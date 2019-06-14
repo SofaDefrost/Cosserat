@@ -210,6 +210,8 @@ void POEMapping<TIn1, TIn2, TOut>::apply(
     const In1VecCoord& in1 = dataVecIn1Pos[0]->getValue();
     const In2VecCoord& in2 = dataVecIn2Pos[0]->getValue();
 
+
+
     Transform Frame = Transform(In2::getCPos(in2[0]),In2::getCRot(in2[0]));
     //m_vecTransform.push_back(Frame);
 
@@ -274,6 +276,8 @@ defaulttype::Vec6 POEMapping<TIn1, TIn2, TOut>::compute_eta(const defaulttype::V
     const In1DataVecCoord* x1fromData = m_fromModel1->read(core::ConstVecCoordId::position());
     const In1VecCoord x1from = x1fromData->getValue();
 
+    helper::ReadAccessor<Data<helper::vector<double>>> curv_abs_input1 = d_curv_abs_input1;
+    helper::ReadAccessor<Data<helper::vector<double>>> curv_abs_input2 = d_curv_abs_input2;
 
     Transform out_Trans;
     Mat6x6 Adjoint, Tg;
@@ -290,8 +294,8 @@ defaulttype::Vec6 POEMapping<TIn1, TIn2, TOut>::compute_eta(const defaulttype::V
         diff0 = abs_input; //
         _diff0 = -abs_input;
     }else {
-        diff0 = abs_input - d_curv_abs_input1.getValue()[m_index_input_1 - 1];
-        _diff0 = d_curv_abs_input1.getValue()[m_index_input_1 - 1] - abs_input;
+        diff0 = abs_input - curv_abs_input1[m_index_input_1 - 1];
+        _diff0 = curv_abs_input1[m_index_input_1 - 1] - abs_input;
     }
 
     computeExponentialSE3(_diff0,x1from[m_index_input_1],out_Trans);
@@ -301,6 +305,9 @@ defaulttype::Vec6 POEMapping<TIn1, TIn2, TOut>::compute_eta(const defaulttype::V
 
     return Adjoint * (baseEta + Tg * Xi_dot );
 }
+
+
+
 
 
 
@@ -320,31 +327,49 @@ void POEMapping<TIn1, TIn2, TOut>:: applyJ(
     const In2VecDeriv& in2_vecDeriv = dataVecIn2Vel[0]->getValue();
     defaulttype::Vec6 eta;
 
+
+    helper::ReadAccessor<Data<helper::vector<double>>> curv_abs_input1 = d_curv_abs_input1;
     helper::ReadAccessor<Data<helper::vector<double>>> curv_abs_input2 = d_curv_abs_input2;
 
     //Get base velocity
     Deriv2 _base_eta;
     if (!in2_vecDeriv.empty())
         _base_eta = in2_vecDeriv[0];
+
+    const In2VecCoord& xfrom2Data = m_fromModel2->read(core::ConstVecCoordId::position())->getValue();
+    Transform Tinverse = Transform(xfrom2Data[0].getCenter(),xfrom2Data[0].getOrientation()).inversed();
+    Mat6x6 P = build_projector(Tinverse);
+
+
     defaulttype::Vec6 base_eta;  for (unsigned p=0;p<6;p++) {base_eta[p] = _base_eta[p];}
+
+    defaulttype::Vec6 base_eta_local = P * base_eta;
+
+    std::cout << "base eta local :"<< base_eta_local <<std::endl;
 
 
     //For loop for computing all etas
     //applyJ(out,in, inroot);
 
-    outVel.resize(d_curv_abs_input2.getValue().size());
-    for (unsigned int j = 0; j < d_curv_abs_input2.getValue().size(); j++) {
+    const OutVecCoord& out = m_toModel->read(core::ConstVecCoordId::position())->getValue();
+    std::cout << "Out :"<< out << std::endl;
+    outVel.resize(curv_abs_input2.size());
+    for (unsigned int j = 0; j < curv_abs_input2.size(); j++) {
 
-        if(d_curv_abs_input2.getValue()[j] <= d_curv_abs_input1.getValue()[m_index_input_1]){
+        if(curv_abs_input2[j] <= curv_abs_input1[m_index_input_1]){
             //(const defaulttype::Vec6 & baseEta, const In1VecDeriv & k_dot, const unsigned int index_input_2)
-            eta = compute_eta(base_eta,in1,d_curv_abs_input2.getValue()[j]);
+            eta = compute_eta(base_eta_local,in1,curv_abs_input2[j]);
         }else {
-            base_eta = compute_eta(base_eta,in1,d_curv_abs_input1.getValue()[m_index_input_1]);
+            base_eta_local = compute_eta(base_eta_local,in1,curv_abs_input1[m_index_input_1]);
             m_index_input_1++;
-            eta = compute_eta(base_eta,in1,d_curv_abs_input2.getValue()[j]);
+            eta = compute_eta(base_eta_local,in1,curv_abs_input2[j]);
         }
-        std::cout<< "Eta : "<< eta << std::endl;
-        outVel[j] = eta;
+        Transform _T = Transform(out[j].getCenter(),out[j].getOrientation());
+        Mat6x6 _P = build_projector(_T);
+        std::cout<< "Eta local : "<< eta << std::endl;
+
+        outVel[j] = _P * eta;
+        std::cout<< "Eta global : "<< outVel[j] << std::endl;
     }
 
     dataVecOutVel[0]->endEdit();

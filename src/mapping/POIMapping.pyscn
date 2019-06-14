@@ -195,7 +195,7 @@ def createScene(rootNode):
                 #rigidBaseNode.createObject('SparseLDLSolver', name='preconditioner')
                 #rigidBaseNode.createObject('GenericConstraintCorrection')
                 
-                RigidBaseMO = rigidBaseNode.createObject('MechanicalObject', template='Rigid3d', name="RigidBaseMO", position="0 0 0  0 0 0 1", showObject='1', showObjectScale='1', velocity='0 0 0.0 0.0 0 0' )
+                RigidBaseMO = rigidBaseNode.createObject('MechanicalObject', template='Rigid3d', name="RigidBaseMO", position="0 0 0  0 0 0. 1", showObject='1', showObjectScale='1', velocity='0 0 0.0 0.0 0 0' )
                 
         
                 
