@@ -232,6 +232,20 @@ public:
 
     void compute_Tang_Exp(double & x, const defaulttype::Vector3& k, Mat6x6 & TgX);
 
+    Mat6x6 build_projector(const Transform &T){
+        Mat6x6 P;
+        Real R[4][4]; (T.getOrientation()).buildRotationMatrix(R);
+
+        for (unsigned int i = 0; i < 3;  i++) {
+            for (unsigned int j = 0; j < 3; j++) {
+                P[i][j+3] = R[i][j];
+                P[i+3][j] = R[i][j];
+            }
+        }
+        return  P;
+        //std::cout<< "Extract mat : "<< P << std::endl;
+    }
+
     defaulttype::Matrix3 getTildMatrix(const defaulttype::Vector3 & u){
         defaulttype::Matrix3 tild;
         tild[0][1] = -u[2];
