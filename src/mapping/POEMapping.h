@@ -36,6 +36,10 @@ namespace sofa
 {
 using sofa::defaulttype::SolidTypes ;
 using sofa::core::objectmodel::BaseContext ;
+using sofa::defaulttype::Matrix3;
+using sofa::defaulttype::Matrix4;
+using sofa::defaulttype::Vector3;
+using sofa::defaulttype::Vec6;
 
 namespace component
 {
@@ -85,6 +89,7 @@ public:
     typedef Data<In2VecDeriv> In2DataVecDeriv;
     typedef Data<In2MatrixDeriv> In2DataMatrixDeriv;
     typedef defaulttype::Mat<6,6,Real> Mat6x6;
+    typedef defaulttype::Mat<3,6,Real> Mat3x6;
     typedef defaulttype::Mat<4,4,Real> Mat4x4;
 
     typedef typename Out::VecCoord OutVecCoord;
@@ -107,9 +112,9 @@ protected:
     Data<helper::vector<double>>      d_curv_abs_input2 ;
 
     /// Input Models container. New inputs are added through addInputModel(In* ).
-//    LinkFromModels1 m_fromModel1;
-//    LinkFromModels2 m_fromModel2;
-//    LinkToModels m_toModel;
+    //    LinkFromModels1 m_fromModel1;
+    //    LinkFromModels2 m_fromModel2;
+    //    LinkToModels m_toModel;
 
     core::State<In1>* m_fromModel1;
     core::State<In2>* m_fromModel2;
@@ -131,9 +136,9 @@ public:
     virtual void reset() override;
     virtual void reinit() override;
 
-//    using Inherit::apply;
-//    using Inherit::applyJ;
-//    using Inherit::applyJT;
+    //    using Inherit::apply;
+    //    using Inherit::applyJ;
+    //    using Inherit::applyJT;
 
     //Apply
     /// Apply ///
@@ -203,23 +208,23 @@ public:
         for (unsigned int k = 0; k < 6 ; k++) {
             for (unsigned int i = 0; i < 6; i++)
                 printf("  %lf",R[k][i]);
-                //std::cout<< " " << R[k][i];
+            //std::cout<< " " << R[k][i];
             printf("\n");
         }
     }
 
-    defaulttype::Matrix3 extract_rotMatrix(const Transform frame){
+    Matrix3 extract_rotMatrix(const Transform frame){
         defaulttype::Quat q = frame.getOrientation();
         Real R[4][4];     q.buildRotationMatrix(R);
-        defaulttype::Matrix3 mat;
+        Matrix3 mat;
 
         for (unsigned int k = 0; k < 3 ; k++)
             for (unsigned int i = 0; i < 3; i++)
                 mat[k][i] = R[k][i];
         return  mat;
-     }
+    }
 
-    void buildaAdjoint(const defaulttype::Matrix3 &R, const defaulttype::Matrix3 & tild_u_R, Mat6x6 & Adjoint){
+    void buildaAdjoint(const Matrix3 &R, const Matrix3 & tild_u_R, Mat6x6 & Adjoint){
 
         for (unsigned int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; ++j) {
@@ -230,7 +235,7 @@ public:
         }
     }
 
-    void compute_Tang_Exp(double & x, const defaulttype::Vector3& k, Mat6x6 & TgX);
+    void compute_Tang_Exp(double & x, const Vector3& k, Mat6x6 & TgX);
 
     Mat6x6 build_projector(const Transform &T){
         Mat6x6 P;
@@ -246,7 +251,7 @@ public:
         //std::cout<< "Extract mat : "<< P << std::endl;
     }
 
-    defaulttype::Matrix3 getTildMatrix(const defaulttype::Vector3 & u){
+    Matrix3 getTildMatrix(const Vector3 & u){
         defaulttype::Matrix3 tild;
         tild[0][1] = -u[2];
         tild[0][2] = u[1];
@@ -258,7 +263,56 @@ public:
         return  tild;
     }
 
-    defaulttype::Vec6 compute_eta(const defaulttype::Vec6 & baseEta, const In1VecDeriv & k_dot, const double abs_input);
+    defaulttype::Vec6 compute_eta(const Vec6 & baseEta, const In1VecDeriv & k_dot, const double abs_input);
+
+    void compute_Forces_6(const unsigned int index, const Vec6& inputForce, Vec6& outForce){
+        // Fill the initial vector
+        const In1DataVecCoord* x1fromData = m_fromModel1->read(core::ConstVecCoordId::position());
+        const In1VecCoord x1from = x1fromData->getValue();
+
+        helper::ReadAccessor<Data<helper::vector<double>>> curv_abs_input1 = d_curv_abs_input1;
+        helper::ReadAccessor<Data<helper::vector<double>>> curv_abs_input2 = d_curv_abs_input2;
+
+        Transform out_Trans;
+        Mat6x6 Adjoint, temp_Adjoint;
+
+        for (unsigned int j = 0; j < 6; j++) Adjoint[j][j] = 1.0;
+
+        double diff0 ;
+        double _diff0 ;
+
+
+        while(curv_abs_input2[index] > curv_abs_input1[m_index_input_1]){
+            if(m_index_input_1 == 0){
+                diff0 = curv_abs_input1[m_index_input_1]; //
+                _diff0 = -diff0;
+            }else {
+                diff0 = curv_abs_input1[m_index_input_1] - curv_abs_input1[m_index_input_1 - 1];
+                _diff0 = -diff0;
+            }
+            computeExponentialSE3(_diff0,x1from[m_index_input_1],out_Trans);
+            computeAdjoint(out_Trans,temp_Adjoint);
+             Adjoint = temp_Adjoint * Adjoint;
+
+            m_index_input_1++;
+        }
+
+        if(m_index_input_1 == 0){
+            diff0 = curv_abs_input2[index];
+            _diff0 = -diff0;
+        }else {
+            diff0 = curv_abs_input2[index] - curv_abs_input1[m_index_input_1 - 1];
+            _diff0 = -diff0;
+        }
+        computeExponentialSE3(_diff0,x1from[m_index_input_1],out_Trans);
+        computeAdjoint(out_Trans,temp_Adjoint);
+         Adjoint = temp_Adjoint * Adjoint; Adjoint.transpose();
+
+         outForce = Adjoint* inputForce;
+    }
+    void compute_Forces_3(const unsigned int index1, const unsigned int index2, const Vec6& inputForce, Vector3& force3 ){
+
+    }
 
     void draw(const core::visual::VisualParams* vparams) override;
 };

@@ -39,9 +39,7 @@ namespace sofa
 {
 using sofa::core::objectmodel::BaseContext ;
 using sofa::helper::AdvancedTimer;
-using sofa::defaulttype::Matrix3;
-using sofa::defaulttype::Matrix4;
-using sofa::defaulttype::Vector3;
+
 
 namespace component
 {
@@ -307,10 +305,6 @@ defaulttype::Vec6 POEMapping<TIn1, TIn2, TOut>::compute_eta(const defaulttype::V
 }
 
 
-
-
-
-
 template <class TIn1, class TIn2, class TOut>
 void POEMapping<TIn1, TIn2, TOut>:: applyJ(
         const core::MechanicalParams* /* mparams */, const helper::vector< OutDataVecDeriv*>& dataVecOutVel,
@@ -378,12 +372,96 @@ void POEMapping<TIn1, TIn2, TOut>:: applyJ(
 }
 
 
+//template <class TIn, class TInRoot, class TOut>
+//void DeformableOnRigidFrameMapping<TIn, TInRoot, TOut>::applyJT(
+//    const core::MechanicalParams* /* mparams */, const helper::vector< InDataVecDeriv*>& dataVecOutForce,
+//    const helper::vector< InRootDataVecDeriv*>& dataVecOutRootForce,
+//    const helper::vector<const OutDataVecDeriv*>& dataVecInForce)
+//{
+//    if(dataVecOutForce.empty() || dataVecInForce.empty())
+//        return;
+
+//    InRootVecDeriv* outroot = NULL;
+
+//    //We need only one input In model and input Root model (if present)
+//    InVecDeriv& out = *dataVecOutForce[0]->beginEdit();
+//    const OutVecDeriv& in = dataVecInForce[0]->getValue();
+
+//    if (!dataVecOutRootForce.empty())
+//        outroot = dataVecOutRootForce[0]->beginEdit();
+
+//    applyJT(out,in, outroot);
+
+//    dataVecOutForce[0]->endEdit();
+//    if (outroot != NULL)
+//        dataVecOutRootForce[0]->endEdit();
+//}
 
 template <class TIn1, class TIn2, class TOut>
 void POEMapping<TIn1, TIn2, TOut>:: applyJT(
-        const core::MechanicalParams* /* mparams */, const helper::vector< In1DataVecDeriv*>& dataVecOut1Force,
-        const helper::vector< In2DataVecDeriv*>& dataVecOut2RootForce,
-        const helper::vector<const OutDataVecDeriv*>& dataVecInForce) {}
+        const core::MechanicalParams* mparams, const helper::vector< In1DataVecDeriv*>& dataVecOut1Force,
+        const helper::vector< In2DataVecDeriv*>& dataVecOut2Force,
+        const helper::vector<const OutDataVecDeriv*>& dataVecInForce)  {
+
+    if(dataVecOut1Force.empty() || dataVecInForce.empty() || dataVecOut2Force.empty())
+        return;
+
+    const OutVecDeriv& in = dataVecInForce[0]->getValue();
+
+    In1VecDeriv& out1 = *dataVecOut1Force[0]->beginEdit();
+    In2VecDeriv& out2 = *dataVecOut2Force[0]->beginEdit();
+
+
+    const OutVecCoord& frame = m_toModel->read(core::ConstVecCoordId::position())->getValue();
+    const In1DataVecCoord* x1fromData = m_fromModel1->read(core::ConstVecCoordId::position());
+    const In1VecCoord x1from = x1fromData->getValue();
+
+    helper::vector<Vec6> inVec6 ;     inVec6.clear();
+    helper::vector<Vec6> local_F_Vec ;     inVec6.clear();
+
+    out2.resize(x1from.size());
+
+    //convert the input from Deriv type to vec6 type, for the purpose of the matrix vector multiplication
+    for (int var = 0; var < in.size(); ++var) {
+        defaulttype::Vec6 vec;
+        for(unsigned j = 0; j < 6; j++) vec[j] = in[var][j];
+        inVec6.push_back(vec);
+
+        //Convert input from Sofa frame to Frederico frame
+        Transform _T = Transform(frame[var].getCenter(),frame[var].getOrientation());
+        Mat6x6 P_trans =(build_projector(_T)); P_trans.transpose();
+        defaulttype::Vec6 local_F = P_trans * vec;
+        local_F_Vec.push_back(local_F);
+    }
+
+
+    //Compute force
+
+    for (unsigned int s = 0 ; s <= x1from.size(); s++) { // size is given by the size of the deformation + rigid size
+        if(s == 0){
+            Vec6 f6;
+            for (unsigned int i = 0; i<in.size(); i++) {
+                Vec6 temp_f6;
+                compute_Forces_6(i,local_F_Vec[i],temp_f6);
+                f6 = f6 + temp_f6;
+            }
+            out1[0] = f6;
+        }else {
+            Vector3 f3;
+            for (unsigned int i = 0; i<in.size(); i++) {
+                Vector3 temp_f3;
+                compute_Forces_3(i,s,local_F_Vec[i],temp_f3);
+                f3 = f3 + temp_f3;
+            }
+            out2[s-1] = f3;
+        }
+    }
+    dataVecOut1Force[0]->endEdit();
+    dataVecOut2Force[0]->endEdit();
+}
+
+
+
 
 //template <class TIn1, class TIn2, class TOut>
 //void POEMapping<TIn1, TIn2, TOut>::applyDJT(const core::MechanicalParams* mparams, core::MultiVecDerivId inForce, core::ConstMultiVecDerivId outForce){}
