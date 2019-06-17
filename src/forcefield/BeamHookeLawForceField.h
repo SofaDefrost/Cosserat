@@ -122,6 +122,8 @@ protected:
     Data<double>                      d_youngModululs; /// youngModulus
     Data<double>                      d_poissonRatio; /// poissonRatio
 
+    Data<helper::vector<double>>      d_length ; /// length of each beam
+
     /// Circular Cross Section
     Data<Real>          d_radius;
     Data<Real>          d_innerRadius;
@@ -134,6 +136,7 @@ protected:
 private :
 
     Mat33 m_K_section;
+    bool compute_df;
 
     ////////////////////////// Inherited attributes ////////////////////////////
     /// https://gcc.gnu.org/onlinedocs/gcc/Name-lookup.html
