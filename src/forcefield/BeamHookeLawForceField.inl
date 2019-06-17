@@ -79,7 +79,7 @@ BeamHookeLawForceField<DataTypes>::BeamHookeLawForceField()
       d_lengthY( initData( &d_lengthY, 1.0, "lengthY", "side length of the cross section along local y axis (if rectangular)")),
       d_lengthZ( initData( &d_lengthZ, 1.0, "length2", "side length of the cross section along local z axis (if rectangular)"))
 {
-
+    compute_df=true;
 }
 
 
@@ -140,7 +140,8 @@ void BeamHookeLawForceField<DataTypes>::addForce(const MechanicalParams* mparams
     SOFA_UNUSED(mparams);
 
     if(!this->getMState()) {
-        msg_info("AngularSpringForceField") << "No Mechanical State found, no force will be computed..." << "\n";
+        msg_info("BeamHookeLawForceField") << "No Mechanical State found, no force will be computed..." << "\n";
+        compute_df=false;
         return;
     }
     VecDeriv& f = *d_f.beginEdit();
@@ -150,11 +151,17 @@ void BeamHookeLawForceField<DataTypes>::addForce(const MechanicalParams* mparams
 
     f.resize(x.size());
 
+    if(x.size()!=d_length.getValue().size()){
+        msg_warning("BeamHookeLawForceField")<<" length should have the same size as x..."<<"\n";
+        compute_df = false;
+        return;
+    }
+
 
     for (unsigned int i=0; i<x.size(); i++)
     {
 
-        f[i] -= m_K_section * (x[i] - x0[i]);
+        f[i] -= (m_K_section * (x[i] - x0[i])) * d_length.getValue()[i];
 
     }
 
@@ -167,6 +174,10 @@ void BeamHookeLawForceField<DataTypes>::addDForce(const MechanicalParams* mparam
                                           DataVecDeriv&  d_df ,
                                           const DataVecDeriv&  d_dx)
 {
+
+    if (!compute_df)
+        return;
+
     WriteAccessor< DataVecDeriv > df = d_df;
     ReadAccessor< DataVecDeriv > dx = d_dx;
     Real kFactor = (Real)mparams->kFactorIncludingRayleighDamping(this->rayleighStiffness.getValue());
@@ -174,7 +185,7 @@ void BeamHookeLawForceField<DataTypes>::addDForce(const MechanicalParams* mparam
     df.resize(dx.size());
     for (unsigned int i=0; i<dx.size(); i++)
     {
-        df[i] -= (m_K_section * dx[i])*kFactor;
+        df[i] -= (m_K_section * dx[i])*kFactor* d_length.getValue()[i];
     }
 
 
