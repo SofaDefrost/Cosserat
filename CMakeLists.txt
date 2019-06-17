@@ -11,6 +11,8 @@ set(HEADER_FILES
     src/mapping/POEMapping.h
     src/mapping/POEMapping.inl
 
+    src/forcefield/BeamHookeLawForceField.h
+    src/forcefield/BeamHookeLawForceField.inl
     
     )
 
@@ -18,6 +20,8 @@ set(SOURCE_FILES
     src/initCosserat.cpp
 
     src/mapping/POEMapping.cpp
+
+    src/forcefield/BeamHookeLawForceField.cpp
     )
 
 set(README_FILE "Cosserat.txt" )
@@ -57,10 +61,10 @@ sofa_generate_package(
     )
 
 
-option(COSSERAT_BUILD_TESTS "Build unit tests" ON )
-if(COSSERAT_BUILD_TESTS)
-    add_subdirectory(tests)
-endif()
+#option(COSSERAT_BUILD_TESTS "Build unit tests" OFF )
+#if(COSSERAT_BUILD_TESTS)
+#    add_subdirectory(tests)
+#endif()
 
 SET_PROPERTY(GLOBAL PROPERTY USE_FOLDERS ON)
 SET_PROPERTY(TARGET ${PROJECT_NAME} PROPERTY FOLDER "plugins")
