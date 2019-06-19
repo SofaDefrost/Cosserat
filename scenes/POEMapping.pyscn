@@ -171,7 +171,7 @@ def dummyInterpolateTransform(a_H_b, a_H_c, alpha):
 def createScene(rootNode):
     
                 rootNode.createObject('RequiredPlugin', pluginName='SoftRobots SofaPython SofaSparseSolver CosseratPlugin BeamAdapter', printLog='0')
-                rootNode.createObject('VisualStyle', displayFlags='hideVisualModels showBehaviorModels showCollisionModels hideBoundingCollisionModels hideForceFields hideInteractionForceFields hideWireframe')
+                rootNode.createObject('VisualStyle', displayFlags='hideVisualModels showBehaviorModels showCollisionModels hideBoundingCollisionModels showForceFields hideInteractionForceFields hideWireframe')
                 
 
                 #rootNode.createObject('FreeMotionAnimationLoop')
@@ -189,7 +189,7 @@ def createScene(rootNode):
                 
                 #rootNode.createObject('EulerImplicitSolver', firstOrder="1", rayleighStiffness="1.0", rayleighMass='1.0')
                 rootNode.createObject('StaticSolver')
-                rootNode.createObject('CGLinearSolver', name='solver', tolerance='1e-20',  threshold='1e-20')
+                rootNode.createObject('CGLinearSolver', name='solver', tolerance='1e-20',  threshold='1e-20', verbose='1')
                 ###############hresho
                 ## RigidBase
                 ###############
@@ -197,9 +197,9 @@ def createScene(rootNode):
                 #rigidBaseNode.createObject('GenericConstraintCorrection')
                 
                 RigidBaseMO = rigidBaseNode.createObject('MechanicalObject', template='Rigid3d', name="RigidBaseMO", position="0 0 0  0 0 0. 1", showObject='1', showObjectScale='1', velocity='0 0 0.0 0.0 0 0' )
-                rigidBaseNode.createObject('RestShapeSpringsForceField', name='spring', stiffness="500000", angularStiffness="5000000", external_points="0", mstate="@RigidBaseMO", points="0", template="Rigid3d"  )
+                rigidBaseNode.createObject('RestShapeSpringsForceField', name='spring', stiffness="500000", angularStiffness="50000", external_points="0", mstate="@RigidBaseMO", points="0", template="Rigid3d"  )
                 
-                rigidBaseNode.createObject('UniformMass', totalMass='0.1' )
+                #rigidBaseNode.createObject('UniformMass', totalMass='0.1' )
                 
                 
                 ###############
@@ -214,11 +214,11 @@ def createScene(rootNode):
                 
                 rateAngularDeformNode = rootNode.createChild('rateAngularDeform')
                 rateAngularDeformMO = rateAngularDeformNode.createObject('MechanicalObject', template='Vec3d', name='rateAngularDeformMO', position=pos, velocity='0 0 0.0 0 0 0') # (2 series of 3 angles for 2 sections. we suppose that the lenght is 10 for each)
-                BeamHookeLawForce = rateAngularDeformNode.createObject('BeamHookeLawForceField', crossSectionShape='circular', length='10 10', radius='0.1' )
+                BeamHookeLawForce = rateAngularDeformNode.createObject('BeamHookeLawForceField', crossSectionShape='circular', length='10 10', radius='0.5', youngModulus='1e5')
                 
-                rateAngularDeformNode.createObject('UniformMass', totalMass='0.1' )
+                #rateAngularDeformNode.createObject('UniformMass', totalMass='0.1' )
                 
-                BeamHookeLawForce = rateAngularDeformNode.createObject('ConstantForceField', forces='0 0 -1500 0 0 -500')
+                #BeamHookeLawForce = rateAngularDeformNode.createObject('ConstantForceField', forces='0 0 -1500 0 0 -500')
                 
                 
                 
@@ -241,9 +241,9 @@ def createScene(rootNode):
                 force2=[0.0,0.0,0.0,0.0,0.0,0.0]
             
                 Force = [force1,force2,force2,force2,force2]
-                framesMO = mappedFrameNode.createObject('MechanicalObject', template='Rigid3d', name="FramesMO", position="0.5 0 0  0 0 0 1  5 0 0 0 0 0 1   11 0 0  0 0 0 1   15 0 0 0 0 0 1  20 0 0  0 0 0 1", showObject='1', showObjectScale='1' )
+                framesMO = mappedFrameNode.createObject('MechanicalObject', template='Rigid3d', name="FramesMO", position="0.5 0 0  0 0 0 1  5 0 0 0 0 0 1   10 0 0  0 0 0 1   15 0 0 0 0 0 1  20 0 0  0 0 0 1", showObject='1', showObjectScale='1' )
                 
-                forceFied = mappedFrameNode.createObject('ConstantForceField', indices="4", forces="0 -10 0 0 0 0")
+                forceFied = mappedFrameNode.createObject('ConstantForceField', indices="3", forces="0 -10 0 100 0 0")
                 #mappedFrameNode.createObject('FixedConstraint', fixAll='1')
                 
                 # The mapping has two inputs: RigidBaseMO and rateAngularDeformMO
@@ -254,7 +254,7 @@ def createScene(rootNode):
                 inputMO_rigid = RigidBaseMO.getLinkPath()
                 outputMO = framesMO.getLinkPath()
                 # TODO:
-                mappedFrameNode.createObject('POEMapping', curv_abs_input1='10 20', curv_abs_input2='0.5 5 11 15 20', input1=inputMO, input2=inputMO_rigid,output=outputMO )
+                mappedFrameNode.createObject('POEMapping', curv_abs_input1='10 20', curv_abs_input2='0.5 5 10 15 20', input1=inputMO, input2=inputMO_rigid,output=outputMO )
                 
 
                 return rootNode

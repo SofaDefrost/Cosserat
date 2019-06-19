@@ -417,6 +417,8 @@ void POEMapping<TIn1, TIn2, TOut>:: applyJT(
 
     const OutVecDeriv& in = dataVecInForce[0]->getValue();
 
+    std::cout << "Input force in applyJT "<<in<<std::endl;
+
     In1VecDeriv& out1 = *dataVecOut1Force[0]->beginEdit();
     In2VecDeriv& out2 = *dataVecOut2Force[0]->beginEdit();
 
@@ -457,7 +459,7 @@ void POEMapping<TIn1, TIn2, TOut>:: applyJT(
             //            std::cout << "1-->Inside applyJT, f6 : "<< f6 << std::endl;
             Transform frame0 = Transform(frame[0].getCenter(),frame[0].getOrientation());
             Mat6x6 M = build_projector(frame0);
-            out2[0] = M * f6;
+            out2[0] += M * f6;
             std::cout << "Rigid Force : "<< out2[0] << std::endl;
         }else {
             Vector3 f3 = Vector3(0.0,0.0,0.0);
@@ -468,7 +470,7 @@ void POEMapping<TIn1, TIn2, TOut>:: applyJT(
                 m_index_input_1 = s-1;
                 f3 = f3 + temp_f3;
             }
-            out1[s-1] = f3;
+            out1[s-1] += f3;
         }
         m_index_input_1 = 0 ;
     }
