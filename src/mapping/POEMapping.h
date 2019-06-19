@@ -90,6 +90,7 @@ public:
     typedef Data<In2MatrixDeriv> In2DataMatrixDeriv;
     typedef defaulttype::Mat<6,6,Real> Mat6x6;
     typedef defaulttype::Mat<3,6,Real> Mat3x6;
+    typedef defaulttype::Mat<6,3,Real> Mat6x3;
     typedef defaulttype::Mat<4,4,Real> Mat4x4;
 
     typedef typename Out::VecCoord OutVecCoord;
@@ -265,7 +266,7 @@ public:
 
     defaulttype::Vec6 compute_eta(const Vec6 & baseEta, const In1VecDeriv & k_dot, const double abs_input);
 
-    void compute_Forces_6(const unsigned int index, const Vec6& inputForce, Vec6& outForce){
+    void compute_Forces_6(const unsigned int index, const Vec6& inputForce, Vec6& outForce6){
         // Fill the initial vector
         const In1DataVecCoord* x1fromData = m_fromModel1->read(core::ConstVecCoordId::position());
         const In1VecCoord x1from = x1fromData->getValue();
@@ -275,12 +276,17 @@ public:
 
         Transform out_Trans;
         Mat6x6 Adjoint, temp_Adjoint;
+        //        std::cout<< "index : "<< index << " ";
+        //        std::cout<< "m_index_input_1 : "<< m_index_input_1 << " ";
+        //        std::cout<< "curv_abs_input2[index]  : "<< curv_abs_input2[index]  << " ";
+        //        std::cout<< "curv_abs_input1[m_index_input_1] : "<< curv_abs_input1[m_index_input_1] << " "<< std::endl;
+
+
+        //std::cout<< " index : "<< index << " m_index_input_1 :"<< m_index_input_1 << std::endl;                                                                                                                                              ""<< std::endl;
 
         for (unsigned int j = 0; j < 6; j++) Adjoint[j][j] = 1.0;
-
         double diff0 ;
         double _diff0 ;
-
 
         while(curv_abs_input2[index] > curv_abs_input1[m_index_input_1]){
             if(m_index_input_1 == 0){
@@ -292,7 +298,7 @@ public:
             }
             computeExponentialSE3(_diff0,x1from[m_index_input_1],out_Trans);
             computeAdjoint(out_Trans,temp_Adjoint);
-             Adjoint = temp_Adjoint * Adjoint;
+            Adjoint = temp_Adjoint * Adjoint;
 
             m_index_input_1++;
         }
@@ -306,12 +312,98 @@ public:
         }
         computeExponentialSE3(_diff0,x1from[m_index_input_1],out_Trans);
         computeAdjoint(out_Trans,temp_Adjoint);
-         Adjoint = temp_Adjoint * Adjoint; Adjoint.transpose();
+        Adjoint = temp_Adjoint * Adjoint;
+        //        std::cout<< "Adjoint :\n";
+        //        print_matrix(Adjoint);
+        //        printf("\n");
+        Adjoint.transpose();
+        //        std::cout<< "Trans Adjoint :\n" ;
+        //        print_matrix(Adjoint);
+        //        printf("\n");
 
-         outForce = Adjoint* inputForce;
+        outForce6 = Adjoint * inputForce;
     }
-    void compute_Forces_3(const unsigned int index1, const unsigned int index2, const Vec6& inputForce, Vector3& force3 ){
+    void compute_Forces_3(const unsigned int index1, const unsigned int index2, const Vec6& inputForce, Vector3& outForce3 ){
 
+        // Fill the initial vector
+        const In1DataVecCoord* x1fromData = m_fromModel1->read(core::ConstVecCoordId::position());
+        const In1VecCoord x1from = x1fromData->getValue();
+
+        helper::ReadAccessor<Data<helper::vector<double>>> curv_abs_input1 = d_curv_abs_input1;
+        helper::ReadAccessor<Data<helper::vector<double>>> curv_abs_input2 = d_curv_abs_input2;
+
+        Transform out_Trans;
+        Mat6x6 Adjoint, TgX;
+
+        for (unsigned int j = 0; j < 6; j++) Adjoint[j][j] = 1.0;
+
+        double diff0 ;
+        double _diff0 ;
+
+        while(curv_abs_input2[index1] > curv_abs_input1[m_index_input_1]){
+            //            printf("\n____________________While ___________________\n");
+            //            std::cout<< "m_index_input_1 : "<< m_index_input_1 << " ";
+            //            std::cout<< "curv_abs_input2[index]  : "<< curv_abs_input2[index1]  << " ";
+            //            std::cout<< "curv_abs_input1[m_index_input_1] : "<< curv_abs_input1[m_index_input_1] << " "<< std::endl;
+            if(m_index_input_1 == 0){
+                diff0 = curv_abs_input1[m_index_input_1]; //
+                _diff0 = -diff0;
+            }else {
+                diff0 = curv_abs_input1[m_index_input_1] - curv_abs_input1[m_index_input_1 - 1];
+                _diff0 = -diff0;
+            }
+            Mat6x6 temp_Adjoint; temp_Adjoint.clear();
+            computeExponentialSE3(_diff0,x1from[m_index_input_1],out_Trans);
+            computeAdjoint(out_Trans,temp_Adjoint);
+            Adjoint = temp_Adjoint * Adjoint;
+
+            m_index_input_1++;
+        }
+
+        if(m_index_input_1 == 0){
+            diff0 = curv_abs_input2[index1];
+            _diff0 = -diff0;
+        }else {
+            diff0 = curv_abs_input2[index1] - curv_abs_input1[m_index_input_1 - 1];
+            _diff0 = -diff0;
+        }
+
+        if(_diff0 > 0.0 ) {
+            //            printf("_diff > 0 \n");
+            outForce3 = Vector3(0.0, 0.0, 0.0);}
+        else {
+            //            printf("\n____________________Else ___________________\n");
+            //            std::cout<< "m_index_input_1 : "<< m_index_input_1 << " ";
+            //            std::cout<< "curv_abs_input2[index]  : "<< curv_abs_input2[index1]  << " ";
+            //            std::cout<< "curv_abs_input1[m_index_input_1] : "<< curv_abs_input1[m_index_input_1] << " "<< std::endl;
+
+            Mat6x6 temp_Adjoint; temp_Adjoint.clear();
+            computeExponentialSE3(_diff0,x1from[m_index_input_1],out_Trans);
+            computeAdjoint(out_Trans,temp_Adjoint);
+            Adjoint = temp_Adjoint * Adjoint;
+
+            //            printf("Adjoint \n");
+            //            print_matrix(Adjoint);
+            //            printf(" \n");
+
+            //compute_Tang_Exp(double & x, const defaulttype::Vector3& k, Mat6x6 & TgX)
+            double x = std::min(curv_abs_input2[index1], curv_abs_input1[index2 - 1]);
+            if(index2>1) x-=curv_abs_input1[index2 - 2] ;
+
+            compute_Tang_Exp(x, x1from[index2 - 1], TgX);
+
+            //            printf("TgX \n");
+            //            print_matrix(TgX);
+            //            printf(" \n");
+
+            Mat6x3 matB; matB.clear(); for(unsigned int k=0; k<3; k++) matB[k][k] = 1.0;
+
+            Mat6x3 S = Adjoint* TgX * matB;
+            Mat3x6 transS = S.transposed();
+
+            outForce3 =  transS * inputForce;
+
+        }
     }
 
     void draw(const core::visual::VisualParams* vparams) override;

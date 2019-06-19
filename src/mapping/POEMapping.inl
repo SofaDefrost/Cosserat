@@ -1,4 +1,4 @@
-/******************************************************************************
+﻿/******************************************************************************
 *       SOFA, Simulation Open-Framework Architecture, development version     *
 *                (c) 2006-2019 INRIA, USTL, UJF, CNRS, MGH                    *
 *                                                                             *
@@ -103,7 +103,7 @@ void POEMapping<TIn1, TIn2, TOut>::bwdInit()
 template <class TIn1, class TIn2, class TOut>
 void POEMapping<TIn1, TIn2, TOut>::reinit()
 {
-    //init();
+    init();
 
 }
 
@@ -201,6 +201,7 @@ void POEMapping<TIn1, TIn2, TOut>::apply(
 
     if(dataVecOutPos.empty() || dataVecIn1Pos.empty() || dataVecIn2Pos.empty())
         return;
+
 
     ///Do Apply
     //We need only one input In model and input Root model (if present)
@@ -311,7 +312,7 @@ void POEMapping<TIn1, TIn2, TOut>:: applyJ(
         const helper::vector<const In1DataVecDeriv*>& dataVecIn1Vel,
         const helper::vector<const In2DataVecDeriv*>& dataVecIn2Vel) {
 
-    printf("====> inside the applyJ \n");
+    //printf("====> inside the applyJ \n");
     if(dataVecOutVel.empty() || dataVecIn1Vel.empty())
         return;
 
@@ -324,6 +325,13 @@ void POEMapping<TIn1, TIn2, TOut>:: applyJ(
 
     helper::ReadAccessor<Data<helper::vector<double>>> curv_abs_input1 = d_curv_abs_input1;
     helper::ReadAccessor<Data<helper::vector<double>>> curv_abs_input2 = d_curv_abs_input2;
+
+
+    //    std::cout << "Input1 : "<< in1 << std::endl;
+
+    //    std::cout << "Input2 : "<< in2_vecDeriv << std::endl;
+
+    //    std::cout << "outVel : "<< outVel << std::endl;
 
     //Get base velocity
     Deriv2 _base_eta;
@@ -339,14 +347,14 @@ void POEMapping<TIn1, TIn2, TOut>:: applyJ(
 
     defaulttype::Vec6 base_eta_local = P * base_eta;
 
-    std::cout << "base eta local :"<< base_eta_local <<std::endl;
+    //    std::cout << "base eta local :"<< base_eta_local <<std::endl;
 
 
     //For loop for computing all etas
     //applyJ(out,in, inroot);
 
     const OutVecCoord& out = m_toModel->read(core::ConstVecCoordId::position())->getValue();
-    std::cout << "Out :"<< out << std::endl;
+    //std::cout << "Out :"<< out << std::endl;
     outVel.resize(curv_abs_input2.size());
     for (unsigned int j = 0; j < curv_abs_input2.size(); j++) {
 
@@ -360,12 +368,13 @@ void POEMapping<TIn1, TIn2, TOut>:: applyJ(
         }
         Transform _T = Transform(out[j].getCenter(),out[j].getOrientation());
         Mat6x6 _P = build_projector(_T);
-        std::cout<< "Eta local : "<< eta << std::endl;
+        //std::cout<< "Eta local : "<< eta << std::endl;
 
         outVel[j] = _P * eta;
-        std::cout<< "Eta global : "<< outVel[j] << std::endl;
+        //std::cout<< "Eta global : "<< outVel[j] << std::endl;
     }
 
+    //    std::cout << "Inside the apply J, outVel after computation  :  "<< outVel << std::endl;
     dataVecOutVel[0]->endEdit();
 
     m_index_input_1 = 0;
@@ -416,48 +425,58 @@ void POEMapping<TIn1, TIn2, TOut>:: applyJT(
     const In1DataVecCoord* x1fromData = m_fromModel1->read(core::ConstVecCoordId::position());
     const In1VecCoord x1from = x1fromData->getValue();
 
-    helper::vector<Vec6> inVec6 ;     inVec6.clear();
-    helper::vector<Vec6> local_F_Vec ;     inVec6.clear();
+    helper::vector<Vec6> local_F_Vec ;   local_F_Vec.clear();
 
-    out2.resize(x1from.size());
+    out1.resize(x1from.size());
 
     //convert the input from Deriv type to vec6 type, for the purpose of the matrix vector multiplication
+    //    std::cout<< "Size of frames :"<< in.size()<< std::endl;
     for (int var = 0; var < in.size(); ++var) {
         defaulttype::Vec6 vec;
         for(unsigned j = 0; j < 6; j++) vec[j] = in[var][j];
-        inVec6.push_back(vec);
 
         //Convert input from Sofa frame to Frederico frame
         Transform _T = Transform(frame[var].getCenter(),frame[var].getOrientation());
         Mat6x6 P_trans =(build_projector(_T)); P_trans.transpose();
         defaulttype::Vec6 local_F = P_trans * vec;
         local_F_Vec.push_back(local_F);
+        //        std::cout<< "local_F_Vec : "<< local_F << std::endl;
     }
 
 
     //Compute force
-
     for (unsigned int s = 0 ; s <= x1from.size(); s++) { // size is given by the size of the deformation + rigid size
         if(s == 0){
             Vec6 f6;
             for (unsigned int i = 0; i<in.size(); i++) {
-                Vec6 temp_f6;
+                Vec6 temp_f6 = Vec6(0.0,0.0,0.0,0.0,0.0,0.0);
                 compute_Forces_6(i,local_F_Vec[i],temp_f6);
+                m_index_input_1 = 0 ;
                 f6 = f6 + temp_f6;
             }
-            out1[0] = f6;
+            //            std::cout << "1-->Inside applyJT, f6 : "<< f6 << std::endl;
+            Transform frame0 = Transform(frame[0].getCenter(),frame[0].getOrientation());
+            Mat6x6 M = build_projector(frame0);
+            out2[0] = M * f6;
+            std::cout << "Rigid Force : "<< out2[0] << std::endl;
         }else {
-            Vector3 f3;
+            Vector3 f3 = Vector3(0.0,0.0,0.0);
+            m_index_input_1 = s-1;
             for (unsigned int i = 0; i<in.size(); i++) {
-                Vector3 temp_f3;
+                Vector3 temp_f3 = Vector3(0.0,0.0,0.0);
                 compute_Forces_3(i,s,local_F_Vec[i],temp_f3);
+                m_index_input_1 = s-1;
                 f3 = f3 + temp_f3;
             }
-            out2[s-1] = f3;
+            out1[s-1] = f3;
         }
+        m_index_input_1 = 0 ;
     }
+    std::cout << "Pos Force : "<< out1 << std::endl;
+    printf("_______________________\n");
     dataVecOut1Force[0]->endEdit();
     dataVecOut2Force[0]->endEdit();
+
 }
 
 
