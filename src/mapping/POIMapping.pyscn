@@ -187,9 +187,10 @@ def createScene(rootNode):
                 
                 
                 
-                rootNode.createObject('EulerImplicitSolver', firstOrder="1", rayleighStiffness="1.0", rayleighMass='1.0')
-                rootNode.createObject('CGLinearSolver', name='solver', tolerance='1e-20')
-                ###############
+                #rootNode.createObject('EulerImplicitSolver', firstOrder="1", rayleighStiffness="1.0", rayleighMass='1.0')
+                rootNode.createObject('StaticSolver')
+                rootNode.createObject('CGLinearSolver', name='solver', tolerance='1e-20',  threshold='1e-20')
+                ###############hresho
                 ## RigidBase
                 ###############
                 rigidBaseNode= rootNode.createChild('rigidBase')
@@ -198,7 +199,7 @@ def createScene(rootNode):
                 RigidBaseMO = rigidBaseNode.createObject('MechanicalObject', template='Rigid3d', name="RigidBaseMO", position="0 0 0  0 0 0. 1", showObject='1', showObjectScale='1', velocity='0 0 0.0 0.0 0 0' )
                 rigidBaseNode.createObject('RestShapeSpringsForceField', name='spring', stiffness="500000", angularStiffness="5000000", external_points="0", mstate="@RigidBaseMO", points="0", template="Rigid3d"  )
                 
-        
+                rigidBaseNode.createObject('UniformMass', totalMass='0.1' )
                 
                 
                 ###############
@@ -213,10 +214,15 @@ def createScene(rootNode):
                 
                 rateAngularDeformNode = rootNode.createChild('rateAngularDeform')
                 rateAngularDeformMO = rateAngularDeformNode.createObject('MechanicalObject', template='Vec3d', name='rateAngularDeformMO', position=pos, velocity='0 0 0.0 0 0 0') # (2 series of 3 angles for 2 sections. we suppose that the lenght is 10 for each)
-                BeamHookeLawForce = rateAngularDeformNode.createObject('BeamHookeLawForceField', crossSectionShape='circular' )
+                BeamHookeLawForce = rateAngularDeformNode.createObject('BeamHookeLawForceField', crossSectionShape='circular', length='10 10', radius='0.1' )
+                
+                rateAngularDeformNode.createObject('UniformMass', totalMass='0.1' )
+                
+                BeamHookeLawForce = rateAngularDeformNode.createObject('ConstantForceField', forces='0 0 -1500 0 0 -500')
                 
                 
                 
+
                 
                 #############@
                 ### Animation (to move the dofs)
@@ -235,9 +241,10 @@ def createScene(rootNode):
                 force2=[0.0,0.0,0.0,0.0,0.0,0.0]
             
                 Force = [force1,force2,force2,force2,force2]
-                framesMO = mappedFrameNode.createObject('MechanicalObject', template='Rigid3d', name="FramesMO", position="0.5 0 0  0 0 0 1  5 0 0 0 0 0 1   11 0 0  0 0 0 1   15 0 0 0 0 0 1  20 0 0  0 0 0 1", showObject='1', showObjectScale='1', force=Force )
+                framesMO = mappedFrameNode.createObject('MechanicalObject', template='Rigid3d', name="FramesMO", position="0.5 0 0  0 0 0 1  5 0 0 0 0 0 1   11 0 0  0 0 0 1   15 0 0 0 0 0 1  20 0 0  0 0 0 1", showObject='1', showObjectScale='1' )
                 
                 forceFied = mappedFrameNode.createObject('ConstantForceField', indices="4", forces="0 -10 0 0 0 0")
+                #mappedFrameNode.createObject('FixedConstraint', fixAll='1')
                 
                 # The mapping has two inputs: RigidBaseMO and rateAngularDeformMO
                 #                 one output: FramesMO
@@ -250,7 +257,7 @@ def createScene(rootNode):
                 mappedFrameNode.createObject('POEMapping', curv_abs_input1='10 20', curv_abs_input2='0.5 5 11 15 20', input1=inputMO, input2=inputMO_rigid,output=outputMO )
                 
 
-
+                return rootNode
                 
                 
                 

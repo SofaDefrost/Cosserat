@@ -59,3 +59,42 @@
 --- NEW SESSION: 18/06/2019 16:53:59 ---
 /rigidBase/MappedFrames/ConstantForceField.forces = 0 -100 0 0 0 0
 /rigidBase/MappedFrames/ConstantForceField.showColor = 0.2 0.898039 0.298039 1
+
+--- NEW SESSION: 19/06/2019 12:05:44 ---
+/solver.threshold = -0.97999
+
+--- NEW SESSION: 19/06/2019 12:08:58 ---
+/solver.verbose = 1
+/solver.printLog = 1
+/EulerImplicitSolver.verbose = 1
+/rateAngularDeform/rateAngularDeformMO.position = 0 0 0 0 0 0
+
+--- NEW SESSION: 19/06/2019 12:15:49 ---
+/solver.printLog = 1
+/solver.verbose = 1
+
+--- NEW SESSION: 19/06/2019 12:17:49 ---
+/EulerImplicitSolver.printLog = 1
+/solver.printLog = 1
+/solver.verbose = 1
+/rigidBase/spring.springColor = 0 1 0 1
+/rigidBase/MappedFrames/ConstantForceField.showColor = 0.2 0.898039 0.298039 1
+/rigidBase/MappedFrames/FramesMO.velocity = 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+/rigidBase/MappedFrames/FramesMO.derivX = 0 -297.5 0 0 0 -950 0 -19760 0 0 0 -7700 0 -92460 0 0 0 -15700 0 -159260 0 0 0 -17700 0 -254010 0 0 0 -20200
+/rigidBase/MappedFrames/FramesMO.force = 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -10 0 0 0 0
+/rigidBase/MappedFrames/FramesMO.9(V_DERIV) = 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+/rigidBase/MappedFrames/FramesMO.dforce(V_DERIV) = 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+/rateAngularDeform/ConstantForceField.showColor = 0.2 0.898039 0.298039 1
+/rateAngularDeform/ConstantForceField.showColor = 0.2 0.898039 0.298039 1
+/rateAngularDeform/ConstantForceField.showColor = 0.2 0.898039 0.298039 1
+/rateAngularDeform/ConstantForceField.showColor = 0.2 0.898039 0.298039 1
+/solver.graph = Denominator 4.83546e+09 3.8868e+08 2.08495e-17 7.12868e-25
+Error 1 1 1.74871 3.25177e-14 1.51228e-16
+/solver.graph = Denominator 4.83546e+09 3.8868e+08 2.08495e-17 7.12868e-25
+Error 1 1 1.74871 3.25177e-14 1.51228e-16
+/solver.graph = Denominator 4.83546e+09 3.887e+08 2.77013e-17 1.68103e+20 1.8088e+12 2.58784e+38 8.16571e+52 4.00061e+57 2.84865e+90 1.17718e+76 1.25667e+128 1.67406e+98 3.24755e+156 1.17131e+133 6.89317e+176 1.16526e+169 7.46903e+195 7.57755e+204 2.40714e+215 1.62064e+241 5.2475e+234 1.7455e+277 1.18559e+255
+Error 1 1 1.74873 0.00503569 6.76558e+08 1.97104e+11 4.05632e+21 5.7104e+27 1.60241e+34 2.26651e+43 4.27398e+46 1.23393e+59 1.4529e+59 2.28737e+74 1.6235e+74 1.08144e+87 2.48697e+89 2.54429e+99 4.1819e+104 8.92117e+111 9.05658e+119 2.86104e+124 1.99522e+135 1.33786e+137
+
+--- NEW SESSION: 19/06/2019 12:35:24 ---
+/solver.printLog = 1
+/solver.verbose = 1

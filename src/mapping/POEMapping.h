@@ -108,7 +108,6 @@ public:
     typedef typename SolidTypes<Real>::Transform      Transform ;
 
 protected:
-    Data<bool>                        d_applyRestPosition; ///
     Data<helper::vector<double>>      d_curv_abs_input1 ;
     Data<helper::vector<double>>      d_curv_abs_input2 ;
 
@@ -180,6 +179,11 @@ public:
 
     void applyDJT(const core::MechanicalParams* mparams, core::MultiVecDerivId inForce, core::ConstMultiVecDerivId outForce) override{}
 
+    /// This method must be reimplemented by all mappings if they need to support constraints.
+    virtual void applyJT(
+        const core::ConstraintParams* /* cparams */, const helper::vector< In1DataMatrixDeriv*>& /* dataMatOut1Const */ ,
+        const helper::vector< In2DataMatrixDeriv*>&  /* dataMatOut2Const */,
+        const helper::vector<const OutDataMatrixDeriv*>& /* dataMatInConst */) override { }
 
 
 

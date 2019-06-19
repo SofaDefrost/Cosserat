@@ -48,8 +48,7 @@ namespace mapping
 {
 template <class TIn1, class TIn2, class TOut>
 POEMapping<TIn1, TIn2, TOut>::POEMapping()
-    : d_applyRestPosition( initData( &d_applyRestPosition, false, "applyRestPosition", "set to true to apply this mapping to restPosition at init"))
-    , d_curv_abs_input1( initData( &d_curv_abs_input1, "curv_abs_input1", " need to be com...."))
+    : d_curv_abs_input1( initData( &d_curv_abs_input1, "curv_abs_input1", " need to be com...."))
     , d_curv_abs_input2( initData( &d_curv_abs_input2, "curv_abs_input2", " need to be com...."))
     , m_fromModel1(NULL)
     , m_fromModel2(NULL)
@@ -91,6 +90,7 @@ void POEMapping<TIn1, TIn2, TOut>::init()
     for (unsigned int i = 0; i < xfrom.size(); i++) {
         m_vecTransform.push_back(xfrom[i]);
     }
+    Inherit::init();
 }
 
 
