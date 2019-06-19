@@ -74,6 +74,7 @@ BeamHookeLawForceField<DataTypes>::BeamHookeLawForceField()
                                  "shape of the cross-section. Can be: circular (tube with external radius being radius and internal radius being innerRadius ) or rectangular (lengthY and lengthZ) . Default is circular" )),
       d_youngModululs( initData( &d_youngModululs, 1.0e6, "youngModulus", "Young Modulus describes the stiffness of the material")),
       d_poissonRatio( initData( &d_poissonRatio, 0.45, "poissonRatio", "poisson Ratio describes the compressibility of the material")),
+      d_length( initData( &d_length, "length", "lenght of each beam")),
       d_radius( initData( &d_radius, 1.0, "radius", "external radius of the cross section (if circular)")),
       d_innerRadius( initData( &d_innerRadius, 0.0, "innerRadius", "internal radius of the cross section (if circular)")),
       d_lengthY( initData( &d_lengthY, 1.0, "lengthY", "side length of the cross section along local y axis (if rectangular)")),
@@ -150,6 +151,8 @@ void BeamHookeLawForceField<DataTypes>::addForce(const MechanicalParams* mparams
     const VecCoord& x0 = this->mstate->read(VecCoordId::restPosition())->getValue();
 
     f.resize(x.size());
+
+    std::cout<< "===> x :"<< x << std::endl;
 
     if(x.size()!=d_length.getValue().size()){
         msg_warning("BeamHookeLawForceField")<<" length should have the same size as x..."<<"\n";
