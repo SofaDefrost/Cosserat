@@ -34,3 +34,28 @@
 /rigidBase/MappedFrames/FramesMO.9(V_DERIV) = 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 /rigidBase/MappedFrames/FramesMO.velocity = -0.00130577 0.012423 0 0 0 0.05 -1.01321 0.578338 0 0 0 0.5 -3.1831 -3.02642 0 0 0 1 -3.1831 -7.02642 0 0 0 1 -3.1831 -11.0264 0 0 0 1
 /rigidBase/MappedFrames/FramesMO.dforce(V_DERIV) = 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+
+--- NEW SESSION: 18/06/2019 16:28:01 ---
+/rigidBase/MappedFrames/FramesMO.externalForce = 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+/rigidBase/MappedFrames/FramesMO.force = 0 0.1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+/rigidBase/MappedFrames/FramesMO.velocity = -0.00130577 0.012423 0 0 0 0.05 -1.01321 0.578338 0 0 0 0.5 -3.1831 -3.02642 0 0 0 1 -3.1831 -7.02642 0 0 0 1 -3.1831 -11.0264 0 0 0 1
+/rigidBase/MappedFrames/FramesMO.velocity = -0.00130577 0.012423 0 0 0 0.05 -1.01321 0.578338 0 0 0 0.5 -3.1831 -3.02642 0 0 0 1 -3.1831 -7.02642 0 0 0 1 -3.1831 -11.0264 0 0 0 1
+/rigidBase/MappedFrames/FramesMO.9(V_DERIV) = 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+/rigidBase/MappedFrames/FramesMO.force = 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+/rigidBase/MappedFrames/FramesMO.derivX = 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+/rigidBase/MappedFrames/FramesMO.dforce(V_DERIV) = 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+
+--- NEW SESSION: 18/06/2019 16:33:00 ---
+/rigidBase/MappedFrames/FramesMO.velocity = -0.00130577 0.012423 0 0 0 0.05 -1.01321 0.578338 0 0 0 0.5 -3.1831 -3.02642 0 0 0 1 -3.1831 -7.02642 0 0 0 1 -3.1831 -11.0264 0 0 0 1
+/rigidBase/MappedFrames/FramesMO.force = 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+/rigidBase/MappedFrames/FramesMO.externalForce = 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+
+--- NEW SESSION: 18/06/2019 16:51:29 ---
+/rigidBase/spring.springColor = 0 1 0 1
+
+--- NEW SESSION: 18/06/2019 16:52:06 ---
+/rigidBase/MappedFrames/ConstantForceField.showColor = 0.2 0.898039 0.298039 1
+
+--- NEW SESSION: 18/06/2019 16:53:59 ---
+/rigidBase/MappedFrames/ConstantForceField.forces = 0 -100 0 0 0 0
+/rigidBase/MappedFrames/ConstantForceField.showColor = 0.2 0.898039 0.298039 1

@@ -187,15 +187,16 @@ def createScene(rootNode):
                 
                 
                 
+                rootNode.createObject('EulerImplicitSolver', firstOrder="1", rayleighStiffness="1.0", rayleighMass='1.0')
+                rootNode.createObject('CGLinearSolver', name='solver', tolerance='1e-20')
                 ###############
                 ## RigidBase
                 ###############
                 rigidBaseNode= rootNode.createChild('rigidBase')
-                rigidBaseNode.createObject('EulerImplicitSolver', firstOrder="0", rayleighStiffness="1.0", rayleighMass='1.0')
-                #rigidBaseNode.createObject('SparseLDLSolver', name='preconditioner')
                 #rigidBaseNode.createObject('GenericConstraintCorrection')
                 
                 RigidBaseMO = rigidBaseNode.createObject('MechanicalObject', template='Rigid3d', name="RigidBaseMO", position="0 0 0  0 0 0. 1", showObject='1', showObjectScale='1', velocity='0 0 0.0 0.0 0 0' )
+                rigidBaseNode.createObject('RestShapeSpringsForceField', name='spring', stiffness="500000", angularStiffness="5000000", external_points="0", mstate="@RigidBaseMO", points="0", template="Rigid3d"  )
                 
         
                 
@@ -206,18 +207,21 @@ def createScene(rootNode):
                 
                 #pos = pi
                 
-                array1 = [0.0,0.0,pi/10.0]
+                array1 = [0.0,0.0,0.0]
                 array2 = [0.0,0.0,0.0]
                 pos = [array1, array2]
                 
                 rateAngularDeformNode = rootNode.createChild('rateAngularDeform')
-                rateAngularDeformMO = rateAngularDeformNode.createObject('MechanicalObject', template='Vec3d', name='rateAngularDeformMO', position=pos, velocity='0 0 0.1 0 0 0') # (2 series of 3 angles for 2 sections. we suppose that the lenght is 10 for each)
+                rateAngularDeformMO = rateAngularDeformNode.createObject('MechanicalObject', template='Vec3d', name='rateAngularDeformMO', position=pos, velocity='0 0 0.0 0 0 0') # (2 series of 3 angles for 2 sections. we suppose that the lenght is 10 for each)
+                BeamHookeLawForce = rateAngularDeformNode.createObject('BeamHookeLawForceField', crossSectionShape='circular' )
+                
+                
                 
                 
                 #############@
                 ### Animation (to move the dofs)
                 ##############
-                anim = Animation(rigidBaseNode,rateAngularDeformNode);
+                #anim = Animation(rigidBaseNode,rateAngularDeformNode);
                 
                 
                 ##############
@@ -227,7 +231,13 @@ def createScene(rootNode):
                 mappedFrameNode = rigidBaseNode.createChild('MappedFrames')
                 rateAngularDeformNode.addChild(mappedFrameNode)
                 
-                framesMO = mappedFrameNode.createObject('MechanicalObject', template='Rigid3d', name="FramesMO", position="0.5 0 0  0 0 0 1  5 0 0 0 0 0 1   11 0 0  0 0 0 1   15 0 0 0 0 0 1  19 0 0  0 0 0 1", showObject='1', showObjectScale='1')
+                force1=[0.0,0.1,0.0,0.0,0.0,0.0]
+                force2=[0.0,0.0,0.0,0.0,0.0,0.0]
+            
+                Force = [force1,force2,force2,force2,force2]
+                framesMO = mappedFrameNode.createObject('MechanicalObject', template='Rigid3d', name="FramesMO", position="0.5 0 0  0 0 0 1  5 0 0 0 0 0 1   11 0 0  0 0 0 1   15 0 0 0 0 0 1  20 0 0  0 0 0 1", showObject='1', showObjectScale='1', force=Force )
+                
+                forceFied = mappedFrameNode.createObject('ConstantForceField', indices="4", forces="0 -10 0 0 0 0")
                 
                 # The mapping has two inputs: RigidBaseMO and rateAngularDeformMO
                 #                 one output: FramesMO
@@ -237,7 +247,7 @@ def createScene(rootNode):
                 inputMO_rigid = RigidBaseMO.getLinkPath()
                 outputMO = framesMO.getLinkPath()
                 # TODO:
-                mappedFrameNode.createObject('POEMapping', curv_abs_input1='10 20', curv_abs_input2='0.5 5 11 15 19', input1=inputMO, input2=inputMO_rigid,output=outputMO )
+                mappedFrameNode.createObject('POEMapping', curv_abs_input1='10 20', curv_abs_input2='0.5 5 11 15 20', input1=inputMO, input2=inputMO_rigid,output=outputMO )
                 
 
 
