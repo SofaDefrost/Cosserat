@@ -108,8 +108,9 @@ public:
     typedef typename SolidTypes<Real>::Transform      Transform ;
 
 protected:
-    Data<helper::vector<double>>      d_curv_abs_input1 ;
-    Data<helper::vector<double>>      d_curv_abs_input2 ;
+    Data<helper::vector<double>>      d_curv_abs_input ;
+    Data<helper::vector<double>>      d_curv_abs_output ;
+    Data<bool>                        d_debug ;
 
     /// Input Models container. New inputs are added through addInputModel(In* ).
     //    LinkFromModels1 m_fromModel1;
@@ -120,8 +121,24 @@ protected:
     core::State<In2>* m_fromModel2;
     core::State<Out>* m_toModel;
 
-    unsigned int m_index_input_1;
+    unsigned int m_index_input;
     OutVecCoord m_vecTransform ;
+
+    /*===========COSSERAT VECTORS ======================*/
+
+    helper::vector<Transform> m_ExponentialSE3Vectors;
+    helper::vector<Transform> m_nodesExponentialSE3Vectors;
+
+    helper::vector<int> m_indicesVectors;
+
+    helper::vector<double> m_beamLenghtVectors;
+    helper::vector<double> m_framesLenghtVectors;
+
+    helper::vector<Vec6> m_nodesVelocityVectors;
+    helper::vector<Mat6x6> m_nodesTangExpVectors;
+    helper::vector<Mat6x6> m_framesTangExpVectors;
+
+
 
 protected:
     /// Constructor
@@ -131,27 +148,15 @@ protected:
     ~POEMapping()  override {}
 public:
 
+
+    /**********************SOFA METHODS**************************/
     void init() override;
     virtual void bwdInit() override;  // get the points
     virtual void reset() override;
     virtual void reinit() override;
+    void draw(const core::visual::VisualParams* vparams) override;
 
-    //    using Inherit::apply;
-    //    using Inherit::applyJ;
-    //    using Inherit::applyJT;
-
-    //Apply
-    /// Apply ///
-    /// Apply the mapping to position vectors.
-    ///
-    /// If the Mapping can be represented as a matrix J, this method computes
-    /// $ out = J in $
-    /// void apply (const MechanicalParams* mparams, MultiVecCoordId outPos, ConstMultiVecCoordId inPos ) override;
-    ///
-    /// This method must be reimplemented by all mappings.
-    /// InPos and OutPos by default contains VecIds of type V_COORD.
-    /// The size of InPos vector is the same as the number of fromModels.
-    /// The size of OutPos vector is the same as the number of OutModels.
+    /**********************MAPPING METHODS**************************/
     void apply(
             const core::MechanicalParams* /* mparams */, const helper::vector<OutDataVecCoord*>& dataVecOutPos,
             const helper::vector<const In1DataVecCoord*>& dataVecIn1Pos ,
@@ -163,15 +168,6 @@ public:
             const helper::vector<const In2DataVecDeriv*>& dataVecIn2Vel) override;
 
     //ApplyJT Force
-    /// do_ApplyJ ///
-    /// This method computes
-    /// $ out = J in $
-    /// where J is the tangent operator (the linear approximation) of the mapping
-    ///
-    /// This method must be reimplemented by all mappings.
-    /// InDeriv and OutDeriv by default contains VecIds of type V_DERIV.
-    /// The size of InDeriv vector is the same as the number of fromModels.
-    /// The size of OutDeriv vector is the same as the number of OutModels.
     void applyJT(
             const core::MechanicalParams* /* mparams */, const helper::vector< In1DataVecDeriv*>& dataVecOut1Force,
             const helper::vector< In2DataVecDeriv*>& dataVecOut2RootForce,
@@ -185,49 +181,13 @@ public:
         const helper::vector< In2DataMatrixDeriv*>&  /* dataMatOut2Const */,
         const helper::vector<const OutDataMatrixDeriv*>& /* dataMatInConst */) override { }
 
-
-
-    ///
-    /// /// ApplyJT (Force)///
-    /// Apply the mapping to Force vectors.
-    //    //ApplyJT Constraint
-    //    void do_applyJT( In1MatrixDeriv& out1, const OutMatrixDeriv& in, In2MatrixDeriv* out2 );
-
-    /// This method must be reimplemented by all mappings.
-    /// InDeriv and OutDeriv by default contains VecIds of type V_DERIV.
-    /// The size of InDeriv vector is the same as the number of fromModels.
-    /// The size of OutDeriv vector is the same as the number of OutModels.
-    //    void applyJT(
-    //            const core::ConstraintParams* /* cparams */, const helper::vector< In1DataMatrixDeriv*>& dataMatOut1Const ,
-    //            const helper::vector< In2DataMatrixDeriv*>&  dataMatOut2Const ,
-    //            const helper::vector<const OutDataMatrixDeriv*>& dataMatInConst) override;
-
-    //    void draw(const core::visual::VisualParams* vparams) override;
-
+protected:
+    /**********************COSSERAT METHODS**************************/
     void computeExponentialSE3(double & x, const defaulttype::Vector3& k, Transform & Trans);
-    void compute_frame(Transform &latestFrame, const In1VecCoord &indeformed, const unsigned int index2);
     void computeAdjoint(const Transform & frame, Mat6x6 &adjoint);
 
-    void print_matrix(const Mat6x6 R){
-
-        for (unsigned int k = 0; k < 6 ; k++) {
-            for (unsigned int i = 0; i < 6; i++)
-                printf("  %lf",R[k][i]);
-            //std::cout<< " " << R[k][i];
-            printf("\n");
-        }
-    }
-
-    Matrix3 extract_rotMatrix(const Transform frame){
-        defaulttype::Quat q = frame.getOrientation();
-        Real R[4][4];     q.buildRotationMatrix(R);
-        Matrix3 mat;
-
-        for (unsigned int k = 0; k < 3 ; k++)
-            for (unsigned int i = 0; i < 3; i++)
-                mat[k][i] = R[k][i];
-        return  mat;
-    }
+    void update_ExponentialSE3(const In1VecCoord & inDeform);
+    void update_TangExpSE3(const In1VecCoord & inDeform, const helper::vector<double> &curv_abs_input , const helper::vector<double> &curv_abs_output );
 
     void buildaAdjoint(const Matrix3 &R, const Matrix3 & tild_u_R, Mat6x6 & Adjoint){
 
@@ -242,32 +202,6 @@ public:
 
     void compute_Tang_Exp(double & x, const Vector3& k, Mat6x6 & TgX);
 
-    Mat6x6 build_projector(const Transform &T){
-        Mat6x6 P;
-        Real R[4][4]; (T.getOrientation()).buildRotationMatrix(R);
-
-        for (unsigned int i = 0; i < 3;  i++) {
-            for (unsigned int j = 0; j < 3; j++) {
-                P[i][j+3] = R[i][j];
-                P[i+3][j] = R[i][j];
-            }
-        }
-        return  P;
-        //std::cout<< "Extract mat : "<< P << std::endl;
-    }
-
-    Matrix3 getTildMatrix(const Vector3 & u){
-        defaulttype::Matrix3 tild;
-        tild[0][1] = -u[2];
-        tild[0][2] = u[1];
-        tild[1][2] = -u[0];
-
-        tild[1][0] = -tild[0][1];
-        tild[2][0] = -tild[0][2];
-        tild[2][1] = -tild[1][2];
-        return  tild;
-    }
-
     defaulttype::Vec6 compute_eta(const Vec6 & baseEta, const In1VecDeriv & k_dot, const double abs_input);
 
     void compute_Forces_6(const unsigned int index, const Vec6& inputForce, Vec6& outForce6){
@@ -275,8 +209,8 @@ public:
         const In1DataVecCoord* x1fromData = m_fromModel1->read(core::ConstVecCoordId::position());
         const In1VecCoord x1from = x1fromData->getValue();
 
-        helper::ReadAccessor<Data<helper::vector<double>>> curv_abs_input1 = d_curv_abs_input1;
-        helper::ReadAccessor<Data<helper::vector<double>>> curv_abs_input2 = d_curv_abs_input2;
+        helper::ReadAccessor<Data<helper::vector<double>>> curv_abs_input1 = d_curv_abs_input;
+        helper::ReadAccessor<Data<helper::vector<double>>> curv_abs_input2 = d_curv_abs_output;
 
         Transform out_Trans;
         Mat6x6 Adjoint, temp_Adjoint;
@@ -292,29 +226,29 @@ public:
         double diff0 ;
         double _diff0 ;
 
-        while(curv_abs_input2[index] > curv_abs_input1[m_index_input_1]){
-            if(m_index_input_1 == 0){
-                diff0 = curv_abs_input1[m_index_input_1]; //
+        while(curv_abs_input2[index] > curv_abs_input1[m_index_input]){
+            if(m_index_input == 0){
+                diff0 = curv_abs_input1[m_index_input]; //
                 _diff0 = -diff0;
             }else {
-                diff0 = curv_abs_input1[m_index_input_1] - curv_abs_input1[m_index_input_1 - 1];
+                diff0 = curv_abs_input1[m_index_input] - curv_abs_input1[m_index_input - 1];
                 _diff0 = -diff0;
             }
-            computeExponentialSE3(_diff0,x1from[m_index_input_1],out_Trans);
+            computeExponentialSE3(_diff0,x1from[m_index_input],out_Trans);
             computeAdjoint(out_Trans,temp_Adjoint);
             Adjoint = temp_Adjoint * Adjoint;
 
-            m_index_input_1++;
+            m_index_input++;
         }
 
-        if(m_index_input_1 == 0){
+        if(m_index_input == 0){
             diff0 = curv_abs_input2[index];
             _diff0 = -diff0;
         }else {
-            diff0 = curv_abs_input2[index] - curv_abs_input1[m_index_input_1 - 1];
+            diff0 = curv_abs_input2[index] - curv_abs_input1[m_index_input - 1];
             _diff0 = -diff0;
         }
-        computeExponentialSE3(_diff0,x1from[m_index_input_1],out_Trans);
+        computeExponentialSE3(_diff0,x1from[m_index_input],out_Trans);
         computeAdjoint(out_Trans,temp_Adjoint);
         Adjoint = temp_Adjoint * Adjoint;
         //        std::cout<< "Adjoint :\n";
@@ -333,8 +267,8 @@ public:
         const In1DataVecCoord* x1fromData = m_fromModel1->read(core::ConstVecCoordId::position());
         const In1VecCoord x1from = x1fromData->getValue();
 
-        helper::ReadAccessor<Data<helper::vector<double>>> curv_abs_input1 = d_curv_abs_input1;
-        helper::ReadAccessor<Data<helper::vector<double>>> curv_abs_input2 = d_curv_abs_input2;
+        helper::ReadAccessor<Data<helper::vector<double>>> curv_abs_input1 = d_curv_abs_input;
+        helper::ReadAccessor<Data<helper::vector<double>>> curv_abs_input2 = d_curv_abs_output;
 
         Transform out_Trans;
         Mat6x6 Adjoint, TgX;
@@ -344,31 +278,31 @@ public:
         double diff0 ;
         double _diff0 ;
 
-        while(curv_abs_input2[index1] > curv_abs_input1[m_index_input_1]){
+        while(curv_abs_input2[index1] > curv_abs_input1[m_index_input]){
             //            printf("\n____________________While ___________________\n");
             //            std::cout<< "m_index_input_1 : "<< m_index_input_1 << " ";
             //            std::cout<< "curv_abs_input2[index]  : "<< curv_abs_input2[index1]  << " ";
             //            std::cout<< "curv_abs_input1[m_index_input_1] : "<< curv_abs_input1[m_index_input_1] << " "<< std::endl;
-            if(m_index_input_1 == 0){
-                diff0 = curv_abs_input1[m_index_input_1]; //
+            if(m_index_input == 0){
+                diff0 = curv_abs_input1[m_index_input]; //
                 _diff0 = -diff0;
             }else {
-                diff0 = curv_abs_input1[m_index_input_1] - curv_abs_input1[m_index_input_1 - 1];
+                diff0 = curv_abs_input1[m_index_input] - curv_abs_input1[m_index_input - 1];
                 _diff0 = -diff0;
             }
             Mat6x6 temp_Adjoint; temp_Adjoint.clear();
-            computeExponentialSE3(_diff0,x1from[m_index_input_1],out_Trans);
+            computeExponentialSE3(_diff0,x1from[m_index_input],out_Trans);
             computeAdjoint(out_Trans,temp_Adjoint);
             Adjoint = temp_Adjoint * Adjoint;
 
-            m_index_input_1++;
+            m_index_input++;
         }
 
-        if(m_index_input_1 == 0){
+        if(m_index_input == 0){
             diff0 = curv_abs_input2[index1];
             _diff0 = -diff0;
         }else {
-            diff0 = curv_abs_input2[index1] - curv_abs_input1[m_index_input_1 - 1];
+            diff0 = curv_abs_input2[index1] - curv_abs_input1[m_index_input - 1];
             _diff0 = -diff0;
         }
 
@@ -382,7 +316,7 @@ public:
             //            std::cout<< "curv_abs_input1[m_index_input_1] : "<< curv_abs_input1[m_index_input_1] << " "<< std::endl;
 
             Mat6x6 temp_Adjoint; temp_Adjoint.clear();
-            computeExponentialSE3(_diff0,x1from[m_index_input_1],out_Trans);
+            computeExponentialSE3(_diff0,x1from[m_index_input],out_Trans);
             computeAdjoint(out_Trans,temp_Adjoint);
             Adjoint = temp_Adjoint * Adjoint;
 
@@ -410,7 +344,55 @@ public:
         }
     }
 
-    void draw(const core::visual::VisualParams* vparams) override;
+public:
+    /**********************OTHER METHODS**************************/
+    void initialize();
+    void print_matrix(const Mat6x6 R){
+
+        for (unsigned int k = 0; k < 6 ; k++) {
+            for (unsigned int i = 0; i < 6; i++)
+                printf("  %lf",R[k][i]);
+            //std::cout<< " " << R[k][i];
+            printf("\n");
+        }
+    }
+
+    Matrix3 extract_rotMatrix(const Transform frame){
+        defaulttype::Quat q = frame.getOrientation();
+        Real R[4][4];     q.buildRotationMatrix(R);
+        Matrix3 mat;
+
+        for (unsigned int k = 0; k < 3 ; k++)
+            for (unsigned int i = 0; i < 3; i++)
+                mat[k][i] = R[k][i];
+        return  mat;
+    }
+    Mat6x6 build_projector(const Transform &T){
+        Mat6x6 P;
+        Real R[4][4]; (T.getOrientation()).buildRotationMatrix(R);
+
+        for (unsigned int i = 0; i < 3;  i++) {
+            for (unsigned int j = 0; j < 3; j++) {
+                P[i][j+3] = R[i][j];
+                P[i+3][j] = R[i][j];
+            }
+        }
+        return  P;
+        //std::cout<< "Extract mat : "<< P << std::endl;
+    }
+
+    Matrix3 getTildMatrix(const Vector3 & u){
+        defaulttype::Matrix3 tild;
+        tild[0][1] = -u[2];
+        tild[0][2] = u[1];
+        tild[1][2] = -u[0];
+
+        tild[1][0] = -tild[0][1];
+        tild[2][0] = -tild[0][2];
+        tild[2][1] = -tild[1][2];
+        return  tild;
+    }
+
 };
 
 //extern template class SOFA_POE_MAPPING_API POEMapping<defaulttype::Vec3Types>;
