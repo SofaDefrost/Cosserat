@@ -257,6 +257,17 @@ void POEMapping<TIn1, TIn2, TOut>:: computeAdjoint(const Transform & frame, Mat6
 
     buildaAdjoint(R,tild_u_R, Adjoint);
 }
+template <class TIn1, class TIn2, class TOut>
+void POEMapping<TIn1, TIn2, TOut>:: compute_coAdjoint(const Transform & frame, Mat6x6 &coAdjoint)
+{
+    Matrix3 R = extract_rotMatrix(frame);
+    Vector3 u = frame.getOrigin();
+    Matrix3 tild_u = getTildMatrix(u);
+    Matrix3 tild_u_R = tild_u*R;
+
+    build_coaAdjoint(R,tild_u_R, coAdjoint);
+}
+
 
 
 template <class TIn1, class TIn2, class TOut>
@@ -479,6 +490,9 @@ void POEMapping<TIn1, TIn2, TOut>:: applyJT(
     In1VecDeriv& out1 = *dataVecOut1Force[0]->beginEdit();
     In2VecDeriv& out2 = *dataVecOut2Force[0]->beginEdit();
 
+    //Maybe need, in case the apply funcion is not call this must be call before
+    //update_ExponentialSE3(in1);
+
     const OutVecCoord& frame = m_toModel->read(core::ConstVecCoordId::position())->getValue();
     const In1DataVecCoord* x1fromData = m_fromModel1->read(core::ConstVecCoordId::position());
     const In1VecCoord x1from = x1fromData->getValue();
@@ -493,44 +507,61 @@ void POEMapping<TIn1, TIn2, TOut>:: applyJT(
         defaulttype::Vec6 vec;
         for(unsigned j = 0; j < 6; j++) vec[j] = in[var][j];
 
-        //Convert input from Sofa frame to Frederico frame
+        //Convert input from global frame(SOFA) to local frame
         Transform _T = Transform(frame[var].getCenter(),frame[var].getOrientation());
         Mat6x6 P_trans =(build_projector(_T)); P_trans.transpose();
         defaulttype::Vec6 local_F = P_trans * vec;
         local_F_Vec.push_back(local_F);
-        //        std::cout<< "local_F_Vec : "<< local_F << std::endl;
     }
 
+    //Compute output forces
+    size_t sz = m_indicesVectors.size();
+    int index =  m_indicesVectors[sz-1];
+    m_totalBeamForceVectors.clear();
+    m_totalBeamForceVectors.resize(sz);
 
-    //Compute force
-    for (unsigned int s = 0 ; s <= x1from.size(); s++) { // size is given by the size of the deformation + rigid size
-        if(s == 0){
-            Vec6 f6;
-            for (unsigned int i = 0; i<in.size(); i++) {
-                Vec6 temp_f6 = Vec6(0.0,0.0,0.0,0.0,0.0,0.0);
-                compute_Forces_6(i,local_F_Vec[i],temp_f6);
-                m_index_input = 0 ;
-                f6 = f6 + temp_f6;
-            }
-            //            std::cout << "1-->Inside applyJT, f6 : "<< f6 << std::endl;
-            Transform frame0 = Transform(frame[0].getCenter(),frame[0].getOrientation());
-            Mat6x6 M = build_projector(frame0);
-            out2[0] += M * f6;
-            std::cout << "Rigid Force : "<< out2[0] << std::endl;
-        }else {
-            Vector3 f3 = Vector3(0.0,0.0,0.0);
-            m_index_input = s-1;
-            for (unsigned int i = 0; i<in.size(); i++) {
-                Vector3 temp_f3 = Vector3(0.0,0.0,0.0);
-                compute_Forces_3(i,s,local_F_Vec[i],temp_f3);
-                m_index_input = s-1;
-                f3 = f3 + temp_f3;
-            }
-            out1[s-1] += f3;
+    Vec6 F_tot; F_tot.clear();
+    m_totalBeamForceVectors.push_back(F_tot);
+
+    Mat3x6 matB_trans; matB_trans.clear();
+    for(unsigned int k=0; k<3; k++) matB_trans[k][k] = 1.0;
+
+    for (size_t s = sz-1 ; s--;) {
+        Mat6x6 coAdjoint;
+        compute_coAdjoint(m_ExponentialSE3Vectors[s],coAdjoint);
+        Vec6 node_F_Vec = coAdjoint * local_F_Vec[s];
+        Mat6x6 temp = m_framesTangExpVectors[s];
+        temp.transpose();
+        Vector3 f = matB_trans * temp * node_F_Vec;
+
+        if(index!=m_indicesVectors[s]){
+            index--;
+            //bring F_tot to the reference of the new beam
+            compute_coAdjoint(m_nodesExponentialSE3Vectors[index],coAdjoint);
+            F_tot = coAdjoint * F_tot;
+            Mat6x6 temp = m_nodesTangExpVectors[index];
+            temp.transpose();
+            //apply F_tot to the new beam
+            Vector3 temp_f = matB_trans * temp * F_tot;
+            out1[index-1] += temp_f;
         }
-        m_index_input = 0 ;
+        if(d_debug.getValue())
+            std::cout << "f at s ="<< s <<" and index"<< index <<  " is : "<< f << std::endl;
+
+        //compte F_tot
+        F_tot += node_F_Vec;
+        out1[index-1] += f;
     }
-    std::cout << "Pos Force : "<< out1 << std::endl;
+
+    Transform frame0 = Transform(frame[0].getCenter(),frame[0].getOrientation());
+    Mat6x6 M = build_projector(frame0);
+    out2[0] += M * F_tot;
+
+    //if(d_debug.getValue()){
+        std::cout << "Node forces "<< out1 << std::endl;
+        std::cout << "base Force: "<< out2[0] << std::endl;
+    //}
+
     printf("_______________________\n");
     dataVecOut1Force[0]->endEdit();
     dataVecOut2Force[0]->endEdit();
