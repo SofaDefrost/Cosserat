@@ -514,8 +514,11 @@ void POEMapping<TIn1, TIn2, TOut>:: applyJT(
         local_F_Vec.push_back(local_F);
     }
 
+    std::cout<<"m_indicesVectors"<<m_indicesVectors<<std::endl;
+
     //Compute output forces
     size_t sz = m_indicesVectors.size();
+
     int index =  m_indicesVectors[sz-1];
     m_totalBeamForceVectors.clear();
     m_totalBeamForceVectors.resize(sz);
@@ -525,19 +528,20 @@ void POEMapping<TIn1, TIn2, TOut>:: applyJT(
 
     Mat3x6 matB_trans; matB_trans.clear();
     for(unsigned int k=0; k<3; k++) matB_trans[k][k] = 1.0;
-
-    for (size_t s = sz-1 ; s--;) {
+    std::cout<<sz-1<<std::endl;
+    for (size_t s = sz ; s-- ; ) {
+        std::cout<<"s = "<<s<<std::endl;
         Mat6x6 coAdjoint;
-        compute_coAdjoint(m_ExponentialSE3Vectors[s],coAdjoint);
+        compute_coAdjoint(m_ExponentialSE3Vectors[s],coAdjoint);  // m_ExponentialSE3Vectors[s] computed in apply
         Vec6 node_F_Vec = coAdjoint * local_F_Vec[s];
-        Mat6x6 temp = m_framesTangExpVectors[s];
+        Mat6x6 temp = m_framesTangExpVectors[s];   // m_framesTangExpVectors[s] computed in applyJ (here we transpose)
         temp.transpose();
         Vector3 f = matB_trans * temp * node_F_Vec;
 
-        if(index!=m_indicesVectors[s]){
+        if(index!=m_indicesVectors[s]){ // TODO to be replaced by while
             index--;
             //bring F_tot to the reference of the new beam
-            compute_coAdjoint(m_nodesExponentialSE3Vectors[index],coAdjoint);
+            compute_coAdjoint(m_nodesExponentialSE3Vectors[index],coAdjoint);  //m_nodesExponentialSE3Vectors computed in apply
             F_tot = coAdjoint * F_tot;
             Mat6x6 temp = m_nodesTangExpVectors[index];
             temp.transpose();
@@ -550,7 +554,8 @@ void POEMapping<TIn1, TIn2, TOut>:: applyJT(
 
         //compte F_tot
         F_tot += node_F_Vec;
-        out1[index-1] += f;
+        out1[m_indicesVectors[s]-1] += f;
+        std::cout<<"f = "<<f<<std::endl;
     }
 
     Transform frame0 = Transform(frame[0].getCenter(),frame[0].getOrientation());

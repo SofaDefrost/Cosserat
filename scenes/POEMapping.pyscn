@@ -187,8 +187,8 @@ def createScene(rootNode):
                 
                 
                 
-                #rootNode.createObject('EulerImplicitSolver', firstOrder="1", rayleighStiffness="1.0", rayleighMass='1.0')
-                rootNode.createObject('StaticSolver')
+                rootNode.createObject('EulerImplicitSolver', firstOrder="1", rayleighStiffness="1.0", rayleighMass='1.0')
+                #rootNode.createObject('StaticSolver')
                 rootNode.createObject('CGLinearSolver', name='solver', tolerance='1e-20',  threshold='1e-20', verbose='1')
                 ###############hresho
                 ## RigidBase
@@ -214,7 +214,7 @@ def createScene(rootNode):
                 
                 rateAngularDeformNode = rootNode.createChild('rateAngularDeform')
                 rateAngularDeformMO = rateAngularDeformNode.createObject('MechanicalObject', template='Vec3d', name='rateAngularDeformMO', position=pos, velocity='0 0 0.0 0 0 0') # (2 series of 3 angles for 2 sections. we suppose that the lenght is 10 for each)
-                BeamHookeLawForce = rateAngularDeformNode.createObject('BeamHookeLawForceField', crossSectionShape='circular', length='10 10', radius='0.5', youngModulus='1e5')
+                BeamHookeLawForce = rateAngularDeformNode.createObject('BeamHookeLawForceField', crossSectionShape='circular', length='10 10', radius='0.5', youngModulus='5e4')
                 
                 #rateAngularDeformNode.createObject('UniformMass', totalMass='0.1' )
                 
@@ -242,7 +242,7 @@ def createScene(rootNode):
                 Force = [force1,force2,force2,force2,force2]
                 framesMO = mappedFrameNode.createObject('MechanicalObject', template='Rigid3d', name="FramesMO", position="0.5 0 0  0 0 0 1  5 0 0 0 0 0 1   10 0 0  0 0 0 1   15 0 0 0 0 0 1  20 0 0  0 0 0 1", showObject='1', showObjectScale='1' )
                 
-                forceFied = mappedFrameNode.createObject('ConstantForceField', indices="1", forces="-10 0 0 0 0 -100")
+                forceFied = mappedFrameNode.createObject('ConstantForceField', indices="4", forces="-10 0 0 50 0 -100")
                 #mappedFrameNode.createObject('FixedConstraint', fixAll='1')
                 
                 # The mapping has two inputs: RigidBaseMO and rateAngularDeformMO
