@@ -160,17 +160,12 @@ void BeamHookeLawForceField<DataTypes>::addForce(const MechanicalParams* mparams
         return;
     }
 
-    std::cout<<" BeamHookeLawForceField<DataTypes>::addForce before:"<< f << std::endl;
-
-
     for (unsigned int i=0; i<x.size(); i++)
     {
 
         f[i] -= (m_K_section * (x[i] - x0[i])) * d_length.getValue()[i];
 
     }
-
-    std::cout<<" BeamHookeLawForceField<DataTypes>::addForce After:"<< f << std::endl;
 
     d_f.endEdit();
 
@@ -190,14 +185,10 @@ void BeamHookeLawForceField<DataTypes>::addDForce(const MechanicalParams* mparam
     Real kFactor = (Real)mparams->kFactorIncludingRayleighDamping(this->rayleighStiffness.getValue());
 
     df.resize(dx.size());
-    std::cout<<" BeamHookeLawForceField<DataTypes>::addDForce before:"<< df << std::endl;
     for (unsigned int i=0; i<dx.size(); i++)
     {
         df[i] -= (m_K_section * dx[i])*kFactor* d_length.getValue()[i];
     }
-
-    std::cout<<" BeamHookeLawForceField<DataTypes>::addDForce After:"<< df << std::endl;
-
 
 }
 
