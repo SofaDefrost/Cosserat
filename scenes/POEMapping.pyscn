@@ -174,11 +174,11 @@ def createScene(rootNode):
                 rootNode.createObject('VisualStyle', displayFlags='hideVisualModels showBehaviorModels showCollisionModels hideBoundingCollisionModels showForceFields hideInteractionForceFields hideWireframe')
                 
 
-                #rootNode.createObject('FreeMotionAnimationLoop')
-                #rootNode.createObject('GenericConstraintSolver', tolerance="1-2")
+                rootNode.createObject('FreeMotionAnimationLoop')
+                rootNode.createObject('GenericConstraintSolver', tolerance="1e-5")
 
-                rootNode.createObject('CollisionPipeline', verbose="0")
-                rootNode.createObject('BruteForceDetection', name="N2")
+                #rootNode.createObject('CollisionPipeline', verbose="0")
+                #rootNode.createObject('BruteForceDetection', name="N2")
                 rootNode.gravity = "0 -9810 0"
                 rootNode.dt="0.01"
                 #rootNode.createObject('BackgroundSetting', color='0 0.168627 0.511765')
@@ -186,10 +186,14 @@ def createScene(rootNode):
                 #rootNode.createObject('PythonScriptController', filename="controller/FingerController.py", classname="controller")
                 
                 
+                #rootNode.createChild('MecaModel');
                 
                 rootNode.createObject('EulerImplicitSolver', firstOrder="1", rayleighStiffness="1.0", rayleighMass='1.0')
                 #rootNode.createObject('StaticSolver')
-                rootNode.createObject('CGLinearSolver', name='solver', tolerance='1e-20',  threshold='1e-20', verbose='1')
+                #rootNode.createObject('CGLinearSolver', name='solver', tolerance='1e-20',  threshold='1e-20', verbose='1')
+                rootNode.createObject('SparseLDLSolver', name='solver')
+                
+                rootNode.createObject('GenericConstraintCorrection')
                 ###############hresho
                 ## RigidBase
                 ###############
@@ -242,7 +246,7 @@ def createScene(rootNode):
                 Force = [force1,force2,force2,force2,force2]
                 framesMO = mappedFrameNode.createObject('MechanicalObject', template='Rigid3d', name="FramesMO", position="0.5 0 0  0 0 0 1  5 0 0 0 0 0 1   10 0 0  0 0 0 1   15 0 0 0 0 0 1  20 0 0  0 0 0 1", showObject='1', showObjectScale='1' )
                 
-                forceFied = mappedFrameNode.createObject('ConstantForceField', indices="4", forces="-10 0 0 50 0 -100")
+                #forceFied = mappedFrameNode.createObject('ConstantForceField', indices="4", forces="-10 0 0 50 0 -100")
                 #mappedFrameNode.createObject('FixedConstraint', fixAll='1')
                 
                 # The mapping has two inputs: RigidBaseMO and rateAngularDeformMO
@@ -255,6 +259,15 @@ def createScene(rootNode):
                 # TODO:
                 mappedFrameNode.createObject('POEMapping', curv_abs_input='0 10 20', curv_abs_output='0.5 5 10 15 20', input1=inputMO, input2=inputMO_rigid,output=outputMO, debug='0' )
                 
+                
+                
+                targetPosNode= rootNode.createChild('targetPos')
+                targetPosNode.createObject('MechanicalObject', template='Rigid3d', name='target', position='17 1 0 0 0 0 1')
+                targetPosNode.createObject('RestShapeSpringsForceField', name='spring', stiffness="500000", angularStiffness="50000", external_points="0", mstate="@target", points="0", template="Rigid3d"  )
+                
+                
+                rootNode.createObject('BilateralInteractionConstraint', template='Rigid3d', object1='@rigidBase/MappedFrames/FramesMO', object2='@targetPos/target', first_point='4', second_point='0')
+
 
                 return rootNode
                 
@@ -262,4 +275,3 @@ def createScene(rootNode):
                 
                 
           
-                return rootNode

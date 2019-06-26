@@ -206,8 +206,23 @@ template<typename DataTypes>
 void BeamHookeLawForceField<DataTypes>::addKToMatrix(const MechanicalParams* mparams,
                                                const MultiMatrixAccessor* matrix)
 {
-    SOFA_UNUSED(mparams);
-    SOFA_UNUSED(matrix);
+    MultiMatrixAccessor::MatrixRef mref = matrix->getMatrix(this->mstate);
+    BaseMatrix* mat = mref.matrix;
+    unsigned int offset = mref.offset;
+    Real kFact = (Real)mparams->kFactorIncludingRayleighDamping(this->rayleighStiffness.getValue());
+
+    const VecCoord& pos = this->mstate->read(core::ConstVecCoordId::position())->getValue();
+
+    for (unsigned int n=0; n<pos.size(); n++)
+    {
+
+        for(int i = 0; i < 3; i++)
+        {
+            for (int j=0; j<3 ; j++)
+                mat->add(offset + i + 3*n, offset + j + 3*n, -kFact * m_K_section[i][j]*d_length.getValue()[n]);
+        }
+    }
+
 }
 
 
