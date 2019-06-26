@@ -1,4 +1,4 @@
-﻿/******************************************************************************
+/******************************************************************************
 *       SOFA, Simulation Open-Framework Architecture, development version     *
 *                (c) 2006-2019 INRIA, USTL, UJF, CNRS, MGH                    *
 *                                                                             *
@@ -151,8 +151,8 @@ void POEMapping<TIn1, TIn2, TOut>::computeExponentialSE3(double & x, const defau
     }
 
     defaulttype::Mat3x3 M;
-    for(unsigned int j = 0; j <3; j++) {
-        for(unsigned int i = 0; i <3; i++){
+    for(int j = 0; j <3; j++) {
+        for(int i = 0; i <3; i++){
             M[j][i] = g_x(j,i);
         }
     }
@@ -167,7 +167,7 @@ void POEMapping<TIn1, TIn2, TOut>::computeExponentialSE3(double & x, const defau
 //Fill exponential vectors
 template <class TIn1, class TIn2, class TOut>
 void POEMapping<TIn1, TIn2, TOut>::update_ExponentialSE3(const In1VecCoord & inDeform){
-    helper::ReadAccessor<Data<helper::vector<double>>> curv_abs_input = d_curv_abs_input;
+    //helper::ReadAccessor<Data<helper::vector<double>>> curv_abs_input = d_curv_abs_input;
     helper::ReadAccessor<Data<helper::vector<double>>> curv_abs_output = d_curv_abs_output;
     //m_index_input = 0;
 
@@ -232,7 +232,7 @@ void POEMapping<TIn1, TIn2, TOut>::apply(
 
     for(unsigned int i=0; i<sz; i++){
         Transform frame = frame0;
-        for (size_t u = 0; u < m_indicesVectors[i]; u++) {
+        for (int u = 0; u < m_indicesVectors[i]; u++) {
             frame *= m_nodesExponentialSE3Vectors[u];
         }
         frame *= m_ExponentialSE3Vectors[i];
@@ -368,7 +368,7 @@ defaulttype::Vec6 POEMapping<TIn1, TIn2, TOut>::compute_eta(const defaulttype::V
     const In1VecCoord x1from = x1fromData->getValue();
 
     helper::ReadAccessor<Data<helper::vector<double>>> curv_abs_input = d_curv_abs_input;
-    helper::ReadAccessor<Data<helper::vector<double>>> curv_abs_output = d_curv_abs_output;
+    //helper::ReadAccessor<Data<helper::vector<double>>> curv_abs_output = d_curv_abs_output;
 
     Transform out_Trans;
     Mat6x6 Adjoint, Tg;
@@ -478,7 +478,7 @@ void POEMapping<TIn1, TIn2, TOut>:: applyJ(
 
 template <class TIn1, class TIn2, class TOut>
 void POEMapping<TIn1, TIn2, TOut>:: applyJT(
-        const core::MechanicalParams* mparams, const helper::vector< In1DataVecDeriv*>& dataVecOut1Force,
+        const core::MechanicalParams* /*mparams*/, const helper::vector< In1DataVecDeriv*>& dataVecOut1Force,
         const helper::vector< In2DataVecDeriv*>& dataVecOut2Force,
         const helper::vector<const OutDataVecDeriv*>& dataVecInForce)  {
 
@@ -503,7 +503,7 @@ void POEMapping<TIn1, TIn2, TOut>:: applyJT(
 
     //convert the input from Deriv type to vec6 type, for the purpose of the matrix vector multiplication
     //    std::cout<< "Size of frames :"<< in.size()<< std::endl;
-    for (int var = 0; var < in.size(); ++var) {
+    for (size_t var = 0; var < in.size(); ++var) {
         defaulttype::Vec6 vec;
         for(unsigned j = 0; j < 6; j++) vec[j] = in[var][j];
 
@@ -513,8 +513,6 @@ void POEMapping<TIn1, TIn2, TOut>:: applyJT(
         defaulttype::Vec6 local_F = P_trans * vec;
         local_F_Vec.push_back(local_F);
     }
-
-    std::cout<<"m_indicesVectors"<<m_indicesVectors<<std::endl;
 
     //Compute output forces
     size_t sz = m_indicesVectors.size();
@@ -530,8 +528,8 @@ void POEMapping<TIn1, TIn2, TOut>:: applyJT(
     for(unsigned int k=0; k<3; k++) matB_trans[k][k] = 1.0;
     std::cout<<sz-1<<std::endl;
     for (size_t s = sz ; s-- ; ) {
-        std::cout<<"s = "<<s<<std::endl;
         Mat6x6 coAdjoint;
+        //
         compute_coAdjoint(m_ExponentialSE3Vectors[s],coAdjoint);  // m_ExponentialSE3Vectors[s] computed in apply
         Vec6 node_F_Vec = coAdjoint * local_F_Vec[s];
         Mat6x6 temp = m_framesTangExpVectors[s];   // m_framesTangExpVectors[s] computed in applyJ (here we transpose)
@@ -555,7 +553,6 @@ void POEMapping<TIn1, TIn2, TOut>:: applyJT(
         //compte F_tot
         F_tot += node_F_Vec;
         out1[m_indicesVectors[s]-1] += f;
-        std::cout<<"f = "<<f<<std::endl;
     }
 
     Transform frame0 = Transform(frame[0].getCenter(),frame[0].getOrientation());
@@ -563,8 +560,8 @@ void POEMapping<TIn1, TIn2, TOut>:: applyJT(
     out2[0] += M * F_tot;
 
     //if(d_debug.getValue()){
-        std::cout << "Node forces "<< out1 << std::endl;
-        std::cout << "base Force: "<< out2[0] << std::endl;
+    std::cout << "Node forces "<< out1 << std::endl;
+    std::cout << "base Force: "<< out2[0] << std::endl;
     //}
 
     printf("_______________________\n");
@@ -576,15 +573,12 @@ void POEMapping<TIn1, TIn2, TOut>:: applyJT(
 //___________________________________________________________________________
 template <class TIn1, class TIn2, class TOut>
 void POEMapping<TIn1, TIn2, TOut>::applyJT(
-        const core::ConstraintParams*cparams , const helper::vector< In1DataMatrixDeriv*>&  dataMatOut1Const,
+        const core::ConstraintParams*/*cparams*/ , const helper::vector< In1DataMatrixDeriv*>&  dataMatOut1Const,
         const helper::vector< In2DataMatrixDeriv*>&  dataMatOut2Const ,
         const helper::vector<const OutDataMatrixDeriv*>& dataMatInConst)
 {
     if(dataMatOut1Const.empty() || dataMatOut2Const.empty() || dataMatInConst.empty() )
         return;
-
-
-
 
     //We need only one input In model and input Root model (if present)
     In1MatrixDeriv& out1 = *dataMatOut1Const[0]->beginEdit(); // constraints on the strain space (reduced coordinate)
@@ -608,8 +602,8 @@ void POEMapping<TIn1, TIn2, TOut>::applyJT(
 
     for (typename OutMatrixDeriv::RowConstIterator rowIt = in.begin(); rowIt != rowItEnd; ++rowIt)
     {
-        std::cout<<"************* iteration on line "<<std::endl;
-        std::cout<<rowIt.index()<<std::endl;
+        std::cout<<"************* iteration on line ";
+        std::cout<<rowIt.index();
         std::cout<<"*************  "<<std::endl;
         typename OutMatrixDeriv::ColConstIterator colIt = rowIt.begin();
         typename OutMatrixDeriv::ColConstIterator colItEnd = rowIt.end();
@@ -626,20 +620,21 @@ void POEMapping<TIn1, TIn2, TOut>::applyJT(
 
 
         NodesInvolved.clear();
-    //NodesConstraintDirection.clear();
+        //NodesConstraintDirection.clear();
 
-         std::cout<<" start iterating on columns"<<std::endl;
+        std::cout<<"Start iterating on columns"<<std::endl;
         while (colIt != colItEnd)
         {
             int childIndex = colIt.index();
+            std::cout << "==> childIndex :"<< childIndex << "\n";
+
             const OutDeriv valueConst_ = colIt.val();
             defaulttype::Vec6 valueConst;
             for(unsigned j = 0; j < 6; j++) valueConst[j] = valueConst_[j];
-
+            std::cout << "==> colIt.val() :"<< valueConst << "\n";
 
             int indexBeam =  m_indicesVectors[childIndex];
-
-
+            std::cout << "==> indexBeam :"<< indexBeam << "\n";
 
             Transform _T = Transform(frame[childIndex].getCenter(),frame[childIndex].getOrientation());
             Mat6x6 P_trans =(build_projector(_T));
@@ -652,11 +647,11 @@ void POEMapping<TIn1, TIn2, TOut>::applyJT(
 
             defaulttype::Vec6 local_F =  coAdjoint * P_trans * valueConst; // constraint direction in local frame of the beam.
 
+
             Vector3 f = matB_trans * temp * local_F; // constraint direction in the strain space.
+            std::cout << "==> local_F :"<< local_F << " after transform :"<< f << "\n";
+
             o1.addCol(indexBeam-1, f);
-
-
-
             std::tuple<int,Vec6> test = std::make_tuple(indexBeam, local_F);
 
             NodesInvolved.push_back(test);
@@ -664,20 +659,25 @@ void POEMapping<TIn1, TIn2, TOut>::applyJT(
 
         }
 
-        std::cout<<" start sort"<<std::endl;
+        std::cout<<"==> NodesInvolved"<<std::endl;
+        for (size_t i = 0; i < NodesInvolved.size(); i++)
+            std::cout << "index :" <<get<0>(NodesInvolved[i]) << " force :"
+                      << get<1>(NodesInvolved[i]) << "\n ";
+
+        std::cout<<"Start sort"<<std::endl;
 
 
         //std::cout<<" NodesInvolved before sort "<<NodesInvolved<<std::endl;
 
         // sort the Nodes Invoved by decreasing order
         std::sort(begin(NodesInvolved), end(NodesInvolved),
-            [](std::tuple<int, Vec6> const &t1, std::tuple<int, Vec6> const &t2) {
-                return std::get<0>(t1) > std::get<0>(t2); // custom compare function
-              } );
+                  [](std::tuple<int, Vec6> const &t1, std::tuple<int, Vec6> const &t2) {
+            return std::get<0>(t1) > std::get<0>(t2); // custom compare function
+        } );
 
         NodesInvolvedCompressed.clear();
 
-         std::cout<<" start compress"<<std::endl;
+        std::cout<<"Start compress"<<std::endl;
 
         for (unsigned n=0; n<NodesInvolved.size(); n++)
         {
@@ -702,32 +702,40 @@ void POEMapping<TIn1, TIn2, TOut>::applyJT(
             NodesInvolvedCompressed.push_back(std::make_tuple(numNode_i, cumulativeF));
         }
 
-        //std::cout<<" NodesInvolved after sort and compress"<<NodesInvolvedCompressed<<std::endl;
+        std::cout<<" NodesInvolved after sort and compress"<<std::endl;
+        for (size_t i = 0; i < NodesInvolvedCompressed.size(); i++)
+            std::cout << "index :" <<get<0>(NodesInvolvedCompressed[i]) << " force :"
+                      << get<1>(NodesInvolvedCompressed[i]) << "\n ";
 
 
-
-         std::cout<<" start put constraints on DOF"<<std::endl;
+        std::cout<<" start put constraints on DOF"<<std::endl;
         for (unsigned n=0; n<NodesInvolvedCompressed.size(); n++)
         {
 
             std::tuple<int,Vec6> test = NodesInvolvedCompressed[n];
             int numNode= std::get<0>(test);
-            int i= numNode;
+            int i = numNode;
             Vec6 CumulativeF = std::get<1>(test);
+
+            std::cout <<"n = "<< n<< " Cumulative force 1="<< CumulativeF <<" \n";
 
             while(i>0)
             {
                 std::cout<<"i "<<i<<std::endl;
                 //cumulate on beam frame
                 Mat6x6 coAdjoint;
-                compute_coAdjoint(m_nodesExponentialSE3Vectors[i],coAdjoint);  //m_nodesExponentialSE3Vectors computed in apply
+                compute_coAdjoint(m_nodesExponentialSE3Vectors[i-1],coAdjoint);  //m_nodesExponentialSE3Vectors computed in apply
                 CumulativeF = coAdjoint * CumulativeF;
 
+                std::cout << "==> CumulativeF force 2 ="<< CumulativeF << std::endl;
+
                 // transfer to strain space (local coordinates)
-                Mat6x6 temp = m_nodesTangExpVectors[i];
+                Mat6x6 temp = m_nodesTangExpVectors[i-1];
                 temp.transpose();
                 Vector3 temp_f = matB_trans * temp * CumulativeF;
-                o1.addCol(i-1, temp_f);
+
+                std::cout << "==> temp_f force ="<< temp_f << std::endl;
+                if(i>1) o1.addCol(i-2, temp_f);
 
                 i--;
             }
@@ -735,9 +743,13 @@ void POEMapping<TIn1, TIn2, TOut>::applyJT(
             Transform frame0 = Transform(frame[0].getCenter(),frame[0].getOrientation());
             Mat6x6 M = build_projector(frame0);
 
-            o2.addCol(0, M * CumulativeF);
+            Vec6 base_force = M * CumulativeF;
+
+            std::cout << "==> base_Force :"<< base_force << std::endl;
+
+            o2.addCol(0, base_force);
         }
-        std::cout<<" end put constraints on DOF"<<std::endl;
+        std::cout<<"End put constraints on DOF"<<std::endl;
 
     }
 

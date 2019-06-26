@@ -40,6 +40,7 @@ using sofa::defaulttype::Matrix3;
 using sofa::defaulttype::Matrix4;
 using sofa::defaulttype::Vector3;
 using sofa::defaulttype::Vec6;
+using std::get;
 
 namespace component
 {
@@ -175,7 +176,7 @@ public:
             const helper::vector< In2DataVecDeriv*>& dataVecOut2RootForce,
             const helper::vector<const OutDataVecDeriv*>& dataVecInForce) override;
 
-    void applyDJT(const core::MechanicalParams* mparams, core::MultiVecDerivId inForce, core::ConstMultiVecDerivId outForce) override{}
+    void applyDJT(const core::MechanicalParams* /*mparams*/, core::MultiVecDerivId /*inForce*/, core::ConstMultiVecDerivId /*outForce*/) override{}
 
     /// This method must be reimplemented by all mappings if they need to support constraints.
     virtual void applyJT(
