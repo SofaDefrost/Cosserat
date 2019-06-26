@@ -239,7 +239,7 @@ void POEMapping<TIn1, TIn2, TOut>::apply(
 
         Vector3 v = frame.getOrigin();
         defaulttype::Quat q = frame.getOrientation();
-        out[i] = outCoord(v,q);
+        out[i] = OutCoord(v,q);
     }
     m_index_input = 0;
 
@@ -571,6 +571,180 @@ void POEMapping<TIn1, TIn2, TOut>:: applyJT(
     dataVecOut1Force[0]->endEdit();
     dataVecOut2Force[0]->endEdit();
 
+}
+
+//___________________________________________________________________________
+template <class TIn1, class TIn2, class TOut>
+void POEMapping<TIn1, TIn2, TOut>::applyJT(
+        const core::ConstraintParams*cparams , const helper::vector< In1DataMatrixDeriv*>&  dataMatOut1Const,
+        const helper::vector< In2DataMatrixDeriv*>&  dataMatOut2Const ,
+        const helper::vector<const OutDataMatrixDeriv*>& dataMatInConst)
+{
+    if(dataMatOut1Const.empty() || dataMatOut2Const.empty() || dataMatInConst.empty() )
+        return;
+
+
+
+
+    //We need only one input In model and input Root model (if present)
+    In1MatrixDeriv& out1 = *dataMatOut1Const[0]->beginEdit(); // constraints on the strain space (reduced coordinate)
+    In2MatrixDeriv& out2 = *dataMatOut2Const[0]->beginEdit(); // constraints on the reference frame (base frame)
+    const OutMatrixDeriv& in = dataMatInConst[0]->getValue(); // input constraints defined on the mapped frames
+
+    const OutVecCoord& frame = m_toModel->read(core::ConstVecCoordId::position())->getValue();
+    const In1DataVecCoord* x1fromData = m_fromModel1->read(core::ConstVecCoordId::position());
+    const In1VecCoord x1from = x1fromData->getValue();
+
+
+    Mat3x6 matB_trans; matB_trans.clear();
+    for(unsigned int k=0; k<3; k++) matB_trans[k][k] = 1.0;
+
+
+    helper::vector< std::tuple<int,Vec6> > NodesInvolved;
+    helper::vector< std::tuple<int,Vec6> > NodesInvolvedCompressed;
+    //helper::vector<Vec6> NodesConstraintDirection;
+
+    typename OutMatrixDeriv::RowConstIterator rowItEnd = in.end();
+
+    for (typename OutMatrixDeriv::RowConstIterator rowIt = in.begin(); rowIt != rowItEnd; ++rowIt)
+    {
+        std::cout<<"************* iteration on line "<<std::endl;
+        std::cout<<rowIt.index()<<std::endl;
+        std::cout<<"*************  "<<std::endl;
+        typename OutMatrixDeriv::ColConstIterator colIt = rowIt.begin();
+        typename OutMatrixDeriv::ColConstIterator colItEnd = rowIt.end();
+
+        // Creates a constraints if the input constraint is not empty.
+        if (colIt == colItEnd)
+        {
+            std::cout<<"no column for this constraint"<<std::endl;
+            continue;
+        }
+
+        typename In1MatrixDeriv::RowIterator o1 = out1.writeLine(rowIt.index()); // we store the constraint number
+        typename In2MatrixDeriv::RowIterator o2 = out2.writeLine(rowIt.index());
+
+
+        NodesInvolved.clear();
+    //NodesConstraintDirection.clear();
+
+         std::cout<<" start iterating on columns"<<std::endl;
+        while (colIt != colItEnd)
+        {
+            int childIndex = colIt.index();
+            const OutDeriv valueConst_ = colIt.val();
+            defaulttype::Vec6 valueConst;
+            for(unsigned j = 0; j < 6; j++) valueConst[j] = valueConst_[j];
+
+
+            int indexBeam =  m_indicesVectors[childIndex];
+
+
+
+            Transform _T = Transform(frame[childIndex].getCenter(),frame[childIndex].getOrientation());
+            Mat6x6 P_trans =(build_projector(_T));
+            P_trans.transpose();
+
+            Mat6x6 coAdjoint;
+            compute_coAdjoint(m_ExponentialSE3Vectors[childIndex],coAdjoint);  // m_ExponentialSE3Vectors[s] computed in apply
+            Mat6x6 temp = m_framesTangExpVectors[childIndex];   // m_framesTangExpVectors[s] computed in applyJ (here we transpose)
+            temp.transpose();
+
+            defaulttype::Vec6 local_F =  coAdjoint * P_trans * valueConst; // constraint direction in local frame of the beam.
+
+            Vector3 f = matB_trans * temp * local_F; // constraint direction in the strain space.
+            o1.addCol(indexBeam-1, f);
+
+
+
+            std::tuple<int,Vec6> test = std::make_tuple(indexBeam, local_F);
+
+            NodesInvolved.push_back(test);
+            colIt++;
+
+        }
+
+        std::cout<<" start sort"<<std::endl;
+
+
+        //std::cout<<" NodesInvolved before sort "<<NodesInvolved<<std::endl;
+
+        // sort the Nodes Invoved by decreasing order
+        std::sort(begin(NodesInvolved), end(NodesInvolved),
+            [](std::tuple<int, Vec6> const &t1, std::tuple<int, Vec6> const &t2) {
+                return std::get<0>(t1) > std::get<0>(t2); // custom compare function
+              } );
+
+        NodesInvolvedCompressed.clear();
+
+         std::cout<<" start compress"<<std::endl;
+
+        for (unsigned n=0; n<NodesInvolved.size(); n++)
+        {
+
+            std::tuple<int,Vec6> test_i = NodesInvolved[n];
+            int numNode_i= std::get<0>(test_i);
+            Vec6 cumulativeF =std::get<1>(NodesInvolved[n]);
+
+            if (n<NodesInvolved.size()-1)
+            {
+                std::tuple<int,Vec6> test_i1 = NodesInvolved[n+1];
+                int numNode_i1= std::get<0>(test_i1);
+
+                while (numNode_i == numNode_i1)
+                {
+                    cumulativeF += std::get<1>(NodesInvolved[n+1]);
+                    n++;
+                    test_i1 = NodesInvolved[n+1];
+                    numNode_i1= std::get<0>(test_i1);
+                }
+            }
+            NodesInvolvedCompressed.push_back(std::make_tuple(numNode_i, cumulativeF));
+        }
+
+        //std::cout<<" NodesInvolved after sort and compress"<<NodesInvolvedCompressed<<std::endl;
+
+
+
+         std::cout<<" start put constraints on DOF"<<std::endl;
+        for (unsigned n=0; n<NodesInvolvedCompressed.size(); n++)
+        {
+
+            std::tuple<int,Vec6> test = NodesInvolvedCompressed[n];
+            int numNode= std::get<0>(test);
+            int i= numNode;
+            Vec6 CumulativeF = std::get<1>(test);
+
+            while(i>0)
+            {
+                std::cout<<"i "<<i<<std::endl;
+                //cumulate on beam frame
+                Mat6x6 coAdjoint;
+                compute_coAdjoint(m_nodesExponentialSE3Vectors[i],coAdjoint);  //m_nodesExponentialSE3Vectors computed in apply
+                CumulativeF = coAdjoint * CumulativeF;
+
+                // transfer to strain space (local coordinates)
+                Mat6x6 temp = m_nodesTangExpVectors[i];
+                temp.transpose();
+                Vector3 temp_f = matB_trans * temp * CumulativeF;
+                o1.addCol(i-1, temp_f);
+
+                i--;
+            }
+
+            Transform frame0 = Transform(frame[0].getCenter(),frame[0].getOrientation());
+            Mat6x6 M = build_projector(frame0);
+
+            o2.addCol(0, M * CumulativeF);
+        }
+        std::cout<<" end put constraints on DOF"<<std::endl;
+
+    }
+
+
+    ////// END ARTICULATION SYSTEM MAPPING
+    dataMatOut1Const[0]->endEdit();
+    dataMatOut2Const[0]->endEdit();
 }
 
 

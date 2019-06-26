@@ -94,7 +94,8 @@ public:
     typedef defaulttype::Mat<4,4,Real> Mat4x4;
 
     typedef typename Out::VecCoord OutVecCoord;
-    typedef typename Out::Coord outCoord;
+    typedef typename Out::Coord OutCoord;
+    typedef typename Out::Deriv OutDeriv;
     typedef typename Out::VecDeriv OutVecDeriv;
     typedef typename Out::MatrixDeriv OutMatrixDeriv;
     typedef Data<OutVecCoord> OutDataVecCoord;
@@ -178,9 +179,9 @@ public:
 
     /// This method must be reimplemented by all mappings if they need to support constraints.
     virtual void applyJT(
-        const core::ConstraintParams* /* cparams */, const helper::vector< In1DataMatrixDeriv*>& /* dataMatOut1Const */ ,
-        const helper::vector< In2DataMatrixDeriv*>&  /* dataMatOut2Const */,
-        const helper::vector<const OutDataMatrixDeriv*>& /* dataMatInConst */) override { }
+        const core::ConstraintParams*  cparams , const helper::vector< In1DataMatrixDeriv*>& dataMatOut1Const  ,
+        const helper::vector< In2DataMatrixDeriv*>&  dataMatOut2Const ,
+        const helper::vector<const OutDataMatrixDeriv*>&  dataMatInConst) override;
 
 protected:
     /**********************COSSERAT METHODS**************************/
@@ -266,6 +267,9 @@ public:
             }
         }
     }
+
+
+
 
 };
 
