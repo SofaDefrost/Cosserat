@@ -49,7 +49,7 @@ namespace mapping
 {
 
 /*!
- * \class POEMapping
+ * \class DiscretCosseratMapping
  * @brief Computes and map the length of the beams
  *
  * This is a component:
@@ -58,10 +58,10 @@ namespace mapping
 
 
 template <class TIn1, class TIn2, class TOut>
-class POEMapping : public core::Multi2Mapping<TIn1, TIn2, TOut>
+class DiscretCosseratMapping : public core::Multi2Mapping<TIn1, TIn2, TOut>
 {
 public:
-    SOFA_CLASS(SOFA_TEMPLATE3(POEMapping, TIn1,TIn2, TOut), SOFA_TEMPLATE3(core::Multi2Mapping, TIn1, TIn2, TOut) );
+    SOFA_CLASS(SOFA_TEMPLATE3(DiscretCosseratMapping, TIn1,TIn2, TOut), SOFA_TEMPLATE3(core::Multi2Mapping, TIn1, TIn2, TOut) );
     typedef core::Multi2Mapping<TIn1, TIn2, TOut> Inherit;
 
     /// Input Model Type
@@ -103,9 +103,9 @@ public:
     typedef Data<OutVecDeriv> OutDataVecDeriv;
     typedef Data<OutMatrixDeriv> OutDataMatrixDeriv;
 
-    typedef MultiLink<POEMapping<In1,In2,Out>, sofa::core::State< In1 >, BaseLink::FLAG_STOREPATH|BaseLink::FLAG_STRONGLINK> LinkFromModels1;
-    typedef MultiLink<POEMapping<In1,In2,Out>, sofa::core::State< In2 >, BaseLink::FLAG_STOREPATH|BaseLink::FLAG_STRONGLINK> LinkFromModels2;
-    typedef MultiLink<POEMapping<In1,In2,Out>, sofa::core::State< Out >, BaseLink::FLAG_STOREPATH|BaseLink::FLAG_STRONGLINK> LinkToModels;
+    typedef MultiLink<DiscretCosseratMapping<In1,In2,Out>, sofa::core::State< In1 >, BaseLink::FLAG_STOREPATH|BaseLink::FLAG_STRONGLINK> LinkFromModels1;
+    typedef MultiLink<DiscretCosseratMapping<In1,In2,Out>, sofa::core::State< In2 >, BaseLink::FLAG_STOREPATH|BaseLink::FLAG_STRONGLINK> LinkFromModels2;
+    typedef MultiLink<DiscretCosseratMapping<In1,In2,Out>, sofa::core::State< Out >, BaseLink::FLAG_STOREPATH|BaseLink::FLAG_STRONGLINK> LinkToModels;
 
     typedef typename SolidTypes<Real>::Transform      Transform ;
 
@@ -145,10 +145,10 @@ protected:
 
 protected:
     /// Constructor
-    //POEMapping();
-    POEMapping() ;
+    //DiscretCosseratMapping();
+    DiscretCosseratMapping() ;
     /// Destructor
-    ~POEMapping()  override {}
+    ~DiscretCosseratMapping()  override {}
 public:
 
 
@@ -274,11 +274,11 @@ public:
 
 };
 
-//extern template class SOFA_POE_MAPPING_API POEMapping<defaulttype::Vec3Types>;
+//extern template class SOFA_POE_MAPPING_API DiscretCosseratMapping<defaulttype::Vec3Types>;
 
 
 #if  !defined(SOFA_COMPONENT_MAPPING_POE_MAPING_CPP)
-extern template class SOFA_COSSERAT_MAPPING_API POEMapping< sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types >;
+extern template class SOFA_COSSERAT_MAPPING_API DiscretCosseratMapping< sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types >;
 #endif
 
 } // mapping

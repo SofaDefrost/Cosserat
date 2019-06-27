@@ -20,7 +20,7 @@
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
 #define SOFA_COMPONENT_MAPPING_POE_MAPING_CPP
-#include "POEMapping.inl"
+#include "DiscretCosseratMapping.inl"
 #include <sofa/defaulttype/VecTypes.h>
 #include <sofa/defaulttype/RigidTypes.h>
 #include <sofa/core/ObjectFactory.h>
@@ -36,11 +36,11 @@ namespace mapping
 using namespace sofa::defaulttype;
 
 // Register in the Factory
-int POEMappingClass = core::RegisterObject("Set the positions and velocities of points attached to a rigid parent")
-        .add< POEMapping< sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types > >() ;
+int DiscretCosseratMappingClass = core::RegisterObject("Set the positions and velocities of points attached to a rigid parent")
+        .add< DiscretCosseratMapping< sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types > >() ;
 
 
-template class SOFA_COSSERAT_MAPPING_API POEMapping< sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types >;
+template class SOFA_COSSERAT_MAPPING_API DiscretCosseratMapping< sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types >;
 
 
 } // namespace mapping

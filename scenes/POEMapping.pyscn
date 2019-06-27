@@ -255,7 +255,7 @@ def createScene(rootNode):
                 inputMO_rigid = RigidBaseMO.getLinkPath()
                 outputMO = framesMO.getLinkPath()
                 # TODO:
-                mappedFrameNode.createObject('POEMapping', curv_abs_input='0 10 20 30', curv_abs_output='0.5 5 10 15 20 25 30', input1=inputMO, input2=inputMO_rigid,output=outputMO, debug='0' )
+                mappedFrameNode.createObject('DiscretCosseratMapping', curv_abs_input='0 10 20 30', curv_abs_output='0.5 5 10 15 20 25 30', input1=inputMO, input2=inputMO_rigid,output=outputMO, debug='0' )
                 
                 
                 

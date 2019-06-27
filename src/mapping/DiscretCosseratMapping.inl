@@ -23,7 +23,7 @@
 #define SOFA_COMPONENT_MAPPING_POEMAPING_INL
 
 #include <sofa/core/Multi2Mapping.inl>
-#include "POEMapping.h"
+#include "DiscretCosseratMapping.h"
 #include <sofa/core/visual/VisualParams.h>
 #include <sofa/core/behavior/MechanicalState.h>
 #include <string>
@@ -47,7 +47,7 @@ namespace component
 namespace mapping
 {
 template <class TIn1, class TIn2, class TOut>
-POEMapping<TIn1, TIn2, TOut>::POEMapping()
+DiscretCosseratMapping<TIn1, TIn2, TOut>::DiscretCosseratMapping()
     : d_curv_abs_input( initData( &d_curv_abs_input, "curv_abs_input", " need to be com...."))
     , d_curv_abs_output( initData( &d_curv_abs_output, "curv_abs_output", " need to be com...."))
     , d_debug( initData( &d_debug, true,"debug", "printf for the debug"))
@@ -62,7 +62,7 @@ POEMapping<TIn1, TIn2, TOut>::POEMapping()
 // _________________________________________________________________________________________
 
 template <class TIn1, class TIn2, class TOut>
-void POEMapping<TIn1, TIn2, TOut>::init()
+void DiscretCosseratMapping<TIn1, TIn2, TOut>::init()
 {
     if(this->getFromModels1().empty())
     {
@@ -102,13 +102,13 @@ void POEMapping<TIn1, TIn2, TOut>::init()
 
 
 template <class TIn1, class TIn2, class TOut>
-void POEMapping<TIn1, TIn2, TOut>::bwdInit()
+void DiscretCosseratMapping<TIn1, TIn2, TOut>::bwdInit()
 {
 
 }
 
 template <class TIn1, class TIn2, class TOut>
-void POEMapping<TIn1, TIn2, TOut>::reinit()
+void DiscretCosseratMapping<TIn1, TIn2, TOut>::reinit()
 {
 
 }
@@ -117,14 +117,14 @@ void POEMapping<TIn1, TIn2, TOut>::reinit()
 
 
 template <class TIn1, class TIn2, class TOut>
-void POEMapping<TIn1, TIn2, TOut>::reset()
+void DiscretCosseratMapping<TIn1, TIn2, TOut>::reset()
 {
     reinit();
 }
 
 
 template <class TIn1, class TIn2, class TOut>
-void POEMapping<TIn1, TIn2, TOut>::computeExponentialSE3(double & x, const defaulttype::Vector3& k, Transform & Trans){
+void DiscretCosseratMapping<TIn1, TIn2, TOut>::computeExponentialSE3(double & x, const defaulttype::Vector3& k, Transform & Trans){
     Eigen::MatrixXd I4 = Eigen::Matrix4d::Identity(4,4);
 
     double theta = k.norm();
@@ -166,7 +166,7 @@ void POEMapping<TIn1, TIn2, TOut>::computeExponentialSE3(double & x, const defau
 
 //Fill exponential vectors
 template <class TIn1, class TIn2, class TOut>
-void POEMapping<TIn1, TIn2, TOut>::update_ExponentialSE3(const In1VecCoord & inDeform){
+void DiscretCosseratMapping<TIn1, TIn2, TOut>::update_ExponentialSE3(const In1VecCoord & inDeform){
     //helper::ReadAccessor<Data<helper::vector<double>>> curv_abs_input = d_curv_abs_input;
     helper::ReadAccessor<Data<helper::vector<double>>> curv_abs_output = d_curv_abs_output;
     //m_index_input = 0;
@@ -207,7 +207,7 @@ void POEMapping<TIn1, TIn2, TOut>::update_ExponentialSE3(const In1VecCoord & inD
 
 
 template <class TIn1, class TIn2, class TOut>
-void POEMapping<TIn1, TIn2, TOut>::apply(
+void DiscretCosseratMapping<TIn1, TIn2, TOut>::apply(
         const core::MechanicalParams* /* mparams */, const helper::vector<OutDataVecCoord*>& dataVecOutPos,
         const helper::vector<const In1DataVecCoord*>& dataVecIn1Pos ,
         const helper::vector<const In2DataVecCoord*>& dataVecIn2Pos)
@@ -247,7 +247,7 @@ void POEMapping<TIn1, TIn2, TOut>::apply(
 }
 
 template <class TIn1, class TIn2, class TOut>
-void POEMapping<TIn1, TIn2, TOut>:: computeAdjoint(const Transform & frame, Mat6x6 &Adjoint)
+void DiscretCosseratMapping<TIn1, TIn2, TOut>:: computeAdjoint(const Transform & frame, Mat6x6 &Adjoint)
 {
 
     Matrix3 R = extract_rotMatrix(frame);
@@ -258,7 +258,7 @@ void POEMapping<TIn1, TIn2, TOut>:: computeAdjoint(const Transform & frame, Mat6
     buildaAdjoint(R,tild_u_R, Adjoint);
 }
 template <class TIn1, class TIn2, class TOut>
-void POEMapping<TIn1, TIn2, TOut>:: compute_coAdjoint(const Transform & frame, Mat6x6 &coAdjoint)
+void DiscretCosseratMapping<TIn1, TIn2, TOut>:: compute_coAdjoint(const Transform & frame, Mat6x6 &coAdjoint)
 {
     Matrix3 R = extract_rotMatrix(frame);
     Vector3 u = frame.getOrigin();
@@ -271,7 +271,7 @@ void POEMapping<TIn1, TIn2, TOut>:: compute_coAdjoint(const Transform & frame, M
 
 
 template <class TIn1, class TIn2, class TOut>
-void POEMapping<TIn1, TIn2, TOut>::compute_Tang_Exp(double & x, const defaulttype::Vector3& k, Mat6x6 & TgX){
+void DiscretCosseratMapping<TIn1, TIn2, TOut>::compute_Tang_Exp(double & x, const defaulttype::Vector3& k, Mat6x6 & TgX){
 
     double theta = k.norm();
     Matrix3 tild_p = getTildMatrix(Vector3(1.0,0.0,0.0));
@@ -321,7 +321,7 @@ void POEMapping<TIn1, TIn2, TOut>::compute_Tang_Exp(double & x, const defaulttyp
 
 
 template <class TIn1, class TIn2, class TOut>
-void POEMapping<TIn1, TIn2, TOut>::update_TangExpSE3(const In1VecCoord & inDeform, const helper::vector<double> &curv_abs_input , const helper::vector<double> &curv_abs_output ){
+void DiscretCosseratMapping<TIn1, TIn2, TOut>::update_TangExpSE3(const In1VecCoord & inDeform, const helper::vector<double> &curv_abs_input , const helper::vector<double> &curv_abs_output ){
 
     m_framesTangExpVectors.clear();
     size_t sz = curv_abs_output.size();
@@ -361,7 +361,7 @@ void POEMapping<TIn1, TIn2, TOut>::update_TangExpSE3(const In1VecCoord & inDefor
 
 
 template <class TIn1, class TIn2, class TOut>
-defaulttype::Vec6 POEMapping<TIn1, TIn2, TOut>::compute_eta(const defaulttype::Vec6 & baseEta, const In1VecDeriv & k_dot, const double abs_input){
+defaulttype::Vec6 DiscretCosseratMapping<TIn1, TIn2, TOut>::compute_eta(const defaulttype::Vec6 & baseEta, const In1VecDeriv & k_dot, const double abs_input){
 
     // Fill the initial vector
     const In1DataVecCoord* x1fromData = m_fromModel1->read(core::ConstVecCoordId::position());
@@ -399,7 +399,7 @@ defaulttype::Vec6 POEMapping<TIn1, TIn2, TOut>::compute_eta(const defaulttype::V
 
 
 template <class TIn1, class TIn2, class TOut>
-void POEMapping<TIn1, TIn2, TOut>:: applyJ(
+void DiscretCosseratMapping<TIn1, TIn2, TOut>:: applyJ(
         const core::MechanicalParams* /* mparams */, const helper::vector< OutDataVecDeriv*>& dataVecOutVel,
         const helper::vector<const In1DataVecDeriv*>& dataVecIn1Vel,
         const helper::vector<const In2DataVecDeriv*>& dataVecIn2Vel) {
@@ -477,7 +477,7 @@ void POEMapping<TIn1, TIn2, TOut>:: applyJ(
 
 
 template <class TIn1, class TIn2, class TOut>
-void POEMapping<TIn1, TIn2, TOut>:: applyJT(
+void DiscretCosseratMapping<TIn1, TIn2, TOut>:: applyJT(
         const core::MechanicalParams* /*mparams*/, const helper::vector< In1DataVecDeriv*>& dataVecOut1Force,
         const helper::vector< In2DataVecDeriv*>& dataVecOut2Force,
         const helper::vector<const OutDataVecDeriv*>& dataVecInForce)  {
@@ -572,7 +572,7 @@ void POEMapping<TIn1, TIn2, TOut>:: applyJT(
 
 //___________________________________________________________________________
 template <class TIn1, class TIn2, class TOut>
-void POEMapping<TIn1, TIn2, TOut>::applyJT(
+void DiscretCosseratMapping<TIn1, TIn2, TOut>::applyJT(
         const core::ConstraintParams*/*cparams*/ , const helper::vector< In1DataMatrixDeriv*>&  dataMatOut1Const,
         const helper::vector< In2DataMatrixDeriv*>&  dataMatOut2Const ,
         const helper::vector<const OutDataMatrixDeriv*>& dataMatInConst)
@@ -764,7 +764,7 @@ void POEMapping<TIn1, TIn2, TOut>::applyJT(
 
 
 template <class TIn1, class TIn2, class TOut>
-void POEMapping<TIn1, TIn2, TOut>::initialize()
+void DiscretCosseratMapping<TIn1, TIn2, TOut>::initialize()
 {
     //find the beam on which each output is
     helper::ReadAccessor<Data<helper::vector<double>>> curv_abs_input = d_curv_abs_input;
@@ -799,21 +799,21 @@ void POEMapping<TIn1, TIn2, TOut>::initialize()
 
 
 //template <class TIn1, class TIn2, class TOut>
-//void POEMapping<TIn1, TIn2, TOut>::applyDJT(const core::MechanicalParams* mparams, core::MultiVecDerivId inForce, core::ConstMultiVecDerivId outForce){}
+//void DiscretCosseratMapping<TIn1, TIn2, TOut>::applyDJT(const core::MechanicalParams* mparams, core::MultiVecDerivId inForce, core::ConstMultiVecDerivId outForce){}
 
 
 //template <class TIn1, class TIn2, class TOut>
-//void POEMapping<TIn1, TIn2, TOut>::do_applyJT( In1MatrixDeriv& out1, const OutMatrixDeriv& in, In2MatrixDeriv* out2 ){}
+//void DiscretCosseratMapping<TIn1, TIn2, TOut>::do_applyJT( In1MatrixDeriv& out1, const OutMatrixDeriv& in, In2MatrixDeriv* out2 ){}
 
 //template <class TIn1, class TIn2, class TOut>
-//void POEMapping<TIn1, TIn2, TOut>:: applyJT(
+//void DiscretCosseratMapping<TIn1, TIn2, TOut>:: applyJT(
 //        const core::ConstraintParams* /* cparams */, const helper::vector< In1DataMatrixDeriv*>& dataMatOut1Const ,
 //        const helper::vector< In2DataMatrixDeriv*>&  dataMatOut2Const ,
 //        const helper::vector<const OutDataMatrixDeriv*>& dataMatInConst) {}
 
 
 template <class TIn1, class TIn2, class TOut>
-void POEMapping<TIn1, TIn2, TOut>::draw(const core::visual::VisualParams* vparams)
+void DiscretCosseratMapping<TIn1, TIn2, TOut>::draw(const core::visual::VisualParams* vparams)
 {
     if (!vparams->displayFlags().getShowMappings())
 
