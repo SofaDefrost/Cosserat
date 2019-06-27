@@ -188,7 +188,7 @@ def createScene(rootNode):
                 
                 #rootNode.createChild('MecaModel');
                 
-                rootNode.createObject('EulerImplicitSolver', firstOrder="1", rayleighStiffness="1.0", rayleighMass='1.0')
+                rootNode.createObject('EulerImplicitSolver', firstOrder="0", rayleighStiffness="1.0", rayleighMass='0.10')
                 #rootNode.createObject('StaticSolver')
                 #rootNode.createObject('CGLinearSolver', name='solver', tolerance='1e-20',  threshold='1e-20', verbose='1')
                 rootNode.createObject('SparseLDLSolver', name='solver')
@@ -214,11 +214,12 @@ def createScene(rootNode):
                 
                 array1 = [0.0,0.0,0.0]
                 array2 = [0.0,0.0,0.0]
-                pos = [array1, array2]
+                array3 = [0.0,0.0,0.0]
+                pos = [array1, array2, array3]
                 
                 rateAngularDeformNode = rootNode.createChild('rateAngularDeform')
                 rateAngularDeformMO = rateAngularDeformNode.createObject('MechanicalObject', template='Vec3d', name='rateAngularDeformMO', position=pos, velocity='0 0 0.0 0 0 0') # (2 series of 3 angles for 2 sections. we suppose that the lenght is 10 for each)
-                BeamHookeLawForce = rateAngularDeformNode.createObject('BeamHookeLawForceField', crossSectionShape='circular', length='10 10', radius='0.5', youngModulus='5e4')
+                BeamHookeLawForce = rateAngularDeformNode.createObject('BeamHookeLawForceField', crossSectionShape='circular', length='10 10 10', radius='0.5', youngModulus='5e6')
                 
                 #rateAngularDeformNode.createObject('UniformMass', totalMass='0.1' )
                 
@@ -240,11 +241,8 @@ def createScene(rootNode):
                 mappedFrameNode = rigidBaseNode.createChild('MappedFrames')
                 rateAngularDeformNode.addChild(mappedFrameNode)
                 
-                force1=[0.0,0.1,0.0,0.0,0.0,0.0]
-                force2=[0.0,0.0,0.0,0.0,0.0,0.0]
-            
-                Force = [force1,force2,force2,force2,force2]
-                framesMO = mappedFrameNode.createObject('MechanicalObject', template='Rigid3d', name="FramesMO", position="0.5 0 0  0 0 0 1  5 0 0 0 0 0 1   10 0 0  0 0 0 1   15 0 0 0 0 0 1  20 0 0  0 0 0 1", showObject='1', showObjectScale='1' )
+                
+                framesMO = mappedFrameNode.createObject('MechanicalObject', template='Rigid3d', name="FramesMO", position="0.5 0 0  0 0 0 1  5 0 0 0 0 0 1   10 0 0  0 0 0 1   15 0 0 0 0 0 1  20 0 0  0 0 0 1 25 0 0  0 0 0 1 30 0 0  0 0 0 1", showObject='1', showObjectScale='1' )
                 
                 #forceFied = mappedFrameNode.createObject('ConstantForceField', indices="4", forces="-10 0 0 50 0 -100")
                 #mappedFrameNode.createObject('FixedConstraint', fixAll='1')
@@ -257,16 +255,16 @@ def createScene(rootNode):
                 inputMO_rigid = RigidBaseMO.getLinkPath()
                 outputMO = framesMO.getLinkPath()
                 # TODO:
-                mappedFrameNode.createObject('POEMapping', curv_abs_input='0 10 20', curv_abs_output='0.5 5 10 15 20', input1=inputMO, input2=inputMO_rigid,output=outputMO, debug='0' )
+                mappedFrameNode.createObject('POEMapping', curv_abs_input='0 10 20 30', curv_abs_output='0.5 5 10 15 20 25 30', input1=inputMO, input2=inputMO_rigid,output=outputMO, debug='0' )
                 
                 
                 
                 targetPosNode= rootNode.createChild('targetPos')
-                targetPosNode.createObject('MechanicalObject', template='Rigid3d', name='target', position='17 1 0 0 0 0 1', showObject='1', showObjectScale='0.1')
+                targetPosNode.createObject('MechanicalObject', template='Rigid3d', name='target', position='5 15 10 0 0 0 1', showObject='1', showObjectScale='0.1')
                 targetPosNode.createObject('RestShapeSpringsForceField', name='spring', stiffness="5000000000", angularStiffness="500000000000", external_points="0", mstate="@target", points="0", template="Rigid3d"  )
                 
                 
-                rootNode.createObject('BilateralInteractionConstraint', template='Rigid3d', object2='@rigidBase/MappedFrames/FramesMO', object1='@targetPos/target', first_point='0', second_point='4')
+                rootNode.createObject('BilateralInteractionConstraint', template='Rigid3d', object2='@rigidBase/MappedFrames/FramesMO', object1='@targetPos/target', first_point='0', second_point='6')
 
 
                 return rootNode
