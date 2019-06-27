@@ -8,8 +8,8 @@ find_package(SofaFramework REQUIRED)
 set(HEADER_FILES
     src/initCosserat.h
 
-    src/mapping/POEMapping.h
-    src/mapping/POEMapping.inl
+    src/mapping/DiscretCosseratMapping.h
+    src/mapping/DiscretCosseratMapping.inl
 
     src/forcefield/BeamHookeLawForceField.h
     src/forcefield/BeamHookeLawForceField.inl
@@ -19,7 +19,7 @@ set(HEADER_FILES
 set(SOURCE_FILES
     src/initCosserat.cpp
 
-    src/mapping/POEMapping.cpp
+    src/mapping/DiscretCosseratMapping.cpp
 
     src/forcefield/BeamHookeLawForceField.cpp
     )
