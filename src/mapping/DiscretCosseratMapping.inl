@@ -526,7 +526,7 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>:: applyJT(
 
     Mat3x6 matB_trans; matB_trans.clear();
     for(unsigned int k=0; k<3; k++) matB_trans[k][k] = 1.0;
-    std::cout<<sz-1<<std::endl;
+
     for (size_t s = sz ; s-- ; ) {
         Mat6x6 coAdjoint;
         //
@@ -559,12 +559,12 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>:: applyJT(
     Mat6x6 M = build_projector(frame0);
     out2[0] += M * F_tot;
 
-    //if(d_debug.getValue()){
-    std::cout << "Node forces "<< out1 << std::endl;
-    std::cout << "base Force: "<< out2[0] << std::endl;
-    //}
+    if(d_debug.getValue()){
+         std::cout << "Node forces "<< out1 << std::endl;
+          std::cout << "base Force: "<< out2[0] << std::endl;
+    }
 
-    printf("_______________________\n");
+
     dataVecOut1Force[0]->endEdit();
     dataVecOut2Force[0]->endEdit();
 
@@ -602,16 +602,21 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>::applyJT(
 
     for (typename OutMatrixDeriv::RowConstIterator rowIt = in.begin(); rowIt != rowItEnd; ++rowIt)
     {
-        std::cout<<"************* iteration on line ";
-        std::cout<<rowIt.index();
-        std::cout<<"*************  "<<std::endl;
+        if (d_debug.getValue()){
+            std::cout<<"************* Apply JT (MatrixDeriv) iteration on line ";
+            std::cout<<rowIt.index();
+            std::cout<<"*************  "<<std::endl;
+        }
         typename OutMatrixDeriv::ColConstIterator colIt = rowIt.begin();
         typename OutMatrixDeriv::ColConstIterator colItEnd = rowIt.end();
 
         // Creates a constraints if the input constraint is not empty.
+
         if (colIt == colItEnd)
         {
-            std::cout<<"no column for this constraint"<<std::endl;
+            if (d_debug.getValue()){
+                std::cout<<"no column for this constraint"<<std::endl;
+            }
             continue;
         }
 
@@ -622,19 +627,17 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>::applyJT(
         NodesInvolved.clear();
         //NodesConstraintDirection.clear();
 
-        std::cout<<"Start iterating on columns"<<std::endl;
+
         while (colIt != colItEnd)
         {
             int childIndex = colIt.index();
-            std::cout << "==> childIndex :"<< childIndex << "\n";
+
 
             const OutDeriv valueConst_ = colIt.val();
             defaulttype::Vec6 valueConst;
             for(unsigned j = 0; j < 6; j++) valueConst[j] = valueConst_[j];
-            std::cout << "==> colIt.val() :"<< valueConst << "\n";
 
             int indexBeam =  m_indicesVectors[childIndex];
-            std::cout << "==> indexBeam :"<< indexBeam << "\n";
 
             Transform _T = Transform(frame[childIndex].getCenter(),frame[childIndex].getOrientation());
             Mat6x6 P_trans =(build_projector(_T));
@@ -649,7 +652,7 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>::applyJT(
 
 
             Vector3 f = matB_trans * temp * local_F; // constraint direction in the strain space.
-            std::cout << "==> local_F :"<< local_F << " after transform :"<< f << "\n";
+
 
             o1.addCol(indexBeam-1, f);
             std::tuple<int,Vec6> test = std::make_tuple(indexBeam, local_F);
@@ -659,12 +662,14 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>::applyJT(
 
         }
 
-        std::cout<<"==> NodesInvolved"<<std::endl;
-        for (size_t i = 0; i < NodesInvolved.size(); i++)
-            std::cout << "index :" <<get<0>(NodesInvolved[i]) << " force :"
-                      << get<1>(NodesInvolved[i]) << "\n ";
+        if (d_debug.getValue()){
 
-        std::cout<<"Start sort"<<std::endl;
+                std::cout<<"==> NodesInvolved"<<std::endl;
+                for (size_t i = 0; i < NodesInvolved.size(); i++)
+                    std::cout << "index :" <<get<0>(NodesInvolved[i]) << " force :"
+                              << get<1>(NodesInvolved[i]) << "\n ";
+
+        }
 
 
         //std::cout<<" NodesInvolved before sort "<<NodesInvolved<<std::endl;
@@ -675,16 +680,16 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>::applyJT(
             return std::get<0>(t1) > std::get<0>(t2); // custom compare function
         } );
 
+
         NodesInvolvedCompressed.clear();
 
-        std::cout<<"Start compress"<<std::endl;
 
         for (unsigned n=0; n<NodesInvolved.size(); n++)
         {
 
             std::tuple<int,Vec6> test_i = NodesInvolved[n];
             int numNode_i= std::get<0>(test_i);
-            Vec6 cumulativeF =std::get<1>(NodesInvolved[n]);
+            Vec6 cumulativeF =std::get<1>(test_i);
 
             if (n<NodesInvolved.size()-1)
             {
@@ -693,8 +698,12 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>::applyJT(
 
                 while (numNode_i == numNode_i1)
                 {
-                    cumulativeF += std::get<1>(NodesInvolved[n+1]);
-                    n++;
+                    cumulativeF += std::get<1>(test_i1);
+
+                    if (n!=NodesInvolved.size()-2){
+                        n++;
+                        break;
+                    }
                     test_i1 = NodesInvolved[n+1];
                     numNode_i1= std::get<0>(test_i1);
                 }
@@ -702,13 +711,19 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>::applyJT(
             NodesInvolvedCompressed.push_back(std::make_tuple(numNode_i, cumulativeF));
         }
 
-        std::cout<<" NodesInvolved after sort and compress"<<std::endl;
-        for (size_t i = 0; i < NodesInvolvedCompressed.size(); i++)
-            std::cout << "index :" <<get<0>(NodesInvolvedCompressed[i]) << " force :"
-                      << get<1>(NodesInvolvedCompressed[i]) << "\n ";
 
 
-        std::cout<<" start put constraints on DOF"<<std::endl;
+
+
+        if (d_debug.getValue()){
+            std::cout<<" NodesInvolved after sort and compress"<<std::endl;
+            for (size_t i = 0; i < NodesInvolvedCompressed.size(); i++)
+                std::cout << "index :" <<get<0>(NodesInvolvedCompressed[i]) << " force :"
+                          << get<1>(NodesInvolvedCompressed[i]) << "\n ";
+        }
+
+
+
         for (unsigned n=0; n<NodesInvolvedCompressed.size(); n++)
         {
 
@@ -717,24 +732,23 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>::applyJT(
             int i = numNode;
             Vec6 CumulativeF = std::get<1>(test);
 
-            std::cout <<"n = "<< n<< " Cumulative force 1="<< CumulativeF <<" \n";
+
 
             while(i>0)
             {
-                std::cout<<"i "<<i<<std::endl;
+
                 //cumulate on beam frame
                 Mat6x6 coAdjoint;
                 compute_coAdjoint(m_nodesExponentialSE3Vectors[i-1],coAdjoint);  //m_nodesExponentialSE3Vectors computed in apply
                 CumulativeF = coAdjoint * CumulativeF;
 
-                std::cout << "==> CumulativeF force 2 ="<< CumulativeF << std::endl;
+
 
                 // transfer to strain space (local coordinates)
                 Mat6x6 temp = m_nodesTangExpVectors[i-1];
                 temp.transpose();
                 Vector3 temp_f = matB_trans * temp * CumulativeF;
 
-                std::cout << "==> temp_f force ="<< temp_f << std::endl;
                 if(i>1) o1.addCol(i-2, temp_f);
 
                 i--;
@@ -745,11 +759,10 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>::applyJT(
 
             Vec6 base_force = M * CumulativeF;
 
-            std::cout << "==> base_Force :"<< base_force << std::endl;
 
             o2.addCol(0, base_force);
         }
-        std::cout<<"End put constraints on DOF"<<std::endl;
+
 
     }
 

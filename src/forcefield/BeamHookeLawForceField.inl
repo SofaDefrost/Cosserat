@@ -151,9 +151,6 @@ void BeamHookeLawForceField<DataTypes>::addForce(const MechanicalParams* mparams
     const VecCoord& x0 = this->mstate->read(VecCoordId::restPosition())->getValue();
 
     f.resize(x.size());
-
-    std::cout<< "===> x :"<< x << std::endl;
-
     if(x.size()!=d_length.getValue().size()){
         msg_warning("BeamHookeLawForceField")<<" length should have the same size as x..."<<"\n";
         compute_df = false;
