@@ -240,7 +240,7 @@ def addCables(nodeFrame):
                             valueType='force')
         cableL.createObject('SkinningMapping', nbRef='2',  mapForces='false', mapMasses='false')
     test[0].valueType='displacement'
-    test[0].value='6.0' 
+    test[0].value='3.0' 
     #test[1].valueType='displacement'
     #test[1].value='1.0'     
 
@@ -294,7 +294,7 @@ def createScene(rootNode):
                 #rootNode.createObject('StaticSolver')
                 #rootNode.createObject('CGLinearSolver', name='solver', tolerance='1e-20',  threshold='1e-20', verbose='1')
                 
-                trunkNode.createObject('PCGLinearSolver', preconditioners='solver')
+                trunkNode.createObject('PCGLinearSolver', preconditioners='solver', tolerance="1e-15")
                 trunkNode.createObject('SparseLDLSolver', name='solver')
                 
                 trunkNode.createObject('GenericConstraintCorrection', solverName='solver')
@@ -316,10 +316,10 @@ def createScene(rootNode):
                 
                 #pos = pi
                 
-                array1 = [0.0,0.0,0.0]
-                array2 = [0.0,0.0,0.0]
-                array3 = [0.0,0.0,0.0]
-                pos = [array1, array2, array3]
+                position1 = [0.0,0.0,0.0]
+                position2 = [0.0,0.0,0.0]
+                position3 = [0.0,0.0,0.0]
+                pos = [position1, position2, position3]
                 
                 rateAngularDeformNode = trunkNode.createChild('rateAngularDeform')
                 rateAngularDeformMO = rateAngularDeformNode.createObject('MechanicalObject', template='Vec3d', name='rateAngularDeformMO', position=pos) # (2 series of 3 angles for 2 sections. we suppose that the lenght is 10 for each)
