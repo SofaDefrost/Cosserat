@@ -180,9 +180,9 @@ public:
 
     /// This method must be reimplemented by all mappings if they need to support constraints.
     virtual void applyJT(
-        const core::ConstraintParams*  cparams , const helper::vector< In1DataMatrixDeriv*>& dataMatOut1Const  ,
-        const helper::vector< In2DataMatrixDeriv*>&  dataMatOut2Const ,
-        const helper::vector<const OutDataMatrixDeriv*>&  dataMatInConst) override;
+            const core::ConstraintParams*  cparams , const helper::vector< In1DataMatrixDeriv*>& dataMatOut1Const  ,
+            const helper::vector< In2DataMatrixDeriv*>&  dataMatOut2Const ,
+            const helper::vector<const OutDataMatrixDeriv*>&  dataMatInConst) override;
 
 protected:
     /**********************COSSERAT METHODS**************************/
@@ -268,9 +268,6 @@ public:
             }
         }
     }
-
-
-
 
 };
 

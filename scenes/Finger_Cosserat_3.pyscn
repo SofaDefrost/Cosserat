@@ -250,26 +250,6 @@ def createScene(rootNode):
                 fingerVisu.createObject('BarycentricMapping')
 
                 rootNode.createObject('BilateralInteractionConstraint', template='Vec3d', object2='@cableNode/rigidBase/MappedFrames/cable/cablePos', object1='@finger/points/pointsInFEM', first_point='6', second_point='6')
-
-                # rootNode.createObject('SlidingConstraint', name="constraint2", object1="@finger/points/pointsInFEM", object2="@cableNode/rigidBase/MappedFrames/cable/cablePos", sliding_point="0 1 2", axis_1="0", axis_2="2")
-                # rootNode.createObject('SlidingConstraint', name="constraint2", object1="@finger/points/pointsInFEM", object2="@cableNode/rigidBase/MappedFrames/cable/cablePos", sliding_point="3 4", axis_1="2", axis_2="4")
-                # rootNode.createObject('SlidingConstraint', name="constraint2", object1="@finger/points/pointsInFEM", object2="@cableNode/rigidBase/MappedFrames/cable/cablePos", sliding_point="5 6", axis_1="4", axis_2="6")
-
-                # rootNode.createObject('CosseratSlidingConstraint', name="constraint2", object1="@finger/points/pointsInFEM", object2="@cableNode/rigidBase/MappedFrames/cable/cablePos", sliding_point="0 1", axis_1="0", axis_2="2")
-                rootNode.createObject('SlidingConstraint', name="constraint2", object1="@finger/points/pointsInFEM", object2="@cableNode/rigidBase/MappedFrames/cable/cablePos", sliding_point="0", axis_1="0", axis_2="2")
-                rootNode.createObject('SlidingConstraint', name="constraint2", object1="@finger/points/pointsInFEM", object2="@cableNode/rigidBase/MappedFrames/cable/cablePos", sliding_point="1", axis_1="1", axis_2="3")
-                rootNode.createObject('SlidingConstraint', name="constraint2", object1="@finger/points/pointsInFEM", object2="@cableNode/rigidBase/MappedFrames/cable/cablePos", sliding_point="2", axis_1="2", axis_2="4")
-                rootNode.createObject('SlidingConstraint', name="constraint2", object1="@finger/points/pointsInFEM", object2="@cableNode/rigidBase/MappedFrames/cable/cablePos", sliding_point="3", axis_1="3", axis_2="5")
-                rootNode.createObject('SlidingConstraint', name="constraint2", object1="@finger/points/pointsInFEM", object2="@cableNode/rigidBase/MappedFrames/cable/cablePos", sliding_point="4", axis_1="4", axis_2="6")
-                rootNode.createObject('SlidingConstraint', name="constraint2", object1="@finger/points/pointsInFEM", object2="@cableNode/rigidBase/MappedFrames/cable/cablePos", sliding_point="5", axis_1="4", axis_2="6")
-                # rootNode.createObject('SlidingConstraint', name="constraint2", object1="@finger/points/pointsInFEM", object2="@cableNode/rigidBase/MappedFrames/cable/cablePos", sliding_point="2", axis_1="2", axis_2="3")
-                # rootNode.createObject('SlidingConstraint', name="constraint2", object1="@finger/points/pointsInFEM", object2="@cableNode/rigidBase/MappedFrames/cable/cablePos", sliding_point="3 4", axis_1="3", axis_2="4")
-                # rootNode.createObject('SlidingConstraint', name="constraint2", object1="@finger/points/pointsInFEM", object2="@cableNode/rigidBase/MappedFrames/cable/cablePos", sliding_point="5 6", axis_1="4", axis_2="6")
-
-
-                # rootNode.createObject('SlidingConstraint', name="constraint2", object1="@finger/points/pointsInFEM", object2="@cableNode/rigidBase/MappedFrames/cable/cablePos", sliding_point="0 1 2", axis_1="0", axis_2="2")
-                # rootNode.createObject('SlidingConstraint', name="constraint2", object1="@finger/points/pointsInFEM", object2="@cableNode/rigidBase/MappedFrames/cable/cablePos", sliding_point="0 1 2 3 4 5 6", axis_1="3", axis_2="4")
-                # rootNode.createObject('SlidingConstraint', name="constraint2", object1="@finger/points/pointsInFEM", object2="@cableNode/rigidBase/MappedFrames/cable/cablePos", sliding_point="0 1 2 3 4 5 6", axis_1="4", axis_2="5")
-                # rootNode.createObject('SlidingConstraint', name="constraint2", object1="@finger/points/pointsInFEM", object2="@cableNode/rigidBase/MappedFrames/cable/cablePos", sliding_point="0 1 2 3 4 5 6", axis_1="5", axis_2="6")
+                rootNode.createObject('CosseratSlidingConstraint', name="constraint2", object1="@finger/points/pointsInFEM", object2="@cableNode/rigidBase/MappedFrames/cable/cablePos", sliding_point="0 1", axis_1="0", axis_2="2")
 
                 return rootNode

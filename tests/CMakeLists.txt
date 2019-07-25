@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.1)
 
-project(PEOMapping_test VERSION 1.0)
+project(DiscretCosseratMapping_test VERSION 1.0)
 
 
 find_package(CosseratPlugin REQUIRED)
@@ -9,7 +9,7 @@ find_package(SofaGTestMain REQUIRED)
 
 set(SOURCE_FILES
 
-    mapping/POEMappingTest.cpp
+    mapping/DiscretCosseratMappingTest.cpp
     
     )
 

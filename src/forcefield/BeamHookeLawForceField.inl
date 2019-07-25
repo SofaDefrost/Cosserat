@@ -65,13 +65,15 @@ namespace forcefield
 using sofa::component::linearsolver::DefaultMultiMatrixAccessor ;
 using sofa::core::behavior::MultiMatrixAccessor ;
 using sofa::core::behavior::BaseMechanicalState ;
+using sofa::helper::WriteAccessor ;
+
 
 template<typename DataTypes>
 BeamHookeLawForceField<DataTypes>::BeamHookeLawForceField()
     : Inherit1(),
       d_crossSectionShape( initData(&d_crossSectionShape, OptionsGroup(2,"circular","rectangular"),
-                                 "crossSectionShape",
-                                 "shape of the cross-section. Can be: circular (tube with external radius being radius and internal radius being innerRadius ) or rectangular (lengthY and lengthZ) . Default is circular" )),
+                                    "crossSectionShape",
+                                    "shape of the cross-section. Can be: circular (tube with external radius being radius and internal radius being innerRadius ) or rectangular (lengthY and lengthZ) . Default is circular" )),
       d_youngModululs( initData( &d_youngModululs, 1.0e6, "youngModulus", "Young Modulus describes the stiffness of the material")),
       d_poissonRatio( initData( &d_poissonRatio, 0.45, "poissonRatio", "poisson Ratio describes the compressibility of the material")),
       d_length( initData( &d_length, "length", "lenght of each beam")),
@@ -93,11 +95,7 @@ void BeamHookeLawForceField<DataTypes>::init()
 {
     Inherit1::init();
 
-
-
-
     Real Iy, Iz, J, A;
-
 
     if ( d_crossSectionShape.getValue().getSelectedItem() == "rectangular" )
     {
@@ -121,7 +119,7 @@ void BeamHookeLawForceField<DataTypes>::init()
         J = Iz + Iy;
         A = M_PI*(r*r - rInner*rInner);
 
-       }
+    }
 
     Real E= d_youngModululs.getValue();
     Real G= E/(2.0*(1.0+d_poissonRatio.getValue()));
@@ -129,13 +127,35 @@ void BeamHookeLawForceField<DataTypes>::init()
     m_K_section[0][0] = G*J;
     m_K_section[1][1] = E*Iy;
     m_K_section[2][2] = E*Iz;
+
+
+    //Compute the size of each beam
+    //    helper::WriteAccessor<Data<helper::vector<double>>>  length = d_length;
+    //    const VecCoord& pos = this->mstate->read(core::ConstVecCoordId::position())->getValue();
+    //    helper::vector<double> m_vector; m_vector.clear();
+
+    //    length.resize(pos.size());
+    //    for (size_t i = 0; i < pos.size()-1; i++){
+    //        if(i==0){
+    //            length[i] = (pos[i]).norm();
+    //            m_vector.push_back(0.0);
+    //        }
+    //        else{
+    //            length[i] = (pos[i] - pos[i-1]).norm();
+    //            m_vector.push_back(m_vector[i-1]+length[i]);
+    //        }
+    //    }
+
+    //    std::cout << "============>length : \n"<< length << std::endl;
+    //    std::cout << "============>distance : \n"<< m_vector << std::endl;
+
 }
 
 template<typename DataTypes>
 void BeamHookeLawForceField<DataTypes>::addForce(const MechanicalParams* mparams,
-                                         DataVecDeriv& d_f,
-                                         const DataVecCoord& d_x,
-                                         const DataVecDeriv& d_v)
+                                                 DataVecDeriv& d_f,
+                                                 const DataVecCoord& d_x,
+                                                 const DataVecDeriv& d_v)
 {
     SOFA_UNUSED(d_v);
     SOFA_UNUSED(mparams);
@@ -170,8 +190,8 @@ void BeamHookeLawForceField<DataTypes>::addForce(const MechanicalParams* mparams
 
 template<typename DataTypes>
 void BeamHookeLawForceField<DataTypes>::addDForce(const MechanicalParams* mparams,
-                                          DataVecDeriv&  d_df ,
-                                          const DataVecDeriv&  d_dx)
+                                                  DataVecDeriv&  d_df ,
+                                                  const DataVecDeriv&  d_dx)
 {
 
     if (!compute_df)
@@ -191,7 +211,7 @@ void BeamHookeLawForceField<DataTypes>::addDForce(const MechanicalParams* mparam
 
 template<typename DataTypes>
 double BeamHookeLawForceField<DataTypes>::getPotentialEnergy(const MechanicalParams* mparams,
-                                                     const DataVecCoord& d_x) const
+                                                             const DataVecCoord& d_x) const
 {
     SOFA_UNUSED(mparams);
     SOFA_UNUSED(d_x);
@@ -201,7 +221,7 @@ double BeamHookeLawForceField<DataTypes>::getPotentialEnergy(const MechanicalPar
 
 template<typename DataTypes>
 void BeamHookeLawForceField<DataTypes>::addKToMatrix(const MechanicalParams* mparams,
-                                               const MultiMatrixAccessor* matrix)
+                                                     const MultiMatrixAccessor* matrix)
 {
     MultiMatrixAccessor::MatrixRef mref = matrix->getMatrix(this->mstate);
     BaseMatrix* mat = mref.matrix;

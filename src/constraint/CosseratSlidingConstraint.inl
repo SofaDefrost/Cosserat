@@ -1,0 +1,361 @@
+/******************************************************************************
+*       SOFA, Simulation Open-Framework Architecture, development version     *
+*                (c) 2006-2019 INRIA, USTL, UJF, CNRS, MGH                    *
+*                                                                             *
+* This program is free software; you can redistribute it and/or modify it     *
+* under the terms of the GNU Lesser General Public License as published by    *
+* the Free Software Foundation; either version 2.1 of the License, or (at     *
+* your option) any later version.                                             *
+*                                                                             *
+* This program is distributed in the hope that it will be useful, but WITHOUT *
+* ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or       *
+* FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License *
+* for more details.                                                           *
+*                                                                             *
+* You should have received a copy of the GNU Lesser General Public License    *
+* along with this program. If not, see <http://www.gnu.org/licenses/>.        *
+*******************************************************************************
+* Authors: The SOFA Team and external contributors (see Authors.txt)          *
+*                                                                             *
+* Contact information: contact@sofa-framework.org                             *
+******************************************************************************/
+#ifndef SOFA_COMPONENT_CONSTRAINTSET_CosseratSlidingConstraint_INL
+#define SOFA_COMPONENT_CONSTRAINTSET_CosseratSlidingConstraint_INL
+
+#include "CosseratSlidingConstraint.h"
+#include <sofa/core/visual/VisualParams.h>
+#include <sofa/core/behavior/BaseConstraint.h>
+#include <sofa/defaulttype/RGBAColor.h>
+#include <sofa/defaulttype/Vec.h>
+namespace sofa
+{
+
+namespace component
+{
+
+namespace constraintset
+{
+
+template<class DataTypes>
+CosseratSlidingConstraint<DataTypes>::CosseratSlidingConstraint()
+    : CosseratSlidingConstraint(nullptr, nullptr)
+{
+}
+
+template<class DataTypes>
+CosseratSlidingConstraint<DataTypes>::CosseratSlidingConstraint(MechanicalState* m_from)
+    : CosseratSlidingConstraint(m_from, m_from)
+{
+}
+
+template<class DataTypes>
+CosseratSlidingConstraint<DataTypes>::CosseratSlidingConstraint(MechanicalState* m_from, MechanicalState* m_dst)
+    : Inherit(m_from, m_dst)
+    , d_m1(initData(&d_m1, 0, "sliding_point","index of the spliding point on the first model"))
+    , d_m2a(initData(&d_m2a, 0, "axis_1","index of one end of the sliding axis"))
+    , d_m2b(initData(&d_m2b, 0, "axis_2","index of the other end of the sliding axis"))
+    , d_force(initData(&d_force,"force","force (impulse) used to solve the constraint"))
+    , m_yetIntegrated(false)
+{
+}
+
+template<class DataTypes>
+void CosseratSlidingConstraint<DataTypes>::init()
+{
+    printf("CosseratSlidingConstraint<DataTypes>::init Before\n");
+    assert(this->mstate1);
+    assert(this->mstate2);
+    printf("CosseratSlidingConstraint<DataTypes>::init After\n");
+    m_thirdConstraint = 0;
+}
+
+
+template<class DataTypes>
+void CosseratSlidingConstraint<DataTypes>::computeProximity(const DataVecCoord &x1, const DataVecCoord &x2){
+
+    printf("CosseratSlidingConstraint<DataTypes>::computeProximity Before\n");
+    //    const VecCoord & from = this->mstate1->read(core::ConstVecCoordId::position())->getValue();
+    //    const VecCoord & dst  = this->mstate2->read(core::ConstVecCoordId::position())->getValue();
+
+    VecCoord from = x1.getValue();
+    VecCoord dst  = x2.getValue();
+    //OutVecCoord& out = *dataVecOutPos[0]->beginEdit();
+    m_constraints.clear();
+
+    size_t szFrom = from.size();
+    size_t szDst = dst.size();
+    //For each point in the FEM find the closest edge of the cable
+    for (size_t i = 0 ; i < szFrom; i++) {
+        Coord P = from[i];
+        Constraint constraint;
+
+        std::cout << "P "<< P << std::endl;
+
+        Real min_dist = std::numeric_limits<Real>::max();
+        for (size_t j = 0; j < szDst-1; j++) {
+            Coord Q1 = dst[j];
+            Coord Q2 = dst[j+1];
+
+            //std::cout << "Q1 "<< Q1 << " ===> Q2 "<< Q2 << std::endl;
+
+            // the axis
+            Deriv dirAxe = Q2 - Q1;
+            dirAxe.normalize();
+
+            // projection of the point on the axis
+            Real r = (P-Q1) * dirAxe;
+            Deriv proj = Q1 + dirAxe * r;
+
+            Real dist = (P - Q1).norm();
+            //            std::cout << "dirAxe :"<< dirAxe<< " r: " << r  << " proj :"<< proj << std::endl;
+            //            std::cout << "dist :"<< dist << " mindis :"<< min_dist << std::endl;
+            //            printf("------------------------------------\n");
+            if(dist < min_dist){
+                min_dist = dist;
+                constraint.P = proj;
+                constraint.Q = from[i];
+                constraint.eid = j;
+                constraint.r = r;
+                constraint.dirAxe = dirAxe;
+                /////
+                constraint.Q1Q2 = (Q2-Q1).norm();
+                constraint.r2 = r / constraint.Q1Q2;
+
+                // We move the constraint point onto the projection
+                Deriv dirProj = P - proj; // violation vector
+                constraint.dist = dirProj.norm(); // constraint violation
+                dirProj.normalize(); // direction of the constraint
+                constraint.dirProj = dirProj;
+
+                Deriv dirOrtho = cross(dirProj, dirAxe);
+                dirOrtho.normalize();
+                constraint.dirOrtho = dirOrtho;
+
+            }
+        }
+        std::cout << i << " Closets edge is "<< constraint.eid << std::endl;
+        m_constraints.push_back(constraint);
+        printf("=================================\n");
+    }
+    printf("CosseratSlidingConstraint<DataTypes>::computeProximity After\n");
+}
+
+template<class DataTypes>
+void CosseratSlidingConstraint<DataTypes>::buildConstraintMatrix(const core::ConstraintParams*, DataMatrixDeriv &c1_d, DataMatrixDeriv &c2_d, unsigned int &cIndex
+                                                                 , const DataVecCoord &x1, const DataVecCoord &x2)
+{
+    printf("CosseratSlidingConstraint<DataTypes>::BuidConstraint Before\n");
+    computeProximity(x1,x2);
+    printf("=================================\n");
+
+    MatrixDeriv &c1 = *c1_d.beginEdit();
+    MatrixDeriv &c2 = *c2_d.beginEdit();
+    VecCoord dst  = x2.getValue();
+    size_t nb_Edge = dst.size();
+
+    for (size_t i = 0 ; i <  m_constraints.size(); i++) {
+        Constraint& c = m_constraints[i];
+
+        //int tm1 = d_m1.getValue();
+        int ei1 = (c.eid < nb_Edge-1) ? c.eid : c.eid-1; // c.eid; //
+        int ei2 = (c.eid+1 < nb_Edge-1) ? c.eid+2 : c.eid+1;
+
+        std::cout <<"cIndex :"<< cIndex << " E1 :"<< ei1 <<" ; ei2 :"<< ei2 << std::endl;
+
+        unsigned int cid = cIndex;
+        printf("=====+>cid :%d \n", cid);
+        cIndex += 2;
+        std::cout << " E1 :"<< ei1 <<" ; ei2 :"<< ei2 << std::endl;
+
+        printf("____________________________ \n");
+        std::cout << "i :"<< i << " c.dirProj :"<< c.dirProj << " cid :" << cid << std::endl;
+        std::cout << "i : "<< i <<  " c.dirOrtho :"<< c.dirOrtho << std::endl;
+        MatrixDerivRowIterator c1_it = c1.writeLine(cid);
+        c1_it.addCol(i, c.dirProj);
+
+        c1_it = c1.writeLine(cid + 1);
+        c1_it.setCol(i, c.dirOrtho);
+
+        MatrixDerivRowIterator c2_it = c2.writeLine(cid);
+        c2_it.addCol(ei1, -c.dirProj * (1-c.r2));
+        c2_it.addCol(ei2, -c.dirProj * c.r2);
+        std::cout << "ei1 :"<< ei1 << " ei2 :"<< ei2 << " c.r2 :" << c.r2 << " c.r :"<< c.r << std::endl;
+
+
+        c2_it = c2.writeLine(cid + 1);
+        c2_it.addCol(ei1, -c.dirOrtho * (1-c.r2));
+        c2_it.addCol(ei2, -c.dirOrtho * c.r2);
+
+        c.thirdConstraint = 0;
+
+        std::cout << "===> r "<< c.r << "  ===> c.Q1Q2 :"<< c.Q1Q2 << std::endl;
+        if (c.r < 0)
+        {
+            printf("======================++>Inside if \n");
+            c.thirdConstraint = c.r;
+            cIndex++;
+
+            c1_it = c1.writeLine(cid + 2);
+            c1_it.setCol(i, c.dirAxe);
+
+            c2_it = c2.writeLine(cid + 2);
+            c2_it.addCol(ei1, -c.dirAxe);
+        }
+        else if (c.r > c.Q1Q2)
+        {
+            printf("======================++>Inside else \n");
+            c.thirdConstraint = c.r - c.Q1Q2;
+            cIndex++;
+
+            c1_it = c1.writeLine(cid + 2);
+            c1_it.setCol(i, -c.dirAxe);
+
+            c2_it = c2.writeLine(cid + 2);
+            c2_it.addCol(ei2, c.dirAxe);
+        }
+        c.cid = cid;
+        std::cout << " c.cid :"<< c.cid << " cid :"<< cid << " ==>Index :" << cIndex << std::endl;
+    }
+
+    c1_d.endEdit();
+    c2_d.endEdit();
+    printf("CosseratSlidingConstraint<DataTypes>::BuidConstraint After\n");
+
+}
+
+
+template<class DataTypes>
+void CosseratSlidingConstraint<DataTypes>::getConstraintViolation(const core::ConstraintParams *, defaulttype::BaseVector *v, const DataVecCoord &, const DataVecCoord &
+                                                                  , const DataVecDeriv &, const DataVecDeriv &)
+{
+    printf("CosseratSlidingConstraint<DataTypes>::getConstraintViolation Before\n");
+    for (size_t i = 0; i < m_constraints.size(); i++) {
+        Constraint& c = m_constraints[i];
+        std::cout << " c.cid :"<< c.cid << " c.dist"<< c.dist << std::endl;
+
+        v->set(c.cid, c.dist);
+        v->set(c.cid+1, 0.0);
+
+        if(c.thirdConstraint)
+        {
+            if(c.thirdConstraint>0)
+                v->set(c.cid+2, - c.thirdConstraint);
+            else
+                v->set(c.cid+2, c.thirdConstraint);
+        }
+    }
+    printf("CosseratSlidingConstraint<DataTypes>::getConstraintViolation After\n");
+}
+
+
+template<class DataTypes>
+void CosseratSlidingConstraint<DataTypes>::getConstraintResolution(const ConstraintParams*,
+                                                                   std::vector<core::behavior::ConstraintResolution*>& resTab,
+                                                                   unsigned int& offset)
+{
+    printf("CosseratSlidingConstraint<DataTypes>::getConstraintResolution Before\n");
+    for (size_t i = 0; i < m_constraints.size(); i++) {
+        Constraint& c = m_constraints[i];
+        resTab[offset++] = new BilateralConstraintResolution();
+        resTab[offset++] = new BilateralConstraintResolution();
+
+        if(c.thirdConstraint)
+            resTab[offset++] = new UnilateralConstraintResolution();
+    }
+    printf("CosseratSlidingConstraint<DataTypes>::getConstraintResolution After\n");
+}
+
+
+template<class DataTypes>
+void CosseratSlidingConstraint<DataTypes>::storeLambda(const ConstraintParams* /*cParams*/, sofa::core::MultiVecDerivId /*res*/, const sofa::defaulttype::BaseVector* lambda)
+{
+    printf("CosseratSlidingConstraint<DataTypes>::storeLambda before\n");
+
+    Real lamb1,lamb2, lamb3;
+    for (size_t i = 0; i < m_constraints.size(); i++) {
+        Constraint& c = m_constraints[i];
+
+        lamb1 = lambda->element(c.cid);
+        lamb2 = lambda->element(c.cid+1);
+
+        if(c.thirdConstraint)
+        {
+            lamb3 = lambda->element(c.cid+2);
+            d_force.setValue( m_dirProj* lamb1 + m_dirOrtho * lamb2 + m_dirAxe * lamb3);
+        }
+        else
+        {
+            d_force.setValue( m_dirProj* lamb1 + m_dirOrtho * lamb2 );
+        }
+    }
+    printf("CosseratSlidingConstraint<DataTypes>::storeLambda After\n");
+}
+
+template<class DataTypes>
+void CosseratSlidingConstraint<DataTypes>::draw(const core::visual::VisualParams* vparams)
+{
+    //printf("CosseratSlidingConstraint<DataTypes>::draw(const core::visual::VisualParams* vparams) before \n");
+    if (!vparams->displayFlags().getShowInteractionForceFields())
+        return;
+
+    vparams->drawTool()->saveLastState();
+
+    vparams->drawTool()->disableLighting();
+
+    sofa::defaulttype::RGBAColor color;
+    //    Constraint& c = m_constraints[0];
+
+    //    if(c.thirdConstraint<0)
+    //        color = sofa::defaulttype::RGBAColor::yellow();
+    //    else if(c.thirdConstraint>0)
+    //        color = sofa::defaulttype::RGBAColor::green();
+    //    else
+    color = sofa::defaulttype::RGBAColor::magenta();
+
+    std::vector<sofa::defaulttype::Vector3> vertices;
+    //    vertices.push_back(DataTypes::getCPos((this->mstate1->read(core::ConstVecCoordId::position())->getValue())[d_m1.getValue()]));
+
+    //    vparams->drawTool()->drawPoints(vertices, 10, color);
+    //    vertices.clear();
+
+    //    color = sofa::defaulttype::RGBAColor::blue();
+    //    vertices.push_back(DataTypes::getCPos((this->mstate2->read(core::ConstVecCoordId::position())->getValue())[d_m2a.getValue()]));
+    //    vertices.push_back(DataTypes::getCPos((this->mstate2->read(core::ConstVecCoordId::position())->getValue())[d_m2b.getValue()]));
+    vparams->drawTool()->drawLines(vertices, 1, color);
+
+    for (size_t i =0 ; i < m_constraints.size(); i++) {
+        color = sofa::defaulttype::RGBAColor::green();
+        vertices.push_back(m_constraints[i].P);
+        vertices.push_back(m_constraints[i].Q);
+        vparams->drawTool()->drawLines(vertices, 1, color);
+    }
+    //printf("CosseratSlidingConstraint<DataTypes>::draw(const core::visual::VisualParams* vparams) After \n");
+
+    drawLinesBetweenPoints(vparams);
+    vparams->drawTool()->restoreLastState();
+}
+
+template<class DataTypes>
+void CosseratSlidingConstraint<DataTypes>::drawLinesBetweenPoints(const core::visual::VisualParams* vparams)
+{
+    const VecCoord & positions  = this->mstate2->read(core::ConstVecCoordId::position())->getValue();
+    sofa::defaulttype::RGBAColor color;
+    color = sofa::defaulttype::RGBAColor::magenta();
+    std::vector<sofa::defaulttype::Vector3> vertices;
+    for (unsigned int i=0; i<positions.size()-1; i++)
+    {
+        vertices.push_back(positions[i]);
+        vertices.push_back(positions[i+1]);
+    }
+
+    vparams->drawTool()->drawLines(vertices, 1.5, color);
+}
+
+
+} // namespace constraintset
+
+} // namespace component
+
+} // namespace sofa
+
+#endif
