@@ -39,6 +39,7 @@ namespace sofa
 {
 using sofa::core::objectmodel::BaseContext ;
 using sofa::helper::AdvancedTimer;
+using sofa::helper::WriteAccessor;
 
 
 namespace component
@@ -89,11 +90,29 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>::init()
     // Fill the initial vector
     const OutDataVecCoord* xfromData = m_toModel->read(core::ConstVecCoordId::position());
     const OutVecCoord xfrom = xfromData->getValue();
+    //    WriteAccessor<Data < helper::vector<double>>> curv_abs_output = d_curv_abs_output;
+    //    curv_abs_output.clear();
 
     m_vecTransform.clear();
     for (unsigned int i = 0; i < xfrom.size(); i++) {
         m_vecTransform.push_back(xfrom[i]);
+        //        if(i==0)
+        //            curv_abs_output.push_back(1.0);
+        //        else
+        //            curv_abs_output.push_back(curv_abs_output[i-1] + (xfrom[i]-xfrom[i-1]).norm());
     }
+
+    //    std::cout<< "=============> curv_abs_output :" << curv_abs_output << std::endl;
+    //    WriteAccessor<Data<helper::vector<double>>> curv_abs_input = d_curv_abs_input;
+    //    curv_abs_input.clear();
+
+    //    const In1VecCoord x1from = m_fromModel1->read(core::ConstVecCoordId::position())->getValue();
+    //    std::cout << "=====>  x1form :"<< x1from << std::endl;
+    //    for (size_t i = 0 ; i < x1from.size(); i++) {
+    //        std::cout << "=============> input :"<< x1from[i] << std::endl;
+    //        if(i==0) curv_abs_input.push_back(0.0);
+    //        else curv_abs_input.push_back(curv_abs_input[i-1] + (x1from[i] - x1from[i-1]).norm());
+    //    }
 
     initialize();
     //Inherit::init();
@@ -151,8 +170,8 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>::computeExponentialSE3(double & x,
     }
 
     defaulttype::Mat3x3 M;
-    for(int j = 0; j <3; j++) {
-        for(int i = 0; i <3; i++){
+    for(size_t j = 0; j <3; j++) {
+        for(size_t i = 0; i <3; i++){
             M[j][i] = g_x(j,i);
         }
     }
@@ -560,8 +579,8 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>:: applyJT(
     out2[0] += M * F_tot;
 
     if(d_debug.getValue()){
-         std::cout << "Node forces "<< out1 << std::endl;
-          std::cout << "base Force: "<< out2[0] << std::endl;
+        std::cout << "Node forces "<< out1 << std::endl;
+        std::cout << "base Force: "<< out2[0] << std::endl;
     }
 
 
@@ -664,10 +683,10 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>::applyJT(
 
         if (d_debug.getValue()){
 
-                std::cout<<"==> NodesInvolved"<<std::endl;
-                for (size_t i = 0; i < NodesInvolved.size(); i++)
-                    std::cout << "index :" <<get<0>(NodesInvolved[i]) << " force :"
-                              << get<1>(NodesInvolved[i]) << "\n ";
+            std::cout<<"==> NodesInvolved"<<std::endl;
+            for (size_t i = 0; i < NodesInvolved.size(); i++)
+                std::cout << "index :" <<get<0>(NodesInvolved[i]) << " force :"
+                          << get<1>(NodesInvolved[i]) << "\n ";
 
         }
 
@@ -787,6 +806,7 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>::initialize()
     m_framesLenghtVectors.clear();
     m_beamLenghtVectors.clear();
     size_t input_index = 1;
+
     for (size_t i=0; i < sz; i++) {
         if (curv_abs_input[input_index] >= curv_abs_output[i]) {
             m_indicesVectors.push_back(input_index);
@@ -830,6 +850,7 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>::draw(const core::visual::VisualPa
 {
     if (!vparams->displayFlags().getShowMappings())
 
+        if(!d_debug.getValue()) return;
         for (unsigned int i = 0;i < m_vecTransform.size(); i++) {
 
             defaulttype::Quat q = m_vecTransform[i].getOrientation();

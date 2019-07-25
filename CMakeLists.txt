@@ -13,6 +13,9 @@ set(HEADER_FILES
 
     src/forcefield/BeamHookeLawForceField.h
     src/forcefield/BeamHookeLawForceField.inl
+
+    src/constraint/CosseratSlidingConstraint.h
+    src/constraint/CosseratSlidingConstraint.inl
     
     )
 
@@ -22,6 +25,8 @@ set(SOURCE_FILES
     src/mapping/DiscretCosseratMapping.cpp
 
     src/forcefield/BeamHookeLawForceField.cpp
+
+    src/constraint/CosseratSlidingConstraint.cpp
     )
 
 set(README_FILE "Cosserat.txt" )
@@ -29,12 +34,12 @@ set(README_FILE "Cosserat.txt" )
 find_package(SofaAdvancedConstraint QUIET)
 if(SofaAdvancedConstraint_FOUND)
     set(HEADER_FILES ${HEADER_FILES}
-#        src/POEMapper.h
-#        src/POEMapper.inl
+#        src/DiscretCosserat.h
+#        src/DiscretCosserat.inl
         )
 
     set(SOURCE_FILES ${SOURCE_FILES}
-#        src/POEMapper.cpp
+#        src/DiscretCosserat.cpp
         )
 
 endif()
@@ -61,10 +66,10 @@ sofa_generate_package(
     )
 
 
-#option(COSSERAT_BUILD_TESTS "Build unit tests" OFF )
-#if(COSSERAT_BUILD_TESTS)
-#    add_subdirectory(tests)
-#endif()
+option(COSSERAT_BUILD_TESTS "Build unit tests" OFF )
+if(COSSERAT_BUILD_TESTS)
+    add_subdirectory(tests)
+endif()
 
 SET_PROPERTY(GLOBAL PROPERTY USE_FOLDERS ON)
 SET_PROPERTY(TARGET ${PROJECT_NAME} PROPERTY FOLDER "plugins")
