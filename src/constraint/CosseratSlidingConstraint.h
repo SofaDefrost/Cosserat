@@ -131,10 +131,10 @@ protected:
     Data<int> d_m2b; ///< index of the other end of the sliding axis
     Data<Deriv> d_force; ///< interaction force
 
-    Real m_dist;	// constraint violation
-    Real m_thirdConstraint; // 0 if A<proj<B, -1 if proj<A, 1 if B<proj
-    bool m_yetIntegrated;
-    unsigned int m_cid;
+    //    Real m_dist;	// constraint violation
+    //    Real m_thirdConstraint; // 0 if A<proj<B, -1 if proj<A, 1 if B<proj
+    //    bool m_yetIntegrated;
+    //    unsigned int m_cid;
 
 
     CosseratSlidingConstraint();
@@ -181,6 +181,8 @@ private:
     } Constraint;
 
     helper::vector<Constraint> m_constraints;
+
+    unsigned int m_step;
 
 
 
