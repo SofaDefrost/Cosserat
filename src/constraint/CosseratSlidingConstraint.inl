@@ -55,71 +55,66 @@ CosseratSlidingConstraint<DataTypes>::CosseratSlidingConstraint(MechanicalState*
     , d_m2a(initData(&d_m2a, 0, "axis_1","index of one end of the sliding axis"))
     , d_m2b(initData(&d_m2b, 0, "axis_2","index of the other end of the sliding axis"))
     , d_force(initData(&d_force,"force","force (impulse) used to solve the constraint"))
-    , m_yetIntegrated(false)
+    //, m_yetIntegrated(false)
+    //, m_step(0)
 {
 }
 
 template<class DataTypes>
 void CosseratSlidingConstraint<DataTypes>::init()
 {
-    printf("CosseratSlidingConstraint<DataTypes>::init Before\n");
     assert(this->mstate1);
     assert(this->mstate2);
-    printf("CosseratSlidingConstraint<DataTypes>::init After\n");
-    m_thirdConstraint = 0;
 }
 
 
 template<class DataTypes>
 void CosseratSlidingConstraint<DataTypes>::computeProximity(const DataVecCoord &x1, const DataVecCoord &x2){
 
-    printf("CosseratSlidingConstraint<DataTypes>::computeProximity Before\n");
-    //    const VecCoord & from = this->mstate1->read(core::ConstVecCoordId::position())->getValue();
-    //    const VecCoord & dst  = this->mstate2->read(core::ConstVecCoordId::position())->getValue();
-
     VecCoord from = x1.getValue();
     VecCoord dst  = x2.getValue();
-    //OutVecCoord& out = *dataVecOutPos[0]->beginEdit();
     m_constraints.clear();
 
     size_t szFrom = from.size();
     size_t szDst = dst.size();
     //For each point in the FEM find the closest edge of the cable
-    for (size_t i = 0 ; i < szFrom; i++) {
+    for (size_t i = 0 ; i < szFrom-1; i++) {
         Coord P = from[i];
         Constraint constraint;
 
-        std::cout << "P "<< P << std::endl;
+        //std::cout << "P "<< P << std::endl;
 
-        Real min_dist = std::numeric_limits<Real>::max();
+        Real min_dist = std::numeric_limits<Real>::max();  // min dist between the projection and the projected point
         for (size_t j = 0; j < szDst-1; j++) {
             Coord Q1 = dst[j];
             Coord Q2 = dst[j+1];
 
-            //std::cout << "Q1 "<< Q1 << " ===> Q2 "<< Q2 << std::endl;
-
             // the axis
-            Deriv dirAxe = Q2 - Q1;
-            dirAxe.normalize();
+            Coord v = Q2 -Q1;
+            Real fact_v = dot(P-Q1,v) / dot(v,v);
 
-            // projection of the point on the axis
-            Real r = (P-Q1) * dirAxe;
-            Deriv proj = Q1 + dirAxe * r;
+            //std::cout<< " i: " << i<< " \t fact_v :"<< fact_v << std::endl;
+            if(fact_v <= 0.0) continue;
 
-            Real dist = (P - Q1).norm();
-            //            std::cout << "dirAxe :"<< dirAxe<< " r: " << r  << " proj :"<< proj << std::endl;
-            //            std::cout << "dist :"<< dist << " mindis :"<< min_dist << std::endl;
-            //            printf("------------------------------------\n");
-            if(dist < min_dist){
-                min_dist = dist;
+            if(fact_v < min_dist){
+
+                Deriv dirAxe = v;
+                dirAxe.normalize();
+
+                // projection of the point on the axis
+                Real r = (P-Q1) * dirAxe;
+                Deriv proj = Q1 + dirAxe * r;
+
+                min_dist = fact_v;
                 constraint.P = proj;
                 constraint.Q = from[i];
                 constraint.eid = j;
                 constraint.r = r;
                 constraint.dirAxe = dirAxe;
                 /////
-                constraint.Q1Q2 = (Q2-Q1).norm();
-                constraint.r2 = r / constraint.Q1Q2;
+                constraint.Q1Q2 = v.norm();
+                constraint.r2 = fact_v;
+                //std::cout << "fact_v :"<< fact_v << " ; r2 :"<< constraint.r2 << std::endl;
 
                 // We move the constraint point onto the projection
                 Deriv dirProj = P - proj; // violation vector
@@ -133,43 +128,32 @@ void CosseratSlidingConstraint<DataTypes>::computeProximity(const DataVecCoord &
 
             }
         }
-        std::cout << i << " Closets edge is "<< constraint.eid << std::endl;
+        //std::cout << i << " Closets edge is "<< constraint.eid << std::endl;
         m_constraints.push_back(constraint);
-        printf("=================================\n");
     }
-    printf("CosseratSlidingConstraint<DataTypes>::computeProximity After\n");
+    //printf("CosseratSlidingConstraint<DataTypes>::computeProximity After\n");
 }
 
 template<class DataTypes>
 void CosseratSlidingConstraint<DataTypes>::buildConstraintMatrix(const core::ConstraintParams*, DataMatrixDeriv &c1_d, DataMatrixDeriv &c2_d, unsigned int &cIndex
                                                                  , const DataVecCoord &x1, const DataVecCoord &x2)
 {
-    printf("CosseratSlidingConstraint<DataTypes>::BuidConstraint Before\n");
     computeProximity(x1,x2);
-    printf("=================================\n");
+    //printf("=================================\n");
 
     MatrixDeriv &c1 = *c1_d.beginEdit();
     MatrixDeriv &c2 = *c2_d.beginEdit();
     VecCoord dst  = x2.getValue();
-    size_t nb_Edge = dst.size();
 
     for (size_t i = 0 ; i <  m_constraints.size(); i++) {
         Constraint& c = m_constraints[i];
 
-        //int tm1 = d_m1.getValue();
-        int ei1 = (c.eid < nb_Edge-1) ? c.eid : c.eid-1; // c.eid; //
-        int ei2 = (c.eid+1 < nb_Edge-1) ? c.eid+2 : c.eid+1;
-
-        std::cout <<"cIndex :"<< cIndex << " E1 :"<< ei1 <<" ; ei2 :"<< ei2 << std::endl;
+        int ei1 = c.eid;
+        int ei2 = (ei1==0) ? c.eid+1 : c.eid+1;
 
         unsigned int cid = cIndex;
-        printf("=====+>cid :%d \n", cid);
         cIndex += 2;
-        std::cout << " E1 :"<< ei1 <<" ; ei2 :"<< ei2 << std::endl;
 
-        printf("____________________________ \n");
-        std::cout << "i :"<< i << " c.dirProj :"<< c.dirProj << " cid :" << cid << std::endl;
-        std::cout << "i : "<< i <<  " c.dirOrtho :"<< c.dirOrtho << std::endl;
         MatrixDerivRowIterator c1_it = c1.writeLine(cid);
         c1_it.addCol(i, c.dirProj);
 
@@ -179,7 +163,6 @@ void CosseratSlidingConstraint<DataTypes>::buildConstraintMatrix(const core::Con
         MatrixDerivRowIterator c2_it = c2.writeLine(cid);
         c2_it.addCol(ei1, -c.dirProj * (1-c.r2));
         c2_it.addCol(ei2, -c.dirProj * c.r2);
-        std::cout << "ei1 :"<< ei1 << " ei2 :"<< ei2 << " c.r2 :" << c.r2 << " c.r :"<< c.r << std::endl;
 
 
         c2_it = c2.writeLine(cid + 1);
@@ -188,10 +171,8 @@ void CosseratSlidingConstraint<DataTypes>::buildConstraintMatrix(const core::Con
 
         c.thirdConstraint = 0;
 
-        std::cout << "===> r "<< c.r << "  ===> c.Q1Q2 :"<< c.Q1Q2 << std::endl;
         if (c.r < 0)
         {
-            printf("======================++>Inside if \n");
             c.thirdConstraint = c.r;
             cIndex++;
 
@@ -203,7 +184,6 @@ void CosseratSlidingConstraint<DataTypes>::buildConstraintMatrix(const core::Con
         }
         else if (c.r > c.Q1Q2)
         {
-            printf("======================++>Inside else \n");
             c.thirdConstraint = c.r - c.Q1Q2;
             cIndex++;
 
@@ -214,12 +194,10 @@ void CosseratSlidingConstraint<DataTypes>::buildConstraintMatrix(const core::Con
             c2_it.addCol(ei2, c.dirAxe);
         }
         c.cid = cid;
-        std::cout << " c.cid :"<< c.cid << " cid :"<< cid << " ==>Index :" << cIndex << std::endl;
     }
 
     c1_d.endEdit();
     c2_d.endEdit();
-    printf("CosseratSlidingConstraint<DataTypes>::BuidConstraint After\n");
 
 }
 
@@ -228,10 +206,9 @@ template<class DataTypes>
 void CosseratSlidingConstraint<DataTypes>::getConstraintViolation(const core::ConstraintParams *, defaulttype::BaseVector *v, const DataVecCoord &, const DataVecCoord &
                                                                   , const DataVecDeriv &, const DataVecDeriv &)
 {
-    printf("CosseratSlidingConstraint<DataTypes>::getConstraintViolation Before\n");
     for (size_t i = 0; i < m_constraints.size(); i++) {
         Constraint& c = m_constraints[i];
-        std::cout << " c.cid :"<< c.cid << " c.dist"<< c.dist << std::endl;
+        //std::cout << " c.cid :"<< c.cid << " c.dist :"<< c.dist << std::endl;
 
         v->set(c.cid, c.dist);
         v->set(c.cid+1, 0.0);
@@ -244,7 +221,6 @@ void CosseratSlidingConstraint<DataTypes>::getConstraintViolation(const core::Co
                 v->set(c.cid+2, c.thirdConstraint);
         }
     }
-    printf("CosseratSlidingConstraint<DataTypes>::getConstraintViolation After\n");
 }
 
 
@@ -253,7 +229,6 @@ void CosseratSlidingConstraint<DataTypes>::getConstraintResolution(const Constra
                                                                    std::vector<core::behavior::ConstraintResolution*>& resTab,
                                                                    unsigned int& offset)
 {
-    printf("CosseratSlidingConstraint<DataTypes>::getConstraintResolution Before\n");
     for (size_t i = 0; i < m_constraints.size(); i++) {
         Constraint& c = m_constraints[i];
         resTab[offset++] = new BilateralConstraintResolution();
@@ -262,15 +237,12 @@ void CosseratSlidingConstraint<DataTypes>::getConstraintResolution(const Constra
         if(c.thirdConstraint)
             resTab[offset++] = new UnilateralConstraintResolution();
     }
-    printf("CosseratSlidingConstraint<DataTypes>::getConstraintResolution After\n");
 }
 
 
 template<class DataTypes>
 void CosseratSlidingConstraint<DataTypes>::storeLambda(const ConstraintParams* /*cParams*/, sofa::core::MultiVecDerivId /*res*/, const sofa::defaulttype::BaseVector* lambda)
 {
-    printf("CosseratSlidingConstraint<DataTypes>::storeLambda before\n");
-
     Real lamb1,lamb2, lamb3;
     for (size_t i = 0; i < m_constraints.size(); i++) {
         Constraint& c = m_constraints[i];
@@ -281,14 +253,13 @@ void CosseratSlidingConstraint<DataTypes>::storeLambda(const ConstraintParams* /
         if(c.thirdConstraint)
         {
             lamb3 = lambda->element(c.cid+2);
-            d_force.setValue( m_dirProj* lamb1 + m_dirOrtho * lamb2 + m_dirAxe * lamb3);
+            d_force.setValue( c.dirProj* lamb1 + c.dirOrtho * lamb2 + c.dirProj * lamb3);
         }
         else
         {
-            d_force.setValue( m_dirProj* lamb1 + m_dirOrtho * lamb2 );
+            d_force.setValue( c.dirProj* lamb1 + c.dirOrtho * lamb2 );
         }
     }
-    printf("CosseratSlidingConstraint<DataTypes>::storeLambda After\n");
 }
 
 template<class DataTypes>

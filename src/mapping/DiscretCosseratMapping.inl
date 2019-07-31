@@ -515,7 +515,6 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>:: applyJT(
     const OutVecCoord& frame = m_toModel->read(core::ConstVecCoordId::position())->getValue();
     const In1DataVecCoord* x1fromData = m_fromModel1->read(core::ConstVecCoordId::position());
     const In1VecCoord x1from = x1fromData->getValue();
-
     helper::vector<Vec6> local_F_Vec ;   local_F_Vec.clear();
 
     out1.resize(x1from.size());
@@ -545,7 +544,6 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>:: applyJT(
 
     Mat3x6 matB_trans; matB_trans.clear();
     for(unsigned int k=0; k<3; k++) matB_trans[k][k] = 1.0;
-
     for (size_t s = sz ; s-- ; ) {
         Mat6x6 coAdjoint;
         //
@@ -573,7 +571,6 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>:: applyJT(
         F_tot += node_F_Vec;
         out1[m_indicesVectors[s]-1] += f;
     }
-
     Transform frame0 = Transform(frame[0].getCenter(),frame[0].getOrientation());
     Mat6x6 M = build_projector(frame0);
     out2[0] += M * F_tot;
@@ -583,10 +580,8 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>:: applyJT(
         std::cout << "base Force: "<< out2[0] << std::endl;
     }
 
-
     dataVecOut1Force[0]->endEdit();
     dataVecOut2Force[0]->endEdit();
-
 }
 
 //___________________________________________________________________________
@@ -638,14 +633,12 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>::applyJT(
             }
             continue;
         }
-
         typename In1MatrixDeriv::RowIterator o1 = out1.writeLine(rowIt.index()); // we store the constraint number
         typename In2MatrixDeriv::RowIterator o2 = out2.writeLine(rowIt.index());
 
 
         NodesInvolved.clear();
         //NodesConstraintDirection.clear();
-
 
         while (colIt != colItEnd)
         {
@@ -674,20 +667,18 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>::applyJT(
 
 
             o1.addCol(indexBeam-1, f);
+            //std::cout<< "colIt :"<< colIt.index() <<" ; indexBeam :"<< indexBeam << " childIndex :"<< childIndex << " local_F : "<< local_F << std::endl;
             std::tuple<int,Vec6> test = std::make_tuple(indexBeam, local_F);
 
             NodesInvolved.push_back(test);
             colIt++;
 
         }
-
         if (d_debug.getValue()){
-
-            std::cout<<"==> NodesInvolved"<<std::endl;
+            std::cout<<"==> NodesInvolved : "<<std::endl;
             for (size_t i = 0; i < NodesInvolved.size(); i++)
                 std::cout << "index :" <<get<0>(NodesInvolved[i]) << " force :"
                           << get<1>(NodesInvolved[i]) << "\n ";
-
         }
 
 
@@ -699,13 +690,15 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>::applyJT(
             return std::get<0>(t1) > std::get<0>(t2); // custom compare function
         } );
 
+        //        for (size_t i = 0; i < NodesInvolved.size(); i++)
+        //            std::cout << "index :" <<get<0>(NodesInvolved[i]) << " force :"
+        //                      << get<1>(NodesInvolved[i]) << "\n ";
 
         NodesInvolvedCompressed.clear();
 
 
         for (unsigned n=0; n<NodesInvolved.size(); n++)
         {
-
             std::tuple<int,Vec6> test_i = NodesInvolved[n];
             int numNode_i= std::get<0>(test_i);
             Vec6 cumulativeF =std::get<1>(test_i);
@@ -718,21 +711,17 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>::applyJT(
                 while (numNode_i == numNode_i1)
                 {
                     cumulativeF += std::get<1>(test_i1);
-
-                    if (n!=NodesInvolved.size()-2){
+                    if ((n!=NodesInvolved.size()-2)||(n==0)){
                         n++;
                         break;
                     }
                     test_i1 = NodesInvolved[n+1];
                     numNode_i1= std::get<0>(test_i1);
                 }
+
             }
             NodesInvolvedCompressed.push_back(std::make_tuple(numNode_i, cumulativeF));
         }
-
-
-
-
 
         if (d_debug.getValue()){
             std::cout<<" NodesInvolved after sort and compress"<<std::endl;
@@ -740,8 +729,6 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>::applyJT(
                 std::cout << "index :" <<get<0>(NodesInvolvedCompressed[i]) << " force :"
                           << get<1>(NodesInvolvedCompressed[i]) << "\n ";
         }
-
-
 
         for (unsigned n=0; n<NodesInvolvedCompressed.size(); n++)
         {
@@ -751,18 +738,12 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>::applyJT(
             int i = numNode;
             Vec6 CumulativeF = std::get<1>(test);
 
-
-
             while(i>0)
             {
-
                 //cumulate on beam frame
                 Mat6x6 coAdjoint;
                 compute_coAdjoint(m_nodesExponentialSE3Vectors[i-1],coAdjoint);  //m_nodesExponentialSE3Vectors computed in apply
                 CumulativeF = coAdjoint * CumulativeF;
-
-
-
                 // transfer to strain space (local coordinates)
                 Mat6x6 temp = m_nodesTangExpVectors[i-1];
                 temp.transpose();
@@ -777,14 +758,9 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>::applyJT(
             Mat6x6 M = build_projector(frame0);
 
             Vec6 base_force = M * CumulativeF;
-
-
             o2.addCol(0, base_force);
         }
-
-
     }
-
 
     ////// END ARTICULATION SYSTEM MAPPING
     dataMatOut1Const[0]->endEdit();
@@ -793,8 +769,6 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>::applyJT(
 
 
 //___________________________________________________________________________
-
-
 template <class TIn1, class TIn2, class TOut>
 void DiscretCosseratMapping<TIn1, TIn2, TOut>::initialize()
 {
@@ -851,23 +825,23 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>::draw(const core::visual::VisualPa
     if (!vparams->displayFlags().getShowMappings())
 
         if(!d_debug.getValue()) return;
-        for (unsigned int i = 0;i < m_vecTransform.size(); i++) {
+    for (unsigned int i = 0;i < m_vecTransform.size(); i++) {
 
-            defaulttype::Quat q = m_vecTransform[i].getOrientation();
-            q.normalize();
+        defaulttype::Quat q = m_vecTransform[i].getOrientation();
+        q.normalize();
 
-            defaulttype::Vector3 P1, x,y,z;
-            P1 = m_vecTransform[i].getCenter();
+        defaulttype::Vector3 P1, x,y,z;
+        P1 = m_vecTransform[i].getCenter();
 
-            x= q.rotate(defaulttype::Vector3(1.0,0,0));
-            y= q.rotate(defaulttype::Vector3(0,1.0,0));
-            z= q.rotate(defaulttype::Vector3(0,0,1.0));
-            double radius_arrow = 1.0/8.0;
+        x= q.rotate(defaulttype::Vector3(1.0,0,0));
+        y= q.rotate(defaulttype::Vector3(0,1.0,0));
+        z= q.rotate(defaulttype::Vector3(0,0,1.0));
+        double radius_arrow = 1.0/8.0;
 
-            vparams->drawTool()->drawArrow(P1,(P1 + x)*1.0, radius_arrow, defaulttype::Vec<4,double>(1,0,0,1));
-            vparams->drawTool()->drawArrow(P1,(P1 + y)*1.0, radius_arrow, defaulttype::Vec<4,double>(0,1,0,1));
-            vparams->drawTool()->drawArrow(P1,(P1 + z)*1.0, radius_arrow, defaulttype::Vec<4,double>(0,0,1,1));
-        }
+        vparams->drawTool()->drawArrow(P1,(P1 + x)*1.0, radius_arrow, defaulttype::Vec<4,double>(1,0,0,1));
+        vparams->drawTool()->drawArrow(P1,(P1 + y)*1.0, radius_arrow, defaulttype::Vec<4,double>(0,1,0,1));
+        vparams->drawTool()->drawArrow(P1,(P1 + z)*1.0, radius_arrow, defaulttype::Vec<4,double>(0,0,1,1));
+    }
     //return;
 }
 
