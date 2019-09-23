@@ -1,0 +1,200 @@
+# -*- coding: utf-8 -*-
+
+import Sofa
+import SofaPython
+from math import sin,cos, sqrt, pi
+from stlib.physics.collision import CollisionMesh
+import os
+path = os.path.dirname(os.path.abspath(__file__))+'/mesh/'
+
+
+class Animation(Sofa.PythonScriptController):
+
+    def __init__(self, rigidBaseNode):
+        self.rigidBaseNode = rigidBaseNode
+        self.rate = 0.2;
+        self.angularRate=0.0;
+        return;
+
+    def initGraph(self, nodeRigid):
+        self.rigidBaseMO = self.rigidBaseNode.getObject('RigidBaseMO')
+
+    def onKeyPressed(self, c):
+
+        if ord(c)==19: # up
+            pos = self.rigidBaseMO.findData('rest_position').value;
+            pos[0][1] += self.rate
+            self.rigidBaseMO.findData('rest_position').value = pos
+
+        if ord(c)==21: # down
+            pos = self.rigidBaseMO.findData('rest_position').value;
+            pos[0][0] -= self.rate
+            self.rigidBaseMO.findData('rest_position').value = pos
+
+        if ord(c)==18: # left
+            pos = self.rigidBaseMO.findData('position').value;
+            pos[0][2] -= self.rate
+            self.rigidBaseMO.findData('position').value = pos
+
+        if ord(c)==20: # right
+            pos = self.rigidBaseMO.findData('position').value;
+            pos[0][2] += self.rate
+            self.rigidBaseMO.findData('position').value = pos
+
+class Twist(Sofa.PythonScriptController):
+
+    def __init__(self, rateAngularDeformNode,indice):
+        self.rateAngularDeformNode = rateAngularDeformNode
+        self.rate = 0.2;
+        self.angularRate=0.0;
+        self.indice = indice;
+        return;
+
+    def initGraph(self, twistNode):
+        self.rateAngularDeformMO = self.rateAngularDeformNode.getObject('rateAngularDeformMO')
+
+    def onKeyPressed(self, c):
+
+        if ord(c)==19: # up
+            pos = self.rateAngularDeformMO.findData('position').value;
+            pos[self.indice][1] += self.rate
+            self.rateAngularDeformMO.findData('position').value = pos
+
+        if ord(c)==21: # down
+            pos = self.rateAngularDeformMO.findData('position').value;
+            pos[self.indice][0] -= self.rate
+            self.rateAngularDeformMO.findData('position').value = pos
+
+        if ord(c)==18: # left
+            pos = self.rateAngularDeformMO.findData('position').value;
+            pos[self.indice][2] -= self.rate
+            self.rateAngularDeformMO.findData('position').value = pos
+
+        if ord(c)==20: # right
+            pos = self.rateAngularDeformMO.findData('position').value;
+            pos[self.indice][2] += self.rate
+            self.rateAngularDeformMO.findData('position').value = pos
+
+
+def createScene(rootNode):
+                import os
+                from stlib.scene import MainHeader, ContactHeader
+                MainHeader(rootNode, plugins=["SoftRobots","SofaPython","SofaSparseSolver", "SofaPreconditioner", "SofaOpenglVisual", "CosseratPlugin", "BeamAdapter"],
+                repositoryPaths=[os.getcwd()])
+                # rootNode.createObject('RequiredPlugin', pluginName='SoftRobots SofaPython SofaSparseSolver ')
+                #rootNode.createObject('VisualStyle', displayFlags='showVisualModels hideBehaviorModels showCollisionModels hideBoundingCollisionModels hideForceFields showInteractionForceFields showWireframe')
+
+                # rootNode.createObject('FreeMotionAnimationLoop')
+                # rootNode.createObject('GenericConstraintSolver', tolerance="1e-5", maxIterations="100", printLog="1")
+                rootNode.gravity = "0 -9810 0"
+                rootNode.dt="0.01"
+                ContactHeader(rootNode, alarmDistance=4, contactDistance=3, frictionCoef=0.08)
+                rootNode.createObject('BackgroundSetting', color='0 0.168627 0.211765')
+                rootNode.createObject('OglSceneFrame', style="Arrows", alignment="TopRight")
+                rootNode.createObject('CollisionPipeline', verbose="0")
+                rootNode.createObject('BruteForceDetection', name="N2")
+
+                ###############hresho
+                ## RigidBase
+                ###############
+                cableNode = rootNode.createChild('cableNode')
+                cableNode.createObject('EulerImplicitSolver', firstOrder="0", rayleighStiffness="1.0", rayleighMass='0.1')
+                # cableNode.createObject('PCGLinearSolver', preconditioners='solver', tolerance="1e-15")
+                # cableNode.createObject('SparseLDLSolver', name='solver')
+                cableNode.createObject('SparseLUSolver', name='solver')
+                #rootNode.createObject('SparseLUSolver', name='solver', tolerance='1e-5',  threshold='1e-5')
+                cableNode.createObject('GenericConstraintCorrection')
+
+                ###############hresho
+                ## RigidBase
+                ###############
+                rigidBaseNode= cableNode.createChild('rigidBase')
+                RigidBaseMO = rigidBaseNode.createObject('MechanicalObject', template='Rigid3d', name="RigidBaseMO", position="0 0 0  0 0 0 1", showObject='1', showObjectScale='0.1' )
+                rigidBaseNode.createObject('RestShapeSpringsForceField', name='spring', stiffness="50000", angularStiffness="50000", external_points="0", mstate="@RigidBaseMO", points="0", template="Rigid3d")
+
+                ###############
+                ## Rate of angular Deformation  (2 sections)
+                ###############
+                position=[" 0.4 0 0.4 " + " 0.4 0 0.4 " + " 0.4 0 0.4 " + " 0.4 0 0.4 " + "0.4 0 0.4 " + " 0.4 0 0.4 " + " 0.4 0 0.4 "  ]
+                longeur = '2 2 2 2 2 2 1' # beams size
+                rateAngularDeformNode = cableNode.createChild('rateAngularDeform')
+                rateAngularDeformMO = rateAngularDeformNode.createObject('MechanicalObject', template='Vec3d', name='rateAngularDeformMO', position=position)
+                rateAngularDeformNode.createObject('UniformMass', totalMass='0.1' )
+
+                #############@
+                ### Animation (to move the dofs)
+                ##############
+
+                indice = 6
+                print "indice : ", indice
+                twist = Twist(rateAngularDeformNode,indice)
+                BeamHookeLawForce = rateAngularDeformNode.createObject('BeamHookeLawForceField', crossSectionShape='circular', length=longeur, radius='0.5', youngModulus='5e6')
+                # anim = Animation(rigidBaseNode);
+
+                ##############
+                ## Frames
+                ##############
+                frames=[ "0.0 0 0  0 0 0 1    1 0 0  0 0 0 1     2 0 0  0 0 0 1   " +
+                                " 3.0 0 0  0 0 0 1   4 0 0  0 0 0 1     5 0 0  0 0 0 1" +
+                                " 6.0 0 0  0 0 0 1   7 0 0  0 0 0 1   8.0 0 0  0 0 0 1"+
+                                " 9.0 0 0  0 0 0 1   10.0 0 0  0 0 0 1    11 0 0  0 0 0 1 " +
+                                " 12 0 0  0 0 0 1   13 0 0  0 0 0 1"]
+                # the node of the frame needs to inherit from rigidBaseMO and rateAngularDeform
+                mappedFrameNode = rigidBaseNode.createChild('MappedFrames')
+                rateAngularDeformNode.addChild(mappedFrameNode)
+                framesMO = mappedFrameNode.createObject('MechanicalObject', template='Rigid3d', name="FramesMO", position=frames, showObject='1', showObjectScale='1' )
+
+
+
+                # The mapping has two inputs: RigidBaseMO and rateAngularDeformMO
+                #                 one output: FramesMO
+                inputMO = rateAngularDeformMO.getLinkPath()
+                inputMO_rigid = RigidBaseMO.getLinkPath()
+                outputMO = framesMO.getLinkPath()
+
+                curv_abs_input='0 2 4 6 8 10 12 13'
+                curv_abs_output='0 1 2  3  4 5 6 7 8 9 10 11 12 13'
+                mappedFrameNode.createObject('DiscretCosseratMapping', curv_abs_input=curv_abs_input, curv_abs_output=curv_abs_output, input1=inputMO, input2=inputMO_rigid,output=outputMO, debug='0' )
+
+                # forceFied = mappedFrameNode.createObject('ConstantForceField', indices="13", forces="0 -500 0 0 0 0")
+                # return rootNode
+
+                ##########################################
+                # Helix FEM Model                        #
+                ##########################################
+                Helix = rigidBaseNode.createChild('Helix')
+                # finger.createObject('EulerImplicitSolver', name='odesolver', firstOrder='0', rayleighMass="0.1", rayleighStiffness="0.1")
+                # finger.createObject('SparseLDLSolver', name='preconditioner')
+
+		        # Add a componant to load a VTK tetrahedral mesh and expose the resulting topology in the scene .
+                Helix.createObject('MeshSTLLoader', name='loader', filename=path+'helix964_1924_rotate.stl')
+                Helix.createObject('TriangleSetTopologyContainer', src='@loader', name='container')
+                Helix.createObject('TriangleSetTopologyModifier')
+
+                # Create a mechanicaobject component to stores the DoFs of the model
+                Helix.createObject('MechanicalObject', name='triangle', template='Vec3d', showObject='true', showIndicesScale='4e-5', rx='0', dz='0')
+
+                # Gives a mass to the model
+                # Helix.createObject('UniformMass', totalMass='0.075')
+                Helix.createObject('RigidMapping')
+
+
+                # Add a TetrahedronFEMForceField componant which implement an elastic material model solved using the Finite Element Method on
+                # tetrahedrons.
+
+
+                #############@
+                ### Animation (to move the dofs)
+                ##############
+                # anim = Animation(rigidBaseNode);
+
+
+                # targetPosNode= rootNode.createChild('targetPos')
+                # targetPosNode.createObject('MechanicalObject', template='Rigid3d', name='target', position='18 6 2 0 0 0 1', showObject='1', showObjectScale='0.3')
+                # targetPosNode.createObject('RestShapeSpringsForceField', name='spring', stiffness="5000000000", angularStiffness="500000000000", external_points="0", mstate="@target", points="0", template="Rigid3d"  )
+
+
+                # rootNode.createObject('BilateralInteractionConstraint', template='Rigid3d', object2='@cableNode/rigidBase/MappedFrames/FramesMO', object1='@targetPos/target', first_point='0', second_point='26')
+
+
+                return rootNode
