@@ -13,6 +13,8 @@ set(HEADER_FILES
 
     src/forcefield/BeamHookeLawForceField.h
     src/forcefield/BeamHookeLawForceField.inl
+    src/forcefield/CosseratInternalActuation.h
+    src/forcefield/CosseratInternalActuation.inl
 
     src/constraint/CosseratSlidingConstraint.h
     src/constraint/CosseratSlidingConstraint.inl
@@ -25,6 +27,7 @@ set(SOURCE_FILES
     src/mapping/DiscretCosseratMapping.cpp
 
     src/forcefield/BeamHookeLawForceField.cpp
+    src/forcefield/CosseratInternalActuation.cpp
 
     src/constraint/CosseratSlidingConstraint.cpp
     )
