@@ -27,10 +27,10 @@
 * Contact information: https://project.inria.fr/softrobot/contact/            *
 *                                                                             *
 ******************************************************************************/
-#ifndef SOFA_COMPONENT_FORCEFIELD_BeamHookeLawForceField_INL
-#define SOFA_COMPONENT_FORCEFIELD_BeamHookeLawForceField_INL
+#ifndef SOFA_COMPONENT_FORCEFIELD_CosseratInternalActuation_INL
+#define SOFA_COMPONENT_FORCEFIELD_CosseratInternalActuation_INL
 
-#include "BeamHookeLawForceField.h"
+#include "CosseratInternalActuation.h"
 #include <SofaBaseLinearSolver/FullVector.h>
 #include <sofa/core/behavior/MechanicalState.h>
 
@@ -69,7 +69,7 @@ using sofa::helper::WriteAccessor ;
 
 
 template<typename DataTypes>
-BeamHookeLawForceField<DataTypes>::BeamHookeLawForceField()
+CosseratInternalActuation<DataTypes>::CosseratInternalActuation()
     : Inherit1(),
       d_crossSectionShape( initData(&d_crossSectionShape, OptionsGroup(2,"circular","rectangular"),
                                     "crossSectionShape",
@@ -80,18 +80,21 @@ BeamHookeLawForceField<DataTypes>::BeamHookeLawForceField()
       d_radius( initData( &d_radius, 1.0, "radius", "external radius of the cross section (if circular)")),
       d_innerRadius( initData( &d_innerRadius, 0.0, "innerRadius", "internal radius of the cross section (if circular)")),
       d_lengthY( initData( &d_lengthY, 1.0, "lengthY", "side length of the cross section along local y axis (if rectangular)")),
-      d_lengthZ( initData( &d_lengthZ, 1.0, "length2", "side length of the cross section along local z axis (if rectangular)"))
+      d_lengthZ( initData( &d_lengthZ, 1.0, "length2", "side length of the cross section along local z axis (if rectangular)")),
+      d_distance( initData( &d_distance,  "distance", "distance between the midleline and the cable")),
+      d_ddistance( initData( &d_ddistance,  "ddistance", "the derivative of the distance between the midleline and the calble with respect to x")),
+      d_Tt( initData( &d_Tt,  "tension", "the cable tension according to t"))
 {
     compute_df=true;
 }
 
 
 template<typename DataTypes>
-BeamHookeLawForceField<DataTypes>::~BeamHookeLawForceField()
+CosseratInternalActuation<DataTypes>::~CosseratInternalActuation()
 {}
 
 template<typename DataTypes>
-void BeamHookeLawForceField<DataTypes>::init()
+void CosseratInternalActuation<DataTypes>::init()
 {
     Inherit1::init();
 
@@ -152,7 +155,38 @@ void BeamHookeLawForceField<DataTypes>::init()
 }
 
 template<typename DataTypes>
-void BeamHookeLawForceField<DataTypes>::addForce(const MechanicalParams* mparams,
+void CosseratInternalActuation<DataTypes>::computeArgument(const double &Li, const double &Li_1, const VecCoord &x, const int id, Vec3 &argu, const double & C)
+{
+    //Compute s
+    //This computation is made manually and use for the computation of d(s) and d'(s)
+    //double s = ((Li-Li_1)/2.0)*C + (Li+Li_1)/2.0;
+
+    //compute argu
+    Coord ds = d_distance.getValue()[id];
+    Coord dds = d_ddistance.getValue()[id]; //derivative of the distance
+
+    std::cout << "x[id] :"<< x[id] << std::endl;
+    Coord vec = cross(x[id],ds) + Coord(1.0,0.0,0.0) + dds;
+    argu = cross(ds,vec)/(vec.norm());
+
+}
+
+template<typename DataTypes>
+void CosseratInternalActuation<DataTypes>::computeIntegrale(const double &Li, const double& Li_1, const VecCoord& x, const int id, Coord & integral)
+{
+
+    Coord arg0, arg1 ;
+    computeArgument(Li,Li_1,x,id,arg0,m_gaussCoeff[0]);
+    computeArgument(Li,Li_1,x,id,arg1,m_gaussCoeff[1]);
+    std::cout << "Argu0 : "<< arg0 << "\nArgu1 : "<< arg1 << std::endl;
+    std::cout << "m_gaussWeights[0]*arg0 + m_gaussWeights[1]*arg1 : "<< m_gaussWeights[0]*arg0 + m_gaussWeights[1]*arg1 << std::endl;
+    integral = ((Li-Li_1)/2.0) * (m_gaussWeights[0]*arg0 + m_gaussWeights[1]*arg1);
+    //integral = ((Li-Li_1)/2.0) * arg0 ; // Cas exeptionel w_1==w_2 & d_s constant
+
+}
+
+template<typename DataTypes>
+void CosseratInternalActuation<DataTypes>::addForce(const MechanicalParams* mparams,
                                                  DataVecDeriv& d_f,
                                                  const DataVecCoord& d_x,
                                                  const DataVecDeriv& d_v)
@@ -161,7 +195,7 @@ void BeamHookeLawForceField<DataTypes>::addForce(const MechanicalParams* mparams
     SOFA_UNUSED(mparams);
 
     if(!this->getMState()) {
-        msg_info("BeamHookeLawForceField") << "No Mechanical State found, no force will be computed..." << "\n";
+        msg_info("CosseratInternalActuation") << "No Mechanical State found, no force will be computed..." << "\n";
         compute_df=false;
         return;
     }
@@ -172,21 +206,36 @@ void BeamHookeLawForceField<DataTypes>::addForce(const MechanicalParams* mparams
 
     f.resize(x.size());
     if(x.size()!=d_length.getValue().size()){
-        msg_warning("BeamHookeLawForceField")<<" length should have the same size as x..."<<"\n";
+        msg_warning("CosseratInternalActuation")<<" length should have the same size as x..."<<"\n";
         compute_df = false;
         return;
     }
 
     for (unsigned int i=0; i<x.size(); i++)
     {
-        f[i] -= (m_K_section * (x[i] - x0[i])) * d_length.getValue()[i];
+        //compute the tension internal force
+        //(const double &Li, const double& Li_1, const VecCoord& x, const int id, Coord & integral)
+        Coord integral =  Coord(0.0,0.0,0.0);
+        double Li = 0.0; double Li_1 = 0.0;
+
+        for(unsigned j=0; j<=i; j++) Li += d_length.getValue()[j] ;
+        if(i>0) for(unsigned j=0; j<i; j++) Li_1 += d_length.getValue()[j] ;
+
+        computeIntegrale(Li,Li_1, x, i, integral);
+
+        std::cout<< "Li_1 :"<< Li_1 << " ==> Li :"<< Li<<" ==> xi : "<< x[i]<< std::endl;
+
+        std::cout << "\nIntegral :" << integral << std::endl;
+
+        f[i] -= (m_K_section * (x[i] - x0[i])) * d_length.getValue()[i] + d_Tt.getValue() * integral;
     }
+    std::cout << "The finale force is : "<< f << std::endl;
     d_f.endEdit();
 
 }
 
 template<typename DataTypes>
-void BeamHookeLawForceField<DataTypes>::addDForce(const MechanicalParams* mparams,
+void CosseratInternalActuation<DataTypes>::addDForce(const MechanicalParams* mparams,
                                                   DataVecDeriv&  d_df ,
                                                   const DataVecDeriv&  d_dx)
 {
@@ -206,7 +255,7 @@ void BeamHookeLawForceField<DataTypes>::addDForce(const MechanicalParams* mparam
 }
 
 template<typename DataTypes>
-double BeamHookeLawForceField<DataTypes>::getPotentialEnergy(const MechanicalParams* mparams,
+double CosseratInternalActuation<DataTypes>::getPotentialEnergy(const MechanicalParams* mparams,
                                                              const DataVecCoord& d_x) const
 {
     SOFA_UNUSED(mparams);
@@ -216,7 +265,7 @@ double BeamHookeLawForceField<DataTypes>::getPotentialEnergy(const MechanicalPar
 }
 
 template<typename DataTypes>
-void BeamHookeLawForceField<DataTypes>::addKToMatrix(const MechanicalParams* mparams,
+void CosseratInternalActuation<DataTypes>::addKToMatrix(const MechanicalParams* mparams,
                                                      const MultiMatrixAccessor* matrix)
 {
     MultiMatrixAccessor::MatrixRef mref = matrix->getMatrix(this->mstate);
@@ -243,4 +292,4 @@ void BeamHookeLawForceField<DataTypes>::addKToMatrix(const MechanicalParams* mpa
 } // component
 } // sofa
 
-#endif // SOFA_COMPONENT_FORCEFIELD_BeamHookeLawForceField_INL
+#endif // SOFA_COMPONENT_FORCEFIELD_CosseratInternalActuation_INL

@@ -132,9 +132,6 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>::reinit()
 
 }
 
-
-
-
 template <class TIn1, class TIn2, class TOut>
 void DiscretCosseratMapping<TIn1, TIn2, TOut>::reset()
 {
@@ -245,10 +242,9 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>::apply(
     out.resize(sz);
 
     //update the Exponential Matrices according to new deformation
-    update_ExponentialSE3(in1);
+    update_ExponentialSE3(in1); // ==> update m_ExponentialSE3Vectors & m_nodesExponentialSE3Vectors
 
     Transform frame0 = Transform(In2::getCPos(in2[0]),In2::getCRot(in2[0]));
-
     for(unsigned int i=0; i<sz; i++){
         Transform frame = frame0;
         for (int u = 0; u < m_indicesVectors[i]; u++) {
@@ -261,21 +257,19 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>::apply(
         out[i] = OutCoord(v,q);
     }
     m_index_input = 0;
-
     dataVecOutPos[0]->endEdit();
 }
 
 template <class TIn1, class TIn2, class TOut>
 void DiscretCosseratMapping<TIn1, TIn2, TOut>:: computeAdjoint(const Transform & frame, Mat6x6 &Adjoint)
 {
-
     Matrix3 R = extract_rotMatrix(frame);
     Vector3 u = frame.getOrigin();
     Matrix3 tild_u = getTildMatrix(u);
     Matrix3 tild_u_R = tild_u*R;
-
     buildaAdjoint(R,tild_u_R, Adjoint);
 }
+
 template <class TIn1, class TIn2, class TOut>
 void DiscretCosseratMapping<TIn1, TIn2, TOut>:: compute_coAdjoint(const Transform & frame, Mat6x6 &coAdjoint)
 {
@@ -283,7 +277,6 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>:: compute_coAdjoint(const Transfor
     Vector3 u = frame.getOrigin();
     Matrix3 tild_u = getTildMatrix(u);
     Matrix3 tild_u_R = tild_u*R;
-
     build_coaAdjoint(R,tild_u_R, coAdjoint);
 }
 
@@ -291,7 +284,6 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>:: compute_coAdjoint(const Transfor
 
 template <class TIn1, class TIn2, class TOut>
 void DiscretCosseratMapping<TIn1, TIn2, TOut>::compute_Tang_Exp(double & x, const defaulttype::Vector3& k, Mat6x6 & TgX){
-
     double theta = k.norm();
     Matrix3 tild_p = getTildMatrix(Vector3(1.0,0.0,0.0));
     Matrix3 tild_k = getTildMatrix(k);
