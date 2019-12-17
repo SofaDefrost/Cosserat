@@ -98,7 +98,7 @@ public :
     void init() override;
     ///////////////////////////////////////////////////////////////////////////
 
-    void computeArgument(const double &Li, const double &Li_1, const VecCoord &x, const int id, Vec3 &argu, const double &C);
+    void computeArgument(const VecCoord &distance, const VecCoord &x, const int id, Vec3 &argu, const double &C);
     void computeIntegrale(const double &Li, const double &Li_1, const VecCoord &x, const int id, Coord & integral);
 
     ////////////////////////// Inherited from ForceField /////////////////////////
@@ -137,9 +137,13 @@ protected:
     Data<Real>          d_lengthZ;
 
     //distance from the midlesection
-    Data<helper::vector<Coord>>      d_distance; // distance between the midleline and the calble
-    Data<helper::vector<Coord>>      d_ddistance; // the derivative of the distance between the midleline and the calble with respect to x
+    Data<helper::vector<Coord>>      d_distance0; // distance between the midleline and the calble
+    Data<helper::vector<Coord>>      d_distance1; // distance between the midleline and the calble
+    Data<helper::vector<Coord>>      d_ddistance0; // the derivative of the distance between the midleline and the calble with respect to x
+    Data<helper::vector<Coord>>      d_ddistance1; // the derivative of the distance between the midleline and the calble with respect to x
     Data<double>                     d_Tt ; // Cable tension
+    Data<helper::vector<Coord>>      d_integral; // the derivative of the distance between the midleline and the calble with respect to x
+
 
 private :
 
