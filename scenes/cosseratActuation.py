@@ -61,10 +61,8 @@ def createScene(rootNode):
                 ddistance3 = [0.0,0.0,0.0]
                 _ddistance = [ddistance1, ddistance2, ddistance3]
 
-                print ("========================+++++> Tension : ", _tension)
-
                 rateAngularDeformNode = rootNode.createChild('rateAngularDeform')
-                rateAngularDeformMO = rateAngularDeformNode.createObject('MechanicalObject', template='Vec3d', name='rateAngularDeformMO', position=pos, velocity='0 0 0.0 0 0 0') # (2 series of 3 angles for 2 sections. we suppose that the lenght is 10 for each)
+                rateAngularDeformMO = rateAngularDeformNode.createObject('MechanicalObject', template='Vec3d', name='rateAngularDeformMO', position=pos, velocity='0 0 0 0 0 0 0 0 0') # (2 series of 3 angles for 2 sections. we suppose that the lenght is 10 for each)
                 # BeamHookeLawForce = rateAngularDeformNode.createObject('CosseratInternalActuation', crossSectionShape='circular', length='10 10 10', radius='0.5', youngModulus='5e6')
                 BeamHookeLawForce = rateAngularDeformNode.createObject('CosseratInternalActuation', name="BeamHookeLawForce",  crossSectionShape='circular', length='10 10 10', radius='0.5',
                 youngModulus='1e6',distance=_distance, ddistance=_ddistance, tension=_tension)

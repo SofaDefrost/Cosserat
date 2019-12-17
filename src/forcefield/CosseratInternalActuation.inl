@@ -81,9 +81,12 @@ CosseratInternalActuation<DataTypes>::CosseratInternalActuation()
       d_innerRadius( initData( &d_innerRadius, 0.0, "innerRadius", "internal radius of the cross section (if circular)")),
       d_lengthY( initData( &d_lengthY, 1.0, "lengthY", "side length of the cross section along local y axis (if rectangular)")),
       d_lengthZ( initData( &d_lengthZ, 1.0, "length2", "side length of the cross section along local z axis (if rectangular)")),
-      d_distance( initData( &d_distance,  "distance", "distance between the midleline and the cable")),
-      d_ddistance( initData( &d_ddistance,  "ddistance", "the derivative of the distance between the midleline and the calble with respect to x")),
-      d_Tt( initData( &d_Tt,  "tension", "the cable tension according to t"))
+      d_distance0( initData( &d_distance0,  "distance0", "distance between the midleline and the cable")),
+      d_distance1( initData( &d_distance1,  "distance1", "distance between the midleline and the cable")),
+      d_ddistance0( initData( &d_ddistance0,  "ddistance0", "the derivative of the distance between the midleline and the calble with respect to x")),
+      d_ddistance1( initData( &d_ddistance1,  "ddistance1", "the derivative of the distance between the midleline and the calble with respect to x")),
+      d_Tt( initData( &d_Tt,  "tension", "the cable tension according to t")),
+      d_integral( initData( &d_integral,  "integral", "The value of the integral of all the tension"))
 {
     compute_df=true;
 }
@@ -155,41 +158,51 @@ void CosseratInternalActuation<DataTypes>::init()
 }
 
 template<typename DataTypes>
-void CosseratInternalActuation<DataTypes>::computeArgument(const double &Li, const double &Li_1, const VecCoord &x, const int id, Vec3 &argu, const double & C)
+void CosseratInternalActuation<DataTypes>::computeArgument(const VecCoord & distance, const VecCoord &x, const int id, Vec3 &argu, const double & C)
 {
     //Compute s
     //This computation is made manually and use for the computation of d(s) and d'(s)
     //double s = ((Li-Li_1)/2.0)*C + (Li+Li_1)/2.0;
 
-    //compute argu
-    Coord ds = d_distance.getValue()[id];
-    Coord dds = d_ddistance.getValue()[id]; //derivative of the distance
+    //    //compute argu
+    //    Coord ds = d_distance.getValue()[id];
+    //    Coord dds = d_ddistance.getValue()[id]; //derivative of the distance
 
-    std::cout << "x[id] :"<< x[id] << std::endl;
-    Coord vec = cross(x[id],ds) + Coord(1.0,0.0,0.0) + dds;
-    argu = cross(ds,vec)/(vec.norm());
-
+    //    //    std::cout << "x[id] :"<< x[id] << std::endl;
+    //    std::cout<< " The derivative is : "<<  dds << std::endl;
+    //    Coord vec = cross(x[id],ds) + Coord(1.0,0.0,0.0) + dds;
+    //    argu = cross(ds,vec)/(vec.norm());
 }
 
 template<typename DataTypes>
 void CosseratInternalActuation<DataTypes>::computeIntegrale(const double &Li, const double& Li_1, const VecCoord& x, const int id, Coord & integral)
 {
-
     Coord arg0, arg1 ;
-    computeArgument(Li,Li_1,x,id,arg0,m_gaussCoeff[0]);
-    computeArgument(Li,Li_1,x,id,arg1,m_gaussCoeff[1]);
-    std::cout << "Argu0 : "<< arg0 << "\nArgu1 : "<< arg1 << std::endl;
-    std::cout << "m_gaussWeights[0]*arg0 + m_gaussWeights[1]*arg1 : "<< m_gaussWeights[0]*arg0 + m_gaussWeights[1]*arg1 << std::endl;
+    VecCoord distance0 = d_distance0.getValue(); // d(X0) , X0 = [((Li-Li_1)/2)*C1 + (Li+Li_1)/2.0]
+    VecCoord distance1 = d_distance1.getValue(); // d(X1) , X1 = [((Li-Li_1)/2)*C2 + (Li+Li_1)/2.0]
+
+    VecCoord ddistance0 = d_ddistance0.getValue(); // the derivative of d
+    VecCoord ddistance1 = d_ddistance1.getValue(); // the derivative of d
+
+    //Compute f(X1) and f(X2) according to gauss parameters
+    Coord vec0 = cross(x[id],distance0[id]) + Coord(1.0,0.0,0.0) + ddistance0[id];
+    arg0 = cross(distance0[id],vec0)/(vec0.norm());
+    //    std::cout << "fx0: "<< arg0 << std::endl;
+
+
+    Coord vec1 = cross(x[id],distance1[id]) + Coord(1.0,0.0,0.0) + ddistance1[id];
+    arg1 = cross(distance1[id],vec1)/(vec1.norm());
+    //    std::cout << "fx1: "<< arg1 << std::endl;
+
     integral = ((Li-Li_1)/2.0) * (m_gaussWeights[0]*arg0 + m_gaussWeights[1]*arg1);
-    //integral = ((Li-Li_1)/2.0) * arg0 ; // Cas exeptionel w_1==w_2 & d_s constant
 
 }
 
 template<typename DataTypes>
 void CosseratInternalActuation<DataTypes>::addForce(const MechanicalParams* mparams,
-                                                 DataVecDeriv& d_f,
-                                                 const DataVecCoord& d_x,
-                                                 const DataVecDeriv& d_v)
+                                                    DataVecDeriv& d_f,
+                                                    const DataVecCoord& d_x,
+                                                    const DataVecDeriv& d_v)
 {
     SOFA_UNUSED(d_v);
     SOFA_UNUSED(mparams);
@@ -223,21 +236,20 @@ void CosseratInternalActuation<DataTypes>::addForce(const MechanicalParams* mpar
 
         computeIntegrale(Li,Li_1, x, i, integral);
 
-        std::cout<< "Li_1 :"<< Li_1 << " ==> Li :"<< Li<<" ==> xi : "<< x[i]<< std::endl;
-
-        std::cout << "\nIntegral :" << integral << std::endl;
-
-        f[i] -= (m_K_section * (x[i] - x0[i])) * d_length.getValue()[i] + d_Tt.getValue() * integral;
+        //        std::cout<< "Li_1 :"<< Li_1 << " ==> Li :"<< Li<<" ==> xi : "<< x[i]<< std::endl;
+        //        std::cout << "Integral 0 :" << integral << std::endl;
+        //        std::cout << "Integral 1 :" << d_integral.getValue()[i] << std::endl;
+        f[i] -= (m_K_section * (x[i] - x0[i])) * d_length.getValue()[i] + d_Tt.getValue() * d_integral.getValue()[i];
     }
-    std::cout << "The finale force is : "<< f << std::endl;
+    //    std::cout << "The finale force is : "<< f << std::endl;
     d_f.endEdit();
 
 }
 
 template<typename DataTypes>
 void CosseratInternalActuation<DataTypes>::addDForce(const MechanicalParams* mparams,
-                                                  DataVecDeriv&  d_df ,
-                                                  const DataVecDeriv&  d_dx)
+                                                     DataVecDeriv&  d_df ,
+                                                     const DataVecDeriv&  d_dx)
 {
     if (!compute_df)
         return;
@@ -256,7 +268,7 @@ void CosseratInternalActuation<DataTypes>::addDForce(const MechanicalParams* mpa
 
 template<typename DataTypes>
 double CosseratInternalActuation<DataTypes>::getPotentialEnergy(const MechanicalParams* mparams,
-                                                             const DataVecCoord& d_x) const
+                                                                const DataVecCoord& d_x) const
 {
     SOFA_UNUSED(mparams);
     SOFA_UNUSED(d_x);
@@ -266,7 +278,7 @@ double CosseratInternalActuation<DataTypes>::getPotentialEnergy(const Mechanical
 
 template<typename DataTypes>
 void CosseratInternalActuation<DataTypes>::addKToMatrix(const MechanicalParams* mparams,
-                                                     const MultiMatrixAccessor* matrix)
+                                                        const MultiMatrixAccessor* matrix)
 {
     MultiMatrixAccessor::MatrixRef mref = matrix->getMatrix(this->mstate);
     BaseMatrix* mat = mref.matrix;
