@@ -80,7 +80,7 @@ CosseratInternalActuation<DataTypes>::CosseratInternalActuation()
       d_radius( initData( &d_radius, 1.0, "radius", "external radius of the cross section (if circular)")),
       d_innerRadius( initData( &d_innerRadius, 0.0, "innerRadius", "internal radius of the cross section (if circular)")),
       d_lengthY( initData( &d_lengthY, 1.0, "lengthY", "side length of the cross section along local y axis (if rectangular)")),
-      d_lengthZ( initData( &d_lengthZ, 1.0, "length2", "side length of the cross section along local z axis (if rectangular)")),
+      d_lengthZ( initData( &d_lengthZ, 1.0, "lengthZ", "side length of the cross section along local z axis (if rectangular)")),
       d_distance0( initData( &d_distance0,  "distance0", "distance between the midleline and the cable")),
       d_distance1( initData( &d_distance1,  "distance1", "distance between the midleline and the cable")),
       d_ddistance0( initData( &d_ddistance0,  "ddistance0", "the derivative of the distance between the midleline and the calble with respect to x")),

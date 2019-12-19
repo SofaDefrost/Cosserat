@@ -11,7 +11,7 @@
 	<Node name="FEM">
 		<!-- <MeshVTKLoader name="meshLoader" filename="deformedLiver.vtk" scale3d="0.001 0.001 0.001" /> -->
 		<!-- <MeshVTKLoader name="meshLoader" filename="out/liverVesicule.vtk" /> -->
-		<MeshObjLoader name="meshLoader" filename="mesh/helix964_1924.obj" scale3d="0.001 0.001 0.001" />
+		<MeshSTLLoader name="meshLoader" filename="mesh/transformFinger_2_2.stl" />
 		<TriangleSetTopologyContainer name="Container" src="@meshLoader" />
 		<TriangleSetTopologyModifier src="@meshLoader" />
 		<MechanicalObject name="dofs"  />
@@ -20,14 +20,14 @@
 
 
 	<Node name="1500" activated="true" >
-  <MeshGenerationFromPolyhedron name="generator" template="Vec3d"
+  		<MeshGenerationFromPolyhedron name="generator" template="Vec3d"
 					      inputPoints="@../FEM/meshLoader.position"
 					      inputTriangles="@../FEM/meshLoader.triangles"
 								facetAngle="25"
-		facetSize="0.15"
-		facetApproximation="0.00026"
-		cellRatio="2"
-		cellSize="0.000765"
+		facetSize="0.1"
+		facetApproximation="0.26"
+		cellRatio="1"
+		cellSize="0.0765"
 		sharpEdgeAngle="120"
 		sharpEdgeSize="0"
 		odt="false"
@@ -75,7 +75,7 @@
 		<!-- <TetrahedronSetTopologyAlgorithms name="TopoAlgo" /> -->
 		<!-- <TetrahedronSetGeometryAlgorithms name="GeomAlgo" /> -->
 
-		<VTKExporter filename="mesh/elix964_1924.vtu" edges="0" tetras="1" listening="true"  exportAtEnd="true" overwrite="true" />
+		<VTKExporter filename="mesh/transformFinger_2_2.vtu" edges="0" tetras="1" listening="true"  exportAtEnd="true" overwrite="true" />
 		<!-- <VTKExporter filename="deformedLiver.vtu" edges="0" tetras="1" listening="true"  exportAtEnd="true" overwrite="true" /> -->
 
 	</Node>
