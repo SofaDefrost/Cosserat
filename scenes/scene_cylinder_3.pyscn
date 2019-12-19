@@ -1,0 +1,89 @@
+# -*- coding: utf-8 -*-
+import Sofa
+import os, sys
+from splib.numerics import sin, cos, to_radians
+path = os.path.dirname(os.path.abspath(__file__))+'/mesh/'
+
+
+import Sofa
+
+class Controller(Sofa.PythonScriptController):
+
+    def initGraph(self, node):
+            self.node = node
+            self.time = 0.0
+            rat = 0.05/15.0
+            # for k in range(15) :
+            #     print str(k*0.5)+" "+str(0.025)+" "+str(0.025-(k*rat))
+
+    def onBeginAnimationStep(self, dt):
+            inputvalue = self.node.getObject('aCableActuator').findData('value')
+            self.time = self.time + dt;
+            displacement = inputvalue.value[0][0] + 0.10
+
+            if displacement < 100.0:
+                print ("displacement :", displacement)
+                inputvalue.value = str(displacement)
+
+def createScene(rootNode):
+                rootNode.createObject('RequiredPlugin', pluginName='SoftRobots SofaPython SofaSparseSolver SofaPreconditioner SofaOpenglVisual CosseratPlugin BeamAdapter')
+                rootNode.createObject('VisualStyle', displayFlags='showBehaviorModels showVisualModels hideForceFields showVisual showCollisionModels hideWireframe showInteractionForceFields')
+
+                rootNode.createObject('FreeMotionAnimationLoop')
+                rootNode.createObject('GenericConstraintSolver', tolerance="1e-5", maxIterations="100", printLog="0")
+                rootNode.gravity = "0 0 0"
+                rootNode.dt="0.01"
+                rootNode.createObject('BackgroundSetting', color=' 1 1 1 ')
+                rootNode.createObject('OglSceneFrame', style="Arrows", alignment="TopRight")
+
+
+                CylinderFEMNode = rootNode.createChild('CylinderFEMNode')
+                CylinderFEMNode.createObject('EulerImplicitSolver', rayleighStiffness="0.01", rayleighMass='0.01', firstOrder="0")
+                # CylinderFEMNode.createObject('StaticSolver')
+                # CylinderFEMNode.createObject('CGLinearSolver', iterations="25", tolerance="0.000001", threshold="1e-5")
+                # CylinderFEMNode.createObject('PCGLinearSolver', preconditioners='solver', tolerance="1e-15")
+                CylinderFEMNode.createObject('SparseLDLSolver', name='solver')
+                CylinderFEMNode.createObject('CylinderGridTopology', nx="5", ny="5", nz="20", length="7.5", radius="0.1", axis="1 0 0" )
+                CylinderFEMNode.createObject('MechanicalObject', name="Hexa")
+                CylinderFEMNode.createObject('UniformMass', totalMass="7")
+                CylinderFEMNode.createObject('BoxROI', name='ROI1', box="-0.1 -0.2 -0.5 0.2 0.2 0.5" , drawBoxes='true')
+                CylinderFEMNode.createObject('RestShapeSpringsForceField', points='@ROI1.indices', stiffness='1e12')
+                CylinderFEMNode.createObject('TetrahedronFEMForceField', name="FEM", youngModulus="1e6", poissonRatio="0.48")
+                # CylinderFEMNode.createObject('HexahedronFEMForceField', name="FEM", youngModulus="5e5", poissonRatio="0.3", method="large") # method="large"
+
+                Visu = CylinderFEMNode.createChild('Visu')
+                Visu.createObject('OglModel', name="Visual", material="Default Diffuse 1 0 0 1 0.0392157 Ambient 1 0 0 0.2 1 Specular 0 0 0 1 1 Emissive 0 0 0 1 1 Shininess 0 45 ")
+                Visu.createObject('IdentityMapping', input="@../Hexa", output="@Visual")
+
+                ##########################################
+                #               Cable                    #
+                ##########################################
+                cable_position=[
+                        "   0.0 0.025 0.025     0.5 0.025 0.0216666666667       1.0 0.025 0.0183333333333       1.5 0.025 0.015     2.0 0.025 0.0116666666667       2.5 0.025 0.00833333333333      3.0 0.025 0.005 "+
+                        " 3.5 0.025 0.00166666666667        4.0 0.025 -0.00166666666667     4.5 0.025 -0.005        5.0 0.025 -0.00833333333333     5.5 0.025 -0.0116666666667      6.0 0.025 -0.015 "+
+                        "   6.5 0.025 -0.0183333333333      7.0 0.025 -0.0216666666667      7.5 0.025 -0.025"
+                            ]
+                # # #  This create a new node in the scene. This node is appended to the finger's node.
+                cable = CylinderFEMNode.createChild('cable')
+                cable.createObject('MechanicalObject', name="cablePos", position=cable_position,  showObject="1", showIndices="0")
+                cable.createObject('CableConstraint', name="aCableActuator",
+                                        indices=range(0,16),
+                                        # indices='0 1 3 4 5 6 7 8 ',
+                                        template='Vec3d',
+                                        pullPoint=" -1.0 0.035 0.035",
+                                        #hasPullPoint="0",
+                                        valueType='force',
+                                        minForce=-0.0001,
+                                        #value='3.0'
+                                        )
+                cable.createObject('BarycentricMapping')
+
+                cable.createObject('PythonScriptController',classname="Controller")
+
+
+                # CylinderFEMNode.createObject('LinearSolverConstraintCorrection')
+                CylinderFEMNode.createObject('GenericConstraintCorrection', solverName='solver')
+
+
+
+                return rootNode

@@ -470,7 +470,7 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>:: applyJ(
         computeAdjoint(t,Adjoint);
 
         defaulttype::Vec6 Xi_dot = Vec6(in1[m_indicesVectors[i]-1],Vector3(0.0,0.0,0.0)) ;
-        Vec6 temp = Adjoint * (m_nodesVelocityVectors[m_indicesVectors[i]-1] + m_framesTangExpVectors[i] * Xi_dot );
+        Vec6 temp = Adjoint * (m_nodesVelocityVectors[m_indicesVectors[i]-1] + m_framesTangExpVectors[i] * Xi_dot ); // eta
 
         Transform _T = Transform(out[i].getCenter(),out[i].getOrientation());
         Mat6x6 _P = build_projector(_T);

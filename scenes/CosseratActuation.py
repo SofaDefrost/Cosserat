@@ -13,7 +13,7 @@ GaussCoeff = [1.0/sqrt(3.0),0.57735] # Coeff
 GaussWeights = [1.0,1.0] #weight
 #
 # curv_abs_input = [0, 25, 50, 75]
-curv_abs_input=[0, 15, 30, 45, 60, 66, 81]
+curv_abs_input=[0, 15, 30, 45, 60, 66, 81, 88, 95, 100, 103]
 #
 # ###############
 # ## Rate of angular Deformation  (2 sections)
