@@ -13,7 +13,7 @@ GaussCoeff = [1.0/sqrt(3.0),0.57735] # Coeff
 GaussWeights = [1.0,1.0] #weight
 #
 # curv_abs_input = [0, 25, 50, 75]
-curv_abs_input=[0, 15, 30, 45, 60, 66, 81, 88, 95, 100, 103]
+# curv_abs_input=[0, 15, 30, 45, 60, 66, 81, 88, 95, 100, 103]
 #
 # ###############
 # ## Rate of angular Deformation  (2 sections)
@@ -24,17 +24,37 @@ curv_abs_input=[0, 15, 30, 45, 60, 66, 81, 88, 95, 100, 103]
 # _tension = 0.0
 
 class CosseratActuation(Sofa.PythonScriptController):
-    """docstring for DataComputationClass.Sofa.PythonScriptController"""
+    """docstring for CosseratActuation.Sofa.PythonScriptController"""
 
     def __init__(self):
         print("The python init================================================++++++> ")
-        super(DataComputationClass,Sofa.PythonScriptController).__init__()
+        super(CosseratActuation,Sofa.PythonScriptController).__init__()
+        self.curv_abs_input = []
+
+    # def computeX(self):
+    #     X = []
+    #     for j in range(1, len(curv_abs_input)) :
+    #         Li = curv_abs_input[j]
+    #         Li_1 = curv_abs_input[j-1]
+    #
+    #         #compute X (the curve absisa) base on the Gauss Quadrature
+    #         # Source:  Federico
+    #         s0 = Li_1  +  GaussCoeff[0] * (Li - Li_1)
+    #         s1 = Li_1  +  GaussCoeff[1] * (Li - Li_1)
+    #
+    #         # source https://en.wikipedia.org/wiki/Gaussian_quadrature
+    #         # s0 = ((Li - Li_1)/2.0) * C[0] + (Li + Li_1)/2.0
+    #         # s1 = ((Li - Li_1)/2.0) * C[1] + (Li + Li_1)/2.0
+    #         X.append([s0,s1])
+    #     print ("XXXXX ==> :", X)
+    #     return X
 
     def computeX(self):
         X = []
-        for j in range(1, len(curv_abs_input)) :
-            Li = curv_abs_input[j]
-            Li_1 = curv_abs_input[j-1]
+
+        for j in range(1, len(self.curv_abs_input)) :
+            Li = self.curv_abs_input[j]
+            Li_1 = self.curv_abs_input[j-1]
 
             #compute X (the curve absisa) base on the Gauss Quadrature
             # Source:  Federico
@@ -94,8 +114,8 @@ class CosseratActuation(Sofa.PythonScriptController):
 
         #### Compute Integral
         for id in range(0,len(K)):
-            Li   = curv_abs_input[id+1]
-            Li_1 = curv_abs_input[id]
+            Li   = self.curv_abs_input[id+1]
+            Li_1 = self.curv_abs_input[id]
 
             distance0 = distance[0]
             d_distance0 = d_distance[1]

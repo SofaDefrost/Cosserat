@@ -130,6 +130,7 @@ protected:
 
     helper::vector<Transform> m_ExponentialSE3Vectors;
     helper::vector<Transform> m_nodesExponentialSE3Vectors;
+    helper::vector<Eigen::Matrix4d> m_nodesLogarithmeSE3Vectors;
 
     helper::vector<int> m_indicesVectors;
 
@@ -195,12 +196,25 @@ protected:
     void compute_Tang_Exp(double & x, const Vector3& k, Mat6x6 & TgX);
 
     defaulttype::Vec6 compute_eta(const Vec6 & baseEta, const In1VecDeriv & k_dot, const double abs_input);
+    Eigen::Matrix4d computeLogarithme(const double & x, const Eigen::Matrix4d &gX);
+    double computeTheta(const double &x, const Eigen::Matrix4d &gX){
+        double Tr_gx = 0.0;
+        for (int i = 0; i<4; i++) {
+            Tr_gx += gX(i,i);
+        }
+
+        double theta;
+        if( x <= std::numeric_limits<double>::epsilon()) theta = 0.0;
+        else theta = (1.0/x) * std::acos((Tr_gx/2.0) -1);
+
+        return  theta;
+    }
+
 
 public:
     /**********************OTHER METHODS**************************/
     void initialize();
     void print_matrix(const Mat6x6 R){
-
         for (unsigned int k = 0; k < 6 ; k++) {
             for (unsigned int i = 0; i < 6; i++)
                 printf("  %lf",R[k][i]);
@@ -209,7 +223,7 @@ public:
         }
     }
 
-    Matrix3 extract_rotMatrix(const Transform frame){
+    Matrix3 extract_rotMatrix(const Transform & frame){
         defaulttype::Quat q = frame.getOrientation();
         Real R[4][4];     q.buildRotationMatrix(R);
         Matrix3 mat;
@@ -267,6 +281,20 @@ public:
                 coAdjoint [i][j+3]= B[i][j];
             }
         }
+    }
+
+    Eigen::Matrix4d convertTransformToMatrix4x4(const Transform & T){
+        Eigen::Matrix4d M = Eigen::Matrix4d::Identity(4,4);
+        Matrix3 R = extract_rotMatrix(T);
+        Vector3 trans = T.getOrigin();
+
+        for (unsigned int i = 0; i < 3; i++) {
+            for (unsigned int j=0; j<3; j++){
+                M(i,j) = R[i][j];
+                M(i,3) = trans[i];
+            }
+        }
+        return M;
     }
 
 };

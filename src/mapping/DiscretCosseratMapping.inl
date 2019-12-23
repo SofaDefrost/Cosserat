@@ -189,6 +189,7 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>::update_ExponentialSE3(const In1Ve
 
     m_ExponentialSE3Vectors.clear();
     m_nodesExponentialSE3Vectors.clear();
+    m_nodesLogarithmeSE3Vectors.clear();
     size_t sz = curv_abs_output.size();
 
     //Compute exponential at frame points
@@ -212,13 +213,23 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>::update_ExponentialSE3(const In1Ve
     for (size_t j = 0; j < inDeform.size(); j++) {
         Vector3 k = inDeform[j];
         double  x = m_beamLenghtVectors[j];
-        Transform T;         computeExponentialSE3(x,k,T) ;
+        Transform T; computeExponentialSE3(x,k,T) ;
         m_nodesExponentialSE3Vectors.push_back(T);
+
+        //////////////////
+        //        Eigen::Matrix4d gX = convertTransformToMatrix4x4(T);
+        //        Eigen::Matrix4d log_gX= (1.0/x) * computeLogarithme(x, gX);
+        //        std::cout << "k : \n"<< k << std::endl;
+        //        std::cout << "The logarithme : \n"<< log_gX << std::endl;
+        //        m_nodesLogarithmeSE3Vectors.push_back(log_gX);
     }
+
     if (d_debug.getValue()){
         printf("_________________Beam Expo___________________\n");
         std::cout << "Beam Expo : "<< m_nodesExponentialSE3Vectors << std::endl;
+        printf("_________________Beam Expo___________________\n");
     }
+
 }
 
 
@@ -256,6 +267,7 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>::apply(
         defaulttype::Quat q = frame.getOrientation();
         out[i] = OutCoord(v,q);
     }
+
     m_index_input = 0;
     dataVecOutPos[0]->endEdit();
 }
@@ -307,6 +319,35 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>::compute_Tang_Exp(double & x, cons
     }
 }
 
+
+template <class TIn1, class TIn2, class TOut>
+Eigen::Matrix4d DiscretCosseratMapping<TIn1, TIn2, TOut>::computeLogarithme(const double & x, const Eigen::Matrix4d &gX){
+
+    // Compute theta before everything
+    const double theta = computeTheta(x, gX);
+    Eigen::Matrix4d I4 = Eigen::Matrix4d::Identity(4,4);
+    Eigen::Matrix4d log_gX;
+
+
+    double csc_theta = 1.0/(sin(x * theta/2.0));
+    double sec_theta = 1.0/(cos(x * theta/2.0));
+    double cst = (1.0/8) * (csc_theta*csc_theta*csc_theta) * sec_theta;
+    double x_theta = x*theta;
+    double cos_2Xtheta = cos(2.0 * x_theta);
+    double cos_Xtheta = cos(x_theta);
+    double sin_2Xtheta = sin(2.0 *x_theta);
+    double sin_Xtheta = sin(x_theta);
+
+    if(theta <= std::numeric_limits<double>::epsilon()) log_gX = I4;
+    else {
+        log_gX  = cst * ((x_theta*cos_2Xtheta - sin_Xtheta)*I4 -
+                         (x_theta*cos_Xtheta + 2.0*x_theta*cos_2Xtheta - sin_Xtheta -sin_2Xtheta)*gX +
+                         (2.0*x_theta*cos_Xtheta + x_theta*cos_2Xtheta-sin_Xtheta - sin_2Xtheta) *(gX*gX)-
+                         (x_theta*cos_Xtheta - sin_Xtheta)*(gX*gX*gX));
+    }
+
+    return log_gX;
+}
 
 //template<class In1VecCoord, class Mat6x6>
 //void computeViolation(In1VecCoord& inDeform, const helper::vector<double> m_framesLenghtVectors, const
@@ -423,7 +464,7 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>:: applyJ(
 
 
 
-    helper::ReadAccessor<Data<helper::vector<double>>> curv_abs_input = d_curv_abs_input;
+    helper::ReadAccessor<Data<helper::vector<double>>> curv_abs_input = d_curv_abs_input; // This is the vector of X in the paper
     helper::ReadAccessor<Data<helper::vector<double>>> curv_abs_output = d_curv_abs_output;
 
     // Compute the tangent Exponential SE3 vectors
