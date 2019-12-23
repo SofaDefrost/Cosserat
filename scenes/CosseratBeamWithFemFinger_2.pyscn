@@ -4,15 +4,15 @@ from CosseratActuation import *
 import Sofa
 import SofaPython
 from math import sin,cos, sqrt, pi
-from stlib.physics.collision import CollisionMesh
+#from stlib.physics.collision import CollisionMesh
 import os
-from splib.numerics import sin, cos, to_radians
-from stlib.physics.deformable import ElasticMaterialObject
-from splib.objectmodel import SofaPrefab, SofaObject
-from stlib.physics.mixedmaterial import Rigidify
-from stlib.components import addOrientedBoxRoi
-from splib.numerics import vec3
-from splib.numerics.quat import Quat
+#from splib.numerics import sin, cos, to_radians
+#from stlib.physics.deformable import ElasticMaterialObject
+#from splib.objectmodel import SofaPrefab, SofaObject
+#from stlib.physics.mixedmaterial import Rigidify
+#from stlib.components import addOrientedBoxRoi
+#from splib.numerics import vec3
+#from splib.numerics.quat import Quat
 path = os.path.dirname(os.path.abspath(__file__))+'/mesh/'
 
 
@@ -33,7 +33,8 @@ class Animation(CosseratActuation):
     """docstring for DataComputationClass.Sofa.PythonScriptController"""
 
     def __init__(self):
-        super(DataComputationClass,Sofa.PythonScriptController).__init__()
+        super(Animation,CosseratActuation).__init__()
+
 
     def initGraph(self, node):
         self.tension = 50.0
@@ -41,6 +42,9 @@ class Animation(CosseratActuation):
         self.BeamHookeLawForce = self.node.getObject('BeamHookeLawForce')
         self.rateAngularDeformMO = self.node.getObject('rateAngularDeformMO')
         self.K = self.rateAngularDeformMO.findData('position').value
+        self.curv_abs_input = curv_abs_input
+        print ("The input curv_abs_input : "+str(self.curv_abs_input))
+
         print ("Size of K :", len(self.K))
         self.X  = self.computeX()
         self.distance = [] # distance
@@ -53,7 +57,8 @@ class Animation(CosseratActuation):
         # self.vec_dy  = [R_b/2.0]; self.vec_dz  = [0.0]
         # self.vec_ddy = [-R_b/L];     self.vec_ddz = [0.0]
 
-        self.muti_ActuationIntegral(self.vec_dy, self.vec_dz, self.vec_ddy, self.vec_ddz, self.K)
+        kwargs = [self.vec_dy, self.vec_dz, self.vec_ddy, self.vec_ddz, self.K]
+        self.muti_ActuationIntegral(*kwargs)
 
 
         ############################## HELICAL PARAMETERS ####################################""
@@ -72,7 +77,7 @@ class Animation(CosseratActuation):
 
 
     def onBeginAnimationStep(self, dt):
-        self.tension = self.tension + 1000.0 * dt;
+        self.tension = self.tension + 2000.0 * dt;
         self.K = self.rateAngularDeformMO.findData('position').value
 
         integral = self.muti_ActuationIntegral(self.vec_dy, self.vec_dz, self.vec_ddy, self.vec_ddz, self.K)
@@ -85,7 +90,7 @@ class Animation(CosseratActuation):
         self.BeamHookeLawForce.findData('integral').value = listIntegral
         # print ("=++++++++=======+++> 1) muti_ActuationIntegral : ", integral )
 
-        if(self.tension < 80000.0):
+        if(self.tension < 10000.0):
             self.BeamHookeLawForce.findData('tension').value = self.tension
             # print("Tension is : "+str(self.tension))
 
@@ -105,44 +110,45 @@ def engineRigid2Vec3(mappedFrameNode,cable):
     print(position)
 
 
-class HandleRigidification(SofaObject):
-    """docstring for HandleRigidification."""
+#class HandleRigidification(SofaObject):
+    #"""docstring for HandleRigidification."""
 
-    def __init__(self, parent, name="Beam", radius=60, numMotors=1, angleShift=180.0):
-        self.node = parent.createChild(name)
-        ElasticBody(self.node)
+    #def __init__(self, parent, name="Beam", radius=60, numMotors=1, angleShift=180.0):
+        #self.node = parent.createChild(name)
+        #ElasticBody(self.node)
 
-        dist = radius
-        numstep = numMotors
-        self.actuatedarms = []
-        for i in range(0, numstep):
-            name = "ActuatedArm"+str(i)
-            translation, eulerRotation = self.__getTransform(i, numstep, angleShift, radius, dist)
-            arm = ActuatedArm(self.node, name=name,
-                              translation=translation, eulerRotation=eulerRotation)
-            self.actuatedarms.append(arm)
-            # Add limits to angle that correspond to limits on real robot
-            arm.ServoMotor.minAngle = -2.0225
-            arm.ServoMotor.maxAngle = -0.0255
+        #dist = radius
+        #numstep = numMotors
+        #self.actuatedarms = []
+        #for i in range(0, numstep):
+            #name = "ActuatedArm"+str(i)
+            #translation, eulerRotation = self.__getTransform(i, numstep, angleShift, radius, dist)
+            #arm = ActuatedArm(self.node, name=name,
+                              #translation=translation, eulerRotation=eulerRotation)
+            #self.actuatedarms.append(arm)
+            ## Add limits to angle that correspond to limits on real robot
+            #arm.ServoMotor.minAngle = -2.0225
+            #arm.ServoMotor.maxAngle = -0.0255
 
 
 
 def createScene(rootNode):
                 import os
-                from stlib.scene import MainHeader, ContactHeader
-                MainHeader(rootNode, plugins=["SoftRobots","SofaPython","SofaSparseSolver", "SofaPreconditioner", "SofaOpenglVisual", "CosseratPlugin", "BeamAdapter"],
-                repositoryPaths=[os.getcwd()])
-                # rootNode.createObject('RequiredPlugin', pluginName='SoftRobots SofaPython SofaSparseSolver ')
+                #from stlib.scene import MainHeader, ContactHeader
+                #MainHeader(rootNode, plugins=["SoftRobots","SofaPython","SofaSparseSolver", "SofaPreconditioner", "SofaOpenglVisual", "CosseratPlugin", "BeamAdapter"],
+                #repositoryPaths=[os.getcwd()])
+                #rootNode.createObject("RequiredPlugin", name="SoftRobots")
+                rootNode.createObject('RequiredPlugin', pluginName='SoftRobots SofaPython SofaSparseSolver CosseratPlugin')
                 rootNode.createObject('VisualStyle', displayFlags='showVisualModels hideBehaviorModels showCollisionModels hideBoundingCollisionModels hideForceFields showInteractionForceFields showWireframe')
 
                 rootNode.gravity = "0 -0 0"
                 rootNode.dt="0.01"
-                ContactHeader(rootNode, alarmDistance=4, contactDistance=3, frictionCoef=0.08)
+                #ContactHeader(rootNode, alarmDistance=4, contactDistance=3, frictionCoef=0.08)
                 rootNode.createObject('BackgroundSetting', color='0 0.168627 0.211765')
-                rootNode.createObject('OglSceneFrame', style="Arrows", alignment="TopRight")
+                #rootNode.createObject('OglSceneFrame', style="Arrows", alignment="TopRight")
 
                 rootNode.createObject('FreeMotionAnimationLoop')
-                rootNode.createObject('GenericConstraintSolver', tolerance="1e-10", maxIterations="100", printLog="1")
+                rootNode.createObject('GenericConstraintSolver', tolerance="1e-20", maxIterations="100", printLog="0")
 
                 ##########################################
                 # FEM Model                              #
@@ -166,7 +172,7 @@ def createScene(rootNode):
 
                 # finger.createObject('BoxROI', name='ROI1', box='-18 -15 -8 2 -3 8', drawBoxes='false')
                 # finger.createObject('RestShapeSpringsForceField', points='@ROI1.indices', stiffness='1e12')
-                boxeElement =  finger.createObject('BoxROI', name='commonPoints', box='-1.0 -3 -10 95 3 10', drawBoxes='0', drawSize="1")
+                boxeElement =  finger.createObject('BoxROI', name='commonPoints', box='-1.0 -3 -10 105 3 10', drawBoxes='1', drawSize="1")
                 # boxeElement.init()
                 boxeElement.bwdInit()
 
@@ -198,8 +204,9 @@ def createScene(rootNode):
                 ##########################################
                 cableNode = rootNode.createChild('cableNode')
                 cableNode.createObject('EulerImplicitSolver', firstOrder="0", rayleighStiffness="0.01", rayleighMass='0.01')
+                #cableNode.createObject('PCGLinearSolver', preconditioners='solver')
                 cableNode.createObject('SparseLUSolver', name='solver')
-                cableNode.createObject('GenericConstraintCorrection')
+                cableNode.createObject('GenericConstraintCorrection', solverName='solver')
 
                 ###############hresho
                 ## RigidBase
@@ -258,11 +265,16 @@ def createScene(rootNode):
                 print ("=++==================> ", listOfPoints)
                 # cubeTopo.addChild(points)
                 pointsPairs = []
-                for i in range(0, 10):
+                for i in range(0, 9):
                     pointsPairs.append(i)
 
+                pointsPairs.append(51)
+                pointsPairs.append(52)
+                pointsPairs.append(53)
+
+
                 # pointsPairs='0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15'
-                rootNode.createObject('BilateralInteractionConstraint', template='Vec3d', object2='@cableNode/rigidBase/MappedFrames/cubeTopo/points/mstateCoss', object1='@finger/points/pointsInFEM', first_point=pointsPairs, second_point=pointsPairs)
+                rootNode.createObject('BilateralInteractionConstraint', template='Vec3d', object2='@cableNode/rigidBase/MappedFrames/cubeTopo/points/mstateCoss', object1='@finger/points/pointsInFEM', first_point=pointsPairs, second_point=pointsPairs, merge="false")
 
                 return rootNode
 
@@ -273,7 +285,7 @@ def createScene(rootNode):
                 # # Visualization                          #
                 # ##########################################
                 # # In Sofa, visualization is handled by adding a rendering model.
-                # # Create an empty child node to store this rendering model.
+                # # Create an empty child node to store this rendering model.
                 # CollisionMesh(finger, surfaceMeshFileName="mesh/finger.stl", name="part0", translation="-17.5 -12.5 7.5",
                 # rotation="0 180 0", collisionGroup=[1, 2])
                 #
