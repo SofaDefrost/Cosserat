@@ -30,10 +30,10 @@ _tension = 0.0
 
 class Animation(CosseratActuation):
 
-    """docstring for DataComputationClass.Sofa.PythonScriptController"""
+    """docstring for CosseratActuation.Animation"""
 
     def __init__(self):
-        super(DataComputationClass,Sofa.PythonScriptController).__init__()
+        super(DataComputationClass,Sofa.PythonScriptController.CosseratActuation).__init__()
 
     def initGraph(self, node):
         self.tension = 50.0

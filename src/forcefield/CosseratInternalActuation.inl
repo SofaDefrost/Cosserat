@@ -157,22 +157,22 @@ void CosseratInternalActuation<DataTypes>::init()
 
 }
 
-template<typename DataTypes>
-void CosseratInternalActuation<DataTypes>::computeArgument(const VecCoord & distance, const VecCoord &x, const int id, Vec3 &argu, const double & C)
-{
-    //Compute s
-    //This computation is made manually and use for the computation of d(s) and d'(s)
-    //double s = ((Li-Li_1)/2.0)*C + (Li+Li_1)/2.0;
+//template<typename DataTypes>
+//void CosseratInternalActuation<DataTypes>::computeArgument(const VecCoord & distance, const VecCoord &x, const int id, Vec3 &argu, const double & C)
+//{
+//    //Compute s
+//    //This computation is made manually and use for the computation of d(s) and d'(s)
+//    //double s = ((Li-Li_1)/2.0)*C + (Li+Li_1)/2.0;
 
-    //    //compute argu
-    //    Coord ds = d_distance.getValue()[id];
-    //    Coord dds = d_ddistance.getValue()[id]; //derivative of the distance
+//    //    //compute argu
+//    //    Coord ds = d_distance.getValue()[id];
+//    //    Coord dds = d_ddistance.getValue()[id]; //derivative of the distance
 
-    //    //    std::cout << "x[id] :"<< x[id] << std::endl;
-    //    std::cout<< " The derivative is : "<<  dds << std::endl;
-    //    Coord vec = cross(x[id],ds) + Coord(1.0,0.0,0.0) + dds;
-    //    argu = cross(ds,vec)/(vec.norm());
-}
+//    //    //    std::cout << "x[id] :"<< x[id] << std::endl;
+//    //    std::cout<< " The derivative is : "<<  dds << std::endl;
+//    //    Coord vec = cross(x[id],ds) + Coord(1.0,0.0,0.0) + dds;
+//    //    argu = cross(ds,vec)/(vec.norm());
+//}
 
 template<typename DataTypes>
 void CosseratInternalActuation<DataTypes>::computeIntegrale(const double &Li, const double& Li_1, const VecCoord& x, const int id, Coord & integral)
@@ -234,8 +234,7 @@ void CosseratInternalActuation<DataTypes>::addForce(const MechanicalParams* mpar
         for(unsigned j=0; j<=i; j++) Li += d_length.getValue()[j] ;
         if(i>0) for(unsigned j=0; j<i; j++) Li_1 += d_length.getValue()[j] ;
 
-        computeIntegrale(Li,Li_1, x, i, integral);
-
+        //        computeIntegrale(Li,Li_1, x, i, integral);
         //        std::cout<< "Li_1 :"<< Li_1 << " ==> Li :"<< Li<<" ==> xi : "<< x[i]<< std::endl;
         //        std::cout << "Integral 0 :" << integral << std::endl;
         //        std::cout << "Integral 1 :" << d_integral.getValue()[i] << std::endl;
