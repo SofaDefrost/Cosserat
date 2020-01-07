@@ -141,12 +141,11 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>::reset()
 
 template <class TIn1, class TIn2, class TOut>
 void DiscretCosseratMapping<TIn1, TIn2, TOut>::computeExponentialSE3(double & x, const defaulttype::Vector3& k, Transform & Trans){
-    Eigen::MatrixXd I4 = Eigen::Matrix4d::Identity(4,4);
 
+    Matrix4 I4; I4.clear(); I4.identity();
     double theta = k.norm();
-
-    Eigen::Matrix4d g_x;
-    Eigen::Matrix4d Xi = Eigen::MatrixXd::Zero(4,4);
+    Matrix4 g_x; g_x.clear();
+    Matrix4 Xi; Xi.clear();
 
     Xi(0,1) = -k(2);
     Xi(0,2) = k[1];
@@ -166,16 +165,9 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>::computeExponentialSE3(double & x,
         g_x = I4 + x*Xi + scalar1*Xi*Xi + scalar2*Xi*Xi*Xi ;
     }
 
-    defaulttype::Mat3x3 M;
-    for(size_t j = 0; j <3; j++) {
-        for(size_t i = 0; i <3; i++){
-            M[j][i] = g_x(j,i);
-        }
-    }
-    defaulttype::Quat R;
-    R.fromMatrix(M);
+    defaulttype::Mat3x3 M; g_x.getsub(0,0,M);
+    defaulttype::Quat R; R.fromMatrix(M);
     Vector3 T = Vector3(g_x(0,3),g_x(1,3),g_x(2,3));
-
     Trans = Transform(T,R);
 }
 
@@ -321,12 +313,12 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>::compute_Tang_Exp(double & x, cons
 
 
 template <class TIn1, class TIn2, class TOut>
-Eigen::Matrix4d DiscretCosseratMapping<TIn1, TIn2, TOut>::computeLogarithme(const double & x, const Eigen::Matrix4d &gX){
+Matrix4 DiscretCosseratMapping<TIn1, TIn2, TOut>::computeLogarithme(const double & x, const defaulttype::Matrix4 &gX){
 
     // Compute theta before everything
     const double theta = computeTheta(x, gX);
-    Eigen::Matrix4d I4 = Eigen::Matrix4d::Identity(4,4);
-    Eigen::Matrix4d log_gX;
+    Matrix4 I4; I4.clear(); I4.identity();
+    Matrix4 log_gX; log_gX.clear();
 
 
     double csc_theta = 1.0/(sin(x * theta/2.0));

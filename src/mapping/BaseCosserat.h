@@ -19,8 +19,8 @@
 *                                                                             *
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
-#ifndef SOFA_COMPONENT_MAPPING_POEMAPING_H
-#define SOFA_COMPONENT_MAPPING_POEMAPING_H
+#ifndef SOFA_COMPONENT_MAPPING_BASEMAPPING_H
+#define SOFA_COMPONENT_MAPPING_BASEMAPPING_H
 
 #include <sofa/core/BaseMapping.h>
 #include <sofa/core/core.h>
@@ -28,6 +28,9 @@
 #include "../initCosserat.h"
 #include <sofa/defaulttype/SolidTypes.h>
 #include <sofa/defaulttype/RigidTypes.h>
+#include <sofa/core/objectmodel/BaseObject.h>
+#include <math.h>
+#include <sofa/defaulttype/Vec.h>
 
 
 
@@ -41,6 +44,7 @@ using sofa::defaulttype::Matrix4;
 using sofa::defaulttype::Vector3;
 using sofa::defaulttype::Vec6;
 using std::get;
+using sofa::core::objectmodel::BaseObject;
 
 namespace component
 {
@@ -49,7 +53,7 @@ namespace mapping
 {
 
 /*!
- * \class DiscretCosseratMapping
+ * \class BaseCosserat
  * @brief Computes and map the length of the beams
  *
  * This is a component:
@@ -58,11 +62,11 @@ namespace mapping
 
 
 template <class TIn1, class TIn2, class TOut>
-class DiscretCosseratMapping : public core::Multi2Mapping<TIn1, TIn2, TOut>
+class BaseCosserat : public virtual sofa::core::objectmodel::BaseObject
 {
 public:
-    SOFA_CLASS(SOFA_TEMPLATE3(DiscretCosseratMapping, TIn1,TIn2, TOut), SOFA_TEMPLATE3(core::Multi2Mapping, TIn1, TIn2, TOut) );
-    typedef core::Multi2Mapping<TIn1, TIn2, TOut> Inherit;
+    SOFA_CLASS(SOFA_TEMPLATE3(BaseCosserat, TIn1,TIn2, TOut), BaseObject );
+    typedef BaseObject Inherit;
 
     /// Input Model Type
     typedef TIn1 In1;
@@ -103,9 +107,9 @@ public:
     typedef Data<OutVecDeriv> OutDataVecDeriv;
     typedef Data<OutMatrixDeriv> OutDataMatrixDeriv;
 
-    typedef MultiLink<DiscretCosseratMapping<In1,In2,Out>, sofa::core::State< In1 >, BaseLink::FLAG_STOREPATH|BaseLink::FLAG_STRONGLINK> LinkFromModels1;
-    typedef MultiLink<DiscretCosseratMapping<In1,In2,Out>, sofa::core::State< In2 >, BaseLink::FLAG_STOREPATH|BaseLink::FLAG_STRONGLINK> LinkFromModels2;
-    typedef MultiLink<DiscretCosseratMapping<In1,In2,Out>, sofa::core::State< Out >, BaseLink::FLAG_STOREPATH|BaseLink::FLAG_STRONGLINK> LinkToModels;
+    typedef MultiLink<BaseCosserat<In1,In2,Out>, sofa::core::State< In1 >, BaseLink::FLAG_STOREPATH|BaseLink::FLAG_STRONGLINK> LinkFromModels1;
+    typedef MultiLink<BaseCosserat<In1,In2,Out>, sofa::core::State< In2 >, BaseLink::FLAG_STOREPATH|BaseLink::FLAG_STRONGLINK> LinkFromModels2;
+    typedef MultiLink<BaseCosserat<In1,In2,Out>, sofa::core::State< Out >, BaseLink::FLAG_STOREPATH|BaseLink::FLAG_STRONGLINK> LinkToModels;
 
     typedef typename SolidTypes<Real>::Transform      Transform ;
 
@@ -123,10 +127,11 @@ protected:
     core::State<In2>* m_fromModel2;
     core::State<Out>* m_toModel;
 
+public:
+    /*===========COSSERAT VECTORS ======================*/
     unsigned int m_index_input;
     OutVecCoord m_vecTransform ;
 
-    /*===========COSSERAT VECTORS ======================*/
     helper::vector<Transform> m_ExponentialSE3Vectors;
     helper::vector<Transform> m_nodesExponentialSE3Vectors;
     helper::vector<Matrix4> m_nodesLogarithmeSE3Vectors;
@@ -141,63 +146,45 @@ protected:
     helper::vector<Mat6x6> m_framesTangExpVectors;
     helper::vector<Vec6>   m_totalBeamForceVectors;
 
+    helper::vector<Mat6x6> m_nodeAjointVectors;
+    helper::vector<Mat6x6> m_nodeAjointEtaVectors;
+    helper::vector<Mat6x6> m_frameAjointEtaVectors;
+    helper::vector<Mat6x6> m_node_coAjointEtaVectors;
+    helper::vector<Mat6x6> m_frame_coAjointEtaVectors;
+
+
 protected:
     /// Constructor
-    //DiscretCosseratMapping();
-    DiscretCosseratMapping() ;
+    //BaseCosserat();
+    BaseCosserat() ;
     /// Destructor
-    ~DiscretCosseratMapping()  override {}
+    ~BaseCosserat()  override {}
 public:
 
 
     /**********************SOFA METHODS**************************/
     void init() override;
     virtual void bwdInit() override;  // get the points
-    virtual void reset() override;
     virtual void reinit() override;
     void draw(const core::visual::VisualParams* vparams) override;
-
-    /**********************MAPPING METHODS**************************/
-    void apply(
-            const core::MechanicalParams* /* mparams */, const helper::vector<OutDataVecCoord*>& dataVecOutPos,
-            const helper::vector<const In1DataVecCoord*>& dataVecIn1Pos ,
-            const helper::vector<const In2DataVecCoord*>& dataVecIn2Pos) override;
-
-    void applyJ(
-            const core::MechanicalParams* /* mparams */, const helper::vector< OutDataVecDeriv*>& dataVecOutVel,
-            const helper::vector<const In1DataVecDeriv*>& dataVecIn1Vel,
-            const helper::vector<const In2DataVecDeriv*>& dataVecIn2Vel) override;
-
-    //ApplyJT Force
-    void applyJT(
-            const core::MechanicalParams* /* mparams */, const helper::vector< In1DataVecDeriv*>& dataVecOut1Force,
-            const helper::vector< In2DataVecDeriv*>& dataVecOut2RootForce,
-            const helper::vector<const OutDataVecDeriv*>& dataVecInForce) override;
-
-    void applyDJT(const core::MechanicalParams* /*mparams*/, core::MultiVecDerivId /*inForce*/, core::ConstMultiVecDerivId /*outForce*/) override{}
-
-    /// This method must be reimplemented by all mappings if they need to support constraints.
-    virtual void applyJT(
-            const core::ConstraintParams*  cparams , const helper::vector< In1DataMatrixDeriv*>& dataMatOut1Const  ,
-            const helper::vector< In2DataMatrixDeriv*>&  dataMatOut2Const ,
-            const helper::vector<const OutDataMatrixDeriv*>&  dataMatInConst) override;
 
 protected:
     /**********************COSSERAT METHODS**************************/
     void computeExponentialSE3(double & x, const defaulttype::Vector3& k, Transform & Trans);
     void computeAdjoint(const Transform & frame, Mat6x6 &Adjoint);
     void compute_coAdjoint(const Transform & frame, Mat6x6 &coAdjoint);
+    void compute_adjointVec6(const Vec6 & frame, Mat6x6 &adjoint);
 
     void update_ExponentialSE3(const In1VecCoord & inDeform);
     void update_TangExpSE3(const In1VecCoord & inDeform, const helper::vector<double> &curv_abs_input , const helper::vector<double> &curv_abs_output );
     void compute_Tang_Exp(double & x, const Vector3& k, Mat6x6 & TgX);
 
     defaulttype::Vec6 compute_eta(const Vec6 & baseEta, const In1VecDeriv & k_dot, const double abs_input);
-    defaulttype::Matrix4 computeLogarithme(const double & x, const Matrix4 &gX);
-    double computeTheta(const double &x, const Matrix4 &gX){
+    defaulttype::Matrix4 computeLogarithme(const double & x, const Mat4x4 &gX);
+    double computeTheta(const double &x, const Mat4x4 &gX){
         double Tr_gx = 0.0;
         for (int i = 0; i<4; i++) {
-            Tr_gx += gX(i,i);
+            Tr_gx += gX[i][i];
         }
 
         double theta;
@@ -240,8 +227,9 @@ public:
                 P[i+3][j] = R[i][j];
             }
         }
+        //        print_matrix(P);
+        //        printf("__________________________\n");
         return  P;
-        //std::cout<< "Extract mat : "<< P << std::endl;
     }
 
     Matrix3 getTildMatrix(const Vector3 & u){
@@ -281,24 +269,24 @@ public:
     }
 
     Matrix4 convertTransformToMatrix4x4(const Transform & T){
-        Matrix4 M ; M.clear(); M.identity();
+        Matrix4 M; M.identity();
         Matrix3 R = extract_rotMatrix(T);
         Vector3 trans = T.getOrigin();
-        M.setsub(0,0,R);
-        M.setsub(0,3,trans);
-        //        for (unsigned int i = 0; i < 3; i++) {
-        //                M(i,3) = trans[i];
-        //        }
+
+        for (size_t i = 0; i < 3; i++) {
+            for (size_t j=0; j<3; j++){
+                M(i,j) = R[i][j];
+                M(i,3) = trans[i];
+            }
+        }
         return M;
     }
 
 };
 
-//extern template class SOFA_POE_MAPPING_API DiscretCosseratMapping<defaulttype::Vec3Types>;
-
 
 #if  !defined(SOFA_COMPONENT_MAPPING_POE_MAPING_CPP)
-extern template class SOFA_COSSERAT_MAPPING_API DiscretCosseratMapping< sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types >;
+extern template class SOFA_COSSERAT_MAPPING_API BaseCosserat< sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types >;
 #endif
 
 } // mapping

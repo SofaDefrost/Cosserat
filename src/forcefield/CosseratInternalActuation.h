@@ -98,7 +98,7 @@ public :
     void init() override;
     ///////////////////////////////////////////////////////////////////////////
 
-    void computeArgument(const VecCoord &distance, const VecCoord &x, const int id, Vec3 &argu, const double &C);
+    //    void computeArgument(const VecCoord &distance, const VecCoord &x, const int id, Vec3 &argu, const double &C);
     void computeIntegrale(const double &Li, const double &Li_1, const VecCoord &x, const int id, Coord & integral);
 
     ////////////////////////// Inherited from ForceField /////////////////////////

@@ -49,52 +49,36 @@ class DataComputationClass(CosseratActuation):
         self.K = self.rateAngularDeformMO.findData('position').value
         self.curv_abs_input = curv_abs_input
         self.X  = self.computeX()
-        self.distance = [] # distance
-        self.d_distance = [] # derivative of the distance
-        # print("================================================++++++> ")
+        # self.distance = [] # distance
+        # self.d_distance = [] # derivative of the distance
 
-        # #CONSTANT parameters ( dy, dz, _dy, _dz)
-        # self.computeDX(R_b/2.0, 0.0, 0.0, 0.0)
-
-        # OBLIQUE parameters ( dy, dz, _dy, _dz)
-        # self.computeDX(R_b/2.0, 0.0, -R_b/L, 0.0)
-
-        # Act1 parameters ( dy, dz, _dy, _dz)
-        # self.computeDX(0.0, R_b/2.0, R_b/(2*L), (-R_b)/(2*L)) # Act1 parameters ( dy, dz, _dy, _dz)
-
-        # Act2 parameters ( dy, dz, _dy, _dz)
-        # self.computeDX(0.0, R_b/2.0, -R_b/(2.0*L),  R_b/(2.0*L)) # Act2 parameters ( dy, dz, _dy, _dz)
-
-        # Act3 parameters ( dy, dz, _dy, _dz)
-        # self.computeDX(0.0, R_b/2.0, R_b/(2*L), (-R_b)/(2*L)) # Act3 parameters ( dy, dz, _dy, _dz)
-
+        self.vecDistance1 = [] # distance at s1 = L_{i-1} + C1(L_{i} - L_{i-1})
+        self.vecDistance2 = [] # distance at s2 = L_{i-1} + C2(L_{i} - L_{i-1})
+        self.vecDDistance1 = [] # derivative of the distance at s1
+        self.vecDDistance2 = [] # derivative of the distance at s2
+        print("================================================++++++> ")
         # CONSTANT parameters ( dy, dz, _dy, _dz)
         # self.vec_dy  = [R_b/2.0]; self.vec_dz  = [0.0]
         # self.vec_ddy = [0.0];     self.vec_ddz = [0.0]
 
-        # self.vec_dy  = [R_b/2.0]; self.vec_dz  = [0.0]
-        # self.vec_ddy = [-R_b/L];     self.vec_ddz = [0.0]
+        self.vec_dy  = [R_b/2.0]; self.vec_dz  = [0.0]
+        self.vec_ddy = [-R_b/L];     self.vec_ddz = [0.0]
 
-        self.vec_dy  = [0.0, 0.0, -R_b/2.0];            self.vec_dz  = [R_b/2.0, -R_b/2.0, 0.0]
-        self.vec_ddy = [R_b/(2.0*L), R_b/(2.0*L), 0.0];     self.vec_ddz = [-R_b/(2.0*L), R_b/(2.0*L), 0.0]
+        # self.vec_dy  = [0.0, 0.0, -R_b/2.0];            self.vec_dz  = [R_b/2.0, -R_b/2.0, 0.0]
+        # self.vec_ddy = [R_b/(2.0*L), R_b/(2.0*L), 0.0];     self.vec_ddz = [-R_b/(2.0*L), R_b/(2.0*L), 0.0]
+
+        kwarg = [self.vec_dy, self.vec_dz, self.vec_ddy, self.vec_ddz]
+        self.computeMultiDistanceVectors(*kwarg)
 
         kwargs = [self.vec_dy, self.vec_dz, self.vec_ddy, self.vec_ddz, self.K]
         self.muti_ActuationIntegral(*kwargs)
 
 
         ############################## HELICAL PARAMETERS ####################################""
-        # d = R_b/2.0
-        # alpha = 1.529
-        # p = 2.0 * pi * d * tan(alpha)
-        # self.computeHelicalParameters(d, p)
-        # print ("############################## HELICAL PARAMETERS ####################################")
-        # print ("=======+++++++> self.distance : ",self.distance)
-        # print ("=======+++++++> self.distance : ",self.d_distance)
-        #
-        self.BeamHookeLawForce.findData('distance0').value = self.distance[0]
-        self.BeamHookeLawForce.findData('distance1').value = self.distance[1]
-        self.BeamHookeLawForce.findData('ddistance0').value = self.d_distance[0]
-        self.BeamHookeLawForce.findData('ddistance1').value = self.d_distance[1]
+        # self.BeamHookeLawForce.findData('distance0').value = self.distance[0]
+        # self.BeamHookeLawForce.findData('distance1').value = self.distance[1]
+        # self.BeamHookeLawForce.findData('ddistance0').value = self.d_distance[0]
+        # self.BeamHookeLawForce.findData('ddistance1').value = self.d_distance[1]
 
 
     def onBeginAnimationStep(self, dt):

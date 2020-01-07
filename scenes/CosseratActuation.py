@@ -24,7 +24,7 @@ GaussWeights = [1.0,1.0] #weight
 # _tension = 0.0
 
 class CosseratActuation(Sofa.PythonScriptController):
-    """docstring for CosseratActuation.Sofa.PythonScriptController"""
+    """docstring for Sofa.PythonScriptController.CosseratActuation"""
 
     def __init__(self):
         print("The python init================================================++++++> ")
@@ -51,7 +51,6 @@ class CosseratActuation(Sofa.PythonScriptController):
 
     def computeX(self):
         X = []
-
         for j in range(1, len(self.curv_abs_input)) :
             Li = self.curv_abs_input[j]
             Li_1 = self.curv_abs_input[j-1]
@@ -74,12 +73,15 @@ class CosseratActuation(Sofa.PythonScriptController):
         for i in range(0,len(self.X)):
             dX0.append([0.0, dy + _dy * self.X[i][0], dz + _dz*self.X[i][0]])
             dX1.append([0.0, dy + _dy * self.X[i][1], dz + _dz*self.X[i][1]])
+
             d_dX0.append([0.0, _dy, _dz])
             d_dX1.append([0.0, _dy, _dz])
         self.distance   = [dX0,dX1]
         self.d_distance = [d_dX0,d_dX1]
 
         return [dX0,dX1,d_dX0,d_dX1]
+
+
 
 
     def computeHelicalParameters(self, d, p):
@@ -136,15 +138,27 @@ class CosseratActuation(Sofa.PythonScriptController):
 
         # print ("============<<>>>>> integral by actuation :",vecInt)
         return integral
+
     def computeMultiDistanceVectors(self, vec_dy, vec_dz, vec_ddy, vec_ddz):
         size_of_actution = len(vec_dy)
-        for i in range(size_of_actution) :
+        print("================> size_of_actution :", size_of_actution)
+        for k in range(0,size_of_actution) :
             # this doesn't change then can be compute at the initial point
-            argu = self.computeDX (vec_dy[i], vec_dz[i], vec_ddy[i], vec_ddz[i])
+            # argu = self.computeDX (vec_dy[k], vec_dz[k], vec_ddy[k], vec_ddz[k])
+            # computeDX(self, dy, dz, _dy, _dz)
+            ####
+            dy = vec_dy[k] ; _dy = vec_ddy[k]
+            dz = vec_dz[k] ; _dz = vec_ddz[k]
 
-            # print("====+> The argu : "+str(argu))
-            self.distance   = [argu[0], argu[1]]
-            self.d_distance = [argu[2], argu[3]]
+            for i in range(0,len(self.X)):
+                self.vecDistance1.append([0.0, dy + _dy * self.X[i][0], dz + _dz*self.X[i][0]])
+                self.vecDistance2.append([0.0, dy + _dy * self.X[i][1], dz + _dz*self.X[i][1]])
+
+                self.vecDDistance1.append([0.0, _dy, _dz])
+                self.vecDDistance2.append([0.0, _dy, _dz])
+            ####
+        print("disttance 1 ===> :"+str(self.vecDistance1))
+        print("disttance 2 ===> :"+str(self.vecDistance2))
 
 
     def muti_ActuationIntegral(self, vec_dy, vec_dz, vec_ddy, vec_ddz, K):
@@ -154,11 +168,13 @@ class CosseratActuation(Sofa.PythonScriptController):
         size_of_actution = len(vec_dy)
         for i in range(size_of_actution) :
             # this doesn't change then can be compute at the initial point
-            argu = self.computeDX (vec_dy[i], vec_dz[i], vec_ddy[i], vec_ddz[i])
+            # argu = self.computeDX (vec_dy[i], vec_dz[i], vec_ddy[i], vec_ddz[i])
 
             # print("====+> The argu : "+str(argu))
-            distance   = [argu[0], argu[1]]
-            d_distance = [argu[2], argu[3]]
+            # distance   = [argu[0], argu[1]]
+            # d_distance = [argu[2], argu[3]]
+            distance   = [self.vecDistance1, self.vecDistance2]
+            d_distance = [self.vecDDistance1, self.vecDDistance2]
 
             # print("====+> The argu 0 : "+str(distance))
             # print("====+> The argu 1 : "+str(d_distance))
