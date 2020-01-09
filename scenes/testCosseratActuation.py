@@ -36,9 +36,10 @@ _tension = 0.0
 class DataComputationClass(CosseratActuation):
     """docstring for CosseratActuation.DataComputationClass"""
 
-    def __init__(self):
-        # print("The python init================================================++++++> ")
-        super(DataComputationClass,Sofa.PythonScriptController.CosseratActuation).__init__()
+    def __init__(self, nodeA):
+        print("DataComputationClass ================================================++++++> ")
+        CosseratActuation.__init__(self)
+        self.node = nodeA
         # self.K = [10, 1, 6]
 
     def initGraph(self, node):
@@ -52,11 +53,11 @@ class DataComputationClass(CosseratActuation):
         # self.distance = [] # distance
         # self.d_distance = [] # derivative of the distance
 
-        self.vecDistance1 = [] # distance at s1 = L_{i-1} + C1(L_{i} - L_{i-1})
-        self.vecDistance2 = [] # distance at s2 = L_{i-1} + C2(L_{i} - L_{i-1})
-        self.vecDDistance1 = [] # derivative of the distance at s1
-        self.vecDDistance2 = [] # derivative of the distance at s2
-        print("================================================++++++> ")
+        # self.vecDistance1 = [] # distance at s1 = L_{i-1} + C1(L_{i} - L_{i-1})
+        # self.vecDistance2 = [] # distance at s2 = L_{i-1} + C2(L_{i} - L_{i-1})
+        # self.vecDDistance1 = [] # derivative of the distance at s1
+        # self.vecDDistance2 = [] # derivative of the distance at s2
+        # print("================================================++++++> ")
         # CONSTANT parameters ( dy, dz, _dy, _dz)
         # self.vec_dy  = [R_b/2.0]; self.vec_dz  = [0.0]
         # self.vec_ddy = [0.0];     self.vec_ddz = [0.0]
@@ -122,14 +123,13 @@ def createScene(rootNode):
                 RigidBaseMO = rigidBaseNode.createObject('MechanicalObject', template='Rigid3d', name="RigidBaseMO", position="0 0 0  0 0 0. 1", showObject='1', showObjectScale='0.1', velocity='0 0 0.0 0.0 0 0' )
                 rigidBaseNode.createObject('RestShapeSpringsForceField', name='spring', stiffness="5000000", angularStiffness="500000000", external_points="0", mstate="@RigidBaseMO", points="0", template="Rigid3d"  )
 
-
-
                 rateAngularDeformNode = rootNode.createChild('rateAngularDeform')
                 rateAngularDeformMO = rateAngularDeformNode.createObject('MechanicalObject', template='Vec3d', name='rateAngularDeformMO', position=pos, velocity='0 0 0 0 0 0 0 0 0') # (2 series of 3 angles for 2 sections. we suppose that the lenght is 10 for each)
                 # BeamHookeLawForce = rateAngularDeformNode.createObject('BeamHookeLawForceField', name="BeamHookeLawForce", crossSectionShape='circular', length='25 25 25', radius='1.0', youngModulus='5e6')
                 BeamHookeLawForce = rateAngularDeformNode.createObject('CosseratInternalActuation', name="BeamHookeLawForce",  crossSectionShape='circular', length='25 25 25', radius='1.0',
                 youngModulus='5.93e4',distance0=_distance, distance1=_distance, ddistance=_ddistance, tension=_tension)
-                rateAngularDeformNode.createObject('PythonScriptController', classname="DataComputationClass")
+                # rateAngularDeformNode.createObject('PythonScriptController', classname="DataComputationClass")
+                DataComputationClass(rateAngularDeformNode)
 
                 ##############
                 ## Frames

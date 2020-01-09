@@ -37,21 +37,29 @@ set(SOURCE_FILES
     src/forcefield/BeamHookeLawForceField.cpp
     src/forcefield/CosseratInternalActuation.cpp
 
-    src/constraint/CosseratSlidingConstraint.cpp
+    src/constraint/CosseratSlidingConstraint.cpp 
     )
 
 set(README_FILE "Cosserat.txt" )
 
-find_package(SofaAdvancedConstraint QUIET)
-if(SofaAdvancedConstraint_FOUND)
-    set(HEADER_FILES ${HEADER_FILES}
-#        src/DiscretCosserat.h
-#        src/DiscretCosserat.inl
-        )
+find_package(SoftRobots QUIET)
+if(SoftRobots_FOUND)
 
-    set(SOURCE_FILES ${SOURCE_FILES}
-#        src/DiscretCosserat.cpp
+#     set(HEADER_FILES ${HEADER_FILES}
+#        src/constraint/CosseratActuatorConstraint.h
+#        src/constraint/CosseratActuatorConstraint.inl
+#         )
+# 
+#     set(SOURCE_FILES ${SOURCE_FILES}
+#        src/constraint/CosseratActuatorConstraint.cpp
+#         )
+    list(APPEND HEADER_FILES
+        src/constraint/CosseratActuatorConstraint.h
+        src/constraint/CosseratActuatorConstraint.inl
         )
+    list(APPEND SOURCE_FILES
+        src/constraint/CosseratActuatorConstraint.cpp
+        )    
 
 endif()
 
@@ -65,6 +73,9 @@ target_include_directories(${PROJECT_NAME} PUBLIC "$<INSTALL_INTERFACE:include>"
 
 target_link_libraries(${PROJECT_NAME} SofaSimpleFem SofaRigid)
 
+if(SoftRobots_FOUND)
+    target_link_libraries(${PROJECT_NAME} SoftRobots)
+endif() 
 ## Install rules for the library and headers; CMake package configurations files
 sofa_generate_package(
     NAME CosseratPlugin

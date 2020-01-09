@@ -25,11 +25,14 @@ GaussWeights = [1.0,1.0] #weight
 
 class CosseratActuation(Sofa.PythonScriptController):
     """docstring for Sofa.PythonScriptController.CosseratActuation"""
-
-    def __init__(self):
-        print("The python init================================================++++++> ")
-        super(CosseratActuation,Sofa.PythonScriptController).__init__()
+    def __init__(self):                
+        Sofa.PythonScriptController.__init__(self)
         self.curv_abs_input = []
+
+        self.vecDistance1 = [] # distance at s1 = L_{i-1} + C1(L_{i} - L_{i-1})
+        self.vecDistance2 = [] # distance at s2 = L_{i-1} + C2(L_{i} - L_{i-1})
+        self.vecDDistance1 = [] # derivative of the distance at s1
+        self.vecDDistance2 = [] # derivative of the distance at s2
 
     # def computeX(self):
     #     X = []
