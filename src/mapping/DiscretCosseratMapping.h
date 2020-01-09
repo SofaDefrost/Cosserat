@@ -28,7 +28,7 @@
 #include "../initCosserat.h"
 #include <sofa/defaulttype/SolidTypes.h>
 #include <sofa/defaulttype/RigidTypes.h>
-
+#include "BaseCosserat.h"
 
 
 namespace sofa
@@ -58,7 +58,7 @@ namespace mapping
 
 
 template <class TIn1, class TIn2, class TOut>
-class DiscretCosseratMapping : public core::Multi2Mapping<TIn1, TIn2, TOut>
+class DiscretCosseratMapping : public core::Multi2Mapping<TIn1, TIn2, TOut>, public component::mapping::BaseCosserat<TIn1, TIn2, TOut>
 {
 public:
     SOFA_CLASS(SOFA_TEMPLATE3(DiscretCosseratMapping, TIn1,TIn2, TOut), SOFA_TEMPLATE3(core::Multi2Mapping, TIn1, TIn2, TOut) );
@@ -110,9 +110,9 @@ public:
     typedef typename SolidTypes<Real>::Transform      Transform ;
 
 protected:
-    Data<helper::vector<double>>      d_curv_abs_input ;
-    Data<helper::vector<double>>      d_curv_abs_output ;
-    Data<bool>                        d_debug ;
+    //    Data<helper::vector<double>>      d_curv_abs_input ;
+    //    Data<helper::vector<double>>      d_curv_abs_output ;
+    //    Data<bool>                        d_debug ;
 
     /// Input Models container. New inputs are added through addInputModel(In* ).
     //    LinkFromModels1 m_fromModel1;
@@ -123,27 +123,11 @@ protected:
     core::State<In2>* m_fromModel2;
     core::State<Out>* m_toModel;
 
-    unsigned int m_index_input;
-    OutVecCoord m_vecTransform ;
-
     /*===========COSSERAT VECTORS ======================*/
-    helper::vector<Transform> m_ExponentialSE3Vectors;
-    helper::vector<Transform> m_nodesExponentialSE3Vectors;
-    helper::vector<Matrix4> m_nodesLogarithmeSE3Vectors;
-
-    helper::vector<int> m_indicesVectors;
-
-    helper::vector<double> m_beamLenghtVectors;
-    helper::vector<double> m_framesLenghtVectors;
-
-    helper::vector<Vec6>   m_nodesVelocityVectors;
-    helper::vector<Mat6x6> m_nodesTangExpVectors;
-    helper::vector<Mat6x6> m_framesTangExpVectors;
-    helper::vector<Vec6>   m_totalBeamForceVectors;
+    //    helper::vector<Matrix4> m_nodesLogarithmeSE3Vectors;
 
 protected:
-    /// Constructor
-    //DiscretCosseratMapping();
+    /// Constructor    
     DiscretCosseratMapping() ;
     /// Destructor
     ~DiscretCosseratMapping()  override {}
@@ -184,113 +168,8 @@ public:
 
 protected:
     /**********************COSSERAT METHODS**************************/
-    void computeExponentialSE3(double & x, const defaulttype::Vector3& k, Transform & Trans);
-    void computeAdjoint(const Transform & frame, Mat6x6 &Adjoint);
-    void compute_coAdjoint(const Transform & frame, Mat6x6 &coAdjoint);
+    //    defaulttype::Matrix4 computeLogarithme(const double & x, const Matrix4 &gX);
 
-    void update_ExponentialSE3(const In1VecCoord & inDeform);
-    void update_TangExpSE3(const In1VecCoord & inDeform, const helper::vector<double> &curv_abs_input , const helper::vector<double> &curv_abs_output );
-    void compute_Tang_Exp(double & x, const Vector3& k, Mat6x6 & TgX);
-
-    defaulttype::Vec6 compute_eta(const Vec6 & baseEta, const In1VecDeriv & k_dot, const double abs_input);
-    defaulttype::Matrix4 computeLogarithme(const double & x, const Matrix4 &gX);
-    double computeTheta(const double &x, const Matrix4 &gX){
-        double Tr_gx = 0.0;
-        for (int i = 0; i<4; i++) {
-            Tr_gx += gX(i,i);
-        }
-
-        double theta;
-        if( x <= std::numeric_limits<double>::epsilon()) theta = 0.0;
-        else theta = (1.0/x) * std::acos((Tr_gx/2.0) -1);
-
-        return  theta;
-    }
-
-
-public:
-    /**********************OTHER METHODS**************************/
-    void initialize();
-    void print_matrix(const Mat6x6 R){
-        for (unsigned int k = 0; k < 6 ; k++) {
-            for (unsigned int i = 0; i < 6; i++)
-                printf("  %lf",R[k][i]);
-            //std::cout<< " " << R[k][i];
-            printf("\n");
-        }
-    }
-
-    Matrix3 extract_rotMatrix(const Transform & frame){
-        defaulttype::Quat q = frame.getOrientation();
-        Real R[4][4];     q.buildRotationMatrix(R);
-        Matrix3 mat;
-
-        for (unsigned int k = 0; k < 3 ; k++)
-            for (unsigned int i = 0; i < 3; i++)
-                mat[k][i] = R[k][i];
-        return  mat;
-    }
-    Mat6x6 build_projector(const Transform &T){
-        Mat6x6 P;
-        Real R[4][4]; (T.getOrientation()).buildRotationMatrix(R);
-
-        for (unsigned int i = 0; i < 3;  i++) {
-            for (unsigned int j = 0; j < 3; j++) {
-                P[i][j+3] = R[i][j];
-                P[i+3][j] = R[i][j];
-            }
-        }
-        return  P;
-        //std::cout<< "Extract mat : "<< P << std::endl;
-    }
-
-    Matrix3 getTildMatrix(const Vector3 & u){
-        defaulttype::Matrix3 tild;
-        tild[0][1] = -u[2];
-        tild[0][2] = u[1];
-        tild[1][2] = -u[0];
-
-        tild[1][0] = -tild[0][1];
-        tild[2][0] = -tild[0][2];
-        tild[2][1] = -tild[1][2];
-        return  tild;
-    }
-
-    void buildaAdjoint(const Matrix3 &A, const Matrix3 & B, Mat6x6 & Adjoint){
-
-        Adjoint.clear();
-        for (unsigned int i = 0; i < 3; i++) {
-            for (int j = 0; j < 3; ++j) {
-                Adjoint [i][j]= A[i][j];
-                Adjoint [i+3][j+3]= A[i][j];
-                Adjoint [i+3][j]= B[i][j];
-            }
-        }
-    }
-
-    void build_coaAdjoint(const Matrix3 &A, const Matrix3 & B, Mat6x6 & coAdjoint){
-
-        coAdjoint.clear();
-        for (unsigned int i = 0; i < 3; i++) {
-            for (int j = 0; j < 3; ++j) {
-                coAdjoint [i][j]= A[i][j];
-                coAdjoint [i+3][j+3]= A[i][j];
-                coAdjoint [i][j+3]= B[i][j];
-            }
-        }
-    }
-
-    Matrix4 convertTransformToMatrix4x4(const Transform & T){
-        Matrix4 M ; M.clear(); M.identity();
-        Matrix3 R = extract_rotMatrix(T);
-        Vector3 trans = T.getOrigin();
-        M.setsub(0,0,R);
-        M.setsub(0,3,trans);
-        //        for (unsigned int i = 0; i < 3; i++) {
-        //                M(i,3) = trans[i];
-        //        }
-        return M;
-    }
 
 };
 

@@ -4,37 +4,25 @@ from CosseratActuation import *
 import Sofa
 import SofaPython
 from math import sin,cos, sqrt, pi
-#from stlib.physics.collision import CollisionMesh
 import os
-#from splib.numerics import sin, cos, to_radians
-#from stlib.physics.deformable import ElasticMaterialObject
-#from splib.objectmodel import SofaPrefab, SofaObject
-#from stlib.physics.mixedmaterial import Rigidify
-#from stlib.components import addOrientedBoxRoi
-#from splib.numerics import vec3
-#from splib.numerics.quat import Quat
-path = os.path.dirname(os.path.abspath(__file__))+'/mesh/'
 
+path = os.path.dirname(os.path.abspath(__file__))+'/mesh/'
 
 curv_abs_input=[0, 15, 30, 45, 60, 66, 81, 88, 95, 100, 103]
 curv_abs_output=[0.0, 5, 10, 15, 20, 30, 35, 40, 45, 55, 60, 66, 71, 76, 85, 90, 95, 100, 103]
-
 position=["0 0 0 " + "0 0 0 " + "0 0 0 " + "0 0 0 " + "0 0 0 " + "0 0 0 " + "0 0 0 " + "0 0 0 "+ "0 0 0 "+ "0 0 0 "]
 longeur = '15 15 15 15 6 15 7 7 5 3' # beams size
-distance1 = [0.0,0.5,0.0]; distance2 = [0.0,0.1,0.0]; distance3 = [0.0,0.5,0.0]; _distance = [distance1, distance2, distance3]
-ddistance1 = [0.0,0.0,0.0]; ddistance2 = [0.0,0.0,0.0]; ddistance3 = [0.0,0.0,0.0]; _ddistance = [ddistance1, ddistance2, ddistance3]
 R_b = 1.0
 L = 103.0
-
 _tension = 0.0
 
 class Animation(CosseratActuation):
+    """docstring for Sofa.PythonScriptController.CosseratActuation.Animation"""
 
-    """docstring for Sofa.PythonScriptController.CosseratActuation"""
-
-    def __init__(self):
-        super(Animation,CosseratActuation).__init__()
-
+    def __init__(self, nodeA):
+        # super(Animation,CosseratActuation).__init__()
+        CosseratActuation.__init__(self)
+        self.node = nodeA
 
     def initGraph(self, node):
         self.tension = 50.0
@@ -49,12 +37,6 @@ class Animation(CosseratActuation):
         self.X  = self.computeX()
         self.distance = [] # distance
         self.d_distance = [] # derivative of the distance
-
-        self.vecDistance1 = [] # distance at s1 = L_{i-1} + C1(L_{i} - L_{i-1})
-        self.vecDistance2 = [] # distance at s2 = L_{i-1} + C2(L_{i} - L_{i-1})
-        self.vecDDistance1 = [] # derivative of the distance at s1
-        self.vecDDistance2 = [] # derivative of the distance at s2
-
 
         #CONSTANT parameters ( dy, dz, _dy, _dz)
         self.vec_dy  = [R_b/2.0]; self.vec_dz  = [0.0]
@@ -232,8 +214,9 @@ def createScene(rootNode):
                 # BeamHookeLawForce = rateAngularDeformNode.createObject('CosseratInternalActuation', name="BeamHookeLawForce",  crossSectionShape='circular', length=longeur, radius='0.5',
                 # youngModulus='5.93e4',distance0=_distance, distance1=_distance, ddistance=_ddistance, tension=_tension)
                 BeamHookeLawForce = rateAngularDeformNode.createObject('CosseratInternalActuation', name="BeamHookeLawForce",  crossSectionShape='rectangular', length=longeur, radius='0.5',
-                youngModulus='5.93e3',distance0=_distance, distance1=_distance, ddistance=_ddistance, tension=_tension, lengthY='3', lengthZ='10')
-                rateAngularDeformNode.createObject('PythonScriptController', classname="Animation")
+                youngModulus='5.93e3', tension=_tension, lengthY='3', lengthZ='10')
+                Animation(rateAngularDeformNode)
+                # rateAngularDeformNode.createObject('PythonScriptController', classname="Animation")
 
                 ##############
                 ## Frames
