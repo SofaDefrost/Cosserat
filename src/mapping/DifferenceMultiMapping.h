@@ -19,8 +19,8 @@
 *                                                                             *
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
-#ifndef SOFA_COMPONENT_MAPPING_DYNAMIC_COSSERAT_DISCRET_DMAPPING_H
-#define SOFA_COMPONENT_MAPPING_DYNAMIC_COSSERAT_DISCRET_H
+#ifndef SOFA_COMPONENT_MAPPING_DifferenceMultiMapping_H
+#define SOFA_COMPONENT_MAPPING_DifferenceMultiMapping_H
 
 #include <sofa/core/BaseMapping.h>
 #include <sofa/core/core.h>
@@ -29,7 +29,6 @@
 #include <sofa/defaulttype/SolidTypes.h>
 #include <sofa/defaulttype/RigidTypes.h>
 #include "BaseCosserat.h"
-
 
 
 namespace sofa
@@ -50,19 +49,20 @@ namespace mapping
 {
 
 /*!
- * \class DiscretDynamicCosseratMapping
+ * \class DifferenceMultiMapping
  * @brief Computes and map the length of the beams
  *
  * This is a component:
  * https://www.sofa-framework.org/community/doc/programming-with-sofa/create-your-component/
  */
+using mapping::BaseCosserat;
 
 
 template <class TIn1, class TIn2, class TOut>
-class DiscretDynamicCosseratMapping : public core::Multi2Mapping<TIn1, TIn2, TOut>, public component::mapping::BaseCosserat<TIn1, TIn2, TOut>
+class DifferenceMultiMapping : public core::Multi2Mapping<TIn1, TIn2, TOut> //, public component::mapping::BaseCosserat<TIn1, TIn2, TOut>
 {
 public:
-    SOFA_CLASS(SOFA_TEMPLATE3(DiscretDynamicCosseratMapping, TIn1,TIn2, TOut), SOFA_TEMPLATE3(core::Multi2Mapping, TIn1, TIn2, TOut) );
+    SOFA_CLASS(SOFA_TEMPLATE3(DifferenceMultiMapping, TIn1,TIn2, TOut), SOFA_TEMPLATE3(core::Multi2Mapping, TIn1, TIn2, TOut) );
     typedef core::Multi2Mapping<TIn1, TIn2, TOut> Inherit;
 
     /// Input Model Type
@@ -104,51 +104,35 @@ public:
     typedef Data<OutVecDeriv> OutDataVecDeriv;
     typedef Data<OutMatrixDeriv> OutDataMatrixDeriv;
 
-    typedef MultiLink<DiscretDynamicCosseratMapping<In1,In2,Out>, sofa::core::State< In1 >, BaseLink::FLAG_STOREPATH|BaseLink::FLAG_STRONGLINK> LinkFromModels1;
-    typedef MultiLink<DiscretDynamicCosseratMapping<In1,In2,Out>, sofa::core::State< In2 >, BaseLink::FLAG_STOREPATH|BaseLink::FLAG_STRONGLINK> LinkFromModels2;
-    typedef MultiLink<DiscretDynamicCosseratMapping<In1,In2,Out>, sofa::core::State< Out >, BaseLink::FLAG_STOREPATH|BaseLink::FLAG_STRONGLINK> LinkToModels;
+    typedef MultiLink<DifferenceMultiMapping<In1,In2,Out>, sofa::core::State< In1 >, BaseLink::FLAG_STOREPATH|BaseLink::FLAG_STRONGLINK> LinkFromModels1;
+    typedef MultiLink<DifferenceMultiMapping<In1,In2,Out>, sofa::core::State< In2 >, BaseLink::FLAG_STOREPATH|BaseLink::FLAG_STRONGLINK> LinkFromModels2;
+    typedef MultiLink<DifferenceMultiMapping<In1,In2,Out>, sofa::core::State< Out >, BaseLink::FLAG_STOREPATH|BaseLink::FLAG_STRONGLINK> LinkToModels;
 
     typedef typename SolidTypes<Real>::Transform      Transform ;
 
 protected:
+    //    Data<helper::vector<double>>      d_curv_abs_input ;
+    //    Data<helper::vector<double>>      d_curv_abs_output ;
+    //    Data<bool>                        d_debug ;
+
+    /// Input Models container. New inputs are added through addInputModel(In* ).
+    //    LinkFromModels1 m_fromModel1;
+    //    LinkFromModels2 m_fromModel2;
+    //    LinkToModels m_toModel;
+
     core::State<In1>* m_fromModel1;
     core::State<In2>* m_fromModel2;
     core::State<Out>* m_toModel;
 
+
+    /*===========COSSERAT VECTORS ======================*/
+    //    helper::vector<Matrix4> m_nodesLogarithmeSE3Vectors;
+
 protected:
     /// Constructor
-    DiscretDynamicCosseratMapping() ;
+    DifferenceMultiMapping() ;
     /// Destructor
-    ~DiscretDynamicCosseratMapping()  override {}
-
-    helper::vector<helper::vector<Mat6x3>> m_frameJacobienVector;
-    helper::vector<helper::vector<Mat6x3>> m_frameJacobienDotVector;
-    helper::vector<Mat6x6> m_nodeJacobienVector;
-    helper::vector<helper::vector<Mat6x6>> m_nodeJacobienDotVector;
-    helper::vector<Matrix3> m_MassExpressionVector;
-    Mat6x3 m_matrixBi; //Here matrixB_i is a constante matrix
-
-    ////////////////////////// Inherited attributes ////////////////////////////
-    /// https://gcc.gnu.org/onlinedocs/gcc/Name-lookup.html
-    /// Bring inherited attributes and function in the current lookup context.
-    /// otherwise any access to the base::attribute would require
-    /// the "this->" approach.
-    ///
-    using BaseCosserat<TIn1, TIn2, TOut>:: m_indicesVectors ;
-    using BaseCosserat<TIn1, TIn2, TOut>::d_curv_abs_input  ;
-    using BaseCosserat<TIn1, TIn2, TOut>::d_curv_abs_output ;
-    using BaseCosserat<TIn1, TIn2, TOut>::m_nodesTangExpVectors;
-    using BaseCosserat<TIn1, TIn2, TOut>::m_nodesVelocityVectors;
-    using BaseCosserat<TIn1, TIn2, TOut>::m_ExponentialSE3Vectors;
-    using BaseCosserat<TIn1, TIn2, TOut>::m_framesTangExpVectors ;
-    using BaseCosserat<TIn1, TIn2, TOut>::m_totalBeamForceVectors ;
-    using BaseCosserat<TIn1, TIn2, TOut>::m_nodesExponentialSE3Vectors ;
-    using BaseCosserat<TIn1, TIn2, TOut>::d_debug;
-    using BaseCosserat<TIn1, TIn2, TOut>::m_vecTransform ;
-    using BaseCosserat<TIn1, TIn2, TOut>::m_nodeAjointVectors;
-    using BaseCosserat<TIn1, TIn2, TOut>::m_index_input;
-
-
+    ~DifferenceMultiMapping()  override {}
 public:
 
 
@@ -158,6 +142,8 @@ public:
     virtual void reset() override;
     virtual void reinit() override;
     void draw(const core::visual::VisualParams* vparams) override;
+
+    void drawLinesBetweenPoints(const core::visual::VisualParams* vparams);
 
     /**********************MAPPING METHODS**************************/
     void apply(
@@ -184,19 +170,42 @@ public:
             const helper::vector< In2DataMatrixDeriv*>&  dataMatOut2Const ,
             const helper::vector<const OutDataMatrixDeriv*>&  dataMatInConst) override;
 
-    /**********************DISCRET DYNAMIC COSSERAT METHODS**************************/
+    /**********************MAPPING METHODS**************************/
+    void initiatTopologies();
+    void computeProximity(const In1VecCoord &x1, const In2VecCoord &x2);
 
-    void computeMassComponent(const double sectionMass);
-    void computeJ_Jdot_i(const Mat6x6 &Adjoint, size_t frameId, helper::vector<Mat6x3> &J_i, const defaulttype::Vec6 &etaFrame, helper::vector<Mat6x3> &J_dot_i);
+protected:
+    /**********************COSSERAT METHODS**************************/
+    //    defaulttype::Matrix4 computeLogarithme(const double & x, const Matrix4 &gX);
+
+private:
+    // storage of force
+    OutDeriv  m_dirAxe, m_dirProj, m_dirOrtho;
+
+    typedef struct {
+        double fact;
+        int p1, p2;
+        int eid, cid;
+        Real alpha, beta;
+        Coord1 proj, Q;
+        OutDeriv dirAxe, t1, t2;
+        Real r, r2, Q1Q2;
+        Real dist; //violation
+        Real thirdConstraint;
+        //Deriv  m_dirAxe, m_dirProj, m_dirOrtho;
+    } Constraint;
+
+    helper::vector<Constraint> m_constraints;
+
 
 };
 
-//extern template class SOFA_POE_MAPPING_API DiscretDynamicCosseratMapping<defaulttype::Vec3Types>;
+//extern template class SOFA_POE_MAPPING_API DifferenceMultiMapping<defaulttype::Vec3Types>;
 
 
-#if  !defined(SOFA_COMPONENT_MAPPING_DYNAMIC_COSSERAT_DISCRET_CPP)
-extern template class SOFA_COSSERAT_MAPPING_API DiscretDynamicCosseratMapping< sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types >;
-#endif
+//#if  !defined(SOFA_COMPONENT_MAPPING_DifferenceMultiMapping_MAPING_CPP)
+//extern template class SOFA_COSSERAT_MAPPING_API DifferenceMultiMapping< sofa::defaulttype::Vec3Types, sofa::defaulttype::Vec3Types, sofa::defaulttype::Vec3Types >;
+//#endif
 
 } // mapping
 

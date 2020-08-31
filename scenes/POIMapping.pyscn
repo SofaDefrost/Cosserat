@@ -104,7 +104,6 @@ def rotate(v,q):
     c = c+[ ((2.0 * (q[0] * q[1] + q[2] * q[3]))*v[0] + (1.0 - 2.0 * (q[2] * q[2] + q[0] * q[0]))*v[1] + (2.0 * (q[1] * q[2] - q[0] * q[3]))*v[2]) ]
     c = c+[ ((2.0 * (q[2] * q[0] - q[1] * q[3]))*v[0] + (2.0 * (q[1] * q[2] + q[0] * q[3]))*v[1] + (1.0 - 2.0 * (q[1] * q[1] + q[0] * q[0]))*v[2]) ]
 
-
     return c
 
 
@@ -121,11 +120,6 @@ def inverseTransform(a_H_b):
     b_H_a= b_H_a +  inverseQuat( q ) ;
 
     return b_H_a
-
-
-
-
-
 
 
 def composeTransform(a_H_b, b_H_c):
@@ -242,7 +236,7 @@ def createScene(rootNode):
                 Force = [force1,force2,force2,force2,force2]
                 framesMO = mappedFrameNode.createObject('MechanicalObject', template='Rigid3d', name="FramesMO", position="0.5 0 0  0 0 0 1  5 0 0 0 0 0 1   11 0 0  0 0 0 1   15 0 0 0 0 0 1  20 0 0  0 0 0 1", showObject='1', showObjectScale='1' )
 
-                forceFied = mappedFrameNode.createObject('ConstantForceField', indices="4", forces="-20 0 0 0 0 0")
+                forceFied = mappedFrameNode.createObject('ConstantForceField', indices="4", forces="20 0 0 0 0 0")
                 #mappedFrameNode.createObject('FixedConstraint', fixAll='1')
 
                 # The mapping has two inputs: RigidBaseMO and rateAngularDeformMO

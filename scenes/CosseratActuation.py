@@ -25,7 +25,7 @@ GaussWeights = [1.0,1.0] #weight
 
 class CosseratActuation(Sofa.PythonScriptController):
     """docstring for Sofa.PythonScriptController.CosseratActuation"""
-    def __init__(self):                
+    def __init__(self):
         Sofa.PythonScriptController.__init__(self)
         self.curv_abs_input = []
 
@@ -67,7 +67,7 @@ class CosseratActuation(Sofa.PythonScriptController):
             # s0 = ((Li - Li_1)/2.0) * C[0] + (Li + Li_1)/2.0
             # s1 = ((Li - Li_1)/2.0) * C[1] + (Li + Li_1)/2.0
             X.append([s0,s1])
-        print ("XXXXX ==> :", X)
+        # print ("XXXXX ==> :", X)
         return X
 
     def computeDX(self, dy, dz, _dy, _dz):
@@ -139,12 +139,12 @@ class CosseratActuation(Sofa.PythonScriptController):
             vecInt = list(_int[0])
             integral.append(vecInt)
 
-        # print ("============<<>>>>> integral by actuation :",vecInt)
+            # print ("============<<>>>>> integral by actuation :",vecInt)
         return integral
 
     def computeMultiDistanceVectors(self, vec_dy, vec_dz, vec_ddy, vec_ddz):
         size_of_actution = len(vec_dy)
-        print("================> size_of_actution :", size_of_actution)
+        # print("================> size_of_actution :", size_of_actution)
         for k in range(0,size_of_actution) :
             # this doesn't change then can be compute at the initial point
             # argu = self.computeDX (vec_dy[k], vec_dz[k], vec_ddy[k], vec_ddz[k])
@@ -160,8 +160,8 @@ class CosseratActuation(Sofa.PythonScriptController):
                 self.vecDDistance1.append([0.0, _dy, _dz])
                 self.vecDDistance2.append([0.0, _dy, _dz])
             ####
-        print("disttance 1 ===> :"+str(self.vecDistance1))
-        print("disttance 2 ===> :"+str(self.vecDistance2))
+        # print("disttance 1 ===> :"+str(self.vecDistance1))
+        # print("disttance 2 ===> :"+str(self.vecDistance2))
 
 
     def muti_ActuationIntegral(self, vec_dy, vec_dz, vec_ddy, vec_ddz, K):

@@ -84,7 +84,8 @@ void CosseratSlidingConstraint<DataTypes>::computeProximity(const DataVecCoord &
 
         //std::cout << "P "<< P << std::endl;
 
-        Real min_dist = std::numeric_limits<Real>::max();  // min dist between the projection and the projected point
+        // min dist between the projection and the projected point
+        Real min_dist = std::numeric_limits<Real>::max();
         for (size_t j = 0; j < szDst-1; j++) {
             Coord Q1 = dst[j];
             Coord Q2 = dst[j+1];

@@ -52,8 +52,7 @@ DiscretCosseratMapping<TIn1, TIn2, TOut>::DiscretCosseratMapping()
     : m_fromModel1(NULL)
     , m_fromModel2(NULL)
     , m_toModel(NULL)
-{
-}
+{}
 
 
 // _________________________________________________________________________________________
@@ -89,9 +88,9 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>::init()
     //    WriteAccessor<Data < helper::vector<double>>> curv_abs_output = d_curv_abs_output;
     //    curv_abs_output.clear();
 
-    this->m_vecTransform.clear();
+    m_vecTransform.clear();
     for (unsigned int i = 0; i < xfrom.size(); i++) {
-        this->m_vecTransform.push_back(xfrom[i]);
+        m_vecTransform.push_back(xfrom[i]);
     }
 
     this->initialize();
@@ -132,7 +131,7 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>::apply(
     const In1VecCoord& in1 = dataVecIn1Pos[0]->getValue();
     const In2VecCoord& in2 = dataVecIn2Pos[0]->getValue();
 
-    size_t sz = this->d_curv_abs_output.getValue().size();
+    size_t sz = d_curv_abs_output.getValue().size();
     OutVecCoord& out = *dataVecOutPos[0]->beginEdit();
     out.resize(sz);
 
@@ -142,17 +141,17 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>::apply(
     Transform frame0 = Transform(In2::getCPos(in2[0]),In2::getCRot(in2[0]));
     for(unsigned int i=0; i<sz; i++){
         Transform frame = frame0;
-        for (int u = 0; u < this->m_indicesVectors[i]; u++) {
-            frame *= this->m_nodesExponentialSE3Vectors[u];
+        for (int u = 0; u < m_indicesVectors[i]; u++) {
+            frame *= m_nodesExponentialSE3Vectors[u];
         }
-        frame *= this->m_ExponentialSE3Vectors[i];
+        frame *= m_ExponentialSE3Vectors[i];
 
         Vector3 v = frame.getOrigin();
         defaulttype::Quat q = frame.getOrientation();
         out[i] = OutCoord(v,q);
     }
 
-    this->m_index_input = 0;
+    m_index_input = 0;
     dataVecOutPos[0]->endEdit();
 }
 
@@ -222,15 +221,15 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>:: applyJ(
     const In2VecDeriv& in2_vecDeriv = dataVecIn2Vel[0]->getValue();
     OutVecDeriv& outVel = *dataVecOutVel[0]->beginEdit();
 
-    helper::ReadAccessor<Data<helper::vector<double>>> curv_abs_input = this->d_curv_abs_input; // This is the vector of X in the paper
-    helper::ReadAccessor<Data<helper::vector<double>>> curv_abs_output = this->d_curv_abs_output;
+    helper::ReadAccessor<Data<helper::vector<double>>> curv_abs_input =  d_curv_abs_input; // This is the vector of X in the paper
+    helper::ReadAccessor<Data<helper::vector<double>>> curv_abs_output = d_curv_abs_output;
 
     // Compute the tangent Exponential SE3 vectors
     const In1VecCoord& inDeform = m_fromModel1->read(core::ConstVecCoordId::position())->getValue();
     this->update_TangExpSE3(inDeform,curv_abs_input.ref(),curv_abs_output.ref());
 
     //Get base velocity as input this is also called eta
-    this->m_nodesVelocityVectors.clear();
+    m_nodesVelocityVectors.clear();
     Deriv2 _baseVelocity;
     if (!in2_vecDeriv.empty())
         _baseVelocity = in2_vecDeriv[0];
@@ -243,20 +242,20 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>:: applyJ(
     Transform Tinverse = Transform(xfrom2Data[0].getCenter(),xfrom2Data[0].getOrientation()).inversed();
     Mat6x6 P = this->build_projector(Tinverse);
     defaulttype::Vec6 baseLocalVelocity = P * baseVelocity;
-    this->m_nodesVelocityVectors.push_back(baseLocalVelocity);
-    if(this->d_debug.getValue())
+    m_nodesVelocityVectors.push_back(baseLocalVelocity);
+    if(d_debug.getValue())
         std::cout << "Base local Velocity :"<< baseLocalVelocity <<std::endl;
 
     //Compute velocity at nodes
     for (size_t i = 1 ; i < curv_abs_input.size(); i++) {
-        Transform t = this->m_nodesExponentialSE3Vectors[i].inversed();
+        Transform t = m_nodesExponentialSE3Vectors[i].inversed();
         Mat6x6 Adjoint; Adjoint.clear();
         this->computeAdjoint(t,Adjoint);
 
         defaulttype::Vec6 Xi_dot = Vec6(in1[i-1],Vector3(0.0,0.0,0.0)) ;
-        Vec6 temp = Adjoint * (this->m_nodesVelocityVectors[i-1] + this->m_nodesTangExpVectors[i] * Xi_dot );
-        this->m_nodesVelocityVectors.push_back(temp);
-        if(this->d_debug.getValue())
+        Vec6 temp = Adjoint * (m_nodesVelocityVectors[i-1] + m_nodesTangExpVectors[i] * Xi_dot );
+        m_nodesVelocityVectors.push_back(temp);
+        if(d_debug.getValue())
             std::cout<< "Node velocity : "<< i << " = " << temp<< std::endl;
     }
 
@@ -264,12 +263,12 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>:: applyJ(
     size_t sz =curv_abs_output.size();
     outVel.resize(sz);
     for (size_t i = 0 ; i < sz; i++) {
-        Transform t = this->m_ExponentialSE3Vectors[i].inversed();
+        Transform t = m_ExponentialSE3Vectors[i].inversed();
         Mat6x6 Adjoint; Adjoint.clear();
         this->computeAdjoint(t,Adjoint);
 
-        defaulttype::Vec6 Xi_dot = Vec6(in1[this->m_indicesVectors[i]-1],Vector3(0.0,0.0,0.0)) ;
-        Vec6 temp = Adjoint * (this->m_nodesVelocityVectors[this->m_indicesVectors[i]-1] + this->m_framesTangExpVectors[i] * Xi_dot ); // eta
+        defaulttype::Vec6 Xi_dot = Vec6(in1[m_indicesVectors[i]-1],Vector3(0.0,0.0,0.0)) ;
+        Vec6 temp = Adjoint * (m_nodesVelocityVectors[m_indicesVectors[i]-1] + m_framesTangExpVectors[i] * Xi_dot ); // eta
 
         Transform _T = Transform(out[i].getCenter(),out[i].getOrientation());
         Mat6x6 _P = this->build_projector(_T);
@@ -277,12 +276,12 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>:: applyJ(
 
         outVel[i] = _P * temp;
 
-        if(this->d_debug.getValue())
+        if(d_debug.getValue())
             std::cout<< "Frame velocity : "<< i << " = " << temp<< std::endl;
     }
     //    std::cout << "Inside the apply J, outVel after computation  :  "<< outVel << std::endl;
     dataVecOutVel[0]->endEdit();
-    this->m_index_input = 0;
+    m_index_input = 0;
 }
 
 
@@ -324,14 +323,14 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>:: applyJT(
     }
 
     //Compute output forces
-    size_t sz = this->m_indicesVectors.size();
+    size_t sz = m_indicesVectors.size();
 
-    int index =  this->m_indicesVectors[sz-1];
-    this->m_totalBeamForceVectors.clear();
-    this->m_totalBeamForceVectors.resize(sz);
+    int index =  m_indicesVectors[sz-1];
+    m_totalBeamForceVectors.clear();
+    m_totalBeamForceVectors.resize(sz);
 
     Vec6 F_tot; F_tot.clear();
-    this->m_totalBeamForceVectors.push_back(F_tot);
+    m_totalBeamForceVectors.push_back(F_tot);
 
     Mat3x6 matB_trans; matB_trans.clear();
     for(unsigned int k=0; k<3; k++) matB_trans[k][k] = 1.0;
@@ -339,35 +338,35 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>:: applyJT(
     for (size_t s = sz ; s-- ; ) {
         Mat6x6 coAdjoint;
 
-        this->compute_coAdjoint(this->m_ExponentialSE3Vectors[s],coAdjoint);  // m_ExponentialSE3Vectors[s] computed in apply
+        this->compute_coAdjoint(m_ExponentialSE3Vectors[s],coAdjoint);  // m_ExponentialSE3Vectors[s] computed in apply
         Vec6 node_F_Vec = coAdjoint * local_F_Vec[s];
-        Mat6x6 temp = this->m_framesTangExpVectors[s];   // m_framesTangExpVectors[s] computed in applyJ (here we transpose)
+        Mat6x6 temp = m_framesTangExpVectors[s];   // m_framesTangExpVectors[s] computed in applyJ (here we transpose)
         temp.transpose();
         Vector3 f = matB_trans * temp * node_F_Vec;
 
-        if(index != this->m_indicesVectors[s]){ // TODO to be replaced by while
+        if(index != m_indicesVectors[s]){ // TODO to be replaced by while
             index--;
             //bring F_tot to the reference of the new beam
-            this->compute_coAdjoint(this->m_nodesExponentialSE3Vectors[index],coAdjoint);  //m_nodesExponentialSE3Vectors computed in apply
+            this->compute_coAdjoint(m_nodesExponentialSE3Vectors[index],coAdjoint);  //m_nodesExponentialSE3Vectors computed in apply
             F_tot = coAdjoint * F_tot;
-            Mat6x6 temp = this->m_nodesTangExpVectors[index];
+            Mat6x6 temp = m_nodesTangExpVectors[index];
             temp.transpose();
             //apply F_tot to the new beam
             Vector3 temp_f = matB_trans * temp * F_tot;
             out1[index-1] += temp_f;
         }
-        if(this->d_debug.getValue())
+        if(d_debug.getValue())
             std::cout << "f at s ="<< s <<" and index"<< index <<  " is : "<< f << std::endl;
 
         //compte F_tot
         F_tot += node_F_Vec;
-        out1[this->m_indicesVectors[s]-1] += f;
+        out1[m_indicesVectors[s]-1] += f;
     }
     Transform frame0 = Transform(frame[0].getCenter(),frame[0].getOrientation());
     Mat6x6 M = this->build_projector(frame0);
     out2[0] += M * F_tot;
 
-    if(this->d_debug.getValue()){
+    if(d_debug.getValue()){
         std::cout << "Node forces "<< out1 << std::endl;
         std::cout << "base Force: "<< out2[0] << std::endl;
     }
@@ -408,7 +407,7 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>::applyJT(
 
     for (typename OutMatrixDeriv::RowConstIterator rowIt = in.begin(); rowIt != rowItEnd; ++rowIt)
     {
-        if (this->d_debug.getValue()){
+        if (d_debug.getValue()){
             std::cout<<"************* Apply JT (MatrixDeriv) iteration on line ";
             std::cout<<rowIt.index();
             std::cout<<"*************  "<<std::endl;
@@ -420,7 +419,7 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>::applyJT(
 
         if (colIt == colItEnd)
         {
-            if (this->d_debug.getValue()){
+            if (d_debug.getValue()){
                 std::cout<<"no column for this constraint"<<std::endl;
             }
             continue;
@@ -441,15 +440,15 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>::applyJT(
             defaulttype::Vec6 valueConst;
             for(unsigned j = 0; j < 6; j++) valueConst[j] = valueConst_[j];
 
-            int indexBeam =  this->m_indicesVectors[childIndex];
+            int indexBeam =  m_indicesVectors[childIndex];
 
             Transform _T = Transform(frame[childIndex].getCenter(),frame[childIndex].getOrientation());
             Mat6x6 P_trans =(this->build_projector(_T));
             P_trans.transpose();
 
             Mat6x6 coAdjoint;
-            this->compute_coAdjoint(this->m_ExponentialSE3Vectors[childIndex],coAdjoint);  // m_ExponentialSE3Vectors[s] computed in apply
-            Mat6x6 temp = this->m_framesTangExpVectors[childIndex];   // m_framesTangExpVectors[s] computed in applyJ (here we transpose)
+            this->compute_coAdjoint(m_ExponentialSE3Vectors[childIndex],coAdjoint);  // m_ExponentialSE3Vectors[s] computed in apply
+            Mat6x6 temp = m_framesTangExpVectors[childIndex];   // m_framesTangExpVectors[s] computed in applyJ (here we transpose)
             temp.transpose();
 
             defaulttype::Vec6 local_F =  coAdjoint * P_trans * valueConst; // constraint direction in local frame of the beam.
@@ -466,7 +465,7 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>::applyJT(
             colIt++;
 
         }
-        if (this->d_debug.getValue()){
+        if (d_debug.getValue()){
             std::cout<<"==> NodesInvolved : "<<std::endl;
             for (size_t i = 0; i < NodesInvolved.size(); i++)
                 std::cout << "index :" <<get<0>(NodesInvolved[i]) << " force :"
@@ -503,7 +502,9 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>::applyJT(
                 while (numNode_i == numNode_i1)
                 {
                     cumulativeF += std::get<1>(test_i1);
-                    if ((n!=NodesInvolved.size()-2)||(n==0)){
+                    //// This was if ((n!=NodesInvolved.size()-2)||(n==0)) before and I change it to
+                    /// if ((n!=NodesInvolved.size()-1)||(n==0)) since the code can't leave the will loop
+                    if ((n!=NodesInvolved.size()-1)||(n==0)){
                         n++;
                         break;
                     }
@@ -515,7 +516,7 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>::applyJT(
             NodesInvolvedCompressed.push_back(std::make_tuple(numNode_i, cumulativeF));
         }
 
-        if (this->d_debug.getValue()){
+        if (d_debug.getValue()){
             std::cout<<" NodesInvolved after sort and compress"<<std::endl;
             for (size_t i = 0; i < NodesInvolvedCompressed.size(); i++)
                 std::cout << "index :" <<get<0>(NodesInvolvedCompressed[i]) << " force :"
@@ -534,10 +535,10 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>::applyJT(
             {
                 //cumulate on beam frame
                 Mat6x6 coAdjoint;
-                this->compute_coAdjoint(this->m_nodesExponentialSE3Vectors[i-1],coAdjoint);  //m_nodesExponentialSE3Vectors computed in apply
+                this->compute_coAdjoint(m_nodesExponentialSE3Vectors[i-1],coAdjoint);  //m_nodesExponentialSE3Vectors computed in apply
                 CumulativeF = coAdjoint * CumulativeF;
                 // transfer to strain space (local coordinates)
-                Mat6x6 temp = this->m_nodesTangExpVectors[i-1];
+                Mat6x6 temp = m_nodesTangExpVectors[i-1];
                 temp.transpose();
                 Vector3 temp_f = matB_trans * temp * CumulativeF;
 
@@ -581,14 +582,14 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>::draw(const core::visual::VisualPa
 {
     if (!vparams->displayFlags().getShowMappings())
 
-        if(!this->d_debug.getValue()) return;
-    for (unsigned int i = 0;i < this->m_vecTransform.size(); i++) {
+        if(!d_debug.getValue()) return;
+    for (unsigned int i = 0;i < m_vecTransform.size(); i++) {
 
-        defaulttype::Quat q = this->m_vecTransform[i].getOrientation();
+        defaulttype::Quat q = m_vecTransform[i].getOrientation();
         q.normalize();
 
         defaulttype::Vector3 P1, x,y,z;
-        P1 = this->m_vecTransform[i].getCenter();
+        P1 = m_vecTransform[i].getCenter();
 
         x= q.rotate(defaulttype::Vector3(1.0,0,0));
         y= q.rotate(defaulttype::Vector3(0,1.0,0));

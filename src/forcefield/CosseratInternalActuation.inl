@@ -238,7 +238,8 @@ void CosseratInternalActuation<DataTypes>::addForce(const MechanicalParams* mpar
         //        std::cout<< "Li_1 :"<< Li_1 << " ==> Li :"<< Li<<" ==> xi : "<< x[i]<< std::endl;
         //        std::cout << "Integral 0 :" << integral << std::endl;
         //        std::cout << "Integral 1 :" << d_integral.getValue()[i] << std::endl;
-        f[i] -= (m_K_section * (x[i] - x0[i])) * d_length.getValue()[i] + d_Tt.getValue() * d_integral.getValue()[i];
+        //        f[i] -= (m_K_section * (x[i] - x0[i])) * d_length.getValue()[i] + d_Tt.getValue() * d_integral.getValue()[i];
+        f[i] -= (m_K_section * (x[i] - x0[i])) * d_length.getValue()[i] ;
     }
     //    std::cout << "The finale force is : "<< f << std::endl;
     d_f.endEdit();

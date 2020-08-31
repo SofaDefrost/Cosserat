@@ -55,6 +55,7 @@ namespace mapping
  * This is a component:
  * https://www.sofa-framework.org/community/doc/programming-with-sofa/create-your-component/
  */
+using mapping::BaseCosserat;
 
 
 template <class TIn1, class TIn2, class TOut>
@@ -122,6 +123,26 @@ protected:
     core::State<In1>* m_fromModel1;
     core::State<In2>* m_fromModel2;
     core::State<Out>* m_toModel;
+
+    ////////////////////////// Inherited attributes ////////////////////////////
+    /// https://gcc.gnu.org/onlinedocs/gcc/Name-lookup.html
+    /// Bring inherited attributes and function in the current lookup context.
+    /// otherwise any access to the base::attribute would require
+    /// the "this->" approach.
+    ///
+    using BaseCosserat<TIn1, TIn2, TOut>:: m_indicesVectors ;
+    using BaseCosserat<TIn1, TIn2, TOut>::d_curv_abs_input  ;
+    using BaseCosserat<TIn1, TIn2, TOut>::d_curv_abs_output ;
+    using BaseCosserat<TIn1, TIn2, TOut>::m_nodesTangExpVectors;
+    using BaseCosserat<TIn1, TIn2, TOut>::m_nodesVelocityVectors;
+    using BaseCosserat<TIn1, TIn2, TOut>::m_ExponentialSE3Vectors;
+    using BaseCosserat<TIn1, TIn2, TOut>::m_framesTangExpVectors ;
+    using BaseCosserat<TIn1, TIn2, TOut>::m_totalBeamForceVectors ;
+    using BaseCosserat<TIn1, TIn2, TOut>::m_nodesExponentialSE3Vectors ;
+    using BaseCosserat<TIn1, TIn2, TOut>::d_debug;
+    using BaseCosserat<TIn1, TIn2, TOut>::m_vecTransform ;
+    using BaseCosserat<TIn1, TIn2, TOut>::m_nodeAjointVectors;
+    using BaseCosserat<TIn1, TIn2, TOut>::m_index_input;
 
     /*===========COSSERAT VECTORS ======================*/
     //    helper::vector<Matrix4> m_nodesLogarithmeSE3Vectors;
