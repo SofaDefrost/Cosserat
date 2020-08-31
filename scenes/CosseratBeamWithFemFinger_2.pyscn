@@ -9,12 +9,13 @@ import os
 path = os.path.dirname(os.path.abspath(__file__))+'/mesh/'
 
 curv_abs_input=[0, 15, 30, 45, 60, 66, 81, 88, 95, 100, 103]
+indices = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 curv_abs_output=[0.0, 5, 10, 15, 20, 30, 35, 40, 45, 55, 60, 66, 71, 76, 85, 90, 95, 100, 103]
 position=["0 0 0 " + "0 0 0 " + "0 0 0 " + "0 0 0 " + "0 0 0 " + "0 0 0 " + "0 0 0 " + "0 0 0 "+ "0 0 0 "+ "0 0 0 "]
 longeur = '15 15 15 15 6 15 7 7 5 3' # beams size
 R_b = 1.0
 L = 103.0
-_tension = 0.0
+_tension = 50.0
 
 class Animation(CosseratActuation):
     """docstring for Sofa.PythonScriptController.CosseratActuation.Animation"""
@@ -67,7 +68,7 @@ class Animation(CosseratActuation):
 
 
     def onBeginAnimationStep(self, dt):
-        self.tension = self.tension + 2000.0 * dt;
+        self.tension = self.tension - 2000.0 * dt;
         self.K = self.rateAngularDeformMO.findData('position').value
 
         integral = self.muti_ActuationIntegral(self.vec_dy, self.vec_dz, self.vec_ddy, self.vec_ddz, self.K)
@@ -81,8 +82,8 @@ class Animation(CosseratActuation):
         # print ("=++++++++=======+++> 1) muti_ActuationIntegral : ", integral )
 
         if(self.tension < 10000.0):
-            self.BeamHookeLawForce.findData('tension').value = self.tension
-            # print("Tension is : "+str(self.tension))
+            self.BeamHookeLawForce.findData('tension').value -= self.tension
+            print("Tension is : "+str(self.tension))
 
 
 def engineRigid2Vec3(mappedFrameNode,cable):
@@ -162,7 +163,7 @@ def createScene(rootNode):
 
                 # finger.createObject('BoxROI', name='ROI1', box='-18 -15 -8 2 -3 8', drawBoxes='false')
                 # finger.createObject('RestShapeSpringsForceField', points='@ROI1.indices', stiffness='1e12')
-                boxeElement =  finger.createObject('BoxROI', name='commonPoints', box='-1.0 -3 -10 105 3 10', drawBoxes='1', drawSize="1")
+                boxeElement =  finger.createObject('BoxROI', name='commonPoints', box='-1.0 -3 -10 105 3 10', drawBoxes='0', drawSize="1")
                 # boxeElement.init()
                 boxeElement.bwdInit()
 
@@ -187,8 +188,7 @@ def createScene(rootNode):
                 # finger.createObject('LinearSolverConstraintCorrection')
                 finger.createObject('GenericConstraintCorrection')
 
-                # return rootNode
-
+                
                 ##########################################
                 # Cosserat Model                         #
                 ##########################################
@@ -212,7 +212,7 @@ def createScene(rootNode):
                 rateAngularDeformMO = rateAngularDeformNode.createObject('MechanicalObject', template='Vec3d', name='rateAngularDeformMO', position=position)
 
                 # BeamHookeLawForce = rateAngularDeformNode.createObject('CosseratInternalActuation', name="BeamHookeLawForce",  crossSectionShape='circular', length=longeur, radius='0.5',
-                # youngModulus='5.93e4',distance0=_distance, distance1=_distance, ddistance=_ddistance, tension=_tension)
+                # youngModulus='5.93e3')
                 BeamHookeLawForce = rateAngularDeformNode.createObject('CosseratInternalActuation', name="BeamHookeLawForce",  crossSectionShape='rectangular', length=longeur, radius='0.5',
                 youngModulus='5.93e3', tension=_tension, lengthY='3', lengthZ='10')
                 Animation(rateAngularDeformNode)
@@ -235,6 +235,8 @@ def createScene(rootNode):
                 inputMO_rigid = RigidBaseMO.getLinkPath()
                 outputMO = framesMO.getLinkPath()
                 mappedFrameNode.createObject('DiscretCosseratMapping', curv_abs_input=curv_abs_input, curv_abs_output=curv_abs_output, input1=inputMO, input2=inputMO_rigid,output=outputMO, debug='0' )
+
+                cableConstraint = rateAngularDeformNode.createObject('CosseratActuatorConstraint', name="cableConstraint", indices=indices, value="-150", integral="@BeamHookeLawForce.integral")
 
                 # ##### CubeTopo
                 cubeTopo = mappedFrameNode.createChild('cubeTopo')

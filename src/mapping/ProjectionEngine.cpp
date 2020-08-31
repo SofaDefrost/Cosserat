@@ -19,10 +19,12 @@
 *                                                                             *
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
-#define SOFA_COMPONENT_MAPPING_BASEMAPPING_CPP
-#include "BaseCosserat.inl"
+#define SOFA_COMPONENT_CONSTRAINTSET_ProjectionEngine_CPP
+
+#include "ProjectionEngine.inl"
+
 #include <sofa/defaulttype/VecTypes.h>
-#include <sofa/defaulttype/RigidTypes.h>
+#include <SofaBaseMechanics/MechanicalObject.h>
 #include <sofa/core/ObjectFactory.h>
 
 namespace sofa
@@ -31,24 +33,21 @@ namespace sofa
 namespace component
 {
 
-namespace mapping
+namespace constraintset
 {
+
 using namespace sofa::defaulttype;
+using namespace sofa::helper;
 
-// Register in the Factory
-int BaseCosseratClass = core::RegisterObject("Set the positions and velocities of points attached to a rigid parent")
-        .add< BaseCosserat< sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types > >()
-        .add< BaseCosserat< sofa::defaulttype::Vec3Types, sofa::defaulttype::Vec3Types, sofa::defaulttype::Vec3Types > >()
+int ProjectionEngineClass = core::RegisterObject("TODO-ProjectionEngine")
+        .add< ProjectionEngine<Vec3Types> >(true);
 
-;
-
-
-template class SOFA_COSSERAT_MAPPING_API BaseCosserat< sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types >;
-template class SOFA_COSSERAT_MAPPING_API BaseCosserat< sofa::defaulttype::Vec3Types, sofa::defaulttype::Vec3Types, sofa::defaulttype::Vec3Types >;
+template class ProjectionEngine<Vec3dTypes>;
 
 
-} // namespace mapping
+} // namespace constraintset
 
 } // namespace component
 
-} // namespace sofa.
+} // namespace sofa
+

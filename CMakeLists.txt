@@ -14,7 +14,10 @@ set(HEADER_FILES
     src/mapping/DiscretCosseratMapping.inl
     src/mapping/DiscretDynamicCosseratMapping.h
     src/mapping/DiscretDynamicCosseratMapping.inl
-
+    src/mapping/ProjectionEngine.h
+    src/mapping/ProjectionEngine.inl
+    src/mapping/DifferenceMultiMapping.h
+    src/mapping/DifferenceMultiMapping.inl
 
     src/forcefield/BeamHookeLawForceField.h
     src/forcefield/BeamHookeLawForceField.inl
@@ -33,6 +36,8 @@ set(SOURCE_FILES
     src/mapping/DiscretCosseratMapping.cpp
 
     src/mapping/DiscretDynamicCosseratMapping.cpp
+    src/mapping/ProjectionEngine.cpp
+    src/mapping/DifferenceMultiMapping.cpp
 
     src/forcefield/BeamHookeLawForceField.cpp
     src/forcefield/CosseratInternalActuation.cpp

@@ -286,6 +286,7 @@ public:
 
 
 #if  !defined(SOFA_COMPONENT_MAPPING_POE_MAPING_CPP)
+extern template class SOFA_COSSERAT_MAPPING_API BaseCosserat< sofa::defaulttype::Vec3Types, sofa::defaulttype::Vec3Types, sofa::defaulttype::Vec3Types >;
 extern template class SOFA_COSSERAT_MAPPING_API BaseCosserat< sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types >;
 #endif
 

@@ -10,7 +10,7 @@ def createScene(rootNode):
                 rootNode.createObject('VisualStyle', displayFlags='showVisualModels hideBehaviorModels showCollisionModels hideBoundingCollisionModels hideForceFields showInteractionForceFields showWireframe')
 
                 rootNode.createObject('FreeMotionAnimationLoop')
-                rootNode.createObject('GenericConstraintSolver', tolerance="1e-5", maxIterations="100", printLog="1")
+                rootNode.createObject('GenericConstraintSolver', tolerance="1e-5", maxIterations="100", printLog="0")
                 rootNode.gravity = "0 -9810 0"
                 rootNode.dt="0.01"
                 rootNode.createObject('BackgroundSetting', color='0 0.168627 0.211765')

@@ -172,7 +172,7 @@ def createScene(rootNode):
 
 
                 rootNode.createObject('FreeMotionAnimationLoop')
-                rootNode.createObject('GenericConstraintSolver', tolerance="1e-10", printLog='1')
+                rootNode.createObject('GenericConstraintSolver', tolerance="1e-10", printLog='0')
 
                 #rootNode.createObject('CollisionPipeline', verbose="0")
                 #rootNode.createObject('BruteForceDetection', name="N2")
@@ -222,9 +222,6 @@ def createScene(rootNode):
 
                 #BeamHookeLawForce = rateAngularDeformNode.createObject('ConstantForceField', forces='0 0 -1500 0 0 -500')
 
-
-
-
                 #############@
                 ### Animation (to move the dofs)
                 ##############
@@ -237,7 +234,6 @@ def createScene(rootNode):
                 # the node of the frame needs to inherit from rigidBaseMO and rateAngularDeform
                 mappedFrameNode = rigidBaseNode.createChild('MappedFrames')
                 rateAngularDeformNode.addChild(mappedFrameNode)
-
 
                 framesMO = mappedFrameNode.createObject('MechanicalObject', template='Rigid3d', name="FramesMO", position="0.5 0 0  0 0 0 1  5 0 0 0 0 0 1   10 0 0  0 0 0 1   15 0 0 0 0 0 1  20 0 0  0 0 0 1 25 0 0  0 0 0 1 30 0 0  0 0 0 1", showObject='1', showObjectScale='1' )
 

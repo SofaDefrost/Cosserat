@@ -453,23 +453,23 @@ void BaseCosserat<TIn1, TIn2, TOut>::draw(const core::visual::VisualParams* vpar
     if (!vparams->displayFlags().getShowMappings())
 
         if(!d_debug.getValue()) return;
-    for (unsigned int i = 0;i < m_vecTransform.size(); i++) {
+    //    for (unsigned int i = 0;i < m_vecTransform.size(); i++) {
 
-        defaulttype::Quat q = m_vecTransform[i].getOrientation();
-        q.normalize();
+    //        defaulttype::Quat q = m_vecTransform[i].getOrientation();
+    //        q.normalize();
 
-        defaulttype::Vector3 P1, x,y,z;
-        P1 = m_vecTransform[i].getCenter();
+    //        defaulttype::Vector3 P1, x,y,z;
+    //        P1 = m_vecTransform[i].getCenter();
 
-        x= q.rotate(defaulttype::Vector3(1.0,0,0));
-        y= q.rotate(defaulttype::Vector3(0,1.0,0));
-        z= q.rotate(defaulttype::Vector3(0,0,1.0));
-        double radius_arrow = 1.0/8.0;
+    //        x= q.rotate(defaulttype::Vector3(1.0,0,0));
+    //        y= q.rotate(defaulttype::Vector3(0,1.0,0));
+    //        z= q.rotate(defaulttype::Vector3(0,0,1.0));
+    //        double radius_arrow = 1.0/8.0;
 
-        vparams->drawTool()->drawArrow(P1,(P1 + x)*1.0, radius_arrow, defaulttype::Vec<4,double>(1,0,0,1));
-        vparams->drawTool()->drawArrow(P1,(P1 + y)*1.0, radius_arrow, defaulttype::Vec<4,double>(0,1,0,1));
-        vparams->drawTool()->drawArrow(P1,(P1 + z)*1.0, radius_arrow, defaulttype::Vec<4,double>(0,0,1,1));
-    }
+    //        vparams->drawTool()->drawArrow(P1,(P1 + x)*1.0, radius_arrow, defaulttype::Vec<4,double>(1,0,0,1));
+    //        vparams->drawTool()->drawArrow(P1,(P1 + y)*1.0, radius_arrow, defaulttype::Vec<4,double>(0,1,0,1));
+    //        vparams->drawTool()->drawArrow(P1,(P1 + z)*1.0, radius_arrow, defaulttype::Vec<4,double>(0,0,1,1));
+    //    }
     //return;
 }
 
