@@ -150,70 +150,149 @@ void DifferenceMultiMapping<TIn1, TIn2, TOut>::computeProximity(const In1VecCoor
             Coord1 Q2 = dst[j+1];
 
             // the axis
-            Coord1 v = Q2 -Q1;
-            Real fact_v = dot(P-Q1,v) / dot(v,v);
+            Coord1 dirAxe = Q2 -Q1;
+            Real lenght = dirAxe.norm();
+            Real fact_v = dot(P-Q1,dirAxe) / dot(dirAxe,dirAxe) ;
             //if(fact_v <= 0.0) continue;
-
-            // projection of the point on the axis
-            Deriv1 dirAxe = v;
-            dirAxe.normalize();
-            Real alpha = (P-Q1) * dirAxe;
-            Deriv1 proj = Q1 + dirAxe * alpha;
-            Deriv1 distVec = P - proj; // violation vector
-            Real dist = distVec.norm(); // constraint violation
-
-            //std::cout << i << "====>The distance between is : "<< dist << "   j: "<< j << " fact_v : "<< fact_v<<  std::endl;
-
+            //std::cout << "num : "<<  dot(P-Q1,dirAxe) << " ; deno : "<< dot(dirAxe,dirAxe) << std::endl;
 
             if(std::abs(fact_v) < min_dist){
-                //printf ("#################Begin \n");
-                min_dist = std::abs(fact_v) ; //fact_v ;
+                //if(fact_v < min_dist){
+                min_dist = std::abs(fact_v) ;
+                //                std::cout<< "===> fact : "<< fact_v << std::endl;
 
-                //                // projection of the point on the axis
-                //                Deriv1 dirAxe = v;
-                //                dirAxe.normalize();
-                //                Real alpha = (P-Q1) * dirAxe;
-                //                Deriv1 proj = Q1 + dirAxe * alpha;
+                //define the constraint variables
+                Deriv1 proj, distVec;
+                Real alpha, dist;
 
-                constraint.proj = proj;
-                constraint.Q = from[i];
-                constraint.eid = j;
-                constraint.alpha = alpha;
-                constraint.dirAxe = dirAxe;
-                /////
-                constraint.Q1Q2 = v.norm();
-                constraint.r2 = fact_v;
-                //std::cout << "alpha :"<< alpha << " ; r2 :"<< constraint.alpha << std::endl;
+                ///To solve the case that the closest node is
+                /// not the node 0 but the node 1 of the beam
+                if(fact_v < 0.0 && j !=0 && std::abs(fact_v) > 1e-8){
+                    //if fact_v < 0.0 that means the last beam is the good beam
+                    printf("if fact_v < 0.0 that means the last beam is the good beam \n");
+                    Q1 = dst[j-1] ;
+                    dirAxe = dst[j] - Q1;
+                    lenght = dirAxe.norm();
+                    fact_v = dot(P-Q1,dirAxe) / dot(dirAxe,dirAxe) ;
+                    dirAxe.normalize();
+                    alpha = (P-Q1) * dirAxe;
 
-                // We move the constraint point onto the projection
-                Deriv1 t1 = P - proj; // violation vector
-                constraint.dist = t1.norm(); // constraint violation
-                t1.normalize(); // direction of the constraint
-                if(t1.norm()<1.0e-1 && dirAxe[2] < 0.99){
-                    Vector3 temp = Vector3(dirAxe[0],dirAxe[1],dirAxe[2]+50.0);
-                    t1 = cross(dirAxe,temp);
-                    t1.normalize();
+                    proj = Q1 + dirAxe * alpha;
+                    distVec = P - proj; // violation vector
+                    dist = distVec.norm(); // constraint violation
+                    constraint.eid = j-1;
+                    //The direction of the axe or the beam
+                    constraint.dirAxe = dirAxe;
+                    //the node contribution to the constraint which is 1-coeff
+                    alpha = alpha /lenght; //normalize, ensure that <1.0
+                    if (alpha < 1e-8)constraint.alpha = 1.0 ;
+                    else constraint.alpha = 1.0 - alpha;
+
+                    //The projection on the axe
+                    constraint.proj = proj;
+                    constraint.Q = from[i];
+
+                    /////
+                    lenght = (dst[j] - Q1).norm();
+                    constraint.Q1Q2 = lenght;
+
+                    constraint.r2 = fact_v;
+                    std::cout << "j :"<< j << " ; fact_v :"<< fact_v << std::endl;
+                    //std::cout << "alpha :"<< alpha << " ; r2 :"<< constraint.alpha << std::endl;
+
+                    // We move the constraint point onto the projection
+                    Deriv1 t1 = P - proj; // violation vector
+                    constraint.dist = t1.norm(); // constraint violation
+                    t1.normalize(); // direction of the constraint
+
+                    if(t1.norm()<1.0e-1 && dirAxe[2] < 0.99){
+                        Vector3 temp = Vector3(dirAxe[0],dirAxe[1],dirAxe[2]+50.0);
+                        t1 = cross(dirAxe,temp);
+                        t1.normalize();
+                        constraint.t1 = t1;
+                    }
+                    if(t1.norm()<1.0e-1){
+                        Vector3 temp = Vector3(dirAxe[0],dirAxe[1]+50.0,dirAxe[2]);
+                        t1 = cross(dirAxe,temp);
+                        t1.normalize();
+                        constraint.t1 = t1;
+                    }
+
                     constraint.t1 = t1;
-                }
-                if(t1.norm()<1.0e-1){
-                    Vector3 temp = Vector3(dirAxe[0],dirAxe[1]+50.0,dirAxe[2]);
-                    t1 = cross(dirAxe,temp);
-                    t1.normalize();
+                    //tangential 2
+                    Deriv1 t2 = cross(t1, dirAxe);  t2.normalize();
+                    constraint.t2 = t2;
+                    if(i == szFrom-1){
+                        constraint.proj = dst[szDst-1];
+                        constraint.eid = szDst-2;
+                        constraint.alpha = 1.0;
+                        constraint.dist = (dst[szDst-1] - from[szFrom-1]).norm();
+                    }
+                }else{
+                    //compute needs for constraint
+                    dirAxe.normalize();
+                    alpha = (P-Q1) * dirAxe;
+
+                    proj = Q1 + dirAxe * alpha;
+                    distVec = P - proj; // violation vector
+                    dist = distVec.norm(); // constraint violation
+                    constraint.eid = j;
+                    //The direction of the axe or the beam
+                    constraint.dirAxe = dirAxe;
+                    //the node contribution to the constraint which is 1-coeff
+                    alpha = alpha /lenght; //normalize, ensure that <1.0
+                    if (alpha < 1e-8)constraint.alpha = 1.0 ;
+                    else constraint.alpha = 1.0 - alpha;
+
+                    //The projection on the axe
+                    constraint.proj = proj;
+                    constraint.Q = from[i];
+
+                    /////
+                    constraint.Q1Q2 = lenght;
+                    constraint.r2 = fact_v;
+                    std::cout << "j :"<< j << " ; fact_v :"<< fact_v << std::endl;
+                    //std::cout << "alpha :"<< alpha << " ; r2 :"<< constraint.alpha << std::endl;
+
+                    // We move the constraint point onto the projection
+                    Deriv1 t1 = P - proj; // violation vector
+                    constraint.dist = t1.norm(); // constraint violation
+                    t1.normalize(); // direction of the constraint
+
+                    if(t1.norm()<1.0e-1 && dirAxe[2] < 0.99){
+                        Vector3 temp = Vector3(dirAxe[0],dirAxe[1],dirAxe[2]+50.0);
+                        t1 = cross(dirAxe,temp);
+                        t1.normalize();
+                        constraint.t1 = t1;
+                    }
+                    if(t1.norm()<1.0e-1){
+                        Vector3 temp = Vector3(dirAxe[0],dirAxe[1]+50.0,dirAxe[2]);
+                        t1 = cross(dirAxe,temp);
+                        t1.normalize();
+                        constraint.t1 = t1;
+                    }
+
                     constraint.t1 = t1;
+                    //tangential 2
+                    Deriv1 t2 = cross(t1, dirAxe);  t2.normalize();
+                    constraint.t2 = t2;
+
+                    ///This is need because we are applying the a
+                    /// billateral constraint on the last node of the mstate
+                    if(i == szFrom-1){
+                        constraint.proj = dst[szDst-1];
+                        constraint.eid = szDst-2;
+                        constraint.alpha = 1.0;
+                        constraint.dist = (dst[szDst-1] - from[szFrom-1]).norm();
+                    }
                 }
-
-                //printf("1 ########################################################### \n");
-                //std::cout << " i : "<< i << " ==> j :"<< j << " ==> eid : "<< constraint.eid << std::endl;
-                constraint.t1 = t1;
-                //                std::cout << "t1 : "<< t1 << std::endl;
-                //                std::cout << "=============> t1 : "<< constraint.t1 << std::endl;
-                //tangential 2
-                Deriv1 t2 = cross(t1, dirAxe);  t2.normalize();
-                constraint.t2 = t2;
-
             }
         }
-        //        std::cout << i << " Closets edge is "<< constraint.eid << std::endl;
+        printf("______________________________________________________________\n");
+        std::cout << "i :" << i << " ; eid:" << constraint.eid << " alpha : " << constraint.alpha << " ;  dist :"<< constraint.dist << std::endl;
+        std::cout<<" fact_v :"<< constraint.r2 << i << " ; n :"<< constraint.dirAxe << "; t1:" << constraint.t1 << "; t2 :"<<  constraint.t2 << std::endl;
+        printf("______________________________________________________________\n");
+
         //std::cout << " i : "<< i << " ==> dist: :"<< constraint.dist << " ==> eid : "<< constraint.eid << std::endl;
         m_constraints.push_back(constraint);
     }
@@ -242,10 +321,20 @@ void DifferenceMultiMapping<TIn1, TIn2, TOut>::apply(
     out.resize(sz);
 
     for(unsigned int i=0; i<sz; i++){
-        out[i][0] = 0.0;
-        out[i][1] = m_constraints[i].dist;
-        out[i][2] = 0.0;
+        if(i< sz-1){
+            out[i][0] = 0.0;
+            out[i][1] = m_constraints[i].dist;
+            out[i][2] = 0.0;
+        }else{
+            Real dist= (in2[in2.size()-1] - in1[in1.size()-1]).norm();
+            std::cout << " position1 : "<< in1[in1.size()-1] << " ; position2  : "<< in2[in2.size()-1] << " .dist: "<< dist <<std::endl;
+            out[sz-1][0] = 0.0; //std::abs(in2[in2.size()-1][0] - in1[in1.size()-1][0]);
+            out[sz-1][1] = dist; //std::abs(in2[in2.size()-1][1] - in1[in1.size()-1][1]);
+            out[sz-1][2] = 0.0; //std::abs(in2[in2.size()-1][2] - in1[in1.size()-1][2]);
+            std::cout << " dist end :"<< out[sz-1] << std::endl;
+        }
     }
+
     dataVecOutPos[0]->endEdit();
 }
 
@@ -269,12 +358,19 @@ void DifferenceMultiMapping<TIn1, TIn2, TOut>:: applyJ(
         Constraint& c = m_constraints[i];
         int ei1 = c.eid;
         int ei2 = c.eid+1;
-        //        std::cout << " ei1 : " << ei1 << " ei2 : "<< ei2 << std::endl;
-        Real v0 = c.dirAxe * (c.alpha * in2[ei1] + (1-c.alpha) * in2[ei2] - in1[i]);
-        Real v1 = c.t1     * (c.alpha * in2[ei1] + (1-c.alpha) * in2[ei2] - in1[i]);
-        Real v2 = c.t2     * (c.alpha * in2[ei1] + (1-c.alpha) * in2[ei2] - in1[i]);
-
-        outVel[i] = OutDeriv(v0,v1,v2);
+        if(i < sz-1){
+            // std::cout << " ei1 : " << ei1 << " ei2 : "<< ei2 << std::endl;
+            Real v0 = c.dirAxe * (c.alpha * in2[ei1] + (1-c.alpha) * in2[ei2] - in1[i]);
+            Real v1 = c.t1     * (c.alpha * in2[ei1] + (1-c.alpha) * in2[ei2] - in1[i]);
+            Real v2 = c.t2     * (c.alpha * in2[ei1] + (1-c.alpha) * in2[ei2] - in1[i]);
+            outVel[i] = OutDeriv(v0,v1,v2);
+        }else {
+            std::cout << " i : " << i << " ei2 : "<< ei2 << std::endl;
+            Real v0 = c.dirAxe * (in2[ei2] - in1[i]);
+            Real v1 = c.t1     * (in2[ei2] - in1[i]);
+            Real v2 = c.t2     * (in2[ei2] - in1[i]);
+            outVel[i] = OutDeriv(v0,v1,v2);
+        }
     }
     dataVecOutVel[0]->endEdit();
 }
@@ -302,16 +398,23 @@ void DifferenceMultiMapping<TIn1, TIn2, TOut>::applyJT(
         int ei1 = c.eid;
         int ei2 = c.eid+1;
         OutDeriv f = in[i];
-        std::cout << " ================+++++++++>>>>> The force : " << f << std::endl;
-        Deriv2 f1   = (f[0] * c.dirAxe) + (f[1] * c.t1) + (f[2] * c.t2) ;
-        Deriv1 f2   = (c.alpha * f[0]*c.dirAxe) + (c.alpha* f[1] * c.t1) + (c.alpha * f[2] * c.t2);
-        Deriv1 f2_1 = ((1-c.alpha) * f[0]*c.dirAxe )+ ((1-c.alpha) * f[1]*c.t1) + ((1-c.alpha) * f[2]*c.t2);
+        //std::cout << " ================+++++++++>>>>> The force : " << f << std::endl;
+        if(i < sz-1){
+            Deriv2 f1   = (f[0] * c.dirAxe) + (f[1] * c.t1) + (f[2] * c.t2) ;
+            Deriv1 f2   = (c.alpha * f[0]*c.dirAxe) + (c.alpha* f[1] * c.t1) + (c.alpha * f[2] * c.t2);
+            Deriv1 f2_1 = ((1-c.alpha) * f[0]*c.dirAxe )+ ((1-c.alpha) * f[1]*c.t1) + ((1-c.alpha) * f[2]*c.t2);
 
-        std::cout << " f1 : " << f1 << "   f&_1: " << f2_1 << " ; f2 : "<< f2 << std::endl;
+            //std::cout << " f1 : " << f1 << "   f&_1: " << f2_1 << " ; f2 : "<< f2 << std::endl;
 
-        out1[i] -= f1;
-        out2[ei1] += f2;
-        out2[ei2] += f2_1;
+            out1[i] -= f1;
+            out2[ei1] += f2;
+            out2[ei2] += f2_1;
+        }else{
+            Deriv2 f = (f[0] * c.dirAxe) + (f[1] * c.t1) + (f[2] * c.t2) ;
+            out1[i] -= f;
+            out2[ei2] += f;
+        }
+
     }
 
     dataVecOut1Force[0]->endEdit();
@@ -325,7 +428,7 @@ void DifferenceMultiMapping<TIn1, TIn2, TOut>::applyJT(
         const helper::vector< In2DataMatrixDeriv*>&  dataMatOut2Const ,
         const helper::vector<const OutDataMatrixDeriv*>& dataMatInConst)
 {
-    printf("######################## Inside the applyJ constrainte level 1 \n");
+
     if(dataMatOut1Const.empty() || dataMatOut2Const.empty() || dataMatInConst.empty() )
         return;
 
@@ -341,11 +444,6 @@ void DifferenceMultiMapping<TIn1, TIn2, TOut>::applyJT(
     typename OutMatrixDeriv::RowConstIterator rowIt    = in.begin()  ;
     typename OutMatrixDeriv::RowConstIterator rowItEnd = in.end();
 
-
-    if(!rowIt.index()) printf( "===++++==========>  The rowIt is empty \n");
-
-
-
     for (rowIt = in.begin(); rowIt != rowItEnd; ++rowIt)
     {
         std::cout<<"************* Apply JT (MatrixDeriv) iteration on line ";
@@ -358,42 +456,64 @@ void DifferenceMultiMapping<TIn1, TIn2, TOut>::applyJT(
         // Creates a constraints if the input constraint is not empty.
         if (colIt == colItEnd)
         {
-            std::cout<<"no column for this constraint"<<std::endl;
+            // std::cout<<"no column for this constraint"<<std::endl;
             continue;
         }
         typename In1MatrixDeriv::RowIterator o1 = out1.writeLine(rowIt.index()); // we store the constraint number
         typename In2MatrixDeriv::RowIterator o2 = out2.writeLine(rowIt.index());
 
+        if((rowIt.index()/2) < (x1from.size() -1)){
+            while (colIt != colItEnd)
+            {
+                int childIndex = colIt.index();
+                Constraint c = m_constraints[childIndex];
+                const OutDeriv h = colIt.val();
+                int indexBeam =  c.eid;
+                //std::cout << " ===> childIndex : " << childIndex<< " ===> indexBeam : " << indexBeam << std::endl;
+                //std::cout << " ===> h : " << h << std::endl;
 
-        while (colIt != colItEnd)
-        {
-            int childIndex = colIt.index();
-            Constraint c = m_constraints[childIndex];
-            const OutDeriv h = colIt.val();
-            int indexBeam =  c.eid;
-            std::cout << " ===> childIndex : " << childIndex<< " ===> indexBeam : " << indexBeam << std::endl;
-            std::cout << " ===> h : " << h << std::endl;
+                Deriv2 h1 = (h[0] * c.dirAxe) + (h[1] * c.t1) + (h[2] * c.t2) ;
+                Deriv1 h2 = (c.alpha * h[0]*c.dirAxe) + (c.alpha* h[1] * c.t1) + (c.alpha * h[2] * c.t2);
+                Deriv1 h2_1 = ((1.0-c.alpha) * h[0]*c.dirAxe )+ ((1.0-c.alpha) * h[1]*c.t1) + ((1.0-c.alpha) * h[2]*c.t2);
 
-            Deriv2 h1 = (h[0] * c.dirAxe) + (h[1] * c.t1) + (h[2] * c.t2) ;
-            Deriv1 h2 = (c.alpha * h[0]*c.dirAxe) + (c.alpha* h[1] * c.t1) + (c.alpha * h[2] * c.t2);
-            Deriv1 h2_1 = ((1-c.alpha) * h[0]*c.dirAxe )+ ((1-c.alpha) * h[1]*c.t1) + ((1-c.alpha) * h[2]*c.t2);
+                //std::cout << " ==> t1 : "<< c.t1 << " ==> t2 : "<< c.t2 << std::endl;
+                //std::cout << " ===> h1 : " << h1<< " ===> h2 : " << h2 << " ===> h2_1 : " << h2_1 << std::endl;
 
-            std::cout << " ==> t1 : "<< c.t1 << " ==> t2 : "<< c.t2 << std::endl;
+                o1.addCol(childIndex, -h1);
+                o2.addCol(indexBeam, h2);
+                o2.addCol(indexBeam+1, h2_1);
 
-            std::cout << " ===> h1 : " << h1<< " ===> h2 : " << h2 << " ===> h2_1 : " << h2_1 << std::endl;
+                colIt++;
+            }
+        }else{
+            std::cout << " =====> index : "<< rowIt.index() ;
+            while (colIt != colItEnd)
+            {
+                int childIndex = colIt.index();
+                Constraint c = m_constraints[childIndex];
+                const OutDeriv h = colIt.val();
+                int indexBeam =  c.eid;
+                std::cout  << " ===> childIndex : " << childIndex<< " ===> indexBeam+1 : " << indexBeam +1 << std::endl;
+                //std::cout << " ===> h : " << h << std::endl;
 
-            o1.addCol(childIndex, -h1);
-            o2.addCol(indexBeam, h2);
-            o2.addCol(indexBeam+1, h2_1);
+                Deriv2 h1 = (h[0] * c.dirAxe) + (h[1] * c.t1) + (h[2] * c.t2) ;
+                Deriv1 h2 = (c.alpha * h[0]*c.dirAxe) + (c.alpha* h[1] * c.t1) + (c.alpha * h[2] * c.t2);
+                Deriv1 h2_1 = ((1.0-c.alpha) * h[0]*c.dirAxe )+ ((1.0-c.alpha) * h[1]*c.t1) + ((1.0-c.alpha) * h[2]*c.t2);
 
-            colIt++;
+                o1.addCol(childIndex, -h1);
+                o2.addCol(indexBeam, h2_1);
+                o2.addCol(indexBeam+1, h2);
+                colIt++;
+            }
         }
+
+
     }
 
     ////// END ARTICULATION SYSTEM MAPPING
     dataMatOut1Const[0]->endEdit();
     dataMatOut2Const[0]->endEdit();
-    printf("######################## Inside the applyJ constrainte level 2 \n");
+    //    printf("######################## Inside the applyJ constrainte level 2 \n");
 }
 
 
@@ -409,24 +529,11 @@ void DifferenceMultiMapping<TIn1, TIn2, TOut>::draw(const core::visual::VisualPa
     vparams->drawTool()->disableLighting();
 
     sofa::defaulttype::RGBAColor color;
-    //    Constraint& c = m_constraints[0];
 
-    //    if(c.thirdConstraint<0)
-    //        color = sofa::defaulttype::RGBAColor::yellow();
-    //    else if(c.thirdConstraint>0)
-    //        color = sofa::defaulttype::RGBAColor::green();
-    //    else
     color = sofa::defaulttype::RGBAColor::magenta();
 
     std::vector<sofa::defaulttype::Vector3> vertices;
-    //    vertices.push_back(DataTypes::getCPos((this->mstate1->read(core::ConstVecCoordId::position())->getValue())[d_m1.getValue()]));
 
-    //    vparams->drawTool()->drawPoints(vertices, 10, color);
-    //    vertices.clear();
-
-    //    color = sofa::defaulttype::RGBAColor::blue();
-    //    vertices.push_back(DataTypes::getCPos((this->mstate2->read(core::ConstVecCoordId::position())->getValue())[d_m2a.getValue()]));
-    //    vertices.push_back(DataTypes::getCPos((this->mstate2->read(core::ConstVecCoordId::position())->getValue())[d_m2b.getValue()]));
     vparams->drawTool()->drawLines(vertices, 1, color);
 
     for (size_t i =0 ; i < m_constraints.size(); i++) {
@@ -435,6 +542,16 @@ void DifferenceMultiMapping<TIn1, TIn2, TOut>::draw(const core::visual::VisualPa
         vertices.push_back(m_constraints[i].proj);
         vertices.push_back(m_constraints[i].Q);
         vparams->drawTool()->drawLines(vertices, 1, color);
+        if(i==m_constraints.size() - 1){
+            Coord2 P1 = m_constraints[i].Q;
+            Real radius_arrow = 0.10;
+            Coord2 x = m_constraints[i].dirAxe;
+            Coord2 y = m_constraints[i].t1;
+            Coord2 z = m_constraints[i].t2;
+            vparams->drawTool()->drawArrow(P1,P1 + x, radius_arrow, defaulttype::Vec<4,Real>(1,0,0,1));
+            vparams->drawTool()->drawArrow(P1,P1 + y, radius_arrow, defaulttype::Vec<4,Real>(0,1,0,1));
+            vparams->drawTool()->drawArrow(P1,P1 + z, radius_arrow, defaulttype::Vec<4,Real>(0,0,1,1));
+        }
     }
     //printf("CosseratSlidingConstraint<DataTypes>::draw(const core::visual::VisualParams* vparams) After \n");
 
