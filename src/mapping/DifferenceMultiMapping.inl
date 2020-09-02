@@ -321,6 +321,7 @@ void DifferenceMultiMapping<TIn1, TIn2, TOut>::apply(
     out.resize(sz);
 
     for(unsigned int i=0; i<sz; i++){
+        Constraint& c = m_constraints[i];
         if(i< sz-1){
             out[i][0] = 0.0;
             out[i][1] = m_constraints[i].dist;
@@ -328,9 +329,9 @@ void DifferenceMultiMapping<TIn1, TIn2, TOut>::apply(
         }else{
             Real dist= (in2[in2.size()-1] - in1[in1.size()-1]).norm();
             std::cout << " position1 : "<< in1[in1.size()-1] << " ; position2  : "<< in2[in2.size()-1] << " .dist: "<< dist <<std::endl;
-            out[sz-1][0] = 0.0; //std::abs(in2[in2.size()-1][0] - in1[in1.size()-1][0]);
-            out[sz-1][1] = dist; //std::abs(in2[in2.size()-1][1] - in1[in1.size()-1][1]);
-            out[sz-1][2] = 0.0; //std::abs(in2[in2.size()-1][2] - in1[in1.size()-1][2]);
+            out[sz-1][0] = -c.dirAxe * (in2[in2.size()-1] - in1[in1.size()-1]);
+            out[sz-1][1] = -c.t1* (in2[in2.size()-1] - in1[in1.size()-1]); //std::abs(in2[in2.size()-1][1] - in1[in1.size()-1][1]);
+            out[sz-1][2] = -c.t2* (in2[in2.size()-1] - in1[in1.size()-1]); //std::abs(in2[in2.size()-1][2] - in1[in1.size()-1][2]);
             std::cout << " dist end :"<< out[sz-1] << std::endl;
         }
     }
@@ -366,9 +367,9 @@ void DifferenceMultiMapping<TIn1, TIn2, TOut>:: applyJ(
             outVel[i] = OutDeriv(v0,v1,v2);
         }else {
             std::cout << " i : " << i << " ei2 : "<< ei2 << std::endl;
-            Real v0 = c.dirAxe * (in2[ei2] - in1[i]);
-            Real v1 = c.t1     * (in2[ei2] - in1[i]);
-            Real v2 = c.t2     * (in2[ei2] - in1[i]);
+            Real v0 = -c.dirAxe * (in2[ei2] - in1[i]);
+            Real v1 = -c.t1     * (in2[ei2] - in1[i]);
+            Real v2 = -c.t2     * (in2[ei2] - in1[i]);
             outVel[i] = OutDeriv(v0,v1,v2);
         }
     }
@@ -411,8 +412,8 @@ void DifferenceMultiMapping<TIn1, TIn2, TOut>::applyJT(
             out2[ei2] += f2_1;
         }else{
             Deriv2 f = (f[0] * c.dirAxe) + (f[1] * c.t1) + (f[2] * c.t2) ;
-            out1[i] -= f;
-            out2[ei2] += f;
+            out1[i] += f;
+            out2[ei2] -= f;
         }
 
     }
@@ -497,12 +498,10 @@ void DifferenceMultiMapping<TIn1, TIn2, TOut>::applyJT(
                 //std::cout << " ===> h : " << h << std::endl;
 
                 Deriv2 h1 = (h[0] * c.dirAxe) + (h[1] * c.t1) + (h[2] * c.t2) ;
-                Deriv1 h2 = (c.alpha * h[0]*c.dirAxe) + (c.alpha* h[1] * c.t1) + (c.alpha * h[2] * c.t2);
-                Deriv1 h2_1 = ((1.0-c.alpha) * h[0]*c.dirAxe )+ ((1.0-c.alpha) * h[1]*c.t1) + ((1.0-c.alpha) * h[2]*c.t2);
+                Deriv1 h2 = ( h[0]*c.dirAxe) + (h[1] * c.t1) + (h[2] * c.t2);
 
-                o1.addCol(childIndex, -h1);
-                o2.addCol(indexBeam, h2_1);
-                o2.addCol(indexBeam+1, h2);
+                o1.addCol(childIndex, h1);
+                o2.addCol(indexBeam+1, -h2);
                 colIt++;
             }
         }
