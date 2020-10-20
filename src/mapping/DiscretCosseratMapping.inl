@@ -19,8 +19,7 @@
 *                                                                             *
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
-#ifndef SOFA_COMPONENT_MAPPING_POEMAPING_INL
-#define SOFA_COMPONENT_MAPPING_POEMAPING_INL
+#pragma once
 
 #include <sofa/core/Multi2Mapping.inl>
 #include "DiscretCosseratMapping.h"
@@ -33,26 +32,20 @@
 #include <sofa/core/objectmodel/BaseContext.h>
 #include <sofa/helper/logging/Message.h>
 
-
-
-namespace sofa
+namespace sofa::component::mapping
 {
+
 using sofa::core::objectmodel::BaseContext ;
 using sofa::helper::AdvancedTimer;
 using sofa::helper::WriteAccessor;
 
-
-namespace component
-{
-
-namespace mapping
-{
 template <class TIn1, class TIn2, class TOut>
 DiscretCosseratMapping<TIn1, TIn2, TOut>::DiscretCosseratMapping()
     : m_fromModel1(NULL)
     , m_fromModel2(NULL)
     , m_toModel(NULL)
-{}
+{
+}
 
 
 // _________________________________________________________________________________________
@@ -92,6 +85,9 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>::init()
     for (unsigned int i = 0; i < xfrom.size(); i++) {
         m_vecTransform.push_back(xfrom[i]);
     }
+
+    if(d_debug.getValue())
+        msg_info("DiscretCosseratMapping")<< " m_vecTransform : "<< m_vecTransform;
 
     this->initialize();
 }
@@ -580,8 +576,26 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>::applyJT(
 template <class TIn1, class TIn2, class TOut>
 void DiscretCosseratMapping<TIn1, TIn2, TOut>::draw(const core::visual::VisualParams* vparams)
 {
-    if (!vparams->displayFlags().getShowMappings())
 
+    ///draw cable
+    ///
+    const OutDataVecCoord* xfromData = m_toModel->read(core::ConstVecCoordId::position());
+    const OutVecCoord xData = xfromData->getValue();
+    helper::vector<Vector3> positions;
+    positions.clear();
+    unsigned int sz = xData.size();
+    //    msg_info("DiscretCosseratMapping")<< " sz : "<< sz;
+    for (unsigned int i = 0; i<sz; i++){
+        positions.push_back(xData[i].getCenter());
+    }
+    //    for (auto pos : xData)
+    //        positions.push_back(pos.getCenter());
+
+    double radius = 5;
+    defaulttype::Vec4f colorL = defaulttype::Vec4f(0.4,0.4,0.4,1);
+    vparams->drawTool()->drawLineStrip(positions,radius,colorL);
+
+    if (!vparams->displayFlags().getShowMappings())
         if(!d_debug.getValue()) return;
     for (unsigned int i = 0;i < m_vecTransform.size(); i++) {
 
@@ -594,7 +608,7 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>::draw(const core::visual::VisualPa
         x= q.rotate(defaulttype::Vector3(1.0,0,0));
         y= q.rotate(defaulttype::Vector3(0,1.0,0));
         z= q.rotate(defaulttype::Vector3(0,0,1.0));
-        double radius_arrow = 1.0/8.0;
+        double radius_arrow = 1.0/.0;
 
         vparams->drawTool()->drawArrow(P1,(P1 + x)*1.0, radius_arrow, defaulttype::Vec<4,double>(1,0,0,1));
         vparams->drawTool()->drawArrow(P1,(P1 + y)*1.0, radius_arrow, defaulttype::Vec<4,double>(0,1,0,1));
@@ -603,11 +617,4 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>::draw(const core::visual::VisualPa
     //return;
 }
 
-
-} // namespace mapping
-
-} // namespace component
-
 } // namespace sofa
-
-#endif // SOFA_COMPONENT_MAPPING_POEMAPING_INL

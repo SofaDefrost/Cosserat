@@ -19,9 +19,7 @@
 *                                                                             *
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
-#ifndef SOFA_COMPONENT_MAPPING_DifferenceMultiMapping_H
-#define SOFA_COMPONENT_MAPPING_DifferenceMultiMapping_H
-
+#pragma once
 #include <sofa/core/BaseMapping.h>
 #include <sofa/core/core.h>
 #include <sofa/core/Multi2Mapping.h>
@@ -31,8 +29,7 @@
 #include "BaseCosserat.h"
 
 
-namespace sofa
-
+namespace sofa::component::mapping
 {
 using sofa::defaulttype::SolidTypes ;
 using sofa::core::objectmodel::BaseContext ;
@@ -41,12 +38,7 @@ using sofa::defaulttype::Matrix4;
 using sofa::defaulttype::Vector3;
 using sofa::defaulttype::Vec6;
 using std::get;
-
-namespace component
-{
-
-namespace mapping
-{
+using helper::vector;
 
 /*!
  * \class DifferenceMultiMapping
@@ -80,6 +72,8 @@ public:
     typedef Data<In1VecCoord> In1DataVecCoord;
     typedef Data<In1VecDeriv> In1DataVecDeriv;
     typedef Data<In1MatrixDeriv> In1DataMatrixDeriv;
+
+    typedef sofa::defaulttype::Rigid3dTypes::Coord Rigid;
     
     typedef typename In2::Coord::value_type Real          ;
     typedef typename In2::Coord             Coord2         ;
@@ -110,40 +104,24 @@ public:
 
     typedef typename SolidTypes<Real>::Transform      Transform ;
 
-protected:
-    //    Data<helper::vector<double>>      d_curv_abs_input ;
-    //    Data<helper::vector<double>>      d_curv_abs_output ;
-    //    Data<bool>                        d_debug ;
-
-    /// Input Models container. New inputs are added through addInputModel(In* ).
-    //    LinkFromModels1 m_fromModel1;
-    //    LinkFromModels2 m_fromModel2;
-    //    LinkToModels m_toModel;
-
+protected:   
     core::State<In1>* m_fromModel1;
     core::State<In2>* m_fromModel2;
     core::State<Out>* m_toModel;
-
-
-    /*===========COSSERAT VECTORS ======================*/
-    //    helper::vector<Matrix4> m_nodesLogarithmeSE3Vectors;
 
 protected:
     /// Constructor
     DifferenceMultiMapping() ;
     /// Destructor
     ~DifferenceMultiMapping()  override {}
+
 public:
-
-
     /**********************SOFA METHODS**************************/
     void init() override;
     virtual void bwdInit() override;  // get the points
     virtual void reset() override;
     virtual void reinit() override;
     void draw(const core::visual::VisualParams* vparams) override;
-
-    void drawLinesBetweenPoints(const core::visual::VisualParams* vparams);
 
     /**********************MAPPING METHODS**************************/
     void apply(
@@ -175,8 +153,15 @@ public:
     void computeProximity(const In1VecCoord &x1, const In2VecCoord &x2);
 
 protected:
-    /**********************COSSERAT METHODS**************************/
-    //    defaulttype::Matrix4 computeLogarithme(const double & x, const Matrix4 &gX);
+    /********************** The component Data **************************/
+    //Input data
+    Data<vector<Rigid>>                d_direction;
+    Data<vector<unsigned int>>          d_indices;
+    Data<double>                        d_raduis;
+    Data<sofa::defaulttype::Vec4f>      d_color;
+    Data<bool>                          d_drawArrows;
+
+
 
 private:
     // storage of force
@@ -192,7 +177,6 @@ private:
         Real r, r2, Q1Q2;
         Real dist; //violation
         Real thirdConstraint;
-        //Deriv  m_dirAxe, m_dirProj, m_dirOrtho;
     } Constraint;
 
     helper::vector<Constraint> m_constraints;
@@ -200,18 +184,5 @@ private:
 
 };
 
-//extern template class SOFA_POE_MAPPING_API DifferenceMultiMapping<defaulttype::Vec3Types>;
 
-
-//#if  !defined(SOFA_COMPONENT_MAPPING_DifferenceMultiMapping_MAPING_CPP)
-//extern template class SOFA_COSSERAT_MAPPING_API DifferenceMultiMapping< sofa::defaulttype::Vec3Types, sofa::defaulttype::Vec3Types, sofa::defaulttype::Vec3Types >;
-//#endif
-
-} // mapping
-
-} // namespace componenet
-
-} // namespace sofa
-
-#endif //SOFA_COMPONENT_MAPPING_POEMAPING_H
-
+} // sofa::component::mapping
