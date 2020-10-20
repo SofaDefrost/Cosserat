@@ -19,20 +19,15 @@
 *                                                                             *
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
-#define SOFA_COMPONENT_MAPPING_DifferenceMultiMapping_MAPING_CPP
+#pragma once
 #include "DifferenceMultiMapping.inl"
 #include <sofa/defaulttype/VecTypes.h>
 #include <sofa/defaulttype/RigidTypes.h>
 #include <sofa/core/ObjectFactory.h>
 
-namespace sofa
+namespace sofa::component::mapping
 {
 
-namespace component
-{
-
-namespace mapping
-{
 using namespace sofa::defaulttype;
 
 // Register in the Factory
@@ -40,10 +35,5 @@ int DifferenceMultiMappingClass = core::RegisterObject("Set the positions and ve
         .add< DifferenceMultiMapping< sofa::defaulttype::Vec3Types, sofa::defaulttype::Vec3Types, sofa::defaulttype::Vec3Types > >() ;
 
 
-//template class SOFA_COSSERAT_MAPPING_API DifferenceMultiMapping< sofa::defaulttype::Vec3Types, sofa::defaulttype::Vec3Types, sofa::defaulttype::Vec3Types >;
-
-} // namespace mapping
-
-} // namespace component
 
 } // namespace sofa.

@@ -170,7 +170,7 @@ public:
 
 protected:
     /**********************COSSERAT METHODS**************************/
-    void computeExponentialSE3(double & x, const defaulttype::Vector3& k, Transform & Trans);
+    void computeExponentialSE3(const double &x, const defaulttype::Vector3& k, Transform & Trans);
     void computeAdjoint(const Transform & frame, Mat6x6 &Adjoint);
     void compute_coAdjoint(const Transform & frame, Mat6x6 &coAdjoint);
     void compute_adjointVec6(const Vec6 & frame, Mat6x6 &adjoint);

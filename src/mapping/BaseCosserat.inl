@@ -117,7 +117,7 @@ void BaseCosserat<TIn1, TIn2, TOut>::reinit()
 
 
 template <class TIn1, class TIn2, class TOut>
-void BaseCosserat<TIn1, TIn2, TOut>::computeExponentialSE3(double & x, const defaulttype::Vector3& k, Transform & Trans){
+void BaseCosserat<TIn1, TIn2, TOut>::computeExponentialSE3(const double & x, const defaulttype::Vector3& k, Transform & Trans){
     Matrix4 I4; I4.identity();
 
     double theta = k.norm();
@@ -135,6 +135,9 @@ void BaseCosserat<TIn1, TIn2, TOut>::computeExponentialSE3(double & x, const def
 
     Xi[0][3] = 1.0;
 
+    if(d_debug.getValue())
+        msg_info("BaseCosserat: ")<< "matix Xi : "<< Xi;
+
     if(theta <= std::numeric_limits<double>::epsilon()){
         g_X = I4 + x*Xi;
     }else {
@@ -143,7 +146,12 @@ void BaseCosserat<TIn1, TIn2, TOut>::computeExponentialSE3(double & x, const def
         g_X = I4 + x*Xi + scalar1*Xi*Xi + scalar2*Xi*Xi*Xi ;
     }
 
-    defaulttype::Mat3x3 M; g_X.getsub(0,0,M);
+    //    msg_info("BaseCosserat: ")<< "matix g_X : "<< g_X;
+
+    defaulttype::Mat3x3 M;
+    g_X.getsub(0,0,M);
+
+    //    msg_info("BaseCosserat: ")<< "Sub matix M : "<< g_X;
 
     defaulttype::Quat R; R.fromMatrix(M);
     Vector3 T = Vector3(g_X(0,3),g_X(1,3),g_X(2,3));
@@ -173,10 +181,10 @@ void BaseCosserat<TIn1, TIn2, TOut>::update_ExponentialSE3(const In1VecCoord & i
         computeExponentialSE3(x,k,T);
         m_ExponentialSE3Vectors.push_back(T);
 
-        if (d_debug.getValue()){
-            printf("__________________________________________\n");
-            std::cout << "x :"<< x << "; k :"<< k << std::endl;
-            std::cout<< "m_ExponentialSE3Vectors :"<< m_ExponentialSE3Vectors[i] << std::endl;
+        if(d_debug.getValue()){
+            msg_info("BaseCosserat:")<< "__________________________________________";
+            msg_info("BaseCosserat:")<< "x :"<< x << "; k :"<< k;
+            msg_info("BaseCosserat:")<< "m_ExponentialSE3Vectors :"<< T;
         }
     }
 
@@ -188,6 +196,11 @@ void BaseCosserat<TIn1, TIn2, TOut>::update_ExponentialSE3(const In1VecCoord & i
         Transform T; computeExponentialSE3(x,k,T) ;
         m_nodesExponentialSE3Vectors.push_back(T);
 
+        if(d_debug.getValue()){
+            msg_info("BaseCosserat:")<< "_________________Beam Node Expo___________________"<<j;
+            msg_info("BaseCosserat:")<< "Node m_ExponentialSE3Vectors :"<< T;
+            msg_info("BaseCosserat:")<< "_________________Beam Node Expo___________________";
+        }
         //////////////////
         //        Eigen::Matrix4d gX = convertTransformToMatrix4x4(T);
         //        Eigen::Matrix4d log_gX= (1.0/x) * computeLogarithme(x, gX);
@@ -195,13 +208,6 @@ void BaseCosserat<TIn1, TIn2, TOut>::update_ExponentialSE3(const In1VecCoord & i
         //        std::cout << "The logarithme : \n"<< log_gX << std::endl;
         //        m_nodesLogarithmeSE3Vectors.push_back(log_gX);
     }
-
-    if (d_debug.getValue()){
-        printf("_________________Beam Expo___________________\n");
-        std::cout << "Beam Expo : "<< m_nodesExponentialSE3Vectors << std::endl;
-        printf("_________________Beam Expo___________________\n");
-    }
-
 }
 
 
@@ -398,10 +404,12 @@ defaulttype::Vec6 BaseCosserat<TIn1, TIn2, TOut>::compute_eta(const defaulttype:
 template <class TIn1, class TIn2, class TOut>
 void BaseCosserat<TIn1, TIn2, TOut>::initialize()
 {
-    //find the beam on which each output is
+    //find the beam on which each output frame is located
     helper::ReadAccessor<Data<helper::vector<double>>> curv_abs_input = d_curv_abs_input;
     helper::ReadAccessor<Data<helper::vector<double>>> curv_abs_output = d_curv_abs_output;
+
     size_t sz = d_curv_abs_output.getValue().size();
+
     m_indicesVectors.clear();
     m_framesLenghtVectors.clear();
     m_beamLenghtVectors.clear();
@@ -409,9 +417,14 @@ void BaseCosserat<TIn1, TIn2, TOut>::initialize()
     size_t input_index = 1;
 
     for (size_t i=0; i < sz; i++) {
-        if (curv_abs_input[input_index] >= curv_abs_output[i]) {
+        if (curv_abs_input[input_index] > curv_abs_output[i]) {
             m_indicesVectors.push_back(input_index);
-        }else {
+        }
+        else if(curv_abs_input[input_index] == curv_abs_output[i]){
+            m_indicesVectors.push_back(input_index);
+            input_index++;
+        }
+        else {
             m_indicesVectors.push_back(input_index+1);
             input_index++;
         }
@@ -425,9 +438,9 @@ void BaseCosserat<TIn1, TIn2, TOut>::initialize()
     }
 
     if(d_debug.getValue()){
-        std::cout<< "m_indicesVectors : "<< m_indicesVectors << std::endl;
-        std::cout<< "m_framesLenghtVectors : "<< m_framesLenghtVectors << std::endl;
-        std::cout<< "m_beamLenghtVectors : "<< m_beamLenghtVectors << std::endl;
+        msg_info("BaseCosserat:") << "m_indicesVectors : "<< m_indicesVectors ;
+        msg_info("BaseCosserat:") << "m_framesLenghtVectors : "<< m_framesLenghtVectors ;
+        msg_info("BaseCosserat:") << "m_beamLenghtVectors : "<< m_beamLenghtVectors ;
     }
 }
 
