@@ -29,6 +29,8 @@ lengthTrunk = 195.
 nbBeams = 20
 nbFrames = 20 # Dans l'ideal >= nbBeams
 nbCables = 4
+maxSlidingForce = 0
+minSlidingForce = -10
 
 pullPoint = [[0., length1, 0.], [-length1, 0., 0.], [0., -length1, 0.], [length1, 0.,0.]]
 direction = Vec3( lengthTrunk, length2-length1, 0.0)
@@ -50,7 +52,7 @@ position = [[0., 0., 0.]]*nbBeams
 for k in range(0, nbBeams, 2):
     position[k]   = Vec3(direction[0]*17.5*(k/2)+21, 0.0, 0.0)
     position[k+1] = Vec3(direction[0]*17.5*(k/2)+27, 0.0, 0.0)
-
+position[nbBeams-1][0]  += 1.0 
 position=[[0., 0., 0.]]+[pos.toList() for pos in position]
     
 ####################################################
@@ -64,11 +66,35 @@ VecCurvAbsInput  += createCurvAbsOutput(distance)
 VecFrame         += createFramesList(position)
 VecPosFem        += extractFEMConstraintPoints(position) # 3D constraint points in the 
 
+#def extractFEMConstraintPoints():    
+#    femPoints=[]
+#    #### Select point from position
+#    for i in range(0,len(position)-1,2):
+#        print("=================> i : ",i)
+#        femPoints += [[position[i][0], position[i][1], position[i][2]]]                        
+#    femPoints += [position[len(position)-1]]
+#    
+#    #### Apply the predifine transformation    
+#    constraintPoints = []
+#    for k in range(0, nbCables):
+#        constraintPoints.append([])        
+#        q = baseOrientation[k]
+#        pull = pullPoint[k]
+##        for pos in femPoints:
+#        for l in range(1, len(femPoints)):
+#            pos = femPoints[l]
+#            v = Vec3(pos[0], pos[1], pos[2])
+#            sol = v.rotateFromQuat(q)
+#            #print(" solu :", sol)
+#            constraintPoints[k] += [sol[0] + pull[0], sol[1] + pull[1], sol[2] + pull[2]]
+#    return constraintPoints
+
 def extractFEMConstraintPoints():    
     femPoints=[]
     #### Select point from position
     for i in range(0,len(position)-1,2):
-        femPoints += [[position[i][0], position[i][1], position[i][2]]]                        
+        center = (position[i][0] + position[i+1][0])/2.0
+        femPoints += [[center, position[i][1], position[i][2]]]
     femPoints += [position[len(position)-1]]
     
     #### Apply the predifine transformation    
@@ -77,7 +103,8 @@ def extractFEMConstraintPoints():
         constraintPoints.append([])        
         q = baseOrientation[k]
         pull = pullPoint[k]
-        for pos in femPoints:
+        for l in range(1, len(femPoints)):
+            pos = femPoints[l]
             v = Vec3(pos[0], pos[1], pos[2])
             sol = v.rotateFromQuat(q)
             #print(" solu :", sol)
@@ -101,39 +128,39 @@ class Animation(Sofa.PythonScriptController):
         self.targetMO = self.target.getObject('dofs')
         
     def onKeyPressed(self, c):
-        if ord(c) == "+":  # up
+        if ord(c) == 21:  # up
             pos = self.targetMO.findData('position').value
             pos[0][0] += self.rate
             self.targetMO.findData('position').value = pos
             print("=======> Position :", pos)
             
-        if ord(c) == "-":  # down
+        if ord(c) == 19:  # down
             pos = self.targetMO.findData('position').value
             pos[0][0] -= self.rate
             self.targetMO.findData('position').value = pos
             print("=======> Position :",pos)
              
-        if ord(c) == 19:  # up
-            pos = self.targetMO.findData('position').value
-            pos[0][1] += self.rate
-            self.targetMO.findData('position').value = pos
-            print("=======> Position :", pos)
-            
-        if ord(c) == 21:  # down
-            pos = self.targetMO.findData('position').value
-            pos[0][1] -= self.rate
-            self.targetMO.findData('position').value = pos
-            print("=======> Position :",pos)
+#        if ord(c) == 19:  # up
+#            pos = self.targetMO.findData('position').value
+#            pos[0][1] += self.rate
+#            self.targetMO.findData('position').value = pos
+#            print("=======> Position :", pos)
+#            
+#        if ord(c) == 21:  # down
+#            pos = self.targetMO.findData('position').value
+#            pos[0][1] -= self.rate
+#            self.targetMO.findData('position').value = pos
+#            print("=======> Position :",pos)
 
         if ord(c) == 18:  # left
             pos = self.targetMO.findData('position').value
-            pos[0][0] -= self.rate
+            pos[0][2] -= self.rate
             self.targetMO.findData('position').value = pos
             print("=======> Position :", pos)
 
         if ord(c) == 20:  # right
             pos = self.targetMO.findData('position').value
-            pos[0][0] += self.rate
+            pos[0][2] += self.rate
             self.targetMO.findData('position').value = pos
             print("=======> Position :", pos)
 
@@ -168,7 +195,7 @@ class CosseratCable(SofaObject):
             rigidBaseNode.createObject('UniformMass', totalMass="0.001", template="Rigid3d" )
             rigidBaseNode.createObject('PartialFixedConstraint', fixedDirections="1 1 0 1 1 1", indices="0")
 #            rigidBaseNode.createObject('RestShapeSpringsForceField', name='spring', stiffness="500", angularStiffness="500", external_points="0", mstate="@RigidBaseMO", points="0", template="Rigid3d")
-            rigidBaseNode.createObject('SlidingActuator', name="SlidingActuator"+str(i), template='Rigid3d', direction='0 0 1 0 0 0', indices=0,  maxForce='0', minForce='-2000') 
+            rigidBaseNode.createObject('SlidingActuator', name="SlidingActuator"+str(i), template='Rigid3d', direction='0 0 1 0 0 0', indices=0,  maxForce=maxSlidingForce, minForce=minSlidingForce) 
 #            rigidBaseNode.createObject('SlidingActuator', name="SlidingActuator0", template='Rigid3d', direction='1 0 0 0 0 0', indices=0,  maxForce='10000', minForce='-2000') 
             
             #############################################

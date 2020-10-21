@@ -8,6 +8,7 @@ from stlib.scene import Node
 #from cosseratUtilities import compute_BeamLenght, createCurvAbsOutput, createFramesList, extractFEMConstraintPoints
 import Sofa
 import os
+from grippercontroller import GripperController
 path = os.path.dirname(os.path.abspath(__file__))+'/../../scenes/inverseModelScenes/mesh/'
 
 FEMpos = [" 0.0 0 0 15 0 0 30 0 0 45 0 0 60 0 0 66 0 0 81 0.0 0.0"]
@@ -107,7 +108,7 @@ def Finger(parentNode=None, name="Finger",
 class CosseratCable(SofaObject):
     def __init__(self, parentNode, name, trans=[0.0,0.0,0.0], rot=[0.,0.,0.]):
         self.name=name
-        self.node = parentNode.createChild(self.name)             
+        self.node = parentNode #.createChild(self.name)             
         self.cableLenght = 81.0
         self.numberBeams = 6
         self.numberFrame = 15
@@ -245,31 +246,31 @@ class CosseratCable(SofaObject):
 
 def CosseratFinger(rootNode,
                    cableNode,
-                   femtranslation   =[0., 0., 0.],
-                   femrotation      =[0., 0., 0.],
-                   cableBaseTrans   =[0., 0., 0.], 
-                   cableBaseRot     =[0., 0., 0.],
-                   fixingBox        =[-18., -15., -8., 0.0, -3., 8],
+                   translation   =[0., 0., 0.],
+                   rotation      =[0., 0., 0.],                   
+                   fixingBox        =[-8., -20., -18., 0.0, -3., 8],
                    name             ="1"
                    ):
+    cable  = Node(cableNode, name)
+    cableN = CosseratCable(cable,
+                  name="cable",
+                  trans=translation, 
+                  rot=rotation)
     
-    cable = CosseratCable(cableNode,
-                           name="cable"+name,
-                           trans=cableBaseTrans, 
-                           rot=cableBaseRot)
-    slidingPoint = cable.slidingPoint
-    cableDofMO   = cable.cableDofMO
+    slidingPoint = cableN.slidingPoint
+    cableDofMO   = cableN.cableDofMO
     
     finger = Finger(rootNode, name="Finger"+name, 
-                     translation=femtranslation, 
-                     rotation=femrotation, 
+                     translation=translation, 
+                     rotation=rotation, 
                      fixingBox=fixingBox)
     
-    mappedPointsNode = cable.mappedPointsNode
+    mappedPointsNode = cableN.mappedPointsNode
     inputFEMCableMO = addConstraintPoints(attachedTo=finger,cstPoints= FEMpos,mappedPointsNode=mappedPointsNode)
     
-    mappedPointsNode.createObject('DifferenceMultiMapping', name="pointsMulti", input1=inputFEMCableMO, input2=cableDofMO, output=cable.outputPointMO, direction=cable.framesMO+".position")
+    mappedPointsNode.createObject('DifferenceMultiMapping', name="pointsMulti", input1=inputFEMCableMO, input2=cableDofMO, output=cableN.outputPointMO, direction=cableN.framesMO+".position")
     
+    return cable
     
 def createScene(rootNode):
     from stlib.scene import MainHeader
@@ -282,43 +283,45 @@ def createScene(rootNode):
     rootNode.createObject('FreeMotionAnimationLoop')
     rootNode.createObject('GenericConstraintSolver', tolerance="1e-20", maxIterations="5 00", printLog="0")
 
-    rootNode.gravity = "0 -9180 0"
+    rootNode.gravity = "0 0 0"
     rootNode.createObject('BackgroundSetting', color='0 0.168627 0.211765')
     rootNode.createObject('OglSceneFrame', style="Arrows",alignment="TopRight")
     
-    cableNode = rootNode.createChild('cableNode')
+    cableNode = rootNode.createChild('cosseratNode')
     cableNode.createObject('EulerImplicitSolver', firstOrder="0", rayleighStiffness="1.0", rayleighMass='0.1')
     cableNode.createObject('SparseLUSolver', name='solver')
     cableNode.createObject('GenericConstraintCorrection')
 
     CF1 = CosseratFinger(rootNode=rootNode, cableNode=cableNode, 
-                         name="1",
-                         femrotation    =[0., 0, -25.],
-                         femtranslation =[0., 0., 0.0],
-                         fixingBox      =[-20, -10, 0, 20, 10, 15],
-                         cableBaseRot   =[0., 0, -25.],
-                         cableBaseTrans =[0., 0., 0.0],
+                         name="cosseratF",
+                         rotation    =[-20., 0, 0.],
+                         translation =[0., 0., 0.0],
+                         fixingBox      =[-20, -10, -10, -2, 10, 15],                         
                          )
     
-    CF2 = CosseratFinger(rootNode=rootNode, 
-                         cableNode=cableNode, 
-                         name           ="2",
-                         femrotation    =[180., 0, 25],
-                         femtranslation =[0., 10., 0.0],
-                         fixingBox      =[-20, -10, 0, 20, 10, 15],
-                         cableBaseRot   =[180., 0, 25],
-                         cableBaseTrans =[0., 10., 0.0],
-                         )
     
-    CF3 = CosseratFinger(rootNode=rootNode, 
-                         cableNode=cableNode, 
-                         name           ="3",
-                         femrotation    =[80., 15., 0.],
-                         femtranslation =[0., 0., -10.0],
-                         fixingBox      =[-20, -10, 0, 20, 10, 15],
-                         cableBaseRot   =[80., 15., 0.],
-                         cableBaseTrans =[0., 0., -10.0],
-                         )
+#    cosseratNode = rootNode.getChild("cosseratNode")
+#    cNode            = cosseratNode.getChild("cable")
+#    m            = cNode.getChild("cableNode")
+    
+    GripperController(rootNode, [CF1])
+    
+#    CF2 = CosseratFinger(rootNode=rootNode, 
+#                         cableNode=cableNode, 
+#                         name           ="2",
+#                         rotation    =[200., 0, 60],
+#                         translation =[0., 10., 0.0],
+#                         fixingBox      =[-20, -10, 0, 20, 10, 15],
+#                         )
+#    
+#    CF3 = CosseratFinger(rootNode=rootNode, 
+#                          cableNode=cableNode, 
+#                          name           ="3",
+#                          rotation    =[100., 45., 45.],
+#                          translation =[-10., 10., -15.0],
+#                          fixingBox      =[-20, -10, 0, 20, 10, 15]                          
+#                          )
+# =============================================================================
     
     #cableNode = rootNode.createChild('cableNode')
     #cableNode.createObject('EulerImplicitSolver', firstOrder="0", rayleighStiffness="1.0", rayleighMass='0.1')
