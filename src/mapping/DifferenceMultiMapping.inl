@@ -210,32 +210,32 @@ void DifferenceMultiMapping<TIn1, TIn2, TOut>::computeProximity(const In1VecCoor
                     t1.normalize(); // direction of the constraint
 
                     //// First method compute normals using projections
-                    //                    if(t1.norm()<1.0e-1 && dirAxe[2] < 0.99){
-                    //                        Vector3 temp = Vector3(dirAxe[0],dirAxe[1],dirAxe[2]+50.0);
-                    //                        t1 = cross(dirAxe,temp);
-                    //                        t1.normalize();
-                    //                        constraint.t1 = t1;
-                    //                    }
-                    //                    if(t1.norm()<1.0e-1){
-                    //                        Vector3 temp = Vector3(dirAxe[0],dirAxe[1]+50.0,dirAxe[2]);
-                    //                        t1 = cross(dirAxe,temp);
-                    //                        t1.normalize();
-                    //                        constraint.t1 = t1;
-                    //                    }
+                    if(t1.norm()<1.0e-1 && dirAxe[2] < 0.99){
+                        Vector3 temp = Vector3(dirAxe[0],dirAxe[1],dirAxe[2]+50.0);
+                        t1 = cross(dirAxe,temp);
+                        t1.normalize();
+                        constraint.t1 = t1;
+                    }
+                    if(t1.norm()<1.0e-1){
+                        Vector3 temp = Vector3(dirAxe[0],dirAxe[1]+50.0,dirAxe[2]);
+                        t1 = cross(dirAxe,temp);
+                        t1.normalize();
+                        constraint.t1 = t1;
+                    }
 
                     //                    if(t1.norm()<1.0e-1)
                     //                    {
 
                     //// Second method compute normals using frames directions
-                    Rigid dir = direction[constraint.eid];
-                    Vector3 vY = Vector3(0.,1.,0.);
-                    defaulttype::Quat ori = dir.getOrientation() ;
-                    vY = ori.rotate(vY); vY.normalize();
-                    t1 = vY ;
-                    //                    }
+                    //                    Rigid dir = direction[constraint.eid];
+                    //                    Vector3 vY = Vector3(0.,1.,0.);
+                    //                    defaulttype::Quat ori = dir.getOrientation() ;
+                    //                    vY = ori.rotate(vY); vY.normalize();
+                    //                    t1 = vY ;
+                    //                    //                    }
+                    //                    constraint.t1 = t1;
+                    //                    //tangential 2
 
-                    constraint.t1 = t1;
-                    //tangential 2
                     Deriv1 t2 = cross(t1, dirAxe);  t2.normalize();
                     constraint.t2 = t2;
 
@@ -295,28 +295,29 @@ void DifferenceMultiMapping<TIn1, TIn2, TOut>::computeProximity(const In1VecCoor
                     /// If the violation is very small t1 is close to zero
                     ///
                     //// First method compute normals using projections
-                    //                    if(t1.norm()<1.0e-1 && dirAxe[2] < 0.99){
-                    //                        Vector3 temp = Vector3(dirAxe[0],dirAxe[1],dirAxe[2]+50.0);
-                    //                        t1 = cross(dirAxe,temp);
-                    //                        t1.normalize();
-                    //                        constraint.t1 = t1;
-                    //                    }
-                    //                    if(t1.norm()<1.0e-1){
-                    //                        Vector3 temp = Vector3(dirAxe[0],dirAxe[1]+50.0,dirAxe[2]);
-                    //                        t1 = cross(dirAxe,temp);
-                    //                        t1.normalize();
-                    //                        constraint.t1 = t1;
-                    //                    }
+                    if(t1.norm()<1.0e-1 && dirAxe[2] < 0.99){
+                        Vector3 temp = Vector3(dirAxe[0],dirAxe[1],dirAxe[2]+50.0);
+                        t1 = cross(dirAxe,temp);
+                        t1.normalize();
+                        constraint.t1 = t1;
+                    }
+                    if(t1.norm()<1.0e-1){
+                        Vector3 temp = Vector3(dirAxe[0],dirAxe[1]+50.0,dirAxe[2]);
+                        t1 = cross(dirAxe,temp);
+                        t1.normalize();
+                        constraint.t1 = t1;
+                    }
 
                     //// Second method compute normals using frames directions
-                    Rigid dir = direction[constraint.eid];
-                    Vector3 vY = Vector3(0.,1.,0.);
-                    defaulttype::Quat ori = dir.getOrientation() ;
-                    vY = ori.rotate(vY); vY.normalize();
-                    t1 = vY ;
-                    //                    }
-                    constraint.t1 = t1;
-                    //tangential 2
+                    //                    Rigid dir = direction[constraint.eid];
+                    //                    Vector3 vY = Vector3(0.,1.,0.);
+                    //                    defaulttype::Quat ori = dir.getOrientation() ;
+                    //                    vY = ori.rotate(vY); vY.normalize();
+                    //                    t1 = vY ;
+                    //                    //                    }
+                    //                    constraint.t1 = t1;
+                    //                    //tangential 2
+
                     Deriv1 t2 = cross(t1, dirAxe);  t2.normalize();
                     constraint.t2 = t2;
 
@@ -347,9 +348,9 @@ void DifferenceMultiMapping<TIn1, TIn2, TOut>::computeProximity(const In1VecCoor
                 }
             }
         }
-        //        printf("______________________________________________________________\n");
-        //        std::cout << "i :" << i << " ; eid:" << constraint.eid << " alpha : " << constraint.alpha << " ;  dist :"<< constraint.dist << std::endl;
-        //        std::cout<<" fact_v :"<< constraint.r2 << i << " ; n :"<< constraint.dirAxe << "; t1:" << constraint.t1 << "; t2 :"<<  constraint.t2 << std::endl;
+        //        msg_info("DifferenceMultiMapping") << "______________________________________________________________\n";
+        //        msg_info("DifferenceMultiMapping")<< "i :" << i << " / eid:" << constraint.eid << " / alpha : " << constraint.alpha << " /  dist :"<< constraint.dist ;
+        //        msg_info("DifferenceMultiMapping")<< "dirAxe :"<< constraint.dirAxe << " / t1:" << constraint.t1 << " /t2 :"<<  constraint.t2 ;
         //        printf("______________________________________________________________\n");
         m_constraints.push_back(constraint);
     }
@@ -379,16 +380,17 @@ void DifferenceMultiMapping<TIn1, TIn2, TOut>::apply(
 
     for(unsigned int i=0; i<sz; i++){
         Constraint& c = m_constraints[i];
-        if(i< sz-1){
+        if(i < sz-1){
             out[i][0] = 0.0;
             out[i][1] = c.t1 * (in1[i] - c.proj)  ; //c.dist;
             out[i][2] = c.t2 * (in1[i] - c.proj); //0.0
         }else{
             Real dist= (in2[in2.size()-1] - in1[in1.size()-1]).norm();
-            out[sz-1][0] = c.dirAxe * (in1[in1.size()-1] - in2[in2.size()-1]);
-            out[sz-1][1] = c.t1     * (in1[in1.size()-1] - in2[in2.size()-1]); //std::abs(in2[in2.size()-1][1] - in1[in1.size()-1][1]);
-            out[sz-1][2] = c.t2     * (in1[in1.size()-1] - in2[in2.size()-1]); //std::abs(in2[in2.size()-1][2] - in1[in1.size()-1][2]);
+            out[i][0] = c.dirAxe * (in1[in1.size()-1] - in2[in2.size()-1]);
+            out[i][1] = c.t1     * (in1[in1.size()-1] - in2[in2.size()-1]); //std::abs(in2[in2.size()-1][1] - in1[in1.size()-1][1]);
+            out[i][2] = c.t2     * (in1[in1.size()-1] - in2[in2.size()-1]); //std::abs(in2[in2.size()-1][2] - in1[in1.size()-1][2]);
         }
+        //std::cout <<"================> out[i]: " << out[i] << std::endl;
     }
     dataVecOutPos[0]->endEdit();
 }

@@ -213,8 +213,8 @@ def createScene(rootNode):
     # Cable points                           #
     ##########################################
     # Mappe points inside the meca, this points will be use for the bilateral mapping
-    FEMpos = [" 0.0 0 0 15 0 0 30 0 0 45 0 0 60 0 0 66 0 0 81 0.0 0.0"]
-    # FEMpos = ["81.0 0.0 0.0"]
+#    FEMpos = [" 0.0 0 0 15 0 0 30 0 0 45 0 0 60 0 0 66 0 0 81 0.0 0.0"]
+    FEMpos = ["66. 0. 0.  81.0 0.0 0.0"]
     femPoints = finger.createChild('femPoints')
     inputFEMCable = femPoints.createObject('MechanicalObject', name="pointsInFEM", position=FEMpos, showObject="1", showIndices="1")
     femPoints.createObject('BarycentricMapping')
