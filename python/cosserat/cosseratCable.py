@@ -11,7 +11,7 @@ import os
 from grippercontroller import GripperController
 path = os.path.dirname(os.path.abspath(__file__))+'/../../scenes/inverseModelScenes/mesh/'
 
-FEMpos = [" 0.0 0 0 15 0 0 30 0 0 45 0 0 60 0 0 66 0 0 81 0.0 0.0"]
+FEMpos = [" 0. 0. 0. 15. 0. 0. 30. 0. 0. 45. 0. 0. 60. 0. 0. 66. 0. 0. 81. 0.0 0.0"]
 
 def cable(
     attachedTo=None,
@@ -64,9 +64,11 @@ def cable(
     
     #mappedPointsNode.createObject('DifferenceMultiMapping', name="pointsMulti", input1=inputFEMCableMO, input2=inputCableMO, output=outputPointMO, direction=direction)
 
-def addConstraintPoints(attachedTo, cstPoints,mappedPointsNode):
+def addConstraintPoints(attachedTo, cstPoints,mappedPointsNode,translation=[0.,0.,0.],rotation=[0.,0.,0.]):
+        
         trunkMappedPoints = attachedTo.createChild('constraintPoints')        
-        inputFEMCable = trunkMappedPoints.createObject('MechanicalObject', name="pointsInFEM", position=cstPoints, showObject="1", showIndices="1")
+        inputFEMCable = trunkMappedPoints.createObject('MechanicalObject', name="pointsInFEM", position=cstPoints, 
+                                                       showObject="1", showIndices="1", translation=translation, rotation=rotation)
         
         trunkMappedPoints.addChild(mappedPointsNode)
         trunkMappedPoints.createObject('BarycentricMapping')
@@ -79,8 +81,8 @@ def Finger(parentNode=None, name="Finger",
     
     finger = ElasticMaterialObject(parentNode,name=name,
                                    volumeMeshFileName=path+"transFinger.vtk",
-                                   poissonRatio=0.3,
-                                   youngModulus=18000,
+                                   poissonRatio=0.45,
+                                   youngModulus=600,
                                    totalMass=0.5,
                                    surfaceColor=[0.0, 0.7, 0.7],
                                    surfaceMeshFileName=path+"transFinger.stl",
@@ -176,7 +178,7 @@ class CosseratCable(SofaObject):
         mappedFrameNode.createObject('DiscretCosseratMapping', curv_abs_input=curv_abs_input,
                                     curv_abs_output=self.curv_abs_output, input1=inputMO, input2=inputMO_rigid, output=self.framesMO, debug='0')
         
-        actuators = mappedFrameNode.createChild('actuators')
+        #actuators = mappedFrameNode.createChild('actuators')
         #  This create a new node in the scene. This node is appended to the finger's node.
         slidingPoint = mappedFrameNode.createChild('slidingPoint')
 
@@ -191,8 +193,12 @@ class CosseratCable(SofaObject):
         self.slidingPoint = slidingPoint
         
         mappedPointsNode = slidingPoint.createChild('MappedPoints')
-        mappedPoints = mappedPointsNode.createObject('MechanicalObject', template='Vec3d', position=FEMpos, name="FramesMO", showObject='1', showObjectScale='1')
-        mappedPointsNode.createObject('QPSlidingConstraint', nodeame="QPConstraint")
+        diffPosition = []
+        for l in range(0, 7):
+            diffPosition.append([0,0,0])
+            
+        mappedPoints = mappedPointsNode.createObject('MechanicalObject', template='Vec3d', position=diffPosition, name="FramesMO", showObject='1', showObjectScale='1')
+        mappedPointsNode.createObject('QPSlidingConstraint', name="QPConstraint")
         
         self.outputPointMO = mappedPoints.getLinkPath()
         self.mappedPointsNode = mappedPointsNode
@@ -266,7 +272,7 @@ def CosseratFinger(rootNode,
                      fixingBox=fixingBox)
     
     mappedPointsNode = cableN.mappedPointsNode
-    inputFEMCableMO = addConstraintPoints(attachedTo=finger,cstPoints= FEMpos,mappedPointsNode=mappedPointsNode)
+    inputFEMCableMO = addConstraintPoints(attachedTo=finger,cstPoints= FEMpos,mappedPointsNode=mappedPointsNode, translation=translation,rotation=rotation)
     
     mappedPointsNode.createObject('DifferenceMultiMapping', name="pointsMulti", input1=inputFEMCableMO, input2=cableDofMO, output=cableN.outputPointMO, direction=cableN.framesMO+".position")
     
@@ -281,7 +287,8 @@ def createScene(rootNode):
         'VisualStyle', displayFlags='showVisualModels hideBehaviorModels showCollisionModels hideBoundingCollisionModels hideForceFields showInteractionForceFields showWireframe')
     
     rootNode.createObject('FreeMotionAnimationLoop')
-    rootNode.createObject('GenericConstraintSolver', tolerance="1e-20", maxIterations="5 00", printLog="0")
+    rootNode.createObject('GenericConstraintSolver', tolerance="1e-20", maxIterations="5000", printLog="0")
+    
 
     rootNode.gravity = "0 0 0"
     rootNode.createObject('BackgroundSetting', color='0 0.168627 0.211765')
@@ -292,19 +299,18 @@ def createScene(rootNode):
     cableNode.createObject('SparseLUSolver', name='solver')
     cableNode.createObject('GenericConstraintCorrection')
 
-    CF1 = CosseratFinger(rootNode=rootNode, cableNode=cableNode, 
-                         name="cosseratF",
-                         rotation    =[-20., 0, 0.],
-                         translation =[0., 0., 0.0],
-                         fixingBox      =[-20, -10, -10, -2, 10, 15],                         
+    cosFinger1 = CosseratFinger(rootNode=rootNode, cableNode=cableNode, 
+                         name           ="cosseratF",
+                         rotation       =   [-20., 0, 0.],
+                         translation    =   [0., 0., 0.0],
+                         fixingBox      =   [-20, -20, -10, -2, 10, 15],                         
                          )
-    
     
 #    cosseratNode = rootNode.getChild("cosseratNode")
 #    cNode            = cosseratNode.getChild("cable")
 #    m            = cNode.getChild("cableNode")
     
-    GripperController(rootNode, [CF1])
+    GripperController(rootNode, [cosFinger1])
     
 #    CF2 = CosseratFinger(rootNode=rootNode, 
 #                         cableNode=cableNode, 

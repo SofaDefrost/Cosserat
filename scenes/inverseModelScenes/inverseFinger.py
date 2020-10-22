@@ -139,6 +139,7 @@ def createScene(rootNode):
                            position=FEMpos, showObject="1", showIndices="1")
     femPoints.createObject('BarycentricMapping')
 
+    finger.createObject('LinearSolverConstraintCorrection')
     ##########################################
     # Visualization                          #
     ##########################################
@@ -152,7 +153,6 @@ def createScene(rootNode):
     fingerVisu.createObject('BarycentricMapping')
 
 
-    finger.createObject('LinearSolverConstraintCorrection')
 
     ##########################################
     # Effector goal for interactive control  #
@@ -255,7 +255,7 @@ def createScene(rootNode):
     inputFEMCableMO = inputFEMCable.getLinkPath()
     outputPointMO = mappedPoints.getLinkPath()
 
-    mappedPointsNode.createObject('QPSlidingConstraint', nodeame="QPConstraint")
+    mappedPointsNode.createObject('QPSlidingConstraint', name="QPConstraint")
 
     mappedPointsNode.createObject('DifferenceMultiMapping', name="pointsMulti", input1=inputFEMCableMO, input2=inputCableMO, output=outputPointMO, direction="@../../FramesMO.position")
 
