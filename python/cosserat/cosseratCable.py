@@ -4,11 +4,13 @@ from splib.numerics import Vec3, Quat
 from splib.animation import animate, AnimationManager
 from stlib.physics.deformable import ElasticMaterialObject
 from stlib.physics.constraints import FixedBox
+from stlib.physics.rigid import Floor, Cube
 from stlib.scene import Node
 #from cosseratUtilities import compute_BeamLenght, createCurvAbsOutput, createFramesList, extractFEMConstraintPoints
 import Sofa
 import os
 from grippercontroller import GripperController
+from stlib.physics.collision import CollisionMesh
 path = os.path.dirname(os.path.abspath(__file__))+'/../../scenes/inverseModelScenes/mesh/'
 
 FEMpos = [" 0. 0. 0. 15. 0. 0. 30. 0. 0. 45. 0. 0. 60. 0. 0. 66. 0. 0. 81. 0.0 0.0"]
@@ -66,6 +68,8 @@ def cable(
 
 def addConstraintPoints(attachedTo, cstPoints,mappedPointsNode,translation=[0.,0.,0.],rotation=[0.,0.,0.]):
         
+#        rot= [0.0,180.,0.] + rotation
+#        trans=[-17.5,12.5,7.5] + translation
         trunkMappedPoints = attachedTo.createChild('constraintPoints')        
         inputFEMCable = trunkMappedPoints.createObject('MechanicalObject', name="pointsInFEM", position=cstPoints, 
                                                        showObject="1", showIndices="1", translation=translation, rotation=rotation)
@@ -79,32 +83,35 @@ def Finger(parentNode=None, name="Finger",
            rotation=[0.0, 0.0, 0.0], translation=[0.0, 0.0, 0.0],
            fixingBox=[-18., -15., -8., 2., -3., 8]):
     
+#    trans = translation        
     finger = ElasticMaterialObject(parentNode,name=name,
                                    volumeMeshFileName=path+"transFinger.vtk",
+#                                   volumeMeshFileName=path+"finger.vtk",
                                    poissonRatio=0.45,
                                    youngModulus=600,
                                    totalMass=0.5,
                                    surfaceColor=[0.0, 0.7, 0.7],
                                    surfaceMeshFileName=path+"transFinger.stl",
+#                                   surfaceMeshFileName=path+"finger.stl",
                                    rotation=rotation,
                                    translation=translation)
-
-    FixedBox(finger.node, atPositions=fixingBox, doVisualization=True)
+    finger.node.createObject('RestShapeSpringsForceField', points='16 17 18 19 20 21 48 51 52 54 63 103 104 105 106 107 113 116 128 135 143 150', stiffness='1e12')
+#    FixedBox(finger.node, atPositions=fixingBox, doVisualization=True)
     
-    #CollisionMesh(eobject.node, name="CollisionMesh",
-                 #surfaceMeshFileName=path+"finger.stl",
-                 #rotation=rotation, translation=translation,
-                 #collisionGroup=[1, 2])
+    CollisionMesh(finger.node, name="CollisionMesh",
+                 surfaceMeshFileName=path+"transFinger.stl",
+                 rotation=rotation, translation=translation,
+                 collisionGroup=[1, 2])
 
-    #CollisionMesh(eobject.node, name="CollisionMeshAuto1",
-                 #surfaceMeshFileName=path+"fingerCollision_part1.stl",
-                 #rotation=rotation, translation=translation,
-                 #collisionGroup=[1])
-
-    #CollisionMesh(eobject.node, name="CollisionMeshAuto2",
-                 #surfaceMeshFileName=path+"fingerCollision_part2.stl",
-                 #rotation=rotation, translation=translation,
-                 #collisionGroup=[2])
+#    CollisionMesh(finger.node, name="CollisionMeshAuto1",
+#                 surfaceMeshFileName=path+"fingerCollision_part1.stl",
+#                 rotation=rotation, translation=translation,
+#                 collisionGroup=[1])
+#
+#    CollisionMesh(finger.node, name="CollisionMeshAuto2",
+#                 surfaceMeshFileName=path+"fingerCollision_part2.stl",
+#                 rotation=rotation, translation=translation,
+#                 collisionGroup=[2])
     return finger
 
 class CosseratCable(SofaObject):
@@ -116,8 +123,10 @@ class CosseratCable(SofaObject):
         self.numberFrame = 15
         self.stiffness="50000"
         self.angularStiffness=50000
-        self.rot=rot
-        self.trans=trans
+#        rotLoc = [0.0,180.,0.] + rot
+        self.rot= rot
+#        transLoc = [-17.5,12.5,7.5] + trans
+        self.trans = trans
         self.listOfBeamslenght = None
         self.crossSectionShape='circular'
         self.radius=0.5
@@ -146,7 +155,9 @@ class CosseratCable(SofaObject):
         
         rigidBaseNode = self.node.createChild('cableNode')               
         RigidBaseMO = rigidBaseNode.createObject('MechanicalObject', template='Rigid3d', name="RigidBaseMO", 
-                                                 position="0. 0. 0. 0. 0. 0. 1.", translation=self.trans, rotation=self.rot, showObject='1', showObjectScale='0.6',showIndices='1' )
+                                                 position="0. 0. 0. 0. 0. 0. 1.", 
+#                                                 rest_position="0. 0. 0. 0. 0. 0. 1.", 
+                                                 translation=self.trans, rotation=self.rot, showObject='1', showObjectScale='0.6',showIndices='1' )
         rigidBaseNode.createObject('RestShapeSpringsForceField', name='spring', stiffness="500", angularStiffness="500",
                                    external_points="0", mstate="@RigidBaseMO", points="0", template="Rigid3d")
         
@@ -257,6 +268,7 @@ def CosseratFinger(rootNode,
                    fixingBox        =[-8., -20., -18., 0.0, -3., 8],
                    name             ="1"
                    ):
+    
     cable  = Node(cableNode, name)
     cableN = CosseratCable(cable,
                   name="cable",
@@ -278,16 +290,17 @@ def CosseratFinger(rootNode,
     
     return cable
     
-def createScene(rootNode):
-    from stlib.scene import MainHeader
+def createScene(rootNode):    
+    from stlib.scene import MainHeader, ContactHeader
     #from stlib.physics.deformable import ElasticMaterialObject
 
     MainHeader(rootNode, plugins=["CosseratPlugin"], gravity=[0., 0., 0.])
     rootNode.createObject(
-        'VisualStyle', displayFlags='showVisualModels hideBehaviorModels showCollisionModels hideBoundingCollisionModels hideForceFields showInteractionForceFields showWireframe')
+        'VisualStyle', displayFlags='showVisualModels hideBehaviorModels showCollisionModels hideBoundingCollisionModels hideForceFields showInteractionForceFields')
     
-    rootNode.createObject('FreeMotionAnimationLoop')
-    rootNode.createObject('GenericConstraintSolver', tolerance="1e-20", maxIterations="5000", printLog="0")
+#    rootNode.createObject('FreeMotionAnimationLoop')
+#    rootNode.createObject('GenericConstraintSolver', tolerance="1e-20", maxIterations="5000", printLog="0")
+    ContactHeader(rootNode, alarmDistance=4, contactDistance=3, frictionCoef=0.08)
     
 
     rootNode.gravity = "0 0 0"
@@ -300,33 +313,58 @@ def createScene(rootNode):
     cableNode.createObject('GenericConstraintCorrection')
 
     cosFinger1 = CosseratFinger(rootNode=rootNode, cableNode=cableNode, 
-                         name           ="cosseratF",
-                         rotation       =   [-20., 0, 0.],
-                         translation    =   [0., 0., 0.0],
-                         fixingBox      =   [-20, -20, -10, -2, 10, 15],                         
+                         name           ="cosseratF1",
+                         rotation       =   [0., 0, -120.],
+                         translation    =   [-5., 80., 0.0],
                          )
     
-#    cosseratNode = rootNode.getChild("cosseratNode")
-#    cNode            = cosseratNode.getChild("cable")
-#    m            = cNode.getChild("cableNode")
+    cosFinger2 = CosseratFinger(rootNode=rootNode, 
+                         cableNode=cableNode, 
+                         name           ="cosseratF2",
+                         rotation    =[180., 0, -60.],
+                         translation =[5., 80., 10.0]                         
+                         )
     
-    GripperController(rootNode, [cosFinger1])
+    cosFinger3 = CosseratFinger(rootNode=rootNode, 
+                          cableNode=cableNode, 
+                          name           ="cosseratF3",
+                          rotation    =[180., 0, -60.],
+                          translation =[5., 80., -10.0]
+                          )
     
-#    CF2 = CosseratFinger(rootNode=rootNode, 
-#                         cableNode=cableNode, 
-#                         name           ="2",
-#                         rotation    =[200., 0, 60],
-#                         translation =[0., 10., 0.0],
-#                         fixingBox      =[-20, -10, 0, 20, 10, 15],
-#                         )
-#    
-#    CF3 = CosseratFinger(rootNode=rootNode, 
-#                          cableNode=cableNode, 
-#                          name           ="3",
-#                          rotation    =[100., 45., 45.],
-#                          translation =[-10., 10., -15.0],
-#                          fixingBox      =[-20, -10, 0, 20, 10, 15]                          
-#                          )
+    GripperController(rootNode, fingers=[cosFinger1,cosFinger2,cosFinger3],angles=[[0., 0, -120.],[180., 0, -60.],[180., 0, -60.]] )
+    
+    Floor(rootNode, 
+          color=[1.0,0.0,0.0],
+          translation=[0.0,-25.0,0.0],
+          rotation=[0.0,0.0,0.0],
+          isAStaticObject=True)
+
+    Cube(rootNode, 
+          uniformScale=20.0,
+          color=[1.0,1.0,0.0],
+          totalMass=0.03,
+          volume=20,
+          inertiaMatrix=[1000.0,0.0,0.0,0.0,1000.0,0.0,0.0,0.0,1000.0],
+          rotation=[0.0,0.0,0.0],
+          translation=[0.0,0.0,0.0],
+          )
+    
+#    Floor(rootNode, 
+#          color=[1.0,0.0,0.0],
+#          translation=[100.0,50.0,-40.0],
+#          rotation=[30.0,0.0,105.0],
+#          isAStaticObject=True)
+#
+#    Cube(rootNode, 
+#          uniformScale=20.0,
+#          color=[1.0,1.0,0.0],
+#          totalMass=0.03,
+#          volume=20,
+#          inertiaMatrix=[1000.0,0.0,0.0,0.0,1000.0,0.0,0.0,0.0,1000.0],
+#          rotation=[30.0,0.0,105.0],
+#          translation=[80.0,50.0,-40.0],
+#          )
 # =============================================================================
     
     #cableNode = rootNode.createChild('cableNode')

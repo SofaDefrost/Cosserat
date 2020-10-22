@@ -132,37 +132,37 @@ class Animation(Sofa.PythonScriptController):
             pos = self.targetMO.findData('position').value
             pos[0][0] += self.rate
             self.targetMO.findData('position').value = pos
-            print("=======> Position :", pos)
+#            print("=======> Position :", pos)
             
         if ord(c) == 19:  # down
             pos = self.targetMO.findData('position').value
             pos[0][0] -= self.rate
             self.targetMO.findData('position').value = pos
-            print("=======> Position :",pos)
+#            print("=======> Position :",pos)
              
-#        if ord(c) == 19:  # up
-#            pos = self.targetMO.findData('position').value
-#            pos[0][1] += self.rate
-#            self.targetMO.findData('position').value = pos
+        if ord(c) == "+":  # +y
+            pos = self.targetMO.findData('position').value
+            pos[0][1] += self.rate
+            self.targetMO.findData('position').value = pos
 #            print("=======> Position :", pos)
-#            
-#        if ord(c) == 21:  # down
-#            pos = self.targetMO.findData('position').value
-#            pos[0][1] -= self.rate
-#            self.targetMO.findData('position').value = pos
+            
+        if ord(c) == "-":  # -y
+            pos = self.targetMO.findData('position').value
+            pos[0][1] -= self.rate
+            self.targetMO.findData('position').value = pos
 #            print("=======> Position :",pos)
 
         if ord(c) == 18:  # left
             pos = self.targetMO.findData('position').value
             pos[0][2] -= self.rate
             self.targetMO.findData('position').value = pos
-            print("=======> Position :", pos)
+#            print("=======> Position :", pos)
 
         if ord(c) == 20:  # right
             pos = self.targetMO.findData('position').value
             pos[0][2] += self.rate
             self.targetMO.findData('position').value = pos
-            print("=======> Position :", pos)
+#            print("=======> Position :", pos)
 
 @SofaPrefab
 class CosseratCable(SofaObject):
