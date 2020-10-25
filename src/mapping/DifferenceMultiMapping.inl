@@ -48,7 +48,7 @@ DifferenceMultiMapping<TIn1, TIn2, TOut>::DifferenceMultiMapping()
     , d_indices(initData(&d_indices, "indices","Indices of fixe points of the cable"))
     , d_raduis(initData(&d_raduis, 2.0, "radius","The size of the cable"))
     , d_color(initData(&d_color,defaulttype::Vec4f(1,0,0,1), "color","The color of the cable"))
-    , d_drawArrows(initData(&d_drawArrows,true, "drawArrows","The color of the cable"))
+    , d_drawArrows(initData(&d_drawArrows,false, "drawArrows","The color of the cable"))
     , m_fromModel1(NULL)
     , m_fromModel2(NULL)
     , m_toModel(NULL)
@@ -347,10 +347,10 @@ void DifferenceMultiMapping<TIn1, TIn2, TOut>::computeProximity(const In1VecCoor
                 }
             }
         }
-        printf("______________________________________________________________\n");
-        std::cout << "i :" << i << " ; eid:" << constraint.eid << " alpha : " << constraint.alpha << " ;  dist :"<< constraint.dist << std::endl;
-        std::cout<<" fact_v :"<< constraint.r2 << i << " ; n :"<< constraint.dirAxe << "; t1:" << constraint.t1 << "; t2 :"<<  constraint.t2 << std::endl;
-        printf("______________________________________________________________\n");
+        //        printf("______________________________________________________________\n");
+        //        std::cout << "i :" << i << " ; eid:" << constraint.eid << " alpha : " << constraint.alpha << " ;  dist :"<< constraint.dist << std::endl;
+        //        std::cout<<" fact_v :"<< constraint.r2 << i << " ; n :"<< constraint.dirAxe << "; t1:" << constraint.t1 << "; t2 :"<<  constraint.t2 << std::endl;
+        //        printf("______________________________________________________________\n");
         m_constraints.push_back(constraint);
     }
 }
@@ -556,6 +556,17 @@ void DifferenceMultiMapping<TIn1, TIn2, TOut>::applyJT(
 template <class TIn1, class TIn2, class TOut>
 void DifferenceMultiMapping<TIn1, TIn2, TOut>::draw(const core::visual::VisualParams* vparams)
 {
+
+    ///draw cable
+    ///
+    //    const In2DataVecDeriv* xfromData = m_toModel->read(core::ConstVecCoordId::position());
+    //    const In2VecCoord& postions = xfromData[0].getValue();
+    //    unsigned int sz = postions.size();
+    //    //    msg_info("DRAW")<< "The size of object is : "<< sz;
+
+    //    double radius = d_raduis.getValue();
+    //    vparams->drawTool()->drawLineStrip(postions,8.8,defaulttype::Vec4f(1.,0.,0.,1));
+
     //printf("CosseratSlidingConstraint<DataTypes>::draw(const core::visual::VisualParams* vparams) before \n");
     if (!vparams->displayFlags().getShowInteractionForceFields())
         return;
@@ -570,7 +581,7 @@ void DifferenceMultiMapping<TIn1, TIn2, TOut>::draw(const core::visual::VisualPa
 
     std::vector<sofa::defaulttype::Vector3> vertices;
 
-    vparams->drawTool()->drawLines(vertices, 1, color);
+    //    vparams->drawTool()->drawLines(vertices, 1, color);
 
     sofa::defaulttype::Vec4f colorL = d_color.getValue();
     if(d_drawArrows.getValue()){
@@ -605,15 +616,7 @@ void DifferenceMultiMapping<TIn1, TIn2, TOut>::draw(const core::visual::VisualPa
         //        msg_info("DRAW")<< "The size of object is : "<< postions.size();
         vparams->drawTool()->draw3DText_Indices(fromPos,6,defaulttype::Vec<4,Real>(0,2,0,1));
     }
-    ///draw cable
-    ///
-    const In2DataVecDeriv* xfromData = m_toModel->read(core::ConstVecCoordId::position());
-    const In2VecCoord& postions = xfromData[0].getValue();
-    unsigned int sz = postions.size();
-    //    msg_info("DRAW")<< "The size of object is : "<< sz;
 
-    double radius = d_raduis.getValue();
-    vparams->drawTool()->drawLineStrip(postions,radius,colorL);
 
     //    for(unsigned int j = 0; j<sz-1; j++){
     //        vparams->drawTool()->drawLine(postions[j],postions[j+1],sofa::defaulttype::Vec4f(colorL[0],colorL[1],colorL[2],radius));

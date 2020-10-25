@@ -37,7 +37,7 @@ def cable(
     # RigidBase
     ###############
     base = [translation[0],translation[1],translation[2],rotation[0],rotation[1],rotation[2],rotation[3]]
-    RigidBaseMO = cable.createObject('MechanicalObject', template='Rigid3d',name="RigidBaseMO", position=base, showObject='1', showObjectScale='0.1')
+    RigidBaseMO = cable.createObject('MechanicalObject', template='Rigid3d',name="RigidBaseMO", position=base, showObject='0', showObjectScale='0.')
     cable.createObject('RestShapeSpringsForceField', name='spring', stiffness=stiffness,angularStiffness=angularStiffness, external_points="0", mstate="@RigidBaseMO", points="0", template="Rigid3d")
     
     
@@ -72,7 +72,7 @@ def addConstraintPoints(attachedTo, cstPoints,mappedPointsNode,translation=[0.,0
 #        trans=[-17.5,12.5,7.5] + translation
         trunkMappedPoints = attachedTo.createChild('constraintPoints')        
         inputFEMCable = trunkMappedPoints.createObject('MechanicalObject', name="pointsInFEM", position=cstPoints, 
-                                                       showObject="1", showIndices="1", translation=translation, rotation=rotation)
+                                                       showObject="0", showIndices="0", translation=translation, rotation=rotation)
         
         trunkMappedPoints.addChild(mappedPointsNode)
         trunkMappedPoints.createObject('BarycentricMapping')
@@ -157,7 +157,7 @@ class CosseratCable(SofaObject):
         RigidBaseMO = rigidBaseNode.createObject('MechanicalObject', template='Rigid3d', name="RigidBaseMO", 
                                                  position="0. 0. 0. 0. 0. 0. 1.", 
 #                                                 rest_position="0. 0. 0. 0. 0. 0. 1.", 
-                                                 translation=self.trans, rotation=self.rot, showObject='1', showObjectScale='0.6',showIndices='1' )
+                                                 translation=self.trans, rotation=self.rot, showObject='0', showObjectScale='0. ',showIndices='0' )
         rigidBaseNode.createObject('RestShapeSpringsForceField', name='spring', stiffness="500", angularStiffness="500",
                                    external_points="0", mstate="@RigidBaseMO", points="0", template="Rigid3d")
         
@@ -175,7 +175,7 @@ class CosseratCable(SofaObject):
         mappedFrameNode = rigidBaseNode.createChild('MappedFrames')
         rateAngularDeformNode.addChild(mappedFrameNode)
         framesMO = mappedFrameNode.createObject(
-            'MechanicalObject', template='Rigid3d', name="FramesMO", position=self.frames, showObject='1', showObjectScale='1')
+            'MechanicalObject', template='Rigid3d', name="FramesMO", position=self.frames, showObject='0', showObjectScale='0')
 
         # The mapping has two inputs: RigidBaseMO and rateAngularDeformMO
         #                 one output: FramesMO
@@ -197,7 +197,7 @@ class CosseratCable(SofaObject):
         # mechanical modelling. In the case of a cable it is a set of positions specifying
         #the points where the cable is passing by.
         slidingPointMO = slidingPoint.createObject('MechanicalObject', name="cablePos",
-                                position=self.cable_position, showObject="1", showIndices="1")
+                                position=self.cable_position, showObject="0", showIndices="0")
         slidingPoint.createObject('IdentityMapping')
         
         self.cableDofMO = slidingPointMO.getLinkPath()
@@ -208,7 +208,7 @@ class CosseratCable(SofaObject):
         for l in range(0, 7):
             diffPosition.append([0,0,0])
             
-        mappedPoints = mappedPointsNode.createObject('MechanicalObject', template='Vec3d', position=diffPosition, name="FramesMO", showObject='1', showObjectScale='1')
+        mappedPoints = mappedPointsNode.createObject('MechanicalObject', template='Vec3d', position=diffPosition, name="FramesMO", showObject='0', showObjectScale='0')
         mappedPointsNode.createObject('QPSlidingConstraint', name="QPConstraint")
         
         self.outputPointMO = mappedPoints.getLinkPath()
@@ -261,6 +261,7 @@ class CosseratCable(SofaObject):
 
     #def constraintBinding(self, position="", attachedTo=None, name = "MappedPoints"):
 
+
 def CosseratFinger(rootNode,
                    cableNode,
                    translation   =[0., 0., 0.],
@@ -286,7 +287,7 @@ def CosseratFinger(rootNode,
     mappedPointsNode = cableN.mappedPointsNode
     inputFEMCableMO = addConstraintPoints(attachedTo=finger,cstPoints= FEMpos,mappedPointsNode=mappedPointsNode, translation=translation,rotation=rotation)
     
-    mappedPointsNode.createObject('DifferenceMultiMapping', name="pointsMulti", input1=inputFEMCableMO, input2=cableDofMO, output=cableN.outputPointMO, direction=cableN.framesMO+".position")
+    mappedPointsNode.createObject('DifferenceMultiMapping', name="pointsMulti", input1=inputFEMCableMO, input2=cableDofMO, output=cableN.outputPointMO, direction=cableN.framesMO+".position", color="1 0 0 1")
     
     return cable
     
@@ -295,15 +296,17 @@ def createScene(rootNode):
     #from stlib.physics.deformable import ElasticMaterialObject
 
     MainHeader(rootNode, plugins=["CosseratPlugin"], gravity=[0., 0., 0.])
+#    rootNode.createObject(
+#        'VisualStyle', displayFlags='showVisualModels hideBehaviorModels showCollisionModels hideBoundingCollisionModels hideForceFields showInteractionForceFields showWireframe')
     rootNode.createObject(
-        'VisualStyle', displayFlags='showVisualModels hideBehaviorModels showCollisionModels hideBoundingCollisionModels hideForceFields showInteractionForceFields')
+        'VisualStyle', displayFlags='showVisualModels showInteractionForceFields')
     
 #    rootNode.createObject('FreeMotionAnimationLoop')
 #    rootNode.createObject('GenericConstraintSolver', tolerance="1e-20", maxIterations="5000", printLog="0")
     ContactHeader(rootNode, alarmDistance=4, contactDistance=3, frictionCoef=0.08)
     
 
-    rootNode.gravity = "0 0 0"
+    rootNode.gravity = "0 -981 0"
     rootNode.createObject('BackgroundSetting', color='0 0.168627 0.211765')
     rootNode.createObject('OglSceneFrame', style="Arrows",alignment="TopRight")
     
@@ -312,27 +315,31 @@ def createScene(rootNode):
     cableNode.createObject('SparseLUSolver', name='solver')
     cableNode.createObject('GenericConstraintCorrection')
 
+    
     cosFinger1 = CosseratFinger(rootNode=rootNode, cableNode=cableNode, 
                          name           ="cosseratF1",
                          rotation       =   [0., 0, -120.],
-                         translation    =   [-5., 80., 0.0],
+                         translation    =   [-5., 70., 0.0],
                          )
-    
+    #trans = cosFinger1.trans
+
     cosFinger2 = CosseratFinger(rootNode=rootNode, 
                          cableNode=cableNode, 
                          name           ="cosseratF2",
                          rotation    =[180., 0, -60.],
-                         translation =[5., 80., 10.0]                         
+                         translation =[5., 70., 10.0]                         
                          )
     
     cosFinger3 = CosseratFinger(rootNode=rootNode, 
                           cableNode=cableNode, 
                           name           ="cosseratF3",
                           rotation    =[180., 0, -60.],
-                          translation =[5., 80., -10.0]
+                          translation =[5., 70., -10.0]
                           )
     
-    GripperController(rootNode, fingers=[cosFinger1,cosFinger2,cosFinger3],angles=[[0., 0, -120.],[180., 0, -60.],[180., 0, -60.]] )
+    
+    GripperController(rootNode, fingers=[cosFinger1,cosFinger2,cosFinger3],
+                      angles=[[0., 0, -120.],[180., 0, -60.],[180., 0, -60.]] )
     
     Floor(rootNode, 
           color=[1.0,0.0,0.0],
