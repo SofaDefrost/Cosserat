@@ -593,6 +593,7 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>::draw(const core::visual::VisualPa
 
     double radius = 5;
     defaulttype::Vec4f colorL = defaulttype::Vec4f(0.4,0.4,0.4,1);
+    //    defaulttype::Vec4f colorL = defaulttype::Vec4f(0.,0.,1.,1);
     vparams->drawTool()->drawLineStrip(positions,radius,colorL);
 
     if (!vparams->displayFlags().getShowMappings())

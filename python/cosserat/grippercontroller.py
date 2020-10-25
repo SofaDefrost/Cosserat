@@ -46,6 +46,8 @@ class GripperController(Sofa.PythonScriptController):
             for finger in self.fingers:
                 
                 cableNode = finger.getChild("cableNode")
+                #trans = finger.trans
+#                print("The transformation is :", finger)   
                 mecaobject = cableNode.getObject("RigidBaseMO")
                 angle = self.angles[i] 
                 mecaobject.findData('rest_position').value = getTranslated( mecaobject.rest_position,  dir , angle)

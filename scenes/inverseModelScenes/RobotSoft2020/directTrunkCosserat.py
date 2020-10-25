@@ -1,3 +1,11 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Fri Oct 23 16:42:04 2020
+
+@author: younes
+"""
+
 from math import sqrt, pi, cos, sin
 from splib.objectmodel import SofaPrefab, SofaObject
 from splib.numerics import Vec3, Quat
@@ -5,7 +13,7 @@ from splib.animation import animate, AnimationManager
 from cosseratUtilities import compute_BeamLenght, createCurvAbsOutput, createFramesList, extractFEMConstraintPoints
 import Sofa
 import os
-from controlTrunk import Animation
+#from controlTrunk import Animation
 
 path = os.path.dirname(os.path.abspath(__file__))+'/mesh/'
 dirPath = os.path.dirname(os.path.abspath(__file__))+'/'
@@ -191,7 +199,8 @@ class CosseratCable(SofaObject):
             slidingPoint.createObject('IdentityMapping')
             mappedPointsNode = slidingPoint.createChild('MappedPoints')
             mappedPoints = mappedPointsNode.createObject('MechanicalObject', template='Vec3d', position=cstPoints[i], name="FramesMO", showObject='0', showObjectScale='0')
-            mappedPointsNode.createObject('CosseratEquality', name="QPConstraint", eqDisp='0.0')
+#            mappedPointsNode.createObject('CosseratEquality', name="QPConstraint", eqDisp='0.0')
+            mappedPointsNode.createObject('QPSlidingConstraint', name="QPConstraint")
             
             self.mappedPointsNodeTab  += [mappedPointsNode]
             self.cableDofMOTab        += [slidingPointMO.getLinkPath()]                   
@@ -288,16 +297,17 @@ def createScene(rootNode):
     rootNode.createObject("RequiredPlugin", name="SofaPython")
     rootNode.createObject("RequiredPlugin", name="CosseratPlugin")
     
-    AnimationManager(rootNode)
+#    AnimationManager(rootNode)
+    
     #rootNode.createObject("VisualStyle", displayFlags='showVisualModels hideBehaviorModels showCollisionModels hideBoundingCollisionModels hideForceFields showInteractionForceFields showWireframe')
     rootNode.createObject('VisualStyle', displayFlags='showVisualModels showInteractionForceFields ShowForceFields')
     rootNode.gravity = "0 0 0"
 
     rootNode.createObject("FreeMotionAnimationLoop")
     #### For direct resolution, i.e direct control of the cable displacement    
-    # rootNode.createObject('GenericConstraintSolver', tolerance="1e-20", maxIterations="500", printLog="0")
+    rootNode.createObject('GenericConstraintSolver', tolerance="1e-20", maxIterations="500", printLog="0")
     #### For inverse resolution, i.e control of effectors position
-    rootNode.createObject("QPInverseProblemSolver", printLog='0', epsilon=1e-1, maxIterations="500")
+#    rootNode.createObject("QPInverseProblemSolver", printLog='0', epsilon=1e-1, maxIterations="500")
     rootNode.createObject('BackgroundSetting', color='0 0.168627 0.211765')
 
     # ###############
