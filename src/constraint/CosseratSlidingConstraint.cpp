@@ -19,7 +19,7 @@
 *                                                                             *
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
-#define SOFA_COMPONENT_CONSTRAINTSET_CosseratSlidingConstraint_CPP
+#pragma once
 
 #include "CosseratSlidingConstraint.inl"
 
@@ -27,13 +27,7 @@
 #include <SofaBaseMechanics/MechanicalObject.h>
 #include <sofa/core/ObjectFactory.h>
 
-namespace sofa
-{
-
-namespace component
-{
-
-namespace constraintset
+namespace sofa::component::constraintset
 {
 
 using namespace sofa::defaulttype;
@@ -43,11 +37,4 @@ int CosseratSlidingConstraintClass = core::RegisterObject("TODO-CosseratSlidingC
         .add< CosseratSlidingConstraint<Vec3Types> >(true);
 
 template class CosseratSlidingConstraint<Vec3dTypes>;
-
-
-} // namespace constraintset
-
-} // namespace component
-
-} // namespace sofa
-
+}

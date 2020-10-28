@@ -28,20 +28,13 @@
 *                                                                             *
 ******************************************************************************/
 
-#ifndef SOFA_COMPONENT_CONSTRAINTSET_COSSERATACTUATORCONSTRAINT_INL
-#define SOFA_COMPONENT_CONSTRAINTSET_COSSERATACTUATORCONSTRAINT_INL
+#pragma once
 
 #include "CosseratActuatorConstraint.h"
 
 using sofa::helper::OptionsGroup;
 
-namespace sofa
-{
-
-namespace component
-{
-
-namespace constraintset
+namespace sofa::component::constraintset
 {
 
 using sofa::core::objectmodel::ComponentState;
@@ -227,11 +220,5 @@ void CosseratActuatorConstraint<DataTypes>::setUpForceLimits(double& imposedValu
         maxDisplacement=d_maxPositiveDisplacement.getValue();
 }
 
-
-} // namespace constraintset
-
-} // namespace component
-
 } // namespace sofa
 
-#endif

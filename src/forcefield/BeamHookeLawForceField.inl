@@ -27,8 +27,7 @@
 * Contact information: https://project.inria.fr/softrobot/contact/            *
 *                                                                             *
 ******************************************************************************/
-#ifndef SOFA_COMPONENT_FORCEFIELD_BeamHookeLawForceField_INL
-#define SOFA_COMPONENT_FORCEFIELD_BeamHookeLawForceField_INL
+#pragma once
 
 #include "BeamHookeLawForceField.h"
 #include <SofaBaseLinearSolver/FullVector.h>
@@ -53,13 +52,7 @@ using std::endl ;
 #include <algorithm>
 #include <ctime>
 
-namespace sofa
-{
-
-namespace component
-{
-
-namespace forcefield
+namespace sofa::component::forcefield
 {
 
 using sofa::component::linearsolver::DefaultMultiMatrixAccessor ;
@@ -240,7 +233,3 @@ void BeamHookeLawForceField<DataTypes>::addKToMatrix(const MechanicalParams* mpa
 
 
 } // forcefield
-} // component
-} // sofa
-
-#endif // SOFA_COMPONENT_FORCEFIELD_BeamHookeLawForceField_INL

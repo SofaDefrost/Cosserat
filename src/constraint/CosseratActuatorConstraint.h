@@ -27,9 +27,7 @@
 * Contact information: https://project.inria.fr/softrobot/contact/            *
 *                                                                             *
 ******************************************************************************/
-
-#ifndef SOFA_COMPONENT_CONSTRAINTSET_COSSERATACTUATORCONSTRAINT_H
-#define SOFA_COMPONENT_CONSTRAINTSET_COSSERATACTUATORCONSTRAINT_H
+#pragma once
 
 #include <sofa/defaulttype/Vec.h>
 #include <sofa/helper/OptionsGroup.h>
@@ -38,14 +36,9 @@
 #include <sofa/core/behavior/PairInteractionConstraint.h>
 #include <SoftRobots/component/constraint/model/CableModel.h>
 
-namespace sofa
+namespace sofa::component::constraintset
 {
 
-namespace component
-{
-
-namespace constraintset
-{
 using sofa::helper::vector;
 using sofa::defaulttype::Vec;
 using sofa::defaulttype::Vec3d;
@@ -207,11 +200,4 @@ private:
 // each compilation unit. see: http://www.stroustrup.com/C++11FAQ.html#extern-templates
 extern template class CosseratActuatorConstraint<sofa::defaulttype::Vec3Types>;
 
-
-} // namespace constraintset
-
-} // namespace component
-
 } // namespace sofa
-
-#endif // SOFA_COMPONENT_CONSTRAINTSET_COSSERATACTUATORCONSTRAINT_H

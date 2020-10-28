@@ -27,9 +27,7 @@
 * Contact information: https://project.inria.fr/softrobot/contact/            *
 *                                                                             *
 ******************************************************************************/
-#ifndef SOFA_COMPONENT_FORCEFIELD_CosseratInternalActuation_INL
-#define SOFA_COMPONENT_FORCEFIELD_CosseratInternalActuation_INL
-
+#pragma once
 #include "CosseratInternalActuation.h"
 #include <SofaBaseLinearSolver/FullVector.h>
 #include <sofa/core/behavior/MechanicalState.h>
@@ -53,13 +51,7 @@ using std::endl ;
 #include <algorithm>
 #include <ctime>
 
-namespace sofa
-{
-
-namespace component
-{
-
-namespace forcefield
+namespace sofa::component::forcefield
 {
 
 using sofa::component::linearsolver::DefaultMultiMatrixAccessor ;
@@ -301,7 +293,3 @@ void CosseratInternalActuation<DataTypes>::addKToMatrix(const MechanicalParams* 
 
 
 } // forcefield
-} // component
-} // sofa
-
-#endif // SOFA_COMPONENT_FORCEFIELD_CosseratInternalActuation_INL

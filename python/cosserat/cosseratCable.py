@@ -1,9 +1,5 @@
-from math import sqrt, pi
-from splib.objectmodel import SofaPrefab, SofaObject
-from splib.numerics import Vec3, Quat
-from splib.animation import animate, AnimationManager
+from splib.objectmodel import SofaObject
 from stlib.physics.deformable import ElasticMaterialObject
-from stlib.physics.constraints import FixedBox
 from stlib.physics.rigid import Floor, Cube
 from stlib.scene import Node
 #from cosseratUtilities import compute_BeamLenght, createCurvAbsOutput, createFramesList, extractFEMConstraintPoints
@@ -11,9 +7,11 @@ import Sofa
 import os
 from grippercontroller import GripperController
 from stlib.physics.collision import CollisionMesh
-path = os.path.dirname(os.path.abspath(__file__))+'/../../scenes/inverseModelScenes/mesh/'
 
+
+path = os.path.dirname(os.path.abspath(__file__))+'/../../scenes/inverseModelScenes/mesh/'
 FEMpos = [" 0. 0. 0. 15. 0. 0. 30. 0. 0. 45. 0. 0. 60. 0. 0. 66. 0. 0. 81. 0.0 0.0"]
+
 
 def cable(
     attachedTo=None,
@@ -22,8 +20,8 @@ def cable(
     numberBeams = 6,
     stiffness="50000",
     angularStiffness=50000,
-    rotation=[0.0,0.0,0.0,1.0],
-    translation=[0.0,0.0,0.0],
+    rotation=[0.0, 0.0, 0.0, 1.0],
+    translation=[0.0, 0.0, 0.0],
     listOfBeamslenght = None,
     crossSectionShape='circular',
     radius=0.5,
@@ -37,7 +35,7 @@ def cable(
     # RigidBase
     ###############
     base = [translation[0],translation[1],translation[2],rotation[0],rotation[1],rotation[2],rotation[3]]
-    RigidBaseMO = cable.createObject('MechanicalObject', template='Rigid3d',name="RigidBaseMO", position=base, showObject='0', showObjectScale='0.')
+    cable.createObject('MechanicalObject', template='Rigid3d',name="RigidBaseMO", position=base, showObject='0', showObjectScale='0.')
     cable.createObject('RestShapeSpringsForceField', name='spring', stiffness=stiffness,angularStiffness=angularStiffness, external_points="0", mstate="@RigidBaseMO", points="0", template="Rigid3d")
     
     
@@ -61,58 +59,54 @@ def cable(
     #BeamHookeLawForce = rateAngularDeformNode.createObject('BeamHookeLawForceField', crossSectionShape=crossSectionShape, length=lenghts, radius=radius, youngModulus=youngModulus)
         
     #return cable
-
-
-    
     #mappedPointsNode.createObject('DifferenceMultiMapping', name="pointsMulti", input1=inputFEMCableMO, input2=inputCableMO, output=outputPointMO, direction=direction)
-
-def addConstraintPoints(attachedTo, cstPoints,mappedPointsNode,translation=[0.,0.,0.],rotation=[0.,0.,0.]):
-        
-#        rot= [0.0,180.,0.] + rotation
-#        trans=[-17.5,12.5,7.5] + translation
-        trunkMappedPoints = attachedTo.createChild('constraintPoints')        
-        inputFEMCable = trunkMappedPoints.createObject('MechanicalObject', name="pointsInFEM", position=cstPoints, 
-                                                       showObject="0", showIndices="0", translation=translation, rotation=rotation)
-        
-        trunkMappedPoints.addChild(mappedPointsNode)
-        trunkMappedPoints.createObject('BarycentricMapping')
-        return inputFEMCable.getLinkPath()
 
 
 def Finger(parentNode=None, name="Finger",
-           rotation=[0.0, 0.0, 0.0], translation=[0.0, 0.0, 0.0],
-           fixingBox=[-18., -15., -8., 2., -3., 8]):
-    
-#    trans = translation        
-    finger = ElasticMaterialObject(parentNode,name=name,
-                                   volumeMeshFileName=path+"transFinger.vtk",
-#                                   volumeMeshFileName=path+"finger.vtk",
-                                   poissonRatio=0.45,
-                                   youngModulus=600,
-                                   totalMass=0.5,
-                                   surfaceColor=[0.0, 0.7, 0.7],
-                                   surfaceMeshFileName=path+"transFinger.stl",
-#                                   surfaceMeshFileName=path+"finger.stl",
-                                   rotation=rotation,
-                                   translation=translation)
-    finger.node.createObject('RestShapeSpringsForceField', points='16 17 18 19 20 21 48 51 52 54 63 103 104 105 106 107 113 116 128 135 143 150', stiffness='1e12')
-#    FixedBox(finger.node, atPositions=fixingBox, doVisualization=True)
-    
-    CollisionMesh(finger.node, name="CollisionMesh",
+           rotation=[0.0, 0.0, 0.0], translation=[0.0, 0.0, 0.0]):
+
+   # trans = translation
+   finger = ElasticMaterialObject(parentNode,name=name,
+                                  volumeMeshFileName=path+"transFinger.vtk",
+                                  # volumeMeshFileName=path+"finger.vtk",
+                                  poissonRatio=0.45,
+                                  youngModulus=600,
+                                  totalMass=0.5,
+                                  surfaceColor=[0.0, 0.7, 0.7],
+                                  surfaceMeshFileName=path+"transFinger.stl",
+                                  # surfaceMeshFileName=path+"finger.stl",
+                                  rotation=rotation,
+                                  translation=translation)
+
+   finger.node.createObject('RestShapeSpringsForceField', points='16 17 18 19 20 21 48 51 52 54 63 103 104 105 106 107 113 116 128 135 143 150', stiffness='1e12')
+   # FixedBox(finger.node, atPositions=fixingBox, doVisualization=True)
+
+   CollisionMesh(finger.node, name="CollisionMesh",
                  surfaceMeshFileName=path+"transFinger.stl",
                  rotation=rotation, translation=translation,
                  collisionGroup=[1, 2])
 
-#    CollisionMesh(finger.node, name="CollisionMeshAuto1",
-#                 surfaceMeshFileName=path+"fingerCollision_part1.stl",
-#                 rotation=rotation, translation=translation,
-#                 collisionGroup=[1])
-#
-#    CollisionMesh(finger.node, name="CollisionMeshAuto2",
-#                 surfaceMeshFileName=path+"fingerCollision_part2.stl",
-#                 rotation=rotation, translation=translation,
-#                 collisionGroup=[2])
-    return finger
+   # CollisionMesh(finger.node, name="CollisionMeshAuto1",
+   #              surfaceMeshFileName=path+"fingerCollision_part1.stl",
+   #              rotation=rotation, translation=translation,
+   #              collisionGroup=[1])
+   #
+   # CollisionMesh(finger.node, name="CollisionMeshAuto2",
+   #              surfaceMeshFileName=path+"fingerCollision_part2.stl",
+   #              rotation=rotation, translation=translation,
+   #              collisionGroup=[2])
+   return finger
+
+
+def addConstraintPoints(attachedTo, cstPoints,mappedPointsNode,translation=[0., 0., 0.],rotation=[0., 0., 0.]):
+       # rot= [0.0,180.,0.] + rotation
+       # trans=[-17.5,12.5,7.5] + translation
+        trunkMappedPoints = attachedTo.createChild('constraintPoints')
+        inputFEMCable = trunkMappedPoints.createObject('MechanicalObject', name="pointsInFEM", position=cstPoints,
+                                                       showObject="0", showIndices="0", translation=translation, rotation=rotation)
+        trunkMappedPoints.addChild(mappedPointsNode)
+        trunkMappedPoints.createObject('BarycentricMapping')
+        return inputFEMCable.getLinkPath()
 
 class CosseratCable(SofaObject):
     def __init__(self, parentNode, name, trans=[0.0,0.0,0.0], rot=[0.,0.,0.]):
@@ -123,9 +117,7 @@ class CosseratCable(SofaObject):
         self.numberFrame = 15
         self.stiffness="50000"
         self.angularStiffness=50000
-#        rotLoc = [0.0,180.,0.] + rot
         self.rot= rot
-#        transLoc = [-17.5,12.5,7.5] + trans
         self.trans = trans
         self.listOfBeamslenght = None
         self.crossSectionShape='circular'
@@ -156,7 +148,7 @@ class CosseratCable(SofaObject):
         rigidBaseNode = self.node.createChild('cableNode')               
         RigidBaseMO = rigidBaseNode.createObject('MechanicalObject', template='Rigid3d', name="RigidBaseMO", 
                                                  position="0. 0. 0. 0. 0. 0. 1.", 
-#                                                 rest_position="0. 0. 0. 0. 0. 0. 1.", 
+                                                 # rest_position="0. 0. 0. 0. 0. 0. 1.",
                                                  translation=self.trans, rotation=self.rot, showObject='0', showObjectScale='0. ',showIndices='0' )
         rigidBaseNode.createObject('RestShapeSpringsForceField', name='spring', stiffness="500", angularStiffness="500",
                                    external_points="0", mstate="@RigidBaseMO", points="0", template="Rigid3d")
@@ -216,7 +208,7 @@ class CosseratCable(SofaObject):
     
     def __computePosition(self):
         position = []
-        for i in range(0,numberBeams):
+        for i in range(0,self.numberBeams):
             position.append([0.,0.,0.])
         
         return position
@@ -265,24 +257,23 @@ class CosseratCable(SofaObject):
 def CosseratFinger(rootNode,
                    cableNode,
                    translation   =[0., 0., 0.],
-                   rotation      =[0., 0., 0.],                   
-                   fixingBox        =[-8., -20., -18., 0.0, -3., 8],
+                   rotation      =[0., 0., 0.],
                    name             ="1"
                    ):
     
     cable  = Node(cableNode, name)
     cableN = CosseratCable(cable,
-                  name="cable",
-                  trans=translation, 
-                  rot=rotation)
+                           name="cable",
+                           trans=translation,
+                           rot=rotation)
     
     slidingPoint = cableN.slidingPoint
     cableDofMO   = cableN.cableDofMO
     
-    finger = Finger(rootNode, name="Finger"+name, 
-                     translation=translation, 
-                     rotation=rotation, 
-                     fixingBox=fixingBox)
+    finger = Finger(rootNode,
+                    name="Finger"+name,
+                    translation=translation,
+                    rotation=rotation)
     
     mappedPointsNode = cableN.mappedPointsNode
     inputFEMCableMO = addConstraintPoints(attachedTo=finger,cstPoints= FEMpos,mappedPointsNode=mappedPointsNode, translation=translation,rotation=rotation)
@@ -318,8 +309,8 @@ def createScene(rootNode):
     
     cosFinger1 = CosseratFinger(rootNode=rootNode, cableNode=cableNode, 
                          name           ="cosseratF1",
-                         rotation       =   [0., 0, -120.],
-                         translation    =   [-5., 70., 0.0],
+                         rotation       =[0., 0, -120.],
+                         translation    =[-5., 70., 0.0],
                          )
     #trans = cosFinger1.trans
 

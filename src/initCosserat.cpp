@@ -27,6 +27,9 @@
 #include "initCosserat.h"
 #include <cstring>
 #include <string>
+#include <sofa/core/ObjectFactory.h>
+#include <sofa/helper/system/PluginManager.h>
+using sofa::helper::system::PluginManager;
 
 
 namespace sofa
@@ -52,20 +55,29 @@ void initExternalModule()
     {
         first = false;
     }
+    // Automatically load the STLIB plugin if available.
+    if( !PluginManager::getInstance().findPlugin("STLIB").empty() )
+    {
+        PluginManager::getInstance().loadPlugin("STLIB") ;
+    }
+    
+#ifdef SOFTROBOTS_PYTHON
+    PythonEnvironment::addPythonModulePathsForPluginsByName("CosseratPlugin");
+#endif
 }
 const char* getModuleLicense()
 {
-    return "INRIA and Digital-Trainers";
+    return "LGPL";
 }
 
 const char* getModuleName()
 {
-    return "Cosserat";
+    return "CosseratPlugin";
 }
 
 const char* getModuleVersion()
 {
-    return "0.1";
+    return "1.0";
 }
 
 const char* getModuleDescription()
@@ -75,10 +87,13 @@ const char* getModuleDescription()
 
 const char* getModuleComponentList()
 {
-    return	"MultiCosseratMapping \n"
-            "MultiCosseratMapping \n"
+    return	"BaseCosserat \n"
+            "DiscretCosseratMapping \n"
+            "DifferenceMultiMapping \n"
+            "DiscretDynamicCosseratMapping \n"
             ;
 }
+
 } 
 } 
 

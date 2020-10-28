@@ -115,74 +115,74 @@ def createScene(rootNode):
     ##########################################
     # FEM Model                              #
     ##########################################
-#    finger = rootNode.createChild('finger')
-#    finger.createObject('EulerImplicitSolver', name='odesolver',firstOrder='0', rayleighMass=0.1, rayleighStiffness=0.1)
-#    finger.createObject('SparseLDLSolver', name='preconditioner')
-#
-#    # Add a componant to load a VTK tetrahedral mesh and expose the resulting topology in the scene .
-#    finger.createObject('MeshVTKLoader', name='loader', filename=path +'finger.vtk', translation="-17.5 -12.5 7.5", rotation="0 180 0")
-#    
-#    #finger.createObject('MeshExporter', name='loader', filename=path +'transFinger.vtk', exportAtEnd="true")
-#    
-#    finger.createObject('TetrahedronSetTopologyContainer', src='@loader', name='container')
-#    finger.createObject('TetrahedronSetTopologyModifier')
-#    finger.createObject('TetrahedronSetTopologyAlgorithms', template='Vec3d')
-#    finger.createObject('TetrahedronSetGeometryAlgorithms', template='Vec3d')
-#
-#    # Create a mechanicaobject component to stores the DoFs of the model
-#    finger.createObject('MechanicalObject', name='tetras', template='Vec3d',showIndices='false', showIndicesScale='4e-5', rx='0', dz='0')
-#
-#    # Gives a mass to the model
-#    finger.createObject('UniformMass', totalMass='0.075')
-#
-#    # Add a TetrahedronFEMForceField componant which implement an elastic material model solved using the Finite Element Method on
-#    # tetrahedrons.
-#    finger.createObject('TetrahedronFEMForceField', template='Vec3d',
-#                        name='FEM', method='large', poissonRatio='0.45',  youngModulus='1200')
-#
-#    finger.createObject('BoxROI', name='ROI1',
-#                        box='-18 -15 -8 2 -3 8', drawBoxes='true')
-#    finger.createObject('RestShapeSpringsForceField',
-#                        points='@ROI1.indices', stiffness='1e12')
-#
-#
-#
-#    ##########################################
-#    # Cable points                           #
-#    ##########################################
-#    # Mappe points inside the meca, this points will be use for the bilateral mapping
-#    FEMpos = [" 0.0 0 0 15 0 0 30 0 0 45 0 0 60 0 0 66 0 0 81 0.0 0.0"]
-#    # FEMpos = [" 81 0.0 0.0"]
-#    
-#    femPoints = finger.createChild('femPoints')
-#    inputFEMCable = femPoints.createObject('MechanicalObject', name="pointsInFEM",
-#                           position=FEMpos, showObject="1", showIndices="1")
-#    femPoints.createObject('BarycentricMapping')
-#    
-#    ##########################################
-#    #  Finger auto-Collision            #
-#    ##########################################
-#    CollisionMesh(finger,
-#                  surfaceMeshFileName="mesh/fingerCollision_part1.stl",
-#                  name="CollisionMeshAuto1", translation="-17.5 -12.5 7.5", rotation="0 180 0", collisionGroup=[1])
-#
-#    CollisionMesh(finger,
-#                  surfaceMeshFileName="mesh/fingerCollision_part2.stl",
-#                  name="CollisionMeshAuto2", translation="-17.5 -12.5 7.5", rotation="0 180 0", collisionGroup=[2])
-#
-#
-#    finger.createObject('LinearSolverConstraintCorrection')
-#    ##########################################
-#    # Visualization                          #
-#    ##########################################
-#    fingerVisu = finger.createChild('visu')
-#    fingerVisu.createObject(
-#        'MeshSTLLoader', filename=path+"finger.stl", name="loader", translation="-17.5 -12.5 7.5",
-#        rotation="0 180 0")
-#    #fingerVisu.createObject('STLExporter', filename=path+"transFinger", exportAtEnd="true")
-#    fingerVisu.createObject('OglModel', src="@loader",
-#                            template='ExtVec3f', color="0.0 0.7 0.7")
-#    fingerVisu.createObject('BarycentricMapping')
+    finger = rootNode.createChild('finger')
+    finger.createObject('EulerImplicitSolver', name='odesolver',firstOrder='0', rayleighMass=0.1, rayleighStiffness=0.1)
+    finger.createObject('SparseLDLSolver', name='preconditioner')
+
+    # Add a componant to load a VTK tetrahedral mesh and expose the resulting topology in the scene .
+    finger.createObject('MeshVTKLoader', name='loader', filename=path +'finger.vtk', translation="-17.5 -12.5 7.5", rotation="0 180 0")
+    
+    #finger.createObject('MeshExporter', name='loader', filename=path +'transFinger.vtk', exportAtEnd="true")
+    
+    finger.createObject('TetrahedronSetTopologyContainer', src='@loader', name='container')
+    finger.createObject('TetrahedronSetTopologyModifier')
+    finger.createObject('TetrahedronSetTopologyAlgorithms', template='Vec3d')
+    finger.createObject('TetrahedronSetGeometryAlgorithms', template='Vec3d')
+
+    # Create a mechanicaobject component to stores the DoFs of the model
+    finger.createObject('MechanicalObject', name='tetras', template='Vec3d',showIndices='false', showIndicesScale='4e-5', rx='0', dz='0')
+
+    # Gives a mass to the model
+    finger.createObject('UniformMass', totalMass='0.075')
+
+    # Add a TetrahedronFEMForceField componant which implement an elastic material model solved using the Finite Element Method on
+    # tetrahedrons.
+    finger.createObject('TetrahedronFEMForceField', template='Vec3d',
+                        name='FEM', method='large', poissonRatio='0.45',  youngModulus='1200')
+
+    finger.createObject('BoxROI', name='ROI1',
+                        box='-18 -15 -8 2 -3 8', drawBoxes='true')
+    finger.createObject('RestShapeSpringsForceField',
+                        points='@ROI1.indices', stiffness='1e12')
+
+
+
+    ##########################################
+    # Cable points                           #
+    ##########################################
+    # Mappe points inside the meca, this points will be use for the bilateral mapping
+    FEMpos = [" 0.0 0 0 15 0 0 30 0 0 45 0 0 60 0 0 66 0 0 81 0.0 0.0"]
+    # FEMpos = [" 81 0.0 0.0"]
+    
+    femPoints = finger.createChild('femPoints')
+    inputFEMCable = femPoints.createObject('MechanicalObject', name="pointsInFEM",
+                           position=FEMpos, showObject="1", showIndices="1")
+    femPoints.createObject('BarycentricMapping')
+    
+    ##########################################
+    #  Finger auto-Collision            #
+    ##########################################
+    CollisionMesh(finger,
+                  surfaceMeshFileName="mesh/fingerCollision_part1.stl",
+                  name="CollisionMeshAuto1", translation="-17.5 -12.5 7.5", rotation="0 180 0", collisionGroup=[1])
+
+    CollisionMesh(finger,
+                  surfaceMeshFileName="mesh/fingerCollision_part2.stl",
+                  name="CollisionMeshAuto2", translation="-17.5 -12.5 7.5", rotation="0 180 0", collisionGroup=[2])
+
+
+    finger.createObject('LinearSolverConstraintCorrection')
+    ##########################################
+    # Visualization                          #
+    ##########################################
+    fingerVisu = finger.createChild('visu')
+    fingerVisu.createObject(
+        'MeshSTLLoader', filename=path+"finger.stl", name="loader", translation="-17.5 -12.5 7.5",
+        rotation="0 180 0")
+    #fingerVisu.createObject('STLExporter', filename=path+"transFinger", exportAtEnd="true")
+    fingerVisu.createObject('OglModel', src="@loader",
+                            template='ExtVec3f', color="0.0 0.7 0.7")
+    fingerVisu.createObject('BarycentricMapping')
 
 
 
@@ -260,17 +260,17 @@ def createScene(rootNode):
     slidingPoint.createObject('IdentityMapping')
 
 
-#    mappedPointsNode = slidingPoint.createChild('MappedPoints')
-#    femPoints.addChild(mappedPointsNode)
-#    mappedPoints = mappedPointsNode.createObject('MechanicalObject', template='Vec3d', position=FEMpos, name="FramesMO", showObject='1', showObjectScale='1')
-#
-#    inputCableMO = slidingPointMO.getLinkPath()
-#    inputFEMCableMO = inputFEMCable.getLinkPath()
-#    outputPointMO = mappedPoints.getLinkPath()
-#
-#    mappedPointsNode.createObject('QPSlidingConstraint', name="QPConstraint")
-#
-#    mappedPointsNode.createObject('DifferenceMultiMapping', name="pointsMulti", input1=inputFEMCableMO, input2=inputCableMO, output=outputPointMO, direction="@../../FramesMO.position")
+    mappedPointsNode = slidingPoint.createChild('MappedPoints')
+    femPoints.addChild(mappedPointsNode)
+    mappedPoints = mappedPointsNode.createObject('MechanicalObject', template='Vec3d', position=FEMpos, name="FramesMO", showObject='1', showObjectScale='1')
+
+    inputCableMO = slidingPointMO.getLinkPath()
+    inputFEMCableMO = inputFEMCable.getLinkPath()
+    outputPointMO = mappedPoints.getLinkPath()
+
+    mappedPointsNode.createObject('QPSlidingConstraint', name="QPConstraint")
+
+    mappedPointsNode.createObject('DifferenceMultiMapping', name="pointsMulti", input1=inputFEMCableMO, input2=inputCableMO, output=outputPointMO, direction="@../../FramesMO.position")
     
     ## Get the tree mstate links for the mapping
 

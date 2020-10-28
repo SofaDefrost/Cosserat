@@ -19,20 +19,16 @@
 *                                                                             *
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
-#define SOFA_COMPONENT_MAPPING_BASEMAPPING_CPP
+#pragma once
+
 #include "BaseCosserat.inl"
 #include <sofa/defaulttype/VecTypes.h>
 #include <sofa/defaulttype/RigidTypes.h>
 #include <sofa/core/ObjectFactory.h>
 
-namespace sofa
+namespace sofa::component::mapping
 {
 
-namespace component
-{
-
-namespace mapping
-{
 using namespace sofa::defaulttype;
 
 // Register in the Factory
@@ -45,10 +41,5 @@ int BaseCosseratClass = core::RegisterObject("Set the positions and velocities o
 
 template class SOFA_COSSERAT_MAPPING_API BaseCosserat< sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types >;
 template class SOFA_COSSERAT_MAPPING_API BaseCosserat< sofa::defaulttype::Vec3Types, sofa::defaulttype::Vec3Types, sofa::defaulttype::Vec3Types >;
-
-
-} // namespace mapping
-
-} // namespace component
 
 } // namespace sofa.

@@ -1,6 +1,6 @@
 /******************************************************************************
 *               SOFA, Simulation Open-Framework Architecture                  *
-*                (c) 2006-2018 INRIA, USTL, UJF, CNRS, MGH                    *
+*                (c) 2020 INRIA, USTL, UJF, CNRS, MGH                    *
 *                                                                             *
 * This library is free software; you can redistribute it and/or modify it     *
 * under the terms of the GNU Lesser General Public License as published by    *
@@ -16,7 +16,7 @@
 * along with this library; if not, write to the Free Software Foundation,     *
 * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA.          *
 *******************************************************************************
-*                           Plugin SoftRobots v1.0                            *
+*                      Plugin Cosserat v1.0                                   *
 *                                                                             *
 * This plugin is also distributed under the GNU LGPL (Lesser General          *
 * Public License) license with the same conditions than SOFA.                 *
@@ -25,24 +25,19 @@
 *               Ecole Centrale de Lille)                                      *
 *                                                                             *
 * Contact information: https://project.inria.fr/softrobot/contact/            *
-*                                                                             *
+*                     adagolodjo@protonmail.com                               *
 ******************************************************************************/
 
-#ifndef SOFA_COMPONENT_CONSTRAINTSET_QPSlidingConstraint_H
-#define SOFA_COMPONENT_CONSTRAINTSET_QPSlidingConstraint_H
+#pragma once
 
 #include <sofa/defaulttype/Vec3Types.h>
-#include "CableModel.h"
 #include <sofa/helper/OptionsGroup.h>
-#include "../../behavior/SoftRobotsConstraint.h"
+#include <sofa/defaulttype/defaulttype.h>
 
-namespace sofa
-{
+#include "../../../SoftRobots/src/SoftRobots/component/constraint/model/CableModel.h"
+#include "../../../SoftRobots/src/SoftRobots/component/behavior/SoftRobotsConstraint.h"
 
-namespace component
-{
-
-namespace constraintset
+namespace sofa::component::constraintset
 {
 
 using sofa::core::behavior::SoftRobotsConstraint ;
@@ -64,8 +59,8 @@ public:
     SlidingForceConstraintResolution(const double& imposedForce, const double& min, const double& max);
 
     //////////////////// Inherited from ConstraintResolution ////////////////////
-    void init(int line, double** w, double *force) override;
-    void resolution(int line, double** w, double* d, double* force, double* dfree) override;
+    virtual void init(int line, double** w, double *force) override;
+    virtual void resolution(int line, double** w, double* d, double* force, double* dfree) override;
     /////////////////////////////////////////////////////////////////////////////
 
 protected:
@@ -180,11 +175,6 @@ private:
 // each compilation unit. see: http://www.stroustrup.com/C++11FAQ.html#extern-templates
 extern template class QPSlidingConstraint<defaulttype::Vec3Types>;
 
-
-} // namespace constraintset
-
-} // namespace component
-
 } // namespace sofa
 
-#endif // SOFA_COMPONENT_CONSTRAINTSET_QPSlidingConstraint_H
+

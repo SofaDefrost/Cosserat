@@ -30,15 +30,8 @@
 #include "CosseratInternalActuation.inl"
 #include <sofa/core/ObjectFactory.h>
 
-namespace sofa
+namespace sofa::component::forcefield
 {
-
-namespace component
-{
-
-namespace forcefield
-{
-
 ////////////////////////////////////////////    FACTORY    //////////////////////////////////////////////
 // Registering the component
 // see: http://wiki.sofa-framework.org/wiki/ObjectFactory
@@ -60,8 +53,4 @@ int CosseratInternalActuationClass = core::RegisterObject("This component is use
 template class CosseratInternalActuation<Vec3Types>;
 
 
-} // forcefield
-
-} // component
-
-} // sofa
+}

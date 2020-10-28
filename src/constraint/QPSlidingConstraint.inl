@@ -16,7 +16,7 @@
 * along with this library; if not, write to the Free Software Foundation,     *
 * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA.          *
 *******************************************************************************
-*                           Plugin SoftRobots v1.0                            *
+*                           Plugin Cosserat  v1.0                             *
 *                                                                             *
 * This plugin is also distributed under the GNU LGPL (Lesser General          *
 * Public License) license with the same conditions than SOFA.                 *
@@ -25,11 +25,10 @@
 *               Ecole Centrale de Lille)                                      *
 *                                                                             *
 * Contact information: https://project.inria.fr/softrobot/contact/            *
-*                                                                             *
+*                     adagolodjo@protonmail.com                               *
 ******************************************************************************/
 
-#ifndef SOFA_COMPONENT_CONSTRAINTSET_QPSlidingConstraint_INL
-#define SOFA_COMPONENT_CONSTRAINTSET_QPSlidingConstraint_INL
+#pragma once
 
 #include <sofa/core/visual/VisualParams.h>
 #include <sofa/defaulttype/Vec.h>
@@ -37,13 +36,7 @@
 
 #include "QPSlidingConstraint.h"
 
-namespace sofa
-{
-
-namespace component
-{
-
-namespace constraintset
+namespace sofa::component::constraintset
 {
 
 using sofa::core::objectmodel::ComponentState;
@@ -282,11 +275,5 @@ void QPSlidingConstraint<DataTypes>::draw(const VisualParams* vparams)
 
 }
 
-
-} // namespace constraintset
-
-} // namespace component
-
 } // namespace sofa
 
-#endif

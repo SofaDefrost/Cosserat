@@ -19,9 +19,8 @@
 *                                                                             *
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
-#ifndef SOFA_COMPONENT_MAPPING_BASEMAPPING_H
-#define SOFA_COMPONENT_MAPPING_BASEMAPPING_H
 
+#pragma once
 #include <sofa/core/BaseMapping.h>
 #include <sofa/core/core.h>
 #include <sofa/core/Multi2Mapping.h>
@@ -34,7 +33,7 @@
 
 
 
-namespace sofa
+namespace sofa::component::mapping
 
 {
 using sofa::defaulttype::SolidTypes ;
@@ -45,12 +44,6 @@ using sofa::defaulttype::Vector3;
 using sofa::defaulttype::Vec6;
 using std::get;
 using sofa::core::objectmodel::BaseObject;
-
-namespace component
-{
-
-namespace mapping
-{
 
 /*!
  * \class BaseCosserat
@@ -290,11 +283,4 @@ extern template class SOFA_COSSERAT_MAPPING_API BaseCosserat< sofa::defaulttype:
 extern template class SOFA_COSSERAT_MAPPING_API BaseCosserat< sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types >;
 #endif
 
-} // mapping
-
-} // namespace componenet
-
 } // namespace sofa
-
-#endif //SOFA_COMPONENT_MAPPING_POEMAPING_H
-
