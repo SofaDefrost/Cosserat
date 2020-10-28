@@ -35,21 +35,18 @@ Example:
 
 Contents of the library
 **********************
+Template for cosserat .
 
+Content:
+********
 .. autosummary::
-    :toctree: _autosummary
 
-    softrobots.actuator
-    softrobots.inverse
+   CosseratCable 
 
-
-Indices and tables
-******************
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
-
+.. autofunction:: cable
+.. autofunction:: CosseratFinger
+.. autofunction:: addConstraintPoints
 """
 
-__all__=["cosserat"]
+from cosseratCable import CosseratFinger, CosseratCable
+from grippercontroller import GripperController

@@ -19,8 +19,8 @@
 *                                                                             *
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
-#ifndef SOFA_COMPONENT_MAPPING_POEMAPING_INL
-#define SOFA_COMPONENT_MAPPING_POEMAPING_INL
+
+#pragma once
 
 #include <sofa/core/Multi2Mapping.inl>
 #include "BaseCosserat.h"
@@ -35,18 +35,12 @@
 
 
 
-namespace sofa
+namespace sofa::component::mapping
 {
 using sofa::core::objectmodel::BaseContext ;
 using sofa::helper::AdvancedTimer;
 using sofa::helper::WriteAccessor;
 
-
-namespace component
-{
-
-namespace mapping
-{
 template <class TIn1, class TIn2, class TOut>
 BaseCosserat<TIn1, TIn2, TOut>::BaseCosserat()
     : d_curv_abs_input( initData( &d_curv_abs_input, "curv_abs_input", " need to be com...."))
@@ -485,12 +479,5 @@ void BaseCosserat<TIn1, TIn2, TOut>::draw(const core::visual::VisualParams* vpar
     //    }
     //return;
 }
+}
 
-
-} // namespace mapping
-
-} // namespace component
-
-} // namespace sofa
-
-#endif // SOFA_COMPONENT_MAPPING_BASEMAPPING_INL

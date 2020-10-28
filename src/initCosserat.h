@@ -1,28 +1,31 @@
 /******************************************************************************
-*       SOFA, Simulation Open-Framework Architecture, version 1.0 beta 4      *
-*                (c) 2006-2009 MGH, INRIA, USTL, UJF, CNRS                    *
+*       SOFA, Simulation Open-Framework Architecture                          *
+*                (c) 2006-2018 INRIA, USTL, UJF, CNRS, MGH                    *
 *                                                                             *
-* This program is free software; you can redistribute it and/or modify it     *
-* under the terms of the GNU General Public License as published by the Free  *
-* Software Foundation; either version 2 of the License, or (at your option)   *
-* any later version.                                                          *
+* This library is free software; you can redistribute it and/or modify it     *
+* under the terms of the GNU Lesser General Public License as published by    *
+* the Free Software Foundation; either version 2.1 of the License, or (at     *
+* your option) any later version.                                             *
 *                                                                             *
-* This program is distributed in the hope that it will be useful, but WITHOUT *
+* This library is distributed in the hope that it will be useful, but WITHOUT *
 * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or       *
-* FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for    *
-* more details.                                                               *
+* FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License *
+* for more details.                                                           *
 *                                                                             *
-* You should have received a copy of the GNU General Public License along     *
-* with this program; if not, write to the Free Software Foundation, Inc., 51  *
-* Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.                   *
+* You should have received a copy of the GNU Lesser General Public License    *
+* along with this library; if not, write to the Free Software Foundation,     *
+* Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA.          *
 *******************************************************************************
-*                            SOFA :: Applications                             *
+*                           Plugin Cosserat    v1.0                           *
+*				                                                              *
+* This plugin is also distributed under the GNU LGPL (Lesser General          *
+* Public License) license with the same conditions than SOFA.                 *
 *                                                                             *
-* Authors: M. Adam, J. Allard, B. Andre, P-J. Bensoussan, S. Cotin, C. Duriez,*
-* H. Delingette, F. Falipou, F. Faure, S. Fonteneau, L. Heigeas, C. Mendoza,  *
-* M. Nesme, P. Neumann, J-P. de la Plata Alcade, F. Poyer and F. Roy          *
+* Contributors: Defrost team  (INRIA, University of Lille, CNRS,              *
+*               Ecole Centrale de Lille)                                      *
 *                                                                             *
-* Contact information: contact@sofa-framework.org                             *
+* Contact information: https://project.inria.fr/softrobot/contact/            *
+*                                                                             *
 ******************************************************************************/
 #ifndef SOFA_COMPONENT_COSSERA_MAPPING_INIT_H
 #define SOFA_COMPONENT_COSSERA_MAPPING_INIT_H
@@ -30,11 +33,17 @@
 #include <sofa/helper/system/config.h>
 
 
-#ifdef SOFA_COMPONENT_COSSERA_MAPPING_INIT_H
-#  define SOFA_COSSERAT_MAPPING_API SOFA_EXPORT_DYNAMIC_LIBRARY
+#ifdef SOFA_BUILD_COSSERAT
+#define SOFA_TARGET CosseratPlugin
+#define SOFA_COSSERAT_MAPPING_API SOFA_EXPORT_DYNAMIC_LIBRARY
 #else
 #  define SOFA_COSSERAT_MAPPING_API SOFA_IMPORT_DYNAMIC_LIBRARY
 #endif
 
+//#cmakedefine COSSERAT_PYTHON
+
+/** \mainpage
+  This is the plugin for the Discret Cosserat Plugin
+  */
 
 #endif /* SOFA_COMPONENT_COSSERA_MAPPING_INIT_H */

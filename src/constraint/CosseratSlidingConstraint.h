@@ -19,23 +19,16 @@
 *                                                                             *
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
-#ifndef SOFA_COMPONENT_CONSTRAINTSET_CosseratSlidingConstraint_H
-#define SOFA_COMPONENT_CONSTRAINTSET_CosseratSlidingConstraint_H
+#pragma once
 
 #include <sofa/core/behavior/PairInteractionConstraint.h>
 #include <sofa/core/behavior/MechanicalState.h>
 #include <iostream>
 
-namespace sofa {
-
-namespace component
-{
-
-namespace constraintset
+namespace sofa::component::constraintset
 {
 
 using sofa::core::behavior::ConstraintResolution ;
-
 class UnilateralConstraintResolution : public ConstraintResolution {
 public:
 
@@ -188,15 +181,4 @@ private:
 
 };
 
-//#if  !defined(SOFA_COMPONENT_CONSTRAINTSET_CosseratSlidingConstraint_CPP)
-//extern template class SOFA_CONSTRAINT_API CosseratSlidingConstraint< sofa::defaulttype::Vec3Types >;
-
-//#endif
-
-} // namespace constraintset
-
-} // namespace component
-
-} // namespace sofa
-
-#endif // SOFA_COMPONENT_CONSTRAINTSET_CosseratSlidingConstraint_H
+}

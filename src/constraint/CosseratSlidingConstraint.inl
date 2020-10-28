@@ -19,21 +19,15 @@
 *                                                                             *
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
-#ifndef SOFA_COMPONENT_CONSTRAINTSET_CosseratSlidingConstraint_INL
-#define SOFA_COMPONENT_CONSTRAINTSET_CosseratSlidingConstraint_INL
+#pragma once
 
 #include "CosseratSlidingConstraint.h"
 #include <sofa/core/visual/VisualParams.h>
 #include <sofa/core/behavior/BaseConstraint.h>
 #include <sofa/defaulttype/RGBAColor.h>
 #include <sofa/defaulttype/Vec.h>
-namespace sofa
-{
 
-namespace component
-{
-
-namespace constraintset
+namespace sofa::component::constraintset
 {
 
 template<class DataTypes>
@@ -323,11 +317,4 @@ void CosseratSlidingConstraint<DataTypes>::drawLinesBetweenPoints(const core::vi
     vparams->drawTool()->drawLines(vertices, 1.5, color);
 }
 
-
-} // namespace constraintset
-
-} // namespace component
-
 } // namespace sofa
-
-#endif

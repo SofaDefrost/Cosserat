@@ -33,13 +33,7 @@
 
 #include <sofa/core/ObjectFactory.h>
 
-namespace sofa
-{
-
-namespace component
-{
-
-namespace constraintset
+namespace sofa::component::constraintset
 {
 
 //////////////////////////////////////CosseratActuatorConstraintConstraintResolution1Dof/////////////////////////////////////////////
@@ -64,11 +58,6 @@ int CosseratActuatorConstraintClass = RegisterObject("Simulate cable actuation."
 // avoid the code generation of the template for each compilation unit.
 // see: http://www.stroustrup.com/C++11FAQ.html#extern-templates
 template class CosseratActuatorConstraint<Vec3Types>;
-
-
-} // namespace constraintset
-
-} // namespace component
 
 } // namespace sofa
 

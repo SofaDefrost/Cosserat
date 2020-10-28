@@ -27,8 +27,7 @@
 * Contact information: https://project.inria.fr/softrobot/contact/            *
 *                                                                             *
 ******************************************************************************/
-#ifndef SOFA_COMPONENT_FORCEFIELD_CosseratInternalActuation_H
-#define SOFA_COMPONENT_FORCEFIELD_CosseratInternalActuation_H
+#pragma once
 
 #include <sofa/defaulttype/Vec.h>
 #include <sofa/defaulttype/Mat.h>
@@ -40,14 +39,9 @@
 
 #include <sofa/helper/OptionsGroup.h>
 
-namespace sofa
+namespace sofa::component::forcefield
 {
 
-namespace component
-{
-
-namespace forcefield
-{
 using sofa::defaulttype::Vec ;
 using sofa::defaulttype::Mat ;
 using sofa::helper::vector;
@@ -168,9 +162,4 @@ private :
     ////////////////////////////////////////////////////////////////////////////
 };
 
-
-} // forcefield
-} // component
 } // sofa
-
-#endif // SOFA_COMPONENT_FORCEFIELD_CosseratInternalActuation_H

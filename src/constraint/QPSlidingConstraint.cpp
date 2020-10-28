@@ -21,30 +21,25 @@
 *                                                                             *
 * This component is not open-source                                           *
 *                                                                             *
-* Authors: Yinoussa Adagolodjo                                                *
+* Authors: Yinoussa Adagolodjo/adagolodjo@protonamil.com                      *
 *                                                                             *
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
 #include <sofa/defaulttype/Vec3Types.h>
 #include <sofa/core/ObjectFactory.h>
 #include <iostream>
-using namespace sofa::defaulttype;
-using namespace sofa::helper;
-using namespace sofa::core;
-
-#define SOFTROBOTS_CONSTRAINT_QPSLIDINGCONSTRAINT_NOEXTERN
 #include "QPSlidingConstraint.inl"
 
-namespace sofa
+
+
+//#define SOFTROBOTS_CONSTRAINT_QPSLIDINGCONSTRAINT_NOEXTERN
+
+namespace sofa::component::constraintset
 {
 
-namespace component
-{
-
-namespace constraintset
-{
 using sofa::defaulttype::Rigid3Types;
-
+using namespace sofa::helper;
+using namespace sofa::core;
 
 
 //--------------- Force constraint -------------
@@ -91,7 +86,7 @@ void SlidingForceConstraintResolution::resolution(int line, double** w, double* 
 // 2-.add<>(true) : Set default template
 
 int QPSlidingConstraintClass = RegisterObject("Simulate cable actuation.")
-.add< QPSlidingConstraint<Vec3Types> >(true)
+.add< QPSlidingConstraint<sofa::defaulttype::Vec3Types> >(true)
 
 ;
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -100,12 +95,8 @@ int QPSlidingConstraintClass = RegisterObject("Simulate cable actuation.")
 // This goes with the extern template declaration in the .h. Declaring extern template
 // avoid the code generation of the template for each compilation unit.
 // see: http://www.stroustrup.com/C++11FAQ.html#extern-templates
-template class QPSlidingConstraint<Vec3Types>;
+template class QPSlidingConstraint<sofa::defaulttype::Vec3Types>;
 
-
-} // namespace constraintset
-
-} // namespace component
 
 } // namespace sofa
 

@@ -53,14 +53,14 @@ class GripperController(Sofa.PythonScriptController):
                 mecaobject.findData('rest_position').value = getTranslated( mecaobject.rest_position,  dir , angle)
                                
 #                print(" The rest Position After: ", mecaobject.rest_position)
-                
+#
 #                pos = self.rigidBaseMO.findData('position').value
 #                pos[0][2] -= self.rate
 #                self.rigidBaseMO.findData('position').value = pos
-
+#
 #                cable = m.getChild("PullingCable").getObject("CableConstraint")
 #                p = cable.pullPoint[0]
 #                cable.findData("pullPoint").value = [p[0]+dir[0], p[1]+dir[1], p[2]+dir[2]]
-
-#16 17 18 19 20 21 48 49 50 51 52 54 63 101 102 103 104 105 106 107 116 128 135 143 150
-#16 17 18 19 20 21 48 51 52 54 63 103 104 105 106 107 113 116 128 135 143 150
+#
+# 16 17 18 19 20 21 48 49 50 51 52 54 63 101 102 103 104 105 106 107 116 128 135 143 150
+# 16 17 18 19 20 21 48 51 52 54 63 103 104 105 106 107 113 116 128 135 143 150

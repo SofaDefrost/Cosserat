@@ -30,13 +30,7 @@
 #include "BeamHookeLawForceField.inl"
 #include <sofa/core/ObjectFactory.h>
 
-namespace sofa
-{
-
-namespace component
-{
-
-namespace forcefield
+namespace sofa::component::forcefield
 {
 
 ////////////////////////////////////////////    FACTORY    //////////////////////////////////////////////
@@ -59,9 +53,4 @@ int BeamHookeLawForceFieldClass = core::RegisterObject("This component is used t
 
 template class BeamHookeLawForceField<Vec3Types>;
 
-
 } // forcefield
-
-} // component
-
-} // sofa
