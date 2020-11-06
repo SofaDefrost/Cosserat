@@ -228,46 +228,6 @@ void QPSlidingConstraint<DataTypes>::getConstraintResolution(const ConstraintPar
 
 
 template<class DataTypes>
-void QPSlidingConstraint<DataTypes>::setUpDisplacementLimits(double& imposedValue, double& minForce, double& maxForce)
-{
-    //    if(d_maxDispVariation.isSet())
-    //    {
-    //        double displacement = d_displacement.getValue();
-    //        if(imposedValue > displacement && imposedValue-displacement>d_maxDispVariation.getValue())
-    //            imposedValue = displacement+d_maxDispVariation.getValue();
-
-    //        if(imposedValue < displacement && imposedValue-displacement<-d_maxDispVariation.getValue())
-    //            imposedValue = displacement-d_maxDispVariation.getValue();
-    //    }
-
-    //    if(d_maxPositiveDisplacement.isSet() && imposedValue>d_maxPositiveDisplacement.getValue())
-    //        imposedValue = d_maxPositiveDisplacement.getValue();
-
-    //    if(d_maxNegativeDisplacement.isSet() && imposedValue<-d_maxNegativeDisplacement.getValue())
-    //        imposedValue = -d_maxNegativeDisplacement.getValue();
-
-    //    if(d_minForce.isSet())
-    //        minForce=d_minForce.getValue();
-    //    if(d_maxForce.isSet())
-    //        maxForce=d_maxForce.getValue();
-}
-
-template<class DataTypes>
-void QPSlidingConstraint<DataTypes>::setUpForceLimits(double& imposedValue, double& minDisplacement, double& maxDisplacement)
-{
-    //    if(d_maxForce.isSet() && imposedValue>d_maxForce.getValue())
-    //        imposedValue = d_maxForce.getValue();
-
-    //    if(d_minForce.isSet() && imposedValue<d_minForce.getValue())
-    //        imposedValue = d_minForce.getValue();
-
-    //    if(d_maxNegativeDisplacement.isSet())
-    //        minDisplacement=-d_maxNegativeDisplacement.getValue();
-    //    if(d_maxPositiveDisplacement.isSet())
-    //        maxDisplacement=d_maxPositiveDisplacement.getValue();
-}
-
-template<class DataTypes>
 void QPSlidingConstraint<DataTypes>::draw(const VisualParams* vparams)
 {
     if(d_componentState != ComponentState::Valid)
