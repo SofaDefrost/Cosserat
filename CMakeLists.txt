@@ -4,13 +4,13 @@ project(CosseratPlugin VERSION 1.0)
 include(cmake/environment.cmake)
 find_package(SofaFramework REQUIRED)
 
-option(SOFTROBOTS_IGNORE_ERRORS "Enable this option to ignore the recommendations and generate anyway." OFF)
+option(COSSERAT_IGNORE_ERRORS "Enable this option to ignore the recommendations and generate anyway." OFF)
 if(NOT COSSERAT_IGNORE_ERRORS)    
     if(NOT PLUGIN_SOFAPYTHON)
         message(SEND_ERROR "
             You should not use the plugin Cosserat without enabling PLUGIN_SOFAPYTHON.
             Most examples will not be loadable.
-            To fix this error you can either follow the recommendation or enable SOFTROBOTS_IGNORE_ERRORS.")
+            To fix this error you can either follow the recommendation or enable COSSERAT_IGNORE_ERRORS.")
     endif()    
 endif()
 
