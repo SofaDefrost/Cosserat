@@ -44,7 +44,7 @@ def createScene(rootNode):
                 rootNode.createObject('OglSceneFrame', style="Arrows", alignment="TopRight")
 
                 topo = rootNode.createChild('topo')
-                topo.createObject('CylinderGridTopology', name="grid", nx="5", ny="5", nz="20", length="0.75", radius="0.01", axis="1 0 0" )
+                topo.createObject('CylinderGridTopology', name="grid", nx="5", ny="2", nz="2", length="12.95", radius="0.01", axis="1 0 0" )
 
 
 
