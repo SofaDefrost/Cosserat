@@ -9,4 +9,10 @@ This model can be used to model and control concentric tube robots, continuum ro
 ![GitHub Logo](circleActuationConstraint.png)
 ![GitHub Logo](/scenes/mesh/cosseratgripper_2.png)
 
+
+<p align="center">
+  <img src="actuationConstraint_1.png" width="350" title="hover text">
+  <img src="actuationConstraint_2.png" width="350" alt="accessibility text">
+</p>
+
 Format: ![Alt Text](url)
