@@ -4,15 +4,17 @@ The specificity of Cosserat's theory from the point of view of the mechanics of 
 For the modeling of linear structures, it is therefore possible to find a framework very close to the articulated solids with a series of rigid solids whose relative position is defined by a strain state.
 This model can be used to model and control concentric tube robots, continuum robots actuated with cables, or pneumatic soft robots with a constant cross-section.
 
-![GitHub Logo](actuationConstraint_1.png)
-![GitHub Logo](actuationConstraint_2.png)
-![GitHub Logo](circleActuationConstraint.png)
+<p align="center">
+  <img src="actuationConstraint_1.png" width="350" title="Actuation 1">
+  <img src="actuationConstraint_2.png" width="350" title="Actuation 2">
+  <img src="circleActuationConstraint.png" width="350" title="Actuation 3">
+</p>
+
 ![GitHub Logo](/scenes/mesh/cosseratgripper_2.png)
 
+<!-- ![GitHub Logo](actuationConstraint_1.png) -->
+<!-- ![GitHub Logo](actuationConstraint_2.png) -->
+<!-- ![GitHub Logo](circleActuationConstraint.png) -->
 
-<p align="center">
-  <img src="actuationConstraint_1.png" width="350" title="hover text">
-  <img src="actuationConstraint_2.png" width="350" alt="accessibility text">
-</p>
 
 Format: ![Alt Text](url)
