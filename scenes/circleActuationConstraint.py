@@ -39,7 +39,7 @@ class DataComputationClass(CosseratActuation):
     """docstring for CosseratActuation.DataComputationClass"""
 
     def __init__(self, nodeA):
-        print("========================= DataComputationClass ======================= ")
+        # print("========================= DataComputationClass ======================= ")
         CosseratActuation.__init__(self)
         self.node = nodeA
         # self.K = [10, 1, 6]
@@ -55,7 +55,7 @@ class DataComputationClass(CosseratActuation):
         self.X  = self.computeX()
 
         listIntegral = []
-        for i in range(0,len(indices)):
+        for i in range(0, len(indices)):
             listIntegral.append([0.0,0.0,0.0])
         self.BeamHookeLawForce.findData('integral').value = listIntegral
         # self.cableConstraint.findData('integral').value = listIntegral
@@ -91,9 +91,8 @@ class DataComputationClass(CosseratActuation):
         # self.BeamHookeLawForce.findData('ddistance0').value = self.d_distance[0]
         # self.BeamHookeLawForce.findData('ddistance1').value = self.d_distance[1]
 
-
     def onBeginAnimationStep(self, dt):
-        self.tension = self.tension + 50.0 ;
+        self.tension = self.tension + 50.0
         self.K = self.rateAngularDeformMO.findData('position').value
 
         integral = self.muti_ActuationIntegral(self.vec_dy, self.vec_dz, self.vec_ddy, self.vec_ddz, self.K)
@@ -118,7 +117,7 @@ def createScene(rootNode):
                 rootNode.createObject('GenericConstraintSolver', tolerance="1e-20", maxIterations=1000, printLog=0)
 
                 rootNode.gravity = "0 0 0"
-                rootNode.dt="0.01"
+                rootNode.dt = "0.01"
                 rootNode.createObject('EulerImplicitSolver', firstOrder="0", rayleighStiffness="1.0", rayleighMass='0.10')
                 rootNode.createObject('SparseLDLSolver', name='solver')
                 # rootNode.createObject('GenericConstraintCorrection')

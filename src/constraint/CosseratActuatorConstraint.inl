@@ -114,8 +114,6 @@ void CosseratActuatorConstraint<DataTypes>::buildConstraintMatrix(const Constrai
     const SetIndexArray &indices = d_indices.getValue();
     helper::ReadAccessor<Data<helper::vector<Coord>>> integral = d_integral;
 
-    std::cout << "===>>>> Integral : "<< integral << std::endl;
-
     for (unsigned int i=0; i<indices.size(); i++)
     {
         /*
@@ -160,12 +158,10 @@ void CosseratActuatorConstraint<DataTypes>::getConstraintViolation(const Constra
     SOFA_UNUSED(cParams);
 
     d_cableLength.setValue(this->getCableLength(m_state->readPositions().ref()));
-
-    std::cout << "===> d_cableInitialLength : "<< d_cableInitialLength.getValue() << std::endl;
-    std::cout << "===> d_cableLength : "<< d_cableLength.getValue() << std::endl;
-    std::cout << "===> Jdx->element(0) : "<< Jdx->element(0) << std::endl;
-
-    std::cout << "&&&&&&&===> d_indices.getValue().size() : "<< d_indices.getValue().size() << std::endl;
+    //    std::cout << "===> d_cableInitialLength : "<< d_cableInitialLength.getValue() << std::endl;
+    //    std::cout << "===> d_cableLength : "<< d_cableLength.getValue() << std::endl;
+    //    std::cout << "===> Jdx->element(0) : "<< Jdx->element(0) << std::endl;
+    //    std::cout << "&&&&&&&===> d_indices.getValue().size() : "<< d_indices.getValue().size() << std::endl;
 
     Real dfree = Jdx->element(0) + d_cableInitialLength.getValue() - d_cableLength.getValue();
 
@@ -173,10 +169,7 @@ void CosseratActuatorConstraint<DataTypes>::getConstraintViolation(const Constra
     for (unsigned i=0;i<d_indices.getValue().size();i++) {
         resV->set(m_constraintId, dfree);
     }
-
 }
-
-
 
 
 template<class DataTypes>
@@ -191,14 +184,10 @@ void CosseratActuatorConstraint<DataTypes>::getConstraintResolution(const Constr
 
     double imposedValue=d_value.getValue()[d_valueIndex.getValue()];
 
-    //    std::cout << "imposedValue :"<< imposedValue << std::endl;
-
     double maxDisplacement = std::numeric_limits<double>::max();
     double minDisplacement = -maxDisplacement;
 
     setUpForceLimits(imposedValue,minDisplacement,maxDisplacement);
-
-    std::cout << "===> imposedValue : "<< imposedValue << std::endl;
 
     MyCableForceConstraintResolution *cr=  new MyCableForceConstraintResolution(imposedValue, minDisplacement, maxDisplacement);
     resTab[offset++] =cr;
