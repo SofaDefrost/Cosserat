@@ -30,6 +30,11 @@
 #include <sofa/defaulttype/RigidTypes.h>
 #include "BaseCosserat.h"
 
+//#include <sofa/core/visual/VisualModel.h>
+//#include <sofa/core/visual/VisualParams.h>
+//#include <sofa/core/topology/BaseMeshTopology.h>
+#include <SofaOpenglVisual/OglColorMap.h>
+//#include <SofaBaseVisual/VisualModelImpl.h>
 
 namespace sofa
 
@@ -44,6 +49,7 @@ using std::get;
 
 namespace component
 {
+//using sofa::component::visualmodel::OglColorMap;
 
 namespace mapping
 {
@@ -111,9 +117,14 @@ public:
     typedef typename SolidTypes<Real>::Transform      Transform ;
 
 protected:
-    //    Data<helper::vector<double>>      d_curv_abs_input ;
+    //    Data<helper::vector<double>>      d_curv_abs_de ;
     //    Data<helper::vector<double>>      d_curv_abs_output ;
-    //    Data<bool>                        d_debug ;
+    Data<int>                        d_deformationAxis ;
+    Data<Real>                       d_max ;
+    Data<Real>                       d_min ;
+    Data<Real>                       d_radius ;
+    Data<bool>                       d_drawMapBeam ;
+    Data<helper::vector<int> >       d_index;
 
     /// Input Models container. New inputs are added through addInputModel(In* ).
     //    LinkFromModels1 m_fromModel1;
@@ -143,6 +154,7 @@ protected:
     using BaseCosserat<TIn1, TIn2, TOut>::m_vecTransform ;
     using BaseCosserat<TIn1, TIn2, TOut>::m_nodeAjointVectors;
     using BaseCosserat<TIn1, TIn2, TOut>::m_index_input;
+    using BaseCosserat<TIn1, TIn2, TOut>::m_indicesVectorsDraw;
 
     /*===========COSSERAT VECTORS ======================*/
     //    helper::vector<Matrix4> m_nodesLogarithmeSE3Vectors;
@@ -190,7 +202,8 @@ public:
 protected:
     /**********************COSSERAT METHODS**************************/
     //    defaulttype::Matrix4 computeLogarithme(const double & x, const Matrix4 &gX);
-
+    //    visualmodel::OglColorMap *colorMap;
+    helper::ColorMap m_colorMap;
 
 };
 

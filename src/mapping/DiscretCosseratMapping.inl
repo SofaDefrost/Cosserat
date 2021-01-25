@@ -44,6 +44,19 @@ DiscretCosseratMapping<TIn1, TIn2, TOut>::DiscretCosseratMapping()
     : m_fromModel1(NULL)
     , m_fromModel2(NULL)
     , m_toModel(NULL)
+    , d_deformationAxis(initData(&d_deformationAxis, (int)1, "deformationAxis",
+                                 "the axis in which we want to show the deformation.\n"))
+    , d_max(initData(&d_max, (Real)1.0e-2, "max",
+                                 "the maximum of the deformation.\n"))
+    , d_min(initData(&d_min, (Real)0.0, "min",
+                                 "the minimum of the deformation.\n"))
+    , d_radius(initData(&d_radius, (Real)3.0, "radius",
+                                 "the axis in which we want to show the deformation.\n"))
+    , d_drawMapBeam(initData(&d_drawMapBeam, true,"nonColored", "if this parameter is false, you draw the beam with color "
+                                                                "according to the force apply to each beam"))
+
+    , d_index(initData(&d_index, "index", "if this parameter is false, you draw the beam with color "
+                                                          "according to the force apply to each beam"))
 {
 }
 
@@ -90,6 +103,9 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>::init()
         msg_info("DiscretCosseratMapping")<< " m_vecTransform : "<< m_vecTransform;
 
     this->initialize();
+
+    m_colorMap.setColorScheme("Blue to Red");
+    m_colorMap.reinit();
 }
 
 
@@ -539,7 +555,6 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>::applyJT(
                 Vector3 temp_f = matB_trans * temp * CumulativeF;
 
                 if(i>1) o1.addCol(i-2, temp_f);
-
                 i--;
             }
 
@@ -572,29 +587,71 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>::applyJT(
 //        const helper::vector< In2DataMatrixDeriv*>&  dataMatOut2Const ,
 //        const helper::vector<const OutDataMatrixDeriv*>& dataMatInConst) {}
 
-
 template <class TIn1, class TIn2, class TOut>
 void DiscretCosseratMapping<TIn1, TIn2, TOut>::draw(const core::visual::VisualParams* vparams)
 {
+    //    if(!d_debug.getValue()) return;
 
     ///draw cable
     ///
+    typedef sofa::helper::types::RGBAColor RGBAColor;
     const OutDataVecCoord* xfromData = m_toModel->read(core::ConstVecCoordId::position());
     const OutVecCoord xData = xfromData->getValue();
     helper::vector<Vector3> positions;
+    helper::vector<defaulttype::Quat> Orientation;
     positions.clear();
+    Orientation.clear();
     unsigned int sz = xData.size();
     //    msg_info("DiscretCosseratMapping")<< " sz : "<< sz;
     for (unsigned int i = 0; i<sz; i++){
         positions.push_back(xData[i].getCenter());
+        Orientation.push_back(xData[i].getOrientation());
     }
     //    for (auto pos : xData)
     //        positions.push_back(pos.getCenter());
 
+    //Get access articulated
+    const In1DataVecCoord* artiData = m_fromModel1->read(core::ConstVecCoordId::position());
+    const In1VecCoord xPos = artiData->getValue();
+
+    //    std::cout << "=============> art :"<< xPos << std::endl;
+
+    //Define color map
+    Real min = d_min.getValue();
+    Real max = d_max.getValue();
+    //helper::ColorMap::evaluator<Real> eval = colorMap->getEvaluator(min, max);
+    helper::ColorMap::evaluator<Real> _eval = m_colorMap.getEvaluator(min, max);
+
     double radius = 5;
-    defaulttype::Vec4f colorL = defaulttype::Vec4f(0.4,0.4,0.4,1);
-    //    defaulttype::Vec4f colorL = defaulttype::Vec4f(0.,0.,1.,1);
-    vparams->drawTool()->drawLineStrip(positions,radius,colorL);
+    if(d_drawMapBeam.getValue()){
+        //        defaulttype::Vec4f colorL = defaulttype::Vec4f(0.4,0.4,0.4,1);
+        RGBAColor colorL = RGBAColor(0.4,0.4,0.4,1.);
+        vparams->drawTool()->drawLineStrip(positions,radius,colorL);
+    }else {
+        //        setMaterial(color);œ
+        glLineWidth(d_radius.getValue());
+        int j = 0;
+        helper::vector<int> index = d_index.getValue();
+        for (unsigned int i=0; i<sz-1; i++) {
+            j = m_indicesVectorsDraw[i]-1; // to get the articulation on which the frame is related to
+            RGBAColor color =  RGBAColor::fromVec4(_eval(xPos[j][d_deformationAxis.getValue()]));
+            vparams->drawTool()->drawLine(positions[i],positions[i+1],color);
+        }
+        glLineWidth(1);
+        for (unsigned int i = 0; i<sz; i+=2){
+            defaulttype::Vector3 P1 = positions[i];
+            defaulttype::Quat q = xData[i].getOrientation();
+            defaulttype::Vector3 x,y,z;
+            double radius_arrow = 0.1;
+            x= q.rotate(defaulttype::Vector3(2.0,0,0));
+            y= q.rotate(defaulttype::Vector3(0,2.0,0));
+            z= q.rotate(defaulttype::Vector3(0,0,2.0));
+
+            vparams->drawTool()->drawArrow(P1,(P1 + x)*1.0, radius_arrow, RGBAColor(1.,0.,0.,1.));
+            vparams->drawTool()->drawArrow(P1,(P1 + y)*1.0, radius_arrow, RGBAColor(0.,1.,0.,1.));
+            vparams->drawTool()->drawArrow(P1,(P1 + z)*1.0, radius_arrow, RGBAColor(0.,0.,1.,1.));
+        }
+    }
 
     if (!vparams->displayFlags().getShowMappings())
         if(!d_debug.getValue()) return;
@@ -609,11 +666,11 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>::draw(const core::visual::VisualPa
         x= q.rotate(defaulttype::Vector3(1.0,0,0));
         y= q.rotate(defaulttype::Vector3(0,1.0,0));
         z= q.rotate(defaulttype::Vector3(0,0,1.0));
-        double radius_arrow = 1.0/.0;
+        double radius_arrow = 1.0/2.0;
 
-        vparams->drawTool()->drawArrow(P1,(P1 + x)*1.0, radius_arrow, defaulttype::Vec<4,double>(1,0,0,1));
-        vparams->drawTool()->drawArrow(P1,(P1 + y)*1.0, radius_arrow, defaulttype::Vec<4,double>(0,1,0,1));
-        vparams->drawTool()->drawArrow(P1,(P1 + z)*1.0, radius_arrow, defaulttype::Vec<4,double>(0,0,1,1));
+        vparams->drawTool()->drawArrow(P1,(P1 + x)*1.0, radius_arrow, RGBAColor(1.,0.,0.,1.));
+        vparams->drawTool()->drawArrow(P1,(P1 + y)*1.0, radius_arrow, RGBAColor(0.,1.,0.,1.));
+        vparams->drawTool()->drawArrow(P1,(P1 + z)*1.0, radius_arrow, RGBAColor(0.,0.,1.,1.));
     }
     //return;
 }

@@ -25,7 +25,7 @@
 *                                                                             *
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
-#include <sofa/defaulttype/Vec3Types.h>
+#include<sofa/defaulttype/VecTypes.h>
 #include <sofa/core/ObjectFactory.h>
 #include <iostream>
 #include "QPSlidingConstraint.inl"

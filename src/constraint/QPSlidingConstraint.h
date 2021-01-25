@@ -30,7 +30,7 @@
 
 #pragma once
 
-#include <sofa/defaulttype/Vec3Types.h>
+#include<sofa/defaulttype/VecTypes.h>
 #include <sofa/helper/OptionsGroup.h>
 #include <sofa/defaulttype/defaulttype.h>
 
