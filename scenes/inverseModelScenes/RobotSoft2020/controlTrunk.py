@@ -45,7 +45,7 @@ class Animation(Sofa.PythonScriptController):
             pos = self.targetMO.findData('position').value
         return pos
 
-    def onBeginAnimationStep(self):
+    def onBeginAnimationStep(self, dt):
         pos = self.targetMO.findData('position').value
         if self.step == 1:
             axes = [0]

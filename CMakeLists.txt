@@ -5,13 +5,13 @@ include(cmake/environment.cmake)
 find_package(SofaFramework REQUIRED)
 
 option(COSSERAT_IGNORE_ERRORS "Enable this option to ignore the recommendations and generate anyway." OFF)
-if(NOT COSSERAT_IGNORE_ERRORS)    
+if(NOT COSSERAT_IGNORE_ERRORS)
     if(NOT PLUGIN_SOFAPYTHON)
         message(SEND_ERROR "
             You should not use the plugin Cosserat without enabling PLUGIN_SOFAPYTHON.
             Most examples will not be loadable.
             To fix this error you can either follow the recommendation or enable COSSERAT_IGNORE_ERRORS.")
-    endif()    
+    endif()
 endif()
 
 find_package(SofaPython QUIET)
@@ -47,6 +47,9 @@ set(HEADER_FILES
     src/constraint/CosseratSlidingConstraint.inl
     src/constraint/QPSlidingConstraint.h
     src/constraint/QPSlidingConstraint.inl
+
+		# src/constraint/DrawTrianglesComponent.h
+		# src/constraint/DrawTrianglesComponent.inl
     )
 
 set(SOURCE_FILES
@@ -62,8 +65,9 @@ set(SOURCE_FILES
     src/forcefield/BeamHookeLawForceField.cpp
     src/forcefield/CosseratInternalActuation.cpp
 
-    src/constraint/CosseratSlidingConstraint.cpp 
+    src/constraint/CosseratSlidingConstraint.cpp
     src/constraint/QPSlidingConstraint.cpp
+		# src/constraint/DrawTrianglesComponent.cpp
     )
 
 set(README_FILE "Cosserat.txt" )
@@ -75,7 +79,7 @@ if(SoftRobots_FOUND)
 #        src/constraint/CosseratActuatorConstraint.h
 #        src/constraint/CosseratActuatorConstraint.inl
 #         )
-# 
+#
 #     set(SOURCE_FILES ${SOURCE_FILES}
 #        src/constraint/CosseratActuatorConstraint.cpp
 #         )
@@ -85,7 +89,7 @@ if(SoftRobots_FOUND)
         )
     list(APPEND SOURCE_FILES
         src/constraint/CosseratActuatorConstraint.cpp
-        )    
+        )
 
 endif()
 
@@ -99,7 +103,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC "$<INSTALL_INTERFACE:include>"
 
 set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "-DSOFA_BUILD_COSSERAT")
 set_target_properties(${PROJECT_NAME} PROPERTIES DEBUG_POSTFIX "_d")
-target_link_libraries(${PROJECT_NAME} SofaCore SofaConstraint SofaSimpleFem SofaBaseMechanics SofaRigid SofaMiscMapping)
+target_link_libraries(${PROJECT_NAME} SofaCore SofaConstraint SofaSimpleFem SofaBaseMechanics SofaRigid SofaMiscMapping SofaBaseVisual SofaOpenglVisual)
 
 
 if(SofaPython_FOUND)
@@ -110,7 +114,7 @@ endif()
 
 if(SoftRobots_FOUND)
     target_link_libraries(${PROJECT_NAME} SoftRobots)
-endif() 
+endif()
 
 ## Install rules for the library and headers; CMake package configurations files
 sofa_generate_package(
@@ -118,7 +122,7 @@ sofa_generate_package(
     VERSION ${PROJECT_VERSION}
     TARGETS ${PROJECT_NAME}
     INCLUDE_SOURCE_DIR "src"
-    INCLUDE_INSTALL_DIR ${PROJECT_NAME}    
+    INCLUDE_INSTALL_DIR ${PROJECT_NAME}
     RELOCATABLE "plugins"
     )
 

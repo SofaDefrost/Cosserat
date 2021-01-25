@@ -130,6 +130,7 @@ public:
     helper::vector<Matrix4> m_nodesLogarithmeSE3Vectors;
 
     helper::vector<int> m_indicesVectors;
+    helper::vector<int> m_indicesVectorsDraw;
 
     helper::vector<double> m_beamLenghtVectors;
     helper::vector<double> m_framesLenghtVectors;

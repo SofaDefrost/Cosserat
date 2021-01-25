@@ -120,16 +120,19 @@ class DataComputationClass(CosseratActuation):
 
         print ("======+++> listIntegral : ", listIntegral)
 
-        if(self.tension < 500501.0):
+        if self.tension < 500501.0:
             self.BeamHookeLawForce.findData('tension').value = self.tension
 
 
 def createScene(rootNode):
 
     rootNode.createObject(
-        'RequiredPlugin', pluginName='SoftRobots SoftRobots.Inverse SofaPython SofaSparseSolver CosseratPlugin BeamAdapter', printLog='0')
+        'RequiredPlugin', pluginName='SoftRobots SoftRobots.Inverse SofaPython SofaSparseSolver CosseratPlugin '
+                                     'BeamAdapter', printLog='0')
     rootNode.createObject(
-        'VisualStyle', displayFlags='hideVisualModels showBehaviorModels showCollisionModels hideBoundingCollisionModels showForceFields showInteractionForceFields hideWireframe')
+        'VisualStyle', displayFlags='hideVisualModels showBehaviorModels showCollisionModels '
+                                    'hideBoundingCollisionModels showForceFields showInteractionForceFields '
+                                    'hideWireframe')
     rootNode.createObject('FreeMotionAnimationLoop')
     # rootNode.createObject('GenericConstraintSolver',
     #                       tolerance="1e-20", maxIterations=1000, printLog=0)
@@ -147,24 +150,30 @@ def createScene(rootNode):
     ###############
     rigidBaseNode = rootNode.createChild('rigidBase')
     RigidBaseMO = rigidBaseNode.createObject('MechanicalObject', template='Rigid3d', name="RigidBaseMO",
-                                             position="0 0 0  0 0 0. 1", showObject='1', showObjectScale='0.1', velocity='0 0 0.0 0.0 0 0')
+                                             position="0 0 0  0 0 0. 1", showObject='1', showObjectScale='0.1',
+                                             velocity='0 0 0.0 0.0 0 0')
     rigidBaseNode.createObject('RestShapeSpringsForceField', name='spring', stiffness="5e12",
-                               angularStiffness="5e3", external_points="0", mstate="@RigidBaseMO", points="0", template="Rigid3d")
+                               angularStiffness="5e3", external_points="0", mstate="@RigidBaseMO", points="0",
+                               template="Rigid3d")
 
     rateAngularDeformNode = rootNode.createChild('rateAngularDeform')
     # (2 series of 3 angles for 2 sections. we suppose that the lenght is 10 for each)
     rateAngularDeformMO = rateAngularDeformNode.createObject(
         'MechanicalObject', template='Vec3d', name='rateAngularDeformMO', position=pos, velocity='0 0 0 0 0 0 0 0 0')
     BeamHookeLawForce = rateAngularDeformNode.createObject(
-        'BeamHookeLawForceField', name="BeamHookeLawForce", crossSectionShape='circular', length='25 25 25', radius='1.0', youngModulus='50')
-    # BeamHookeLawForce = rateAngularDeformNode.createObject('CosseratInternalActuation', name="BeamHookeLawForce",  crossSectionShape='circular', length='25 25 25', radius='1.5',
+        'BeamHookeLawForceField', name="BeamHookeLawForce", crossSectionShape='circular', length='25 25 25',
+        radius='1.0', youngModulus='50')
+    # BeamHookeLawForce = rateAngularDeformNode.createObject('CosseratInternalActuation', name="BeamHookeLawForce",
+    # crossSectionShape='circular', length='25 25 25', radius='1.5',
     #    youngModulus = '5.93e4', distance0 = _distance, distance1 = _distance, tension = _tension)
 
     # cable_position=["25.0 0.0  0.0 " + " 50.0 0.0 0.0 " + "75   0.0  0.0" ]
     # cable = rateAngularDeformNode.createChild('cable')
-    # cable.createObject('MechanicalObject', name="cablePos", position=cable_position, template="", showObject="1", showIndices="1")
+    # cable.createObject('MechanicalObject', name="cablePos", position=cable_position, template="",
+    # showObject="1", showIndices="1")
     # cableConstraint = rateAngularDeformNode.createObject(
-    #     'CosseratActuatorConstraint', name="cableConstraint", indices=indices, value="50", integral="@BeamHookeLawForce.integral")
+    #     'CosseratActuatorConstraint', name="cableConstraint", indices=indices, value="50",
+    #     integral="@BeamHookeLawForce.integral")
     # cable.createObject('SkinningMapping', nbRef='1',  mapForces='false', mapMasses='false')
 
     # DataComputationClass(rateAngularDeformNode)
@@ -173,8 +182,10 @@ def createScene(rootNode):
     # Frames
     ##############
     # the node of the frame needs to inherit from rigidBaseMO and rateAngularDeform
-    frames = ["0.0 0 0  0 0 0 1  5 0 0 0 0 0 1   10 0 0  0 0 0 1   15 0 0 0 0 0 1  20 0 0  0 0 0 1  25 0 0  0 0 0 1  30 0 0  0 0 0 1  35 0 0  0 0 0 1 " +
-              " 40 0 0  0 0 0 1   45 0 0  0 0 0 1  50 0 0  0 0 0 1  55 0 0  0 0 0 1   60 0 0  0 0 0 1    65 0 0  0 0 0 1  70 0 0  0 0 0 1  75 0 0  0 0 0 1"]
+    frames = ["0.0 0 0  0 0 0 1  5 0 0 0 0 0 1   10 0 0  0 0 0 1   15 0 0 0 0 0 1  20 0 0  0 0 0 1  25 0 0  0 0 0 1  "
+              "30 0 0  0 0 0 1  35 0 0  0 0 0 1 " +
+              " 40 0 0  0 0 0 1   45 0 0  0 0 0 1  50 0 0  0 0 0 1  55 0 0  0 0 0 1   60 0 0  0 0 0 1    "
+              "65 0 0  0 0 0 1  70 0 0  0 0 0 1  75 0 0  0 0 0 1"]
 
     mappedFrameNode = rigidBaseNode.createChild('MappedFrames')
     rateAngularDeformNode.addChild(mappedFrameNode)
@@ -192,7 +203,8 @@ def createScene(rootNode):
 
     # CylinderGridTop
     CylinderCollision = mappedFrameNode.createChild('CylinderCollision')
-    # CylinderCollision.createObject('MeshSTLLoader', filename=path+'trunk.stl', name='loader', rotation='0 90 0', scale='0.155')
+    # CylinderCollision.createObject('MeshSTLLoader', filename=path+'trunk.stl',
+    # name='loader', rotation='0 90 0', scale='0.155')
     CylinderCollision.createObject('CylinderGridTopology', name="loader",
                                    nx="8", ny="8", nz="20", length="75", radius="1.0", axis="1 0 0")
     CylinderCollision.createObject('Mesh', src='@loader')
@@ -242,7 +254,8 @@ def createScene(rootNode):
 
     # TODO:
     mappedFrameNode.createObject('DiscretCosseratMapping', curv_abs_input=curv_abs_input,
-                                 curv_abs_output=curv_abs_output, input1=inputMO, input2=inputMO_rigid, output=outputMO, debug='0')
+                                 curv_abs_output=curv_abs_output, input1=inputMO, input2=inputMO_rigid, output=outputMO,
+                                 debug='0')
     # mappedFrameNode.createObject('GenericConstraintCorrection')
 
     ##########################################
@@ -261,8 +274,7 @@ def createScene(rootNode):
     # Effector                               #
     ##########################################
     effector = mappedFrameNode.createChild('fingertip')
-    effector.createObject('MechanicalObject',
-                          position=("75.0 0.50 0.0 "))
+    effector.createObject('MechanicalObject', position="75.0 0.50 0.0")
     effector.createObject('PositionEffector', template='Vec3d',
                           indices="0",
                           effectorGoal="@../../../goal/goalMO.position")
