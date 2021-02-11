@@ -153,28 +153,24 @@ class Animation(Sofa.PythonScriptController):
 
 def createScene(rootNode):
 
-    MainHeader(rootNode, plugins=["SoftRobots", "SoftRobots.Inverse", "SofaPython", "SofaSparseSolver", "SofaPreconditioner", "SofaOpenglVisual", "CosseratPlugin", "BeamAdapter"],
-               repositoryPaths=[os.getcwd()])
+    MainHeader(rootNode, plugins=["SoftRobots", "SoftRobots.Inverse", "SofaPython",
+                                  "SofaSparseSolver", "SofaPreconditioner", "SofaOpenglVisual", "CosseratPlugin",
+                                  "BeamAdapter"], repositoryPaths=[os.getcwd()])
 
-    #rootNode.createObject(
-        #'VisualStyle', displayFlags='showVisualModels hideBehaviorModels showCollisionModels hideBoundingCollisionModels hideForceFields showInteractionForceFields showWireframe')
-    rootNode.createObject(
-        'VisualStyle', displayFlags='showVisualModels showInteractionForceFields')
+    #rootNode.createObject('VisualStyle', displayFlags='showVisualModels hideBehaviorModels showCollisionModels
+    # hideBoundingCollisionModels hideForceFields showInteractionForceFields showWireframe')
+    rootNode.createObject('VisualStyle', displayFlags='showVisualModels showInteractionForceFields')
 
     rootNode.createObject('FreeMotionAnimationLoop')
     rootNode.createObject('QPInverseProblemSolver', printLog='0')
     # rootNode.createObject('GenericConstraintSolver', tolerance="1e-20", maxIterations="5 00", printLog="0")
-
 
     rootNode.gravity = "0 0 0"
     rootNode.createObject('BackgroundSetting', color='0 0.168627 0.211765')
     rootNode.createObject('OglSceneFrame', style="Arrows",
                           alignment="TopRight")    
     #ContactHeader(rootNode, alarmDistance=4,contactDistance=3, frictionCoef=0.08)
-    
-    
 
-    
     ##########################################
     # Effector goal for interactive control  #
     ##########################################
@@ -211,7 +207,8 @@ def createScene(rootNode):
     # rigidBaseNode.createObject('EulerImplicitSolver', firstOrder="0", rayleighStiffness="1.0", rayleighMass='0.1')
     # rigidBaseNode.createObject('SparseLUSolver', name='solver')
     # rigidBaseNode.createObject('GenericConstraintCorrection')
-    RigidBaseMO = rigidBaseNode.createObject('MechanicalObject', template='Rigid3d', name="RigidBaseMO", position="0 0 0  0 0 0 1", showObject='0', showObjectScale='0.1')
+    RigidBaseMO = rigidBaseNode.createObject('MechanicalObject', template='Rigid3d', name="RigidBaseMO",
+                                             position="0 0 0  0 0 0 1", showObject='0', showObjectScale='0.1')
     rigidBaseNode.createObject('PartialFixedConstraint', fixedDirections="0 1 1 1 1 1", indices="0")
 #    rigidBaseNode.createObject('RestShapeSpringsForceField', name='spring', stiffness="100",angularStiffness="100", external_points="0", mstate="@RigidBaseMO", points="0", template="Rigid3d")
     rigidBaseNode.createObject('UniformMass', totalMass="0.001", template="Rigid3d" )
@@ -334,7 +331,7 @@ def createScene(rootNode):
     #CollisionMesh(finger,
                   #surfaceMeshFileName="mesh/fingerCollision_part2.stl",
                   #name="CollisionMeshAuto2", translation="-17.5 -12.5 7.5", rotation="0 180 0", collisionGroup=[2])
-    
+
     
     finger.createObject('LinearSolverConstraintCorrection')
 

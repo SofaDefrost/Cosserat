@@ -126,10 +126,16 @@ protected:
     Data<Real>          d_lengthY;
     Data<Real>          d_lengthZ;
 
+    //In case we have a beam with different propertise per section
+    Data<bool>                      d_varianteSections; /// bool to identify different beams sections
+    Data<helper::vector<double>>    d_youngModululsList; /// youngModulus
+    Data<helper::vector<double>>    d_poissonRatioList; /// poissonRatio
+
 
 private :
 
     Mat33 m_K_section;
+    helper::vector<Mat33> m_K_sectionList;
     bool compute_df;
 
     ////////////////////////// Inherited attributes ////////////////////////////

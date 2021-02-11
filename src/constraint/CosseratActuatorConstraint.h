@@ -31,7 +31,7 @@
 
 #include <sofa/defaulttype/Vec.h>
 #include <sofa/helper/OptionsGroup.h>
-#include <sofa/defaulttype/Vec3Types.h>
+#include<sofa/defaulttype/VecTypes.h>
 #include <sofa/core/behavior/BaseConstraintSet.h>
 #include <sofa/core/behavior/PairInteractionConstraint.h>
 #include <SoftRobots/component/constraint/model/CableModel.h>

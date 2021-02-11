@@ -73,7 +73,10 @@ BeamHookeLawForceField<DataTypes>::BeamHookeLawForceField()
       d_radius( initData( &d_radius, 1.0, "radius", "external radius of the cross section (if circular)")),
       d_innerRadius( initData( &d_innerRadius, 0.0, "innerRadius", "internal radius of the cross section (if circular)")),
       d_lengthY( initData( &d_lengthY, 1.0, "lengthY", "side length of the cross section along local y axis (if rectangular)")),
-      d_lengthZ( initData( &d_lengthZ, 1.0, "lengthZ", "side length of the cross section along local z axis (if rectangular)"))
+      d_lengthZ( initData( &d_lengthZ, 1.0, "lengthZ", "side length of the cross section along local z axis (if rectangular)")),
+      d_varianteSections( initData( &d_varianteSections, false, "varianteSections", "In case we have variante beam section this has to be set to true")),
+      d_youngModululsList(initData(&d_youngModululsList, "youngModululsList", "The list of Young modulus in case we have sections with variable physical properties")),
+      d_poissonRatioList(initData(&d_poissonRatioList, "poissonRatioList", "The list of poisson's ratio in case we have sections with variable physical properties"))
 {
     compute_df=true;
 }
@@ -89,7 +92,6 @@ void BeamHookeLawForceField<DataTypes>::init()
     Inherit1::init();
 
     Real Iy, Iz, J, A;
-
     if ( d_crossSectionShape.getValue().getSelectedItem() == "rectangular" )
     {
         Real Ly = d_lengthY.getValue();
@@ -114,34 +116,37 @@ void BeamHookeLawForceField<DataTypes>::init()
 
     }
 
-    Real E= d_youngModululs.getValue();
-    Real G= E/(2.0*(1.0+d_poissonRatio.getValue()));
+    if(!d_varianteSections.getValue()){
 
-    m_K_section[0][0] = G*J;
-    m_K_section[1][1] = E*Iy;
-    m_K_section[2][2] = E*Iz;
+        Real E= d_youngModululs.getValue();
+        Real G= E/(2.0*(1.0+d_poissonRatio.getValue()));
 
+        m_K_section[0][0] = G*J;
+        m_K_section[1][1] = E*Iy;
+        m_K_section[2][2] = E*Iz;
+    }else {
+        msg_info("BeamHookeLawForceField")<< "=====> Multi section";
+        m_K_sectionList.clear();
+        size_t szYM = d_youngModululsList.getValue().size();
+        size_t szPR = d_poissonRatioList.getValue().size();
+        size_t szL  = d_length.getValue().size();
 
-    //Compute the size of each beam
-    //    helper::WriteAccessor<Data<helper::vector<double>>>  length = d_length;
-    //    const VecCoord& pos = this->mstate->read(core::ConstVecCoordId::position())->getValue();
-    //    helper::vector<double> m_vector; m_vector.clear();
+        if((szL != szPR)||(szL != szYM)){
+            msg_error("BeamHookeLawForceField")<< "Pleseas, lenght, youngModululsList and poissonRatioList should have the same size";
+            return;
+        }
 
-    //    length.resize(pos.size());
-    //    for (size_t i = 0; i < pos.size()-1; i++){
-    //        if(i==0){
-    //            length[i] = (pos[i]).norm();
-    //            m_vector.push_back(0.0);
-    //        }
-    //        else{
-    //            length[i] = (pos[i] - pos[i-1]).norm();
-    //            m_vector.push_back(m_vector[i-1]+length[i]);
-    //        }
-    //    }
+        for(size_t k=0; k<szL; k++){
+            Mat33 _m_K_section;
+            Real E= d_youngModululsList.getValue()[k];
+            Real G= E/(2.0*(1.0+d_poissonRatioList.getValue()[k]));
 
-    //    std::cout << "============>length : \n"<< length << std::endl;
-    //    std::cout << "============>distance : \n"<< m_vector << std::endl;
-
+            _m_K_section[0][0] = G*J;
+            _m_K_section[1][1] = E*Iy;
+            _m_K_section[2][2] = E*Iz;
+            m_K_sectionList.push_back(_m_K_section);
+        }
+    }
 }
 
 template<typename DataTypes>
@@ -170,10 +175,12 @@ void BeamHookeLawForceField<DataTypes>::addForce(const MechanicalParams* mparams
         return;
     }
 
-    for (unsigned int i=0; i<x.size(); i++)
-    {
-        f[i] -= (m_K_section * (x[i] - x0[i])) * d_length.getValue()[i];
-    }
+    if(!d_varianteSections.getValue())
+        for (unsigned int i=0; i<x.size(); i++)
+            f[i] -= (m_K_section * (x[i] - x0[i])) * d_length.getValue()[i];
+    else
+        for (unsigned int i=0; i<x.size(); i++)
+            f[i] -= (m_K_sectionList[i] * (x[i] - x0[i])) * d_length.getValue()[i];
     d_f.endEdit();
 
 }
@@ -191,11 +198,12 @@ void BeamHookeLawForceField<DataTypes>::addDForce(const MechanicalParams* mparam
     Real kFactor = (Real)mparams->kFactorIncludingRayleighDamping(this->rayleighStiffness.getValue());
 
     df.resize(dx.size());
-    for (unsigned int i=0; i<dx.size(); i++)
-    {
-        df[i] -= (m_K_section * dx[i])*kFactor* d_length.getValue()[i];
-    }
-
+    if(!d_varianteSections.getValue())
+        for (unsigned int i=0; i<dx.size(); i++)
+            df[i] -= (m_K_section * dx[i])*kFactor* d_length.getValue()[i];
+    else
+        for (unsigned int i=0; i<dx.size(); i++)
+            df[i] -= (m_K_sectionList[i] * dx[i])*kFactor* d_length.getValue()[i];
 }
 
 template<typename DataTypes>
@@ -221,11 +229,14 @@ void BeamHookeLawForceField<DataTypes>::addKToMatrix(const MechanicalParams* mpa
 
     for (unsigned int n=0; n<pos.size(); n++)
     {
-        for(int i = 0; i < 3; i++)
-        {
-            for (int j = 0; j< 3; j++)
-                mat->add(offset + i + 3*n, offset + j + 3*n, -kFact * m_K_section[i][j]*d_length.getValue()[n]);
-        }
+        if(!d_varianteSections.getValue())
+            for(int i = 0; i < 3; i++)
+                for (int j = 0; j< 3; j++)
+                    mat->add(offset + i + 3*n, offset + j + 3*n, -kFact * m_K_section[i][j]*d_length.getValue()[n]);
+        else
+            for(int i = 0; i < 3; i++)
+                for (int j = 0; j< 3; j++)
+                    mat->add(offset + i + 3*n, offset + j + 3*n, -kFact * m_K_sectionList[n][i][j] * d_length.getValue()[n]);
     }
 }
 

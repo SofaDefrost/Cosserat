@@ -30,7 +30,7 @@
 
 #pragma once
 
-#include <sofa/defaulttype/Vec3Types.h>
+#include<sofa/defaulttype/VecTypes.h>
 #include <sofa/helper/OptionsGroup.h>
 #include <sofa/defaulttype/defaulttype.h>
 
@@ -164,11 +164,6 @@ protected:
     using SoftRobotsConstraint<DataTypes>::m_constraintId ;
 
     void internalInit();
-
-private:
-    void setUpDisplacementLimits(double& imposedValue, double& minForce, double& maxForce);
-    void setUpForceLimits(double& imposedValue, double& minDisplacement, double& maxDisplacement);
-
 };
 
 // Declares template as extern to avoid the code generation of the template for

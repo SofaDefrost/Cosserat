@@ -302,15 +302,15 @@ def createScene(rootNode):
     membraneNode.addObject('LinearSolverConstraintCorrection')
 
     
-    collMembraneNode = membraneNode.addChild('collMembraneNode')
-    collMembraneNode.addObject('MechanicalObject', name="Coll_MO", template="Vec3d", src="@../loader")
-    collMembraneNode.addObject('TriangleCollisionModel', bothSide="1", group='1')
-    collMembraneNode.addObject('LineCollisionModel', bothSide="1", group='1')
-    collMembraneNode.addObject('PointCollisionModel', bothSide="1", group='1')
-    collMembraneNode.addObject('IdentityMapping', input="@../MO", output="@Coll_MO")
+    #collMembraneNode = membraneNode.addChild('collMembraneNode')
+    #collMembraneNode.addObject('MechanicalObject', name="Coll_MO", template="Vec3d", src="@../loader")
+    #collMembraneNode.addObject('TriangleCollisionModel', bothSide="1", group='1')
+    #collMembraneNode.addObject('LineCollisionModel', bothSide="1", group='1')
+    #collMembraneNode.addObject('PointCollisionModel', bothSide="1", group='1')
+    #collMembraneNode.addObject('IdentityMapping', input="@../MO", output="@Coll_MO")
 
-    visuMembraneNode = membraneNode.addChild('visuMembraneNode')
-    visuMembraneNode.addObject('OglModel', name="Visual", color="red")
+    #visuMembraneNode = membraneNode.addChild('visuMembraneNode')
+    #visuMembraneNode.addObject('OglModel', name="Visual", color="red")
 
     #controle = CostController(rootNode, name="CostController", goal_pos=goal_pos, effMO=effMO, solver=qp_solver)
     rootNode.addObject(CostController(name="CostController", goalPos=goalListMecha, posEffector=posEffector, effMO=effMO, solver=qp_solver))

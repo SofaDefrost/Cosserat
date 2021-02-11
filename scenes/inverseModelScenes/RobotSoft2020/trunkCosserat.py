@@ -36,8 +36,8 @@ nbCables = 4
 maxSlidingForce = 0
 minSlidingForce = -10
 
-pullPoint = [[0., length1, 0.], [-length1, 0., 0.], [0., -length1, 0.], [length1, 0.,0.]]
-direction = Vec3( lengthTrunk, length2-length1, 0.0)
+pullPoint = [[0., length1, 0.], [-length1, 0., 0.], [0., -length1, 0.], [length1, 0., 0.]]
+direction = Vec3(lengthTrunk, length2-length1, 0.0)
 direction.normalize()
 Ori0 = Quat.createFromEuler([-pi/2., 0., -0.04], 'ryxz')
 Ori1 = Quat.createFromEuler([-pi/2.04, 0.0, 0.0], 'ryxz')
@@ -144,18 +144,18 @@ class CosseratCable(SofaObject):
             # RigidBases
             ###############
             basePose = VecFrame[0]   
-            for l in range(0,3):  ### fill the translation part
+            for l in range(0, 3):  ### fill the translation part
                 basePose[l] = pullPoint[i][l]
-            for l in range(0,4): ### fill the orientation part (here Quat)
+            for l in range(0, 4): ### fill the orientation part (here Quat)
                 basePose[l+3] = baseOrientation[i][l]
             
             rigidBaseNode = self.node.createChild('rigidBase'+str(i))
             RigidBaseMO = rigidBaseNode.createObject('MechanicalObject', template='Rigid3d', name="RigidBaseMO", position=basePose, showObject='', showObjectScale='0.',showIndices='0' )
             rigidBaseNode.createObject('UniformMass', totalMass="0.001", template="Rigid3d" )
             rigidBaseNode.createObject('PartialFixedConstraint', fixedDirections="1 1 0 1 1 1", indices="0")
-#            rigidBaseNode.createObject('RestShapeSpringsForceField', name='spring', stiffness="500", angularStiffness="500", external_points="0", mstate="@RigidBaseMO", points="0", template="Rigid3d")
+            # rigidBaseNode.createObject('RestShapeSpringsForceField', name='spring', stiffness="500", angularStiffness="500", external_points="0", mstate="@RigidBaseMO", points="0", template="Rigid3d")
             rigidBaseNode.createObject('SlidingActuator', name="SlidingActuator"+str(i), template='Rigid3d', direction='0 0 1 0 0 0', indices=0,  maxForce=maxSlidingForce, minForce=minSlidingForce) 
-#            rigidBaseNode.createObject('SlidingActuator', name="SlidingActuator0", template='Rigid3d', direction='1 0 0 0 0 0', indices=0,  maxForce='10000', minForce='-2000') 
+            # rigidBaseNode.createObject('SlidingActuator', name="SlidingActuator0", template='Rigid3d', direction='1 0 0 0 0 0', indices=0,  maxForce='10000', minForce='-2000')
             
             #############################################
             # Rate of angular Deformation  (2 sections)
@@ -176,7 +176,13 @@ class CosseratCable(SofaObject):
             inputMO = rateAngularDeformMO.getLinkPath()
             inputMO_rigid = RigidBaseMO.getLinkPath()
             outputMO = framesMO.getLinkPath()            
-            mappedFrameNode.createObject('DiscretCosseratMapping', curv_abs_input=VecCurvAbsInput, curv_abs_output=VecCurvAbsOutput, input1=inputMO, input2=inputMO_rigid, output=outputMO, debug='0', printLog=0) 
+            # mappedFrameNode.createObject('DiscretCosseratMapping', curv_abs_input=VecCurvAbsInput,
+            #                              curv_abs_output=VecCurvAbsOutput, input1=inputMO, input2=inputMO_rigid,
+            #                              output=outputMO, debug='0', printLog=0)
+            mappedFrameNode.createObject('DiscretCosseratMapping', curv_abs_input=VecCurvAbsInput,
+                                         curv_abs_output=VecCurvAbsOutput, input1=inputMO, input2=inputMO_rigid,
+                                         output=outputMO, debug='0', max=6.e-2, deformationAxis=0, nonColored="0",
+                                         radius=5)
             
             ##########################################
             # Multi mapped mstats                    #
@@ -230,8 +236,8 @@ class Trunk(SofaObject):
         self.node.createObject('MeshVTKLoader', name='loader', filename=path+'trunk.vtk')
         self.node.createObject('TetrahedronSetTopologyContainer', src='@loader', name='container')
         self.node.createObject('TetrahedronSetTopologyModifier')
-        self.node.createObject('TetrahedronSetTopologyAlgorithms')
-        self.node.createObject('TetrahedronSetGeometryAlgorithms')
+        # self.node.createObject('TetrahedronSetTopologyAlgorithms')
+        # self.node.createObject('TetrahedronSetGeometryAlgorithms')
 
         self.node.createObject('MechanicalObject', name='dofs', template='Vec3d', showIndices='false', showIndicesScale='4e-5')
         self.node.createObject('UniformMass', totalMass=totalMass)
@@ -289,8 +295,10 @@ def createScene(rootNode):
     rootNode.createObject("RequiredPlugin", name="CosseratPlugin")
     
     AnimationManager(rootNode)
-    #rootNode.createObject("VisualStyle", displayFlags='showVisualModels hideBehaviorModels showCollisionModels hideBoundingCollisionModels hideForceFields showInteractionForceFields showWireframe')
-    rootNode.createObject('VisualStyle', displayFlags='showVisualModels showInteractionForceFields ShowForceFields')
+    #rootNode.createObject("VisualStyle", displayFlags='showVisualModels hideBehaviorModels showCollisionModels
+    # hideBoundingCollisionModels hideForceFields showInteractionForceFields showWireframe')
+    # rootNode.createObject('VisualStyle', displayFlags='showVisualModels showInteractionForceFields ShowForceFields')
+    rootNode.createObject('VisualStyle', displayFlags='showVisualModels showInteractionForceFields showWireframe')
     rootNode.gravity = "0 0 0"
 
     rootNode.createObject("FreeMotionAnimationLoop")
@@ -298,7 +306,7 @@ def createScene(rootNode):
     # rootNode.createObject('GenericConstraintSolver', tolerance="1e-20", maxIterations="500", printLog="0")
     #### For inverse resolution, i.e control of effectors position
     rootNode.createObject("QPInverseProblemSolver", printLog='0', epsilon=1e-1, maxIterations="500")
-    rootNode.createObject('BackgroundSetting', color='0 0.168627 0.211765')
+    # rootNode.createObject('BackgroundSetting', color='0 0.168627 0.211765')
 
     # ###############
     # New adds to use the sliding Actuator
@@ -327,7 +335,7 @@ def createScene(rootNode):
     cableDofMOTab = Cable.cableDofMOTab
     outputViolationMOTab = Cable.outputViolationMOTab
     framesMoTab = Cable.framesMoTab
-    for i in range(0,nbCables):
+    for i in range(0, nbCables):
         mappedPointsNode = mappedPointsNodeTab[i]
         trunk.addConstraintPoints(cstPoints[i],i,mappedPointsNode)
         
