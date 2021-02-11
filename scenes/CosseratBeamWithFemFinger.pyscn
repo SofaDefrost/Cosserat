@@ -157,8 +157,8 @@ def createScene(rootNode):
                 finger.createObject('MeshGmshLoader', name='loader', filename=path+'transformFinger_2_2.msh')
                 finger.createObject('TetrahedronSetTopologyContainer', src='@loader', name='container')
                 finger.createObject('TetrahedronSetTopologyModifier')
-                finger.createObject('TetrahedronSetTopologyAlgorithms', template='Vec3d')
-                finger.createObject('TetrahedronSetGeometryAlgorithms', template='Vec3d')
+                #finger.createObject('TetrahedronSetTopologyAlgorithms', template='Vec3d')
+                #finger.createObject('TetrahedronSetGeometryAlgorithms', template='Vec3d')
                 finger.createObject('MechanicalObject', name='tetras', template='Vec3d', showIndices='false', showIndicesScale='4e-5', rx='0', dz='0')
                 finger.createObject('UniformMass', totalMass='0.00001')
                 # finger.createObject('VTKExporter', filename=path+"transformFinger_2",  edges="1", tetras="1", triangles="1", listening="true", exportAtEnd="true")
@@ -269,36 +269,36 @@ def createScene(rootNode):
                 #
                 #
                 #
-                # ##########################################
-                # # Visualization                          #
-                # ##########################################
-                # # In Sofa, visualization is handled by adding a rendering model.
-                # # Create an empty child node to store this rendering model.
-                # CollisionMesh(finger, surfaceMeshFileName="mesh/finger.stl", name="part0", translation="-17.5 -12.5 7.5",
-                # rotation="0 180 0", collisionGroup=[1, 2])
+                ##########################################
+                # Visualization                          #
+                ##########################################
+                # In Sofa, visualization is handled by adding a rendering model.
+                # Create an empty child node to store this rendering model.
+                CollisionMesh(finger, surfaceMeshFileName="mesh/finger.stl", name="part0", translation="-17.5 -12.5 7.5",
+                rotation="0 180 0", collisionGroup=[1, 2])
+                
+                ##########################################
+                #  Finger auto-Collision            #
+                ##########################################
+                CollisionMesh(finger,
+                 surfaceMeshFileName="mesh/fingerCollision_part1.stl",
+                 name="CollisionMeshAuto1", translation="-17.5 -12.5 7.5", rotation="0 180 0", collisionGroup=[1])
+                
+                CollisionMesh(finger,
+                  surfaceMeshFileName="mesh/fingerCollision_part2.stl",
+                  name="CollisionMeshAuto2", translation="-17.5 -12.5 7.5", rotation="0 180 0", collisionGroup=[2])
+                
                 #
-                # ##########################################
-                # #  Finger auto-Collision            #
-                # ##########################################
-                # CollisionMesh(finger,
-                #  surfaceMeshFileName="mesh/fingerCollision_part1.stl",
-                #  name="CollisionMeshAuto1", translation="-17.5 -12.5 7.5", rotation="0 180 0", collisionGroup=[1])
+                # fingerVisu = finger.createChild('visu')
                 #
-                # CollisionMesh(finger,
-                #   surfaceMeshFileName="mesh/fingerCollision_part2.stl",
-                #   name="CollisionMeshAuto2", translation="-17.5 -12.5 7.5", rotation="0 180 0", collisionGroup=[2])
+                # # Add to this empty node a rendering model made of triangles and loaded from an stl file.
+                # fingerVisu.createObject('MeshSTLLoader', filename=path+"finger.stl", name="loader", translation="-17.5 -12.5 7.5",rotation="0 180 0")
+                # fingerVisu.createObject('OglModel', src="@loader", template='ExtVec3f', color="0.0 0.7 0.7")
                 #
-                # #
-                # # fingerVisu = finger.createChild('visu')
-                # #
-                # # # Add to this empty node a rendering model made of triangles and loaded from an stl file.
-                # # fingerVisu.createObject('MeshSTLLoader', filename=path+"finger.stl", name="loader", translation="-17.5 -12.5 7.5",rotation="0 180 0")
-                # # fingerVisu.createObject('OglModel', src="@loader", template='ExtVec3f', color="0.0 0.7 0.7")
-                # #
-                # # # Add a BarycentricMapping to deform the rendering model in a way that follow the ones of the parent mechanical model.
-                # # fingerVisu.createObject('BarycentricMapping')
-                #
-                # rootNode.createObject('BilateralInteractionConstraint', template='Vec3d', object2='@cableNode/rigidBase/MappedFrames/cable/cablePos', object1='@finger/points/pointsInFEM', first_point='6', second_point='14', merge="true")
-                # rootNode.createObject('CosseratSlidingConstraint', name="constraint2", object1="@finger/points/pointsInFEM", object2="@cableNode/rigidBase/MappedFrames/cable/cablePos", sliding_point="0 1", axis_1="0", axis_2="2")
-                #
+                # # Add a BarycentricMapping to deform the rendering model in a way that follow the ones of the parent mechanical model.
+                # fingerVisu.createObject('BarycentricMapping')
+                
+                rootNode.createObject('BilateralInteractionConstraint', template='Vec3d', object2='@cableNode/rigidBase/MappedFrames/cable/cablePos', object1='@finger/points/pointsInFEM', first_point='6', second_point='14', merge="true")
+                rootNode.createObject('CosseratSlidingConstraint', name="constraint2", object1="@finger/points/pointsInFEM", object2="@cableNode/rigidBase/MappedFrames/cable/cablePos", sliding_point="0 1", axis_1="0", axis_2="2")
+                
                 # return rootNode
