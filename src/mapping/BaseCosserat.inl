@@ -408,18 +408,23 @@ void BaseCosserat<TIn1, TIn2, TOut>::initialize()
     m_framesLenghtVectors.clear();
     m_beamLenghtVectors.clear();
 
+    m_indicesVectorsDraw.clear();
+
     size_t input_index = 1;
 
     for (size_t i=0; i < sz; i++) {
         if (curv_abs_input[input_index] > curv_abs_output[i]) {
             m_indicesVectors.push_back(input_index);
+            m_indicesVectorsDraw.push_back(input_index);
         }
         else if(curv_abs_input[input_index] == curv_abs_output[i]){
             m_indicesVectors.push_back(input_index);
             input_index++;
+            m_indicesVectorsDraw.push_back(input_index);
         }
         else {
             m_indicesVectors.push_back(input_index+1);
+            m_indicesVectorsDraw.push_back(input_index+1);
             input_index++;
         }
         //Fill the vector m_framesLenghtVectors with the distance
