@@ -91,6 +91,12 @@ void BeamHookeLawForceField<DataTypes>::init()
 {
     Inherit1::init();
 
+    reinit();
+}
+
+template<typename DataTypes>
+void BeamHookeLawForceField<DataTypes>::reinit()
+{
     Real Iy, Iz, J, A;
     if ( d_crossSectionShape.getValue().getSelectedItem() == "rectangular" )
     {

@@ -48,6 +48,8 @@ set(HEADER_FILES
     src/constraint/CosseratSlidingConstraint.inl
     src/constraint/QPSlidingConstraint.h
     src/constraint/QPSlidingConstraint.inl
+    src/constraint/CosseratNeedleSlidingConstraint.h
+    src/constraint/CosseratNeedleSlidingConstraint.inl
 
 		# src/constraint/DrawTrianglesComponent.h
 		# src/constraint/DrawTrianglesComponent.inl
@@ -68,6 +70,7 @@ set(SOURCE_FILES
 
     src/constraint/CosseratSlidingConstraint.cpp
     src/constraint/QPSlidingConstraint.cpp
+    src/constraint/CosseratNeedleSlidingConstraint.cpp
 		# src/constraint/DrawTrianglesComponent.cpp
     )
 
