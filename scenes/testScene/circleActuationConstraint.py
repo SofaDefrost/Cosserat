@@ -93,7 +93,7 @@ class DataComputationClass(CosseratActuation):
 
     def onBeginAnimationStep(self, dt):
         self.tension = self.tension + 50.0
-        self.K = self.rateAngularDeformMO.findData('position').value
+        # self.K = self.rateAngularDeformMO.findData('position').value
 
         integral = self.muti_ActuationIntegral(self.vec_dy, self.vec_dz, self.vec_ddy, self.vec_ddz, self.K)
         # print ("=++++++++=======+++> 0) muti_ActuationIntegral : ", integral )
