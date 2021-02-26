@@ -98,7 +98,7 @@ void CosseratActuatorConstraint<DataTypes>::internalInit()
 template<class DataTypes>
 void CosseratActuatorConstraint<DataTypes>::buildConstraintMatrix(const ConstraintParams* cParams, DataMatrixDeriv &cMatrix, unsigned int &cIndex, const DataVecCoord &x)
 {
-    if(d_componentState != ComponentState::Valid)
+    if(d_componentState.getValue() != ComponentState::Valid)
         return ;
 
     SOFA_UNUSED(cParams);
@@ -152,7 +152,7 @@ void CosseratActuatorConstraint<DataTypes>::getConstraintViolation(const Constra
                                                                    BaseVector *resV,
                                                                    const BaseVector *Jdx)
 {
-    if(d_componentState != ComponentState::Valid)
+    if(d_componentState.getValue() != ComponentState::Valid)
         return ;
 
     SOFA_UNUSED(cParams);
@@ -177,7 +177,7 @@ void CosseratActuatorConstraint<DataTypes>::getConstraintResolution(const Constr
                                                                     std::vector<ConstraintResolution*>& resTab,
                                                                     unsigned int& offset)
 {
-    if(d_componentState != ComponentState::Valid)
+    if(d_componentState.getValue() != ComponentState::Valid)
         return ;
 
     SOFA_UNUSED(cParam);

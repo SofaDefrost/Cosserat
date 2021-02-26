@@ -119,7 +119,7 @@ void QPSlidingConstraint<DataTypes>::internalInit()
 template<class DataTypes>
 void QPSlidingConstraint<DataTypes>::buildConstraintMatrix(const ConstraintParams* cParams, DataMatrixDeriv &cMatrix, unsigned int &cIndex, const DataVecCoord &x)
 {
-    if(d_componentState != ComponentState::Valid)
+    if(d_componentState.getValue() != ComponentState::Valid)
         return ;
 
     SOFA_UNUSED(cParams);
@@ -157,7 +157,7 @@ void QPSlidingConstraint<DataTypes>::getConstraintViolation(const ConstraintPara
                                                             BaseVector *resV,
                                                             const BaseVector *Jdx)
 {
-    if(d_componentState != ComponentState::Valid)
+    if(d_componentState.getValue() != ComponentState::Valid)
         return ;
 
     SOFA_UNUSED(cParams);
@@ -230,7 +230,7 @@ void QPSlidingConstraint<DataTypes>::getConstraintResolution(const ConstraintPar
 template<class DataTypes>
 void QPSlidingConstraint<DataTypes>::draw(const VisualParams* vparams)
 {
-    if(d_componentState != ComponentState::Valid)
+    if(d_componentState.getValue() != ComponentState::Valid)
         return ;
 
 }
