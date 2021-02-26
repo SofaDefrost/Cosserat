@@ -119,7 +119,7 @@ void CosseratNeedleSlidingConstraint<DataTypes>::internalInit()
 template<class DataTypes>
 void CosseratNeedleSlidingConstraint<DataTypes>::buildConstraintMatrix(const ConstraintParams* cParams, DataMatrixDeriv &cMatrix, unsigned int &cIndex, const DataVecCoord &x)
 {
-    if(d_componentState != ComponentState::Valid)
+    if(d_componentState.getValue() != ComponentState::Valid)
         return ;
 
     SOFA_UNUSED(cParams);
@@ -145,7 +145,7 @@ void CosseratNeedleSlidingConstraint<DataTypes>::getConstraintViolation(const Co
                                                                         BaseVector *resV,
                                                                         const BaseVector *Jdx)
 {
-    if(d_componentState != ComponentState::Valid)
+    if(d_componentState.getValue() != ComponentState::Valid)
         return ;
 
     SOFA_UNUSED(cParams);
@@ -189,7 +189,7 @@ void CosseratNeedleSlidingConstraint<DataTypes>::getConstraintResolution(const C
 template<class DataTypes>
 void CosseratNeedleSlidingConstraint<DataTypes>::draw(const VisualParams* vparams)
 {
-    if(d_componentState != ComponentState::Valid)
+    if(d_componentState.getValue() != ComponentState::Valid)
         return ;
 
 }
