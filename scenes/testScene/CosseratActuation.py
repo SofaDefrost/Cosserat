@@ -2,189 +2,101 @@
 
 import Sofa
 import SofaPython
-from math import sin,cos, tan, sqrt, pi
+from math import sin,cos, sqrt, pi
 import os
-import numpy as np
 path = os.path.dirname(os.path.abspath(__file__))+'/mesh/'
 
-#Gauss Quadrature
-#Suurce : https://en.wikipedia.org/wiki/Gaussian_quadrature
-GaussCoeff = [1.0/sqrt(3.0),0.57735] # Coeff
-GaussWeights = [1.0,1.0] #weight
-#
-# curv_abs_input = [0, 25, 50, 75]
-# curv_abs_input=[0, 15, 30, 45, 60, 66, 81, 88, 95, 100, 103]
-#
-# ###############
-# ## Rate of angular Deformation  (2 sections)
-# ###############
-# R_b = 1.0
-# L = 75.0
-#
-# _tension = 0.0
 
-class CosseratActuation(Sofa.PythonScriptController):
-    """docstring for Sofa.PythonScriptController.CosseratActuation"""
-    def __init__(self):
-        Sofa.PythonScriptController.__init__(self)
-        self.curv_abs_input = []
+_tension = 0.0
+class TensionComputing(Sofa.PythonScriptController):
+    def initGraph(self, node):
+        self.tension = 500
+        self.node = node;
+        self.BeamHookeLawForce = self.node.getObject('BeamHookeLawForce')
 
-        self.vecDistance1 = [] # distance at s1 = L_{i-1} + C1(L_{i} - L_{i-1})
-        self.vecDistance2 = [] # distance at s2 = L_{i-1} + C2(L_{i} - L_{i-1})
-        self.vecDDistance1 = [] # derivative of the distance at s1
-        self.vecDDistance2 = [] # derivative of the distance at s2
-
-    # def computeX(self):
-    #     X = []
-    #     for j in range(1, len(curv_abs_input)) :
-    #         Li = curv_abs_input[j]
-    #         Li_1 = curv_abs_input[j-1]
-    #
-    #         #compute X (the curve absisa) base on the Gauss Quadrature
-    #         # Source:  Federico
-    #         s0 = Li_1  +  GaussCoeff[0] * (Li - Li_1)
-    #         s1 = Li_1  +  GaussCoeff[1] * (Li - Li_1)
-    #
-    #         # source https://en.wikipedia.org/wiki/Gaussian_quadrature
-    #         # s0 = ((Li - Li_1)/2.0) * C[0] + (Li + Li_1)/2.0
-    #         # s1 = ((Li - Li_1)/2.0) * C[1] + (Li + Li_1)/2.0
-    #         X.append([s0,s1])
-    #     print ("XXXXX ==> :", X)
-    #     return X
-
-    def computeX(self):
-        X = []
-        for j in range(1, len(self.curv_abs_input)) :
-            Li = self.curv_abs_input[j]
-            Li_1 = self.curv_abs_input[j-1]
-
-            #compute X (the curve absisa) base on the Gauss Quadrature
-            # Source:  Federico
-            s0 = Li_1  +  GaussCoeff[0] * (Li - Li_1)
-            s1 = Li_1  +  GaussCoeff[1] * (Li - Li_1)
-
-            # source https://en.wikipedia.org/wiki/Gaussian_quadrature
-            # s0 = ((Li - Li_1)/2.0) * C[0] + (Li + Li_1)/2.0
-            # s1 = ((Li - Li_1)/2.0) * C[1] + (Li + Li_1)/2.0
-            X.append([s0,s1])
-        # print ("XXXXX ==> :", X)
-        return X
-
-    def computeDX(self, dy, dz, _dy, _dz):
-        dX0   = []; dX1   = []
-        d_dX0 = []; d_dX1 = []
-        for i in range(0,len(self.X)):
-            dX0.append([0.0, dy + _dy * self.X[i][0], dz + _dz*self.X[i][0]])
-            dX1.append([0.0, dy + _dy * self.X[i][1], dz + _dz*self.X[i][1]])
-
-            d_dX0.append([0.0, _dy, _dz])
-            d_dX1.append([0.0, _dy, _dz])
-        self.distance   = [dX0,dX1]
-        self.d_distance = [d_dX0,d_dX1]
-
-        return [dX0,dX1,d_dX0,d_dX1]
+    def onBeginAnimationStep(self, dt):
+        self.tension = self.tension + 8000 * dt;
+        self.BeamHookeLawForce.findData('tension').value = self.tension
 
 
+def createScene(rootNode):
+
+                rootNode.createObject('RequiredPlugin', pluginName='SoftRobots SofaPython SofaSparseSolver CosseratPlugin BeamAdapter', printLog='0')
+                rootNode.createObject('VisualStyle', displayFlags='hideVisualModels showBehaviorModels showCollisionModels hideBoundingCollisionModels showForceFields hideInteractionForceFields hideWireframe')
+                rootNode.createObject('FreeMotionAnimationLoop')
+                rootNode.createObject('GenericConstraintSolver', tolerance="1e-10", printLog='0')
+
+                rootNode.gravity = "0 0 0"
+                rootNode.dt="0.01"
+                rootNode.createObject('EulerImplicitSolver', firstOrder="0", rayleighStiffness="1.0", rayleighMass='0.10')
+                #rootNode.createObject('StaticSolver')
+                #rootNode.createObject('CGLinearSolver', name='solver', tolerance='1e-20',  threshold='1e-20', verbose='1')
+                rootNode.createObject('SparseLDLSolver', name='solver')
+
+                rootNode.createObject('GenericConstraintCorrection')
+                ###############hresho
+                ## RigidBase
+                ###############
+                rigidBaseNode= rootNode.createChild('rigidBase')
+                #rigidBaseNode.createObject('GenericConstraintCorrection')
+
+                RigidBaseMO = rigidBaseNode.createObject('MechanicalObject', template='Rigid3d', name="RigidBaseMO", position="0 0 0  0 0 0. 1", showObject='1', showObjectScale='0.1', velocity='0 0 0.0 0.0 0 0' )
+                rigidBaseNode.createObject('RestShapeSpringsForceField', name='spring', stiffness="5000000", angularStiffness="500000000", external_points="0", mstate="@RigidBaseMO", points="0", template="Rigid3d"  )
+
+                ###############
+                ## Rate of angular Deformation  (2 sections)
+                ###############
+                pos1 = [0.0,0.0,0.0]
+                pos2 = [0.0,0.0,0.0]
+                pos3 = [0.0,0.0,0.0]
+                pos = [pos1, pos2, pos3]
+
+                distance1 = [0.0,0.2,0.0]
+                distance2 = [0.0,0.2,0.0]
+                distance3 = [0.0,0.2,0.0]
+                _distance = [distance1, distance2, distance3]
+
+                ddistance1 = [0.0,0.0,0.0]
+                ddistance2 = [0.0,0.0,0.0]
+                ddistance3 = [0.0,0.0,0.0]
+                _ddistance = [ddistance1, ddistance2, ddistance3]
+
+                rateAngularDeformNode = rootNode.createChild('rateAngularDeform')
+                rateAngularDeformMO = rateAngularDeformNode.createObject('MechanicalObject', template='Vec3d', name='rateAngularDeformMO', position=pos, velocity='0 0 0 0 0 0 0 0 0') # (2 series of 3 angles for 2 sections. we suppose that the lenght is 10 for each)
+                # BeamHookeLawForce = rateAngularDeformNode.createObject('CosseratInternalActuation', crossSectionShape='circular', length='10 10 10', radius='0.5', youngModulus='5e6')
+                BeamHookeLawForce = rateAngularDeformNode.createObject('CosseratInternalActuation', name="BeamHookeLawForce",  crossSectionShape='circular', length='10 10 10', radius='0.5',
+                youngModulus='1e6',distance=_distance, ddistance=_ddistance, tension=_tension)
+                rateAngularDeformNode.createObject('PythonScriptController', classname="TensionComputing")
+
+                ##############
+                ## Frames
+                ##############
+                # the node of the frame needs to inherit from rigidBaseMO and rateAngularDeform
+                mappedFrameNode = rigidBaseNode.createChild('MappedFrames')
+                rateAngularDeformNode.addChild(mappedFrameNode)
+                framesMO = mappedFrameNode.createObject('MechanicalObject', template='Rigid3d', name="FramesMO", position="0.5 0 0  0 0 0 1  5 0 0 0 0 0 1   10 0 0  0 0 0 1   15 0 0 0 0 0 1  20 0 0  0 0 0 1 25 0 0  0 0 0 1 30 0 0  0 0 0 1", showObject='1', showObjectScale='1' )
+
+                # The mapping has two inputs: RigidBaseMO and rateAngularDeformMO
+                # one output: FramesMO
+
+                inputMO = rateAngularDeformMO.getLinkPath() # + " " + RigidBaseMO.getLinkPath()
+                #inputMO = rateAngularDeformMO.getLinkPath()
+                inputMO_rigid = RigidBaseMO.getLinkPath()
+                outputMO = framesMO.getLinkPath()
+                # TODO:
+                mappedFrameNode.createObject('DiscretCosseratMapping', curv_abs_input='0 10 20 30', curv_abs_output='0.5 5 10 15 20 25 30', input1=inputMO, input2=inputMO_rigid,output=outputMO, debug='0' )
+
+                #### CylinderGridTop
+                CylinderCollision = mappedFrameNode.createChild('CylinderCollision')
+
+                # CylinderCollision.createObject('MeshSTLLoader', filename=path+'trunk.stl', name='loader', rotation='0 90 0', scale='0.155')
+                CylinderCollision.createObject('CylinderGridTopology', name="loader", nx="8", ny="8", nz="20", length="30", radius="0.5", axis="1 0 0" )
+                CylinderCollision.createObject('Mesh', src='@loader')
+                CylinderCollision.createObject('MechanicalObject', template='Vec3d')
+                CylinderCollision.createObject('Triangle')
+                CylinderCollision.createObject('SkinningMapping', nbRef='2')
+
+                # rootNode.createObject('BilateralInteractionConstraint', template='Rigid3d', object2='@rigidBase/MappedFrames/FramesMO', object1='@targetPos/target', first_point='0', second_point='6')
 
 
-    def computeHelicalParameters(self, d, p):
-        dX0  = []; dX1  = []
-        d_dX0 = []; d_dX1 = []
-        a = (2.0 * pi )/p
-        X = self.X
-        for i in range(0,len(self.X)):
-            dX0.append([0.0, d * cos(a * X[i][0]), d * sin(a * X[i][0]) ])
-            dX1.append([0.0, d * cos(a * X[i][1]), d * sin(a * X[i][1]) ])
-
-            d_dX0.append([0.0, -d * a * sin(a * X[i][0]), d * a * cos(a * X[i][0]) ])
-            d_dX1.append([0.0, -d * a * sin(a * X[i][1]), d * a * cos(a * X[i][1]) ])
-
-        self.distance   = [dX0,dX1]
-        self.d_distance = [d_dX0,d_dX1]
-
-    #
-    # def computeD_DX(self, _dy, _dz):
-    #     ddX0 = []
-    #     ddX1 = []
-    #     for i in range(0,len(self.X)):
-    #         ddX0.append([0.0, _dy, _dz])
-    #         ddX1.append([0.0, _dy, _dz])
-    #     print ("_DXDXDXDXDX ==> :", [ddX0,ddX1])
-    #     return [ddX0,ddX1]
-
-    def computeIntegrale(self, distance, d_distance,K):
-        # distance = self.distance
-        # d_distance = self.d_distance
-        integral = []
-
-        #### Compute Integral
-        for id in range(0,len(K)):
-            Li   = self.curv_abs_input[id+1]
-            Li_1 = self.curv_abs_input[id]
-
-            distance0 = distance[0]
-            d_distance0 = d_distance[1]
-            Vec0 = np.cross(K[id], distance0[id]) + [1.0, 0.0, 0.0] + d_distance0[id]
-            fx0  = np.cross(distance0[id],Vec0)/(np.linalg.norm(Vec0))
-            # print ("fx0 : "+str(fx0))
-
-            distance1 = distance[1]
-            d_distance1 = d_distance[1]
-            Vec1 = np.cross(K[id], distance1[id]) + [1.0, 0.0, 0.0] + d_distance1[id]
-            fx1  = np.cross(distance1[id],Vec1)/(np.linalg.norm(Vec1))
-            # print ("fx1 : "+str(fx1))
-            _int = []
-            #Integral base on Gauss Quadrature
-            _int.append(np.dot(((Li-Li_1)/2.0), np.dot(GaussWeights[0],fx0) + np.dot(GaussWeights[1],fx1)))
-            vecInt = list(_int[0])
-            integral.append(vecInt)
-
-            # print ("============<<>>>>> integral by actuation :",vecInt)
-        return integral
-
-    def computeMultiDistanceVectors(self, vec_dy, vec_dz, vec_ddy, vec_ddz):
-        size_of_actution = len(vec_dy)
-        # print("================> size_of_actution :", size_of_actution)
-        for k in range(0,size_of_actution) :
-            # this doesn't change then can be compute at the initial point
-            # argu = self.computeDX (vec_dy[k], vec_dz[k], vec_ddy[k], vec_ddz[k])
-            # computeDX(self, dy, dz, _dy, _dz)
-            ####
-            dy = vec_dy[k] ; _dy = vec_ddy[k]
-            dz = vec_dz[k] ; _dz = vec_ddz[k]
-
-            for i in range(0,len(self.X)):
-                self.vecDistance1.append([0.0, dy + _dy * self.X[i][0], dz + _dz*self.X[i][0]])
-                self.vecDistance2.append([0.0, dy + _dy * self.X[i][1], dz + _dz*self.X[i][1]])
-
-                self.vecDDistance1.append([0.0, _dy, _dz])
-                self.vecDDistance2.append([0.0, _dy, _dz])
-            ####
-        # print("disttance 1 ===> :"+str(self.vecDistance1))
-        # print("disttance 2 ===> :"+str(self.vecDistance2))
-
-
-    def muti_ActuationIntegral(self, vec_dy, vec_dz, vec_ddy, vec_ddz, K):
-        #For multi actuation what change for each actuation is d(X)
-        #the let compute each d(X)
-        integral = []
-        size_of_actution = len(vec_dy)
-        for i in range(size_of_actution) :
-            # this doesn't change then can be compute at the initial point
-            # argu = self.computeDX (vec_dy[i], vec_dz[i], vec_ddy[i], vec_ddz[i])
-
-            # print("====+> The argu : "+str(argu))
-            # distance   = [argu[0], argu[1]]
-            # d_distance = [argu[2], argu[3]]
-            distance   = [self.vecDistance1, self.vecDistance2]
-            d_distance = [self.vecDDistance1, self.vecDDistance2]
-
-            # print("====+> The argu 0 : "+str(distance))
-            # print("====+> The argu 1 : "+str(d_distance))
-
-            #So for each d(X) let compute the integral
-            integral += self.computeIntegrale(distance, d_distance,K)
-            # print("====+> The integral : "+str(integral))
-        # print ("=++++++++=======+++> muti_ActuationIntegral : "+ str(integral))
-
-        return integral
+                return rootNode
