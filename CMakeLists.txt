@@ -7,10 +7,10 @@ find_package(SofaFramework REQUIRED)
 option(COSSERAT_IGNORE_ERRORS "Enable this option to ignore the recommendations and generate anyway." OFF)
 
 if(NOT COSSERAT_IGNORE_ERRORS)
-    if(NOT PLUGIN_SOFAPYTHON)
+    if(NOT PLUGIN_SOFAPYTHON AND NOT PLUGIN_SOFAPYTHON3)
         message(SEND_ERROR "
-            You should not use the plugin Cosserat without enabling PLUGIN_SOFAPYTHON.
-            Most examples will not be loadable.
+            You should not use the plugin Cosserat without enabling PLUGIN_SOFAPYTHON or PLUGIN_SOFAPYTHON3.
+            Since all the scenes to test this plugin are using one of this two plugins. 
             To fix this error you can either follow the recommendation or enable COSSERAT_IGNORE_ERRORS.")
     endif()    
 endif()
@@ -21,7 +21,7 @@ find_package(STLIB QUIET)
 if(STLIB_FOUND)
     message("-- Found dependency : 'STLIB' plugin .")
 else()
-    message("-- The highly recommanded 'STLIB' plugin is missing. You can compile Cosserat but most of the provided python examples will not work. ")
+    message("-- The highly recommanded 'STLIB' plugin is missing. You can compile Cosserat but some of the provided python examples will not work. ")
 endif()
 
 
@@ -50,9 +50,6 @@ set(HEADER_FILES
     src/constraint/QPSlidingConstraint.inl
     src/constraint/CosseratNeedleSlidingConstraint.h
     src/constraint/CosseratNeedleSlidingConstraint.inl
-
-		# src/constraint/DrawTrianglesComponent.h
-		# src/constraint/DrawTrianglesComponent.inl
     )
 
 set(SOURCE_FILES
@@ -71,7 +68,6 @@ set(SOURCE_FILES
     src/constraint/CosseratSlidingConstraint.cpp
     src/constraint/QPSlidingConstraint.cpp
     src/constraint/CosseratNeedleSlidingConstraint.cpp
-		# src/constraint/DrawTrianglesComponent.cpp
     )
 
 set(README_FILE "Cosserat.txt" )
@@ -79,14 +75,6 @@ set(README_FILE "Cosserat.txt" )
 find_package(SoftRobots QUIET)
 if(SoftRobots_FOUND)
 
-#     set(HEADER_FILES ${HEADER_FILES}
-#        src/constraint/CosseratActuatorConstraint.h
-#        src/constraint/CosseratActuatorConstraint.inl
-#         )
-#
-#     set(SOURCE_FILES ${SOURCE_FILES}
-#        src/constraint/CosseratActuatorConstraint.cpp
-#         )
     list(APPEND HEADER_FILES
         src/constraint/CosseratActuatorConstraint.h
         src/constraint/CosseratActuatorConstraint.inl
@@ -94,7 +82,6 @@ if(SoftRobots_FOUND)
     list(APPEND SOURCE_FILES
         src/constraint/CosseratActuatorConstraint.cpp
         )
-
 endif()
 
 file(GLOB_RECURSE RESOURCE_FILES  "*.md" "*.psl" "*.py" "*.pyscn" "*.scn" "*.ah")
@@ -121,10 +108,10 @@ if(SoftRobots_FOUND)
 endif()
 
 ## Install rules for the library and headers; CMake package configurations files
-sofa_generate_package(
-    NAME CosseratPlugin
-    VERSION ${PROJECT_VERSION}
-    TARGETS ${PROJECT_NAME}
+sofa_create_package_with_targets(
+    PACKAGE_NAME ${PROJECT_NAME}
+    PACKAGE_VERSION ${PROJECT_VERSION}
+    TARGETS ${PROJECT_NAME} AUTO_SET_TARGET_PROPERTIES
     INCLUDE_SOURCE_DIR "src"
     INCLUDE_INSTALL_DIR ${PROJECT_NAME}
     RELOCATABLE "plugins"
