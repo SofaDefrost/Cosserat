@@ -1,6 +1,7 @@
+
 /******************************************************************************
-*               SOFA, Simulation Open-Framework Architecture                  *
-*                (c) 2006-2018 INRIA, USTL, UJF, CNRS, MGH                    *
+*       SOFA, Simulation Open-Framework Architecture, version 1.0 RC 1        *
+*                (c) 2006-2011 MGH, INRIA, USTL, UJF, CNRS                    *
 *                                                                             *
 * This library is free software; you can redistribute it and/or modify it     *
 * under the terms of the GNU Lesser General Public License as published by    *
@@ -16,30 +17,67 @@
 * along with this library; if not, write to the Free Software Foundation,     *
 * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA.          *
 *******************************************************************************
-*                           Plugin SoftRobots v1.0                            *
+*                               SOFA :: Modules                               *
 *                                                                             *
-* This plugin is also distributed under the GNU LGPL (Lesser General          *
-* Public License) license with the same conditions than SOFA.                 *
+* This component is not open-source                                           *
 *                                                                             *
-* Contributors: Defrost team  (INRIA, University of Lille, CNRS,              *
-*               Ecole Centrale de Lille)                                      *
+* Authors: Yinoussa Adagolodjo/adagolodjo@protonamil.com                      *
 *                                                                             *
-* Contact information: https://project.inria.fr/softrobot/contact/            *
-*                                                                             *
+* Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
-
-
-#include "CosseratActuatorConstraint.inl"
-
+#include<sofa/defaulttype/VecTypes.h>
 #include <sofa/core/ObjectFactory.h>
+#include <iostream>
+#include "CosseratNeedleSlidingConstraint.inl"
+
+
+
+//#define SOFTROBOTS_CONSTRAINT_CosseratNeedleSlidingConstraint_NOEXTERN
 
 namespace sofa::component::constraintset
 {
 
-//////////////////////////////////////CosseratActuatorConstraintConstraintResolution1Dof/////////////////////////////////////////////
-using namespace sofa::defaulttype;
+using sofa::defaulttype::Rigid3Types;
 using namespace sofa::helper;
 using namespace sofa::core;
+
+
+////--------------- Force constraint -------------
+//SlidingForceConstraintResolution::SlidingForceConstraintResolution(const double &imposedForce, const double& min, const double& max)
+//    : ConstraintResolution(1)
+//    , m_imposedForce(imposedForce)
+//    , m_minDisplacement(min)
+//    , m_maxDisplacement(max)
+//{ }
+
+
+//void SlidingForceConstraintResolution::init(int line, double** w, double * lambda)
+//{
+//    SOFA_UNUSED(lambda);
+//    m_wActuatorActuator = w[line][line];
+//}
+
+//void SlidingForceConstraintResolution::resolution(int line, double** w, double* d, double* lambda, double* dfree)
+//{
+//    SOFA_UNUSED(dfree);
+//    SOFA_UNUSED(w);
+
+//    double displacement = m_wActuatorActuator*m_imposedForce + d[line];
+
+//    if (displacement<m_minDisplacement)
+//    {
+//        displacement=m_minDisplacement;
+//        lambda[line] -= (d[line]-displacement) / m_wActuatorActuator;
+//    }
+//    else if (displacement>m_maxDisplacement)
+//    {
+//        displacement=m_maxDisplacement;
+//        lambda[line] -= (d[line]-displacement) / m_wActuatorActuator;
+//    }
+//    else
+//        lambda[line] = m_imposedForce;
+//}
+
 
 ////////////////////////////////////////////    FACTORY    //////////////////////////////////////////////
 // Registering the component
@@ -47,8 +85,8 @@ using namespace sofa::core;
 // 1-RegisterObject("description") + .add<> : Register the component
 // 2-.add<>(true) : Set default template
 
-int CosseratActuatorConstraintClass = RegisterObject("Simulate cable actuation.")
-.add< CosseratActuatorConstraint<Vec3Types> >(true)
+int CosseratNeedleSlidingConstraintClass = RegisterObject("Simulate cable actuation.")
+.add< CosseratNeedleSlidingConstraint<sofa::defaulttype::Vec3Types> >(true)
 
 ;
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -57,7 +95,9 @@ int CosseratActuatorConstraintClass = RegisterObject("Simulate cable actuation."
 // This goes with the extern template declaration in the .h. Declaring extern template
 // avoid the code generation of the template for each compilation unit.
 // see: http://www.stroustrup.com/C++11FAQ.html#extern-templates
-//template class CosseratActuatorConstraint<Vec3Types>;
+//template class CosseratNeedleSlidingConstraint<sofa::defaulttype::Vec3Types>;
+
 
 } // namespace sofa
+
 

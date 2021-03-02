@@ -36,6 +36,7 @@
 #include <sofa/core/MechanicalParams.h>
 #include <SofaBaseLinearSolver/CompressedRowSparseMatrix.h>
 #include <SofaBaseLinearSolver/DefaultMultiMatrixAccessor.h>
+#include <sofa/core/behavior/ForceField.inl>
 
 #include <sofa/helper/OptionsGroup.h>
 
@@ -89,6 +90,7 @@ public :
 
     ////////////////////////// Inherited from BaseObject /////////////////////////
     void init() override;
+    void reinit() ;
     ///////////////////////////////////////////////////////////////////////////
 
     ////////////////////////// Inherited from ForceField /////////////////////////

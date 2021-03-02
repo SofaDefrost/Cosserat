@@ -34,7 +34,7 @@
 #include <sofa/defaulttype/Vec.h>
 #include <SofaConstraint/BilateralInteractionConstraint.h>
 
-#include "QPSlidingConstraint.h"
+#include "CosseratNeedleSlidingConstraint.h"
 
 namespace sofa::component::constraintset
 {
@@ -52,7 +52,7 @@ using sofa::helper::vector;
 using sofa::helper::OptionsGroup;
 
 template<class DataTypes>
-QPSlidingConstraint<DataTypes>::QPSlidingConstraint(MechanicalState* object)
+CosseratNeedleSlidingConstraint<DataTypes>::CosseratNeedleSlidingConstraint(MechanicalState* object)
     : Inherit1(object)
 
     , d_value(initData(&d_value, "value",
@@ -71,13 +71,13 @@ QPSlidingConstraint<DataTypes>::QPSlidingConstraint(MechanicalState* object)
 }
 
 template<class DataTypes>
-QPSlidingConstraint<DataTypes>::~QPSlidingConstraint()
+CosseratNeedleSlidingConstraint<DataTypes>::~CosseratNeedleSlidingConstraint()
 {
 }
 
 
 template<class DataTypes>
-void QPSlidingConstraint<DataTypes>::init()
+void CosseratNeedleSlidingConstraint<DataTypes>::init()
 {
     Inherit1::init();
 
@@ -92,13 +92,13 @@ void QPSlidingConstraint<DataTypes>::init()
 
 
 template<class DataTypes>
-void QPSlidingConstraint<DataTypes>::reinit()
+void CosseratNeedleSlidingConstraint<DataTypes>::reinit()
 {
     internalInit();
 }
 
 template<class DataTypes>
-void QPSlidingConstraint<DataTypes>::internalInit()
+void CosseratNeedleSlidingConstraint<DataTypes>::internalInit()
 {
     if(d_value.getValue().size()==0)
     {
@@ -117,7 +117,7 @@ void QPSlidingConstraint<DataTypes>::internalInit()
 
 
 template<class DataTypes>
-void QPSlidingConstraint<DataTypes>::buildConstraintMatrix(const ConstraintParams* cParams, DataMatrixDeriv &cMatrix, unsigned int &cIndex, const DataVecCoord &x)
+void CosseratNeedleSlidingConstraint<DataTypes>::buildConstraintMatrix(const ConstraintParams* cParams, DataMatrixDeriv &cMatrix, unsigned int &cIndex, const DataVecCoord &x)
 {
     if(d_componentState.getValue() != ComponentState::Valid)
         return ;
@@ -129,23 +129,11 @@ void QPSlidingConstraint<DataTypes>::buildConstraintMatrix(const ConstraintParam
 
     for (unsigned int i=0; i<positions.size(); i++)
     {
-        if(i < positions.size()-1){
-            MatrixDerivRowIterator c_it = matrix.writeLine(cIndex);
-            c_it.addCol(i, Coord(0,1,0)); // instead of vector3(0,1,0) use the directtion of the projection
-            MatrixDerivRowIterator c_it_1 = matrix.writeLine(cIndex+1);
-            c_it_1.addCol(i, Coord(0,0,1)); // instead of vector3(0,1,0) use the directtion of the projection
-            cIndex +=2;
-        }else{
-            MatrixDerivRowIterator c_it = matrix.writeLine(cIndex);
-            c_it.addCol(i, Coord(1,0,0));
-
-            MatrixDerivRowIterator c_it_1 = matrix.writeLine(cIndex+1);
-            c_it_1.addCol(i, Coord(0,1,0));
-            MatrixDerivRowIterator c_it_2 = matrix.writeLine(cIndex+2);
-            c_it_2.addCol(i, Coord(0,0,1));
-            cIndex +=3;
-        }
-
+        MatrixDerivRowIterator c_it = matrix.writeLine(cIndex);
+        c_it.addCol(i, Coord(0,1,0)); // instead of vector3(0,1,0) use the directtion of the projection
+        MatrixDerivRowIterator c_it_1 = matrix.writeLine(cIndex+1);
+        c_it_1.addCol(i, Coord(0,0,1)); // instead of vector3(0,1,0) use the directtion of the projection
+        cIndex +=2;
     }
     cMatrix.endEdit();
     m_nbLines = cIndex - m_constraintId;
@@ -153,9 +141,9 @@ void QPSlidingConstraint<DataTypes>::buildConstraintMatrix(const ConstraintParam
 
 
 template<class DataTypes>
-void QPSlidingConstraint<DataTypes>::getConstraintViolation(const ConstraintParams* cParams,
-                                                            BaseVector *resV,
-                                                            const BaseVector *Jdx)
+void CosseratNeedleSlidingConstraint<DataTypes>::getConstraintViolation(const ConstraintParams* cParams,
+                                                                        BaseVector *resV,
+                                                                        const BaseVector *Jdx)
 {
     if(d_componentState.getValue() != ComponentState::Valid)
         return ;
@@ -164,71 +152,42 @@ void QPSlidingConstraint<DataTypes>::getConstraintViolation(const ConstraintPara
     ReadAccessor<Data<VecCoord>> positions = m_state->readPositions();
 
     if(Jdx->size()==0){
-        //std::cout << "Size JDX = "<< Jdx->size() << std::endl;
         for (size_t i = 0; i < positions.size(); i++){
-            if( i < positions.size()-1){
-                Real dfree1 =  positions[i][1];
-                Real dfree2 =  positions[i][2];
+            Real dfree1 =  positions[i][1];
+            Real dfree2 =  positions[i][2];
 
-                resV->set(m_constraintId + 2*i   , dfree1);
-                resV->set(m_constraintId + 2*i +1, dfree2);
-            }else{
-                Real dfree0 =  positions[i][0];
-                Real dfree1 =  positions[i][1];
-                Real dfree2 =  positions[i][2];
-
-                resV->set(m_constraintId + 2*i   , dfree0);
-                resV->set(m_constraintId + 2*i +1, dfree1);
-                resV->set(m_constraintId + 2*i +2, dfree2);
-            }
+            resV->set(m_constraintId + 2*i   , dfree1);
+            resV->set(m_constraintId + 2*i +1, dfree2);
         }
 
     }else{
-        //std::cout << "Size JDX = "<< Jdx->size() << std::endl;
         for (size_t i = 0; i < positions.size(); i++){
-            if( i < positions.size()-1){
-                Real dfree1 = Jdx->element(2*i)   + positions[i][1];
-                Real dfree2 = Jdx->element(2*i+1) + positions[i][2];
+            Real dfree1 = Jdx->element(2*i)   + positions[i][1];
+            Real dfree2 = Jdx->element(2*i+1) + positions[i][2];
+            resV->set(m_constraintId + 2*i   , dfree1);
+            resV->set(m_constraintId + 2*i +1, dfree2);
 
-                resV->set(m_constraintId + 2*i   , dfree1);
-                resV->set(m_constraintId + 2*i +1, dfree2);
-            }else{
-                //std::cout << " The laste position : "<< positions[i] << "; Jdx->element() "<< Jdx->element(2*i) <<" "<< Jdx->element(2*i+1) <<" "<< Jdx->element(2*i+2) << std::endl;
-                Real dfree0 = Jdx->element(2*i)   + positions[i][0];
-                Real dfree1 = Jdx->element(2*i+1) + positions[i][1];
-                Real dfree2 = Jdx->element(2*i+2) + positions[i][2];
-
-                //std::cout << " m_constraintId + 2*i : "<< m_constraintId + 2*i << std::endl;
-                resV->set(m_constraintId + 2*i   , dfree0);
-                resV->set(m_constraintId + 2*i +1, dfree1);
-                resV->set(m_constraintId + 2*i +2, dfree2);
-            }
         }
     }
 }
 
 template<class DataTypes>
-void QPSlidingConstraint<DataTypes>::getConstraintResolution(const ConstraintParams*,
-                                                             std::vector<core::behavior::ConstraintResolution*>& resTab,
-                                                             unsigned int& offset)
+void CosseratNeedleSlidingConstraint<DataTypes>::getConstraintResolution(const ConstraintParams*,
+                                                                         std::vector<core::behavior::ConstraintResolution*>& resTab,
+                                                                         unsigned int& offset)
 {
     ReadAccessor<Data<VecCoord>> positions = m_state->readPositions();
-    //    std::cout << "The position size is : " << positions.size()<< std::endl;
     double imposedValue= 1.0;
     for (size_t i = 0; i < positions.size(); i++){
 
         resTab[offset++] = new BilateralConstraintResolution();
         resTab[offset++] = new BilateralConstraintResolution();
-        if(i == positions.size()-1){
-            resTab[offset++] = new BilateralConstraintResolution();
-        }
     }
-    //    std::cout << "The position size is END " << std::endl;
 }
 
 
 template<class DataTypes>
-void QPSlidingConstraint<DataTypes>::draw(const VisualParams* vparams)
+void CosseratNeedleSlidingConstraint<DataTypes>::draw(const VisualParams* vparams)
 {
     if(d_componentState.getValue() != ComponentState::Valid)
         return ;
