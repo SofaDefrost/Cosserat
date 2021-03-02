@@ -36,6 +36,7 @@
 
 #include "../../../SoftRobots/src/SoftRobots/component/constraint/model/CableModel.h"
 #include "../../../SoftRobots/src/SoftRobots/component/behavior/SoftRobotsConstraint.h"
+#include "QPSlidingConstraint.h"
 
 namespace sofa::component::constraintset
 {
@@ -50,38 +51,38 @@ using sofa::core::ConstraintParams ;
 using sofa::helper::ReadAccessor ;
 using sofa::core::VecCoordId ;
 
-using sofa::core::behavior::ConstraintResolution ;
+//using sofa::core::behavior::ConstraintResolution ;
 
 
-class SlidingForceConstraintResolution : public ConstraintResolution
-{
-public:
-    SlidingForceConstraintResolution(const double& imposedForce, const double& min, const double& max);
+//class SlidingForceConstraintResolution : public ConstraintResolution
+//{
+//public:
+//    SlidingForceConstraintResolution(const double& imposedForce, const double& min, const double& max);
 
-    //////////////////// Inherited from ConstraintResolution ////////////////////
-    virtual void init(int line, double** w, double *force) override;
-    virtual void resolution(int line, double** w, double* d, double* force, double* dfree) override;
-    /////////////////////////////////////////////////////////////////////////////
+//    //////////////////// Inherited from ConstraintResolution ////////////////////
+//    virtual void init(int line, double** w, double *force) override;
+//    virtual void resolution(int line, double** w, double* d, double* force, double* dfree) override;
+//    /////////////////////////////////////////////////////////////////////////////
 
-protected:
+//protected:
 
-    double      m_wActuatorActuator;
-    double      m_imposedForce;
-    double      m_minDisplacement;
-    double      m_maxDisplacement;
+//    double      m_wActuatorActuator;
+//    double      m_imposedForce;
+//    double      m_minDisplacement;
+//    double      m_maxDisplacement;
 
-};
+//};
 
 
 /**
  * This class contains common implementation of cable constraints
 */
 template< class DataTypes >
-class QPSlidingConstraint : public CableModel<DataTypes>
+class CosseratNeedleSlidingConstraint : public CableModel<DataTypes>
 {
 public:
 
-    SOFA_CLASS(SOFA_TEMPLATE(QPSlidingConstraint,DataTypes), SOFA_TEMPLATE(CableModel,DataTypes));
+    SOFA_CLASS(SOFA_TEMPLATE(CosseratNeedleSlidingConstraint,DataTypes), SOFA_TEMPLATE(CableModel,DataTypes));
     typedef typename DataTypes::VecCoord VecCoord;
     typedef typename DataTypes::VecDeriv VecDeriv;
     typedef typename DataTypes::Coord Coord;
@@ -98,9 +99,9 @@ public:
 
 
 public:
-    QPSlidingConstraint(MechanicalState* object = nullptr);
+    CosseratNeedleSlidingConstraint(MechanicalState* object = nullptr);
 
-    ~QPSlidingConstraint() override;
+    ~CosseratNeedleSlidingConstraint() override;
 
     ////////////////////////// Inherited from BaseObject ////////////////////
     void init() override;
@@ -168,7 +169,7 @@ protected:
 
 // Declares template as extern to avoid the code generation of the template for
 // each compilation unit. see: http://www.stroustrup.com/C++11FAQ.html#extern-templates
-//extern template class QPSlidingConstraint<defaulttype::Vec3Types>;
+//extern template class CosseratNeedleSlidingConstraint<defaulttype::Vec3Types>;
 
 } // namespace sofa
 

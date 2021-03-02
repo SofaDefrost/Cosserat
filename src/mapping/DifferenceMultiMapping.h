@@ -152,6 +152,8 @@ public:
     void initiatTopologies();
     void computeProximity(const In1VecCoord &x1, const In2VecCoord &x2);
 
+    void computeNeedleProximity(const In1VecCoord &x1, const In2VecCoord &x2);
+
 protected:
     /********************** The component Data **************************/
     //Input data
@@ -160,6 +162,7 @@ protected:
     Data<double>                        d_raduis;
     Data<sofa::defaulttype::Vec4f>      d_color;
     Data<bool>                          d_drawArrows;
+    Data<bool>                          d_lastPointIsFixed;
 
 
 
