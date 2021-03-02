@@ -5,17 +5,14 @@ For the modeling of linear structures, it is therefore possible to find a framew
 This model can be used to model and control concentric tube robots, continuum robots actuated with cables, or pneumatic soft robots with a constant cross-section.
 
 <p align="center">
-  DCM for beam modeling:
   <img src="/doc/images/actuationConstraint_1.png" width="30O" title="Actuation 1">
   <img src="/doc/images/actuationConstraint_2.png" width="300" title="Actuation 2">
   <img src="doc/images/circleActuationConstraint.png" width="300" title="Actuation 3">
 </p>
 
 <p align="center">
-  DCM for cable modeling:
   <img src="/scenes/mesh/cosseratgripper_2.png" width="50O" title="Actuation 1">
-  <img src="/doc/images/tenSections.png" width="500" title="Actuation 2">
+  <img src="/doc/images/tenCossseratSections.png" width="500" title="Ten section ">
 </p>
-
 
 Format: ![Alt Text](url)
