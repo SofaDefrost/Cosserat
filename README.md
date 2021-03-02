@@ -14,8 +14,7 @@ DCM for beam modeling:
 DCM for cable modeling:
 <p align="center">
   <img src="/scenes/mesh/cosseratgripper_2.png" width="50O" title="Actuation 1">
-  <img src="/doc/images/tenSections.png" width="500" title="Actuation 2">
+  <img src="/doc/images/tenCossseratSections.png" width="500" title="Ten section ">
 </p>
-
 
 Format: ![Alt Text](url)
