@@ -13,7 +13,7 @@ This model can be used to model and control concentric tube robots, continuum ro
 <p align="center">
   <img src="/doc/images/actuationConstraint_2.png" width="330" title="DCM Beam actuation using a given cable">
   <img src="doc/images/circleActuationConstraint.png" width="330" title="DCM Beam actuation using a given cable">
-  <img src="/doc/images/actuationConstraint_1.png" width="33O" title="DCM Beam actuation using a cable">
+  <img src="/doc/images/actuationConstraint_1.png" width="33O0" title="DCM Beam actuation using a cable">
 </p>
 
 DCM for cable modeling:
