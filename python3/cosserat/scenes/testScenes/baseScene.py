@@ -10,8 +10,6 @@ __version__ = "1.0.0"
 __copyright__ = "(c) 2020,Inria"
 __date__ = "March 1 2020"
 import Sofa
-import os
-
 
 def createScene(rootNode):
     """Classical function to create a scene with SofaPython3.
@@ -76,7 +74,7 @@ def createScene(rootNode):
         sum += longeurS[i]
         curv_abs_inputS.append(sum)
 
-    longeurS[nbSectionS-1] = longeurS[nbSectionS-1] + 1.
+    # longeurS[nbSectionS-1] = longeurS[nbSectionS-1] + 1.
     curv_abs_inputS[nbSectionS] = tot_length
 
     print("=============> positionS : ", positionS)
