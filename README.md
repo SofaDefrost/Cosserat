@@ -5,9 +5,9 @@ For the modeling of linear structures, it is therefore possible to find a framew
 This model can be used to model and control concentric tube robots, continuum robots actuated with cables, or pneumatic soft robots with a constant cross-section.
 
 <p align="center">
-  <img src="/doc/images/multiSectionWithColorMap1.png" width="33O" title="DCM as an implant">
-  <img src="/doc/images/multiSectionWithColorMap2.png" width="33O" title="DCM as an implant">
-  <img src="/doc/images/multiSectionWithColorMap3.png" width="33O" title="DCM as an implant">
+  <img src="/doc/images/multiSectionWithColorMap1.png" title="DCM as an implant">
+  <img src="/doc/images/multiSectionWithColorMap2.png" title="DCM as an implant">
+  <img src="/doc/images/multiSectionWithColorMap3.png" title="DCM as an implant">
 </p>
 
 <p align="center">
