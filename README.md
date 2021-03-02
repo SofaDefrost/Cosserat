@@ -10,18 +10,17 @@ This model can be used to model and control concentric tube robots, continuum ro
   <img src="/doc/images/multiSectionWithColorMap3.png" title="DCM as an implant">
 </p>
 
-<p align="center">
-  <img src="/doc/images/actuationConstraint_2.png" width="330" title="DCM Beam actuation using a given cable">
-  <img src="doc/images/circleActuationConstraint.png" width="330" title="DCM Beam actuation using a given cable">
-  <img src="/doc/images/actuationConstraint_1.png" width="33O0" title="DCM Beam actuation using a cable">
-</p>
-
 DCM for cable modeling:
 <p align="center">
-  <img src="/scenes/mesh/cosseratgripper_2.png" width="50O" title="DCM for cable modeling">
-  <img src="/doc/images/tenCossseratSections.png" width="500" title="DCM for cable modeling ">
+  <img src="/scenes/mesh/cosseratgripper_2.png" title="DCM for cable modeling">
+  <img src="/doc/images/tenCossseratSections.png" title="DCM for cable modeling ">
 </p>
 
+<p align="center">
+  <img src="/doc/images/actuationConstraint_2.png" width="500" title="DCM Beam actuation using a given cable">
+  <img src="doc/images/circleActuationConstraint.png" width="500" title="DCM Beam actuation using a given cable">
+  <img src="/doc/images/actuationConstraint_1.png" title="DCM Beam actuation using a cable">
+</p>
 
 
 Format: ![Alt Text](url)
