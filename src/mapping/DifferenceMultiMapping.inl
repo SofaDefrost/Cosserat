@@ -62,7 +62,7 @@ DifferenceMultiMapping<TIn1, TIn2, TOut>::DifferenceMultiMapping()
 
 
 template <class TIn1, class TIn2, class TOut>
-void DifferenceMultiMapping<TIn1, TIn2, TOut>::initiatTopologies()
+void DifferenceMultiMapping<TIn1, TIn2, TOut>::initiateTopologies()
 {
     m_toModel = this->getToModels()[0];
     if (! m_toModel) {
@@ -71,17 +71,8 @@ void DifferenceMultiMapping<TIn1, TIn2, TOut>::initiatTopologies()
         return;
     }
 
-
     if (!d_direction.isSet())
-        msg_warning()<<"No direction nor indiece is given.";
-
-
-    //    unsigned int szIndices =  d_indices.getValue().size();
-    //    unsigned int szdirection =  d_direction.getValue().size();
-    //    if(!(szIndices == szdirection))
-    //        msg_warning()<< "The size of the list of indes is != the the size of directions list, plese fixe this";
-
-
+        msg_warning()<<"No direction nor indices is given.";
 }
 
 
@@ -113,7 +104,7 @@ void DifferenceMultiMapping<TIn1, TIn2, TOut>::init()
 
     m_toModel = m_fromModel1;
 
-    initiatTopologies();
+    initiateTopologies();
 }
 
 
@@ -147,8 +138,8 @@ void DifferenceMultiMapping<TIn1, TIn2, TOut>::computeProximity(const In1VecCoor
     size_t szDst = dst.size();
     helper::vector<Rigid> direction = d_direction.getValue();
 
-    ///get the last rigige direction, the main goal is to use it for the
-    /// 3D bilaterale constraint i.e the fix point of the cable in the robot structure
+    ///get the last rigid direction, the main goal is to use it for the
+    /// 3D bilateral constraint i.e the fix point of the cable in the robot structure
     //Rigid direction = d_direction.getValue()[szDst-1];
 
     //For each point in the FEM find the closest edge of the cable
@@ -247,7 +238,7 @@ void DifferenceMultiMapping<TIn1, TIn2, TOut>::computeProximity(const In1VecCoor
                     if(i == szFrom-1){
                         ///This handle the fix point constraint the last point of
                         /// of cstr points indeed here we have
-                        /// 3D bilaterale constraint and alpha=1.0
+                        /// 3D bilateral constraint and alpha=1.0
                         // We use the given direction of fill H
 
                         if (!direction.empty()){
@@ -325,21 +316,20 @@ void DifferenceMultiMapping<TIn1, TIn2, TOut>::computeProximity(const In1VecCoor
                     constraint.t2 = t2;
 
                     ///This is need because we are applying the a
-                    /// billateral constraint on the last node of the mstate
+                    /// bilateral constraint on the last node of the mstate
                     if(i == szFrom-1){
                         ///This handle the fix point constraint the last point of
                         /// of cstr points indeed here we have
-                        /// 3D bilaterale constraint and alpha=1.0
+                        /// 3D bilateral constraint and alpha=1.0
                         // We use the given direction of fill H
                         if (!d_direction.getValue().empty()){
                             Rigid dir = direction[szDst-1];
-                            Vector3 vY = Vector3(0.,1.,0.);
-                            Vector3 vZ = Vector3(0.,0.,1.);
-                            defaulttype::Quat ori = dir.getOrientation() ;
-                            vY = ori.rotate(vY); vY.normalize();
-                            vZ = ori.rotate(vZ); vZ.normalize();
-                            //msg_info("1 debug :")<< " ====> t1 :"<< vY;
-                            //msg_info("1 debug :")<< " ====> t2 :"<< vZ;
+                            defaulttype::Quat ori = (direction[szDst-1]).getOrientation() ;
+                            Vector3 vY = ori.rotate(Vector3(0.,1.,0.));
+                            vY.normalize();
+                            Vector3 vZ = ori.rotate(Vector3(0.,0.,1.));
+                            vZ.normalize();
+
                             constraint.t1 = vY ;
                             constraint.t2 = vZ ;
                         }
@@ -370,8 +360,8 @@ void DifferenceMultiMapping<TIn1, TIn2, TOut>::computeNeedleProximity(const In1V
     size_t szDst = dst.size();
     helper::vector<Rigid> direction = d_direction.getValue();
 
-    ///get the last rigige direction, the main goal is to use it for the
-    /// 3D bilaterale constraint i.e the fix point of the cable in the robot structure
+    ///get the last rigid direction, the main goal is to use it for the
+    /// 3D bilateral constraint i.e the fix point of the cable in the robot structure
     //Rigid direction = d_direction.getValue()[szDst-1];
 
     //For each point in the FEM find the closest edge of the cable
@@ -774,35 +764,17 @@ void DifferenceMultiMapping<TIn1, TIn2, TOut>::draw(const core::visual::VisualPa
 
     ///draw cable
     ///
-    //    const In2DataVecDeriv* xfromData = m_toModel->read(core::ConstVecCoordId::position());
-    //    const In2VecCoord& postions = xfromData[0].getValue();
-    //    unsigned int sz = postions.size();
-    //    //    msg_info("DRAW")<< "The size of object is : "<< sz;
-
-    //    double radius = d_raduis.getValue();
-    //    vparams->drawTool()->drawLineStrip(postions,8.8,defaulttype::Vec4f(1.,0.,0.,1));
-
-    //printf("CosseratSlidingConstraint<DataTypes>::draw(const core::visual::VisualParams* vparams) before \n");
     if (!vparams->displayFlags().getShowInteractionForceFields())
         return;
 
     vparams->drawTool()->saveLastState();
-
     vparams->drawTool()->disableLighting();
 
-    RGBAColor color;
-
-    color = RGBAColor::magenta();
-
+    RGBAColor color = RGBAColor::magenta();
     std::vector<sofa::defaulttype::Vector3> vertices;
-
-    //    vparams->drawTool()->drawLines(vertices, 1, color);
-
-    //    sofa::defaulttype::Vec4f colorL = d_color.getValue();
     if(d_drawArrows.getValue() && d_lastPointIsFixed.getValue()){
         for (size_t i =0 ; i < m_constraints.size(); i++) {
             color = RGBAColor::green();
-            //        std::cout << " Projection : "<< m_constraints[i].proj << " ;  Q :" << m_constraints[i].Q << std::endl;
             vertices.push_back(m_constraints[i].proj);
             vertices.push_back(m_constraints[i].Q);
             vparams->drawTool()->drawLines(vertices, 4.0, color);
@@ -828,15 +800,8 @@ void DifferenceMultiMapping<TIn1, TIn2, TOut>::draw(const core::visual::VisualPa
         }
         const In1DataVecDeriv* xDestData = m_fromModel1->read(core::ConstVecCoordId::position());
         const In1VecCoord& fromPos = xDestData[0].getValue();
-        //        msg_info("DRAW")<< "The size of object is : "<< postions.size();
         vparams->drawTool()->draw3DText_Indices(fromPos,6,defaulttype::Vec<4,Real>(0,2,0,1));
     }
-
-
-    //    for(unsigned int j = 0; j<sz-1; j++){
-    //        vparams->drawTool()->drawLine(postions[j],postions[j+1],sofa::defaulttype::Vec4f(colorL[0],colorL[1],colorL[2],radius));
-    //    }
-
     vparams->drawTool()->restoreLastState();
 }
 

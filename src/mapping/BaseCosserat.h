@@ -129,8 +129,8 @@ public:
     helper::vector<Transform> m_nodesExponentialSE3Vectors;
     helper::vector<Matrix4> m_nodesLogarithmeSE3Vectors;
 
-    helper::vector<int> m_indicesVectors;
-    helper::vector<int> m_indicesVectorsDraw;
+    helper::vector<size_t> m_indicesVectors;
+    helper::vector<size_t> m_indicesVectorsDraw;
 
     helper::vector<double> m_beamLenghtVectors;
     helper::vector<double> m_framesLenghtVectors;
@@ -267,8 +267,8 @@ public:
         Matrix3 R = extract_rotMatrix(T);
         Vector3 trans = T.getOrigin();
 
-        for (size_t i = 0; i < 3; i++) {
-            for (size_t j=0; j<3; j++){
+        for (unsigned int i = 0; i < 3; i++) {
+            for (unsigned int j=0; j<3; j++){
                 M(i,j) = R[i][j];
                 M(i,3) = trans[i];
             }
