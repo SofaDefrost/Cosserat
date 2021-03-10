@@ -72,7 +72,7 @@ void CosseratSlidingConstraint<DataTypes>::computeProximity(const DataVecCoord &
     size_t szFrom = from.size();
     size_t szDst = dst.size();
     //For each point in the FEM find the closest edge of the cable
-    for (size_t i = 0 ; i < szFrom-1; i++) {
+    for (unsigned int i = 0 ; i < szFrom-1; i++) {
         Coord P = from[i];
         Constraint constraint;
 
@@ -80,7 +80,7 @@ void CosseratSlidingConstraint<DataTypes>::computeProximity(const DataVecCoord &
 
         // min dist between the projection and the projected point
         Real min_dist = std::numeric_limits<Real>::max();
-        for (size_t j = 0; j < szDst-1; j++) {
+        for (unsigned int j = 0; j < szDst-1; j++) {
             Coord Q1 = dst[j];
             Coord Q2 = dst[j+1];
 

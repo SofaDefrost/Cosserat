@@ -35,7 +35,7 @@
 #include <sofa/core/behavior/BaseConstraintSet.h>
 #include <sofa/core/behavior/PairInteractionConstraint.h>
 #include <SoftRobots/component/constraint/model/CableModel.h>
-
+#include <sofa/core/behavior/ConstraintResolution.h>
 namespace sofa::component::constraintset
 {
 

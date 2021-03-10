@@ -149,7 +149,7 @@ public:
             const helper::vector<const OutDataMatrixDeriv*>&  dataMatInConst) override;
 
     /**********************MAPPING METHODS**************************/
-    void initiatTopologies();
+    void initiateTopologies();
     void computeProximity(const In1VecCoord &x1, const In2VecCoord &x2);
 
     void computeNeedleProximity(const In1VecCoord &x1, const In2VecCoord &x2);

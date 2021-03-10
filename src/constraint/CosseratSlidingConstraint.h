@@ -24,6 +24,7 @@
 #include <sofa/core/behavior/PairInteractionConstraint.h>
 #include <sofa/core/behavior/MechanicalState.h>
 #include <iostream>
+#include <sofa/core/behavior/ConstraintResolution.h>
 
 namespace sofa::component::constraintset
 {

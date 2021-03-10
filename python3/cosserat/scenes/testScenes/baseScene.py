@@ -42,7 +42,6 @@ def createScene(rootNode):
     #################################
     ##           RigidBase         ##
     #################################
-
     rigidBaseNode = rootNode.addChild('rigidBase')
     RigidBaseMO = rigidBaseNode.addObject('MechanicalObject', template='Rigid3d',
                                              name="RigidBaseMO", position= [0,0,0,0,0,0,1], showObject=1,
@@ -50,59 +49,49 @@ def createScene(rootNode):
     rigidBaseNode.addObject('RestShapeSpringsForceField', name='spring', stiffness=5000,
                                angularStiffness=5000, external_points=0, mstate="@RigidBaseMO", points=0,
                                template="Rigid3d")
-    #rigidBaseNode.addObject('UniformMass', totalMass='0.1' )
+    # rigidBaseNode.addObject('UniformMass', totalMass='0.1' )
 
     #################################
     ## Rate of angular Deformation ##
     #################################
 
-    #Define: the number of section, the total lenght and the lenght of each beam.
+    # Define: the number of section, the total lenght and the lenght of each beam.
     nbSectionS = 3
     tot_length = 30.0
     lengthS = tot_length / nbSectionS
 
-    #Define: the longueur of each beam in a list, the positions of eahc beam
-    #(flexion, torsion), the abs of each section
+    # Define: the longueur of each beam in a list, the positions of eahc beam
+    # (flexion, torsion), the abs of each section
     positionS = []
     longeurS = []
-    sum = 0.
-    curv_abs_inputS = []
-    curv_abs_inputS.append(0.0)
+    temp = 0.
+    curv_abs_inputS = [0.0]
     for i in range(nbSectionS):
         positionS.append([0, 0, 0])
         longeurS.append((((i+1)*lengthS) - i*lengthS))
-        sum += longeurS[i]
-        curv_abs_inputS.append(sum)
-
-    # longeurS[nbSectionS-1] = longeurS[nbSectionS-1] + 1.
+        temp += longeurS[i]
+        curv_abs_inputS.append(temp)
     curv_abs_inputS[nbSectionS] = tot_length
 
-    print("=============> positionS : ", positionS)
-    print("=============> longeurS : ", longeurS)
-    print("=============> curv_abs_inputS : ", curv_abs_inputS)
-
-
-    #Define: sofa elements
+    # Define: sofa elements
     rateAngularDeformNode = rootNode.addChild('rateAngularDeform')
-    rateAngularDeformMO = rateAngularDeformNode.addObject('MechanicalObject',
-                                    template='Vec3d', name='rateAngularDeformMO',
-                                    position=positionS, showIndices=0)
-    BeamHookeLawForce = rateAngularDeformNode.addObject('BeamHookeLawForceField',
+    rateAngularDeformMO = rateAngularDeformNode.addObject('MechanicalObject', template='Vec3d',
+                                                          name='rateAngularDeformMO',
+                                                          position=positionS, showIndices=0)
+    rateAngularDeformNode.addObject('BeamHookeLawForceField',
                                     crossSectionShape='circular', length=longeurS,
                                     radius=0.50, youngModulus=5e6)
-    #rateAngularDeformNode.addObject('UniformMass', totalMass='0.1' )
-
+    # This is an option, one can add mass to be in complete dynamics simulation
+    # rateAngularDeformNode.addObject('UniformMass', totalMass='0.1' )
 
     #################################
     ##             Frame           ##
     #################################
-
-    #Define: the number of frame and the lenght beetween each frame.
+    # Define: the number of frame and the length between each frame.
     nbFramesF = 6
-    lengthF = tot_length /nbFramesF
+    lengthF = tot_length / nbFramesF
 
-
-    #Define: the abs of each frame and the position of each frame.
+    # Define: the abs of each frame and the position of each frame.
     framesF = []
     curv_abs_outputF = []
     for i in range(nbFramesF):
@@ -113,35 +102,30 @@ def createScene(rootNode):
     framesF.append([tot_length, 0, 0, 0, 0, 0, 1])
     curv_abs_outputF.append(tot_length)
 
-
-    #The node of the frame needs to inherit from rigidBaseMO and rateAngularDeform
+    # The node of the frame needs to inherit from rigidBaseMO and rateAngularDeform
     mappedFrameNode = rigidBaseNode.addChild('MappedFrames')
     rateAngularDeformNode.addChild(mappedFrameNode)
-
     framesMO = mappedFrameNode.addObject('MechanicalObject', template='Rigid3d',
-                                                name="FramesMO", position=framesF,
-                                            showObject=1, showObjectScale=1)
+                                         name="FramesMO", position=framesF,
+                                         showObject=1, showObjectScale=1)
 
-    # The mapping has two inputs: RigidBaseMO and rateAngularDeformMO
-    #                 one output: FramesMO
+    # The mapping has two inputs: RigidBaseMO and rateAngularDeformMO one outputMO: FramesMO
     inputMO = rateAngularDeformMO.getLinkPath()
     inputMO_rigid = RigidBaseMO.getLinkPath()
     outputMO = framesMO.getLinkPath()
 
-    mappedFrameNode.addObject('DiscretCosseratMapping', curv_abs_input= curv_abs_inputS,
-                                 curv_abs_output=curv_abs_outputF, input1=inputMO, input2=inputMO_rigid,
-                                 output=outputMO, debug=0)
-
-
-
-
-    targetPosNode= rootNode.addChild('targetPos')
-    targetPosNode.addObject('MechanicalObject', template='Rigid3d', name='target', position='5 15 10 0 0 0 1', showObject='1', showObjectScale='0.1')
-    targetPosNode.addObject('RestShapeSpringsForceField', name='spring', stiffness="5000000000", angularStiffness="500000000000", external_points="0", mstate="@target", points="0", template="Rigid3d"  )
-
-
-    rootNode.addObject('BilateralInteractionConstraint', template='Rigid3d', object2='@rigidBase/MappedFrames/FramesMO', object1='@targetPos/target', first_point='0', second_point=str(len(curv_abs_outputF)-1))
-
-
+    mappedFrameNode.addObject('DiscretCosseratMapping', curv_abs_input=curv_abs_inputS,
+                              curv_abs_output=curv_abs_outputF, input1=inputMO, input2=inputMO_rigid,
+                              output=outputMO, debug=0)
+    # Target to reach with the tip of the model (cable or rod)
+    targetPosNode = rootNode.addChild('targetPos')
+    targetPosNode.addObject('MechanicalObject', template='Rigid3d', name='target', position='5 15 10 0 0 0 1',
+                            showObject='1', showObjectScale='0.1')
+    targetPosNode.addObject('RestShapeSpringsForceField', name='spring', stiffness="5000000000",
+                            angularStiffness="500000000000", external_points="0", mstate="@target", points="0",
+                            template="Rigid3d")
+    # Constraint to drag the tip to the target, this can also be replace with the RestShapeSpringsForceField
+    rootNode.addObject('BilateralInteractionConstraint', template='Rigid3d', object2='@rigidBase/MappedFrames/FramesMO',
+                       object1='@targetPos/target', first_point='0', second_point=str(len(curv_abs_outputF) - 1))
 
     return rootNode
