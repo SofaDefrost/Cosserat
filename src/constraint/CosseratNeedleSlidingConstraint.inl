@@ -152,7 +152,7 @@ void CosseratNeedleSlidingConstraint<DataTypes>::getConstraintViolation(const Co
     ReadAccessor<Data<VecCoord>> positions = m_state->readPositions();
 
     if(Jdx->size()==0){
-        for (size_t i = 0; i < positions.size(); i++){
+        for (unsigned int i = 0; i < positions.size(); i++){
             Real dfree1 =  positions[i][1];
             Real dfree2 =  positions[i][2];
 
@@ -161,7 +161,7 @@ void CosseratNeedleSlidingConstraint<DataTypes>::getConstraintViolation(const Co
         }
 
     }else{
-        for (size_t i = 0; i < positions.size(); i++){
+        for (unsigned int i = 0; i < positions.size(); i++){
             Real dfree1 = Jdx->element(2*i)   + positions[i][1];
             Real dfree2 = Jdx->element(2*i+1) + positions[i][2];
             resV->set(m_constraintId + 2*i   , dfree1);

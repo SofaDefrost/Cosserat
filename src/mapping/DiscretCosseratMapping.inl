@@ -282,11 +282,11 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>:: applyJ(
         defaulttype::Vec6 Xi_dot = Vec6(in1[m_indicesVectors[i]-1],Vector3(0.0,0.0,0.0)) ;
         Vec6 temp = Adjoint * (m_nodesVelocityVectors[m_indicesVectors[i]-1] + m_framesTangExpVectors[i] * Xi_dot ); // eta
 
-        Transform _T = Transform(out[i].getCenter(),out[i].getOrientation());
-        Mat6x6 _P = this->build_projector(_T);
+        auto T = Transform(out[i].getCenter(), out[i].getOrientation());
+        Mat6x6 Proj = this->build_projector(T);
         //std::cout<< "Eta local : "<< eta << std::endl;
 
-        outVel[i] = _P * temp;
+        outVel[i] = Proj * temp;
 
         if(d_debug.getValue())
             std::cout<< "Frame velocity : "<< i << " = " << temp<< std::endl;
@@ -322,7 +322,6 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>:: applyJT(
     out1.resize(x1from.size());
 
     //convert the input from Deriv type to vec6 type, for the purpose of the matrix vector multiplication
-    //    std::cout<< "Size of frames :"<< in.size()<< std::endl;
     for (size_t var = 0; var < in.size(); ++var) {
         defaulttype::Vec6 vec;
         for(unsigned j = 0; j < 6; j++) vec[j] = in[var][j];
