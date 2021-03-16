@@ -21,7 +21,7 @@
 ******************************************************************************/
 #pragma once
 #include <sofa/core/BaseMapping.h>
-#include <sofa/core/core.h>
+#include <sofa/core/config.h>
 #include <sofa/core/Multi2Mapping.h>
 #include "../initCosserat.h"
 #include <sofa/defaulttype/SolidTypes.h>

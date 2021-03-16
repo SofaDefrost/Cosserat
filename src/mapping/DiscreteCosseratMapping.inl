@@ -22,7 +22,7 @@
 #pragma once
 
 #include <sofa/core/Multi2Mapping.inl>
-#include "DiscretCosseratMapping.h"
+#include "DiscreteCosseratMapping.h"
 #include <sofa/core/visual/VisualParams.h>
 #include <sofa/core/behavior/MechanicalState.h>
 #include <string>
@@ -40,7 +40,7 @@ using sofa::helper::AdvancedTimer;
 using sofa::helper::WriteAccessor;
 
 template <class TIn1, class TIn2, class TOut>
-DiscretCosseratMapping<TIn1, TIn2, TOut>::DiscretCosseratMapping()
+DiscreteCosseratMapping<TIn1, TIn2, TOut>::DiscreteCosseratMapping()
     : m_fromModel1(NULL)
     , m_fromModel2(NULL)
     , m_toModel(NULL)
@@ -64,7 +64,7 @@ DiscretCosseratMapping<TIn1, TIn2, TOut>::DiscretCosseratMapping()
 // _________________________________________________________________________________________
 
 template <class TIn1, class TIn2, class TOut>
-void DiscretCosseratMapping<TIn1, TIn2, TOut>::init()
+void DiscreteCosseratMapping<TIn1, TIn2, TOut>::init()
 {
     if(this->getFromModels1().empty())
     {
@@ -100,7 +100,7 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>::init()
     }
 
     if(d_debug.getValue())
-        msg_info("DiscretCosseratMapping")<< " m_vecTransform : "<< m_vecTransform;
+        msg_info("DiscreteCosseratMapping")<< " m_vecTransform : "<< m_vecTransform;
 
     this->initialize();
 
@@ -110,26 +110,26 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>::init()
 
 
 template <class TIn1, class TIn2, class TOut>
-void DiscretCosseratMapping<TIn1, TIn2, TOut>::bwdInit()
+void DiscreteCosseratMapping<TIn1, TIn2, TOut>::bwdInit()
 {
 
 }
 
 template <class TIn1, class TIn2, class TOut>
-void DiscretCosseratMapping<TIn1, TIn2, TOut>::reinit()
+void DiscreteCosseratMapping<TIn1, TIn2, TOut>::reinit()
 {
 
 }
 
 template <class TIn1, class TIn2, class TOut>
-void DiscretCosseratMapping<TIn1, TIn2, TOut>::reset()
+void DiscreteCosseratMapping<TIn1, TIn2, TOut>::reset()
 {
     reinit();
 }
 
 
 template <class TIn1, class TIn2, class TOut>
-void DiscretCosseratMapping<TIn1, TIn2, TOut>::apply(
+void DiscreteCosseratMapping<TIn1, TIn2, TOut>::apply(
         const core::MechanicalParams* /* mparams */, const helper::vector<OutDataVecCoord*>& dataVecOutPos,
         const helper::vector<const In1DataVecCoord*>& dataVecIn1Pos ,
         const helper::vector<const In2DataVecCoord*>& dataVecIn2Pos)
@@ -169,7 +169,7 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>::apply(
 
 
 //template <class TIn1, class TIn2, class TOut>
-//Matrix4 DiscretCosseratMapping<TIn1, TIn2, TOut>::computeLogarithme(const double & x, const defaulttype::Matrix4 &gX){
+//Matrix4 DiscreteCosseratMapping<TIn1, TIn2, TOut>::computeLogarithme(const double & x, const defaulttype::Matrix4 &gX){
 
 //    // Compute theta before everything
 //    const double theta = computeTheta(x, gX);
@@ -222,7 +222,7 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>::apply(
 
 
 template <class TIn1, class TIn2, class TOut>
-void DiscretCosseratMapping<TIn1, TIn2, TOut>:: applyJ(
+void DiscreteCosseratMapping<TIn1, TIn2, TOut>:: applyJ(
         const core::MechanicalParams* /* mparams */, const helper::vector< OutDataVecDeriv*>& dataVecOutVel,
         const helper::vector<const In1DataVecDeriv*>& dataVecIn1Vel,
         const helper::vector<const In2DataVecDeriv*>& dataVecIn2Vel) {
@@ -298,7 +298,7 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>:: applyJ(
 
 
 template <class TIn1, class TIn2, class TOut>
-void DiscretCosseratMapping<TIn1, TIn2, TOut>:: applyJT(
+void DiscreteCosseratMapping<TIn1, TIn2, TOut>:: applyJT(
         const core::MechanicalParams* /*mparams*/, const helper::vector< In1DataVecDeriv*>& dataVecOut1Force,
         const helper::vector< In2DataVecDeriv*>& dataVecOut2Force,
         const helper::vector<const OutDataVecDeriv*>& dataVecInForce)  {
@@ -388,7 +388,7 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>:: applyJT(
 
 //___________________________________________________________________________
 template <class TIn1, class TIn2, class TOut>
-void DiscretCosseratMapping<TIn1, TIn2, TOut>::applyJT(
+void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJT(
         const core::ConstraintParams*/*cparams*/ , const helper::vector< In1DataMatrixDeriv*>&  dataMatOut1Const,
         const helper::vector< In2DataMatrixDeriv*>&  dataMatOut2Const ,
         const helper::vector<const OutDataMatrixDeriv*>& dataMatInConst)
@@ -574,20 +574,20 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>::applyJT(
 //___________________________________________________________________________
 
 //template <class TIn1, class TIn2, class TOut>
-//void DiscretCosseratMapping<TIn1, TIn2, TOut>::applyDJT(const core::MechanicalParams* mparams, core::MultiVecDerivId inForce, core::ConstMultiVecDerivId outForce){}
+//void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyDJT(const core::MechanicalParams* mparams, core::MultiVecDerivId inForce, core::ConstMultiVecDerivId outForce){}
 
 
 //template <class TIn1, class TIn2, class TOut>
-//void DiscretCosseratMapping<TIn1, TIn2, TOut>::do_applyJT( In1MatrixDeriv& out1, const OutMatrixDeriv& in, In2MatrixDeriv* out2 ){}
+//void DiscreteCosseratMapping<TIn1, TIn2, TOut>::do_applyJT( In1MatrixDeriv& out1, const OutMatrixDeriv& in, In2MatrixDeriv* out2 ){}
 
 //template <class TIn1, class TIn2, class TOut>
-//void DiscretCosseratMapping<TIn1, TIn2, TOut>:: applyJT(
+//void DiscreteCosseratMapping<TIn1, TIn2, TOut>:: applyJT(
 //        const core::ConstraintParams* /* cparams */, const helper::vector< In1DataMatrixDeriv*>& dataMatOut1Const ,
 //        const helper::vector< In2DataMatrixDeriv*>&  dataMatOut2Const ,
 //        const helper::vector<const OutDataMatrixDeriv*>& dataMatInConst) {}
 
 template <class TIn1, class TIn2, class TOut>
-void DiscretCosseratMapping<TIn1, TIn2, TOut>::draw(const core::visual::VisualParams* vparams)
+void DiscreteCosseratMapping<TIn1, TIn2, TOut>::draw(const core::visual::VisualParams* vparams)
 {
     //    if(!d_debug.getValue()) return;
 
@@ -601,7 +601,7 @@ void DiscretCosseratMapping<TIn1, TIn2, TOut>::draw(const core::visual::VisualPa
     positions.clear();
     Orientation.clear();
     unsigned int sz = xData.size();
-    //    msg_info("DiscretCosseratMapping")<< " sz : "<< sz;
+    //    msg_info("DiscreteCosseratMapping")<< " sz : "<< sz;
     for (unsigned int i = 0; i<sz; i++){
         positions.push_back(xData[i].getCenter());
         Orientation.push_back(xData[i].getOrientation());

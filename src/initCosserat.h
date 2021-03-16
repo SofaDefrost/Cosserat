@@ -30,7 +30,7 @@
 #ifndef SOFA_COMPONENT_COSSERA_MAPPING_INIT_H
 #define SOFA_COMPONENT_COSSERA_MAPPING_INIT_H
 
-#include <sofa/helper/system/config.h>
+#include <sofa/helper/config.h>
 
 
 #ifdef SOFA_BUILD_COSSERAT
