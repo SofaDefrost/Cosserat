@@ -343,7 +343,6 @@ def createScene(rootNode):
     effector.createObject('PositionEffector', template='Vec3d',indices="0", effectorGoal="@../../goal/goalMO.position")
     effector.createObject('BarycentricMapping', mapForces="false", mapMasses="false")
 
-
     ##########################################
     # Multi mapped mstats                    #
     ##########################################

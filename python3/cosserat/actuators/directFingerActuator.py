@@ -4,14 +4,14 @@
 Based on the work done with SofaPython. See POEMapping.pyscn.
 """
 
-__authors__ = "yadagolo"
+__authors__ = "younesssss"
 __contact__ = "adagolodjo@protonmail.com, yinoussa.adagolodjo@inria.fr"
 __version__ = "1.0.0"
 __copyright__ = "(c) 2020,Inria"
 __date__ = "March 8 2020"
 
+import SofaRuntime
 import Sofa
-import Sofa.Core
 import os
 from splib3.numerics import Quat
 
@@ -25,93 +25,60 @@ class Animation(Sofa.Core.Controller):
     """
     def __init__(self, *args, **kwargs):
         Sofa.Core.Controller.__init__(self, *args, **kwargs)
-        print("#####################################")
-        print("__init__(self, *args, **kwargs):")
-        print("#####################################")
-        self.rigidBaseNode = args[0]
-        self.rateAngularDeformNode = args[1]
+        self.rigidBaseMO = args[0]
+        self.rateAngularDeformMO = args[1]
 
         self.rate = 0.2
         self.angularRate = 0.02
         return
 
-    def initGraph(self, nodeRigid):
-        self.rigidBaseMO = self.rigidBaseNode.getObject('RigidBaseMO')
-        self.rateAngularDeformMO = self.rateAngularDeformNode.getObject('rateAngularDeformMO')
-
     def onKeypressedEvent(self, event):
         key = event['key']
-        print('====> The python class is called ')
         if ord(key) == 19:  # up
-            print('====> The python class is called, UP')
-            posA = self.rigidBaseMO.findData('rest_position').value
-            qOld = Quat()
-            for i in range(0, 4):
-                qOld[i] = posA[0][i+3]
+            with self.rigidBaseMO.rest_position.writeable() as posA:
+                qOld = Quat()
+                for i in range(0, 4):
+                    qOld[i] = posA[0][i+3]
 
-            qNew = Quat.createFromEuler([ 0., self.angularRate, 0.], 'ryxz')
-            qNew.normalize()
-            qNew.rotateFromQuat(qOld)
-            for i in range(0, 4):
-                posA[0][i+3] = qNew[i]
-
-            self.rigidBaseMO.findData('rest_position').value = posA
+                qNew = Quat.createFromEuler([0., self.angularRate, 0.], 'ryxz')
+                qNew.normalize()
+                qNew.rotateFromQuat(qOld)
+                for i in range(0, 4):
+                    posA[0][i+3] = qNew[i]
 
         if ord(key) == 21:  # down
-            posA = self.rigidBaseMO.findData('rest_position').value
-            qOld = Quat()
-            for i in range(0,4):
-                qOld[i] = posA[0][i+3]
+            with self.rigidBaseMO.rest_position.writeable() as posA:
+                qOld = Quat()
+                for i in range(0, 4):
+                    qOld[i] = posA[0][i+3]
 
-            qNew = Quat.createFromEuler([0., -self.angularRate,  0.], 'ryxz')
-            qNew.normalize()
-            qNew.rotateFromQuat(qOld)
-            for i in range(0, 4):
-                posA[0][i+3] = qNew[i]
-
-            self.rigidBaseMO.findData('rest_position').value = posA
+                qNew = Quat.createFromEuler([0., -self.angularRate,  0.], 'ryxz')
+                qNew.normalize()
+                qNew.rotateFromQuat(qOld)
+                for i in range(0, 4):
+                    posA[0][i+3] = qNew[i]
 
         if ord(key) == 18:  # left
-            pos = self.rigidBaseMO.findData('rest_position').value
-            pos[0][0] -= self.rate
-            self.rigidBaseMO.findData('rest_position').value = pos
-
+            with self.rigidBaseMO.rest_position.writeable() as posA:
+                posA[0][0] -= self.rate
         if ord(key) == 20:  # right
-            pos = self.rigidBaseMO.findData('rest_position').value
-            pos[0][0] += self.rate
-            self.rigidBaseMO.findData('rest_position').value = pos
-        if event["key"] == Sofa.constants.Key.plus:
-            print("Plus")
-            posA = self.rateAngularDeformMO.findData('rest_position').value
-            posA[5][1] += self.angularRate
-            self.rateAngularDeformMO.findData('rest_position').value = posA
+            with self.rigidBaseMO.rest_position.writeable() as posA:
+                posA[0][0] += self.rate
 
-        if event["key"] == Sofa.constants.Key.minus:
-            print("Minus")
-            posA = self.rateAngularDeformMO.findData('rest_position').value
-            posA[5][1] -= self.angularRate
-            self.rateAngularDeformMO.findData('rest_position').value = posA
-
-    def onAnimateBeginEvent(self, event): # called at each begin of animation step
-        print("onAnimateBeginEvent")
-
-    def onAnimateEndEvent(self, event): # called at each end of animation step
-        print("onAnimateEndEvent")
 
 def createScene(rootNode):
 
-    from stlib3.scene import MainHeader, ContactHeader
+    from stlib3.scene import MainHeader
+    # from stlib3.physics.collision import CollisionMesh
 
     MainHeader(rootNode, plugins=["SoftRobots", "SofaSparseSolver", 'SofaDeformable', 'SofaEngine',
-                                  'SofaImplicitOdeSolver', 'SofaLoader', 'SofaSimpleFem',
-                                  "SofaPreconditioner", "SofaOpenglVisual", "CosseratPlugin", "BeamAdapter"],
+                                  'SofaImplicitOdeSolver', 'SofaLoader', 'SofaSimpleFem', "SofaPreconditioner",
+                                  "SofaOpenglVisual", "CosseratPlugin", "BeamAdapter", "SofaConstraint"],
                repositoryPaths=[os.getcwd()])
-
     rootNode.addObject('VisualStyle', displayFlags='showVisualModels showInteractionForceFields showWireframe')
 
     rootNode.addObject('FreeMotionAnimationLoop')
     rootNode.addObject('GenericConstraintSolver', tolerance="1e-20", maxIterations="500", printLog="0")
-
     # ContactHeader(rootNode, alarmDistance=2.5, contactDistance=2, frictionCoef=0.08)
 
     gravity = [0, 0, 0]
@@ -123,24 +90,20 @@ def createScene(rootNode):
     # FEM Model                              #
     ##########################################
     finger = rootNode.addChild('finger')
-
     finger.addObject('EulerImplicitSolver', name='odesolver', firstOrder='0', rayleighMass=0.1, rayleighStiffness=0.1)
     finger.addObject('SparseLDLSolver', name='preconditioner')
 
     # Add a componant to load a VTK tetrahedral mesh and expose the resulting topology in the scene .
-    finger.addObject('MeshVTKLoader', name='loader', filename=path +'finger.vtk', translation="-17.5 -12.5 7.5",
-                        rotation="0 180 0")
+    finger.addObject('MeshVTKLoader', name='loader', filename=path + 'finger.vtk', translation="-17.5 -12.5 7.5",
+                     rotation="0 180 0")
     finger.addObject('TetrahedronSetTopologyContainer', src='@loader', name='container')
     finger.addObject('TetrahedronSetTopologyModifier')
-
     # Create a mechanicaobject component to stores the DoFs of the model
-    finger.addObject('MechanicalObject', name='tetras', template='Vec3d', showIndices='false',
-                        showIndicesScale='4e-5', rx='0', dz='0')
-
+    finger.addObject('MechanicalObject', name='tetras', template='Vec3d', showIndices='false', showIndicesScale='4e-5',
+                     rx='0', dz='0')
     # Gives a mass to the model
     finger.addObject('UniformMass', totalMass='0.075')
-
-    # Add a TetrahedronFEMForceField componant which implement an elastic material model
+    # Add a TetrahedronFEMForceField component which implement an elastic material model
     # solved using the Finite Element Method on
     # tetrahedrons.
     finger.addObject('TetrahedronFEMForceField', template='Vec3d',
@@ -154,11 +117,10 @@ def createScene(rootNode):
     ##########################################
     # Mappe points inside the meca, this points will be use for the bilateral mapping
     FEMpos = [" 0.0 0 0 15 0 0 30 0 0 45 0 0 60 0 0 66 0 0 81 0.0 0.0"]
-    # FEMpos = [" 81 0.0 0.0"]
 
     femPoints = finger.addChild('femPoints')
-    inputFEMCable = femPoints.addObject('MechanicalObject', name="pointsInFEM",
-                           position=FEMpos, showObject="1", showIndices="1")
+    inputFEMCable = femPoints.addObject('MechanicalObject', name="pointsInFEM", position=FEMpos, showObject="1",
+                                        showIndices="1")
     femPoints.addObject('BarycentricMapping')
 
     ##########################################
@@ -181,12 +143,8 @@ def createScene(rootNode):
     fingerVisu.addObject(
         'MeshSTLLoader', filename=path+"finger.stl", name="loader", translation="-17.5 -12.5 7.5",
         rotation="0 180 0")
-    #fingerVisu.addObject('STLExporter', filename=path+"transFinger", exportAtEnd="true")
-    fingerVisu.addObject('OglModel', src="@loader",
-                            template='ExtVec3f', color="0.0 0.7 0.7")
+    fingerVisu.addObject('OglModel', src="@loader", template='ExtVec3f', color="0.0 0.7 0.7")
     fingerVisu.addObject('BarycentricMapping')
-
-
 
     # ###############
     # New adds to use the sliding Actuator
@@ -200,30 +158,29 @@ def createScene(rootNode):
     # RigidBase
     ###############
     rigidBaseNode = cableNode.addChild('rigidBase')
-    RigidBaseMO = rigidBaseNode.addObject('MechanicalObject', template='Rigid3d',
-                                             name="RigidBaseMO", position="0 0 0  0 0 0 1", showObject='1',
-                                             showObjectScale='5.')
+    RigidBaseMO = rigidBaseNode.addObject('MechanicalObject', template='Rigid3d', name="RigidBaseMO",
+                                          position="0 0 0  0 0 0 1", showObject='1', showObjectScale='5.')
     rigidBaseNode.addObject('RestShapeSpringsForceField', name='spring', stiffness="50000",
-                               angularStiffness="50000", external_points="0", mstate="@RigidBaseMO", points="0",
-                               template="Rigid3d")
+                            angularStiffness="50000", external_points="0", mstate="@RigidBaseMO", points="0",
+                            template="Rigid3d")
 
     ###############
     # Rate of angular Deformation  (2 sections)
     ###############
-    position = ["0 0 0 " + "0 0 0 " + "0 0 0 " +
-                "0 0 0 " + "0 0 0 " + "0 0 0 "]
-    longeur = '15 15 15 15 6 15'  # beams size
+    position = [[0., 0., 0.], [0., 0., 0.], [0., 0., 0.], [0., 0., 0.], [0., 0., 0.], [0., 0., 0.]]
+    longeur = [15, 15, 15, 15, 6, 15]  # beams size
     rateAngularDeformNode = cableNode.addChild('rateAngularDeform')
-    rateAngularDeformMO = rateAngularDeformNode.addObject(
-        'MechanicalObject', template='Vec3d', name='rateAngularDeformMO', position=position, showIndices="1")
-    BeamHookeLawForce = rateAngularDeformNode.addObject(
-        'BeamHookeLawForceField', crossSectionShape='circular', length=longeur, radius='0.50', youngModulus='5e6')
-    # BeamHookeLawForce = rateAngularDeformNode.addObject('CosseratInternalActuation', name="BeamHookeLawForce",
-    # crossSectionShape='circular', radius='0.5', youngModulus='5e6')
+    rateAngularDeformMO = rateAngularDeformNode.addObject('MechanicalObject', template='Vec3d',
+                                                          name='rateAngularDeformMO', position=position,
+                                                          showIndices="1")
+    BeamHookeLawForce = rateAngularDeformNode.addObject('BeamHookeLawForceField', crossSectionShape='circular',
+                                                        length=longeur, radius='0.50', youngModulus='5e6')
+
     ################################
     # Animation (to move the dofs) #
     ################################
-    anim = Animation(rigidBaseNode, rateAngularDeformNode)
+    animate = Animation(RigidBaseMO, rateAngularDeformMO)
+    rootNode.addObject(animate)
 
     ##############
     #   Frames   #
@@ -246,10 +203,10 @@ def createScene(rootNode):
 
     curv_abs_input = '0 15 30 45 60 66 81'
     curv_abs_output = '0.0 5 10 15 20 30 35 40 45 55 60 66 71 76 81'
-    # mappedFrameNode.addObject('DiscretCosseratMapping', curv_abs_input=curv_abs_input,
+    # mappedFrameNode.addObject('DiscreteCosseratMapping', curv_abs_input=curv_abs_input,
     #                              curv_abs_output=curv_abs_output, input1=inputMO, input2=inputMO_rigid,
     #                              output=outputMO, debug='0', max=2.e-3, deformationAxis=1)
-    mappedFrameNode.addObject('DiscretCosseratMapping', curv_abs_input=curv_abs_input,
+    mappedFrameNode.addObject('DiscreteCosseratMapping', curv_abs_input=curv_abs_input,
                                  curv_abs_output=curv_abs_output, input1=inputMO, input2=inputMO_rigid,
                                  output=outputMO, debug='0', max=6.e-2, deformationAxis=1, nonColored="0", radius=5)
 

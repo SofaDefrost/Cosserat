@@ -443,46 +443,12 @@ void BaseCosserat<TIn1, TIn2, TOut>::initialize()
     }
 }
 
-
-
-//template <class TIn1, class TIn2, class TOut>
-//void BaseCosserat<TIn1, TIn2, TOut>::applyDJT(const core::MechanicalParams* mparams, core::MultiVecDerivId inForce, core::ConstMultiVecDerivId outForce){}
-
-
-//template <class TIn1, class TIn2, class TOut>
-//void BaseCosserat<TIn1, TIn2, TOut>::do_applyJT( In1MatrixDeriv& out1, const OutMatrixDeriv& in, In2MatrixDeriv* out2 ){}
-
-//template <class TIn1, class TIn2, class TOut>
-//void BaseCosserat<TIn1, TIn2, TOut>:: applyJT(
-//        const core::ConstraintParams* /* cparams */, const helper::vector< In1DataMatrixDeriv*>& dataMatOut1Const ,
-//        const helper::vector< In2DataMatrixDeriv*>&  dataMatOut2Const ,
-//        const helper::vector<const OutDataMatrixDeriv*>& dataMatInConst) {}
-
-
 template <class TIn1, class TIn2, class TOut>
 void BaseCosserat<TIn1, TIn2, TOut>::draw(const core::visual::VisualParams* vparams)
 {
     if (!vparams->displayFlags().getShowMappings())
 
         if(!d_debug.getValue()) return;
-    //    for (unsigned int i = 0;i < m_vecTransform.size(); i++) {
-
-    //        defaulttype::Quat q = m_vecTransform[i].getOrientation();
-    //        q.normalize();
-
-    //        defaulttype::Vector3 P1, x,y,z;
-    //        P1 = m_vecTransform[i].getCenter();
-
-    //        x= q.rotate(defaulttype::Vector3(1.0,0,0));
-    //        y= q.rotate(defaulttype::Vector3(0,1.0,0));
-    //        z= q.rotate(defaulttype::Vector3(0,0,1.0));
-    //        double radius_arrow = 1.0/8.0;
-
-    //        vparams->drawTool()->drawArrow(P1,(P1 + x)*1.0, radius_arrow, defaulttype::Vec<4,double>(1,0,0,1));
-    //        vparams->drawTool()->drawArrow(P1,(P1 + y)*1.0, radius_arrow, defaulttype::Vec<4,double>(0,1,0,1));
-    //        vparams->drawTool()->drawArrow(P1,(P1 + z)*1.0, radius_arrow, defaulttype::Vec<4,double>(0,0,1,1));
-    //    }
-    //return;
 }
 }
 

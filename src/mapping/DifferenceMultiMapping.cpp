@@ -19,10 +19,10 @@
 *                                                                             *
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
-#pragma once
+#define COSSERAT_PLUGIN_DIFFERENCEMULTIMAPPING_CPP
+
 #include "DifferenceMultiMapping.inl"
 #include <sofa/defaulttype/VecTypes.h>
-#include <sofa/defaulttype/RigidTypes.h>
 #include <sofa/core/ObjectFactory.h>
 
 namespace sofa::component::mapping

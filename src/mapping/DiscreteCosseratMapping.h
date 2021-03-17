@@ -23,18 +23,13 @@
 #define SOFA_COMPONENT_MAPPING_POEMAPING_H
 
 #include <sofa/core/BaseMapping.h>
-#include <sofa/core/core.h>
+#include <sofa/core/config.h>
 #include <sofa/core/Multi2Mapping.h>
 #include "../initCosserat.h"
 #include <sofa/defaulttype/SolidTypes.h>
 #include <sofa/defaulttype/RigidTypes.h>
 #include "BaseCosserat.h"
-
-//#include <sofa/core/visual/VisualModel.h>
-//#include <sofa/core/visual/VisualParams.h>
-//#include <sofa/core/topology/BaseMeshTopology.h>
 #include <SofaOpenglVisual/OglColorMap.h>
-//#include <SofaBaseVisual/VisualModelImpl.h>
 
 namespace sofa
 
@@ -55,7 +50,7 @@ namespace mapping
 {
 
 /*!
- * \class DiscretCosseratMapping
+ * \class DiscreteCosseratMapping
  * @brief Computes and map the length of the beams
  *
  * This is a component:
@@ -65,10 +60,10 @@ using mapping::BaseCosserat;
 
 
 template <class TIn1, class TIn2, class TOut>
-class DiscretCosseratMapping : public core::Multi2Mapping<TIn1, TIn2, TOut>, public component::mapping::BaseCosserat<TIn1, TIn2, TOut>
+class DiscreteCosseratMapping : public core::Multi2Mapping<TIn1, TIn2, TOut>, public component::mapping::BaseCosserat<TIn1, TIn2, TOut>
 {
 public:
-    SOFA_CLASS(SOFA_TEMPLATE3(DiscretCosseratMapping, TIn1,TIn2, TOut), SOFA_TEMPLATE3(core::Multi2Mapping, TIn1, TIn2, TOut) );
+    SOFA_CLASS(SOFA_TEMPLATE3(DiscreteCosseratMapping, TIn1,TIn2, TOut), SOFA_TEMPLATE3(core::Multi2Mapping, TIn1, TIn2, TOut) );
     typedef core::Multi2Mapping<TIn1, TIn2, TOut> Inherit;
 
     /// Input Model Type
@@ -110,9 +105,9 @@ public:
     typedef Data<OutVecDeriv> OutDataVecDeriv;
     typedef Data<OutMatrixDeriv> OutDataMatrixDeriv;
 
-    typedef MultiLink<DiscretCosseratMapping<In1,In2,Out>, sofa::core::State< In1 >, BaseLink::FLAG_STOREPATH|BaseLink::FLAG_STRONGLINK> LinkFromModels1;
-    typedef MultiLink<DiscretCosseratMapping<In1,In2,Out>, sofa::core::State< In2 >, BaseLink::FLAG_STOREPATH|BaseLink::FLAG_STRONGLINK> LinkFromModels2;
-    typedef MultiLink<DiscretCosseratMapping<In1,In2,Out>, sofa::core::State< Out >, BaseLink::FLAG_STOREPATH|BaseLink::FLAG_STRONGLINK> LinkToModels;
+    typedef MultiLink<DiscreteCosseratMapping<In1,In2,Out>, sofa::core::State< In1 >, BaseLink::FLAG_STOREPATH|BaseLink::FLAG_STRONGLINK> LinkFromModels1;
+    typedef MultiLink<DiscreteCosseratMapping<In1,In2,Out>, sofa::core::State< In2 >, BaseLink::FLAG_STOREPATH|BaseLink::FLAG_STRONGLINK> LinkFromModels2;
+    typedef MultiLink<DiscreteCosseratMapping<In1,In2,Out>, sofa::core::State< Out >, BaseLink::FLAG_STOREPATH|BaseLink::FLAG_STRONGLINK> LinkToModels;
 
     typedef typename SolidTypes<Real>::Transform      Transform ;
 
@@ -161,9 +156,9 @@ protected:
 
 protected:
     /// Constructor    
-    DiscretCosseratMapping() ;
+    DiscreteCosseratMapping() ;
     /// Destructor
-    ~DiscretCosseratMapping()  override {}
+    ~DiscreteCosseratMapping()  override {}
 public:
 
 
@@ -207,11 +202,11 @@ protected:
 
 };
 
-//extern template class SOFA_POE_MAPPING_API DiscretCosseratMapping<defaulttype::Vec3Types>;
+//extern template class SOFA_POE_MAPPING_API DiscreteCosseratMapping<defaulttype::Vec3Types>;
 
 
 #if  !defined(SOFA_COMPONENT_MAPPING_POE_MAPING_CPP)
-extern template class SOFA_COSSERAT_MAPPING_API DiscretCosseratMapping< sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types >;
+extern template class SOFA_COSSERAT_MAPPING_API DiscreteCosseratMapping< sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types >;
 #endif
 
 } // mapping
