@@ -22,7 +22,7 @@
 
 #pragma once
 #include <sofa/core/BaseMapping.h>
-#include <sofa/core/core.h>
+#include <sofa/core/config.h>
 #include <sofa/core/Multi2Mapping.h>
 #include "../initCosserat.h"
 #include <sofa/defaulttype/SolidTypes.h>
@@ -129,8 +129,8 @@ public:
     helper::vector<Transform> m_nodesExponentialSE3Vectors;
     helper::vector<Matrix4> m_nodesLogarithmeSE3Vectors;
 
-    helper::vector<size_t> m_indicesVectors;
-    helper::vector<size_t> m_indicesVectorsDraw;
+    helper::vector<unsigned int> m_indicesVectors;
+    helper::vector<unsigned int> m_indicesVectorsDraw;
 
     helper::vector<double> m_beamLenghtVectors;
     helper::vector<double> m_framesLenghtVectors;

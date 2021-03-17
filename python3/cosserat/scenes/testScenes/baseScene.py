@@ -44,7 +44,7 @@ def createScene(rootNode):
     #################################
     rigidBaseNode = rootNode.addChild('rigidBase')
     RigidBaseMO = rigidBaseNode.addObject('MechanicalObject', template='Rigid3d',
-                                             name="RigidBaseMO", position= [0,0,0,0,0,0,1], showObject=1,
+                                             name="RigidBaseMO", position=[0, 0, 0, 0, 0, 0, 1], showObject=1,
                                              showObjectScale=2.)
     rigidBaseNode.addObject('RestShapeSpringsForceField', name='spring', stiffness=5000,
                                angularStiffness=5000, external_points=0, mstate="@RigidBaseMO", points=0,
@@ -60,7 +60,7 @@ def createScene(rootNode):
     tot_length = 30.0
     lengthS = tot_length / nbSectionS
 
-    # Define: the longueur of each beam in a list, the positions of eahc beam
+    # Define: the length of each beam in a list, the positions of eahc beam
     # (flexion, torsion), the abs of each section
     positionS = []
     longeurS = []

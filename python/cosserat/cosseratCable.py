@@ -16,8 +16,8 @@ FEMpos = [" 0. 0. 0. 15. 0. 0. 30. 0. 0. 45. 0. 0. 60. 0. 0. 66. 0. 0. 81. 0.0 0
 def cable(
     attachedTo=None,
     name="rigidBase",
-    cableLenght= 81, 
-    numberBeams = 6,
+    cableLenght=81,
+    numberBeams=6,
     stiffness="50000",
     angularStiffness=50000,
     rotation=[0.0, 0.0, 0.0, 1.0],
