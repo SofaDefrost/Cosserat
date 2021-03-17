@@ -10,8 +10,8 @@ __version__ = "1.0.0"
 __copyright__ = "(c) 2020,Inria"
 __date__ = "March 8 2020"
 
+import SofaRuntime
 import Sofa
-import Sofa.Core
 import os
 from splib3.numerics import Quat
 

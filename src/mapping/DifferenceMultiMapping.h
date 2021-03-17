@@ -84,9 +84,6 @@ public:
     typedef Data<In2VecCoord> In2DataVecCoord;
     typedef Data<In2VecDeriv> In2DataVecDeriv;
     typedef Data<In2MatrixDeriv> In2DataMatrixDeriv;
-    typedef defaulttype::Mat<6,6,Real> Mat6x6;
-    typedef defaulttype::Mat<3,6,Real> Mat3x6;
-    typedef defaulttype::Mat<6,3,Real> Mat6x3;
     typedef defaulttype::Mat<4,4,Real> Mat4x4;
 
     typedef typename Out::VecCoord OutVecCoord;
@@ -98,9 +95,9 @@ public:
     typedef Data<OutVecDeriv> OutDataVecDeriv;
     typedef Data<OutMatrixDeriv> OutDataMatrixDeriv;
 
-    typedef MultiLink<DifferenceMultiMapping<In1,In2,Out>, sofa::core::State< In1 >, BaseLink::FLAG_STOREPATH|BaseLink::FLAG_STRONGLINK> LinkFromModels1;
-    typedef MultiLink<DifferenceMultiMapping<In1,In2,Out>, sofa::core::State< In2 >, BaseLink::FLAG_STOREPATH|BaseLink::FLAG_STRONGLINK> LinkFromModels2;
-    typedef MultiLink<DifferenceMultiMapping<In1,In2,Out>, sofa::core::State< Out >, BaseLink::FLAG_STOREPATH|BaseLink::FLAG_STRONGLINK> LinkToModels;
+//    typedef MultiLink<DifferenceMultiMapping<In1,In2,Out>, sofa::core::State< In1 >, BaseLink::FLAG_STOREPATH|BaseLink::FLAG_STRONGLINK> LinkFromModels1;
+//    typedef MultiLink<DifferenceMultiMapping<In1,In2,Out>, sofa::core::State< In2 >, BaseLink::FLAG_STOREPATH|BaseLink::FLAG_STRONGLINK> LinkFromModels2;
+//    typedef MultiLink<DifferenceMultiMapping<In1,In2,Out>, sofa::core::State< Out >, BaseLink::FLAG_STOREPATH|BaseLink::FLAG_STRONGLINK> LinkToModels;
 
     typedef typename SolidTypes<Real>::Transform      Transform ;
 
@@ -154,21 +151,17 @@ public:
 
     void computeNeedleProximity(const In1VecCoord &x1, const In2VecCoord &x2);
 
-protected:
+public:
     /********************** The component Data **************************/
     //Input data
     Data<vector<Rigid>>                d_direction;
     Data<vector<unsigned int>>          d_indices;
-    Data<double>                        d_raduis;
+    Data<double>                        d_radius;
     Data<sofa::defaulttype::Vec4f>      d_color;
     Data<bool>                          d_drawArrows;
     Data<bool>                          d_lastPointIsFixed;
 
-
-
 private:
-    // storage of force
-    OutDeriv  m_dirAxe, m_dirProj, m_dirOrtho;
 
     typedef struct {
         double fact;
@@ -184,8 +177,6 @@ private:
 
     helper::vector<Constraint> m_constraints;
 
-
 };
-
 
 } // sofa::component::mapping

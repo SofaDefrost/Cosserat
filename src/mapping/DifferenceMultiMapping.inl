@@ -22,17 +22,17 @@
 #pragma once
 
 #include <sofa/core/Multi2Mapping.inl>
-#include "DifferenceMultiMapping.h"
 #include <sofa/core/visual/VisualParams.h>
 #include <sofa/core/behavior/MechanicalState.h>
 #include <string>
 #include <sofa/core/visual/VisualParams.h>
-
 #include <sofa/helper/AdvancedTimer.h>
+
 #include <sofa/core/objectmodel/BaseContext.h>
 #include <sofa/helper/logging/Message.h>
 #include <sofa/helper/types/RGBAColor.h>
 
+#include "DifferenceMultiMapping.h"
 
 namespace sofa::component::mapping
 {
@@ -45,7 +45,7 @@ template <class TIn1, class TIn2, class TOut>
 DifferenceMultiMapping<TIn1, TIn2, TOut>::DifferenceMultiMapping()
     : d_direction(initData(&d_direction, "direction","The list of directions of fix points .\n"))
     , d_indices(initData(&d_indices, "indices","Indices of fixe points of the cable"))
-    , d_raduis(initData(&d_raduis, 2.0, "radius","The size of the cable"))
+    , d_radius(initData(&d_radius, 2.0, "radius", "The size of the cable"))
     , d_color(initData(&d_color,defaulttype::Vec4f(1,0,0,1), "color","The color of the cable"))
     , d_drawArrows(initData(&d_drawArrows,false, "drawArrows","The color of the cable"))
     , d_lastPointIsFixed(initData(&d_lastPointIsFixed,true, "lastPointIsFixed","This select the last point as fixed of not,"
@@ -144,6 +144,7 @@ void DifferenceMultiMapping<TIn1, TIn2, TOut>::computeProximity(const In1VecCoor
     //For each point in the FEM find the closest edge of the cable
     for (size_t i = 0 ; i < szFrom; i++) {
         Coord2 P = from[i];
+        std::cout << " Position :" << P << std::endl;
         Constraint constraint;
 
         // find the min distance between a from mstate point and it's projection on each edge of the cable (destination mstate)
@@ -151,7 +152,6 @@ void DifferenceMultiMapping<TIn1, TIn2, TOut>::computeProximity(const In1VecCoor
         for (size_t j = 0; j < szDst-1; j++) {
             Coord1 Q1 = dst[j];
             Coord1 Q2 = dst[j+1];
-
             //the axis
             Coord1 dirAxe = Q2 -Q1;
             Real length = dirAxe.norm();
@@ -337,10 +337,10 @@ void DifferenceMultiMapping<TIn1, TIn2, TOut>::computeProximity(const In1VecCoor
                 }
             }
         }
-        //        printf("______________________________________________________________\n");
-        //        std::cout << "i :" << i << " ; eid:" << constraint.eid << " alpha : " << constraint.alpha << " ;  dist :"<< constraint.dist << std::endl;
-        //        std::cout<<" fact_v :"<< constraint.r2 << i << " ; n :"<< constraint.dirAxe << "; t1:" << constraint.t1 << "; t2 :"<<  constraint.t2 << std::endl;
-        //        printf("______________________________________________________________\n");
+        //printf("______________________________________________________________\n");
+        //std::cout << "i :" << i << " ; eid:" << constraint.eid << " alpha : " << constraint.alpha << " ;  dist :"<< constraint.dist << std::endl;
+        //std::cout<<" fact_v :"<< constraint.r2 << i << " ; n :"<< constraint.dirAxe << "; t1:" << constraint.t1 << "; t2 :"<<  constraint.t2 << std::endl;
+        //printf("______________________________________________________________\n");
         m_constraints.push_back(constraint);
     }
 }
@@ -370,7 +370,6 @@ void DifferenceMultiMapping<TIn1, TIn2, TOut>::computeNeedleProximity(const In1V
         for (size_t j = 0; j < szDst-1; j++) {
             Coord1 Q1 = dst[j];
             Coord1 Q2 = dst[j+1];
-
             //the axis
             Coord1 dirAxe = Q2 -Q1;
             Real length = dirAxe.norm();
@@ -476,10 +475,10 @@ void DifferenceMultiMapping<TIn1, TIn2, TOut>::computeNeedleProximity(const In1V
                 }
             }
         }
-        //        printf("______________________________________________________________\n");
-        //        std::cout << "i :" << i << " ; eid:" << constraint.eid << " alpha : " << constraint.alpha << " ;  dist :"<< constraint.dist << std::endl;
-        //        std::cout<<" fact_v :"<< constraint.r2 << i << " ; n :"<< constraint.dirAxe << "; t1:" << constraint.t1 << "; t2 :"<<  constraint.t2 << std::endl;
-        //        printf("______________________________________________________________\n");
+        /*printf("______________________________________________________________\n");
+        std::cout << "i :" << i << " ; eid:" << constraint.eid << " alpha : " << constraint.alpha << " ;  dist :"<< constraint.dist << std::endl;
+        std::cout<<" fact_v :"<< constraint.r2 << i << " ; n :"<< constraint.dirAxe << "; t1:" << constraint.t1 << "; t2 :"<<  constraint.t2 << std::endl;
+        printf("______________________________________________________________\n");*/
         m_constraints.push_back(constraint);
     }
 }
@@ -621,7 +620,6 @@ void DifferenceMultiMapping<TIn1, TIn2, TOut>::applyJT(
                 Deriv1 f2_2 = ((1-c.alpha) * f[0]*c.dirAxe )+ ((1-c.alpha) * f[1]*c.t1) + ((1-c.alpha) * f[2]*c.t2);
 
                 //std::cout << " f1 : " << f1 << "   f&_1: " << f2_1 << " ; f2 : "<< f2 << std::endl;
-
                 out1[i]   += f1;
                 out2[ei1] -= f2_1;
                 out2[ei2] -= f2_2;
@@ -698,9 +696,6 @@ void DifferenceMultiMapping<TIn1, TIn2, TOut>::applyJT(
                     Deriv2 h1 = (h[0] * c.dirAxe) + (h[1] * c.t1) + (h[2] * c.t2) ;
                     Deriv1 h2_1 = (c.alpha * h[0]*c.dirAxe) + (c.alpha* h[1] * c.t1) + (c.alpha * h[2] * c.t2);
                     Deriv1 h2_2 = ((1.0-c.alpha) * h[0]*c.dirAxe )+ ((1.0-c.alpha) * h[1]*c.t1) + ((1.0-c.alpha) * h[2]*c.t2);
-
-                    //std::cout << " ==> t1 : "<< c.t1 << " ==> t2 : "<< c.t2 << std::endl;
-                    //std::cout << " ===> h1 : " << h1<< " ===> h2 : " << h2 << " ===> h2_1 : " << h2_1 << std::endl;
 
                     o1.addCol(childIndex, h1);
                     o2.addCol(indexBeam, -h2_1);

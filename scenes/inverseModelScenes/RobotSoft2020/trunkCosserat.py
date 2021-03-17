@@ -199,8 +199,8 @@ class CosseratCable(SofaObject):
             mappedPoints = mappedPointsNode.createObject('MechanicalObject', template='Vec3d', position=cstPoints[i], name="FramesMO", showObject='0', showObjectScale='0')
             mappedPointsNode.createObject('CosseratEquality', name="QPConstraint", eqDisp='0.0')
             
-            self.mappedPointsNodeTab  += [mappedPointsNode]
-            self.cableDofMOTab        += [slidingPointMO.getLinkPath()]                   
+            self.mappedPointsNodeTab += [mappedPointsNode]
+            self.cableDofMOTab += [slidingPointMO.getLinkPath()]
             self.outputViolationMOTab += [mappedPoints.getLinkPath()]
    
                         
@@ -213,7 +213,7 @@ class CosseratCable(SofaObject):
     
     
     def getExtractPoint(self):
-        print ("END Function getExtractPoint with self.extractPoints =  ",self.extractPoints)
+        print ("END Function getExtractPoint with self.extractPoints =  ", self.extractPoints)
         return self.extractPoints;
     
     def extractPosfromFrame(self,frames):        
