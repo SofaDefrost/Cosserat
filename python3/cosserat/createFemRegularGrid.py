@@ -1,11 +1,22 @@
 # -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
+"""Basic scene using Cosserat in SofaPython3.
+
+Based on the work done with SofaPython. See POEMapping.py
+"""
+
+__authors__ = "younesssss"
+__contact__ = "adagolodjo@protonmail.com, yinoussa.adagolodjo@inria.fr"
+__version__ = "1.0.0"
+__copyright__ = "(c) 2021,Inria"
+__date__ = "March 16 2021"
 
 def createFemCube(parentNode):
     FemNode = parentNode.addChild("FemNode")
     FemNode.addObject('VisualStyle', displayFlags='showBehaviorModels hideCollisionModels hideBoundingCollisionModels '
                                                   'showForceFields hideInteractionForceFields showWireframe')
     gelVolume = FemNode.addChild("gelVolume")
-    gelVolume.addObject("RegularGridTopology", name="HexaTop", n="6 6 6", min="40 -6 -10", max="100 30 10")
+    gelVolume.addObject("RegularGridTopology", name="HexaTop", n="6 6 6", min="40 -16 -10", max="100 20 10")
     gelVolume.addObject("TetrahedronSetTopologyContainer", name="Container", position="@HexaTop.position")
     gelVolume.addObject("TetrahedronSetTopologyModifier", name="Modifier")
     gelVolume.addObject("Hexa2TetraTopologicalMapping", input="@HexaTop", output="@Container", swapping="false")
@@ -27,7 +38,7 @@ def createFemCube(parentNode):
     gelNode.addObject('TetrahedronFEMForceField', template='Vec3d', name='FEM', method='large',
                       poissonRatio='0.45', youngModulus='500')
     # gelNode.addObject('UniformMass', totalMass='5')
-    gelNode.addObject('BoxROI', name='ROI1', box='40 -6 -10 100 -4 10', drawBoxes='true')
+    gelNode.addObject('BoxROI', name='ROI1', box='40 -17 -10 100 -14 10', drawBoxes='true')
     gelNode.addObject('RestShapeSpringsForceField', points='@ROI1.indices', stiffness='1e12')
 
     surfaceNode = gelNode.addChild("surfaceNode")
