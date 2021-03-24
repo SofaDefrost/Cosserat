@@ -145,6 +145,8 @@ void CosseratNeedleSlidingConstraint<DataTypes>::getConstraintViolation(const Co
     SOFA_UNUSED(cParams);
     ReadAccessor<Data<VecCoord>> positions = m_state->readPositions();
 
+    msg_info("CosseratNeedleSlidingConstraint") << "The size of constraint is "<< positions.size();
+
     if(Jdx->size()==0){
         for (unsigned int i = 0; i < positions.size(); i++){
             Real dfree1 =  positions[i][1];

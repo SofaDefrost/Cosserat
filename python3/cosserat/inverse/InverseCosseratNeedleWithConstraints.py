@@ -15,7 +15,18 @@ import sys
 
 sys.path.append('../')
 from createFemRegularGrid import createFemCube
-from usefulFunctions import BuildCosseratGeometry
+from usefulFunctions import BuildCosseratGeometry, MoveTargetProcess
+
+
+def effectorTarget(parentNode, position=[80., 0., 0.35857]):
+    target = parentNode.createChild("Target")
+    target.addObject("EulerImplicitSolver", firstOrder=True)
+    target.addObject('VisualStyle', displayFlags='showVisualModels showInteractionForceFields showCollisionModels')
+    target.addObject("CGLinearSolver")
+    targetMO = target.addObject("MechanicalObject", name="dofs", position=position, showObject=0, showObjectScale=0, drawMode=0, showColor=[1., 1., 1., 1.])
+    target.addObject('SphereCollisionModel', radius='2')
+    target.addObject("UncoupledConstraintCorrection")
+    return [target, targetMO]
 
 
 def createScene(rootNode):
@@ -82,7 +93,7 @@ def createScene(rootNode):
     rateAngularDeformMO = rateAngularDeformNode.addObject(
         'MechanicalObject', template='Vec3d', name='rateAngularDeformMO', position=positionS)
     rateAngularDeformNode.addObject(
-        'BeamHookeLawForceField', crossSectionShape='circular', length=longeurS, radius='0.5', youngModulus='5e5')
+        'BeamHookeLawForceField', crossSectionShape='circular', length=longeurS, radius='0.5', youngModulus='1.0e12')
 
     # for i in range(0, nbSectionS):
     #     rateAngularDeformNode.addObject('SlidingActuator', name="SlidingActuatorY" + str(i), template='Vec3d',
@@ -123,17 +134,17 @@ def createScene(rootNode):
     cubeNode = createFemCube(rootNode)
     ####################################################################################
     # Attached the target to FEM model
-    targetNode = cubeNode.gelNode.addChild('target')
-    targetNode.addObject('VisualStyle', displayFlags='showCollisionModels ')
-    targetMO = targetNode.addObject('MechanicalObject', name="targetMO", position='85.0 1.5  0.35857', showObject="1",
-                                    showIndices="1", template="Vec3d")
-    targetNode.addObject('SphereCollisionModel', radius='2', color="red")
-    targetNode.addObject('BarycentricMapping')
-
+    # targetNode = cubeNode.gelNode.addChild('target')
+    # targetNode.addObject('VisualStyle', displayFlags='showCollisionModels ')
+    # targetMO = targetNode.addObject('MechanicalObject', name="targetMO", position='85.0 1.5  0.35857', showObject="1",
+    #                                 showIndices="1", template="Vec3d")
+    # targetNode.addObject('SphereCollisionModel', radius='2', color="red")
+    # targetNode.addObject('BarycentricMapping')
+    [targetNode, targetMO] = effectorTarget(rootNode)
     ####################################################################################
     # Create constraint Points inside the volume of the deformable object
     # These points are created
-    femPos = [" 41.0 0 0  45 0 0 50 0 0"]
+    femPos = [" 41.0 0 0  45 0 0 50 0 0 55 0 0 "]
     gelNode = cubeNode.getChild('gelNode')
     femPoints = gelNode.addChild('femPoints')
     inputFEMCable = femPoints.addObject('MechanicalObject', name="pointsInFEM", position=femPos, showIndices="1")
@@ -146,13 +157,14 @@ def createScene(rootNode):
     ####################################################################################
     effector = mappedFrameNode.addChild('fingertip')
     effMO = effector.addObject('MechanicalObject', position=[80., 0., 0.35857])
-    effector.addObject('PositionEffector', template='Vec3d', indices="0",
-                       effectorGoal="@../../../../FemNode/gelNode/target/targetMO.position")
+    posEffector = effector.addObject('PositionEffector', template='Vec3d', indices="0",
+                       effectorGoal=targetMO.getLinkPath()+'.position') # "@../../../../FemNode/gelNode/target/targetMO.position"
+    targetNode.addObject(MoveTargetProcess(posEffector))
     effector.addObject('SkinningMapping', nbRef='1', mapForces='false', mapMasses='false')
 
     mappedPointsNode = framePoints.addChild('MappedPoints')
     mappedPoints = mappedPointsNode.addObject('MechanicalObject', template='Vec3d', position=femPos, name="FramesMO",
-                                              showObject='0', showObjectScale='1')
+                                              showObject='1', showIndices='1', showObjectScale='1')
     mappedPointsNode.addObject('CosseratEquality', name="QPConstraint", eqDisp='0.0', lastPointIsFixed="false")
 
     ## Get the tree mstate links for the mapping
@@ -167,4 +179,5 @@ def createScene(rootNode):
 
     # rootNode.addObject(CostController(name="CostController", goal_pos=goalPos, effMO=effMO, solver=qp_solver))
 
-    return rootNode
+    # return rootNode
+

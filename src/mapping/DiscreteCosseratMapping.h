@@ -164,9 +164,6 @@ public:
 
     /**********************SOFA METHODS**************************/
     void init() override;
-    virtual void bwdInit() override;  // get the points
-    virtual void reset() override;
-    virtual void reinit() override;
     void draw(const core::visual::VisualParams* vparams) override;
 
     /**********************MAPPING METHODS**************************/

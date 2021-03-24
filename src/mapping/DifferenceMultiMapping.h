@@ -64,8 +64,8 @@ public:
     /// Output Model Type
     typedef TOut Out;
 
-    typedef typename In1::Coord             Coord1       ;
-    typedef typename In1::Deriv             Deriv1  ;
+    typedef typename In1::Coord Coord1;
+    typedef typename In1::Deriv Deriv1;
     typedef typename In1::VecCoord In1VecCoord;
     typedef typename In1::VecDeriv In1VecDeriv;
     typedef typename In1::MatrixDeriv In1MatrixDeriv;
@@ -151,6 +151,10 @@ public:
 
     void computeNeedleProximity(const In1VecCoord &x1, const In2VecCoord &x2);
 
+    /**********************Useful METHODS**************************/
+    void addPointProcess(){
+        msg_warning("DifferenceMultiMapping")<< "The point you are adding is :"; //<< pointPos ;
+    }
 public:
     /********************** The component Data **************************/
     //Input data

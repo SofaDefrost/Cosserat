@@ -36,7 +36,7 @@ def createFemCube(parentNode):
     # gelNode.addObject('TetrahedronSetTopologyModifier')
     gelNode.addObject('MechanicalObject', name='tetras', template='Vec3d')
     gelNode.addObject('TetrahedronFEMForceField', template='Vec3d', name='FEM', method='large',
-                      poissonRatio='0.45', youngModulus='500')
+                      poissonRatio='0.45', youngModulus='100')
     # gelNode.addObject('UniformMass', totalMass='5')
     gelNode.addObject('BoxROI', name='ROI1', box='40 -17 -10 100 -14 10', drawBoxes='true')
     gelNode.addObject('RestShapeSpringsForceField', points='@ROI1.indices', stiffness='1e12')

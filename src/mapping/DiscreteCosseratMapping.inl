@@ -110,25 +110,6 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::init()
 
 
 template <class TIn1, class TIn2, class TOut>
-void DiscreteCosseratMapping<TIn1, TIn2, TOut>::bwdInit()
-{
-
-}
-
-template <class TIn1, class TIn2, class TOut>
-void DiscreteCosseratMapping<TIn1, TIn2, TOut>::reinit()
-{
-
-}
-
-template <class TIn1, class TIn2, class TOut>
-void DiscreteCosseratMapping<TIn1, TIn2, TOut>::reset()
-{
-    reinit();
-}
-
-
-template <class TIn1, class TIn2, class TOut>
 void DiscreteCosseratMapping<TIn1, TIn2, TOut>::apply(
         const core::MechanicalParams* /* mparams */, const helper::vector<OutDataVecCoord*>& dataVecOutPos,
         const helper::vector<const In1DataVecCoord*>& dataVecIn1Pos ,
