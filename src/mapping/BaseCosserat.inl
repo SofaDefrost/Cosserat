@@ -399,10 +399,14 @@ template <class TIn1, class TIn2, class TOut>
 void BaseCosserat<TIn1, TIn2, TOut>::initialize()
 {
     //find the beam on which each output frame is located
-    helper::ReadAccessor<Data<helper::vector<double>>> curv_abs_input = d_curv_abs_input;
+    helper::ReadAccessor<Data<helper::vector< double>>> curv_abs_input = d_curv_abs_input;
     helper::ReadAccessor<Data<helper::vector<double>>> curv_abs_output = d_curv_abs_output;
 
     size_t sz = d_curv_abs_output.getValue().size();
+
+    if(d_debug.getValue())
+        msg_info("BaseCosserat:") << " curv_abs_input "<< d_curv_abs_output.getValue().size()
+        << "; curv_abs_output: "<< d_curv_abs_output.getValue().size();
 
     m_indicesVectors.clear();
     m_framesLenghtVectors.clear();

@@ -97,7 +97,8 @@ void BeamHookeLawForceField<DataTypes>::init()
 template<typename DataTypes>
 void BeamHookeLawForceField<DataTypes>::reinit()
 {
-    Real Iy, Iz, J, A;
+    Real Iy, Iz, J;
+    Real A;
     if ( d_crossSectionShape.getValue().getSelectedItem() == "rectangular" )
     {
         Real Ly = d_lengthY.getValue();
@@ -136,6 +137,8 @@ void BeamHookeLawForceField<DataTypes>::reinit()
         size_t szYM = d_youngModululsList.getValue().size();
         size_t szPR = d_poissonRatioList.getValue().size();
         size_t szL  = d_length.getValue().size();
+
+        std::cout<< "BeamHookeLawForceField :" << "szYM : "<< szYM << " szPR "<< szPR << "  szL " << szL<< std::endl;
 
         if((szL != szPR)||(szL != szYM)){
             msg_error("BeamHookeLawForceField")<< "Pleseas, lenght, youngModululsList and poissonRatioList should have the same size";

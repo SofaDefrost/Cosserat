@@ -89,14 +89,14 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::init()
     m_toModel = this->getToModels()[0];
 
     // Fill the initial vector
-    const OutDataVecCoord* xfromData = m_toModel->read(core::ConstVecCoordId::position());
-    const OutVecCoord xfrom = xfromData->getValue();
+    const OutDataVecCoord* xFromData = m_toModel->read(core::ConstVecCoordId::position());
+    const OutVecCoord xFrom = xFromData->getValue();
     //    WriteAccessor<Data < helper::vector<double>>> curv_abs_output = d_curv_abs_output;
     //    curv_abs_output.clear();
 
     m_vecTransform.clear();
-    for (unsigned int i = 0; i < xfrom.size(); i++) {
-        m_vecTransform.push_back(xfrom[i]);
+    for (unsigned int i = 0; i < xFrom.size(); i++) {
+        m_vecTransform.push_back(xFrom[i]);
     }
 
     if(d_debug.getValue())
