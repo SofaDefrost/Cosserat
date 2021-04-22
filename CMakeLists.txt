@@ -43,7 +43,9 @@ set(HEADER_FILES
     src/forcefield/BeamHookeLawForceField.inl
     src/forcefield/CosseratInternalActuation.h
     src/forcefield/CosseratInternalActuation.inl
-
+    src/forcefield/MyUniformVelocityDampingForceField.h
+    src/forcefield/MyUniformVelocityDampingForceField.inl
+    
     src/constraint/CosseratSlidingConstraint.h
     src/constraint/CosseratSlidingConstraint.inl
     src/constraint/QPSlidingConstraint.h
@@ -64,6 +66,7 @@ set(SOURCE_FILES
 
     src/forcefield/BeamHookeLawForceField.cpp
     src/forcefield/CosseratInternalActuation.cpp
+    src/forcefield/MyUniformVelocityDampingForceField.cpp
 
     src/constraint/CosseratSlidingConstraint.cpp
     src/constraint/QPSlidingConstraint.cpp
