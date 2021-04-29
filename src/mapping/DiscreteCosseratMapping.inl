@@ -54,8 +54,8 @@ DiscreteCosseratMapping<TIn1, TIn2, TOut>::DiscreteCosseratMapping()
                                  "the axis in which we want to show the deformation.\n"))
     , d_drawMapBeam(initData(&d_drawMapBeam, true,"nonColored", "if this parameter is false, you draw the beam with color "
                                                                 "according to the force apply to each beam"))
-
-    , d_index(initData(&d_index, "index", "if this parameter is false, you draw the beam with color "
+    , d_color(initData(&d_color, defaulttype::Vec4f (1, 0., 1., 0.8) ,"color", "The default beam color"))
+        , d_index(initData(&d_index, "index", "if this parameter is false, you draw the beam with color "
                                                           "according to the force apply to each beam"))
 {
 }
@@ -570,7 +570,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJT(
 template <class TIn1, class TIn2, class TOut>
 void DiscreteCosseratMapping<TIn1, TIn2, TOut>::draw(const core::visual::VisualParams* vparams)
 {
-    //    if(!d_debug.getValue()) return;
+    //if(!d_debug.getValue()) return;
 
     ///draw cable
     ///
@@ -602,11 +602,15 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::draw(const core::visual::VisualP
     //helper::ColorMap::evaluator<Real> eval = colorMap->getEvaluator(min, max);
     helper::ColorMap::evaluator<Real> _eval = m_colorMap.getEvaluator(min, max);
 
-    double radius = 5;
     if(d_drawMapBeam.getValue()){
-        //        defaulttype::Vec4f colorL = defaulttype::Vec4f(0.4,0.4,0.4,1);
-        RGBAColor colorL = RGBAColor(0.4,0.4,0.4,1.);
-        vparams->drawTool()->drawLineStrip(positions,radius,colorL);
+        glLineWidth(d_radius.getValue());
+        defaulttype::Vec4f _color = d_color.getValue();
+        RGBAColor colorL = RGBAColor(_color[0],_color[1],_color[2],_color[3]);
+        //vparams->drawTool()->drawLineStrip(positions,radius,colorL);
+        for (unsigned int i=0; i<sz-1; i++) {
+            vparams->drawTool()->drawLine(positions[i],positions[i+1],colorL);
+        }
+        glLineWidth(1);
     }else {
         //        setMaterial(color);œ
         glLineWidth(d_radius.getValue());
@@ -618,40 +622,40 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::draw(const core::visual::VisualP
             vparams->drawTool()->drawLine(positions[i],positions[i+1],color);
         }
         glLineWidth(1);
-        for (unsigned int i = 0; i<sz; i+=2){
-            defaulttype::Vector3 P1 = positions[i];
-            defaulttype::Quat q = xData[i].getOrientation();
-            defaulttype::Vector3 x,y,z;
-            double radius_arrow = 0.1;
-            x= q.rotate(defaulttype::Vector3(2.0,0,0));
-            y= q.rotate(defaulttype::Vector3(0,2.0,0));
-            z= q.rotate(defaulttype::Vector3(0,0,2.0));
-
-            vparams->drawTool()->drawArrow(P1,(P1 + x)*1.0, radius_arrow, RGBAColor(1.,0.,0.,1.));
-            vparams->drawTool()->drawArrow(P1,(P1 + y)*1.0, radius_arrow, RGBAColor(0.,1.,0.,1.));
-            vparams->drawTool()->drawArrow(P1,(P1 + z)*1.0, radius_arrow, RGBAColor(0.,0.,1.,1.));
-        }
+//        for (unsigned int i = 0; i<sz; i+=2){
+//            defaulttype::Vector3 P1 = positions[i];
+//            defaulttype::Quat q = xData[i].getOrientation();
+//            defaulttype::Vector3 x,y,z;
+//            double radius_arrow = 0.1;
+//            x= q.rotate(defaulttype::Vector3(2.0,0,0));
+//            y= q.rotate(defaulttype::Vector3(0,2.0,0));
+//            z= q.rotate(defaulttype::Vector3(0,0,2.0));
+//
+//            vparams->drawTool()->drawArrow(P1,(P1 + x)*1.0, radius_arrow, RGBAColor(1.,0.,0.,1.));
+//            vparams->drawTool()->drawArrow(P1,(P1 + y)*1.0, radius_arrow, RGBAColor(0.,1.,0.,1.));
+//            vparams->drawTool()->drawArrow(P1,(P1 + z)*1.0, radius_arrow, RGBAColor(0.,0.,1.,1.));
+//        }
     }
 
     if (!vparams->displayFlags().getShowMappings())
         if(!d_debug.getValue()) return;
-    for (unsigned int i = 0;i < m_vecTransform.size(); i++) {
-
-        defaulttype::Quat q = m_vecTransform[i].getOrientation();
-        q.normalize();
-
-        defaulttype::Vector3 P1, x,y,z;
-        P1 = m_vecTransform[i].getCenter();
-
-        x= q.rotate(defaulttype::Vector3(1.0,0,0));
-        y= q.rotate(defaulttype::Vector3(0,1.0,0));
-        z= q.rotate(defaulttype::Vector3(0,0,1.0));
-        double radius_arrow = 1.0/2.0;
-
-        vparams->drawTool()->drawArrow(P1,(P1 + x)*1.0, radius_arrow, RGBAColor(1.,0.,0.,1.));
-        vparams->drawTool()->drawArrow(P1,(P1 + y)*1.0, radius_arrow, RGBAColor(0.,1.,0.,1.));
-        vparams->drawTool()->drawArrow(P1,(P1 + z)*1.0, radius_arrow, RGBAColor(0.,0.,1.,1.));
-    }
+//    for (unsigned int i = 0;i < m_vecTransform.size(); i++) {
+//
+//        defaulttype::Quat q = m_vecTransform[i].getOrientation();
+//        q.normalize();
+//
+//        defaulttype::Vector3 P1, x,y,z;
+//        P1 = m_vecTransform[i].getCenter();
+//
+//        x= q.rotate(defaulttype::Vector3(1.0,0,0));
+//        y= q.rotate(defaulttype::Vector3(0,1.0,0));
+//        z= q.rotate(defaulttype::Vector3(0,0,1.0));
+//        double radius_arrow = 1.0/2.0;
+//
+//        vparams->drawTool()->drawArrow(P1,(P1 + x)*1.0, radius_arrow, RGBAColor(1.,0.,0.,1.));
+//        vparams->drawTool()->drawArrow(P1,(P1 + y)*1.0, radius_arrow, RGBAColor(0.,1.,0.,1.));
+//        vparams->drawTool()->drawArrow(P1,(P1 + z)*1.0, radius_arrow, RGBAColor(0.,0.,1.,1.));
+//    }
     //return;
 }
 

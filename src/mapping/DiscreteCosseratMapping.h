@@ -119,6 +119,7 @@ protected:
     Data<Real>                       d_min ;
     Data<Real>                       d_radius ;
     Data<bool>                       d_drawMapBeam ;
+    Data<defaulttype::Vec4f>         d_color;
     Data<helper::vector<int> >       d_index;
 
     /// Input Models container. New inputs are added through addInputModel(In* ).
