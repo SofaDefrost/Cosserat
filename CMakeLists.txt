@@ -106,6 +106,13 @@ if(SofaPython_FOUND)
     sofa_install_pythonscripts(PLUGIN_NAME ${PROJECT_NAME} PYTHONSCRIPTS_SOURCE_DIR "python/cosserat")
 endif()
 
+if(SofaPython3_FOUND)
+    SP3_add_python_package(
+            SOURCE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/python3/Cosserat
+            TARGET_DIRECTORY Cosserat
+    )
+endif()
+
 if(SoftRobots_FOUND)
     target_link_libraries(${PROJECT_NAME} SoftRobots)
 endif()

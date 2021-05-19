@@ -594,6 +594,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::draw(const core::visual::VisualP
     const In1DataVecCoord* artiData = m_fromModel1->read(core::ConstVecCoordId::position());
     const In1VecCoord xPos = artiData->getValue();
 
+
     //    std::cout << "=============> art :"<< xPos << std::endl;
 
     //Define color map
@@ -602,18 +603,21 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::draw(const core::visual::VisualP
     //helper::ColorMap::evaluator<Real> eval = colorMap->getEvaluator(min, max);
     helper::ColorMap::evaluator<Real> _eval = m_colorMap.getEvaluator(min, max);
 
+//    glClearColor(1, 1, 1, 1);
+//    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glLineWidth(d_radius.getValue());
+    glBegin(GL_LINES);
     if(d_drawMapBeam.getValue()){
-        glLineWidth(d_radius.getValue());
         defaulttype::Vec4f _color = d_color.getValue();
         RGBAColor colorL = RGBAColor(_color[0],_color[1],_color[2],_color[3]);
-        //vparams->drawTool()->drawLineStrip(positions,radius,colorL);
+        glColor4f(colorL[0], colorL[1], colorL[2],colorL[3]);
+//        vparams->drawTool()->drawLineStrip(positions,radius,colorL);
         for (unsigned int i=0; i<sz-1; i++) {
             vparams->drawTool()->drawLine(positions[i],positions[i+1],colorL);
         }
-        glLineWidth(1);
+
     }else {
         //        setMaterial(color);œ
-        glLineWidth(d_radius.getValue());
         int j = 0;
         helper::vector<int> index = d_index.getValue();
         for (unsigned int i=0; i<sz-1; i++) {
@@ -621,21 +625,21 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::draw(const core::visual::VisualP
             RGBAColor color =  RGBAColor::fromVec4(_eval(xPos[j][d_deformationAxis.getValue()]));
             vparams->drawTool()->drawLine(positions[i],positions[i+1],color);
         }
-        glLineWidth(1);
-//        for (unsigned int i = 0; i<sz; i+=2){
-//            defaulttype::Vector3 P1 = positions[i];
-//            defaulttype::Quat q = xData[i].getOrientation();
-//            defaulttype::Vector3 x,y,z;
-//            double radius_arrow = 0.1;
-//            x= q.rotate(defaulttype::Vector3(2.0,0,0));
-//            y= q.rotate(defaulttype::Vector3(0,2.0,0));
-//            z= q.rotate(defaulttype::Vector3(0,0,2.0));
-//
-//            vparams->drawTool()->drawArrow(P1,(P1 + x)*1.0, radius_arrow, RGBAColor(1.,0.,0.,1.));
-//            vparams->drawTool()->drawArrow(P1,(P1 + y)*1.0, radius_arrow, RGBAColor(0.,1.,0.,1.));
-//            vparams->drawTool()->drawArrow(P1,(P1 + z)*1.0, radius_arrow, RGBAColor(0.,0.,1.,1.));
-//        }
+        //        for (unsigned int i = 0; i<sz; i+=2){
+        //            defaulttype::Vector3 P1 = positions[i];
+        //            defaulttype::Quat q = xData[i].getOrientation();
+        //            defaulttype::Vector3 x,y,z;
+        //            double radius_arrow = 0.1;
+        //            x= q.rotate(defaulttype::Vector3(2.0,0,0));
+        //            y= q.rotate(defaulttype::Vector3(0,2.0,0));
+        //            z= q.rotate(defaulttype::Vector3(0,0,2.0));
+        //
+        //            vparams->drawTool()->drawArrow(P1,(P1 + x)*1.0, radius_arrow, RGBAColor(1.,0.,0.,1.));
+        //            vparams->drawTool()->drawArrow(P1,(P1 + y)*1.0, radius_arrow, RGBAColor(0.,1.,0.,1.));
+        //            vparams->drawTool()->drawArrow(P1,(P1 + z)*1.0, radius_arrow, RGBAColor(0.,0.,1.,1.));
+        //        }
     }
+    glLineWidth(1);
 
     if (!vparams->displayFlags().getShowMappings())
         if(!d_debug.getValue()) return;
@@ -657,6 +661,9 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::draw(const core::visual::VisualP
 //        vparams->drawTool()->drawArrow(P1,(P1 + z)*1.0, radius_arrow, RGBAColor(0.,0.,1.,1.));
 //    }
     //return;
+//    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+//    glClear(GL_COLOR_BUFFER_BIT);
+    glEnd();
 }
 
 } // namespace sofa
