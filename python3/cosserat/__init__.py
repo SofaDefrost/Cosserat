@@ -25,3 +25,4 @@ Contents of the library
 __all__ = ["actuators", "scenes", "needle", "inverse"]
 
 from createFemRegularGrid import createFemCube
+from usefulFunctions import BuildCosseratGeometry

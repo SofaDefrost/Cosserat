@@ -67,7 +67,7 @@ BeamHookeLawForceField<DataTypes>::BeamHookeLawForceField()
       d_crossSectionShape( initData(&d_crossSectionShape, OptionsGroup(2,"circular","rectangular"),
                                     "crossSectionShape",
                                     "shape of the cross-section. Can be: circular (tube with external radius being radius and internal radius being innerRadius ) or rectangular (lengthY and lengthZ) . Default is circular" )),
-      d_youngModululs( initData( &d_youngModululs, 1.0e6, "youngModulus", "Young Modulus describes the stiffness of the material")),
+      d_youngModululs( initData( &d_youngModululs, 1.0e9, "youngModulus", "Young Modulus describes the stiffness of the material")),
       d_poissonRatio( initData( &d_poissonRatio, 0.45, "poissonRatio", "poisson Ratio describes the compressibility of the material")),
       d_length( initData( &d_length, "length", "lenght of each beam")),
       d_radius( initData( &d_radius, 1.0, "radius", "external radius of the cross section (if circular)")),
@@ -97,7 +97,8 @@ void BeamHookeLawForceField<DataTypes>::init()
 template<typename DataTypes>
 void BeamHookeLawForceField<DataTypes>::reinit()
 {
-    Real Iy, Iz, J, A;
+    Real Iy, Iz, J;
+    Real A;
     if ( d_crossSectionShape.getValue().getSelectedItem() == "rectangular" )
     {
         Real Ly = d_lengthY.getValue();
@@ -136,6 +137,8 @@ void BeamHookeLawForceField<DataTypes>::reinit()
         size_t szYM = d_youngModululsList.getValue().size();
         size_t szPR = d_poissonRatioList.getValue().size();
         size_t szL  = d_length.getValue().size();
+
+        std::cout<< "BeamHookeLawForceField :" << "szYM : "<< szYM << " szPR "<< szPR << "  szL " << szL<< std::endl;
 
         if((szL != szPR)||(szL != szYM)){
             msg_error("BeamHookeLawForceField")<< "Pleseas, lenght, youngModululsList and poissonRatioList should have the same size";

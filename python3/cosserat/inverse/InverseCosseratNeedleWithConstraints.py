@@ -1,56 +1,32 @@
 # -*- coding: utf-8 -*-
 """Basic scene using Cosserat in SofaPython3.
 
-Based on the work done with SofaPython. See POEMapping.pyscn.
+Based on the work done with SofaPython. See POEMapping.py.
 """
 
 __authors__ = "younesssss"
 __contact__ = "adagolodjo@protonmail.com, yinoussa.adagolodjo@inria.fr"
 __version__ = "1.0.0"
 __copyright__ = "(c) 2020,Inria"
-__date__ = "March 16 2020"
+__date__ = "March 16 2021"
 
-import SofaRuntime
-import Sofa
 import os
-import numpy as np
 import sys
 
-import sys
 sys.path.append('../')
-
 from createFemRegularGrid import createFemCube
-
-path = os.path.dirname(os.path.abspath(__file__)) + '/../mesh/'
-
-def computeRtheta(theta):
-    constA = 4.9
-    constB = 0.125
-
-    x = constA * np.exp(constB * theta) * np.cos(theta)
-    y = constA * np.exp(constB * theta) * np.sin(-theta)
-    # z = np.linspace(0,2, 10000)
-    # rTeta = constA * exp(-constB * teta)
-    return x, y
+from usefulFunctions import BuildCosseratGeometry, MoveTargetProcess
 
 
-def linearizeTrajectory():
-    thetaList = np.linspace(5, 15, 15)
-    zL = np.linspace(90, 150, 15)
-
-    position = []
-    i = 0
-    for theta in thetaList:
-        x, y = computeRtheta(theta)
-        position.append([zL[i], x, y])
-        i += 1
-
-    goal = position[0]
-    return goal
-
-
-def BuildCosseratModel(parentNode=None, nbSection=6, nbFrames=12, totalLength=80):
-    pass
+def effectorTarget(parentNode, position=[80., 0., 0.35857]):
+    target = parentNode.createChild("Target")
+    target.addObject("EulerImplicitSolver", firstOrder=True)
+    target.addObject('VisualStyle', displayFlags='showVisualModels showInteractionForceFields showCollisionModels')
+    target.addObject("CGLinearSolver")
+    targetMO = target.addObject("MechanicalObject", name="dofs", position=position, showObject=0, showObjectScale=0, drawMode=0, showColor=[1., 1., 1., 1.])
+    target.addObject('SphereCollisionModel', radius='2')
+    target.addObject("UncoupledConstraintCorrection")
+    return [target, targetMO]
 
 
 def createScene(rootNode):
@@ -65,13 +41,8 @@ def createScene(rootNode):
                                     'hideBoundingCollisionModels hideForceFields showInteractionForceFields '
                                     'showWireframe')
 
-    # rootNode.addObject('VisualStyle', displayFlags='showBehaviorModels hideCollisionModels hideBoundingCollisionModels '
-    #                                                'showForceFields hideInteractionForceFields showWireframe')
-
     rootNode.addObject('FreeMotionAnimationLoop')
-    # qp_solver = rootNode.addObject('QPInverseProblemSolver', epsilon=0.0, printLog=False, displayTime=0,
-    # tolerance=1e-10, maxIterations=10000)
-    qp_solver = rootNode.createObject('QPInverseProblemSolver', printLog='0', epsilon=0.0002)
+    rootNode.createObject('QPInverseProblemSolver', printLog='0', epsilon=0.0002)
     rootNode.addObject('CollisionPipeline', depth="6", verbose="0", draw="1")
     rootNode.addObject('BruteForceDetection', name="N2")
     rootNode.addObject('DefaultContactManager', response="FrictionContact", responseParams="mu=0.65")
@@ -112,62 +83,28 @@ def createScene(rootNode):
         rigidBaseNode.addObject('SlidingActuator', name="SlidingActuator" + str(j), template='Rigid3d',
                                 direction=direction, indices=0, maxForce='1e6', minForce='-30000')
 
+    [positionS, curv_abs_inputS, longeurS, framesF, curv_abs_outputF, cable_positionF] = \
+        BuildCosseratGeometry(nbSection=8, nbFrames=16, totalLength=80)
+
     #############################################
     # Rate of angular Deformation  (2 sections)
     #############################################
-
-    # Define: the number of section, the total lenght and the lenght of each beam.
-    nbSectionS = 8
-    totalLength = 80.0
-    lengthS = totalLength / nbSectionS
-
-    # Define: the length of each beam in a list, the positions of eahc beam
-    # (flexion, torsion), the abs of each section
-    positionS = []
-    longeurS = []
-    temp = 0.
-    curv_abs_inputS = [0.0]
-    for i in range(nbSectionS):
-        positionS.append([0, 0, 0])
-        longeurS.append((((i + 1) * lengthS) - i * lengthS))
-        temp += longeurS[i]
-        curv_abs_inputS.append(temp)
-    curv_abs_inputS[nbSectionS] = totalLength
-
     rateAngularDeformNode = cableNode.addChild('rateAngularDeform')
     rateAngularDeformMO = rateAngularDeformNode.addObject(
         'MechanicalObject', template='Vec3d', name='rateAngularDeformMO', position=positionS)
-    BeamHookeLawForce = rateAngularDeformNode.addObject(
-        'BeamHookeLawForceField', crossSectionShape='circular', length=longeurS, radius='0.5', youngModulus='5e5')
+    rateAngularDeformNode.addObject(
+        'BeamHookeLawForceField', crossSectionShape='circular', length=longeurS, radius='0.5', youngModulus='1.0e12')
 
     # for i in range(0, nbSectionS):
-    #     rateAngularDeformNode.addObject('SlidingActuator', name="SlidingActuatory" + str(i), template='Vec3d',
+    #     rateAngularDeformNode.addObject('SlidingActuator', name="SlidingActuatorY" + str(i), template='Vec3d',
     #                                     direction='0 1 0 ', indices=i, maxForce='100000', minForce='-30000')
     # for i in range(0, nbSectionS):
-    #     rateAngularDeformNode.addObject('SlidingActuator', name="SlidingActuatorz" + str(i), template='Vec3d',
+    #     rateAngularDeformNode.addObject('SlidingActuator', name="SlidingActuatorZ" + str(i), template='Vec3d',
     #                                     direction='0 0 1', indices=i, maxForce='100000', minForce='-30000')
 
     ##############
     #   Frames   #
     ##############
-    # Define: the number of frame and the length between each frame.
-    nbFramesF = 16
-    lengthF = totalLength / nbFramesF
-
-    # Define: the abs of each frame and the position of each frame.
-    framesF = []
-    curv_abs_outputF = []
-    cable_positionF = []
-    for i in range(nbFramesF):
-        sol = i * lengthF
-        framesF.append([sol, 0, 0, 0, 0, 0, 1])
-        cable_positionF.append([sol, 0, 0])
-        curv_abs_outputF.append(sol)
-
-    framesF.append([totalLength, 0, 0, 0, 0, 0, 1])
-    cable_positionF.append([totalLength, 0, 0])
-    curv_abs_outputF.append(totalLength)
-
     # the node of the frame needs to inherit from rigidBaseMO and rateAngularDeform
     mappedFrameNode = rigidBaseNode.addChild('MappedFrames')
     rateAngularDeformNode.addChild(mappedFrameNode)
@@ -197,17 +134,17 @@ def createScene(rootNode):
     cubeNode = createFemCube(rootNode)
     ####################################################################################
     # Attached the target to FEM model
-    targetNode = cubeNode.gelNode.addChild('target')
-    targetNode.addObject('VisualStyle', displayFlags='showCollisionModels ')
-    targetMO = targetNode.addObject('MechanicalObject', name="targetMO", position='85.0 0.5  0.35857', showObject="1",
-                                    showIndices="1", template="Vec3d")
-    targetNode.addObject('SphereCollisionModel', radius='2', color="red")
-    targetNode.addObject('BarycentricMapping')
-
+    # targetNode = cubeNode.gelNode.addChild('target')
+    # targetNode.addObject('VisualStyle', displayFlags='showCollisionModels ')
+    # targetMO = targetNode.addObject('MechanicalObject', name="targetMO", position='85.0 1.5  0.35857', showObject="1",
+    #                                 showIndices="1", template="Vec3d")
+    # targetNode.addObject('SphereCollisionModel', radius='2', color="red")
+    # targetNode.addObject('BarycentricMapping')
+    [targetNode, targetMO] = effectorTarget(rootNode)
     ####################################################################################
     # Create constraint Points inside the volume of the deformable object
     # These points are created
-    femPos = [" 41.0 0 0  45 0 0 50 0 0"]
+    femPos = [" 41.0 0 0  45 0 0 50 0 0 55 0 0 "]
     gelNode = cubeNode.getChild('gelNode')
     femPoints = gelNode.addChild('femPoints')
     inputFEMCable = femPoints.addObject('MechanicalObject', name="pointsInFEM", position=femPos, showIndices="1")
@@ -220,13 +157,14 @@ def createScene(rootNode):
     ####################################################################################
     effector = mappedFrameNode.addChild('fingertip')
     effMO = effector.addObject('MechanicalObject', position=[80., 0., 0.35857])
-    effector.addObject('PositionEffector', template='Vec3d', indices="0",
-                       effectorGoal="@../../../../FemNode/gelNode/target/targetMO.position")
+    posEffector = effector.addObject('PositionEffector', template='Vec3d', indices="0",
+                       effectorGoal=targetMO.getLinkPath()+'.position') # "@../../../../FemNode/gelNode/target/targetMO.position"
+    targetNode.addObject(MoveTargetProcess(posEffector))
     effector.addObject('SkinningMapping', nbRef='1', mapForces='false', mapMasses='false')
 
     mappedPointsNode = framePoints.addChild('MappedPoints')
     mappedPoints = mappedPointsNode.addObject('MechanicalObject', template='Vec3d', position=femPos, name="FramesMO",
-                                                 showObject='0', showObjectScale='1')
+                                              showObject='1', showIndices='1', showObjectScale='1')
     mappedPointsNode.addObject('CosseratEquality', name="QPConstraint", eqDisp='0.0', lastPointIsFixed="false")
 
     ## Get the tree mstate links for the mapping
@@ -239,8 +177,7 @@ def createScene(rootNode):
     mappedPointsNode.addObject('DifferenceMultiMapping', name="pointsMulti", input1=inputFEMCableMO, lastPointIsFixed=0,
                                input2=inputCableMO, output=outputPointMO, direction="@../../FramesMO.position")
 
-
-
     # rootNode.addObject(CostController(name="CostController", goal_pos=goalPos, effMO=effMO, solver=qp_solver))
 
-    return rootNode
+    # return rootNode
+

@@ -8,83 +8,12 @@ __authors__ = "younesssss"
 __contact__ = "adagolodjo@protonmail.com, yinoussa.adagolodjo@inria.fr"
 __version__ = "1.0.0"
 __copyright__ = "(c) 2020,Inria"
-__date__ = "March 16 2020"
+__date__ = "March 16 2021"
 
-import Sofa.Core
 import os
-import numpy as np
-import sys
-
 import sys
 sys.path.append('../')
-
 path = os.path.dirname(os.path.abspath(__file__)) + '/../mesh/'
-
-
-
-
-def computeRtheta(theta):
-    constA = 4.9
-    constB = 0.125
-
-    x = constA * np.exp(constB * theta) * np.cos(theta)
-    y = constA * np.exp(constB * theta) * np.sin(-theta)
-    # z = np.linspace(0,2, 10000)
-    # rTeta = constA * exp(-constB * teta)
-    return x, y
-
-
-def linearizeTrajectory():
-    thetaList = np.linspace(5, 15, 15)
-    zL = np.linspace(90, 150, 15)
-
-    position = []
-    i = 0
-    for theta in thetaList:
-        x, y = computeRtheta(theta)
-        position.append([zL[i], x, y])
-        i += 1
-
-    goal = position[0]
-    return goal
-
-
-def BuildCosseratModel(parentNode=None, nbSection=6, nbFrames=12, totalLength=80):
-    pass
-
-
-
-class CostController(Sofa.Core.Controller):
-    def __init__(self, *args, **kwargs):
-        # These are needed (and the normal way to override from a python class)
-        Sofa.Core.Controller.__init__(self, *args, **kwargs)
-
-        # self.solver = kwargs.get("solver", None)
-        # self.goalPos = kwargs.get("goalPos", None)
-        # self.iter = 0
-        # self.effMO = kwargs.get("effMO", None)
-
-        # self.cost = np.inf
-        # self.best_cost = 1e-5
-        # self.qp_error = False
-
-        # goal = linearizeTrajectory()
-        # print("The goal is :", goal)
-
-        # self.goalPos.position = [[goal[0], goal[1], goal[2]]]
-
-    # def onKeypressedEvent(self, c):
-    #     key = c['key']
-    #     if key == "0":
-    #         print("You switch to X axis")
-    #         self.iter -= 1
-    #         goal = self.goalPos.position[self.iter]
-    #         self.goalPos.position = [[goal[0], goal[1], goal[2]]]
-    #     if key == "1":
-    #         print("You switch to Y axis")
-    #         self.iter += 1
-    #         goal = self.goalPos.position[self.iter]
-    #         self.goalPos.position = [[goal[0], goal[1], goal[2]]]
 
 
 def createScene(rootNode):
@@ -99,8 +28,6 @@ def createScene(rootNode):
                                     'showWireframe')
 
     rootNode.addObject('FreeMotionAnimationLoop')
-    # qp_solver = rootNode.addObject('QPInverseProblemSolver', epsilon=0.0, printLog=False, displayTime=0,
-    # tolerance=1e-10, maxIterations=10000)
     qp_solver = rootNode.createObject('QPInverseProblemSolver', printLog='0')
     rootNode.addObject('CollisionPipeline', depth="6", verbose="0", draw="1")
     rootNode.addObject('BruteForceDetection', name="N2")
@@ -227,8 +154,8 @@ def createScene(rootNode):
     # #Mapped mechanical points
     #  This create a new node in the scene. This node is appended to the finger's node.
     slidingPoint = mappedFrameNode.addChild('slidingPoint')
-    slidingPointMO = slidingPoint.addObject('MechanicalObject', name="cablePos", position=cable_positionF,
-                                            showObject="1", showIndices="0")
+    slidingPoint.addObject('MechanicalObject', name="cablePos", position=cable_positionF, showObject="1",
+                           showIndices="0")
     slidingPoint.addObject('IdentityMapping')
 
     ##########################################
@@ -238,8 +165,7 @@ def createScene(rootNode):
     effMO = effector.addObject('MechanicalObject', position=[81., 0., 0.35857])
     effector.addObject('PositionEffector', template='Vec3d', indices="0",
                        effectorGoal="@../../../../goal/goalMO.position")
-    # effector.addObject('BarycentricMapping', mapForces="false", mapMasses="false")
     effector.addObject('SkinningMapping', nbRef='1', mapForces='false', mapMasses='false')
-    rootNode.addObject(CostController(name="CostController", goal_pos=goalPos, effMO=effMO, solver=qp_solver))
+
 
     return rootNode
