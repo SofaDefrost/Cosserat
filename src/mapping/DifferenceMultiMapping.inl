@@ -144,7 +144,6 @@ void DifferenceMultiMapping<TIn1, TIn2, TOut>::computeProximity(const In1VecCoor
     //For each point in the FEM find the closest edge of the cable
     for (size_t i = 0 ; i < szFrom; i++) {
         Coord2 P = from[i];
-        std::cout << " Position :" << P << std::endl;
         Constraint constraint;
 
         // find the min distance between a from mstate point and it's projection on each edge of the cable (destination mstate)

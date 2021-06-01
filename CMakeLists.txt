@@ -43,7 +43,9 @@ set(HEADER_FILES
     src/forcefield/BeamHookeLawForceField.inl
     src/forcefield/CosseratInternalActuation.h
     src/forcefield/CosseratInternalActuation.inl
-
+    src/forcefield/MyUniformVelocityDampingForceField.h
+    src/forcefield/MyUniformVelocityDampingForceField.inl
+    
     src/constraint/CosseratSlidingConstraint.h
     src/constraint/CosseratSlidingConstraint.inl
     src/constraint/QPSlidingConstraint.h
@@ -64,11 +66,12 @@ set(SOURCE_FILES
 
     src/forcefield/BeamHookeLawForceField.cpp
     src/forcefield/CosseratInternalActuation.cpp
+    src/forcefield/MyUniformVelocityDampingForceField.cpp
 
     src/constraint/CosseratSlidingConstraint.cpp
     src/constraint/QPSlidingConstraint.cpp
     src/constraint/CosseratNeedleSlidingConstraint.cpp
-    )
+        )
 
 set(README_FILE "Cosserat.txt" )
 
@@ -94,13 +97,20 @@ target_include_directories(${PROJECT_NAME} PUBLIC "$<INSTALL_INTERFACE:include>"
 
 set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "-DSOFA_BUILD_COSSERAT")
 set_target_properties(${PROJECT_NAME} PROPERTIES DEBUG_POSTFIX "_d")
-target_link_libraries(${PROJECT_NAME} SofaCore SofaConstraint SofaSimpleFem SofaBaseMechanics SofaRigid SofaMiscMapping SofaBaseVisual SofaOpenglVisual)
+target_link_libraries(${PROJECT_NAME} SofaCore SofaConstraint SofaSimpleFem SofaBaseMechanics SofaRigid SofaBaseVisual SofaOpenglVisual)
 
 
 if(SofaPython_FOUND)
     target_link_libraries(${PROJECT_NAME} SofaPython)
     # Config files and install rules for pythons scripts
     sofa_install_pythonscripts(PLUGIN_NAME ${PROJECT_NAME} PYTHONSCRIPTS_SOURCE_DIR "python/cosserat")
+endif()
+
+if(SofaPython3_FOUND)
+    SP3_add_python_package(
+            SOURCE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/python3/Cosserat
+            TARGET_DIRECTORY Cosserat
+    )
 endif()
 
 if(SoftRobots_FOUND)
@@ -118,7 +128,7 @@ sofa_create_package_with_targets(
     )
 
 
-option(COSSERAT_BUILD_TESTS "Build unit tests" OFF )
+option(COSSERAT_BUILD_TESTS "Build unit tests" ON )
 if(COSSERAT_BUILD_TESTS)
     add_subdirectory(tests)
 endif()

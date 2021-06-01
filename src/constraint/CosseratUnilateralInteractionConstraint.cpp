@@ -1,7 +1,6 @@
-
 /******************************************************************************
-*       SOFA, Simulation Open-Framework Architecture, version 1.0 RC 1        *
-*                (c) 2006-2011 MGH, INRIA, USTL, UJF, CNRS                    *
+*               SOFA, Simulation Open-Framework Architecture                  *
+*                (c) 2006-2018 INRIA, USTL, UJF, CNRS, MGH                    *
 *                                                                             *
 * This library is free software; you can redistribute it and/or modify it     *
 * under the terms of the GNU Lesser General Public License as published by    *
@@ -17,24 +16,28 @@
 * along with this library; if not, write to the Free Software Foundation,     *
 * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA.          *
 *******************************************************************************
-*                               SOFA :: Modules                               *
+*                           Plugin SoftRobots v1.0                            *
 *                                                                             *
-* This component is not open-source                                           *
+* This plugin is also distributed under the GNU LGPL (Lesser General          *
+* Public License) license with the same conditions than SOFA.                 *
 *                                                                             *
-* Authors: Yinoussa Adagolodjo/adagolodjo@protonamil.com                      *
+* Contributors: Defrost team  (INRIA, University of Lille, CNRS,              *
+*               Ecole Centrale de Lille)                                      *
 *                                                                             *
-* Contact information: contact@sofa-framework.org                             *
+* Contact information: https://project.inria.fr/softrobot/contact/            *
+*                                                                             *
 ******************************************************************************/
-#include<sofa/defaulttype/VecTypes.h>
+
+
+#include "CosseratUnilateralInteractionConstraint.inl"
+
 #include <sofa/core/ObjectFactory.h>
-#include "CosseratNeedleSlidingConstraint.inl"
-
-
 
 namespace sofa::component::constraintset
 {
 
-using sofa::defaulttype::Rigid3Types;
+//////////////////////////////////////CosseratActuatorConstraintConstraintResolution1Dof/////////////////////////////////////////////
+using namespace sofa::defaulttype;
 using namespace sofa::helper;
 using namespace sofa::core;
 
@@ -44,10 +47,17 @@ using namespace sofa::core;
 // 1-RegisterObject("description") + .add<> : Register the component
 // 2-.add<>(true) : Set default template
 
-int CosseratNeedleSlidingConstraintClass = RegisterObject("Simulate sliding contraints for needle insertion.")
-.add< CosseratNeedleSlidingConstraint<sofa::defaulttype::Vec3Types> >(true)
+int CosseratUnilateralInteractionConstraintClass = RegisterObject("Simulate cable actuation.")
+.add< CosseratUnilateralInteractionConstraint<Vec3Types> >(true)
+
 ;
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// Force template specialization for the most common sofa type.
+// This goes with the extern template declaration in the .h. Declaring extern template
+// avoid the code generation of the template for each compilation unit.
+// see: http://www.stroustrup.com/C++11FAQ.html#extern-templates
+//template class CosseratActuatorConstraint<Vec3Types>;
 
 } // namespace sofa
-
 

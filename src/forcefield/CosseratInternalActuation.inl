@@ -30,26 +30,20 @@
 #pragma once
 #include "CosseratInternalActuation.h"
 #include <SofaBaseLinearSolver/FullVector.h>
+#include <sofa/core/behavior/ForceField.inl>
 #include <sofa/core/behavior/MechanicalState.h>
+#include <algorithm>
+#include <ctime>
+#include <sofa/helper/OptionsGroup.h>
+#include <iostream>
 
 using sofa::core::behavior::MechanicalState ;
 using sofa::core::objectmodel::BaseContext ;
-
-#include <sofa/core/behavior/ForceField.inl>
 using sofa::helper::ReadAccessor ;
 using sofa::helper::WriteAccessor ;
 using sofa::core::VecCoordId;
-
-// ??
-#include <sofa/helper/OptionsGroup.h>
-
-
-#include <iostream>
 using std::cout ;
 using std::endl ;
-
-#include <algorithm>
-#include <ctime>
 
 namespace sofa::component::forcefield
 {

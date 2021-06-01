@@ -7,20 +7,19 @@ Based on the work done with SofaPython. See POEMapping.py
 __authors__ = "younesssss"
 __contact__ = "adagolodjo@protonmail.com, yinoussa.adagolodjo@inria.fr"
 __version__ = "1.0.0"
-__copyright__ = "(c) 2021,Inria"
-__date__ = "March 8 2021"
+__copyright__ = "(c) 2020,Inria"
+__date__ = "March 17 2021"
 
 import Sofa
 import os
 import sys
-sys.path.append('../')
-from createFemRegularGrid import createFemCube
-
 from stlib3.scene import MainHeader
 from splib3.numerics import Quat
-# from stlib3.physics.collision import CollisionMesh
 
-path = os.path.dirname(os.path.abspath(__file__))+'/../mesh/'
+sys.path.append('../')
+from createFemRegularGrid import createFemCube
+from usefulFunctions import BuildCosseratGeometry, AddPointProcess
+
 
 
 class Animation(Sofa.Core.Controller):
@@ -46,28 +45,28 @@ class Animation(Sofa.Core.Controller):
                 posA[5][1] -= self.angularRate
 
         # ######## Reste rigid position #########
-        if key == "+":  # up
-            with self.rigidBaseMO.rest_position.writeable() as posA:
-                qOld = Quat()
-                for i in range(0, 4):
-                    qOld[i] = posA[0][i+3]
-                qNew = Quat.createFromEuler([0., self.angularRate, 0.], 'ryxz')
-                qNew.normalize()
-                qNew.rotateFromQuat(qOld)
-                for i in range(0, 4):
-                    posA[0][i+3] = qNew[i]
-
-        if key == "-":  # down
-            with self.rigidBaseMO.rest_position.writeable() as posA:
-                qOld = Quat()
-                for i in range(0, 4):
-                    qOld[i] = posA[0][i+3]
-
-                qNew = Quat.createFromEuler([0., -self.angularRate,  0.], 'ryxz')
-                qNew.normalize()
-                qNew.rotateFromQuat(qOld)
-                for i in range(0, 4):
-                    posA[0][i+3] = qNew[i]
+        # if key == "+":  # up
+        #     with self.rigidBaseMO.rest_position.writeable() as posA:
+        #         qOld = Quat()
+        #         for i in range(0, 4):
+        #             qOld[i] = posA[0][i+3]
+        #         qNew = Quat.createFromEuler([0., self.angularRate, 0.], 'ryxz')
+        #         qNew.normalize()
+        #         qNew.rotateFromQuat(qOld)
+        #         for i in range(0, 4):
+        #             posA[0][i+3] = qNew[i]
+        #
+        # if key == "-":  # down
+        #     with self.rigidBaseMO.rest_position.writeable() as posA:
+        #         qOld = Quat()
+        #         for i in range(0, 4):
+        #             qOld[i] = posA[0][i+3]
+        #
+        #         qNew = Quat.createFromEuler([0., -self.angularRate,  0.], 'ryxz')
+        #         qNew.normalize()
+        #         qNew.rotateFromQuat(qOld)
+        #         for i in range(0, 4):
+        #             posA[0][i+3] = qNew[i]
 
         if ord(key) == 18:  # left
             with self.rigidBaseMO.rest_position.writeable() as posA:
@@ -86,8 +85,6 @@ class Animation(Sofa.Core.Controller):
                 posA[0][1] += self.rate
 
 
-
-
 def createScene(rootNode):
 
     MainHeader(rootNode, plugins=["SoftRobots", "SofaSparseSolver", "SofaPreconditioner",
@@ -96,7 +93,6 @@ def createScene(rootNode):
                                   'SofaConstraint', 'SofaTopologyMapping'],
                repositoryPaths=[os.getcwd()])
 
-    # rootNode.addObject('VisualStyle', displayFlags='showVisualModels showInteractionForceFields')
     rootNode.addObject('VisualStyle', displayFlags='showBehaviorModels hideCollisionModels hideBoundingCollisionModels '
                                                    'showForceFields hideInteractionForceFields showWireframe')
     rootNode.addObject('FreeMotionAnimationLoop')
@@ -119,7 +115,7 @@ def createScene(rootNode):
     ###############
     rigidBaseNode = cableNode.addChild('rigidBase')
     RigidBaseMO = rigidBaseNode.addObject('MechanicalObject', template='Rigid3d', name="RigidBaseMO",
-                                          position="0 0 0  0 0 0 1", showObject='1', showObjectScale='5.')
+                                          position="0 0 0  0 0 0 1", translation="-40. 0. 0.", showObject='1', showObjectScale='5.')
     rigidBaseNode.addObject('RestShapeSpringsForceField', name='spring', stiffness="50000",
                             angularStiffness="50000", external_points="0", mstate="@RigidBaseMO", points="0",
                             template="Rigid3d")
@@ -127,27 +123,14 @@ def createScene(rootNode):
     ###############
     # Rate of angular Deformation  (2 sections)
     ###############
-    totalLen = 80.
-    nbSectionS = 6
-    lengthS = totalLen/nbSectionS
-    positionS = []
-    longeurS = []
-    sumS = 0.
-    curv_abs_inputS = [0.0]
-    for i in range(nbSectionS):
-        positionS.append([0, 0, 0])
-        longeurS.append((((i + 1) * lengthS) - i * lengthS))
-        sumS += longeurS[i]
-        curv_abs_inputS.append(sumS)
-    longeurS[nbSectionS - 1] = longeurS[nbSectionS - 1] + 1.
-    curv_abs_inputS[nbSectionS] = 81.
+    [positionS, curv_abs_inputS, longeurS, framesF, curv_abs_outputF, cable_positionF] = \
+        BuildCosseratGeometry(nbSection=8, nbFrames=16, totalLength=80)
 
-    longeur = '15 15 15 15 6 15'  # beams size
     rateAngularDeformNode = cableNode.addChild('rateAngularDeform')
     rateAngularDeformMO = rateAngularDeformNode.addObject(
-        'MechanicalObject', template='Vec3d', name='rateAngularDeformMO', position=positionS, showIndices="1")
+        'MechanicalObject', template='Vec3d', name='rateAngularDeformMO', position=positionS, showIndices="0")
     rateAngularDeformNode.addObject(
-        'BeamHookeLawForceField', crossSectionShape='circular', length=longeur, radius='2.0', youngModulus='1.e12')
+        'BeamHookeLawForceField', crossSectionShape='circular', length=longeurS, radius='2.0', youngModulus='1.e12')
     ################################
     # Animation (to move the dofs) #
     ################################
@@ -156,20 +139,6 @@ def createScene(rootNode):
     ##############
     #   Frames   #
     ##############
-    nbFramesF = 14
-    lengthF = totalLen / nbFramesF
-    framesF = []
-    curv_abs_outputF = []
-    cable_positionF = []
-    for i in range(nbFramesF):
-        sol = i * lengthF
-        framesF.append([sol, 0, 0, 0, 0, 0, 1])
-        cable_positionF.append([sol, 0, 0])
-        curv_abs_outputF.append(sol)
-    framesF.append([totalLen, 0, 0, 0, 0, 0, 1])
-    print("=============> framesF : ", framesF)
-    cable_positionF.append([totalLen, 0, 0])
-    curv_abs_outputF.append(totalLen)
 
     # the node of the frame needs to inherit from rigidBaseMO and rateAngularDeform
     mappedFrameNode = rigidBaseNode.addChild('MappedFrames')
@@ -187,30 +156,68 @@ def createScene(rootNode):
                               curv_abs_output=curv_abs_outputF, input1=inputMO, input2=inputMO_rigid,
                               output=outputMO, debug='0', max=6.e-2, deformationAxis=1, nonColored="0", radius=5)
 
-    slidingPoint = mappedFrameNode.addChild('slidingPoint')
-    slidingPointMO = slidingPoint.addObject('MechanicalObject', name="cablePos", position=cable_positionF,
-                                            showObject="1", showIndices="0")
-    slidingPoint.addObject('IdentityMapping')
+    needleCollision = mappedFrameNode.addChild('needleCollision')
+    edgeList = "0 1 1 2 2 3 3 4 4 5 5 6 6 7 7 8 8 9 9 10 10 11 11 12 12 13 13 14 14 15 15 16"
+    needleCollision.addObject('EdgeSetTopologyContainer', name="Container", position=cable_positionF, edges=edgeList)
+    needleCollisionMO = needleCollision.addObject('MechanicalObject', name="cablePos", position=cable_positionF,
+                                                  showObject="1", showIndices="0")
+    needleCollision.addObject('NeedleGeometry', name='Needle')  # ### NeedleConstriantPlugin
+    needleCollision.addObject('IdentityMapping')
 
     # Create FEM Node
-    femPos = [" 41.0 0 0 45 0 0 50 0 0 55 0 0 60 0 0 60 0 0  70 0 0 "]
+    femPos = [" 40.0 0 0 45 0 0 50 0 0 55 0 0 60 0 0 65 0 0  70 0 0  80 0 0 "]
+    edgeTrajectory = "0 1 1 2 2 3 3 4 4 5 5 6 6 7 "
     cubeNode = createFemCube(rootNode)
     gelNode = cubeNode.getChild('gelNode')
-    femPoints = gelNode.addChild('femPoints')
-    inputFEMCable = femPoints.addObject('MechanicalObject', name="pointsInFEM", position=femPos, showIndices="1")
-    femPoints.addObject('BarycentricMapping')
 
-    mappedPointsNode = slidingPoint.addChild('MappedPoints')
-    femPoints.addChild(mappedPointsNode)
-    mappedPoints = mappedPointsNode.addObject('MechanicalObject', template='Vec3d', position=femPos, name="FramesMO")
+    Trajectory = gelNode.addChild('Trajectory')
+    Trajectory.addObject('VisualStyle', displayFlags='showCollisionModels')
+    Trajectory.addObject('EdgeSetTopologyContainer', name="Container", position=femPos, edges=edgeTrajectory)
+    Trajectory.addObject('EdgeSetTopologyModifier', name='Modifier')
+    Trajectory.addObject('MechanicalObject', name="pointsInFEM", position=femPos, showIndices="1")
+    Trajectory.addObject('NeedleTrajectoryGeometry', drawRadius=0.2, name="trajectory", entryDist="1",
+                         constraintDist="3", clearTrajectory="true")
+    Trajectory.addObject('BarycentricMapping')
 
-    inputCableMO = slidingPointMO.getLinkPath()
-    inputFEMCableMO = inputFEMCable.getLinkPath()
+    constraintPoints = gelNode.addChild('constraintPoints')
+    inputConstraintPointsMO = constraintPoints.addObject('MechanicalObject', name="pointsInFEM", position=[40., 0., 0.],
+                                                         showIndices="1")
+    constraintPoints.addObject('BarycentricMapping')
+
+    mappedPointsNode = needleCollision.addChild('MappedPoints')
+    constraintPoints.addChild(mappedPointsNode)
+    mappedPoints = mappedPointsNode.addObject('MechanicalObject', template='Vec3d', name="FramesMO")
+
+    inputCableMO = needleCollisionMO.getLinkPath()
+    inputFEMCableMO = inputConstraintPointsMO.getLinkPath()
     outputPointMO = mappedPoints.getLinkPath()
 
     mappedPointsNode.addObject('CosseratNeedleSlidingConstraint', name="QPConstraint")
-    mappedPointsNode.addObject('DifferenceMultiMapping', name="pointsMulti", input1=inputFEMCableMO, lastPointIsFixed=0,
-                               input2=inputCableMO, output=outputPointMO, direction="@../../FramesMO.position")
+    diffMapping = mappedPointsNode.addObject('DifferenceMultiMapping', name="pointsMulti", input1=inputFEMCableMO,
+                                             lastPointIsFixed=0, input2=inputCableMO, output=outputPointMO,
+                                             direction="@../../FramesMO.position")
+    mappedPointsNode.addObject(AddPointProcess(inputConstraintPointsMO, needleCollisionMO, diffMapping))
 
-    return rootNode
+    # return rootNode
 
+
+def main():
+    import SofaRuntime
+    import Sofa.Gui
+    SofaRuntime.importPlugin("SofaOpenglVisual")
+    root = Sofa.Core.Node("root")
+    print("0. ====> ")
+    createScene(root)
+    print("1. ====> ")
+
+    Sofa.Gui.GUIManager.Init("myscene", "qglviewer")
+    Sofa.Gui.GUIManager.createGUI(root, __file__)
+    Sofa.Gui.GUIManager.SetDimension(1080, 1080)
+    Sofa.Gui.GUIManager.MainLoop(root)
+    Sofa.Gui.GUIManager.closeGUI()
+
+    print("End of simulation.")
+
+
+if __name__ == '__main__':
+    main()
