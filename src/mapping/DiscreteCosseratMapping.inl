@@ -52,10 +52,10 @@ DiscreteCosseratMapping<TIn1, TIn2, TOut>::DiscreteCosseratMapping()
                                  "the minimum of the deformation.\n"))
     , d_radius(initData(&d_radius, (Real)3.0, "radius",
                                  "the axis in which we want to show the deformation.\n"))
-    , d_drawMapBeam(initData(&d_drawMapBeam, true,"nonColored", "if this parameter is false, you draw the beam with color "
-                                                                "according to the force apply to each beam"))
+    , d_drawMapBeam(initData(&d_drawMapBeam, true,"nonColored", "if this parameter is false, you draw the beam with "
+                                                                "color according to the force apply to each beam"))
     , d_color(initData(&d_color, defaulttype::Vec4f (1, 0., 1., 0.8) ,"color", "The default beam color"))
-        , d_index(initData(&d_index, "index", "if this parameter is false, you draw the beam with color "
+    , d_index(initData(&d_index, "index", "if this parameter is false, you draw the beam with color "
                                                           "according to the force apply to each beam"))
 {
 }

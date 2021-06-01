@@ -71,7 +71,7 @@ set(SOURCE_FILES
     src/constraint/CosseratSlidingConstraint.cpp
     src/constraint/QPSlidingConstraint.cpp
     src/constraint/CosseratNeedleSlidingConstraint.cpp
-    )
+        )
 
 set(README_FILE "Cosserat.txt" )
 
@@ -128,7 +128,7 @@ sofa_create_package_with_targets(
     )
 
 
-option(COSSERAT_BUILD_TESTS "Build unit tests" OFF )
+option(COSSERAT_BUILD_TESTS "Build unit tests" ON )
 if(COSSERAT_BUILD_TESTS)
     add_subdirectory(tests)
 endif()
