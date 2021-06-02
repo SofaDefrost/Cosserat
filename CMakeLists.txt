@@ -1,8 +1,23 @@
 cmake_minimum_required(VERSION 3.1)
-project(CosseratPlugin VERSION 1.0)
+project(CosseratPlugin VERSION 21.06.99)
+
+# Policies
+cmake_policy(SET CMP0072 NEW)
+cmake_policy(SET CMP0074 NEW)
+cmake_policy(SET CMP0076 NEW)
+cmake_policy(SET CMP0094 NEW)
+
+set (COSSERAT_VERSION ${PROJECT_VERSION})
+
+## Default build type
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE "Release")
+endif()
+
 
 include(cmake/environment.cmake)
 find_package(SofaFramework REQUIRED)
+#find_package(SOFA COMPONENTS SofaFramework REQUIRED)
 
 option(COSSERAT_IGNORE_ERRORS "Enable this option to ignore the recommendations and generate anyway." OFF)
 
@@ -15,7 +30,7 @@ if(NOT COSSERAT_IGNORE_ERRORS)
     endif()    
 endif()
 
-find_package(SofaPython QUIET)
+find_package(SofaPython3 QUIET)
 set(COSSERAT_PYTHON ${SofaPython_FOUND}) # config.h.in
 find_package(STLIB QUIET)
 if(STLIB_FOUND)
@@ -23,7 +38,6 @@ if(STLIB_FOUND)
 else()
     message("-- The highly recommanded 'STLIB' plugin is missing. You can compile Cosserat but some of the provided python examples will not work. ")
 endif()
-
 
 set(HEADER_FILES
     src/initCosserat.h
@@ -52,6 +66,8 @@ set(HEADER_FILES
     src/constraint/QPSlidingConstraint.inl
     src/constraint/CosseratNeedleSlidingConstraint.h
     src/constraint/CosseratNeedleSlidingConstraint.inl
+    src/constraint/CosseratUnilateralInteractionConstraint.h
+    src/constraint/CosseratUnilateralInteractionConstraint.inl
     )
 
 set(SOURCE_FILES
@@ -71,13 +87,13 @@ set(SOURCE_FILES
     src/constraint/CosseratSlidingConstraint.cpp
     src/constraint/QPSlidingConstraint.cpp
     src/constraint/CosseratNeedleSlidingConstraint.cpp
-        )
+    src/constraint/CosseratUnilateralInteractionConstraint.cpp
+    )
 
 set(README_FILE "Cosserat.txt" )
 
 find_package(SoftRobots QUIET)
 if(SoftRobots_FOUND)
-
     list(APPEND HEADER_FILES
         src/constraint/CosseratActuatorConstraint.h
         src/constraint/CosseratActuatorConstraint.inl
@@ -107,6 +123,12 @@ if(SofaPython_FOUND)
 endif()
 
 if(SofaPython3_FOUND)
+    get_filename_component(SP3_ROOT_DIR "${SofaPython3_DIR}/../../.." ABSOLUTE)
+    message(STATUS
+            "Cosserat find SofaPython3 support  \n"
+            "SP3 version: ${SofaPython3_VERSION}\n"
+            "SP3 location: ${SP3_ROOT_DIR}"
+    )
     SP3_add_python_package(
             SOURCE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/python3/Cosserat
             TARGET_DIRECTORY Cosserat
@@ -128,10 +150,37 @@ sofa_create_package_with_targets(
     )
 
 
+find_package(GTest CONFIG QUIET)
+if (NOT GTest_FOUND)
+    # This find_package needs to be executed at MOST once, else it will fails on the second call
+    find_package(GMock QUIET)
+endif ()
+
+
 option(COSSERAT_BUILD_TESTS "Build unit tests" ON )
 if(COSSERAT_BUILD_TESTS)
-    add_subdirectory(tests)
+    add_subdirectory(Tests)
 endif()
+
+#[[option(COSSERAT_BUILD_TESTS "Build unit tests" ON )
+#CMAKE_DEPENDENT_OPTION(COSSERAT_BUILD_TESTS "Compile the automatic tests for Cosserat." ON "GTest_FOUND OR GMock_FOUND" OFF)
+if (COSSERAT_BUILD_TESTS)
+    message(STATUS "Cosserat build unittests is ON")
+    if (TARGET gtest)
+        message(STATUS "Cosserat with unittests")
+    else()        
+        add_library(gtest SHARED IMPORTED)
+        set_target_properties(gtest PROPERTIES
+            INTERFACE_INCLUDE_DIRECTORIES "${GTEST_INCLUDE_DIRS}"
+            IMPORTED_LOCATION "${GTEST_BOTH_LIBRARIES}"
+        )
+        message(STATUS "Cosserat with unittests\n\tLibraries: ${GTEST_BOTH_LIBRARIES}\n\tInclude directories: $GTEST_INCLUDE_DIRS}")
+    endif ()
+    add_subdirectory(Tests)
+elseif(NOT GTest_FOUND AND NOT GMock_FOUND)
+    message(STATUS "Cosserat without unittests (missing GTest)")
+endif()]]
+
 
 SET_PROPERTY(GLOBAL PROPERTY USE_FOLDERS ON)
 SET_PROPERTY(TARGET ${PROJECT_NAME} PROPERTY FOLDER "plugins")
