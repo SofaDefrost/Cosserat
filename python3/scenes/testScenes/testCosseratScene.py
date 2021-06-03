@@ -12,19 +12,57 @@ __date__ = "Juin 3 2021"
 
 import Sofa
 import os
-
+import numpy as np
 
 #constants
 GRAVITY = 9810
 TOT_MASS = 0.1
-YOUNG_MODULUS=7e9
-DENSITY = 0.02
+YOUNG_MODULUS=7e4
+DENSITY = 0.2
 
+TempPath = "/home/stefan/Repos/Code/sofa/plugins/SoftRobots.Inverse/docs/examples/component/constraint/BendLabsEffector/Temp/"
+class OrientationSweepController(Sofa.Core.Controller):
 
+    def __init__(self, *args, **kwargs):
+        Sofa.Core.Controller.__init__(self, *args, **kwargs)
+
+        self.RootNode = kwargs["RootNode"]
+        self.RateAngularDeformMO = kwargs["RateAngularDeformMO"]
+
+        self.LiveAngleDataPath = TempPath + "AngleData.txt"
+        self.Data = np.array([])
+        self.LastData = self.Data
+        
+    def onAnimateBeginEvent(self, dt):
+        
+
+        try:
+            self.Data = np.loadtxt(self.LiveAngleDataPath)
+        except Exception as e:
+            print("Warning: couldn't read angles from file")
+            return
+        
+        if self.Data.shape[0] == 0:
+            return
+
+        tot_length = 100.0        
+        alpha = np.deg2rad(self.Data[1])/(tot_length) # Actually, the sensor (or the arduino lib) doesn't follow our convention of the order of angles (first angle is in xz plane, second in yz plane)
+        beta = np.deg2rad(self.Data[0])/(tot_length)
+        
+
+        #print("value: " + str(self.RateAngularDeformMO.rest_position.value))
+        #CurrentRestPosition = self.RateAngularDeformMO.rest_position.value
+#        CurrentRestPosition[0][1] = alpha
+#        CurrentRestPosition[0][2] = beta
+        self.RateAngularDeformMO.rest_position = [[0, alpha, beta]]
+         
+        print("setting alpha to: " + str(alpha))
+        print("setting beta to: " + str(beta))
+        
 def createScene(rootNode):
 
     rootNode.addObject('RequiredPlugin', name='SoftRobots')
-    rootNode.addObject('RequiredPlugin', name='BeamAdapter')
+    #rootNode.addObject('RequiredPlugin', name='BeamAdapter')
     rootNode.addObject('RequiredPlugin', name='SofaPython3')
     rootNode.addObject('RequiredPlugin', name='SofaSparseSolver')
     rootNode.addObject('RequiredPlugin', name='SofaOpenglVisual')
@@ -39,7 +77,7 @@ def createScene(rootNode):
     rootNode.addObject('RequiredPlugin', name='SofaGeneralRigid')
 
     rootNode.addObject('VisualStyle', displayFlags='showVisualModels showBehaviorModels showCollisionModels hideBoundingCollisionModels showForceFields hideInteractionForceFields hideWireframe')
-    rootNode.findData('dt').value=0.01
+    rootNode.findData('dt').value=0.3
     rootNode.findData('gravity').value= [0., 0., -GRAVITY]
 
     rootNode.addObject('FreeMotionAnimationLoop')
@@ -113,15 +151,17 @@ def createScene(rootNode):
     
     
     """ Define: angular rate which is the torsion(x) and bending (y, z) of each section """
-    val = 3.14/(2*tot_length)
+ 
+    #val = 3.14/(2*tot_length)
+    val = 0   
     rateAngularDeformNode = cableNode.addChild('rateAngularDeform')
     rateAngularDeformMO = rateAngularDeformNode.addObject('MechanicalObject',
                                     template='Vec3d', name='rateAngularDeformMO',
-                                    position=positionS, showIndices=0, rest_position=[0.0, val, val])
+                                    position=positionS, showIndices=0, rest_position=[0.0, 0, val])
     BeamHookeLawForce = rateAngularDeformNode.addObject('BeamHookeLawForceField',
                                     crossSectionShape='circular', length=longeurS,
                                     radius=90., youngModulus=5e6)
-    rateAngularDeformNode.addObject('RestShapeSpringsForceField', name='spring', stiffness="5.e8",
+    rateAngularDeformNode.addObject('RestShapeSpringsForceField', name='spring', stiffness="1.e20",
                                external_points="0", mstate="@rateAngularDeformMO", points="0", template="Vec3d")
 
 
@@ -168,5 +208,7 @@ def createScene(rootNode):
     cosColliMeca = cosCollisionPoints.addObject('MechanicalObject', name="cosColliPoins", template="Vec3d", 
                                                 position = position3D)
     cosCollisionPoints.addObject('SkinningMapping', nbRef='2')
+    
+    rootNode.addObject(OrientationSweepController(name="OrientationSweeController", RootNode=rootNode, RateAngularDeformMO=rateAngularDeformMO))
 
     return rootNode

@@ -11,8 +11,57 @@ __copyright__ = "(c) 2020,Inria"
 __date__ = "March 1 2020"
 import Sofa
 import os
+import numpy as np
 
+TempPath = "/home/stefan/Repos/Code/sofa/plugins/SoftRobots.Inverse/docs/examples/component/constraint/BendLabsEffector/Temp/"
+class OrientationSweepController(Sofa.Core.Controller):
 
+    def __init__(self, *args, **kwargs):
+        Sofa.Core.Controller.__init__(self, *args, **kwargs)
+
+        self.RootNode = kwargs["RootNode"]
+
+        self.LiveAngleDataPath = TempPath + "AngleData.txt"
+        self.Data = np.array([])
+        self.LastData = self.Data
+        
+    def onAnimateBeginEvent(self, dt):
+        
+
+#        self.RotationAngle = (self.RotationAngle + 0.5)%360
+#        
+#        
+#        
+#        Amplitude = 45
+#        self.InclinationAngle = Amplitude #* np.abs(np.sin(np.deg2rad(2*self.RotationAngle)))
+#        self.RInXY = np.cos(np.deg2rad(90-self.InclinationAngle))
+#        self.Height = np.cos(np.deg2rad(self.InclinationAngle))
+#        
+#        (alpha, beta) = calcAlphaAndBeta(self.RotationAngle, self.Height, self.RInXY)
+               
+        try:
+            self.Data = np.loadtxt(self.LiveAngleDataPath)
+        except Exception as e:
+            print("Warning: couldn't read pressures from file")
+#            self.Data = self.LastData
+#            self.RealPressures = self.Data[:6] # in kPa   
+            return
+        
+        if self.Data.shape[0] == 0:
+            return
+        
+        alpha = self.Data[1] # Actually, the sensor (or the arduino lib) doesn't follow our convention of the order of angles (first angle is in xz plane, second in yz plane)
+        beta = self.Data[0]
+        
+        print("setting alpha to: " + str(alpha))
+        print("setting beta to: " + str(beta))
+        
+#        self.BendLabsEffector.alpha.value = alpha
+#        self.BendLabsEffector.beta.value = beta
+#        
+        
+        #print("Constraints: " + str(self.FPAMO.constraint.value))
+        
 def createScene(rootNode):
     """Classical function to create a scene with SofaPython3.
 
@@ -27,7 +76,7 @@ def createScene(rootNode):
 
     """
 
-    rootNode.addObject('RequiredPlugin', pluginName='SoftRobots SofaPython3 SofaSparseSolver CosseratPlugin BeamAdapter SofaConstraint SofaDeformable SofaImplicitOdeSolver', printLog='0')
+    rootNode.addObject('RequiredPlugin', pluginName='SoftRobots SofaPython3 SofaSparseSolver CosseratPlugin  SofaConstraint SofaDeformable SofaImplicitOdeSolver', printLog='0')
     rootNode.addObject('VisualStyle', displayFlags='hideVisualModels showBehaviorModels showCollisionModels hideBoundingCollisionModels showForceFields hideInteractionForceFields hideWireframe')
 
 
@@ -143,7 +192,8 @@ def createScene(rootNode):
 
 
     rootNode.addObject('BilateralInteractionConstraint', template='Rigid3d', object2='@rigidBase/MappedFrames/FramesMO', object1='@targetPos/target', first_point='0', second_point=str(len(curv_abs_outputF)-1))
-
+    
+    rootNode.addObject(OrientationSweepController(name="OrientationSweeController", RootNode=rootNode))
 
 
     return rootNode
