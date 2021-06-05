@@ -130,7 +130,7 @@ sofa_create_package_with_targets(
 
 option(COSSERAT_BUILD_TESTS "Build unit tests" ON )
 if(COSSERAT_BUILD_TESTS)
-    add_subdirectory(tests)
+    add_subdirectory(Tests)
 endif()
 
 SET_PROPERTY(GLOBAL PROPERTY USE_FOLDERS ON)
