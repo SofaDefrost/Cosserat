@@ -2,29 +2,34 @@
 
 import os
 import Sofa
-from stlib.scene import MainHeader, ContactHeader
-from splib.numerics import Vec3, Quat
-from stlib.physics.collision import CollisionMesh
+#from stlib3.scene import MainHeader, ContactHeader
+#from splib.numerics import Vec3, Quat
+#from stlib.physics.collision import CollisionMesh
+from splib3.numerics import Vec3, Quat
 
 path = os.path.dirname(os.path.abspath(__file__)) + '/../mesh/'
 
 
-class Animation(Sofa.PythonScriptController):
-
-    def __init__(self, rigidBaseNode, rateAngularDeformNode):
-        self.rigidBaseNode = rigidBaseNode
-        self.rateAngularDeformNode = rateAngularDeformNode
+class Animation(Sofa.Core.Controller):
+    
+    def __init__(self, *args, **kwargs):
+        Sofa.Core.Controller.__init__(self, *args, **kwargs)
+    #def __init__(self, rigidBaseNode, rateAngularDeformNode):
+        self.rigidBaseNode = args[0]
+        self.rateAngularDeformNode = args[1]
 
         self.rate = 0.2
         self.angularRate = 0.02
+        
+        self.initGraph()
         return
 
-    def initGraph(self, nodeRigid):
+    def initGraph(self):
         self.rigidBaseMO = self.rigidBaseNode.getObject('RigidBaseMO')
         self.rateAngularDeformMO = self.rateAngularDeformNode.getObject(
             'rateAngularDeformMO')
 
-    def onBeginAnimationStep(self, dt):
+    def onAnimateBeginEvent(self, dt):
         pos = self.rigidBaseMO.findData('rest_position').value
         if pos[0][0] >= -17.0654:
             pos[0][0] -= self.rate
@@ -94,64 +99,78 @@ class Animation(Sofa.PythonScriptController):
 
 
 def createScene(rootNode):
-    MainHeader(rootNode, plugins=["SoftRobots", "SoftRobots.Inverse", "SofaPython", "SofaSparseSolver", "SofaConstraint",
-                                  "SofaPreconditioner", "SofaOpenglVisual", "CosseratPlugin", "BeamAdapter"],
-               repositoryPaths=[os.getcwd()])
+        
 
-    # rootNode.createObject('VisualStyle', displayFlags='showVisualModels hideBehaviorModels showCollisionModels '
-    #                                                   'hideBoundingCollisionModels hideForceFields '
-    #                                                   'showInteractionForceFields showWireframe')
-    rootNode.createObject('VisualStyle', displayFlags='showVisualModels showInteractionForceFields showWireframe')
+    pluginNameList = 'SofaConstraint SofaDeformable SofaImplicitOdeSolver SofaMeshCollision SofaPreconditioner' \
+                 ' SofaGeneralTopology SofaOpenglVisual SofaGeneralRigid SoftRobots SofaSparseSolver' \
+                 ' CosseratPlugin BeamAdapter SofaBoundaryCondition'
+    
+    rootNode.addObject('RequiredPlugin', pluginName=pluginNameList, printLog='0')
+    
+    #MainHeader(rootNode, plugins=["SoftRobots", "SoftRobots.Inverse", "SofaPython", "SofaSparseSolver", "SofaConstraint",
+                                  #"SofaPreconditioner", "SofaOpenglVisual", "CosseratPlugin", "BeamAdapter"],
+               #repositoryPaths=[os.getcwd()])
 
-    rootNode.createObject('FreeMotionAnimationLoop')
-    # rootNode.createObject('QPInverseProblemSolver', printLog='0')
-    rootNode.createObject('GenericConstraintSolver', tolerance="1e-20", maxIterations="500", printLog="0")
+    rootNode.addObject('VisualStyle', displayFlags='showVisualModels showInteractionForceFields showWireframe')
 
-    ContactHeader(rootNode, alarmDistance=2.5, contactDistance=2, frictionCoef=0.08)
+    rootNode.findData('gravity').value = [9810., 0., 0.]
+    rootNode.findData('dt').value = 0.01
+
+    rootNode.addObject('FreeMotionAnimationLoop')
+    #rootNode.addObject('DefaultPipeline', verbose="0")
+    rootNode.addObject('CollisionPipeline', verbose="0")
+    rootNode.addObject('BruteForceDetection', name="N2")
+    #rootNode.addObject('DefaultContactManager', response="FrictionContact", responseParams="mu=0.08")
+    rootNode.addObject('CollisionResponse', response="FrictionContact", responseParams="mu=0.08")
+    rootNode.addObject('LocalMinDistance', name="Proximity", alarmDistance=0.3, contactDistance=0.26)
+    # rootNode.addObject('QPInverseProblemSolver', printLog='0')
+    rootNode.addObject('GenericConstraintSolver', tolerance="1e-20", maxIterations="500", printLog="0")
+    rootNode.addObject('Camera', position="-35 0 280", lookAt="0 0 0")
 
     rootNode.gravity = "0 -0 0"
-    rootNode.createObject('BackgroundSetting', color='0 0.168627 0.211765')
-    rootNode.createObject('OglSceneFrame', style="Arrows",
+    rootNode.addObject('BackgroundSetting', color='0 0.168627 0.211765')
+    rootNode.addObject('OglSceneFrame', style="Arrows",
                           alignment="TopRight")
 
     showObject = "0"
     showIndices = "0"
+    return 
 
-    ##########################################
-    # FEM Model                              #
-    ##########################################
-    finger = rootNode.createChild('finger')
-    finger.createObject('EulerImplicitSolver', name='odesolver', firstOrder='0', rayleighMass=0.1,
+    """
+        FEM Model
+    """
+    finger = rootNode.addChild('finger')
+    finger.addObject('EulerImplicitSolver', name='odesolver', firstOrder='0', rayleighMass=0.1,
                         rayleighStiffness=0.1)
-    finger.createObject('SparseLDLSolver', name='preconditioner')
+    finger.addObject('SparseLDLSolver', name='preconditioner')
 
     # Add a componant to load a VTK tetrahedral mesh and expose the resulting topology in the scene .
-    finger.createObject('MeshVTKLoader', name='loader', filename=path + 'finger.vtk', translation="-17.5 -12.5 7.5",
+    finger.addObject('MeshVTKLoader', name='loader', filename=path + 'finger.vtk', translation="-17.5 -12.5 7.5",
                         rotation="0 180 0")
 
-    # finger.createObject('MeshExporter', name='loader', filename=path +'transFinger.vtk', exportAtEnd="true")
+    # finger.addObject('MeshExporter', name='loader', filename=path +'transFinger.vtk', exportAtEnd="true")
 
-    finger.createObject('TetrahedronSetTopologyContainer', src='@loader', name='container')
-    finger.createObject('TetrahedronSetTopologyModifier')
-    # finger.createObject('TetrahedronSetTopologyAlgorithms', template='Vec3d')
-    # finger.createObject('TetrahedronSetGeometryAlgorithms', template='Vec3d')
+    finger.addObject('TetrahedronSetTopologyContainer', src='@loader', name='container')
+    finger.addObject('TetrahedronSetTopologyModifier')
+    # finger.addObject('TetrahedronSetTopologyAlgorithms', template='Vec3d')
+    # finger.addObject('TetrahedronSetGeometryAlgorithms', template='Vec3d')
 
     # Create a mechanicaobject component to stores the DoFs of the model
-    finger.createObject('MechanicalObject', name='tetras', template='Vec3d', showIndices='false',
+    finger.addObject('MechanicalObject', name='tetras', template='Vec3d', showIndices='false',
                         showIndicesScale='4e-5', rx='0', dz='0')
 
     # Gives a mass to the model
-    finger.createObject('UniformMass', totalMass='0.005')
+    finger.addObject('UniformMass', totalMass='0.005')
 
     # Add a TetrahedronFEMForceField componant which implement an elastic material model
     # solved using the Finite Element Method on
     # tetrahedrons.
-    finger.createObject('TetrahedronFEMForceField', template='Vec3d',
+    finger.addObject('TetrahedronFEMForceField', template='Vec3d',
                         name='FEM', method='large', poissonRatio='0.45', youngModulus='500')
 
-    finger.createObject('BoxROI', name='ROI1',
+    finger.addObject('BoxROI', name='ROI1',
                         box='-18 -15 -8 2 -3 8', drawBoxes='true')
-    finger.createObject('RestShapeSpringsForceField',
+    finger.addObject('RestShapeSpringsForceField',
                         points='@ROI1.indices', stiffness='1e12')
 
     ##########################################
@@ -161,60 +180,60 @@ def createScene(rootNode):
     FEMpos = [" 0.0 0 0 15 0 0 30 0 0 45 0 0 60 0 0 66 0 0 81 0.0 0.0"]
     # FEMpos = [" 81 0.0 0.0"]
 
-    femPoints = finger.createChild('femPoints')
-    inputFEMCable = femPoints.createObject('MechanicalObject', name="pointsInFEM", position=FEMpos, showObject="0",
+    femPoints = finger.addChild('femPoints')
+    inputFEMCable = femPoints.addObject('MechanicalObject', name="pointsInFEM", position=FEMpos, showObject="0",
                                            showIndices="0")
-    femPoints.createObject('BarycentricMapping')
+    femPoints.addObject('BarycentricMapping')
 
     # spheres = ["30. 0 0 48. 0 0 66 0 0 81. 0.0 0.0"]
-    # spheresPos = finger.createChild('spheresPos')
-    # spheresPosMec = spheresPos.createObject('MechanicalObject', name="spheresGoal", position=spheres, showObject="0",
+    # spheresPos = finger.addChild('spheresPos')
+    # spheresPosMec = spheresPos.addObject('MechanicalObject', name="spheresGoal", position=spheres, showObject="0",
     #                                        showIndices="1")
-    # spheresPos.createObject('BarycentricMapping')
-    finger.createObject('LinearSolverConstraintCorrection')
+    # spheresPos.addObject('BarycentricMapping')
+    finger.addObject('LinearSolverConstraintCorrection')
 
     ##########################################
     # Effector goal for interactive control  #
     ##########################################
     GoalPos = [[20.6307, 5.57305, -0.494896], [32.5759, 17.6405, -1.11956], [35.3802, 28.458, -1.52895],
                [36.3606, 42.5902, -1.85686]]
-    goal = rootNode.createChild('goal')
-    goal.createObject('EulerImplicitSolver', firstOrder='1')
-    goal.createObject('CGLinearSolver', iterations='100', tolerance="1e-5", threshold="1e-5")
-    # goal.createObject('MechanicalObject', name='goalMO', position='76.591 3.13521 0.35857')
-    goal.createObject('MechanicalObject', name='goalMO', position=GoalPos)
+    goal = rootNode.addChild('goal')
+    goal.addObject('EulerImplicitSolver', firstOrder='1')
+    goal.addObject('CGLinearSolver', iterations='100', tolerance="1e-5", threshold="1e-5")
+    # goal.addObject('MechanicalObject', name='goalMO', position='76.591 3.13521 0.35857')
+    goal.addObject('MechanicalObject', name='goalMO', position=GoalPos)
 
-    goal.createObject('SphereCollisionModel', radius='1.5')
-    goal.createObject('UncoupledConstraintCorrection')
-    goal.createObject('VisualStyle', displayFlags='showVisualModels showInteractionForceFields showCollisionModels')
+    goal.addObject('SphereCollisionModel', radius='1.5')
+    goal.addObject('UncoupledConstraintCorrection')
+    goal.addObject('VisualStyle', displayFlags='showVisualModels showInteractionForceFields showCollisionModels')
 
     ##########################################
     # Visualization                          #
     ##########################################
-    fingerVisu = finger.createChild('visu')
-    fingerVisu.createObject(
+    fingerVisu = finger.addChild('visu')
+    fingerVisu.addObject(
         'MeshSTLLoader', filename=path + "finger.stl", name="loader", translation="-17.5 -12.5 7.5",
         rotation="0 180 0")
-    # fingerVisu.createObject('STLExporter', filename=path+"transFinger", exportAtEnd="true")
-    fingerVisu.createObject('OglModel', src="@loader", template='ExtVec3f', color="0.0 0.7 0.7")
-    fingerVisu.createObject('BarycentricMapping')
+    # fingerVisu.addObject('STLExporter', filename=path+"transFinger", exportAtEnd="true")
+    fingerVisu.addObject('OglModel', src="@loader", template='ExtVec3f', color="0.0 0.7 0.7")
+    fingerVisu.addObject('BarycentricMapping')
 
     # ###############
     # New adds to use the sliding Actuator
     ###############
-    cableNode = rootNode.createChild('cableNode')
-    cableNode.createObject('EulerImplicitSolver', firstOrder="0", rayleighStiffness="1.0", rayleighMass='0.1')
-    cableNode.createObject('SparseLUSolver', name='solver')
-    cableNode.createObject('GenericConstraintCorrection')
+    cableNode = rootNode.addChild('cableNode')
+    cableNode.addObject('EulerImplicitSolver', firstOrder="0", rayleighStiffness="1.0", rayleighMass='0.1')
+    cableNode.addObject('SparseLUSolver', name='solver')
+    cableNode.addObject('GenericConstraintCorrection')
 
     # ###############
     # RigidBase
     ###############
-    rigidBaseNode = cableNode.createChild('rigidBase')
-    RigidBaseMO = rigidBaseNode.createObject('MechanicalObject', template='Rigid3d',
+    rigidBaseNode = cableNode.addChild('rigidBase')
+    RigidBaseMO = rigidBaseNode.addObject('MechanicalObject', template='Rigid3d',
                                              name="RigidBaseMO", position="0 0 0  0 0 0 1", showObject='1',
                                              showObjectScale='5.')
-    rigidBaseNode.createObject('RestShapeSpringsForceField', name='spring', stiffness="50000",
+    rigidBaseNode.addObject('RestShapeSpringsForceField', name='spring', stiffness="50000",
                                angularStiffness="50000", external_points="0", mstate="@RigidBaseMO", points="0",
                                template="Rigid3d")
 
@@ -244,10 +263,10 @@ def createScene(rootNode):
     # position = ["0 0 0 " + "0 0 0 " + "0 0 0 " +
     #             "0 0 0 " + "0 0 0 " + "0 0 0 "]
     # longeur = '15 15 15 15 6 15'  # beams size
-    rateAngularDeformNode = cableNode.createChild('rateAngularDeform')
-    rateAngularDeformMO = rateAngularDeformNode.createObject(
+    rateAngularDeformNode = cableNode.addChild('rateAngularDeform')
+    rateAngularDeformMO = rateAngularDeformNode.addObject(
         'MechanicalObject', template='Vec3d', name='rateAngularDeformMO', position=positionS, showIndices="0")
-    BeamHookeLawForce = rateAngularDeformNode.createObject(
+    BeamHookeLawForce = rateAngularDeformNode.addObject(
         'BeamHookeLawForceField', crossSectionShape='circular', length=longeurS, radius='0.50', youngModulus='5e6')
 
     ################################
@@ -274,9 +293,9 @@ def createScene(rootNode):
     curv_abs_outputF.append(81.)
 
     # the node of the frame needs to inherit from rigidBaseMO and rateAngularDeform
-    mappedFrameNode = rigidBaseNode.createChild('MappedFrames')
+    mappedFrameNode = rigidBaseNode.addChild('MappedFrames')
     rateAngularDeformNode.addChild(mappedFrameNode)
-    framesMO = mappedFrameNode.createObject('MechanicalObject', template='Rigid3d', name="FramesMO", position=framesF,
+    framesMO = mappedFrameNode.addObject('MechanicalObject', template='Rigid3d', name="FramesMO", position=framesF,
                                             showObject='0', showObjectScale='1')
 
     # The mapping has two inputs: RigidBaseMO and rateAngularDeformMO
@@ -285,31 +304,31 @@ def createScene(rootNode):
     inputMO_rigid = RigidBaseMO.getLinkPath()
     outputMO = framesMO.getLinkPath()
 
-    mappedFrameNode.createObject('DiscretCosseratMapping', curv_abs_input=curv_abs_inputS,
+    mappedFrameNode.addObject('DiscretCosseratMapping', curv_abs_input=curv_abs_inputS,
                                  curv_abs_output=curv_abs_outputF, input1=inputMO, input2=inputMO_rigid,
                                  output=outputMO, debug='0', max=6.e-2, deformationAxis=2, nonColored="0", radius=5)
 
     #  This create a new node in the scene. This node is appended to the finger's node.
-    slidingPoint = mappedFrameNode.createChild('slidingPoint')
+    slidingPoint = mappedFrameNode.addChild('slidingPoint')
 
     # This create a MechanicalObject, a componant holding the degree of freedom of our
     # mechanical modelling. In the case of a cable it is a set of positions specifying
     # the points where the cable is passing by.
-    slidingPointMO = slidingPoint.createObject('MechanicalObject', name="cablePos", position=cable_positionF,
+    slidingPointMO = slidingPoint.addObject('MechanicalObject', name="cablePos", position=cable_positionF,
                                                showObject="0", showIndices="0")
-    slidingPoint.createObject('IdentityMapping')
+    slidingPoint.addObject('IdentityMapping')
 
-    mappedPointsNode = slidingPoint.createChild('MappedPoints')
+    mappedPointsNode = slidingPoint.addChild('MappedPoints')
     femPoints.addChild(mappedPointsNode)
-    mappedPoints = mappedPointsNode.createObject('MechanicalObject', template='Vec3d', position=FEMpos,
+    mappedPoints = mappedPointsNode.addObject('MechanicalObject', template='Vec3d', position=FEMpos,
                                                  name="FramesMO", showObject='0', showObjectScale='1')
 
     inputCableMO = slidingPointMO.getLinkPath()
     inputFEMCableMO = inputFEMCable.getLinkPath()
     outputPointMO = mappedPoints.getLinkPath()
 
-    mappedPointsNode.createObject('QPSlidingConstraint', name="QPConstraint")
-    mappedPointsNode.createObject('DifferenceMultiMapping', name="pointsMulti", input1=inputFEMCableMO,
+    mappedPointsNode.addObject('QPSlidingConstraint', name="QPConstraint")
+    mappedPointsNode.addObject('DifferenceMultiMapping', name="pointsMulti", input1=inputFEMCableMO,
                                   input2=inputCableMO, output=outputPointMO, direction="@../../FramesMO.position")
     ## Get the tree mstate links for the mapping
 

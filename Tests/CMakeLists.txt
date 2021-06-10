@@ -16,8 +16,9 @@ set(HEADER_FILES
 set(SOURCE_FILES
         Example.cpp
         constraint/ExampleTest.cpp
-        constraint/ConstraintTest.cpp
-        )
+        constraint/CosseratUnilateralInteractionConstraintTest.cpp
+        forcefield/BeamHookeLawForceFieldTest.cpp
+    )
 
 
 add_executable(${This} ${SOURCE_FILES} ${HEADER_FILES})
