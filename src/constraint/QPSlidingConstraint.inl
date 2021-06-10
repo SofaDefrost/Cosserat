@@ -71,9 +71,7 @@ QPSlidingConstraint<DataTypes>::QPSlidingConstraint(MechanicalState* object)
 }
 
 template<class DataTypes>
-QPSlidingConstraint<DataTypes>::~QPSlidingConstraint()
-{
-}
+QPSlidingConstraint<DataTypes>::~QPSlidingConstraint()= default;
 
 
 template<class DataTypes>
@@ -125,9 +123,9 @@ void QPSlidingConstraint<DataTypes>::buildConstraintMatrix(const ConstraintParam
     {
         if(i < positions.size()-1){
             MatrixDerivRowIterator c_it = matrix.writeLine(cIndex);
-            c_it.addCol(i, Coord(0,1,0)); // instead of vector3(0,1,0) use the directtion of the projection
+            c_it.addCol(i, Coord(0,1,0));
             MatrixDerivRowIterator c_it_1 = matrix.writeLine(cIndex+1);
-            c_it_1.addCol(i, Coord(0,0,1)); // instead of vector3(0,1,0) use the directtion of the projection
+            c_it_1.addCol(i, Coord(0,0,1));
             cIndex +=2;
         }else{
             MatrixDerivRowIterator c_it = matrix.writeLine(cIndex);

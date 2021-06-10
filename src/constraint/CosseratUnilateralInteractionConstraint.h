@@ -32,95 +32,15 @@
 
 #include<sofa/defaulttype/VecTypes.h>
 #include <sofa/helper/OptionsGroup.h>
-#include <sofa/defaulttype/defaulttype.h>
+#include <sofa/defaulttype/config.h>
 #include <SofaConstraint/UnilateralInteractionConstraint.h>
 
 #include "../../../SoftRobots/src/SoftRobots/component/constraint/model/CableModel.h"
 #include "../../../SoftRobots/src/SoftRobots/component/behavior/SoftRobotsConstraint.h"
 
-
 template class SOFA_SOFACONSTRAINT_API sofa::component::constraintset::UnilateralInteractionConstraint<sofa::defaulttype::Vec3Types>;
 
-//class SOFA_SOFACONSTRAINT_API MyUnilateralConstraintResolutionWithFriction : public UnilateralConstraintResolutionWithFriction
-//{
-//public:
-//    MyUnilateralConstraintResolutionWithFriction(double mu, PreviousForcesContainer* prev = nullptr, bool* active = nullptr)
-//            :core::behavior::ConstraintResolution(3)
-//            , _mu(mu)
-//            , _prev(prev)
-//            , _active(active)
-//    {
-//    }
-//
-//    void init(int line, double** w, double* force) override
-//    {
-//        _W[0]=w[line  ][line  ];
-//        _W[1]=w[line  ][line+1];
-//        _W[2]=w[line  ][line+2];
-//        _W[3]=w[line+1][line+1];
-//        _W[4]=w[line+1][line+2];
-//        _W[5]=w[line+2][line+2];
-//
-//        ////////////////// christian : the following does not work ! /////////
-//        if(_prev)
-//        {
-//            force[line] = _prev->popForce();
-//            force[line+1] = _prev->popForce();
-//            force[line+2] = _prev->popForce();
-//        }
-//
-//    }
-//    void resolution(int line, double** w, double* d, double* force, double *dFree) override
-//    {
-//        double f[2];
-//        double normFt;
-//
-//        f[0] = force[line]; f[1] = force[line+1];
-//        force[line] -= d[line] / _W[0];
-//
-//        if(force[line] < 0)
-//        {
-//            force[line]=0; force[line+1]=0; force[line+2]=0;
-//            return;
-//        }
-//
-//        d[line+1] += _W[1] * (force[line]-f[0]);
-//        d[line+2] += _W[2] * (force[line]-f[0]);
-//        force[line+1] -= 2*d[line+1] / (_W[3] +_W[5]) ;
-//        force[line+2] -= 2*d[line+2] / (_W[3] +_W[5]) ;
-//
-//        normFt = sqrt(force[line+1]*force[line+1] + force[line+2]*force[line+2]);
-//
-//        double fN = _mu*force[line];
-//        if(normFt > fN)
-//        {
-//            double factor = fN / normFt;
-//            force[line+1] *= factor;
-//            force[line+2] *= factor;
-//        }
-//    }
-//    void store(int line, double* force, bool /*convergence*/) override
-//    {
-//        if(_prev)
-//        {
-//            _prev->pushForce(force[line]);
-//            _prev->pushForce(force[line+1]);
-//            _prev->pushForce(force[line+2]);
-//        }
-//
-//        if(_active)
-//        {
-//            *_active = (force[line] != 0);
-//            _active = nullptr; // Won't be used in the haptic thread
-//        }
-//    }
-//
-//    protected:
-//    double _mu;
-//    double _W[6];
-//    PreviousForcesContainer* _prev;
-//    bool* _active; // Will set this after the resolution
-//};
+
 
 
 
@@ -135,29 +55,127 @@ namespace sofa::component::constraintset
     using sofa::defaulttype::BaseVector ;
     using sofa::core::ConstraintParams ;
     using sofa::helper::ReadAccessor ;
+    using sofa::helper::WriteAccessor;
     using sofa::core::VecCoordId ;
 
     using sofa::core::behavior::ConstraintResolution ;
 
-
-    class SlidingForceConstraintResolution : public ConstraintResolution
+    class MyPreviousForcesContainer
     {
     public:
-        SlidingForceConstraintResolution(const double& imposedForce, const double& min, const double& max);
+        MyPreviousForcesContainer() : resetFlag(true) {}
+        double popForce()
+        {
+            resetFlag = true;
+            if(forces.empty()) return 0;
+            double f = forces.front();
+            forces.pop_front();
+            return f;
+        }
 
-        //////////////////// Inherited from ConstraintResolution ////////////////////
-        virtual void init(int line, double** w, double *force) override;
-        virtual void resolution(int line, double** w, double* d, double* force, double* dfree) override;
-        /////////////////////////////////////////////////////////////////////////////
+        void pushForce(double f)
+        {
+            if(resetFlag)
+            {
+                forces.clear();
+                resetFlag = false;
+            }
+
+            forces.push_back(f);
+        }
 
     protected:
-
-        double      m_wActuatorActuator;
-        double      m_imposedForce;
-        double      m_minDisplacement;
-        double      m_maxDisplacement;
-
+        std::deque<double> forces;
+        bool resetFlag; // We delete all forces that were not read
     };
+
+    class SOFA_SOFACONSTRAINT_API MyUnilateralConstraintResolutionWithFriction : public ConstraintResolution
+    {
+    public:
+        MyUnilateralConstraintResolutionWithFriction(double mu, MyPreviousForcesContainer* prev = nullptr, bool* active = nullptr)
+                :sofa::core::behavior::ConstraintResolution(3)
+                , _mu(mu)
+                , _prev(prev)
+                , _active(active)
+        {
+        }
+
+        void init(int line, double** w, double* force) override
+        {
+            std::cout << " ============++>  the resolution init is called !" << std::endl;
+            _W[0]=w[line  ][line  ];
+            _W[1]=w[line  ][line+1];
+            _W[2]=w[line  ][line+2];
+            _W[3]=w[line+1][line+1];
+            _W[4]=w[line+1][line+2];
+            _W[5]=w[line+2][line+2];
+
+            ////////////////// christian : the following does not work ! /////////
+            if(_prev)
+            {
+                force[line] = _prev->popForce();
+                force[line+1] = _prev->popForce();
+                force[line+2] = _prev->popForce();
+            }
+
+        }
+        void resolution(int line, double** w, double* d, double* force, double *dFree) override
+        {
+            double f[2];
+            double normFt;
+
+            std::cout << " ============++> the resolution  is called !" << std::endl;
+
+            f[0] = force[line]; f[1] = force[line+1];
+            force[line] -= d[line] / _W[0];
+
+            if(force[line] < 0)
+            {
+                force[line]=0; force[line+1]=0; force[line+2]=0;
+                return;
+            }
+
+            d[line+1] += _W[1] * (force[line]-f[0]);
+            d[line+2] += _W[2] * (force[line]-f[0]);
+            force[line+1] -= 2*d[line+1] / (_W[3] +_W[5]) ;
+            force[line+2] -= 2*d[line+2] / (_W[3] +_W[5]) ;
+
+            normFt = sqrt(force[line+1]*force[line+1] + force[line+2]*force[line+2]);
+
+            double fN = _mu*force[line];
+
+            fprintf(stderr,"============++> the resolution fN:{%f}, normFt:{%f}! \n", fN,normFt);
+            if(normFt > fN)
+            {
+                double factor = fN / normFt;
+                force[line+1] *= factor;
+                force[line+2] *= factor;
+            }
+        }
+        void store(int line, double* force, bool /*convergence*/) override
+        {
+            if(_prev)
+            {
+                _prev->pushForce(force[line+0]);
+                _prev->pushForce(force[line+1]);
+                _prev->pushForce(force[line+2]);
+            }
+
+            if(_active)
+            {
+                *_active = (force[line] != 0);
+                _active = nullptr; // Won't be used in the haptic thread
+            }
+        }
+
+    protected:
+        double _mu;
+        double _W[6];
+        MyPreviousForcesContainer* _prev;
+        bool* _active; // Will set this after the resolution
+    };
+
+
 
 
 /**
@@ -206,23 +224,63 @@ namespace sofa::component::constraintset
         void getConstraintResolution(const ConstraintParams*,
                                      std::vector<core::behavior::ConstraintResolution*>& resTab,
                                      unsigned int& offset) override;
+        bool UpdateList();
+
+
+
+        void storeLambda(const ConstraintParams* cParams,
+                                                core::MultiVecDerivId res,
+                                                const sofa::defaulttype::BaseVector* /*lambda*/) override
+        {
+            SOFA_UNUSED(res);
+            SOFA_UNUSED(cParams);
+        }
+
     protected:
         //Input data
         Data<helper::vector< Real > >   d_value;
-        Data<Real>                      d_force_dumping;
+        Data<Real>                      d_dampingCoefficient;
         Data<unsigned int>              d_valueIndex;
         Data<helper::vector<size_t>>    d_vectorOfIndices;
         Data<defaulttype::Vector3>      d_entryPoint;
-
+        Data<defaulttype::Quat>         d_direction;
     protected:
         using SoftRobotsConstraint<DataTypes>::m_state ;
         using CableModel<DataTypes>::d_componentState ;
         using SoftRobotsConstraint<DataTypes>::m_nbLines ;
+
+        using CableModel<DataTypes>::d_maxDispVariation ;
+
+        using CableModel<DataTypes>::d_maxPositiveDisplacement ;
+        using CableModel<DataTypes>::d_maxNegativeDisplacement ;
+        using CableModel<DataTypes>::d_maxForce ;
+        using CableModel<DataTypes>::d_minForce ;
+        using CableModel<DataTypes>::d_displacement ;
+
         using SoftRobotsConstraint<DataTypes>::m_constraintId ;
 
+        void internalInit()
+        {
+            if(d_value.getValue().size()==0)
+            {
+                WriteAccessor<Data<helper::vector<Real>>> value = d_value;
+                value.resize(1,0.);
+            }
+            // check for errors in the initialization
+            if(d_value.getValue().size()<d_valueIndex.getValue())
+            {
+                msg_warning() << "Bad size for data value (size="<< d_value.getValue().size()<<"), or wrong value for data valueIndex (valueIndex="<<d_valueIndex.getValue()<<"). Set default valueIndex=0.";
+                d_valueIndex.setValue(0);
+            }
+        }
     public:
-        void UpdateList();
         defaulttype::Vector3 findEntryPoint();
+
+    protected:
+         Real m_dx = 0.01;
+
+
+
     };
 
 // Declares template as extern to avoid the code generation of the template for
