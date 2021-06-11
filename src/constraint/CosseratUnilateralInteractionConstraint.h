@@ -92,9 +92,9 @@ namespace sofa::component::constraintset
     class SOFA_SOFACONSTRAINT_API MyUnilateralConstraintResolutionWithFriction : public ConstraintResolution
     {
     public:
-        MyUnilateralConstraintResolutionWithFriction(double mu, MyPreviousForcesContainer* prev = nullptr, bool* active = nullptr)
+        MyUnilateralConstraintResolutionWithFriction(double dampingFactor, MyPreviousForcesContainer* prev = nullptr, bool* active = nullptr)
                 :sofa::core::behavior::ConstraintResolution(3)
-                , _mu(mu)
+                , _dampingFactor(dampingFactor)
                 , _prev(prev)
                 , _active(active)
         {
@@ -102,55 +102,47 @@ namespace sofa::component::constraintset
 
         void init(int line, double** w, double* force) override
         {
-            std::cout << " ============++>  the resolution init is called !" << std::endl;
+            // for methode 1
+            sofa::defaulttype::Mat<3,3,double> temp;
+            temp[0][0] = w[line][line];
+            temp[0][1] = w[line][line+1];
+            temp[0][2] = w[line][line+2];
+            temp[1][0] = w[line+1][line];
+            temp[1][1] = w[line+1][line+1];
+            temp[1][2] = w[line+1][line+2];
+            temp[2][0] = w[line+2][line];
+            temp[2][1] = w[line+2][line+1];
+            temp[2][2] = w[line+2][line+2];
+
+            sofa::type::invertMatrix(invW, temp);
+            // for method 2
             _W[0]=w[line  ][line  ];
             _W[1]=w[line  ][line+1];
             _W[2]=w[line  ][line+2];
             _W[3]=w[line+1][line+1];
             _W[4]=w[line+1][line+2];
             _W[5]=w[line+2][line+2];
-
-            ////////////////// christian : the following does not work ! /////////
-            if(_prev)
-            {
-                force[line] = _prev->popForce();
-                force[line+1] = _prev->popForce();
-                force[line+2] = _prev->popForce();
-            }
-
         }
-        void resolution(int line, double** w, double* d, double* force, double *dFree) override
+        void resolution(int line, double** /*w*/, double* d, double* force, double *dFree) override
         {
             double f[2];
             double normFt;
-
-            std::cout << " ============++> the resolution  is called !" << std::endl;
-
-            f[0] = force[line]; f[1] = force[line+1];
-            force[line] -= d[line] / _W[0];
-
-            if(force[line] < 0)
+            defaulttype::Vector3 _f ;
+            for(int i=0; i<3; i++)
             {
-                force[line]=0; force[line+1]=0; force[line+2]=0;
-                return;
+                for(int j=0; j<3; j++)
+                    _f[i] -= d[line+j] * invW[i][j];
             }
 
-            d[line+1] += _W[1] * (force[line]-f[0]);
-            d[line+2] += _W[2] * (force[line]-f[0]);
-            force[line+1] -= 2*d[line+1] / (_W[3] +_W[5]) ;
-            force[line+2] -= 2*d[line+2] / (_W[3] +_W[5]) ;
+            //printf("d1 %f; d2 %f  d3 %f \n", d[line], d[line+1], d[line+2]);
+            //std::cout<< " 1==> force :"<< _f << std::endl;
+            //std::cout<< " 1==> Force :"<< force[line+0] << " "<< force[line+1] << " " <<force[line+2] << std::endl;
 
-            normFt = sqrt(force[line+1]*force[line+1] + force[line+2]*force[line+2]);
-
-            double fN = _mu*force[line];
-
-            fprintf(stderr,"============++> the resolution fN:{%f}, normFt:{%f}! \n", fN,normFt);
-            if(normFt > fN)
-            {
-                double factor = fN / normFt;
-                force[line+1] *= factor;
-                force[line+2] *= factor;
-            }
+            force[line] -= _f[0]*_dampingFactor;
+            force[line+1] -= _f[1]*_dampingFactor;
+            force[line+2] -= _f[2]* _dampingFactor;
+            //std::cout<< " 2==> Force :"<< force[line+0] << " "<< force[line+1] << " " <<force[line+2] << std::endl;
+            //printf("===================================\n");
         }
         void store(int line, double* force, bool /*convergence*/) override
         {
@@ -169,13 +161,12 @@ namespace sofa::component::constraintset
         }
 
     protected:
-        double _mu;
+        double _dampingFactor;
         double _W[6];
+        sofa::defaulttype::Mat<3,3,double> invW;
         MyPreviousForcesContainer* _prev;
         bool* _active; // Will set this after the resolution
     };
-
-
 
 
 /**
@@ -243,7 +234,7 @@ namespace sofa::component::constraintset
         Data<unsigned int>              d_valueIndex;
         Data<helper::vector<size_t>>    d_vectorOfIndices;
         Data<defaulttype::Vector3>      d_entryPoint;
-        Data<defaulttype::Quat>         d_direction;
+        Data<helper::vector<helper::vector<double>> >         d_direction;
     protected:
         using SoftRobotsConstraint<DataTypes>::m_state ;
         using CableModel<DataTypes>::d_componentState ;
@@ -277,7 +268,7 @@ namespace sofa::component::constraintset
         defaulttype::Vector3 findEntryPoint();
 
     protected:
-         Real m_dx = 0.01;
+         Real m_dx = 0.025;
 
 
 
