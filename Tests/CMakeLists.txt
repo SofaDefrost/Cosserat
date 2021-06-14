@@ -1,27 +1,43 @@
 cmake_minimum_required(VERSION 3.1)
 
-project(CosseratPlugin_test VERSION 1.0)
+set(This Cosserat.Tests)
 
+project(${This} C CXX)
 
 find_package(CosseratPlugin REQUIRED)
-find_package(SofaGTestMain REQUIRED)
 find_package(SofaTest REQUIRED)
 
+enable_testing()
+
 set(HEADER_FILES
-        Tests/constraint/ClassName.h
+        Example.h
+        constraint/Constraint.h
         )
 set(SOURCE_FILES
-
-        Tests/constraint/first-test.cpp
+        Example.cpp
+        constraint/ExampleTest.cpp
+        constraint/CosseratUnilateralInteractionConstraintTest.cpp
+        forcefield/BeamHookeLawForceFieldTest.cpp
     )
 
-add_executable(${PROJECT_NAME} ${SOURCE_FILES})
 
-target_include_directories(${PROJECT_NAME} PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>")
+add_executable(${This} ${SOURCE_FILES} ${HEADER_FILES})
 
-target_link_libraries(${PROJECT_NAME} SofaTest SofaGTestMain CosseratPlugin SofaCore SofaConstraint SofaBaseMechanics SofaUserInteraction)
+target_link_libraries(${PROJECT_NAME} 
+        SofaTest 
+        gtest
+        CosseratPlugin
+)
 
-add_definitions("-DBEAMADAPTER_TEST_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}/\"")
- 
-add_test(NAME ${PROJECT_NAME} COMMAND ${PROJECT_NAME})
+target_include_directories(${This} 
+        PUBLIC 
+        "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../../>"
+)
 
+
+add_test(
+        NAME ${This} 
+        COMMAND ${This}
+)
+
+#[[add_subdirectory(constraint)]]

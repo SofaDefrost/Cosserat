@@ -16,7 +16,7 @@
 * along with this library; if not, write to the Free Software Foundation,     *
 * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA.          *
 *******************************************************************************
-*                           Plugin SoftRobots v1.0                            *
+*                           Plugin Cosserat  v1.0                             *
 *                                                                             *
 * This plugin is also distributed under the GNU LGPL (Lesser General          *
 * Public License) license with the same conditions than SOFA.                 *
@@ -25,189 +25,186 @@
 *               Ecole Centrale de Lille)                                      *
 *                                                                             *
 * Contact information: https://project.inria.fr/softrobot/contact/            *
-*                                                                             *
+*                     adagolodjo_AT_protonmail.com                               *
 ******************************************************************************/
 
 #pragma once
 
-#include "CosseratActuatorConstraint.h"
+#include <sofa/core/visual/VisualParams.h>
+#include <sofa/defaulttype/Vec.h>
+#include <SofaConstraint/BilateralInteractionConstraint.h>
 
-using sofa::helper::OptionsGroup;
+#include "CosseratUnilateralInteractionConstraint.h"
 
 namespace sofa::component::constraintset
 {
 
-using sofa::core::objectmodel::ComponentState;
-using sofa::helper::WriteAccessor;
+    using sofa::core::objectmodel::ComponentState;
+    using sofa::helper::WriteAccessor;
 
-template<class DataTypes>
-CosseratActuatorConstraint<DataTypes>::CosseratActuatorConstraint(MechanicalState* object)
-    : Inherit1(object)
+    using sofa::core::objectmodel::ComponentState;
+    using sofa::core::visual::VisualParams;
+    using sofa::defaulttype::BaseVector;
+    using sofa::helper::ReadAccessor;
+    using sofa::defaulttype::Vec4f;
+    using sofa::defaulttype::Vector3;
+    using sofa::helper::vector;
+    using sofa::helper::OptionsGroup;
 
-    , d_value(initData(&d_value, "value",
-                       "Displacement or force to impose.\n"))
+    template<class DataTypes>
+    CosseratUnilateralInteractionConstraint<DataTypes>::CosseratUnilateralInteractionConstraint(MechanicalState* object)
+            : Inherit1(object)
 
-    , d_valueIndex(initData(&d_valueIndex, (unsigned int) 0, "valueIndex",
-                            "Index of the value (in InputValue vector) that we want to impose \n"
-                            "If unspecified the default value is {0}"))
+            , d_value(initData(&d_value, "value","Displacement or force to impose.\n"))
+            , d_dampingCoefficient(initData(&d_dampingCoefficient, Real(0.1), "dampingCoefficient",
+                                 "The dumping coefficient to slow down the insertion speed.\n"))
+            , d_valueIndex(initData(&d_valueIndex, (unsigned int) 0, "valueIndex",
+                                    "Index of the value (in InputValue vector) that we want to impose \n"
+                                    "If unspecified the default value is {0}"))
+            , d_vectorOfIndices(initData(&d_vectorOfIndices, "vectorOfIndices",
+                                         "vector of indices on witch we have to apply the constraint.\n"))
+            , d_entryPoint(initData(&d_entryPoint, defaulttype::Vector3(24.95, 0., 0), "entryPoint",
+                                    "The predefined entry point, this point can also be determined automatically"
+                                    "but not implemented here.\n"))
+            , d_direction(initData(&d_direction, "direction",
+                                   "direction of insertion, if this is not given "
+                                   "the insertion is direct along X.\n"))
+    {}
 
-    , d_valueType(initData(&d_valueType, OptionsGroup(2,"displacement","force"), "valueType",
-                           "displacement = the contstraint will impose the displacement provided in data value[valueIndex] \n"
-                           "force = the contstraint will impose the force provided in data value[valueIndex] \n"
-                           "If unspecified, the default value is displacement"))
-    , d_integral(initData(&d_integral,"integral","helper vector of H_i ()"))
-{
-}
+    template<class DataTypes>
+    CosseratUnilateralInteractionConstraint<DataTypes>::~CosseratUnilateralInteractionConstraint()
+    = default;
 
-template<class DataTypes>
-CosseratActuatorConstraint<DataTypes>::~CosseratActuatorConstraint()
-{
-}
 
-template<class DataTypes>
-void CosseratActuatorConstraint<DataTypes>::init()
-{
-    Inherit1::init();
-    internalInit();
-}
-
-template<class DataTypes>
-void CosseratActuatorConstraint<DataTypes>::reinit()
-{
-    internalInit();
-}
-
-template<class DataTypes>
-void CosseratActuatorConstraint<DataTypes>::internalInit()
-{
-    if(d_value.getValue().size()==0)
+    template<class DataTypes>
+    void CosseratUnilateralInteractionConstraint<DataTypes>::init()
     {
-        WriteAccessor<Data<vector<Real>>> value = d_value;
-        value.resize(1,0.);
+        Inherit1::init();
+        internalInit();
+        UpdateList();
     }
 
-    // check for errors in the initialization
-    if(d_value.getValue().size()<d_valueIndex.getValue())
+
+    template<class DataTypes>
+    void CosseratUnilateralInteractionConstraint<DataTypes>::reinit()
     {
-        msg_warning() << "Bad size for data value (size="<< d_value.getValue().size()<<"), or wrong value for data valueIndex (valueIndex="<<d_valueIndex.getValue()<<"). Set default valueIndex=0.";
-        d_valueIndex.setValue(0);
+        internalInit();
+        UpdateList();
     }
-}
 
-
-template<class DataTypes>
-void CosseratActuatorConstraint<DataTypes>::buildConstraintMatrix(const ConstraintParams* cParams, DataMatrixDeriv &cMatrix, unsigned int &cIndex, const DataVecCoord &x)
-{
-    if(d_componentState.getValue() != ComponentState::Valid)
-        return ;
-
-    SOFA_UNUSED(cParams);
-
-    m_constraintId = cIndex;
-
-    MatrixDeriv& matrix = *cMatrix.beginEdit();
-
-    MatrixDerivRowIterator rowIterator = matrix.writeLine(m_constraintId);
-
-    VecCoord positions = x.getValue();
-
-    const SetIndexArray &indices = d_indices.getValue();
-    helper::ReadAccessor<Data<helper::vector<Coord>>> integral = d_integral;
-
-    for (unsigned int i=0; i<indices.size(); i++)
+    template<class DataTypes>
+    defaulttype::Vector3 CosseratUnilateralInteractionConstraint<DataTypes>::findEntryPoint()
     {
-        /*
-        Coord previousPosition;
-        Coord currentPosition;
-        Coord nextPosition;
+        /// @todo:1- find the entry automatically, this is need in the case of needle insertion
+        /// can also be necessary when the volume is deforming
+        /// @todo:2- Build unitest function
 
-        int previousIndex = indices[i-1];
-        int currentIndex  = indices[i];
-        int nextIndex     = indices[i+1];
-
-        previousPosition = positions[previousIndex];
-        currentPosition  = positions[currentIndex];
-        nextPosition     = positions[nextIndex];
-
-        Deriv directionBeyond = previousPosition - currentPosition;
-        directionBeyond.normalize();
-
-        Deriv directionAhead  = currentPosition - nextPosition;
-        directionAhead.normalize();
-
-        Deriv slidingDirection = directionBeyond - directionAhead;
-        rowIterator.setCol(currentIndex, slidingDirection);*/
-
-        //        std::cout << "Integral["<<i<<"] : "<< integral[i] << std::endl;
-        rowIterator.setCol(i, integral[i]);
+        return defaulttype::Vector3(0.0f,0.0f,0.0f);
     }
-    cIndex++;
-    cMatrix.endEdit();
-    m_nbLines = cIndex - m_constraintId;
-}
 
+    template<class DataTypes>
+    bool CosseratUnilateralInteractionConstraint<DataTypes>::UpdateList()
+    {
+        /// @todo:1- Update the list of points beyond the entry point
+        /// @todo:2- Build unitest function
+        /// @todo:3- use the direction
 
-template<class DataTypes>
-void CosseratActuatorConstraint<DataTypes>::getConstraintViolation(const ConstraintParams* cParams,
-                                                                   BaseVector *resV,
-                                                                   const BaseVector *Jdx)
-{
-    if(d_componentState.getValue() != ComponentState::Valid)
-        return ;
+        ReadAccessor<Data<VecCoord>> positions = m_state->readPositions();
+        auto entryPoint = d_entryPoint.getValue();
+        WriteAccessor<Data<vector<size_t>>> indices = d_vectorOfIndices;
+        indices.clear();
 
-    SOFA_UNUSED(cParams);
-
-    d_cableLength.setValue(this->getCableLength(m_state->readPositions().ref()));
-    //    std::cout << "===> d_cableInitialLength : "<< d_cableInitialLength.getValue() << std::endl;
-    //    std::cout << "===> d_cableLength : "<< d_cableLength.getValue() << std::endl;
-    //    std::cout << "===> Jdx->element(0) : "<< Jdx->element(0) << std::endl;
-    //    std::cout << "&&&&&&&===> d_indices.getValue().size() : "<< d_indices.getValue().size() << std::endl;
-
-    Real dfree = Jdx->element(0) + d_cableInitialLength.getValue() - d_cableLength.getValue();
-
-
-    for (unsigned i=0;i<d_indices.getValue().size();i++) {
-        resV->set(m_constraintId, dfree);
+        unsigned int index=0;
+        for(auto position : positions){
+            if (position[0] >= entryPoint[0] ){
+                indices.push_back(index);
+            }
+            index++;
+        }
+        return true;
     }
-}
 
 
-template<class DataTypes>
-void CosseratActuatorConstraint<DataTypes>::getConstraintResolution(const ConstraintParams* cParam,
-                                                                    std::vector<ConstraintResolution*>& resTab,
-                                                                    unsigned int& offset)
-{
-    if(d_componentState.getValue() != ComponentState::Valid)
-        return ;
+    template<class DataTypes>
+    void CosseratUnilateralInteractionConstraint<DataTypes>::buildConstraintMatrix(const ConstraintParams* cParams, DataMatrixDeriv &cMatrix, unsigned int &cIndex, const DataVecCoord &x)
+    {
+        if(d_componentState.getValue() != ComponentState::Valid)
+            return ;
+        UpdateList();
 
-    SOFA_UNUSED(cParam);
+        SOFA_UNUSED(cParams);
+        MatrixDeriv& matrix = *cMatrix.beginEdit();
+        VecCoord positions = x.getValue();
+        auto indices = d_vectorOfIndices.getValue();
 
-    double imposedValue=d_value.getValue()[d_valueIndex.getValue()];
+        m_constraintId = cIndex;
+        for (auto index : indices)
+        {
+            MatrixDerivRowIterator c_it_x = matrix.writeLine(cIndex++);
+            c_it_x.addCol(index, Coord(1.,0,0)); // @todo instead of vector3(0,1,0) use the direction of the projection
+            MatrixDerivRowIterator c_it_y = matrix.writeLine(cIndex++);
+            c_it_y.addCol(index, Coord(0,1.,0)); // @todo instead of vector3(0,1,0) use the direction of the projection
+            MatrixDerivRowIterator c_it_z = matrix.writeLine(cIndex++);
+            c_it_z.addCol(index, Coord(0,0,1.)); // @todo instead of vector3(0,1,0) use the direction of the projection
+        }
+        cMatrix.endEdit();
+        m_nbLines = cIndex - m_constraintId;
+    }
 
-    double maxDisplacement = std::numeric_limits<double>::max();
-    double minDisplacement = -maxDisplacement;
 
-    setUpForceLimits(imposedValue,minDisplacement,maxDisplacement);
+    template<class DataTypes>
+    void CosseratUnilateralInteractionConstraint<DataTypes>::getConstraintViolation(const ConstraintParams* cParams,
+                                                                BaseVector *resV,
+                                                                const BaseVector *Jdx)
+    {
+        if(d_componentState.getValue() != ComponentState::Valid)
+            return ;
+        SOFA_UNUSED(cParams);
+        ReadAccessor<Data<VecCoord>> positions = m_state->readPositions();
+        ReadAccessor<Data<VecCoord>> freePositions = m_state->read(core::ConstVecCoordId::freePosition());
+        ReadAccessor<Data<VecDeriv>> velocity = m_state->read(core::ConstVecDerivId::velocity());
+        auto indices = d_vectorOfIndices.getValue();
 
-    MyCableForceConstraintResolution *cr=  new MyCableForceConstraintResolution(imposedValue, minDisplacement, maxDisplacement);
-    resTab[offset++] =cr;
-}
+        unsigned int iter = 0;
+
+        for (auto index : indices){
+            //@todo this need to be recompute, use dfree = newPos-oldPos or posFree - pos or velocity
+            Coord dx =  freePositions[index] - positions[index]; //This is also equal Jdx->element(3*iter +i); i=0,1,2
+            //            std::cout<<" ===> dx :"<< dx << std::endl;
+            //            std::cout<<" ===> dv :"<< velocity[index] << std::endl;
+            Real dfree1 = dx[0];
+            Real dfree2 = dx[1];
+            Real dfree3 = dx[2];
+
+            resV->set(m_constraintId + 3*iter+0, dfree1);
+            resV->set(m_constraintId + 3*iter+1, dfree2);
+            resV->set(m_constraintId + 3*iter+2, dfree2);
+            iter++;
+        }
+    }
+
+    template<class DataTypes>
+    void CosseratUnilateralInteractionConstraint<DataTypes>::getConstraintResolution(const ConstraintParams*,
+                                                                 std::vector<core::behavior::ConstraintResolution*>& resTab,
+                                                                 unsigned int& offset)
+    {
+        double dampingCoefficient = d_dampingCoefficient.getValue();
+        for (auto index : d_vectorOfIndices.getValue()){
+            resTab[offset+0] = new MyUnilateralConstraintResolutionWithFriction(dampingCoefficient);
+            resTab[offset+1] = new MyUnilateralConstraintResolutionWithFriction(dampingCoefficient);
+            resTab[offset+2] = new MyUnilateralConstraintResolutionWithFriction(dampingCoefficient);
+            offset += 3;
+        }
+    }
 
 
-template<class DataTypes>
-void CosseratActuatorConstraint<DataTypes>::setUpForceLimits(double& imposedValue, double& minDisplacement, double& maxDisplacement)
-{
-    if(d_maxForce.isSet() && imposedValue>d_maxForce.getValue())
-        imposedValue = d_maxForce.getValue();
+    template<class DataTypes>
+    void CosseratUnilateralInteractionConstraint<DataTypes>::draw(const VisualParams* /*vparams*/)
+    {
+        if(d_componentState.getValue() != ComponentState::Valid)
+            return ;
 
-    if(d_minForce.isSet() && imposedValue<d_minForce.getValue())
-        imposedValue = d_minForce.getValue();
-
-    if(d_maxNegativeDisplacement.isSet())
-        minDisplacement=-d_maxNegativeDisplacement.getValue();
-    if(d_maxPositiveDisplacement.isSet())
-        maxDisplacement=d_maxPositiveDisplacement.getValue();
-}
+    }
 
 } // namespace sofa
 

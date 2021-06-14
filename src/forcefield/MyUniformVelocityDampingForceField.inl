@@ -51,13 +51,18 @@ void MyUniformVelocityDampingForceField<DataTypes>::addForce (const core::Mechan
     sofa::helper::WriteAccessor<DataVecDeriv> f(_f);
     const VecDeriv& v = _v.getValue();
     const VecCoord& x = _dx.getValue();
-//    std::cout << "the size of _dx : "<< x.size()<< std::endl;
-//    std::cout << "the size of v is : "<< v.size()<< std::endl;
 
-    for(unsigned int i=0; i<d_indices.getValue().size(); i++){
-        unsigned int index = d_indices.getValue()[i];
+
+    for(auto index : d_indices.getValue()){
+        std::cout<< index << " ==> the value of dx : "<< x[index]<< std::endl;
+        std::cout << index << " ==>  the value of v is : "<< v[index] << std::endl;
+        std::cout << "1:" << " ==>  the value of f is : "<< f[index] << std::endl;
+        Deriv temp = v[index]*dampingCoefficient.getValue();
+        std::cout <<" Temp: "<< temp << std::endl;
         f[index] -= v[index]*dampingCoefficient.getValue();
+        std::cout << "2:" << " ==>  the value of f is : "<< f[index] << std::endl;
     }
+    printf("=======================\n");
 }
 
 template<class DataTypes>
@@ -76,8 +81,13 @@ void MyUniformVelocityDampingForceField<DataTypes>::addDForce(const core::Mechan
 
         bFactor *= dampingCoefficient.getValue();
 
-        for(unsigned int i=0; i<dx.size(); i++)
-            df[i] -= dx[i]*bFactor;
+        //@todo why am I doing the loop over all dx and not just on the index involved in the operation?
+//        for(unsigned int i=0; i<dx.size(); i++)
+//            df[i] -= dx[i]*bFactor;
+        for(auto index : d_indices.getValue()){
+            std::cout<<" dx: "<< dx[index]<< " bFactor: "<< bFactor <<std::endl;
+            df[index] -= dx[index]*bFactor;
+        }
     }
 }
 
@@ -88,7 +98,7 @@ void MyUniformVelocityDampingForceField<DataTypes>::addBToMatrix(sofa::defaultty
     if( !d_implicit.getValue() ) return;
 
     const unsigned int size = this->mstate->getMatrixSize();
-
+    //@todo as bellow why do this on all the index of the mState
     for( unsigned i=0 ; i<size ; i++ )
         mat->add( offset+i, offset+i, -dampingCoefficient.getValue()*bFact );
 }
@@ -105,12 +115,15 @@ void MyUniformVelocityDampingForceField<DataTypes>::addKToMatrix(const core::Mec
     Real bFactor = (Real)sofa::core::mechanicalparams::bFactor(mparams);
     const VecCoord& pos = this->mstate->read(core::ConstVecCoordId::position())->getValue();
 
-    const unsigned int size = this->mstate->getMatrixSize();
+    //@todo is it really `offset + index` and not `offset + n`
+//    for (unsigned int n=0; n<d_indices.getValue().size(); n++){
+//        unsigned int index = d_indices.getValue()[n];
+//        mat->add( offset+index, offset+index, -dampingCoefficient.getValue()*bFactor );
+//    }
 
-    for (unsigned int n=0; n<d_indices.getValue().size(); n++){
-        unsigned int index = d_indices.getValue()[n];
+    for(auto index : d_indices.getValue())
         mat->add( offset+index, offset+index, -dampingCoefficient.getValue()*bFactor );
-    }
+
 
 //    for (unsigned int n=0; n<d_indices.getValue().size(); n++)
 //    {

@@ -30,8 +30,8 @@
 
 
 #include "CosseratUnilateralInteractionConstraint.inl"
-
 #include <sofa/core/ObjectFactory.h>
+#include <sofa/defaulttype/config.h>
 
 namespace sofa::component::constraintset
 {
@@ -48,7 +48,7 @@ using namespace sofa::core;
 // 2-.add<>(true) : Set default template
 
 int CosseratUnilateralInteractionConstraintClass = RegisterObject("Simulate cable actuation.")
-.add< CosseratUnilateralInteractionConstraint<Vec3Types> >(true)
+.add< CosseratUnilateralInteractionConstraint<defaulttype::Vec3Types> >(true)
 
 ;
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
