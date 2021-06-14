@@ -1,6 +1,6 @@
 /******************************************************************************
 *               SOFA, Simulation Open-Framework Architecture                  *
-*                (c) 2006-2018 INRIA, USTL, UJF, CNRS, MGH                    *
+*                (c) 2020 INRIA, USTL, UJF, CNRS, MGH                    *
 *                                                                             *
 * This library is free software; you can redistribute it and/or modify it     *
 * under the terms of the GNU Lesser General Public License as published by    *
@@ -16,7 +16,7 @@
 * along with this library; if not, write to the Free Software Foundation,     *
 * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA.          *
 *******************************************************************************
-*                           Plugin SoftRobots v1.0                            *
+*                      Plugin Cosserat v1.0                                   *
 *                                                                             *
 * This plugin is also distributed under the GNU LGPL (Lesser General          *
 * Public License) license with the same conditions than SOFA.                 *
@@ -25,199 +25,259 @@
 *               Ecole Centrale de Lille)                                      *
 *                                                                             *
 * Contact information: https://project.inria.fr/softrobot/contact/            *
-*                                                                             *
+*                     adagolodjo@protonmail.com                               *
 ******************************************************************************/
+
 #pragma once
 
-#include <sofa/defaulttype/Vec.h>
-#include <sofa/helper/OptionsGroup.h>
 #include<sofa/defaulttype/VecTypes.h>
-#include <sofa/core/behavior/BaseConstraintSet.h>
-#include <sofa/core/behavior/PairInteractionConstraint.h>
-#include <SoftRobots/component/constraint/model/CableModel.h>
-#include <sofa/core/behavior/ConstraintResolution.h>
+#include <sofa/helper/OptionsGroup.h>
+#include <sofa/defaulttype/config.h>
+#include <SofaConstraint/UnilateralInteractionConstraint.h>
+
+#include "../../../SoftRobots/src/SoftRobots/component/constraint/model/CableModel.h"
+#include "../../../SoftRobots/src/SoftRobots/component/behavior/SoftRobotsConstraint.h"
+
+template class SOFA_SOFACONSTRAINT_API sofa::component::constraintset::UnilateralInteractionConstraint<sofa::defaulttype::Vec3Types>;
+
+
+
+
+
 namespace sofa::component::constraintset
 {
 
-using sofa::helper::vector;
-using sofa::defaulttype::Vec;
-using sofa::defaulttype::Vec3d;
-using sofa::helper::WriteAccessor;
-using sofa::core::ConstraintParams;
-using sofa::defaulttype::BaseVector;
-using sofa::core::visual::VisualParams ;
-using sofa::core::behavior::ConstraintResolution;
+    using sofa::core::behavior::SoftRobotsConstraint ;
+    using sofa::core::visual::VisualParams ;
+    using sofa::core::objectmodel::Data ;
+    using sofa::defaulttype::Vec3dTypes ;
+    using sofa::defaulttype::Vec3fTypes ;
+    using sofa::defaulttype::BaseVector ;
+    using sofa::core::ConstraintParams ;
+    using sofa::helper::ReadAccessor ;
+    using sofa::helper::WriteAccessor;
+    using sofa::core::VecCoordId ;
 
+    using sofa::core::behavior::ConstraintResolution ;
 
-class MyUnilateralConstraintResolutionWithFriction : public ConstraintResolution
-{
-public:
-    //CableForceConstraintResolution(const double& imposedForce, const double& min, const double& max);
-
-    //////////////////// Inherited from ConstraintResolution ////////////////////
-    //    void init(int line, double** w, double *force) override;
-    //    void resolution(int line, double** w, double* d, double* force, double* dfree) override;
-    /////////////////////////////////////////////////////////////////////////////
-
-protected:
-    double      m_wActuatorActuator;
-    double      m_imposedForce;
-    double      m_minDisplacement;
-    double      m_maxDisplacement;
-
-public:
-    //--------------- Force constraint -------------
-    MyUnilateralConstraintResolutionWithFriction(double mu, PreviousForcesContainer* prev = nullptr, bool* active = nullptr)
-        : ConstraintResolution(3)
-        , _mu(mu)
-        , _prev(prev)
-        , _active(active)
+    class MyPreviousForcesContainer
     {
-        printf("Cosserat UnilateralConstraintResolutionWithFriction \n");
-    }
-
-
-    void init(int line, double** w, double * lambda) override
-    {
-        _W[0]=w[line  ][line  ];
-        _W[1]=w[line  ][line+1];
-        _W[2]=w[line  ][line+2];
-        _W[3]=w[line+1][line+1];
-        _W[4]=w[line+1][line+2];
-        _W[5]=w[line+2][line+2];
-
-        ////////////////// christian : the following does not work ! /////////
-        if(_prev)
+    public:
+        MyPreviousForcesContainer() : resetFlag(true) {}
+        double popForce()
         {
-            force[line] = _prev->popForce();
-            force[line+1] = _prev->popForce();
-            force[line+2] = _prev->popForce();
-        }
-    }
-
-    void resolution(int line, double** w, double* d, double* lambda, double* dfree) override
-    {
-        double f[2];
-        double normFt;
-
-        f[0] = force[line]; f[1] = force[line+1];
-        force[line] -= d[line] / _W[0];
-
-        if(force[line] < 0)
-        {
-            force[line]=0; force[line+1]=0; force[line+2]=0;
-            return;
+            resetFlag = true;
+            if(forces.empty()) return 0;
+            double f = forces.front();
+            forces.pop_front();
+            return f;
         }
 
-        d[line+1] += _W[1] * (force[line]-f[0]);
-        d[line+2] += _W[2] * (force[line]-f[0]);
-        force[line+1] -= 2*d[line+1] / (_W[3] +_W[5]) ;
-        force[line+2] -= 2*d[line+2] / (_W[3] +_W[5]) ;
-
-        normFt = sqrt(force[line+1]*force[line+1] + force[line+2]*force[line+2]);
-
-        double fN = _mu*force[line];
-        if(normFt > fN)
+        void pushForce(double f)
         {
-            double factor = fN / normFt;
-            force[line+1] *= factor;
-            force[line+2] *= factor;
-        }
-    }
-};
+            if(resetFlag)
+            {
+                forces.clear();
+                resetFlag = false;
+            }
 
+            forces.push_back(f);
+        }
+
+    protected:
+        std::deque<double> forces;
+        bool resetFlag; // We delete all forces that were not read
+    };
+
+    class SOFA_SOFACONSTRAINT_API MyUnilateralConstraintResolutionWithFriction : public ConstraintResolution
+    {
+    public:
+        MyUnilateralConstraintResolutionWithFriction(double dampingFactor, MyPreviousForcesContainer* prev = nullptr, bool* active = nullptr)
+                :sofa::core::behavior::ConstraintResolution(3)
+                , _dampingFactor(dampingFactor)
+                , _prev(prev)
+                , _active(active)
+        {
+        }
+
+        void init(int line, double** w, double* force) override
+        {
+            // for methode 1
+            sofa::defaulttype::Mat<3,3,double> temp;
+            temp[0][0] = w[line][line];
+            temp[0][1] = w[line][line+1];
+            temp[0][2] = w[line][line+2];
+            temp[1][0] = w[line+1][line];
+            temp[1][1] = w[line+1][line+1];
+            temp[1][2] = w[line+1][line+2];
+            temp[2][0] = w[line+2][line];
+            temp[2][1] = w[line+2][line+1];
+            temp[2][2] = w[line+2][line+2];
+
+            sofa::type::invertMatrix(invW, temp);
+            // for method 2
+            _W[0]=w[line  ][line  ];
+            _W[1]=w[line  ][line+1];
+            _W[2]=w[line  ][line+2];
+            _W[3]=w[line+1][line+1];
+            _W[4]=w[line+1][line+2];
+            _W[5]=w[line+2][line+2];
+        }
+        void resolution(int line, double** /*w*/, double* d, double* force, double *dFree) override
+        {
+            double f[2];
+            double normFt;
+            defaulttype::Vector3 _f ;
+            for(int i=0; i<3; i++)
+            {
+                for(int j=0; j<3; j++)
+                    _f[i] -= d[line+j] * invW[i][j];
+            }
+
+            //printf("d1 %f; d2 %f  d3 %f \n", d[line], d[line+1], d[line+2]);
+            //std::cout<< " 1==> force :"<< _f << std::endl;
+            //std::cout<< " 1==> Force :"<< force[line+0] << " "<< force[line+1] << " " <<force[line+2] << std::endl;
+
+            force[line] -= _f[0]*_dampingFactor;
+            force[line+1] -= _f[1]*_dampingFactor;
+            force[line+2] -= _f[2]* _dampingFactor;
+            //std::cout<< " 2==> Force :"<< force[line+0] << " "<< force[line+1] << " " <<force[line+2] << std::endl;
+            //printf("===================================\n");
+        }
+        void store(int line, double* force, bool /*convergence*/) override
+        {
+            if(_prev)
+            {
+                _prev->pushForce(force[line+0]);
+                _prev->pushForce(force[line+1]);
+                _prev->pushForce(force[line+2]);
+            }
+
+            if(_active)
+            {
+                *_active = (force[line] != 0);
+                _active = nullptr; // Won't be used in the haptic thread
+            }
+        }
+
+    protected:
+        double _dampingFactor;
+        double _W[6];
+        sofa::defaulttype::Mat<3,3,double> invW;
+        MyPreviousForcesContainer* _prev;
+        bool* _active; // Will set this after the resolution
+    };
 
 
 /**
- * This component simulates a force exerted by a cable to solve an effector constraint.
- * Description can be found at:
- *
+ * This class contains common implementation of cable constraints
 */
-template< class DataTypes >
-class CosseratActuatorConstraint : public CableModel<DataTypes>
-{
-public:
-    SOFA_CLASS(SOFA_TEMPLATE(CosseratActuatorConstraint,DataTypes), SOFA_TEMPLATE(CableModel,DataTypes));
+    template< class DataTypes >
+    class CosseratUnilateralInteractionConstraint : public CableModel<DataTypes>
+    {
+    public:
 
-    typedef typename DataTypes::VecCoord VecCoord;
-    typedef typename DataTypes::VecDeriv VecDeriv;
-    typedef typename DataTypes::Real Real;
-    typedef typename DataTypes::Coord Coord;
-    typedef typename DataTypes::Deriv Deriv;
+        SOFA_CLASS(SOFA_TEMPLATE(CosseratUnilateralInteractionConstraint,DataTypes), SOFA_TEMPLATE(CableModel,DataTypes));
+        typedef typename DataTypes::VecCoord VecCoord;
+        typedef typename DataTypes::VecDeriv VecDeriv;
+        typedef typename DataTypes::Coord Coord;
+        typedef typename DataTypes::Deriv Deriv;
+        typedef typename DataTypes::MatrixDeriv MatrixDeriv;
+        typedef typename Coord::value_type Real;
+        typedef typename core::behavior::MechanicalState<DataTypes> MechanicalState;
 
-    typedef typename DataTypes::MatrixDeriv MatrixDeriv;
-    typedef typename core::behavior::MechanicalState<DataTypes> MechanicalState;
-
-    typedef Data<VecCoord>		DataVecCoord;
-    typedef Data<VecDeriv>		DataVecDeriv;
-    typedef Data<MatrixDeriv>    DataMatrixDeriv;
-    typedef typename DataTypes::MatrixDeriv::RowIterator MatrixDerivRowIterator;
-    typedef helper::vector<unsigned int> SetIndexArray;
-
+        typedef typename DataTypes::MatrixDeriv::RowIterator MatrixDerivRowIterator;
+        typedef Data<VecCoord>		DataVecCoord;
+        typedef Data<VecDeriv>		DataVecDeriv;
+        typedef Data<MatrixDeriv>    DataMatrixDeriv;
+        typedef helper::vector<unsigned int> SetIndexArray;
 
 
-public:
-    CosseratActuatorConstraint(MechanicalState* object = nullptr);
-    ~CosseratActuatorConstraint() override;
+    public:
+        CosseratUnilateralInteractionConstraint(MechanicalState* object = nullptr);
 
-    /////////////// Inherited from BaseObject //////////////////////
-    void init() override;
-    void reinit() override;
-    ///////////////////////////////////////////////////////////////
+        ~CosseratUnilateralInteractionConstraint() override;
+
+        /*********** Inherited from BaseObject ************/
+        void init() override;
+        void reinit() override;
+        void draw(const VisualParams* vparams) override;
+
+        /*********** Inherited from Actuator ************/
+        void buildConstraintMatrix(const ConstraintParams* cParams,
+                                   DataMatrixDeriv &cMatrix,
+                                   unsigned int &cIndex,
+                                   const DataVecCoord &x) override;
+
+        void getConstraintViolation(const ConstraintParams* cParams,
+                                    BaseVector *resV,
+                                    const BaseVector *Jdx) override;
+        void getConstraintResolution(const ConstraintParams*,
+                                     std::vector<core::behavior::ConstraintResolution*>& resTab,
+                                     unsigned int& offset) override;
+        bool UpdateList();
 
 
-    /////////////////// Inherited from BaseConstraint ///////////////
-    void getConstraintResolution(const core::ConstraintParams *cParam,
-                                 std::vector<ConstraintResolution*>& resTab,
-                                 unsigned int& offset) override;
-    ////////////////////////// Inherited from CableModel //////////////////////
-    void buildConstraintMatrix(const ConstraintParams* cParams,
-                               DataMatrixDeriv &cMatrix,
-                               unsigned int &cIndex,
-                               const DataVecCoord &x) override;
 
-    void getConstraintViolation(const ConstraintParams* cParams,
-                                BaseVector *resV,
-                                const BaseVector *Jdx) override;
-    ////////////////////////////////////////////////////////////////
+        void storeLambda(const ConstraintParams* cParams,
+                                                core::MultiVecDerivId res,
+                                                const sofa::defaulttype::BaseVector* /*lambda*/) override
+        {
+            SOFA_UNUSED(res);
+            SOFA_UNUSED(cParams);
+        }
 
-    ////////////////////////// Inherited attributes ////////////////////////////
-    /// https://gcc.gnu.org/onlinedocs/gcc/Name-lookup.html
-    /// Bring inherited attributes and function in the current lookup context.
-    /// otherwise any access to the base::attribute would require
-    /// the "this->" approach.
-    using CableModel<DataTypes>::d_maxDispVariation ;
-    using CableModel<DataTypes>::d_maxPositiveDisplacement ;
-    using CableModel<DataTypes>::d_maxNegativeDisplacement ;
-    using CableModel<DataTypes>::d_maxForce ;
-    using CableModel<DataTypes>::d_minForce ;
-    using CableModel<DataTypes>::d_displacement ;
-    using CableModel<DataTypes>::d_componentState ;
-    using CableModel<DataTypes>::m_nbLines ;
-    using CableModel<DataTypes>::m_constraintId ;
-    using CableModel<DataTypes>::m_state ;
-    using CableModel<DataTypes>::d_indices ;
-    using CableModel<DataTypes>::d_pullPoint;
-    using CableModel<DataTypes>::d_hasPullPoint;
-    using CableModel<DataTypes>::d_cableInitialLength;
-    using CableModel<DataTypes>::d_cableLength;
-    using CableModel<DataTypes>::d_force;
+    protected:
+        //Input data
+        Data<helper::vector< Real > >   d_value;
+        Data<Real>                      d_dampingCoefficient;
+        Data<unsigned int>              d_valueIndex;
+        Data<helper::vector<size_t>>    d_vectorOfIndices;
+        Data<defaulttype::Vector3>      d_entryPoint;
+        Data<helper::vector<helper::vector<double>> >         d_direction;
+    protected:
+        using SoftRobotsConstraint<DataTypes>::m_state ;
+        using CableModel<DataTypes>::d_componentState ;
+        using SoftRobotsConstraint<DataTypes>::m_nbLines ;
 
-protected:
-    //Input data
-    Data<helper::vector< Real > >       d_value;
-    Data<unsigned int>                  d_valueIndex;
-    Data<helper::OptionsGroup>          d_valueType;
-    //    Data<SetIndexArray>                 d_indices;
-    Data<helper::vector<Coord>>         d_integral;
+        using CableModel<DataTypes>::d_maxDispVariation ;
 
-    void internalInit();
-private:
-    void setUpForceLimits(double& imposedValue, double& minDisplacement, double& maxDisplacement);
-};
+        using CableModel<DataTypes>::d_maxPositiveDisplacement ;
+        using CableModel<DataTypes>::d_maxNegativeDisplacement ;
+        using CableModel<DataTypes>::d_maxForce ;
+        using CableModel<DataTypes>::d_minForce ;
+        using CableModel<DataTypes>::d_displacement ;
+
+        using SoftRobotsConstraint<DataTypes>::m_constraintId ;
+
+        void internalInit()
+        {
+            if(d_value.getValue().size()==0)
+            {
+                WriteAccessor<Data<helper::vector<Real>>> value = d_value;
+                value.resize(1,0.);
+            }
+            // check for errors in the initialization
+            if(d_value.getValue().size()<d_valueIndex.getValue())
+            {
+                msg_warning() << "Bad size for data value (size="<< d_value.getValue().size()<<"), or wrong value for data valueIndex (valueIndex="<<d_valueIndex.getValue()<<"). Set default valueIndex=0.";
+                d_valueIndex.setValue(0);
+            }
+        }
+    public:
+        defaulttype::Vector3 findEntryPoint();
+
+    protected:
+         Real m_dx = 0.025;
+
+
+
+    };
 
 // Declares template as extern to avoid the code generation of the template for
 // each compilation unit. see: http://www.stroustrup.com/C++11FAQ.html#extern-templates
-//extern template class CosseratActuatorConstraint<sofa::defaulttype::Vec3Types>;
+//extern template class CosseratUnilateralInteractionConstraint<defaulttype::Vec3Types>;
 
 } // namespace sofa
+
+
