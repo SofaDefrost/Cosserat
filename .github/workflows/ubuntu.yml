@@ -54,7 +54,7 @@ jobs:
           restore-keys: |
             ubuntu-ccache-
 
-      - name: Build sofa cosserat plugin 
+      - name: Build sofa cosserat plugin inside SOFA 
         env:
           CCACHE_COMPRESS: true
           CCACHE_COMPRESSLEVEL: 6
@@ -67,7 +67,7 @@ jobs:
           -DPYTHON_EXECUTABLE=/usr/bin/python3.7
           -DCMAKE_C_COMPILER_LAUNCHER=ccache
           -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
-          -DCARIBOU_BUILD_TESTS=ON
+          #-DCOSSERAT_BUILD_TESTS=ON
           -DCMAKE_BUILD_TYPE=Release
           -DCMAKE_INSTALL_PREFIX=CosseratPlugin
           .
