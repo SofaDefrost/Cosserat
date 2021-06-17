@@ -19,7 +19,7 @@ include(cmake/environment.cmake)
 find_package(SofaFramework REQUIRED)
 #find_package(SOFA COMPONENTS SofaFramework REQUIRED)
 
-option(COSSERAT_IGNORE_ERRORS "Enable this option to ignore the recommendations and generate anyway." OFF)
+option(COSSERAT_IGNORE_ERRORS "Enable this option to ignore the recommendations and generate anyway." ON)
 
 if(NOT COSSERAT_IGNORE_ERRORS)
     if(NOT PLUGIN_SOFAPYTHON AND NOT PLUGIN_SOFAPYTHON3)
@@ -30,7 +30,8 @@ if(NOT COSSERAT_IGNORE_ERRORS)
     endif()    
 endif()
 
-find_package(SofaPython3 QUIET)
+# set(SofaPython_VERSION 3.8.5)
+# find_package(SofaPython3 QUIET)
 set(COSSERAT_PYTHON ${SofaPython_FOUND}) # config.h.in
 find_package(STLIB QUIET)
 if(STLIB_FOUND)
@@ -161,26 +162,6 @@ option(COSSERAT_BUILD_TESTS "Build unit tests" ON )
 if(COSSERAT_BUILD_TESTS)
     add_subdirectory(Tests)
 endif()
-
-#[[option(COSSERAT_BUILD_TESTS "Build unit tests" ON )
-#CMAKE_DEPENDENT_OPTION(COSSERAT_BUILD_TESTS "Compile the automatic tests for Cosserat." ON "GTest_FOUND OR GMock_FOUND" OFF)
-if (COSSERAT_BUILD_TESTS)
-    message(STATUS "Cosserat build unittests is ON")
-    if (TARGET gtest)
-        message(STATUS "Cosserat with unittests")
-    else()        
-        add_library(gtest SHARED IMPORTED)
-        set_target_properties(gtest PROPERTIES
-            INTERFACE_INCLUDE_DIRECTORIES "${GTEST_INCLUDE_DIRS}"
-            IMPORTED_LOCATION "${GTEST_BOTH_LIBRARIES}"
-        )
-        message(STATUS "Cosserat with unittests\n\tLibraries: ${GTEST_BOTH_LIBRARIES}\n\tInclude directories: $GTEST_INCLUDE_DIRS}")
-    endif ()
-    add_subdirectory(Tests)
-elseif(NOT GTest_FOUND AND NOT GMock_FOUND)
-    message(STATUS "Cosserat without unittests (missing GTest)")
-endif()]]
-
 
 SET_PROPERTY(GLOBAL PROPERTY USE_FOLDERS ON)
 SET_PROPERTY(TARGET ${PROJECT_NAME} PROPERTY FOLDER "plugins")
