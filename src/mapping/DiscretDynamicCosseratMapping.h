@@ -126,7 +126,7 @@ protected:
     helper::vector<Mat6x6> m_nodeJacobienVector;
     helper::vector<helper::vector<Mat6x6>> m_nodeJacobienDotVector;
     helper::vector<Matrix3> m_MassExpressionVector;
-    Mat6x3 m_matrixBi; //Here matrixB_i is a constante matrix
+    Mat6x3 m_matrixBi; // matrixB_i is a constant matrix due to the assumption of constant strain along the section
 
     ////////////////////////// Inherited attributes ////////////////////////////
     /// https://gcc.gnu.org/onlinedocs/gcc/Name-lookup.html
