@@ -125,39 +125,45 @@ namespace sofa::component::constraintset
         }
         void resolution(int line, double** /*w*/, double* d, double* force, double *dFree) override
         {
-            double f[2];
-            double normFt;
-            defaulttype::Vector3 _f ;
-            for(int i=0; i<3; i++)
-            {
-                for(int j=0; j<3; j++)
-                    _f[i] -= d[line+j] * invW[i][j];
-            }
+            //printf("::///====================Methode 1==================== %d \n", line);
+            double f2[3];
+            double d2[3];
+//
+            d2[0] = d[line];
+            f2[0] = force[line]-(d[line]/_W[0]);
+            f2[0+1] = force[line+1];
+            f2[0+2] = force[line+2];
 
-            //printf("d1 %f; d2 %f  d3 %f \n", d[line], d[line+1], d[line+2]);
-            //std::cout<< " 1==> force :"<< _f << std::endl;
-            //std::cout<< " 1==> Force :"<< force[line+0] << " "<< force[line+1] << " " <<force[line+2] << std::endl;
+            d2[0+1] = d[line+1] + _W[1] * (f2[0]-force[line]);
+            d2[0+2] = d[line+2] + _W[2] * (f2[0]-force[line]);
 
-            force[line] -= _f[0]*_dampingFactor;
-            force[line+1] -= _f[1]*_dampingFactor;
-            force[line+2] -= _f[2]* _dampingFactor;
-            //std::cout<< " 2==> Force :"<< force[line+0] << " "<< force[line+1] << " " <<force[line+2] << std::endl;
-            //printf("===================================\n");
+            f2[0+1] = force[line+1] - (2*d2[0+1] / (_W[3] +_W[5])) ;
+            f2[0+2] = force[line+2] - (2*d2[0+2] / (_W[3] +_W[5])) ;
+
+            //std::cout<< "M1 |==> F1 :"<< f2[0] << " "<< f2[1] << " "<< f2[2] << " " << std::endl;
+            //std::cout<< "M1 |==> d1 :"<< d2[0] << "  "<< d2[1] << " "<< d2[2] << " " << std::endl;
+            force[line] = f2[0]*_dampingFactor;
+            force[line+1] = f2[1]*_dampingFactor;
+            force[line+2] = f2[2]* _dampingFactor;
+
+            //            printf("::=======================Methode 2======================= \n");
+            //
+            //            defaulttype::Vector3 _f ;
+            //            for(int i=0; i<3; i++)
+            //                for(int j=0; j<3; j++)
+            //                    _f[i] -= d[line+j] * invW[i][j];
+            //
+            //            std::cout<< "M2 |==> F2 :"<< _f << std::endl;
+            //            printf("M2 |==> d2 %f  %f %f \n", d[line], d[line+1], d[line+2]);
+
+            //force[line] += _f[0]*_dampingFactor;
+            //force[line+1] += _f[1]*_dampingFactor;
+            //force[line+2] += _f[2]* _dampingFactor;
+            //printf("::============================================== \n");
         }
         void store(int line, double* force, bool /*convergence*/) override
         {
-            if(_prev)
-            {
-                _prev->pushForce(force[line+0]);
-                _prev->pushForce(force[line+1]);
-                _prev->pushForce(force[line+2]);
-            }
-
-            if(_active)
-            {
-                *_active = (force[line] != 0);
-                _active = nullptr; // Won't be used in the haptic thread
-            }
+            //@todo need to be implemented
         }
 
     protected:
@@ -234,7 +240,8 @@ namespace sofa::component::constraintset
         Data<unsigned int>              d_valueIndex;
         Data<helper::vector<size_t>>    d_vectorOfIndices;
         Data<defaulttype::Vector3>      d_entryPoint;
-        Data<helper::vector<helper::vector<double>> >         d_direction;
+        Data<helper::vector<defaulttype::Quat>>      d_direction;
+
     protected:
         using SoftRobotsConstraint<DataTypes>::m_state ;
         using CableModel<DataTypes>::d_componentState ;
