@@ -48,7 +48,7 @@ namespace sofa::component::constraintset
     using sofa::helper::ReadAccessor;
     using sofa::defaulttype::Vec4f;
     using sofa::defaulttype::Vector3;
-    using sofa::helper::vector;
+    using sofa::type::vector;
     using sofa::helper::OptionsGroup;
 
     template<class DataTypes>
@@ -145,7 +145,7 @@ namespace sofa::component::constraintset
             defaulttype::Vector3 vx, vy, vz;
             for (auto index : indices)
             {
-                defaulttype::Quat q =direction[index]; q.normalize();
+                type::Quat q =direction[index]; q.normalize();
                 vx = q.rotate(Vector3(1.,0.,0)); vx.normalize();
                 vy = q.rotate(Vector3(0.,1.,0.)); vy.normalize();
                 vz = q.rotate(Vector3(0.,0.,1.)); vz.normalize();

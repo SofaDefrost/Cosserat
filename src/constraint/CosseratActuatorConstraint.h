@@ -39,7 +39,7 @@
 namespace sofa::component::constraintset
 {
 
-using sofa::helper::vector;
+using sofa::type::vector;
 using sofa::defaulttype::Vec;
 using sofa::defaulttype::Vec3d;
 using sofa::helper::WriteAccessor;
@@ -132,7 +132,7 @@ public:
     typedef Data<VecDeriv>		DataVecDeriv;
     typedef Data<MatrixDeriv>    DataMatrixDeriv;
     typedef typename DataTypes::MatrixDeriv::RowIterator MatrixDerivRowIterator;
-    typedef helper::vector<unsigned int> SetIndexArray;
+    typedef type::vector<unsigned int> SetIndexArray;
 
 
 
@@ -185,11 +185,11 @@ public:
 
 protected:
     //Input data
-    Data<helper::vector< Real > >       d_value;
+    Data<type::vector< Real > >       d_value;
     Data<unsigned int>                  d_valueIndex;
     Data<helper::OptionsGroup>          d_valueType;
     //    Data<SetIndexArray>                 d_indices;
-    Data<helper::vector<Coord>>         d_integral;
+    Data<type::vector<Coord>>         d_integral;
 
     void internalInit();
 private:

@@ -32,7 +32,7 @@
 #include <sofa/helper/AdvancedTimer.h>
 #include <sofa/core/objectmodel/BaseContext.h>
 #include <sofa/helper/logging/Message.h>
-
+#include "sofa/defaulttype/Quat.h"
 
 
 namespace sofa::component::mapping
@@ -40,6 +40,7 @@ namespace sofa::component::mapping
 using sofa::core::objectmodel::BaseContext ;
 using sofa::helper::AdvancedTimer;
 using sofa::helper::WriteAccessor;
+using sofa::type::vector;
 
 template <class TIn1, class TIn2, class TOut>
 BaseCosserat<TIn1, TIn2, TOut>::BaseCosserat()
@@ -59,41 +60,9 @@ BaseCosserat<TIn1, TIn2, TOut>::BaseCosserat()
 template <class TIn1, class TIn2, class TOut>
 void BaseCosserat<TIn1, TIn2, TOut>::init()
 {
-    //    if(this->getFromModels1().empty())
-    //    {
-    //        msg_error() << "Error while initializing ; input getFromModels1 not found" ;
-    //        return;
-    //    }
-
-    //    if(this->getFromModels2().empty())
-    //    {
-    //        msg_error() << "Error while initializing ; output getFromModels2 not found" ;
-    //        return;
-    //    }
-
-    //    if(this->getToModels().empty())
-    //    {
-    //        msg_error() << "Error while initializing ; output Model not found" ;
-    //        return;
-    //    }
-
-    //    m_fromModel1 = this->getFromModels1()[0];
-    //    m_fromModel2 = this->getFromModels2()[0];
-    //    m_toModel = this->getToModels()[0];
-
     // Fill the initial vector
     const OutDataVecCoord* xfromData = m_toModel->read(core::ConstVecCoordId::position());
     const OutVecCoord xfrom = xfromData->getValue();
-    //    WriteAccessor<Data < helper::vector<double>>> curv_abs_output = d_curv_abs_output;
-    //    curv_abs_output.clear();
-
-    //    m_vecTransform.clear();
-    //    for (unsigned int i = 0; i < xfrom.size(); i++) {
-    //        m_vecTransform.push_back(xfrom[i]);
-    //    }
-    printf("=================================> Init from the BaseCosserat component \n");
-    //    initialize();
-
 }
 
 
@@ -142,7 +111,7 @@ void BaseCosserat<TIn1, TIn2, TOut>::computeExponentialSE3(const double & x, con
 
     //    msg_info("BaseCosserat: ")<< "matix g_X : "<< g_X;
 
-    defaulttype::Mat3x3 M;
+    type::Mat3x3 M;
     g_X.getsub(0,0,M);
 
     //    msg_info("BaseCosserat: ")<< "Sub matix M : "<< g_X;
@@ -158,7 +127,7 @@ void BaseCosserat<TIn1, TIn2, TOut>::computeExponentialSE3(const double & x, con
 template <class TIn1, class TIn2, class TOut>
 void BaseCosserat<TIn1, TIn2, TOut>::update_ExponentialSE3(const In1VecCoord & inDeform){
     //helper::ReadAccessor<Data<helper::vector<double>>> curv_abs_input = d_curv_abs_input;
-    helper::ReadAccessor<Data<helper::vector<double>>> curv_abs_output = d_curv_abs_output;
+    helper::ReadAccessor<Data<type::vector<double>>> curv_abs_output = d_curv_abs_output;
     //m_index_input = 0;
 
     m_ExponentialSE3Vectors.clear();
@@ -207,23 +176,23 @@ void BaseCosserat<TIn1, TIn2, TOut>::update_ExponentialSE3(const In1VecCoord & i
 
 
 template <class TIn1, class TIn2, class TOut>
-void BaseCosserat<TIn1, TIn2, TOut>:: computeAdjoint(const Transform & frame, Mat6x6 &Adjoint)
+void BaseCosserat<TIn1, TIn2, TOut>:: computeAdjoint(const Transform & frame, Mat6x6 &adjoint)
 {
     Matrix3 R = extract_rotMatrix(frame);
     Vector3 u = frame.getOrigin();
     Matrix3 tild_u = getTildMatrix(u);
     Matrix3 tild_u_R = tild_u*R;
-    buildaAdjoint(R,tild_u_R, Adjoint);
+    buildaAdjoint(R, tild_u_R, adjoint);
 }
 
 template <class TIn1, class TIn2, class TOut>
-void BaseCosserat<TIn1, TIn2, TOut>:: compute_coAdjoint(const Transform & frame, Mat6x6 &coAdjoint)
+void BaseCosserat<TIn1, TIn2, TOut>:: compute_coAdjoint(const Transform & frame, Mat6x6 &co_adjoint)
 {
     Matrix3 R = extract_rotMatrix(frame);
     Vector3 u = frame.getOrigin();
     Matrix3 tild_u = getTildMatrix(u);
     Matrix3 tild_u_R = tild_u*R;
-    build_coaAdjoint(R,tild_u_R, coAdjoint);
+    build_coaAdjoint(R, tild_u_R, co_adjoint);
 }
 
 template <class TIn1, class TIn2, class TOut>
@@ -316,7 +285,8 @@ Matrix4 BaseCosserat<TIn1, TIn2, TOut>::computeLogarithme(const double & x, cons
 
 
 template <class TIn1, class TIn2, class TOut>
-void BaseCosserat<TIn1, TIn2, TOut>::update_TangExpSE3(const In1VecCoord & inDeform, const helper::vector<double> &curv_abs_input , const helper::vector<double> &curv_abs_output ){
+void BaseCosserat<TIn1, TIn2, TOut>::update_TangExpSE3(const In1VecCoord & inDeform, const type::vector<double>
+        &curv_abs_input , const type::vector<double> &curv_abs_output ){
 
     m_framesTangExpVectors.clear();
     size_t sz = curv_abs_output.size();
@@ -356,13 +326,13 @@ void BaseCosserat<TIn1, TIn2, TOut>::update_TangExpSE3(const In1VecCoord & inDef
 
 
 template <class TIn1, class TIn2, class TOut>
-defaulttype::Vec6 BaseCosserat<TIn1, TIn2, TOut>::compute_eta(const defaulttype::Vec6 & baseEta, const In1VecDeriv & k_dot, const double abs_input){
+[[maybe_unused]] defaulttype::Vec6 BaseCosserat<TIn1, TIn2, TOut>::compute_eta(const defaulttype::Vec6 & baseEta, const In1VecDeriv & k_dot, const double abs_input){
 
     // Fill the initial vector
     const In1DataVecCoord* x1fromData = m_fromModel1->read(core::ConstVecCoordId::position());
     const In1VecCoord x1from = x1fromData->getValue();
 
-    helper::ReadAccessor<Data<helper::vector<double>>> curv_abs_input = d_curv_abs_input;
+    helper::ReadAccessor<Data<type::vector<double>>> curv_abs_input = d_curv_abs_input;
     //helper::ReadAccessor<Data<helper::vector<double>>> curv_abs_output = d_curv_abs_output;
 
     Transform out_Trans;
@@ -399,8 +369,8 @@ template <class TIn1, class TIn2, class TOut>
 void BaseCosserat<TIn1, TIn2, TOut>::initialize()
 {
     //find the beam on which each output frame is located
-    helper::ReadAccessor<Data<helper::vector< double>>> curv_abs_input = d_curv_abs_input;
-    helper::ReadAccessor<Data<helper::vector<double>>> curv_abs_output = d_curv_abs_output;
+    helper::ReadAccessor<Data<type::vector< double>>> curv_abs_input = d_curv_abs_input;
+    helper::ReadAccessor<Data<type::vector<double>>> curv_abs_output = d_curv_abs_output;
 
     size_t sz = d_curv_abs_output.getValue().size();
 

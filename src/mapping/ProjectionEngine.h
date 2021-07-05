@@ -56,7 +56,7 @@ public:
     typedef typename Coord::value_type Real;
     typedef typename core::behavior::MechanicalState<DataTypes> MechanicalState;
     //typedef typename core::behavior::PairInteractionConstraint<DataTypes> Inherit;
-    typedef sofa::helper::vector<DataTypes> VecData;
+    typedef sofa::type::vector<DataTypes> VecData;
 
     typedef core::objectmodel::Data<VecCoord>		DataVecCoord;
     typedef core::objectmodel::Data<VecDeriv>		DataVecDeriv;
@@ -110,7 +110,7 @@ private:
         //Deriv  m_dirAxe, m_dirProj, m_dirOrtho;
     } Constraint;
 
-    helper::vector<Constraint> m_constraints;
+    type::vector<Constraint> m_constraints;
     unsigned int m_step;
 
     void doUpdate() override

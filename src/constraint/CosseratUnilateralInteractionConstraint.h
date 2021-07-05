@@ -34,6 +34,7 @@
 #include <sofa/helper/OptionsGroup.h>
 #include <sofa/defaulttype/config.h>
 #include <SofaConstraint/UnilateralInteractionConstraint.h>
+#include "sofa/defaulttype/Quat.h"
 
 #include "../../../SoftRobots/src/SoftRobots/component/constraint/model/CableModel.h"
 #include "../../../SoftRobots/src/SoftRobots/component/behavior/SoftRobotsConstraint.h"
@@ -57,7 +58,7 @@ namespace sofa::component::constraintset
     using sofa::helper::ReadAccessor ;
     using sofa::helper::WriteAccessor;
     using sofa::core::VecCoordId ;
-
+    using sofa::type::vector;
     using sofa::core::behavior::ConstraintResolution ;
 
     class MyPreviousForcesContainer
@@ -103,7 +104,7 @@ namespace sofa::component::constraintset
         void init(int line, double** w, double* force) override
         {
             // for methode 1
-            sofa::defaulttype::Mat<3,3,double> temp;
+            sofa::type::Mat<3,3,double> temp;
             temp[0][0] = w[line][line];
             temp[0][1] = w[line][line+1];
             temp[0][2] = w[line][line+2];
@@ -169,7 +170,7 @@ namespace sofa::component::constraintset
     protected:
         double _dampingFactor;
         double _W[6];
-        sofa::defaulttype::Mat<3,3,double> invW;
+        sofa::type::Mat<3,3,double> invW;
         MyPreviousForcesContainer* _prev;
         bool* _active; // Will set this after the resolution
     };
@@ -196,7 +197,7 @@ namespace sofa::component::constraintset
         typedef Data<VecCoord>		DataVecCoord;
         typedef Data<VecDeriv>		DataVecDeriv;
         typedef Data<MatrixDeriv>    DataMatrixDeriv;
-        typedef helper::vector<unsigned int> SetIndexArray;
+        typedef type::vector<unsigned int> SetIndexArray;
 
 
     public:
@@ -235,12 +236,12 @@ namespace sofa::component::constraintset
 
     protected:
         //Input data
-        Data<helper::vector< Real > >   d_value;
+        Data<type::vector< Real > >   d_value;
         Data<Real>                      d_dampingCoefficient;
         Data<unsigned int>              d_valueIndex;
-        Data<helper::vector<size_t>>    d_vectorOfIndices;
-        Data<defaulttype::Vector3>      d_entryPoint;
-        Data<helper::vector<defaulttype::Quat>>      d_direction;
+        Data<type::vector<size_t>>    d_vectorOfIndices;
+        Data<type::Vector3>      d_entryPoint;
+        Data<type::vector<defaulttype::Quat>>      d_direction;
 
     protected:
         using SoftRobotsConstraint<DataTypes>::m_state ;
@@ -261,7 +262,7 @@ namespace sofa::component::constraintset
         {
             if(d_value.getValue().size()==0)
             {
-                WriteAccessor<Data<helper::vector<Real>>> value = d_value;
+                WriteAccessor<Data<type::vector<Real>>> value = d_value;
                 value.resize(1,0.);
             }
             // check for errors in the initialization
@@ -272,7 +273,7 @@ namespace sofa::component::constraintset
             }
         }
     public:
-        defaulttype::Vector3 findEntryPoint();
+        type::Vector3 findEntryPoint();
 
     protected:
          Real m_dx = 0.025;
