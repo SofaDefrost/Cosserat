@@ -26,9 +26,9 @@
 
 namespace sofa::component::forcefield
 {
-using sofa::defaulttype::Vec ;
-using sofa::defaulttype::Mat ;
-using sofa::helper::vector;
+using sofa::type::Vec ;
+using sofa::type::Mat ;
+using sofa::type::vector;
 using sofa::core::MechanicalParams;
 using sofa::defaulttype::BaseMatrix;
 using sofa::core::behavior::ForceField ;
@@ -49,14 +49,14 @@ public:
     typedef typename DataTypes::Coord Coord;
     typedef typename DataTypes::Deriv Deriv;
     typedef typename Coord::value_type Real;
-    typedef helper::vector<unsigned int> VecIndex;
+    typedef type::vector<unsigned int> VecIndex;
     typedef core::objectmodel::Data<VecCoord> DataVecCoord;
     typedef core::objectmodel::Data<VecDeriv> DataVecDeriv;
 
     /// air drag coefficient.
     Data< Real > dampingCoefficient;
     Data<bool> d_implicit; ///< should it generate damping matrix df/dv? (explicit otherwise, i.e. only generating a force)
-    Data<helper::vector<unsigned int> > d_indices; ///The list of indices impacted by the velocity damping.
+    Data<type::vector<unsigned int> > d_indices; ///The list of indices impacted by the velocity damping.
 
 protected:
 

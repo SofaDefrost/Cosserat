@@ -32,7 +32,6 @@
 
 #include<sofa/defaulttype/VecTypes.h>
 #include <sofa/helper/OptionsGroup.h>
-#include <sofa/defaulttype/defaulttype.h>
 
 #include "../../../SoftRobots/src/SoftRobots/component/constraint/model/CableModel.h"
 #include "../../../SoftRobots/src/SoftRobots/component/behavior/SoftRobotsConstraint.h"
@@ -94,7 +93,7 @@ public:
     typedef Data<VecCoord>		DataVecCoord;
     typedef Data<VecDeriv>		DataVecDeriv;
     typedef Data<MatrixDeriv>    DataMatrixDeriv;
-    typedef helper::vector<unsigned int> SetIndexArray;
+    typedef type::vector<unsigned int> SetIndexArray;
 
 
 public:
@@ -131,7 +130,7 @@ public:
 
 protected:
     //Input data
-    Data<helper::vector< Real > >       d_value;
+    Data<type::vector< Real > >       d_value;
     Data<unsigned int>                  d_valueIndex;
     Data<helper::OptionsGroup>          d_valueType;
     // displacement = the constraint will impose the displacement provided in data d_inputValue[d_iputIndex]

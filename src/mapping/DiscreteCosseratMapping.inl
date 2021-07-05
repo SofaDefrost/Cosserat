@@ -31,13 +31,17 @@
 #include <sofa/helper/AdvancedTimer.h>
 #include <sofa/core/objectmodel/BaseContext.h>
 #include <sofa/helper/logging/Message.h>
+#include "sofa/defaulttype/Quat.h"
+
 
 namespace sofa::component::mapping
 {
 
-using sofa::core::objectmodel::BaseContext ;
-using sofa::helper::AdvancedTimer;
-using sofa::helper::WriteAccessor;
+    using sofa::core::objectmodel::BaseContext ;
+    using sofa::helper::AdvancedTimer;
+    using sofa::helper::WriteAccessor;
+    using sofa::defaulttype::SolidTypes ;
+    using sofa::type::RGBAColor;
 
 template <class TIn1, class TIn2, class TOut>
 DiscreteCosseratMapping<TIn1, TIn2, TOut>::DiscreteCosseratMapping()
@@ -111,9 +115,9 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::init()
 
 template <class TIn1, class TIn2, class TOut>
 void DiscreteCosseratMapping<TIn1, TIn2, TOut>::apply(
-        const core::MechanicalParams* /* mparams */, const helper::vector<OutDataVecCoord*>& dataVecOutPos,
-        const helper::vector<const In1DataVecCoord*>& dataVecIn1Pos ,
-        const helper::vector<const In2DataVecCoord*>& dataVecIn2Pos)
+        const core::MechanicalParams* /* mparams */, const type::vector<OutDataVecCoord*>& dataVecOutPos,
+        const type::vector<const In1DataVecCoord*>& dataVecIn1Pos ,
+        const type::vector<const In2DataVecCoord*>& dataVecIn2Pos)
 {
 
     if(dataVecOutPos.empty() || dataVecIn1Pos.empty() || dataVecIn2Pos.empty())
@@ -204,9 +208,9 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::apply(
 
 template <class TIn1, class TIn2, class TOut>
 void DiscreteCosseratMapping<TIn1, TIn2, TOut>:: applyJ(
-        const core::MechanicalParams* /* mparams */, const helper::vector< OutDataVecDeriv*>& dataVecOutVel,
-        const helper::vector<const In1DataVecDeriv*>& dataVecIn1Vel,
-        const helper::vector<const In2DataVecDeriv*>& dataVecIn2Vel) {
+        const core::MechanicalParams* /* mparams */, const type::vector< OutDataVecDeriv*>& dataVecOutVel,
+        const type::vector<const In1DataVecDeriv*>& dataVecIn1Vel,
+        const type::vector<const In2DataVecDeriv*>& dataVecIn2Vel) {
 
     if(dataVecOutVel.empty() || dataVecIn1Vel.empty() ||dataVecIn2Vel.empty() )
         return;
@@ -214,8 +218,8 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>:: applyJ(
     const In2VecDeriv& in2_vecDeriv = dataVecIn2Vel[0]->getValue();
     OutVecDeriv& outVel = *dataVecOutVel[0]->beginEdit();
 
-    helper::ReadAccessor<Data<helper::vector<double>>> curv_abs_input =  d_curv_abs_input; // This is the vector of X in the paper
-    helper::ReadAccessor<Data<helper::vector<double>>> curv_abs_output = d_curv_abs_output;
+    helper::ReadAccessor<Data<type::vector<double>>> curv_abs_input =  d_curv_abs_input; // This is the vector of X in the paper
+    helper::ReadAccessor<Data<type::vector<double>>> curv_abs_output = d_curv_abs_output;
 
     // Compute the tangent Exponential SE3 vectors
     const In1VecCoord& inDeform = m_fromModel1->read(core::ConstVecCoordId::position())->getValue();
@@ -280,9 +284,9 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>:: applyJ(
 
 template <class TIn1, class TIn2, class TOut>
 void DiscreteCosseratMapping<TIn1, TIn2, TOut>:: applyJT(
-        const core::MechanicalParams* /*mparams*/, const helper::vector< In1DataVecDeriv*>& dataVecOut1Force,
-        const helper::vector< In2DataVecDeriv*>& dataVecOut2Force,
-        const helper::vector<const OutDataVecDeriv*>& dataVecInForce)  {
+        const core::MechanicalParams* /*mparams*/, const type::vector< In1DataVecDeriv*>& dataVecOut1Force,
+        const type::vector< In2DataVecDeriv*>& dataVecOut2Force,
+        const type::vector<const OutDataVecDeriv*>& dataVecInForce)  {
 
     if(dataVecOut1Force.empty() || dataVecInForce.empty() || dataVecOut2Force.empty())
         return;
@@ -298,7 +302,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>:: applyJT(
     const OutVecCoord& frame = m_toModel->read(core::ConstVecCoordId::position())->getValue();
     const In1DataVecCoord* x1fromData = m_fromModel1->read(core::ConstVecCoordId::position());
     const In1VecCoord x1from = x1fromData->getValue();
-    helper::vector<Vec6> local_F_Vec ;   local_F_Vec.clear();
+    type::vector<Vec6> local_F_Vec ;   local_F_Vec.clear();
 
     out1.resize(x1from.size());
 
@@ -370,9 +374,9 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>:: applyJT(
 //___________________________________________________________________________
 template <class TIn1, class TIn2, class TOut>
 void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJT(
-        const core::ConstraintParams*/*cparams*/ , const helper::vector< In1DataMatrixDeriv*>&  dataMatOut1Const,
-        const helper::vector< In2DataMatrixDeriv*>&  dataMatOut2Const ,
-        const helper::vector<const OutDataMatrixDeriv*>& dataMatInConst)
+        const core::ConstraintParams*/*cparams*/ , const type::vector< In1DataMatrixDeriv*>&  dataMatOut1Const,
+        const type::vector< In2DataMatrixDeriv*>&  dataMatOut2Const ,
+        const type::vector<const OutDataMatrixDeriv*>& dataMatInConst)
 {
     if(dataMatOut1Const.empty() || dataMatOut2Const.empty() || dataMatInConst.empty() )
         return;
@@ -391,8 +395,8 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJT(
     for(unsigned int k=0; k<3; k++) matB_trans[k][k] = 1.0;
 
 
-    helper::vector< std::tuple<int,Vec6> > NodesInvolved;
-    helper::vector< std::tuple<int,Vec6> > NodesInvolvedCompressed;
+    type::vector< std::tuple<int,Vec6> > NodesInvolved;
+    type::vector< std::tuple<int,Vec6> > NodesInvolvedCompressed;
     //helper::vector<Vec6> NodesConstraintDirection;
 
     typename OutMatrixDeriv::RowConstIterator rowItEnd = in.end();
@@ -574,11 +578,11 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::draw(const core::visual::VisualP
 
     ///draw cable
     ///
-    typedef sofa::helper::types::RGBAColor RGBAColor;
+    typedef RGBAColor RGBAColor;
     const OutDataVecCoord* xfromData = m_toModel->read(core::ConstVecCoordId::position());
     const OutVecCoord xData = xfromData->getValue();
-    helper::vector<Vector3> positions;
-    helper::vector<defaulttype::Quat> Orientation;
+    type::vector<Vector3> positions;
+    type::vector<sofa::defaulttype::Quat> Orientation;
     positions.clear();
     Orientation.clear();
     unsigned int sz = xData.size();
@@ -619,7 +623,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::draw(const core::visual::VisualP
     }else {
         //        setMaterial(color);œ
         int j = 0;
-        helper::vector<int> index = d_index.getValue();
+        type::vector<int> index = d_index.getValue();
         for (unsigned int i=0; i<sz-1; i++) {
             j = m_indicesVectorsDraw[i]-1; // to get the articulation on which the frame is related to
             RGBAColor color =  RGBAColor::fromVec4(_eval(xPos[j][d_deformationAxis.getValue()]));

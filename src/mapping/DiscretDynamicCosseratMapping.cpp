@@ -19,20 +19,15 @@
 *                                                                             *
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
-#define SOFA_COMPONENT_MAPPING_DYNAMIC_COSSERAT_DISCRET_CPP
+#pragma once //SOFA_COMPONENT_MAPPING_DYNAMIC_COSSERAT_DISCRETE_CPP
 #include "DiscretDynamicCosseratMapping.inl"
 #include <sofa/defaulttype/VecTypes.h>
 #include <sofa/defaulttype/RigidTypes.h>
 #include <sofa/core/ObjectFactory.h>
 
-namespace sofa
+namespace sofa::component::mapping
 {
 
-namespace component
-{
-
-namespace mapping
-{
 using namespace sofa::defaulttype;
 
 // Register in the Factory
@@ -42,9 +37,4 @@ int DiscretDynamicCosseratMappingClass = core::RegisterObject("Set the positions
 
 template class SOFA_COSSERAT_MAPPING_API DiscretDynamicCosseratMapping< sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types >;
 
-
-} // namespace mapping
-
-} // namespace component
-
-} // namespace sofa.
+} // namespace sofa::component::mapping

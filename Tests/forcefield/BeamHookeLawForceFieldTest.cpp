@@ -172,7 +172,7 @@ void BeamHookeLawForceFieldTest<defaulttype::Vec3Types>::basicAttributesTest(){
 
     /// List of the supported attributes the user expect to find
     /// This list needs to be updated if you add an attribute.
-    sofa::helper::vector<std::string> attrnames = {
+    sofa::type::vector<std::string> attrnames = {
             "crossSectionShape","youngModulus","poissonRatio","length", "radius",
             "innerRadius", "lengthY", "lengthZ", "varianteSections", "youngModululsList", "poissonRatioList"
     };

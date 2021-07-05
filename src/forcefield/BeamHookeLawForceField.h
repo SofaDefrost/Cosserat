@@ -45,7 +45,7 @@ namespace sofa::component::forcefield
 
 using sofa::defaulttype::Vec ;
 using sofa::defaulttype::Mat ;
-using sofa::helper::vector;
+using sofa::type::vector;
 using sofa::core::MechanicalParams;
 using sofa::defaulttype::BaseMatrix;
 using sofa::core::behavior::ForceField ;
@@ -118,7 +118,7 @@ protected:
     Data<double>                      d_youngModululs; /// youngModulus
     Data<double>                      d_poissonRatio; /// poissonRatio
 
-    Data<helper::vector<double>>      d_length ; /// length of each beam
+    Data<type::vector<double>>      d_length ; /// length of each beam
 
     /// Circular Cross Section
     Data<Real>          d_radius;
@@ -130,14 +130,14 @@ protected:
 
     //In case we have a beam with different propertise per section
     Data<bool>                      d_varianteSections; /// bool to identify different beams sections
-    Data<helper::vector<double>>    d_youngModululsList; /// youngModulus
-    Data<helper::vector<double>>    d_poissonRatioList; /// poissonRatio
+    Data<type::vector<double>>    d_youngModululsList; /// youngModulus
+    Data<type::vector<double>>    d_poissonRatioList; /// poissonRatio
 
 
 private :
 
     Mat33 m_K_section;
-    helper::vector<Mat33> m_K_sectionList;
+    type::vector<Mat33> m_K_sectionList;
     bool compute_df;
 
     ////////////////////////// Inherited attributes ////////////////////////////

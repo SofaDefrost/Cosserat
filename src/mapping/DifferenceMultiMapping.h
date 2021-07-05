@@ -33,12 +33,12 @@ namespace sofa::component::mapping
 {
 using sofa::defaulttype::SolidTypes ;
 using sofa::core::objectmodel::BaseContext ;
-using sofa::defaulttype::Matrix3;
-using sofa::defaulttype::Matrix4;
-using sofa::defaulttype::Vector3;
-using sofa::defaulttype::Vec6;
+using sofa::type::Matrix3;
+using sofa::type::Matrix4;
+using sofa::type::Vector3;
+using sofa::type::Vec6;
 using std::get;
-using helper::vector;
+using type::vector;
 
 /*!
  * \class DifferenceMultiMapping
@@ -84,7 +84,7 @@ public:
     typedef Data<In2VecCoord> In2DataVecCoord;
     typedef Data<In2VecDeriv> In2DataVecDeriv;
     typedef Data<In2MatrixDeriv> In2DataMatrixDeriv;
-    typedef defaulttype::Mat<4,4,Real> Mat4x4;
+    typedef type::Mat<4,4,Real> Mat4x4;
 
     typedef typename Out::VecCoord OutVecCoord;
     typedef typename Out::Coord OutCoord;
@@ -122,28 +122,28 @@ public:
 
     /**********************MAPPING METHODS**************************/
     void apply(
-            const core::MechanicalParams* /* mparams */, const helper::vector<OutDataVecCoord*>& dataVecOutPos,
-            const helper::vector<const In1DataVecCoord*>& dataVecIn1Pos ,
-            const helper::vector<const In2DataVecCoord*>& dataVecIn2Pos) override;
+            const core::MechanicalParams* /* mparams */, const type::vector<OutDataVecCoord*>& dataVecOutPos,
+            const type::vector<const In1DataVecCoord*>& dataVecIn1Pos ,
+            const type::vector<const In2DataVecCoord*>& dataVecIn2Pos) override;
 
     void applyJ(
-            const core::MechanicalParams* /* mparams */, const helper::vector< OutDataVecDeriv*>& dataVecOutVel,
-            const helper::vector<const In1DataVecDeriv*>& dataVecIn1Vel,
-            const helper::vector<const In2DataVecDeriv*>& dataVecIn2Vel) override;
+            const core::MechanicalParams* /* mparams */, const type::vector< OutDataVecDeriv*>& dataVecOutVel,
+            const type::vector<const In1DataVecDeriv*>& dataVecIn1Vel,
+            const type::vector<const In2DataVecDeriv*>& dataVecIn2Vel) override;
 
     //ApplyJT Force
     void applyJT(
-            const core::MechanicalParams* /* mparams */, const helper::vector< In1DataVecDeriv*>& dataVecOut1Force,
-            const helper::vector< In2DataVecDeriv*>& dataVecOut2RootForce,
-            const helper::vector<const OutDataVecDeriv*>& dataVecInForce) override;
+            const core::MechanicalParams* /* mparams */, const type::vector< In1DataVecDeriv*>& dataVecOut1Force,
+            const type::vector< In2DataVecDeriv*>& dataVecOut2RootForce,
+            const type::vector<const OutDataVecDeriv*>& dataVecInForce) override;
 
     void applyDJT(const core::MechanicalParams* /*mparams*/, core::MultiVecDerivId /*inForce*/, core::ConstMultiVecDerivId /*outForce*/) override{}
 
     /// This method must be reimplemented by all mappings if they need to support constraints.
     virtual void applyJT(
-            const core::ConstraintParams*  cparams , const helper::vector< In1DataMatrixDeriv*>& dataMatOut1Const  ,
-            const helper::vector< In2DataMatrixDeriv*>&  dataMatOut2Const ,
-            const helper::vector<const OutDataMatrixDeriv*>&  dataMatInConst) override;
+            const core::ConstraintParams*  cparams , const type::vector< In1DataMatrixDeriv*>& dataMatOut1Const  ,
+            const type::vector< In2DataMatrixDeriv*>&  dataMatOut2Const ,
+            const type::vector<const OutDataMatrixDeriv*>&  dataMatInConst) override;
 
     /**********************MAPPING METHODS**************************/
     void initiateTopologies();
@@ -161,7 +161,7 @@ public:
     Data<vector<Rigid>>                d_direction;
     Data<vector<unsigned int>>          d_indices;
     Data<double>                        d_radius;
-    Data<sofa::defaulttype::Vec4f>      d_color;
+    Data<sofa::type::Vec4f>      d_color;
     Data<bool>                          d_drawArrows;
     Data<bool>                          d_lastPointIsFixed;
 
@@ -179,7 +179,7 @@ private:
         Real thirdConstraint;
     } Constraint;
 
-    helper::vector<Constraint> m_constraints;
+    type::vector<Constraint> m_constraints;
 
 };
 

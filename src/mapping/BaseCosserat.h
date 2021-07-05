@@ -28,18 +28,16 @@
 #include <sofa/defaulttype/SolidTypes.h>
 #include <sofa/defaulttype/RigidTypes.h>
 #include <sofa/core/objectmodel/BaseObject.h>
-#include <math.h>
+#include <cmath>
 #include <sofa/defaulttype/Vec.h>
 
 
-
 namespace sofa::component::mapping
-
 {
 using sofa::defaulttype::SolidTypes ;
 using sofa::core::objectmodel::BaseContext ;
-using sofa::defaulttype::Matrix3;
-using sofa::defaulttype::Matrix4;
+using sofa::type::Matrix3;
+using sofa::type::Matrix4;
 using sofa::defaulttype::Vector3;
 using sofa::defaulttype::Vec6;
 using std::get;
@@ -72,24 +70,20 @@ public:
     typedef typename In1::Deriv             Deriv1  ;
     typedef typename In1::VecCoord In1VecCoord;
     typedef typename In1::VecDeriv In1VecDeriv;
-    typedef typename In1::MatrixDeriv In1MatrixDeriv;
+    [[maybe_unused]] typedef typename In1::MatrixDeriv In1MatrixDeriv;
     typedef Data<In1VecCoord> In1DataVecCoord;
     typedef Data<In1VecDeriv> In1DataVecDeriv;
-    typedef Data<In1MatrixDeriv> In1DataMatrixDeriv;
-    
+
     typedef typename In2::Coord::value_type Real          ;
     typedef typename In2::Coord             Coord2         ;
     typedef typename In2::Deriv             Deriv2         ;
     typedef typename In2::VecCoord In2VecCoord;
     typedef typename In2::VecDeriv In2VecDeriv;
-    typedef typename In2::MatrixDeriv In2MatrixDeriv;
+    [[maybe_unused]] typedef typename In2::MatrixDeriv In2MatrixDeriv;
     typedef Data<In2VecCoord> In2DataVecCoord;
     typedef Data<In2VecDeriv> In2DataVecDeriv;
-    typedef Data<In2MatrixDeriv> In2DataMatrixDeriv;
-    typedef defaulttype::Mat<6,6,Real> Mat6x6;
-    typedef defaulttype::Mat<3,6,Real> Mat3x6;
-    typedef defaulttype::Mat<6,3,Real> Mat6x3;
-    typedef defaulttype::Mat<4,4,Real> Mat4x4;
+    typedef type::Mat<6,6,Real> Mat6x6;
+    typedef type::Mat<4,4,Real> Mat4x4;
 
     typedef typename Out::VecCoord OutVecCoord;
     typedef typename Out::Coord OutCoord;
@@ -102,22 +96,18 @@ public:
 
     typedef MultiLink<BaseCosserat<In1,In2,Out>, sofa::core::State< In1 >, BaseLink::FLAG_STOREPATH|BaseLink::FLAG_STRONGLINK> LinkFromModels1;
     typedef MultiLink<BaseCosserat<In1,In2,Out>, sofa::core::State< In2 >, BaseLink::FLAG_STOREPATH|BaseLink::FLAG_STRONGLINK> LinkFromModels2;
-    typedef MultiLink<BaseCosserat<In1,In2,Out>, sofa::core::State< Out >, BaseLink::FLAG_STOREPATH|BaseLink::FLAG_STRONGLINK> LinkToModels;
+    [[maybe_unused]] typedef MultiLink<BaseCosserat<In1,In2,Out>, sofa::core::State< Out >, BaseLink::FLAG_STOREPATH|BaseLink::FLAG_STRONGLINK> LinkToModels;
 
     typedef typename SolidTypes<Real>::Transform      Transform ;
 
 protected:
-    Data<helper::vector<double>>      d_curv_abs_input ;
-    Data<helper::vector<double>>      d_curv_abs_output ;
+    Data<type::vector<double>>      d_curv_abs_input ;
+    Data<type::vector<double>>      d_curv_abs_output ;
     Data<bool>                        d_debug ;
 
     /// Input Models container. New inputs are added through addInputModel(In* ).
-    //    LinkFromModels1 m_fromModel1;
-    //    LinkFromModels2 m_fromModel2;
-    //    LinkToModels m_toModel;
-
     core::State<In1>* m_fromModel1;
-    core::State<In2>* m_fromModel2;
+    [[maybe_unused]] core::State<In2>* m_fromModel2;
     core::State<Out>* m_toModel;
 
 public:
@@ -125,56 +115,55 @@ public:
     unsigned int m_index_input;
     OutVecCoord m_vecTransform ;
 
-    helper::vector<Transform> m_ExponentialSE3Vectors;
-    helper::vector<Transform> m_nodesExponentialSE3Vectors;
-    helper::vector<Matrix4> m_nodesLogarithmeSE3Vectors;
+    type::vector<Transform> m_ExponentialSE3Vectors;
+    type::vector<Transform> m_nodesExponentialSE3Vectors;
+    type::vector<Matrix4> m_nodesLogarithmeSE3Vectors;
 
-    helper::vector<unsigned int> m_indicesVectors;
-    helper::vector<unsigned int> m_indicesVectorsDraw;
+    type::vector<unsigned int> m_indicesVectors;
+    type::vector<unsigned int> m_indicesVectorsDraw;
 
-    helper::vector<double> m_beamLenghtVectors;
-    helper::vector<double> m_framesLenghtVectors;
+    type::vector<double> m_beamLenghtVectors;
+    type::vector<double> m_framesLenghtVectors;
 
-    helper::vector<Vec6>   m_nodesVelocityVectors;
-    helper::vector<Mat6x6> m_nodesTangExpVectors;
-    helper::vector<Mat6x6> m_framesTangExpVectors;
-    helper::vector<Vec6>   m_totalBeamForceVectors;
+    type::vector<Vec6>   m_nodesVelocityVectors;
+    type::vector<Mat6x6> m_nodesTangExpVectors;
+    type::vector<Mat6x6> m_framesTangExpVectors;
+    type::vector<Vec6>   m_totalBeamForceVectors;
 
-    helper::vector<Mat6x6> m_nodeAjointVectors;
-    helper::vector<Mat6x6> m_nodeAjointEtaVectors;
-    helper::vector<Mat6x6> m_frameAjointEtaVectors;
-    helper::vector<Mat6x6> m_node_coAjointEtaVectors;
-    helper::vector<Mat6x6> m_frame_coAjointEtaVectors;
+    type::vector<Mat6x6> m_nodeAjointVectors;
+    [[maybe_unused]] type::vector<Mat6x6> m_nodeAjointEtaVectors;
+    [[maybe_unused]] type::vector<Mat6x6> m_frameAjointEtaVectors;
+    [[maybe_unused]] type::vector<Mat6x6> m_node_coAjointEtaVectors;
+    [[maybe_unused]] type::vector<Mat6x6> m_frame_coAjointEtaVectors;
 
 
 protected:
     /// Constructor
-    //BaseCosserat();
     BaseCosserat() ;
     /// Destructor
-    ~BaseCosserat()  override {}
+    ~BaseCosserat()  override = default;
 public:
 
 
     /**********************SOFA METHODS**************************/
     void init() override;
-    virtual void bwdInit() override;  // get the points
-    virtual void reinit() override;
+    void bwdInit() override;  // get the points
+    void reinit() override;
     void draw(const core::visual::VisualParams* vparams) override;
 
 protected:
     /**********************COSSERAT METHODS**************************/
     void computeExponentialSE3(const double &x, const defaulttype::Vector3& k, Transform & Trans);
-    void computeAdjoint(const Transform & frame, Mat6x6 &Adjoint);
-    void compute_coAdjoint(const Transform & frame, Mat6x6 &coAdjoint);
+    void computeAdjoint(const Transform & frame, Mat6x6 &adjoint);
+    void compute_coAdjoint(const Transform & frame, Mat6x6 &co_adjoint);
     void compute_adjointVec6(const Vec6 & frame, Mat6x6 &adjoint);
 
     void update_ExponentialSE3(const In1VecCoord & inDeform);
-    void update_TangExpSE3(const In1VecCoord & inDeform, const helper::vector<double> &curv_abs_input , const helper::vector<double> &curv_abs_output );
+    void update_TangExpSE3(const In1VecCoord & inDeform, const type::vector<double> &curv_abs_input , const type::vector<double> &curv_abs_output );
     void compute_Tang_Exp(double & x, const Vector3& k, Mat6x6 & TgX);
 
-    defaulttype::Vec6 compute_eta(const Vec6 & baseEta, const In1VecDeriv & k_dot, const double abs_input);
-    defaulttype::Matrix4 computeLogarithme(const double & x, const Mat4x4 &gX);
+    [[maybe_unused]] type::Vec6 compute_eta(const Vec6 & baseEta, const In1VecDeriv & k_dot, double abs_input);
+    type::Matrix4 computeLogarithme(const double & x, const Mat4x4 &gX);
     double computeTheta(const double &x, const Mat4x4 &gX){
         double Tr_gx = 0.0;
         for (int i = 0; i<4; i++) {
@@ -202,7 +191,7 @@ public:
     }
 
     Matrix3 extract_rotMatrix(const Transform & frame){
-        defaulttype::Quat q = frame.getOrientation();
+        type::Quat q = frame.getOrientation();
         Real R[4][4];     q.buildRotationMatrix(R);
         Matrix3 mat;
 
@@ -227,7 +216,7 @@ public:
     }
 
     Matrix3 getTildMatrix(const Vector3 & u){
-        defaulttype::Matrix3 tild;
+        type::Matrix3 tild;
         tild[0][1] = -u[2];
         tild[0][2] = u[1];
         tild[1][2] = -u[0];

@@ -36,8 +36,8 @@ namespace sofa
 {
 using sofa::defaulttype::SolidTypes ;
 using sofa::core::objectmodel::BaseContext ;
-using sofa::defaulttype::Matrix3;
-using sofa::defaulttype::Matrix4;
+using sofa::type::Matrix3;
+using sofa::type::Matrix4;
 using sofa::defaulttype::Vector3;
 using sofa::defaulttype::Vec6;
 using std::get;
@@ -91,10 +91,10 @@ public:
     typedef Data<In2VecCoord> In2DataVecCoord;
     typedef Data<In2VecDeriv> In2DataVecDeriv;
     typedef Data<In2MatrixDeriv> In2DataMatrixDeriv;
-    typedef defaulttype::Mat<6,6,Real> Mat6x6;
-    typedef defaulttype::Mat<3,6,Real> Mat3x6;
-    typedef defaulttype::Mat<6,3,Real> Mat6x3;
-    typedef defaulttype::Mat<4,4,Real> Mat4x4;
+    typedef type::Mat<6,6,Real> Mat6x6;
+    typedef type::Mat<3,6,Real> Mat3x6;
+    typedef type::Mat<6,3,Real> Mat6x3;
+    typedef type::Mat<4,4,Real> Mat4x4;
 
     typedef typename Out::VecCoord OutVecCoord;
     typedef typename Out::Coord OutCoord;
@@ -120,7 +120,7 @@ protected:
     Data<Real>                       d_radius ;
     Data<bool>                       d_drawMapBeam ;
     Data<defaulttype::Vec4f>         d_color;
-    Data<helper::vector<int> >       d_index;
+    Data<type::vector<int> >       d_index;
 
     /// Input Models container. New inputs are added through addInputModel(In* ).
     //    LinkFromModels1 m_fromModel1;
@@ -169,28 +169,28 @@ public:
 
     /**********************MAPPING METHODS**************************/
     void apply(
-            const core::MechanicalParams* /* mparams */, const helper::vector<OutDataVecCoord*>& dataVecOutPos,
-            const helper::vector<const In1DataVecCoord*>& dataVecIn1Pos ,
-            const helper::vector<const In2DataVecCoord*>& dataVecIn2Pos) override;
+            const core::MechanicalParams* /* mparams */, const type::vector<OutDataVecCoord*>& dataVecOutPos,
+            const type::vector<const In1DataVecCoord*>& dataVecIn1Pos ,
+            const type::vector<const In2DataVecCoord*>& dataVecIn2Pos) override;
 
     void applyJ(
-            const core::MechanicalParams* /* mparams */, const helper::vector< OutDataVecDeriv*>& dataVecOutVel,
-            const helper::vector<const In1DataVecDeriv*>& dataVecIn1Vel,
-            const helper::vector<const In2DataVecDeriv*>& dataVecIn2Vel) override;
+            const core::MechanicalParams* /* mparams */, const type::vector< OutDataVecDeriv*>& dataVecOutVel,
+            const type::vector<const In1DataVecDeriv*>& dataVecIn1Vel,
+            const type::vector<const In2DataVecDeriv*>& dataVecIn2Vel) override;
 
     //ApplyJT Force
     void applyJT(
-            const core::MechanicalParams* /* mparams */, const helper::vector< In1DataVecDeriv*>& dataVecOut1Force,
-            const helper::vector< In2DataVecDeriv*>& dataVecOut2RootForce,
-            const helper::vector<const OutDataVecDeriv*>& dataVecInForce) override;
+            const core::MechanicalParams* /* mparams */, const type::vector< In1DataVecDeriv*>& dataVecOut1Force,
+            const type::vector< In2DataVecDeriv*>& dataVecOut2RootForce,
+            const type::vector<const OutDataVecDeriv*>& dataVecInForce) override;
 
     void applyDJT(const core::MechanicalParams* /*mparams*/, core::MultiVecDerivId /*inForce*/, core::ConstMultiVecDerivId /*outForce*/) override{}
 
     /// This method must be reimplemented by all mappings if they need to support constraints.
     virtual void applyJT(
-            const core::ConstraintParams*  cparams , const helper::vector< In1DataMatrixDeriv*>& dataMatOut1Const  ,
-            const helper::vector< In2DataMatrixDeriv*>&  dataMatOut2Const ,
-            const helper::vector<const OutDataMatrixDeriv*>&  dataMatInConst) override;
+            const core::ConstraintParams*  cparams , const type::vector< In1DataMatrixDeriv*>& dataMatOut1Const  ,
+            const type::vector< In2DataMatrixDeriv*>&  dataMatOut2Const ,
+            const type::vector<const OutDataMatrixDeriv*>&  dataMatInConst) override;
 
 protected:
     /**********************COSSERAT METHODS**************************/
