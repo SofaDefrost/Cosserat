@@ -142,9 +142,9 @@ namespace sofa::component::constraintset
 
             //std::cout<< "M1 |==> F1 :"<< f2[0] << " "<< f2[1] << " "<< f2[2] << " " << std::endl;
             //std::cout<< "M1 |==> d1 :"<< d2[0] << "  "<< d2[1] << " "<< d2[2] << " " << std::endl;
-            force[line] = f2[0]*_dampingFactor;
-            force[line+1] = f2[1]*_dampingFactor;
-            force[line+2] = f2[2]* _dampingFactor;
+            force[line] -= f2[0]*_dampingFactor;
+            force[line+1] -= f2[1]*_dampingFactor;
+            force[line+2] -= f2[2]* _dampingFactor;
 
             //            printf("::=======================Methode 2======================= \n");
             //
