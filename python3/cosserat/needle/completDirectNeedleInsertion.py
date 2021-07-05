@@ -20,6 +20,9 @@ sys.path.append('../')
 from createFemRegularGrid import createFemCube
 from usefulFunctions import BuildCosseratGeometry, AddPointProcess
 
+pluginNameList = 'SofaConstraint SofaDeformable SofaImplicitOdeSolver SofaMeshCollision SofaPreconditioner' \
+                 ' SofaGeneralTopology SofaOpenglVisual SofaGeneralRigid SoftRobots SofaSparseSolver' \
+                 ' CosseratPlugin SofaBoundaryCondition'
 
 
 class Animation(Sofa.Core.Controller):
@@ -44,30 +47,6 @@ class Animation(Sofa.Core.Controller):
             with self.rigidBaseMO.rest_position.writeable() as posA:
                 posA[5][1] -= self.angularRate
 
-        # ######## Reste rigid position #########
-        # if key == "+":  # up
-        #     with self.rigidBaseMO.rest_position.writeable() as posA:
-        #         qOld = Quat()
-        #         for i in range(0, 4):
-        #             qOld[i] = posA[0][i+3]
-        #         qNew = Quat.createFromEuler([0., self.angularRate, 0.], 'ryxz')
-        #         qNew.normalize()
-        #         qNew.rotateFromQuat(qOld)
-        #         for i in range(0, 4):
-        #             posA[0][i+3] = qNew[i]
-        #
-        # if key == "-":  # down
-        #     with self.rigidBaseMO.rest_position.writeable() as posA:
-        #         qOld = Quat()
-        #         for i in range(0, 4):
-        #             qOld[i] = posA[0][i+3]
-        #
-        #         qNew = Quat.createFromEuler([0., -self.angularRate,  0.], 'ryxz')
-        #         qNew.normalize()
-        #         qNew.rotateFromQuat(qOld)
-        #         for i in range(0, 4):
-        #             posA[0][i+3] = qNew[i]
-
         if ord(key) == 18:  # left
             with self.rigidBaseMO.rest_position.writeable() as posA:
                 posA[0][0] -= self.rate
@@ -87,11 +66,7 @@ class Animation(Sofa.Core.Controller):
 
 def createScene(rootNode):
 
-    MainHeader(rootNode, plugins=["SoftRobots", "SofaSparseSolver", "SofaPreconditioner",
-                                  "SofaOpenglVisual", "CosseratPlugin", "BeamAdapter", "SofaDeformable",
-                                  "SofaImplicitOdeSolver", 'SofaEngine', 'SofaMeshCollision', 'SofaSimpleFem',
-                                  'SofaConstraint', 'SofaTopologyMapping'],
-               repositoryPaths=[os.getcwd()])
+    rootNode.addObject('RequiredPlugin', pluginName=pluginNameList, printLog='0')
 
     rootNode.addObject('VisualStyle', displayFlags='showBehaviorModels hideCollisionModels hideBoundingCollisionModels '
                                                    'showForceFields hideInteractionForceFields showWireframe')

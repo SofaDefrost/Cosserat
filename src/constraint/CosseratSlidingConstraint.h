@@ -37,7 +37,7 @@ public:
      * \brief UnilateralConstraintResolution Constructor
      * \param m : double, maxForce value
      */
-    UnilateralConstraintResolution(double m = std::numeric_limits<double>::max()) :
+    explicit UnilateralConstraintResolution(double m = std::numeric_limits<double>::max()) :
         sofa::core::behavior::ConstraintResolution(1),
         m_maxForce(m)
     {}
@@ -50,7 +50,7 @@ public:
      * \param d
      * \param force
      */
-    virtual void resolution(int line, double** w, double* d, double* force, double * /*dFree*/) {
+    void resolution (int line, double** w, double* d, double* force, double * /*dFree*/) override {
         force[line] -= d[line] / w[line][line];
 
         if (force[line]>m_maxForce)
@@ -65,7 +65,7 @@ public:
 class BilateralConstraintResolution : public ConstraintResolution
 {
 public:
-    BilateralConstraintResolution(double* initF=NULL)
+    explicit BilateralConstraintResolution(double* initF=nullptr)
         : ConstraintResolution(1)
         , _f(initF) {}
     void resolution(int line, double** w, double* d, double* force, double *dfree) override
@@ -94,8 +94,6 @@ protected:
 };
 
 
-
-
 using sofa::core::ConstraintParams;
 
 template<class DataTypes>
@@ -120,22 +118,16 @@ public:
 
 protected:
 
-    Data<int> d_m1; ///< index of the spliding point on the first model
+    Data<int> d_m1; ///< index of the 3D point on the first model
     Data<int> d_m2a; ///< index of one end of the sliding axis
     Data<int> d_m2b; ///< index of the other end of the sliding axis
     Data<Deriv> d_force; ///< interaction force
 
-    //    Real m_dist;	// constraint violation
-    //    Real m_thirdConstraint; // 0 if A<proj<B, -1 if proj<A, 1 if B<proj
-    //    bool m_yetIntegrated;
-    //    unsigned int m_cid;
-
-
     CosseratSlidingConstraint();
-    CosseratSlidingConstraint(MechanicalState* object);
+    explicit CosseratSlidingConstraint(MechanicalState* object);
     CosseratSlidingConstraint(MechanicalState* object1, MechanicalState* object2);
 
-    virtual ~CosseratSlidingConstraint(){}
+    virtual ~CosseratSlidingConstraint()=default;
 
 public:
     void init() override;
@@ -159,7 +151,6 @@ public:
 
 private:
     // storage of force
-    Deriv  m_dirAxe, m_dirProj, m_dirOrtho;
 
     typedef struct {
         double fact;
@@ -171,14 +162,10 @@ private:
         Real r,r2, Q1Q2;
         Real dist; //violation
         Real thirdConstraint;
-        //Deriv  m_dirAxe, m_dirProj, m_dirOrtho;
     } Constraint;
 
-    helper::vector<Constraint> m_constraints;
-
     unsigned int m_step;
-
-
+    type::vector<Constraint> m_constraints;
 
 };
 

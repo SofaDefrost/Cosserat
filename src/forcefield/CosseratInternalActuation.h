@@ -45,7 +45,7 @@ namespace sofa::component::forcefield
 
 using sofa::defaulttype::Vec ;
 using sofa::defaulttype::Mat ;
-using sofa::helper::vector;
+using sofa::type::vector;
 using sofa::core::MechanicalParams;
 using sofa::defaulttype::BaseMatrix;
 using sofa::core::behavior::ForceField ;
@@ -121,7 +121,7 @@ protected:
     Data<double>                      d_youngModululs; /// youngModulus
     Data<double>                      d_poissonRatio; /// poissonRatio
 
-    Data<helper::vector<double>>      d_length ; /// length of each beam
+    Data<type::vector<double>>      d_length ; /// length of each beam
 
     /// Circular Cross Section
     Data<Real>          d_radius;
@@ -132,12 +132,12 @@ protected:
     Data<Real>          d_lengthZ;
 
     //distance from the midlesection
-    Data<helper::vector<Coord>>      d_distance0; // distance between the midleline and the calble
-    Data<helper::vector<Coord>>      d_distance1; // distance between the midleline and the calble
-    Data<helper::vector<Coord>>      d_ddistance0; // the derivative of the distance between the midleline and the calble with respect to x
-    Data<helper::vector<Coord>>      d_ddistance1; // the derivative of the distance between the midleline and the calble with respect to x
+    Data<type::vector<Coord>>      d_distance0; // distance between the midleline and the calble
+    Data<type::vector<Coord>>      d_distance1; // distance between the midleline and the calble
+    Data<type::vector<Coord>>      d_ddistance0; // the derivative of the distance between the midleline and the calble with respect to x
+    Data<type::vector<Coord>>      d_ddistance1; // the derivative of the distance between the midleline and the calble with respect to x
     Data<double>                     d_Tt ; // Cable tension
-    Data<helper::vector<Coord>>      d_integral; // the derivative of the distance between the midleline and the calble with respect to x
+    Data<type::vector<Coord>>      d_integral; // the derivative of the distance between the midleline and the calble with respect to x
 
 
 private :

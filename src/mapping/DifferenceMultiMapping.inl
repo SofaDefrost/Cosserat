@@ -135,7 +135,7 @@ void DifferenceMultiMapping<TIn1, TIn2, TOut>::computeProximity(const In1VecCoor
 
     size_t szFrom = from.size();
     size_t szDst = dst.size();
-    helper::vector<Rigid> direction = d_direction.getValue();
+    type::vector<Rigid> direction = d_direction.getValue();
 
     ///get the last rigid direction, the main goal is to use it for the
     /// 3D bilateral constraint i.e the fix point of the cable in the robot structure
@@ -221,7 +221,7 @@ void DifferenceMultiMapping<TIn1, TIn2, TOut>::computeProximity(const In1VecCoor
                     //// Second method compute normals using frames directions
                     Rigid dir = direction[constraint.eid];
                     Vector3 vY = Vector3(0.,1.,0.);
-                    defaulttype::Quat ori = dir.getOrientation() ;
+                    type::Quat ori = dir.getOrientation() ;
                     vY = ori.rotate(vY); vY.normalize();
                     t1 = vY ;
                     //                    }
@@ -240,7 +240,7 @@ void DifferenceMultiMapping<TIn1, TIn2, TOut>::computeProximity(const In1VecCoor
 
                         if (!direction.empty()){
                             Rigid _dir = direction[szDst-1];
-                            defaulttype::Quat _ori = _dir.getOrientation() ;
+                            type::Quat _ori = _dir.getOrientation() ;
 
                             Vector3 _vY = _ori.rotate(Vector3(0.,1.,0.)); _vY.normalize();
                             Vector3 _vZ = _ori.rotate(Vector3(0.,0.,1.)); _vZ.normalize();
@@ -301,7 +301,7 @@ void DifferenceMultiMapping<TIn1, TIn2, TOut>::computeProximity(const In1VecCoor
                     //// Second method compute normals using frames directions
                     Rigid dir = direction[constraint.eid];
                     Vector3 vY = Vector3(0.,1.,0.);
-                    defaulttype::Quat ori = dir.getOrientation() ;
+                    type::Quat ori = dir.getOrientation() ;
                     vY = ori.rotate(vY); vY.normalize();
                     t1 = vY ;
                     //                    }
@@ -319,7 +319,7 @@ void DifferenceMultiMapping<TIn1, TIn2, TOut>::computeProximity(const In1VecCoor
                         // We use the given direction of fill H
                         if (!d_direction.getValue().empty()){
                             Rigid _dir = direction[szDst-1];
-                            defaulttype::Quat _ori = (direction[szDst-1]).getOrientation() ;
+                            type::Quat _ori = (direction[szDst-1]).getOrientation() ;
                             Vector3 _vY = _ori.rotate(Vector3(0.,1.,0.));
                             _vY.normalize();
                             Vector3 _vZ = _ori.rotate(Vector3(0.,0.,1.));
@@ -353,7 +353,7 @@ void DifferenceMultiMapping<TIn1, TIn2, TOut>::computeNeedleProximity(const In1V
 
     size_t szFrom = from.size();
     size_t szDst = dst.size();
-    helper::vector<Rigid> direction = d_direction.getValue();
+    type::vector<Rigid> direction = d_direction.getValue();
 
     ///get the last rigid direction, the main goal is to use it for the
     /// 3D bilateral constraint i.e the fix point of the cable in the robot structure
@@ -422,7 +422,7 @@ void DifferenceMultiMapping<TIn1, TIn2, TOut>::computeNeedleProximity(const In1V
                     //// Second method compute normals using frames directions
                     Rigid dir = direction[constraint.eid];
                     Vector3 vY = Vector3(0.,1.,0.);
-                    defaulttype::Quat ori = dir.getOrientation() ;
+                    type::Quat ori = dir.getOrientation() ;
                     vY = ori.rotate(vY); vY.normalize();
                     t1 = vY ;
                     //                    }
@@ -463,7 +463,7 @@ void DifferenceMultiMapping<TIn1, TIn2, TOut>::computeNeedleProximity(const In1V
                     //// Second method compute normals using frames directions
                     Rigid dir = direction[constraint.eid];
                     Vector3 vY = Vector3(0.,1.,0.);
-                    defaulttype::Quat ori = dir.getOrientation() ;
+                    type::Quat ori = dir.getOrientation() ;
                     vY = ori.rotate(vY); vY.normalize();
                     t1 = vY ;
                     //                    }
@@ -485,9 +485,9 @@ void DifferenceMultiMapping<TIn1, TIn2, TOut>::computeNeedleProximity(const In1V
 
 template <class TIn1, class TIn2, class TOut>
 void DifferenceMultiMapping<TIn1, TIn2, TOut>::apply(
-        const core::MechanicalParams* /* mparams */, const helper::vector<OutDataVecCoord*>& dataVecOutPos,
-        const helper::vector<const In1DataVecCoord*>& dataVecIn1Pos ,
-        const helper::vector<const In2DataVecCoord*>& dataVecIn2Pos)
+        const core::MechanicalParams* /* mparams */, const type::vector<OutDataVecCoord*>& dataVecOutPos,
+        const type::vector<const In1DataVecCoord*>& dataVecIn1Pos ,
+        const type::vector<const In2DataVecCoord*>& dataVecIn2Pos)
 {
 
     if(dataVecOutPos.empty() || dataVecIn1Pos.empty() || dataVecIn2Pos.empty())
@@ -541,9 +541,9 @@ void DifferenceMultiMapping<TIn1, TIn2, TOut>::apply(
 
 template <class TIn1, class TIn2, class TOut>
 void DifferenceMultiMapping<TIn1, TIn2, TOut>:: applyJ(
-        const core::MechanicalParams* /* mparams */, const helper::vector< OutDataVecDeriv*>& dataVecOutVel,
-        const helper::vector<const In1DataVecDeriv*>& dataVecIn1Vel,
-        const helper::vector<const In2DataVecDeriv*>& dataVecIn2Vel) {
+        const core::MechanicalParams* /* mparams */, const type::vector< OutDataVecDeriv*>& dataVecOutVel,
+        const type::vector<const In1DataVecDeriv*>& dataVecIn1Vel,
+        const type::vector<const In2DataVecDeriv*>& dataVecIn2Vel) {
     if(dataVecOutVel.empty() || dataVecIn1Vel.empty() ||dataVecIn2Vel.empty() )
         return;
     const In1VecDeriv& in1 = dataVecIn1Vel[0]->getValue();
@@ -592,9 +592,9 @@ void DifferenceMultiMapping<TIn1, TIn2, TOut>:: applyJ(
 
 template <class TIn1, class TIn2, class TOut>
 void DifferenceMultiMapping<TIn1, TIn2, TOut>::applyJT(
-        const core::MechanicalParams* /*mparams*/, const helper::vector< In1DataVecDeriv*>& dataVecOut1Force,
-        const helper::vector< In2DataVecDeriv*>& dataVecOut2Force,
-        const helper::vector<const OutDataVecDeriv*>& dataVecInForce)  {
+        const core::MechanicalParams* /*mparams*/, const type::vector< In1DataVecDeriv*>& dataVecOut1Force,
+        const type::vector< In2DataVecDeriv*>& dataVecOut2Force,
+        const type::vector<const OutDataVecDeriv*>& dataVecInForce)  {
 
     if(dataVecOut1Force.empty() || dataVecInForce.empty() || dataVecOut2Force.empty())
         return;
@@ -652,9 +652,9 @@ void DifferenceMultiMapping<TIn1, TIn2, TOut>::applyJT(
 //___________________________________________________________________________
 template <class TIn1, class TIn2, class TOut>
 void DifferenceMultiMapping<TIn1, TIn2, TOut>::applyJT(
-        const core::ConstraintParams*/*cparams*/ , const helper::vector< In1DataMatrixDeriv*>&  dataMatOut1Const,
-        const helper::vector< In2DataMatrixDeriv*>&  dataMatOut2Const ,
-        const helper::vector<const OutDataMatrixDeriv*>& dataMatInConst)
+        const core::ConstraintParams*/*cparams*/ , const type::vector< In1DataMatrixDeriv*>&  dataMatOut1Const,
+        const type::vector< In2DataMatrixDeriv*>&  dataMatOut2Const ,
+        const type::vector<const OutDataMatrixDeriv*>& dataMatInConst)
 {
     if(dataMatOut1Const.empty() || dataMatOut2Const.empty() || dataMatInConst.empty() )
         return;

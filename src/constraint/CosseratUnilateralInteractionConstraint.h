@@ -34,6 +34,7 @@
 #include <sofa/helper/OptionsGroup.h>
 #include <sofa/defaulttype/config.h>
 #include <SofaConstraint/UnilateralInteractionConstraint.h>
+#include "sofa/defaulttype/Quat.h"
 
 #include "../../../SoftRobots/src/SoftRobots/component/constraint/model/CableModel.h"
 #include "../../../SoftRobots/src/SoftRobots/component/behavior/SoftRobotsConstraint.h"
@@ -57,7 +58,7 @@ namespace sofa::component::constraintset
     using sofa::helper::ReadAccessor ;
     using sofa::helper::WriteAccessor;
     using sofa::core::VecCoordId ;
-
+    using sofa::type::vector;
     using sofa::core::behavior::ConstraintResolution ;
 
     class MyPreviousForcesContainer
@@ -103,7 +104,7 @@ namespace sofa::component::constraintset
         void init(int line, double** w, double* force) override
         {
             // for methode 1
-            sofa::defaulttype::Mat<3,3,double> temp;
+            sofa::type::Mat<3,3,double> temp;
             temp[0][0] = w[line][line];
             temp[0][1] = w[line][line+1];
             temp[0][2] = w[line][line+2];
@@ -125,45 +126,51 @@ namespace sofa::component::constraintset
         }
         void resolution(int line, double** /*w*/, double* d, double* force, double *dFree) override
         {
-            double f[2];
-            double normFt;
-            defaulttype::Vector3 _f ;
-            for(int i=0; i<3; i++)
-            {
-                for(int j=0; j<3; j++)
-                    _f[i] -= d[line+j] * invW[i][j];
-            }
+            //printf("::///====================Methode 1==================== %d \n", line);
+            double f2[3];
+            double d2[3];
+//
+            d2[0] = d[line];
+            f2[0] = force[line]-(d[line]/_W[0]);
+            f2[0+1] = force[line+1];
+            f2[0+2] = force[line+2];
 
-            //printf("d1 %f; d2 %f  d3 %f \n", d[line], d[line+1], d[line+2]);
-            //std::cout<< " 1==> force :"<< _f << std::endl;
-            //std::cout<< " 1==> Force :"<< force[line+0] << " "<< force[line+1] << " " <<force[line+2] << std::endl;
+            d2[0+1] = d[line+1] + _W[1] * (f2[0]-force[line]);
+            d2[0+2] = d[line+2] + _W[2] * (f2[0]-force[line]);
 
-            force[line] -= _f[0]*_dampingFactor;
-            force[line+1] -= _f[1]*_dampingFactor;
-            force[line+2] -= _f[2]* _dampingFactor;
-            //std::cout<< " 2==> Force :"<< force[line+0] << " "<< force[line+1] << " " <<force[line+2] << std::endl;
-            //printf("===================================\n");
+            f2[0+1] = force[line+1] - (2*d2[0+1] / (_W[3] +_W[5])) ;
+            f2[0+2] = force[line+2] - (2*d2[0+2] / (_W[3] +_W[5])) ;
+
+            //std::cout<< "M1 |==> F1 :"<< f2[0] << " "<< f2[1] << " "<< f2[2] << " " << std::endl;
+            //std::cout<< "M1 |==> d1 :"<< d2[0] << "  "<< d2[1] << " "<< d2[2] << " " << std::endl;
+            force[line] -= f2[0]*_dampingFactor;
+            force[line+1] -= f2[1]*_dampingFactor;
+            force[line+2] -= f2[2]* _dampingFactor;
+
+            //            printf("::=======================Methode 2======================= \n");
+            //
+            //            defaulttype::Vector3 _f ;
+            //            for(int i=0; i<3; i++)
+            //                for(int j=0; j<3; j++)
+            //                    _f[i] -= d[line+j] * invW[i][j];
+            //
+            //            std::cout<< "M2 |==> F2 :"<< _f << std::endl;
+            //            printf("M2 |==> d2 %f  %f %f \n", d[line], d[line+1], d[line+2]);
+
+            //force[line] += _f[0]*_dampingFactor;
+            //force[line+1] += _f[1]*_dampingFactor;
+            //force[line+2] += _f[2]* _dampingFactor;
+            //printf("::============================================== \n");
         }
         void store(int line, double* force, bool /*convergence*/) override
         {
-            if(_prev)
-            {
-                _prev->pushForce(force[line+0]);
-                _prev->pushForce(force[line+1]);
-                _prev->pushForce(force[line+2]);
-            }
-
-            if(_active)
-            {
-                *_active = (force[line] != 0);
-                _active = nullptr; // Won't be used in the haptic thread
-            }
+            //@todo need to be implemented
         }
 
     protected:
         double _dampingFactor;
         double _W[6];
-        sofa::defaulttype::Mat<3,3,double> invW;
+        sofa::type::Mat<3,3,double> invW;
         MyPreviousForcesContainer* _prev;
         bool* _active; // Will set this after the resolution
     };
@@ -190,7 +197,7 @@ namespace sofa::component::constraintset
         typedef Data<VecCoord>		DataVecCoord;
         typedef Data<VecDeriv>		DataVecDeriv;
         typedef Data<MatrixDeriv>    DataMatrixDeriv;
-        typedef helper::vector<unsigned int> SetIndexArray;
+        typedef type::vector<unsigned int> SetIndexArray;
 
 
     public:
@@ -229,12 +236,13 @@ namespace sofa::component::constraintset
 
     protected:
         //Input data
-        Data<helper::vector< Real > >   d_value;
+        Data<type::vector< Real > >   d_value;
         Data<Real>                      d_dampingCoefficient;
         Data<unsigned int>              d_valueIndex;
-        Data<helper::vector<size_t>>    d_vectorOfIndices;
-        Data<defaulttype::Vector3>      d_entryPoint;
-        Data<helper::vector<helper::vector<double>> >         d_direction;
+        Data<type::vector<size_t>>    d_vectorOfIndices;
+        Data<type::Vector3>      d_entryPoint;
+        Data<type::vector<defaulttype::Quat>>      d_direction;
+
     protected:
         using SoftRobotsConstraint<DataTypes>::m_state ;
         using CableModel<DataTypes>::d_componentState ;
@@ -254,7 +262,7 @@ namespace sofa::component::constraintset
         {
             if(d_value.getValue().size()==0)
             {
-                WriteAccessor<Data<helper::vector<Real>>> value = d_value;
+                WriteAccessor<Data<type::vector<Real>>> value = d_value;
                 value.resize(1,0.);
             }
             // check for errors in the initialization
@@ -265,7 +273,7 @@ namespace sofa::component::constraintset
             }
         }
     public:
-        defaulttype::Vector3 findEntryPoint();
+        type::Vector3 findEntryPoint();
 
     protected:
          Real m_dx = 0.025;
