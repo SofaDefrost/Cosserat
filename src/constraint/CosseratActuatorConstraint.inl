@@ -112,7 +112,7 @@ void CosseratActuatorConstraint<DataTypes>::buildConstraintMatrix(const Constrai
     VecCoord positions = x.getValue();
 
     const SetIndexArray &indices = d_indices.getValue();
-    helper::ReadAccessor<Data<helper::vector<Coord>>> integral = d_integral;
+    helper::ReadAccessor<Data<type::vector<Coord>>> integral = d_integral;
 
     for (unsigned int i=0; i<indices.size(); i++)
     {

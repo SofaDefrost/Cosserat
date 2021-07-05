@@ -1,36 +1,82 @@
-# This is a basic workflow to help you get started with Actions
-
-name: CI
+name: Linux
 
 # Controls when the action will run. 
 on:
-  # Triggers the workflow on push or pull request events but only for the master branch
-  push:
-    branches: [ master ]
   pull_request:
     branches: [ master ]
 
-  # Allows you to run this workflow manually from the Actions tab
-  workflow_dispatch:
-
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
   build:
-    # The type of runner that the job will run on
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
+    container: defrost/defrost-ubuntu-2004-builder:v20.12
+    strategy:
+      matrix:
+        sofa_version: [v20.12.01, master ]
+    env:
+      SOFA_VERSION: ${{ matrix.sofa_version }}
+      SOFA_ROOT: /opt/sofa
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v2
-
-      # Runs a single command using the runners shell
-      - name: Run a one-line script
-        run: echo Hello, world!
+      - name: Checkout source code
+        # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+        uses: actions/checkout@v2
 
       # Runs a set of commands using the runners shell
-      - name: Run a multi-line script
-        run: |
-          echo Add other actions to build,
-          echo test, and deploy your project.
+      - name: Download SOFA Release
+        run:  |
+          if [ "$SOFA_VERSION" = "master" ]; then
+              curl --output sofa.zip -L "https://ci.inria.fr/sofa-ci-dev/job/nightly-generate-binaries/lastSuccessfulBuild/CI_SCOPE=binaries_standard/artifact/Linux/*zip*/Linux.zip"
+              unzip sofa.zip -d temp
+              mv temp/Linux/`ls temp/Linux` sofa.zip 
+              rm -rf temp
+              unzip sofa.zip -d temp
+              mv temp/`ls temp` $SOFA_ROOT
+          else
+              curl --output sofa.zip -L "https://github.com/sofa-framework/sofa/releases/download/$SOFA_VERSION/SOFA_"$SOFA_VERSION"_Linux.zip"
+              unzip sofa.zip -d temp
+              mv temp/`ls temp` $SOFA_ROOT
+          fi
+      - name: Get Time
+        id: time
+        uses: nanzm/get-time-action@v1.0
+        with:
+          timeZone: 8
+          format: 'YYYY-MM-DD-HH-mm-ss'
+
+      - name: ccache cache files
+        uses: actions/cache@v2
+        if: ${{ always() }}
+        with:
+          path: .ccache
+          key: ubuntu-ccache-${{ steps.time.outputs.time }}
+          restore-keys: |
+            ubuntu-ccache-
+
+      - name: Build sofa cosserat plugin inside SOFA 
+        env:
+          CCACHE_COMPRESS: true
+          CCACHE_COMPRESSLEVEL: 6
+          CCACHE_MAXSIZE: "500M"
+        run:
+          export CCACHE_BASEDIR=$GITHUB_WORKSPACE &&
+          export CCACHE_DIR=$GITHUB_WORKSPACE/.ccache &&
+          ccache -z &&
+          cmake
+          -DPYTHON_EXECUTABLE=/usr/bin/python3.7
+          -DCMAKE_C_COMPILER_LAUNCHER=ccache
+          -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_INSTALL_PREFIX=CosseratPlugin
+          .
+          && make && make install
+          && tar czvf CosseratPlugin.tar.gz CosseratPlugin
+          && echo ${CCACHE_BASEDIR}
+          && ccache -s
+
+      - name: Archive production
+        uses: actions/upload-artifact@v2
+        with:
+          name: CosseratPlugin_${{ matrix.sofa_version }}
+          path: CosseratPlugin.tar.gz

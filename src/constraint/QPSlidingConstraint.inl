@@ -48,7 +48,7 @@ using sofa::defaulttype::BaseVector;
 using sofa::helper::ReadAccessor;
 using sofa::defaulttype::Vec4f;
 using sofa::defaulttype::Vector3;
-using sofa::helper::vector;
+using sofa::type::vector;
 using sofa::helper::OptionsGroup;
 
 template<class DataTypes>

@@ -19,8 +19,7 @@
 *                                                                             *
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
-#ifndef SOFA_COMPONENT_MAPPING_POEMAPING_INL
-#define SOFA_COMPONENT_MAPPING_POEMAPING_INL
+#pragma once //SOFA_COMPONENT_MAPPING_POEMAPING_INL
 
 #include <sofa/core/Multi2Mapping.inl>
 #include "DiscretDynamicCosseratMapping.h"
@@ -32,21 +31,16 @@
 #include <sofa/helper/AdvancedTimer.h>
 #include <sofa/core/objectmodel/BaseContext.h>
 #include <sofa/helper/logging/Message.h>
+#include "sofa/defaulttype/Quat.h"
 
 
-
-namespace sofa
+namespace sofa::component::mapping
 {
 using sofa::core::objectmodel::BaseContext ;
 using sofa::helper::AdvancedTimer;
 using sofa::helper::WriteAccessor;
 
 
-namespace component
-{
-
-namespace mapping
-{
 template <class TIn1, class TIn2, class TOut>
 DiscretDynamicCosseratMapping<TIn1, TIn2, TOut>::DiscretDynamicCosseratMapping()
 	: m_fromModel1(NULL)
@@ -125,9 +119,9 @@ void DiscretDynamicCosseratMapping<TIn1, TIn2, TOut>::reset()
 
 template <class TIn1, class TIn2, class TOut>
 void DiscretDynamicCosseratMapping<TIn1, TIn2, TOut>::apply(
-		const core::MechanicalParams* /* mparams */, const helper::vector<OutDataVecCoord*>& dataVecOutPos,
-		const helper::vector<const In1DataVecCoord*>& dataVecIn1Pos ,
-		const helper::vector<const In2DataVecCoord*>& dataVecIn2Pos)
+		const core::MechanicalParams* /* mparams */, const type::vector<OutDataVecCoord*>& dataVecOutPos,
+		const type::vector<const In1DataVecCoord*>& dataVecIn1Pos ,
+		const type::vector<const In2DataVecCoord*>& dataVecIn2Pos)
 {
 
 	if(dataVecOutPos.empty() || dataVecIn1Pos.empty() || dataVecIn2Pos.empty())
@@ -167,9 +161,9 @@ void DiscretDynamicCosseratMapping<TIn1, TIn2, TOut>::apply(
 
 template <class TIn1, class TIn2, class TOut>
 void DiscretDynamicCosseratMapping<TIn1, TIn2, TOut>:: applyJ(
-		const core::MechanicalParams* /* mparams */, const helper::vector< OutDataVecDeriv*>& dataVecOutVel,
-		const helper::vector<const In1DataVecDeriv*>& dataVecIn1Vel,
-		const helper::vector<const In2DataVecDeriv*>& dataVecIn2Vel) {
+		const core::MechanicalParams* /* mparams */, const type::vector< OutDataVecDeriv*>& dataVecOutVel,
+		const type::vector<const In1DataVecDeriv*>& dataVecIn1Vel,
+		const type::vector<const In2DataVecDeriv*>& dataVecIn2Vel) {
 
 	if(dataVecOutVel.empty() || dataVecIn1Vel.empty() ||dataVecIn2Vel.empty() )
 		return;
@@ -178,8 +172,8 @@ void DiscretDynamicCosseratMapping<TIn1, TIn2, TOut>:: applyJ(
 	OutVecDeriv& outVel = *dataVecOutVel[0]->beginEdit();
 
 
-	helper::ReadAccessor<Data<helper::vector<double>>> curv_abs_input  = d_curv_abs_input; // This is the vector of X in the paper
-	helper::ReadAccessor<Data<helper::vector<double>>> curv_abs_output = d_curv_abs_output;
+	helper::ReadAccessor<Data<type::vector<double>>> curv_abs_input  = d_curv_abs_input; // This is the vector of X in the paper
+	helper::ReadAccessor<Data<type::vector<double>>> curv_abs_output = d_curv_abs_output;
 	helper::ReadAccessor<Data<bool>> debug = d_debug;
 	m_frameJacobienVector.clear();
 	m_frameJacobienDotVector.clear();
@@ -236,7 +230,7 @@ void DiscretDynamicCosseratMapping<TIn1, TIn2, TOut>:: applyJ(
 		Vec6 etaFrame = Adjoint * (m_nodesVelocityVectors[m_indicesVectors[i]-1] + m_framesTangExpVectors[i] * Xi_dot ); // eta
 
 		//Compute here jacobien and jacobien_dot
-		helper::vector<Mat6x3> J_i, J_dot_i;
+        type::vector<Mat6x3> J_i, J_dot_i;
 		computeJ_Jdot_i(Adjoint, i, J_i, etaFrame, J_dot_i);
 		m_frameJacobienVector.push_back(J_i);
 		m_frameJacobienVector.push_back(J_dot_i);
@@ -257,7 +251,9 @@ void DiscretDynamicCosseratMapping<TIn1, TIn2, TOut>:: applyJ(
 }
 
 template <class TIn1, class TIn2, class TOut>
-void DiscretDynamicCosseratMapping<TIn1, TIn2, TOut>::computeJ_Jdot_i(const Mat6x6 &Adjoint, size_t frameId, helper::vector<Mat6x3> &J_i, const Vec6& etaFrame, helper::vector<Mat6x3> &J_dot_i){
+void DiscretDynamicCosseratMapping<TIn1, TIn2, TOut>::computeJ_Jdot_i(const Mat6x6 &Adjoint, size_t frameId,
+                                                                      type::vector<Mat6x3> &J_i, const Vec6& etaFrame,
+                                                                      type::vector<Mat6x3> &J_dot_i){
 	size_t sz = d_curv_abs_input.getValue().size();
 	Mat6x3 Si;
 	Mat6x6 M;
@@ -317,9 +313,9 @@ void DiscretDynamicCosseratMapping<TIn1, TIn2, TOut>::computeJ_Jdot_i(const Mat6
 
 template <class TIn1, class TIn2, class TOut>
 void DiscretDynamicCosseratMapping<TIn1, TIn2, TOut>:: applyJT(
-		const core::MechanicalParams* /*mparams*/, const helper::vector< In1DataVecDeriv*>& dataVecOut1Force,
-		const helper::vector< In2DataVecDeriv*>& dataVecOut2Force,
-		const helper::vector<const OutDataVecDeriv*>& dataVecInForce)  {
+		const core::MechanicalParams* /*mparams*/, const type::vector< In1DataVecDeriv*>& dataVecOut1Force,
+		const type::vector< In2DataVecDeriv*>& dataVecOut2Force,
+		const type::vector<const OutDataVecDeriv*>& dataVecInForce)  {
 
 	if(dataVecOut1Force.empty() || dataVecInForce.empty() || dataVecOut2Force.empty())
 		return;
@@ -335,7 +331,7 @@ void DiscretDynamicCosseratMapping<TIn1, TIn2, TOut>:: applyJT(
 	const OutVecCoord& frame = m_toModel->read(core::ConstVecCoordId::position())->getValue();
 	const In1DataVecCoord* x1fromData = m_fromModel1->read(core::ConstVecCoordId::position());
 	const In1VecCoord x1from = x1fromData->getValue();
-	helper::vector<Vec6> local_F_Vec ;   local_F_Vec.clear();
+    type::vector<Vec6> local_F_Vec ;   local_F_Vec.clear();
 
 	out1.resize(x1from.size());
 
@@ -407,9 +403,9 @@ void DiscretDynamicCosseratMapping<TIn1, TIn2, TOut>:: applyJT(
 //___________________________________________________________________________
 template <class TIn1, class TIn2, class TOut>
 void DiscretDynamicCosseratMapping<TIn1, TIn2, TOut>::applyJT(
-		const core::ConstraintParams*/*cparams*/ , const helper::vector< In1DataMatrixDeriv*>&  dataMatOut1Const,
-		const helper::vector< In2DataMatrixDeriv*>&  dataMatOut2Const ,
-		const helper::vector<const OutDataMatrixDeriv*>& dataMatInConst)
+		const core::ConstraintParams*/*cparams*/ , const type::vector< In1DataMatrixDeriv*>&  dataMatOut1Const,
+		const type::vector< In2DataMatrixDeriv*>&  dataMatOut2Const ,
+		const type::vector<const OutDataMatrixDeriv*>& dataMatInConst)
 {
 	if(dataMatOut1Const.empty() || dataMatOut2Const.empty() || dataMatInConst.empty() )
 		return;
@@ -428,8 +424,8 @@ void DiscretDynamicCosseratMapping<TIn1, TIn2, TOut>::applyJT(
 	for(unsigned int k=0; k<3; k++) matB_trans[k][k] = 1.0;
 
 
-	helper::vector< std::tuple<int,Vec6> > NodesInvolved;
-	helper::vector< std::tuple<int,Vec6> > NodesInvolvedCompressed;
+    type::vector< std::tuple<int,Vec6> > NodesInvolved;
+    type::vector< std::tuple<int,Vec6> > NodesInvolvedCompressed;
 	//helper::vector<Vec6> NodesConstraintDirection;
 
 	typename OutMatrixDeriv::RowConstIterator rowItEnd = in.end();
@@ -587,8 +583,6 @@ void DiscretDynamicCosseratMapping<TIn1, TIn2, TOut>::applyJT(
 	dataMatOut2Const[0]->endEdit();
 }
 
-
-
 template <class TIn1, class TIn2, class TOut>
 void DiscretDynamicCosseratMapping<TIn1, TIn2, TOut>::draw(const core::visual::VisualParams* vparams)
 {
@@ -596,11 +590,4 @@ void DiscretDynamicCosseratMapping<TIn1, TIn2, TOut>::draw(const core::visual::V
 		return;
 }
 
-
-} // namespace mapping
-
-} // namespace component
-
-} // namespace sofa
-
-#endif // SOFA_COMPONENT_MAPPING_POEMAPING_INL
+} // namespace sofa::component::mapping

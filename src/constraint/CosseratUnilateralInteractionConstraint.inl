@@ -48,7 +48,7 @@ namespace sofa::component::constraintset
     using sofa::helper::ReadAccessor;
     using sofa::defaulttype::Vec4f;
     using sofa::defaulttype::Vector3;
-    using sofa::helper::vector;
+    using sofa::type::vector;
     using sofa::helper::OptionsGroup;
 
     template<class DataTypes>
@@ -107,7 +107,7 @@ namespace sofa::component::constraintset
     {
         /// @todo:1- Update the list of points beyond the entry point
         /// @todo:2- Build unitest function
-        /// @todo:3- use the direction
+        /// @todo:3- use the insertion direction
 
         ReadAccessor<Data<VecCoord>> positions = m_state->readPositions();
         auto entryPoint = d_entryPoint.getValue();
@@ -136,17 +136,44 @@ namespace sofa::component::constraintset
         MatrixDeriv& matrix = *cMatrix.beginEdit();
         VecCoord positions = x.getValue();
         auto indices = d_vectorOfIndices.getValue();
+        auto direction = d_direction.getValue();
 
         m_constraintId = cIndex;
-        for (auto index : indices)
-        {
-            MatrixDerivRowIterator c_it_x = matrix.writeLine(cIndex++);
-            c_it_x.addCol(index, Coord(1.,0,0)); // @todo instead of vector3(0,1,0) use the direction of the projection
-            MatrixDerivRowIterator c_it_y = matrix.writeLine(cIndex++);
-            c_it_y.addCol(index, Coord(0,1.,0)); // @todo instead of vector3(0,1,0) use the direction of the projection
-            MatrixDerivRowIterator c_it_z = matrix.writeLine(cIndex++);
-            c_it_z.addCol(index, Coord(0,0,1.)); // @todo instead of vector3(0,1,0) use the direction of the projection
+
+        //printf("=================================  \n");
+        if ((!direction.empty()) && (direction.size() == positions.size())){
+            defaulttype::Vector3 vx, vy, vz;
+            for (auto index : indices)
+            {
+                type::Quat q =direction[index]; q.normalize();
+                vx = q.rotate(Vector3(1.,0.,0)); vx.normalize();
+                vy = q.rotate(Vector3(0.,1.,0.)); vy.normalize();
+                vz = q.rotate(Vector3(0.,0.,1.)); vz.normalize();
+
+                MatrixDerivRowIterator c_it_x = matrix.writeLine(cIndex++);
+                c_it_x.addCol(index, vx);
+                MatrixDerivRowIterator c_it_y = matrix.writeLine(cIndex++);
+                c_it_y.addCol(index, vy);
+                MatrixDerivRowIterator c_it_z = matrix.writeLine(cIndex++);
+                c_it_z.addCol(index, vz);
+                //                std::cout <<"index : "<< index << std::endl;
+                //                std::cout <<"vx : "<< vx << std::endl;
+                //                std::cout <<"vy : "<< vy << std::endl;
+                //                std::cout <<"vz : "<< vz << std::endl;
+
+            }
+        } else{
+            for (auto index : indices)
+            {
+                MatrixDerivRowIterator c_it_x = matrix.writeLine(cIndex++);
+                c_it_x.addCol(index, Coord(1.,0,0));
+                MatrixDerivRowIterator c_it_y = matrix.writeLine(cIndex++);
+                c_it_y.addCol(index, Coord(0,1.,0));
+                MatrixDerivRowIterator c_it_z = matrix.writeLine(cIndex++);
+                c_it_z.addCol(index, Coord(0,0,1.));
+            }
         }
+        //printf("=================================  \n");
         cMatrix.endEdit();
         m_nbLines = cIndex - m_constraintId;
     }
@@ -170,7 +197,7 @@ namespace sofa::component::constraintset
         for (auto index : indices){
             //@todo this need to be recompute, use dfree = newPos-oldPos or posFree - pos or velocity
             Coord dx =  freePositions[index] - positions[index]; //This is also equal Jdx->element(3*iter +i); i=0,1,2
-            //            std::cout<<" ===> dx :"<< dx << std::endl;
+            //std::cout<<" ===> dx :"<< dx << std::endl;
             //            std::cout<<" ===> dv :"<< velocity[index] << std::endl;
             Real dfree1 = dx[0];
             Real dfree2 = dx[1];

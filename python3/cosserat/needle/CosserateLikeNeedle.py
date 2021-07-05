@@ -16,11 +16,14 @@ import sys
 sys.path.append('../')
 from createFemRegularGrid import createFemCube
 
-from stlib3.scene import MainHeader
 from splib3.numerics import Quat
 # from stlib3.physics.collision import CollisionMesh
 
 path = os.path.dirname(os.path.abspath(__file__))+'/../mesh/'
+
+pluginNameList = 'SofaConstraint SofaDeformable SofaImplicitOdeSolver SofaMeshCollision SofaPreconditioner' \
+                 ' SofaGeneralTopology SofaOpenglVisual SofaGeneralRigid SoftRobots SofaSparseSolver' \
+                 ' CosseratPlugin SofaBoundaryCondition'
 
 
 class Animation(Sofa.Core.Controller):
@@ -89,14 +92,8 @@ class Animation(Sofa.Core.Controller):
 
 
 def createScene(rootNode):
-
-    MainHeader(rootNode, plugins=["SoftRobots", "SofaSparseSolver", "SofaPreconditioner",
-                                  "SofaOpenglVisual", "CosseratPlugin", "BeamAdapter", "SofaDeformable",
-                                  "SofaImplicitOdeSolver", 'SofaEngine', 'SofaMeshCollision', 'SofaSimpleFem',
-                                  'SofaConstraint', 'SofaTopologyMapping'],
-               repositoryPaths=[os.getcwd()])
-
-    # rootNode.addObject('VisualStyle', displayFlags='showVisualModels showInteractionForceFields')
+    rootNode.addObject('RequiredPlugin', pluginName=pluginNameList, printLog='0')
+    
     rootNode.addObject('VisualStyle', displayFlags='showBehaviorModels hideCollisionModels hideBoundingCollisionModels '
                                                    'showForceFields hideInteractionForceFields showWireframe')
     rootNode.addObject('FreeMotionAnimationLoop')
