@@ -15,7 +15,7 @@ import os
 
 
 #constants
-GRAVITY = 9.810
+GRAVITY = 9810
 TOT_MASS = 0.1
 YOUNG_MODULUS=7e9
 DENSITY = 0.02
@@ -47,14 +47,14 @@ def createScene(rootNode):
     
 
     #Define: the total lenght of the beam
-    tot_length = 6.67e-3
+    tot_length = 100.0
 
     #Define: the number of section, the total lenght and the lenght of each beam.
     nbSectionS = 1
     lengthS = tot_length / nbSectionS
 
     #Define: the number of frame and the lenght beetween each frame.
-    nbFramesF = 15
+    nbFramesF = 20
     lengthF = tot_length /nbFramesF
 
     points = []
@@ -81,7 +81,7 @@ def createScene(rootNode):
     ##           RigidBase         ##
     #################################
     cableNode = rootNode.addChild('cableNode')
-    cableNode.addObject('EulerImplicitSolver', rayleighStiffness="0.2", rayleighMass='1.')
+    cableNode.addObject('EulerImplicitSolver', rayleighStiffness="1.2", rayleighMass='1.1')
     cableNode.addObject('SparseLDLSolver', name='solver')
     cableNode.addObject('GenericConstraintCorrection')
 
@@ -89,7 +89,8 @@ def createScene(rootNode):
     RigidBaseMO = rigidBaseNode.addObject('MechanicalObject', template='Rigid3d',
                                              name="RigidBaseMO", position= [0.,0.,0., 0,0,0,1], showObject=1,
                                              showObjectScale=2.)
-    rigidBaseNode.addObject('RestShapeSpringsForceField', name='spring', stiffness="5.e8", angularStiffness="5.e8",external_points="0", mstate="@RigidBaseMO", points="0", template="Rigid3d")
+    rigidBaseNode.addObject('RestShapeSpringsForceField', name='spring', stiffness="5.e8", angularStiffness="5.e8",
+                               external_points="0", mstate="@RigidBaseMO", points="0", template="Rigid3d")
     
     #################################
     ## Rate of angular Deformation ##
@@ -113,16 +114,15 @@ def createScene(rootNode):
     
     """ Define: angular rate which is the torsion(x) and bending (y, z) of each section """
     val = 3.14/(2*tot_length)
-    print ('===< val :', val)
     rateAngularDeformNode = cableNode.addChild('rateAngularDeform')
     rateAngularDeformMO = rateAngularDeformNode.addObject('MechanicalObject',
                                     template='Vec3d', name='rateAngularDeformMO',
-                                    position=positionS, showIndices=0, rest_position=[0.0, 0., 0])
+                                    position=positionS, showIndices=0, rest_position=[0.0, val, val])
     BeamHookeLawForce = rateAngularDeformNode.addObject('BeamHookeLawForceField',
-                                    crossSectionShape='rectangular', length=longeurS,
-                                    lengthZ=1.37e-3, lengthY=0.035e-3, radius=2., youngModulus=2e5)
-    #rateAngularDeformNode.addObject('RestShapeSpringsForceField', name='spring', stiffness="5.e8",
-                               #external_points="0", mstate="@rateAngularDeformMO", points="0", template="Vec3d")
+                                    crossSectionShape='circular', length=longeurS,
+                                    radius=90., youngModulus=5e6)
+    rateAngularDeformNode.addObject('RestShapeSpringsForceField', name='spring', stiffness="5.e8",
+                               external_points="0", mstate="@rateAngularDeformMO", points="0", template="Vec3d")
 
 
     #################################
@@ -146,9 +146,7 @@ def createScene(rootNode):
 
     framesMO = mappedFrameNode.addObject('MechanicalObject', template='Rigid3d',
                                                 name="FramesMO", position=framesF,
-                                            showObject=1, showObjectScale=0.0002)
-    mappedFrameNode.addObject('UniformMass', totalMass="2.2e-10", showAxisSizeFactor='0')
-    forceFied = mappedFrameNode.createObject('ConstantForceField', indices="15", forces="0 1e-7 0 0 0 0")
+                                            showObject=1, showObjectScale=1)
 
     # The mapping has two inputs: RigidBaseMO and rateAngularDeformMO
     #                 one output: FramesMO
@@ -159,8 +157,6 @@ def createScene(rootNode):
     mappedFrameNode.addObject('DiscreteCosseratMapping', curv_abs_input= curv_abs_inputS,
                                  curv_abs_output=curv_abs_outputF, input1=inputMO, input2=inputMO_rigid,
                                  output=outputMO, debug=0)
-    cableNode.addObject('MechanicalMatrixMapper', template='Vec3,Rigid3', object1=inputMO,
-                        object2=inputMO_rigid, nodeToParse=mappedFrameNode.getLinkPath())
 
     ############################################################################
     ############################################################################
