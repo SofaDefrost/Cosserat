@@ -131,6 +131,9 @@ void BeamHookeLawForceField<DataTypes>::reinit()
         m_K_section[0][0] = G*J;
         m_K_section[1][1] = E*Iy;
         m_K_section[2][2] = E*Iz;
+
+
+        std::cout << "Out M_k : "<< m_K_section << std::endl;
     }else {
         msg_info("BeamHookeLawForceField")<< "=====> Multi section";
         m_K_sectionList.clear();
