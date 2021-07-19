@@ -89,7 +89,8 @@ set(SOURCE_FILES
     src/constraint/QPSlidingConstraint.cpp
     src/constraint/CosseratNeedleSlidingConstraint.cpp
     src/constraint/CosseratUnilateralInteractionConstraint.cpp
-        src/engine/engineQuat.cpp src/engine/engineQuat.h)
+    #    src/engine/engineQuat.cpp src/engine/engineQuat.h
+    )
 
 set(README_FILE "Cosserat.txt" )
 
