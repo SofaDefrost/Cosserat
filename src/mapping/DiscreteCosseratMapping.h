@@ -113,7 +113,7 @@ public:
 
 protected:
     //    Data<helper::vector<double>>      d_curv_abs_de ;
-    //    Data<helper::vector<double>>      d_curv_abs_output ;
+    //    Data<helper::vector<double>>      d_curv_abs_frames ;
     Data<int>                        d_deformationAxis ;
     Data<Real>                       d_max ;
     Data<Real>                       d_min ;
@@ -138,17 +138,17 @@ protected:
     /// the "this->" approach.
     ///
     using BaseCosserat<TIn1, TIn2, TOut>:: m_indicesVectors ;
-    using BaseCosserat<TIn1, TIn2, TOut>::d_curv_abs_input  ;
-    using BaseCosserat<TIn1, TIn2, TOut>::d_curv_abs_output ;
+    using BaseCosserat<TIn1, TIn2, TOut>::d_curv_abs_section  ;
+    using BaseCosserat<TIn1, TIn2, TOut>::d_curv_abs_frames ;
     using BaseCosserat<TIn1, TIn2, TOut>::m_nodesTangExpVectors;
     using BaseCosserat<TIn1, TIn2, TOut>::m_nodesVelocityVectors;
-    using BaseCosserat<TIn1, TIn2, TOut>::m_ExponentialSE3Vectors;
+    using BaseCosserat<TIn1, TIn2, TOut>::m_framesExponentialSE3Vectors;
     using BaseCosserat<TIn1, TIn2, TOut>::m_framesTangExpVectors ;
     using BaseCosserat<TIn1, TIn2, TOut>::m_totalBeamForceVectors ;
     using BaseCosserat<TIn1, TIn2, TOut>::m_nodesExponentialSE3Vectors ;
     using BaseCosserat<TIn1, TIn2, TOut>::d_debug;
     using BaseCosserat<TIn1, TIn2, TOut>::m_vecTransform ;
-    using BaseCosserat<TIn1, TIn2, TOut>::m_nodeAjointVectors;
+    using BaseCosserat<TIn1, TIn2, TOut>::m_nodeAdjointVectors;
     using BaseCosserat<TIn1, TIn2, TOut>::m_index_input;
     using BaseCosserat<TIn1, TIn2, TOut>::m_indicesVectorsDraw;
 
@@ -194,7 +194,7 @@ public:
 
 protected:
     /**********************COSSERAT METHODS**************************/
-    //    defaulttype::Matrix4 computeLogarithme(const double & x, const Matrix4 &gX);
+    //    defaulttype::Matrix4 computeLogarithm(const double & x, const Matrix4 &gX);
     //    visualmodel::OglColorMap *colorMap;
     helper::ColorMap m_colorMap;
 
