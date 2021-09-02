@@ -70,21 +70,9 @@ DiscreteCosseratMapping<TIn1, TIn2, TOut>::DiscreteCosseratMapping()
 template <class TIn1, class TIn2, class TOut>
 void DiscreteCosseratMapping<TIn1, TIn2, TOut>::init()
 {
-    if(this->getFromModels1().empty())
+    if(this->getFromModels1().empty() || this->getFromModels2().empty() || this->getToModels().empty())
     {
-        msg_error() << "Error while initializing ; input getFromModels1 not found" ;
-        return;
-    }
-
-    if(this->getFromModels2().empty())
-    {
-        msg_error() << "Error while initializing ; output getFromModels2 not found" ;
-        return;
-    }
-
-    if(this->getToModels().empty())
-    {
-        msg_error() << "Error while initializing ; output Model not found" ;
+        msg_error() << "Error while initializing ; input getFromModels1/getFromModels2/output not found" ;
         return;
     }
 
@@ -95,7 +83,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::init()
     // Fill the initial vector
     const OutDataVecCoord* xFromData = m_toModel->read(core::ConstVecCoordId::position());
     const OutVecCoord xFrom = xFromData->getValue();
-    //    WriteAccessor<Data < helper::vector<double>>> curv_abs_output = d_curv_abs_output;
+    //    WriteAccessor<Data < helper::vector<double>>> curv_abs_output = d_curv_abs_frames;
     //    curv_abs_output.clear();
 
     m_vecTransform.clear();
@@ -128,33 +116,34 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::apply(
     const In1VecCoord& in1 = dataVecIn1Pos[0]->getValue();
     const In2VecCoord& in2 = dataVecIn2Pos[0]->getValue();
 
-    size_t sz = d_curv_abs_output.getValue().size();
+    const auto sz = d_curv_abs_frames.getValue().size();
     OutVecCoord& out = *dataVecOutPos[0]->beginEdit();
     out.resize(sz);
 
-    //update the Exponential Matrices according to new deformation
-    this->update_ExponentialSE3(in1); // ==> update m_ExponentialSE3Vectors & m_nodesExponentialSE3Vectors
-
+    // update the Exponential Matrices according to new deformation
+    // Here we update m_framesExponentialSE3Vectors & m_nodesExponentialSE3Vectors
+    this->update_ExponentialSE3(in1);
+    /* Go from Cossserat to SOFA frame*/
     Transform frame0 = Transform(In2::getCPos(in2[0]),In2::getCRot(in2[0]));
-    for(unsigned int i=0; i<sz; i++){
+    for(auto i=0; i<sz; i++){
         Transform frame = frame0;
-        for (int u = 0; u < m_indicesVectors[i]; u++) {
+        for (auto u = 0; u < m_indicesVectors[i]; u++) {
             frame *= m_nodesExponentialSE3Vectors[u];
         }
-        frame *= m_ExponentialSE3Vectors[i];
+        frame *= m_framesExponentialSE3Vectors[i];
 
         Vector3 v = frame.getOrigin();
         defaulttype::Quat q = frame.getOrientation();
         out[i] = OutCoord(v,q);
     }
-
+    // @todo do this another place
     m_index_input = 0;
     dataVecOutPos[0]->endEdit();
 }
 
 
 //template <class TIn1, class TIn2, class TOut>
-//Matrix4 DiscreteCosseratMapping<TIn1, TIn2, TOut>::computeLogarithme(const double & x, const defaulttype::Matrix4 &gX){
+//Matrix4 DiscreteCosseratMapping<TIn1, TIn2, TOut>::computeLogarithm(const double & x, const defaulttype::Matrix4 &gX){
 
 //    // Compute theta before everything
 //    const double theta = computeTheta(x, gX);
@@ -183,7 +172,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::apply(
 //}
 
 //template<class In1VecCoord, class Mat6x6>
-//void computeViolation(In1VecCoord& inDeform, const helper::vector<double> m_framesLenghtVectors, const
+//void computeViolation(In1VecCoord& inDeform, const helper::vector<double> m_framesLengthVectors, const
 //                       size_t sz, std::function<double(int i, int j)> f)
 //{
 
@@ -192,7 +181,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::apply(
 //        Mat6x6 temp ;
 
 //        Vector3 k = inDeform[m_indicesVectors[i]-1];
-//        double  x = m_framesLenghtVectors[i];
+//        double  x = m_framesLengthVectors[i];
 //        compute_Tang_Exp(x,k,temp) ;
 //        m_framesTangExpVectors.push_back(temp);
 
@@ -218,12 +207,12 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>:: applyJ(
     const In2VecDeriv& in2_vecDeriv = dataVecIn2Vel[0]->getValue();
     OutVecDeriv& outVel = *dataVecOutVel[0]->beginEdit();
 
-    helper::ReadAccessor<Data<type::vector<double>>> curv_abs_input =  d_curv_abs_input; // This is the vector of X in the paper
-    helper::ReadAccessor<Data<type::vector<double>>> curv_abs_output = d_curv_abs_output;
+    helper::ReadAccessor<Data<type::vector<double>>> curv_abs_section =  d_curv_abs_section; // This is the vector of X in the paper
+    helper::ReadAccessor<Data<type::vector<double>>> curv_abs_frames = d_curv_abs_frames;
 
     // Compute the tangent Exponential SE3 vectors
     const In1VecCoord& inDeform = m_fromModel1->read(core::ConstVecCoordId::position())->getValue();
-    this->update_TangExpSE3(inDeform,curv_abs_input.ref(),curv_abs_output.ref());
+    this->update_TangExpSE3(inDeform, curv_abs_section.ref(), curv_abs_frames.ref());
 
     //Get base velocity as input this is also called eta
     m_nodesVelocityVectors.clear();
@@ -232,22 +221,22 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>:: applyJ(
         _baseVelocity = in2_vecDeriv[0];
     //convert to Vec6
     defaulttype::Vec6 baseVelocity;
-    for (size_t u=0;u<6;u++) {baseVelocity[u] = _baseVelocity[u];}
+    for (auto u=0; u<6; u++) {baseVelocity[u] = _baseVelocity[u];}
 
     //Apply the local transform i.e from SOFA frame to Frederico frame
     const In2VecCoord& xfrom2Data = m_fromModel2->read(core::ConstVecCoordId::position())->getValue();
-    Transform Tinverse = Transform(xfrom2Data[0].getCenter(),xfrom2Data[0].getOrientation()).inversed();
-    Mat6x6 P = this->build_projector(Tinverse);
+    Transform TInverse = Transform(xfrom2Data[0].getCenter(), xfrom2Data[0].getOrientation()).inversed();
+    Mat6x6 P = this->build_projector(TInverse);
     defaulttype::Vec6 baseLocalVelocity = P * baseVelocity;
     m_nodesVelocityVectors.push_back(baseLocalVelocity);
     if(d_debug.getValue())
         std::cout << "Base local Velocity :"<< baseLocalVelocity <<std::endl;
 
     //Compute velocity at nodes
-    for (size_t i = 1 ; i < curv_abs_input.size(); i++) {
-        Transform t = m_nodesExponentialSE3Vectors[i].inversed();
+    for (auto i = 1 ; i < curv_abs_section.size(); i++) {
+        Transform Trans = m_nodesExponentialSE3Vectors[i].inversed();
         Mat6x6 Adjoint; Adjoint.clear();
-        this->computeAdjoint(t,Adjoint);
+        this->computeAdjoint(Trans, Adjoint);
 
         defaulttype::Vec6 Xi_dot = Vec6(in1[i-1],Vector3(0.0,0.0,0.0)) ;
         Vec6 temp = Adjoint * (m_nodesVelocityVectors[i-1] + m_nodesTangExpVectors[i] * Xi_dot );
@@ -257,12 +246,12 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>:: applyJ(
     }
 
     const OutVecCoord& out = m_toModel->read(core::ConstVecCoordId::position())->getValue();
-    size_t sz =curv_abs_output.size();
+    auto sz =curv_abs_frames.size();
     outVel.resize(sz);
-    for (size_t i = 0 ; i < sz; i++) {
-        Transform t = m_ExponentialSE3Vectors[i].inversed();
+    for (auto i = 0 ; i < sz; i++) {
+        Transform Trans = m_framesExponentialSE3Vectors[i].inversed();
         Mat6x6 Adjoint; Adjoint.clear();
-        this->computeAdjoint(t,Adjoint);
+        this->computeAdjoint(Trans, Adjoint);
 
         defaulttype::Vec6 Xi_dot = Vec6(in1[m_indicesVectors[i]-1],Vector3(0.0,0.0,0.0)) ;
         Vec6 temp = Adjoint * (m_nodesVelocityVectors[m_indicesVectors[i]-1] + m_framesTangExpVectors[i] * Xi_dot ); // eta
@@ -302,12 +291,12 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>:: applyJT(
     const OutVecCoord& frame = m_toModel->read(core::ConstVecCoordId::position())->getValue();
     const In1DataVecCoord* x1fromData = m_fromModel1->read(core::ConstVecCoordId::position());
     const In1VecCoord x1from = x1fromData->getValue();
-    type::vector<Vec6> local_F_Vec ;   local_F_Vec.clear();
+    type::vector<Vec6> local_F_Vec;  local_F_Vec.clear();
 
     out1.resize(x1from.size());
 
     //convert the input from Deriv type to vec6 type, for the purpose of the matrix vector multiplication
-    for (size_t var = 0; var < in.size(); ++var) {
+    for (auto var = 0; var < in.size(); ++var) {
         defaulttype::Vec6 vec;
         for(unsigned j = 0; j < 6; j++) vec[j] = in[var][j];
 
@@ -319,7 +308,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>:: applyJT(
     }
 
     //Compute output forces
-    size_t sz = m_indicesVectors.size();
+    auto sz = m_indicesVectors.size();
 
     int index =  m_indicesVectors[sz-1];
     m_totalBeamForceVectors.clear();
@@ -331,10 +320,10 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>:: applyJT(
     Mat3x6 matB_trans; matB_trans.clear();
     for(unsigned int k=0; k<3; k++) matB_trans[k][k] = 1.0;
 
-    for (size_t s = sz ; s-- ; ) {
+    for (auto s = sz ; s-- ; ) {
         Mat6x6 coAdjoint;
 
-        this->compute_coAdjoint(m_ExponentialSE3Vectors[s],coAdjoint);  // m_ExponentialSE3Vectors[s] computed in apply
+        this->compute_coAdjoint(m_framesExponentialSE3Vectors[s], coAdjoint);  // m_framesExponentialSE3Vectors[s] computed in apply
         Vec6 node_F_Vec = coAdjoint * local_F_Vec[s];
         Mat6x6 temp = m_framesTangExpVectors[s];   // m_framesTangExpVectors[s] computed in applyJ (here we transpose)
         temp.transpose();
@@ -443,7 +432,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJT(
             P_trans.transpose();
 
             Mat6x6 coAdjoint;
-            this->compute_coAdjoint(m_ExponentialSE3Vectors[childIndex],coAdjoint);  // m_ExponentialSE3Vectors[s] computed in apply
+            this->compute_coAdjoint(m_framesExponentialSE3Vectors[childIndex], coAdjoint);  // m_framesExponentialSE3Vectors[s] computed in apply
             Mat6x6 temp = m_framesTangExpVectors[childIndex];   // m_framesTangExpVectors[s] computed in applyJ (here we transpose)
             temp.transpose();
 

@@ -73,7 +73,7 @@ def createScene(rootNode):
 
     MainHeader(rootNode, plugins=["SoftRobots", "SofaSparseSolver", 'SofaDeformable', 'SofaEngine',
                                   'SofaImplicitOdeSolver', 'SofaLoader', 'SofaSimpleFem', "SofaPreconditioner",
-                                  "SofaOpenglVisual", "CosseratPlugin", "BeamAdapter", "SofaConstraint"],
+                                  "SofaOpenglVisual", "CosseratPlugin", "SofaConstraint"],
                repositoryPaths=[os.getcwd()])
     rootNode.addObject('VisualStyle', displayFlags='showVisualModels showInteractionForceFields showWireframe')
 

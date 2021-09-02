@@ -25,7 +25,7 @@ def createScene(rootNode):
 
     """
 
-    rootNode.addObject('RequiredPlugin', pluginName='SoftRobots SofaPython3 SofaSparseSolver CosseratPlugin BeamAdapter SofaConstraint SofaDeformable SofaImplicitOdeSolver', printLog='0')
+    rootNode.addObject('RequiredPlugin', pluginName='SoftRobots SofaPython3 SofaSparseSolver CosseratPlugin SofaConstraint SofaDeformable SofaImplicitOdeSolver', printLog='0')
     rootNode.addObject('VisualStyle', displayFlags='hideVisualModels showBehaviorModels showCollisionModels hideBoundingCollisionModels showForceFields hideInteractionForceFields hideWireframe')
 
 
@@ -114,7 +114,7 @@ def createScene(rootNode):
     inputMO_rigid = RigidBaseMO.getLinkPath()
     outputMO = framesMO.getLinkPath()
 
-    mappedFrameNode.addObject('DiscretCosseratMapping', curv_abs_input=curv_abs_inputS,
+    mappedFrameNode.addObject('DiscreteCosseratMapping', curv_abs_input=curv_abs_inputS,
                               curv_abs_output=curv_abs_outputF, input1=inputMO, input2=inputMO_rigid,
                               output=outputMO, debug=0)
     # Target to reach with the tip of the model (cable or rod)
