@@ -42,7 +42,7 @@ using std::get;
 
 
 /*!
- * \class RigidRigidCosseratMapping
+ * \class RigidDistanceMapping
  * @brief Computes and map the length of the beams
  *
  * This is a component:
@@ -51,10 +51,10 @@ using std::get;
 using component::mapping::BaseCosserat;
 //
 template <class TIn1, class TIn2, class TOut>
-class RigidRigidCosseratMapping : public core::Multi2Mapping<TIn1, TIn2, TOut> , public component::mapping::BaseCosserat<TIn1, TIn2, TOut>
+class RigidDistanceMapping : public core::Multi2Mapping<TIn1, TIn2, TOut> , public component::mapping::BaseCosserat<TIn1, TIn2, TOut>
 {
 public:
-    SOFA_CLASS(SOFA_TEMPLATE3(RigidRigidCosseratMapping, TIn1,TIn2, TOut), SOFA_TEMPLATE3(core::Multi2Mapping, TIn1, TIn2, TOut) );
+    SOFA_CLASS(SOFA_TEMPLATE3(RigidDistanceMapping, TIn1,TIn2, TOut), SOFA_TEMPLATE3(core::Multi2Mapping, TIn1, TIn2, TOut) );
     typedef core::Multi2Mapping<TIn1, TIn2, TOut> Inherit;
 
     /// Input Model Type
@@ -96,11 +96,12 @@ public:
     typedef Data<OutVecDeriv> OutDataVecDeriv;
     typedef Data<OutMatrixDeriv> OutDataMatrixDeriv;
 
-    typedef MultiLink<RigidRigidCosseratMapping<In1,In2,Out>, sofa::core::State< In1 >, BaseLink::FLAG_STOREPATH|BaseLink::FLAG_STRONGLINK> LinkFromModels1;
-    typedef MultiLink<RigidRigidCosseratMapping<In1,In2,Out>, sofa::core::State< In2 >, BaseLink::FLAG_STOREPATH|BaseLink::FLAG_STRONGLINK> LinkFromModels2;
-    typedef MultiLink<RigidRigidCosseratMapping<In1,In2,Out>, sofa::core::State< Out >, BaseLink::FLAG_STOREPATH|BaseLink::FLAG_STRONGLINK> LinkToModels;
+    typedef MultiLink<RigidDistanceMapping<In1,In2,Out>, sofa::core::State< In1 >, BaseLink::FLAG_STOREPATH|BaseLink::FLAG_STRONGLINK> LinkFromModels1;
+    typedef MultiLink<RigidDistanceMapping<In1,In2,Out>, sofa::core::State< In2 >, BaseLink::FLAG_STOREPATH|BaseLink::FLAG_STRONGLINK> LinkFromModels2;
+    typedef MultiLink<RigidDistanceMapping<In1,In2,Out>, sofa::core::State< Out >, BaseLink::FLAG_STOREPATH|BaseLink::FLAG_STRONGLINK> LinkToModels;
 
     typedef typename SolidTypes<Real>::Transform      Transform ;
+    typedef typename SolidTypes< Real>::SpatialVector SpatialVector   ;
 
 protected:
     //    Data<helper::vector<double>>      d_curv_abs_de ;
@@ -147,9 +148,9 @@ protected:
 
 protected:
     /// Constructor    
-    RigidRigidCosseratMapping() ;
+    RigidDistanceMapping() ;
     /// Destructor
-    ~RigidRigidCosseratMapping()  override {}
+    ~RigidDistanceMapping()  override {}
 public:
 
 
@@ -187,14 +188,15 @@ protected:
     //    defaulttype::Matrix4 computeLogarithm(const double & x, const Matrix4 &gX);
     //    visualmodel::OglColorMap *colorMap;
     helper::ColorMap m_colorMap;
+    sofa::Index  m_minInd;
 
 };
 
-//extern template class SOFA_POE_MAPPING_API RigidRigidCosseratMapping<defaulttype::Rigid3Types>;
+//extern template class SOFA_POE_MAPPING_API RigidDistanceMapping<defaulttype::Rigid3Types>;
 
 
 //#if  !defined(SOFA_COMPONENT_RIGID_RIGID_MAPPING_CPP)
-//extern template class SOFA_COSSERAT_MAPPING_API RigidRigidCosseratMapping< sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types >;
+//extern template class SOFA_COSSERAT_MAPPING_API RigidDistanceMapping< sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types >;
 //#endif
 
 } // namespace sofa::component::mapping

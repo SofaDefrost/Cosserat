@@ -32,7 +32,7 @@
 
 #include "sofa/defaulttype/Quat.h"
 #include "BaseCosserat.inl"
-#include "RigidRigidCosseratMapping.h"
+#include "RigidDistanceMapping.h"
 
 
 namespace sofa::component::mapping
@@ -45,7 +45,7 @@ namespace sofa::component::mapping
     using sofa::type::RGBAColor;
 
 template <class TIn1, class TIn2, class TOut>
-RigidRigidCosseratMapping<TIn1, TIn2, TOut>::RigidRigidCosseratMapping()
+RigidDistanceMapping<TIn1, TIn2, TOut>::RigidDistanceMapping()
     : m_fromModel1(NULL)
     , m_fromModel2(NULL)
     , m_toModel(NULL)
@@ -72,7 +72,7 @@ RigidRigidCosseratMapping<TIn1, TIn2, TOut>::RigidRigidCosseratMapping()
 // _________________________________________________________________________________________
 
 template <class TIn1, class TIn2, class TOut>
-void RigidRigidCosseratMapping<TIn1, TIn2, TOut>::init()
+void RigidDistanceMapping<TIn1, TIn2, TOut>::init()
 {
     if(this->getFromModels1().empty() || this->getFromModels2().empty() || this->getToModels().empty())
     {
@@ -80,12 +80,19 @@ void RigidRigidCosseratMapping<TIn1, TIn2, TOut>::init()
         return;
     }
 
+    const type::vector<int> &m1Indices = d_indice1.getValue();
+    const type::vector<int> &m2Indices = d_indice2.getValue();
 
+    m_minInd = std::min(m1Indices.size(), m2Indices.size());
+    if (m_minInd == 0) {
+        msg_info("") << " The size of the indices must not be equal to zero" ;
+        return;
+    }
 }
 
 
 template <class TIn1, class TIn2, class TOut>
-void RigidRigidCosseratMapping<TIn1, TIn2, TOut>::apply(
+void RigidDistanceMapping<TIn1, TIn2, TOut>::apply(
         const core::MechanicalParams* /* mparams */, const type::vector<OutDataVecCoord*>& dataVecOutPos,
         const type::vector<const In1DataVecCoord*>& dataVecIn1Pos ,
         const type::vector<const In2DataVecCoord*>& dataVecIn2Pos)
@@ -100,68 +107,59 @@ void RigidRigidCosseratMapping<TIn1, TIn2, TOut>::apply(
     const In2VecCoord& in2 = dataVecIn2Pos[0]->getValue();
 
     OutVecCoord& out = *dataVecOutPos[0]->beginEdit();
+    out.resize(m_minInd);
 
-    const type::vector<int> &m1Indices = d_indice1.getValue();
-    const type::vector<int> &m2Indices = d_indice2.getValue();
+    auto &m1Indices = d_indice1.getValue();
+    auto &m2Indices = d_indice2.getValue();
 
-    auto minInd = std::min(m1Indices.size(), m2Indices.size());
-    if (minInd == 0) {
-        return;
-    }
-    out.resize(minInd);
-
-    for (unsigned pid=0; pid<minInd; pid++) {
+    for (sofa::Index pid=0; pid<m_minInd; pid++) {
         int tm1 = m1Indices[pid];
         int tm2 = m2Indices[pid];
-//        std::cout<< " tm1: " << tm1 << " tm2: " << tm2 << std::endl;
-//        std::cout << " in1 :" << in1[tm1] << std::endl;
-//        std::cout << " in2 :" << in2[tm2] << std::endl;
+        //        std::cout<< " tm1: " << tm1 << " tm2: " << tm2 << std::endl;
+        std::cout << " in1 :" << in1[tm1] << std::endl;
+        std::cout << " in2 :" << in2[tm2] << std::endl;
         Vector3 outCenter = in2[tm2].getCenter()-in1[tm1].getCenter();
-        defaulttype::Quat outOri = in2[tm2].getOrientation().inverse() * in1[tm1].getOrientation();
-        out[pid] = OutCoord(outCenter,outOri);
-//        std::cout<< "Center: " << outCenter << std::endl;
-//        std::cout<< "Ori: " << outOri << std::endl;
+//        defaulttype::Quat outOri = in2[tm2].getOrientation().inverse() * in1[tm1].getOrientation() ;
+        defaulttype::Quat outOri = in2[tm2].getOrientation()* in1[tm1].getOrientation().inverse();
+        outOri.normalize();
+        out[pid] = OutCoord(outCenter,outOri); // This difference is in the word space
+        std::cout<< "outPut: " << out[pid]<< std::endl;
     }
 
-//
-//    // update the Exponential Matrices according to new deformation
-//    // Here we update m_framesExponentialSE3Vectors & m_nodesExponentialSE3Vectors
-//    /* Go from Cossserat to SOFA frame*/
-//    Transform frame0 = Transform(In2::getCPos(in2[0]),In2::getCRot(in2[0]));
-//    for(auto i=0; i<sz; i++){
-//        Transform frame = frame0;
-//        for (auto u = 0; u < m_indicesVectors[i]; u++) {
-//            frame *= m_nodesExponentialSE3Vectors[u];
-//        }
-//        frame *= m_framesExponentialSE3Vectors[i];
-//
-//        Vector3 v = frame.getOrigin();
-//        defaulttype::Quat q = frame.getOrientation();
-//        out[i] = OutCoord(v,q);
-//    }
-//    // @todo do this another place
-//    m_index_input = 0;
-//    dataVecOutPos[0]->endEdit();
+    dataVecOutPos[0]->endEdit();
 }
 
 
 template <class TIn1, class TIn2, class TOut>
-void RigidRigidCosseratMapping<TIn1, TIn2, TOut>:: applyJ(
+void RigidDistanceMapping<TIn1, TIn2, TOut>:: applyJ(
         const core::MechanicalParams* /* mparams */, const type::vector< OutDataVecDeriv*>& dataVecOutVel,
         const type::vector<const In1DataVecDeriv*>& dataVecIn1Vel,
         const type::vector<const In2DataVecDeriv*>& dataVecIn2Vel) {
 
-//    if(dataVecOutVel.empty() || dataVecIn1Vel.empty() ||dataVecIn2Vel.empty() )
-//        return;
-//    const In1VecDeriv& in1 = dataVecIn1Vel[0]->getValue();
-//    const In2VecDeriv& in2_vecDeriv = dataVecIn2Vel[0]->getValue();
-//    OutVecDeriv& outVel = *dataVecOutVel[0]->beginEdit();
+    if(dataVecOutVel.empty() || dataVecIn1Vel.empty() ||dataVecIn2Vel.empty() )
+        return;
 
+    const In1VecDeriv& in1Vel = dataVecIn1Vel[0]->getValue();
+    const In2VecDeriv& in2Vel = dataVecIn2Vel[0]->getValue();
+    OutVecDeriv& outVel = *dataVecOutVel[0]->beginEdit();
+
+
+    const auto &m1Indices = d_indice1.getValue();
+    const auto &m2Indices = d_indice2.getValue();
+
+    SpatialVector vDOF1, vDOF2;
+
+    for (sofa::Index index = 0; index < m_minInd; index++) {
+        getVCenter(outVel[index]) = getVCenter(in2Vel[m2Indices[index]]) - getVCenter(in1Vel[m1Indices[index]]);
+        getVOrientation(outVel[index]) =  getVOrientation(in2Vel[m2Indices[index]]) - getVOrientation(in1Vel[m1Indices[index]]) ;
+        std::cout << " =====> outVel[m1Indices[index]] : " << outVel[index] << std::endl;
+    }
+    dataVecOutVel[0]->endEdit();
 }
 
 
 template <class TIn1, class TIn2, class TOut>
-void RigidRigidCosseratMapping<TIn1, TIn2, TOut>:: applyJT(
+void RigidDistanceMapping<TIn1, TIn2, TOut>:: applyJT(
         const core::MechanicalParams* /*mparams*/, const type::vector< In1DataVecDeriv*>& dataVecOut1Force,
         const type::vector< In2DataVecDeriv*>& dataVecOut2Force,
         const type::vector<const OutDataVecDeriv*>& dataVecInForce)  {
@@ -169,19 +167,32 @@ void RigidRigidCosseratMapping<TIn1, TIn2, TOut>:: applyJT(
     if(dataVecOut1Force.empty() || dataVecInForce.empty() || dataVecOut2Force.empty())
         return;
 
-//    const OutVecDeriv& in = dataVecInForce[0]->getValue();
-//
-//    In1VecDeriv& out1 = *dataVecOut1Force[0]->beginEdit();
-//    In2VecDeriv& out2 = *dataVecOut2Force[0]->beginEdit();
-//
-//
-//    dataVecOut1Force[0]->endEdit();
-//    dataVecOut2Force[0]->endEdit();
+    const OutVecDeriv& inForce = dataVecInForce[0]->getValue();
+
+    In1VecDeriv& out1Force = *dataVecOut1Force[0]->beginEdit();
+    In2VecDeriv& out2Force = *dataVecOut2Force[0]->beginEdit();
+
+    //@todo implementation of force modification
+    const auto &m1Indices = d_indice1.getValue();
+    const auto &m2Indices = d_indice2.getValue();
+
+    for (sofa::Index index = 0; index < m_minInd; index++) {
+        getVCenter(out1Force[m1Indices[index]]) -= getVCenter(inForce[index]);
+        getVCenter(out2Force[m2Indices[index]]) += getVCenter(inForce[index]);
+        getVOrientation(out1Force[m1Indices[index]]) -= getVOrientation(inForce[index]);
+        getVOrientation(out2Force[m2Indices[index]]) += getVOrientation(inForce[index]);
+
+        std::cout << "========> out1Force[m1Indices[index]] : "<< out1Force[m1Indices[index]]<< std::endl;
+        std::cout << "========> out2Force[m2Indices[index]] : "<< out2Force[m2Indices[index]]<< std::endl;
+    }
+    printf("__________________________________________ \n");
+    dataVecOut1Force[0]->endEdit();
+    dataVecOut2Force[0]->endEdit();
 }
 
 //___________________________________________________________________________
 template <class TIn1, class TIn2, class TOut>
-void RigidRigidCosseratMapping<TIn1, TIn2, TOut>::applyJT(
+void RigidDistanceMapping<TIn1, TIn2, TOut>::applyJT(
         const core::ConstraintParams*/*cparams*/ , const type::vector< In1DataMatrixDeriv*>&  dataMatOut1Const,
         const type::vector< In2DataMatrixDeriv*>&  dataMatOut2Const ,
         const type::vector<const OutDataMatrixDeriv*>& dataMatInConst)
@@ -189,24 +200,62 @@ void RigidRigidCosseratMapping<TIn1, TIn2, TOut>::applyJT(
     if(dataMatOut1Const.empty() || dataMatOut2Const.empty() || dataMatInConst.empty() )
         return;
 
-    //We need only one input In model and input Root model (if present)
-//    In1MatrixDeriv& out1 = *dataMatOut1Const[0]->beginEdit(); // constraints on the strain space (reduced coordinate)
-//    In2MatrixDeriv& out2 = *dataMatOut2Const[0]->beginEdit(); // constraints on the reference frame (base frame)
-//    const OutMatrixDeriv& in = dataMatInConst[0]->getValue(); // input constraints defined on the mapped frames
-//
-//    const OutVecCoord& frame = m_toModel->read(core::ConstVecCoordId::position())->getValue();
-//    const In1DataVecCoord* x1fromData = m_fromModel1->read(core::ConstVecCoordId::position());
-//    const In1VecCoord x1from = x1fromData->getValue();
-//
-//
-//    ////// END ARTICULATION SYSTEM MAPPING
-//    dataMatOut1Const[0]->endEdit();
-//    dataMatOut2Const[0]->endEdit();
+    In1MatrixDeriv& out1 = *dataMatOut1Const[0]->beginEdit(); // constraints on the reference frame 1
+    In2MatrixDeriv& out2 = *dataMatOut2Const[0]->beginEdit(); // constraints on the reference frame 2
+    const OutMatrixDeriv& in = dataMatInConst[0]->getValue(); // input constraints defined on the mapped frames
+
+    const auto &m1Indices = d_indice1.getValue();
+    const auto &m2Indices = d_indice2.getValue();
+    typename OutMatrixDeriv::RowConstIterator rowItEnd = in.end();
+
+    printf("1. ======================================================================================= \n");
+    for (typename OutMatrixDeriv::RowConstIterator rowIt = in.begin(); rowIt != rowItEnd; ++rowIt) {
+        typename OutMatrixDeriv::ColConstIterator colIt = rowIt.begin();
+        typename OutMatrixDeriv::ColConstIterator colItEnd = rowIt.end();
+
+
+        typename In1MatrixDeriv::RowIterator o1 = out1.writeLine(rowIt.index()); // we store the constraint number
+        typename In2MatrixDeriv::RowIterator o2 = out2.writeLine(rowIt.index());
+
+        int childIndex = colIt.index();
+        std::cout << "Constraint " << rowIt.index() << " ==> childIndex: "<< childIndex << std::endl;
+
+        //We compute the parents indices
+        auto parentIndex1 = m1Indices[childIndex];
+        auto parentIndex2 = m2Indices[childIndex];
+
+        std::cout << "parentIndex1 " << parentIndex1 << " ==> parentIndex2 "<< parentIndex2 << std::endl;
+
+        const OutDeriv valueConst_ = colIt.val();
+        std::cout << "valueConst_: "<< valueConst_ << std::endl;
+
+
+        // SpatialVector FNode1, FNode2;
+        // @todo fill here
+        // compute constraint direction in global frame of the beam.
+
+        // Compute the mapped Constraint on the beam nodes
+        Deriv1 direction1;
+        In1::setDPos(direction1,-getVCenter(valueConst_));
+        In1::setDRot(direction1,-getVOrientation(valueConst_));
+        Deriv2 direction2;
+        In2::setDPos(direction2,getVCenter(valueConst_));
+        In2::setDRot(direction2,getVOrientation(valueConst_));
+        std::cout << "direction1: " << direction1 << std::endl;
+        std::cout << "direction2: " << direction2 << std::endl;
+
+        o1.addCol(parentIndex1, direction1);
+        o2.addCol(parentIndex2, direction2);
+    }
+    printf("2. ======================================================================================= \n");
+
+    dataMatOut1Const[0]->endEdit();
+    dataMatOut2Const[0]->endEdit();
 }
 
 
 template <class TIn1, class TIn2, class TOut>
-void RigidRigidCosseratMapping<TIn1, TIn2, TOut>::draw(const core::visual::VisualParams* vparams)
+void RigidDistanceMapping<TIn1, TIn2, TOut>::draw(const core::visual::VisualParams* vparams)
 {
     //if(!d_debug.getValue()) return;
 

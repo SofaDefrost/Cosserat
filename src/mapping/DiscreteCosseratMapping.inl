@@ -412,14 +412,12 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJT(
         typename In1MatrixDeriv::RowIterator o1 = out1.writeLine(rowIt.index()); // we store the constraint number
         typename In2MatrixDeriv::RowIterator o2 = out2.writeLine(rowIt.index());
 
-
         NodesInvolved.clear();
         //NodesConstraintDirection.clear();
 
         while (colIt != colItEnd)
         {
             int childIndex = colIt.index();
-
 
             const OutDeriv valueConst_ = colIt.val();
             defaulttype::Vec6 valueConst;
