@@ -67,7 +67,7 @@ BeamHookeLawForceField<DataTypes>::BeamHookeLawForceField()
       d_crossSectionShape( initData(&d_crossSectionShape, OptionsGroup(2,"circular","rectangular"),
                                     "crossSectionShape",
                                     "shape of the cross-section. Can be: circular (tube with external radius being radius and internal radius being innerRadius ) or rectangular (lengthY and lengthZ) . Default is circular" )),
-      d_youngModululs( initData( &d_youngModululs, 1.0e9, "youngModulus", "Young Modulus describes the stiffness of the material")),
+      d_youngModulus( initData( &d_youngModulus, 1.0e9, "youngModulus", "Young Modulus describes the stiffness of the material")),
       d_poissonRatio( initData( &d_poissonRatio, 0.45, "poissonRatio", "poisson Ratio describes the compressibility of the material")),
       d_length( initData( &d_length, "length", "lenght of each beam")),
       d_radius( initData( &d_radius, 1.0, "radius", "external radius of the cross section (if circular)")),
@@ -75,7 +75,7 @@ BeamHookeLawForceField<DataTypes>::BeamHookeLawForceField()
       d_lengthY( initData( &d_lengthY, 1.0, "lengthY", "side length of the cross section along local y axis (if rectangular)")),
       d_lengthZ( initData( &d_lengthZ, 1.0, "lengthZ", "side length of the cross section along local z axis (if rectangular)")),
       d_varianteSections( initData( &d_varianteSections, false, "varianteSections", "In case we have variante beam section this has to be set to true")),
-      d_youngModululsList(initData(&d_youngModululsList, "youngModululsList", "The list of Young modulus in case we have sections with variable physical properties")),
+      d_youngModulusList(initData(&d_youngModulusList, "youngModulusList", "The list of Young modulus in case we have sections with variable physical properties")),
       d_poissonRatioList(initData(&d_poissonRatioList, "poissonRatioList", "The list of poisson's ratio in case we have sections with variable physical properties"))
 {
     compute_df=true;
@@ -125,7 +125,7 @@ void BeamHookeLawForceField<DataTypes>::reinit()
 
     if(!d_varianteSections.getValue()){
 
-        Real E= d_youngModululs.getValue();
+        Real E= d_youngModulus.getValue();
         Real G= E/(2.0*(1.0+d_poissonRatio.getValue()));
 
         m_K_section[0][0] = G*J;
@@ -134,20 +134,20 @@ void BeamHookeLawForceField<DataTypes>::reinit()
     }else {
         msg_info("BeamHookeLawForceField")<< "=====> Multi section";
         m_K_sectionList.clear();
-        size_t szYM = d_youngModululsList.getValue().size();
+        size_t szYM = d_youngModulusList.getValue().size();
         size_t szPR = d_poissonRatioList.getValue().size();
         size_t szL  = d_length.getValue().size();
 
         std::cout<< "BeamHookeLawForceField :" << "szYM : "<< szYM << " szPR "<< szPR << "  szL " << szL<< std::endl;
 
         if((szL != szPR)||(szL != szYM)){
-            msg_error("BeamHookeLawForceField")<< "Pleseas, lenght, youngModululsList and poissonRatioList should have the same size";
+            msg_error("BeamHookeLawForceField")<< "Please, lenght, youngModulusList and poissonRatioList should have the same size";
             return;
         }
 
         for(size_t k=0; k<szL; k++){
             Mat33 _m_K_section;
-            Real E= d_youngModululsList.getValue()[k];
+            Real E= d_youngModulusList.getValue()[k];
             Real G= E/(2.0*(1.0+d_poissonRatioList.getValue()[k]));
 
             _m_K_section[0][0] = G*J;
