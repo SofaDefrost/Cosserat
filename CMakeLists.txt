@@ -56,6 +56,8 @@ set(HEADER_FILES
 
     src/forcefield/BeamHookeLawForceField.h
     src/forcefield/BeamHookeLawForceField.inl
+    src/forcefield/BeamPlasticLawForceField.h
+    src/forcefield/BeamPlasticLawForceField.inl
     src/forcefield/CosseratInternalActuation.h
     src/forcefield/CosseratInternalActuation.inl
     src/forcefield/MyUniformVelocityDampingForceField.h
@@ -82,6 +84,7 @@ set(SOURCE_FILES
     src/mapping/DifferenceMultiMapping.cpp
 
     src/forcefield/BeamHookeLawForceField.cpp
+    src/forcefield/BeamPlasticLawForceField.cpp
     src/forcefield/CosseratInternalActuation.cpp
     src/forcefield/MyUniformVelocityDampingForceField.cpp
 
