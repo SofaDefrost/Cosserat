@@ -128,18 +128,21 @@ protected:
     Data<Real>          d_lengthY;
     Data<Real>          d_lengthZ;
 
+    /// Cross-section area
+    Real m_crossSectionArea;
+
     //In case we have a beam with different propertise per section
     Data<bool>                      d_varianteSections; /// bool to identify different beams sections
     Data<type::vector<double>>    d_youngModulusList; /// youngModulus
     Data<type::vector<double>>    d_poissonRatioList; /// poissonRatio
 
-
-private :
-
+    bool compute_df;
     Mat33 m_K_section;
     type::vector<Mat33> m_K_sectionList;
-    bool compute_df;
 
+
+private :
+    
     ////////////////////////// Inherited attributes ////////////////////////////
     /// https://gcc.gnu.org/onlinedocs/gcc/Name-lookup.html
     /// Bring inherited attributes and function in the current lookup context.
@@ -147,7 +150,7 @@ private :
     /// the "this->" approach.
     using ForceField<DataTypes>::getContext ;
     using ForceField<DataTypes>::f_printLog ;
-    using ForceField<DataTypes>::mstate ;
+    //using ForceField<DataTypes>::mstate ;
     ////////////////////////////////////////////////////////////////////////////
 };
 
