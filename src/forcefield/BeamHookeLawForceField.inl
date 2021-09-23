@@ -122,6 +122,7 @@ void BeamHookeLawForceField<DataTypes>::reinit()
         A = M_PI*(r*r - rInner*rInner);
 
     }
+    m_crossSectionArea = A;
 
     if(!d_varianteSections.getValue()){
 
