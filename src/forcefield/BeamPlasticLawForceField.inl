@@ -205,7 +205,7 @@ void BeamPlasticLawForceField<DataTypes>::computeStressIncrement(unsigned int se
         // Thus we can compute the yield surface normal using the deviatoric stress.
         // For the Von Mises yield function, the normal direction to the yield surface doesn't
         // change between the elastic predictor and it's projection on the yield surface
-        Real shiftDevElasticPredictorNorm = shiftedDeviatoricElasticPredictor.norm();
+        Real shiftDevElasticPredictorNorm = correctedNorm(shiftedDeviatoricElasticPredictor);
         Vec3 N = shiftedDeviatoricElasticPredictor / shiftDevElasticPredictorNorm;
 
         // Indicates the proportion of Kinematic vs isotropic hardening. beta=0 <=> kinematic, beta=1 <=> isotropic
@@ -274,7 +274,7 @@ void BeamPlasticLawForceField<DataTypes>::updateTangentStiffness(unsigned int se
     // Cep
     Vec3 gradient = vonMisesGradient(currentStressPoint);
 
-    if (gradient.norm() < m_stressComparisonThreshold
+    if (correctedNorm(gradient) < m_stressComparisonThreshold
         || m_sectionMechanicalStates[sectionId] != MechanicalState::PLASTIC)
         Cep = C; //TO DO: is that correct ?
     else
@@ -432,6 +432,17 @@ typename BeamPlasticLawForceField<DataTypes>::Real BeamPlasticLawForceField<Data
                                                                                                       const Real yieldStress)
 {
     return equivalentStress(stressTensor - backStress) - yieldStress;
+}
+
+
+template< class DataTypes>
+typename BeamPlasticLawForceField<DataTypes>::Real BeamPlasticLawForceField<DataTypes>::correctedNorm(const Vec3& tensor2)
+{
+    Real tensorYZ = tensor2[0];
+    Real tensorXZ = tensor2[1];
+    Real tensorXY = tensor2[2];
+
+    return helper::rsqrt(2*tensorYZ*tensorYZ + 2*tensorXZ*tensorXZ + 2*tensorXY*tensorXY);
 }
 
 

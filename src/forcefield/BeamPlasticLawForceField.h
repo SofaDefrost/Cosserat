@@ -129,6 +129,10 @@ protected:
     /// Computes the Von Mises yield function gradient, for a given stress tensor
     Vec3 vonMisesGradient(const Vec3& stressTensor);
 
+    //----- Correction methods for reduced notation -----//
+
+    /// Computes the norm of a Vec3 reduced representation of a 2nd-order tensor
+    Real correctedNorm(const Vec3& tensor2);
 
     /// Computes stress increment on a single point of space, from previous stress and current strain
     void computeStressIncrement(unsigned int sectionId, const Coord& strainIncrement,
