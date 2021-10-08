@@ -151,7 +151,10 @@ typename BeamPlasticLawForceField<DataTypes>::Vec3 BeamPlasticLawForceField<Data
     // the Cosserat model we use reduces only to the non-diagonal components
     // of the stress tensor. Therefore the reduced stress-tensor considered
     // here is deviatoric.
-    return (3 / (2 * sigmaEq)) * stressTensor;
+    if (sigmaEq < m_stressComparisonThreshold) // We consider that sigmaEq = 0
+        return Vec3();
+    else
+        return (3 / (2 * sigmaEq)) * stressTensor;
 }
 
 
