@@ -28,7 +28,7 @@ namespace sofa::component::forcefield
 {
 
 using sofa::type::vector;
-using sofa::defaulttype::Vec;
+using sofa::type::Vec;
 
 template<typename DataTypes>
 class BeamPlasticLawForceField : public BeamHookeLawForceField<DataTypes>
@@ -44,6 +44,7 @@ public:
     typedef typename DataTypes::VecDeriv VecDeriv;
     typedef typename DataTypes::Coord    Coord;
 
+    typedef Data<VecCoord>    DataVecCoord;
     typedef Data<VecDeriv>    DataVecDeriv;
 
     typedef Vec<3, Real>                Vec3;

@@ -20,8 +20,6 @@
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
 
-#pragma once
-
 #include "BeamPlasticLawForceField.inl"
 #include <sofa/core/ObjectFactory.h>
 

@@ -61,7 +61,7 @@ void BeamPlasticLawForceField<DataTypes>::reinit()
     // Initialisation of the lastStrain field with the rest strain
     m_lastStrain = this->mstate->read(VecCoordId::restPosition())->getValue();
 
-    size_t nbSections = d_length.getValue().size();
+    size_t nbSections = this->d_length.getValue().size();
 
     // Initialisation of the prevStress field with 0
     m_prevStress.clear();
@@ -73,24 +73,24 @@ void BeamPlasticLawForceField<DataTypes>::reinit()
 
     // Initialisaiton of the tangent stiffness matrices with the elastic stiffness matrices
     m_Kt_sectionList.clear();
-    if (!d_varianteSections.getValue())
+    if (!this->d_varianteSections.getValue())
     {
-        m_Kt_sectionList.resize(nbSections, m_K_section);
+        m_Kt_sectionList.resize(nbSections, this->m_K_section);
     }
     else
     {
         for (unsigned int i = 0; i < nbSections; i++)
-            m_Kt_sectionList.push_back(m_K_sectionList[i]);
+            m_Kt_sectionList.push_back(this->m_K_sectionList[i]);
     }
 
     // Computation of the generalised Hooke's law
     // As we are working with only 3 components of the strain tensor,
     // the generalised Hooke's law is reduced to a 3x3 diagonal matrix
     // (instead of a 4th order tensor represented as a 9x9 matrix)
-    if (!d_varianteSections.getValue()) {
+    if (!this->d_varianteSections.getValue()) {
 
-        Real E = d_youngModulus.getValue();
-        Real nu = d_poissonRatio.getValue();
+        Real E = this->d_youngModulus.getValue();
+        Real nu = this->d_poissonRatio.getValue();
 
         m_genHookesLaw[0][0] = m_genHookesLaw[1][1] = m_genHookesLaw[2][2] = E / (1 + nu);
     }
@@ -100,8 +100,8 @@ void BeamPlasticLawForceField<DataTypes>::reinit()
         for (unsigned int i = 0; i < nbSections; i++)
         {
             Mat33 _genHookesLaw;
-            Real E = d_youngModulusList.getValue()[i];
-            Real nu = d_poissonRatioList.getValue()[i];
+            Real E = this->d_youngModulusList.getValue()[i];
+            Real nu = this->d_poissonRatioList.getValue()[i];
 
             _genHookesLaw[0][0] = _genHookesLaw[1][1] = _genHookesLaw[2][2] = E / (1 + nu);
             m_genHookesLawList.push_back(_genHookesLaw);
@@ -213,15 +213,15 @@ void BeamPlasticLawForceField<DataTypes>::computeStressIncrement(unsigned int se
         const Real beta = 0.5;
 
         Real E, nu = 0;
-        if (!d_varianteSections.getValue())
+        if (!this->d_varianteSections.getValue())
         {
-            E = d_youngModulus.getValue();
-            nu = d_poissonRatio.getValue();
+            E = this->d_youngModulus.getValue();
+            nu = this->d_poissonRatio.getValue();
         }
         else
         {
-            E = d_youngModulusList.getValue()[sectionId];
-            nu = d_poissonRatioList.getValue()[sectionId];
+            E = this->d_youngModulusList.getValue()[sectionId];
+            nu = this->d_poissonRatioList.getValue()[sectionId];
         }
         const Real mu = E / (2 * (1 + nu)); // Lame coefficient
 
@@ -256,15 +256,15 @@ void BeamPlasticLawForceField<DataTypes>::updateTangentStiffness(unsigned int se
 
     const Mat33& C = m_genHookesLaw;
     Real E, nu = 0;
-    if (!d_varianteSections.getValue())
+    if (!this->d_varianteSections.getValue())
     {
-        E = d_youngModulus.getValue();
-        nu = d_poissonRatio.getValue();
+        E = this->d_youngModulus.getValue();
+        nu = this->d_poissonRatio.getValue();
     }
     else
     {
-        E = d_youngModulusList.getValue()[sectionId];
-        nu = d_poissonRatioList.getValue()[sectionId];
+        E = this->d_youngModulusList.getValue()[sectionId];
+        nu = this->d_poissonRatioList.getValue()[sectionId];
     }
 
     Vec3 currentStressPoint = m_prevStress[sectionId]; //Updated in computeStressIncrement
@@ -284,7 +284,7 @@ void BeamPlasticLawForceField<DataTypes>::updateTangentStiffness(unsigned int se
         Vec3 CN = C * N;
         //Conversion to matrix, TO DO: better way ? Eigen ? Use only matrices ?
         Mat<3, 1, Real> matCN = Mat<3, 1, Real>();
-        for (int i = 0; i < CN.size(); i++)
+        for (unsigned int i = 0; i < CN.size(); i++)
             matCN[i][0] = CN[i];
         // NtC = (NC)t because of C symmetry
         Cep = C - (2 * matCN * matCN.transposed()) / (2 * N * CN + (2.0 / 3.0) * H); //TO DO: check that * operator is actually dot product
@@ -306,8 +306,8 @@ void BeamPlasticLawForceField<DataTypes>::updateTangentStiffness(unsigned int se
 
     // Integration step, consisting only in multiplication by the element volume, as
     // Cep is considered constant over a segment.
-    Real L = d_length.getValue()[sectionId];
-    Real A = m_crossSectionArea;
+    Real L = this->d_length.getValue()[sectionId];
+    Real A = this->m_crossSectionArea;
     Real V = L * A; // Assuming the initial volume is conserved during deformation
     Kt = V * Cep;
 
@@ -327,7 +327,7 @@ void BeamPlasticLawForceField<DataTypes>::addForce(const MechanicalParams* mpara
 
     if (!this->getMState()) {
         msg_info("BeamPlasticLawForceField") << "No Mechanical State found, no force will be computed..." << "\n";
-        compute_df = false;
+        this->compute_df = false;
         return;
     }
 
@@ -338,9 +338,9 @@ void BeamPlasticLawForceField<DataTypes>::addForce(const MechanicalParams* mpara
 
     f.resize(x.size());
 
-    if (x.size() != d_length.getValue().size()) {
+    if (x.size() != this->d_length.getValue().size()) {
         msg_warning("BeamPlasticLawForceField") << " length should have the same size as x..." << "\n";
-        compute_df = false;
+        this->compute_df = false;
         return;
     }
 
@@ -358,8 +358,8 @@ void BeamPlasticLawForceField<DataTypes>::addForce(const MechanicalParams* mpara
 
         // Computation of internal forces from stress
         // As stress and strain are uniform over the segment, spatial integration reduces to the segment volume
-        Real L = d_length.getValue()[i];
-        Real A = m_crossSectionArea;
+        Real L = this->d_length.getValue()[i];
+        Real A = this->m_crossSectionArea;
         Real V = L * A; // Assuming the initial volume is conserved during deformation
         f[i] = V * m_prevStress[i]; // Previous stress has been updated in computeStressIncrement
     }
@@ -377,7 +377,7 @@ void BeamPlasticLawForceField<DataTypes>::addDForce(const MechanicalParams* mpar
                                                     DataVecDeriv& d_df,
                                                     const DataVecDeriv& d_dx)
 {
-    if (!compute_df)
+    if (!this->compute_df)
         return;
 
     WriteAccessor< DataVecDeriv > df = d_df;
@@ -404,7 +404,7 @@ void BeamPlasticLawForceField<DataTypes>::addKToMatrix(const MechanicalParams* m
     for (unsigned int n = 0; n < pos.size(); n++)
         for (int i = 0; i < 3; i++)
             for (int j = 0; j < 3; j++)
-                mat->add(offset + i + 3 * n, offset + j + 3 * n, -kFact * m_Kt_sectionList[n][i][j] * d_length.getValue()[n]);
+                mat->add(offset + i + 3 * n, offset + j + 3 * n, -kFact * m_Kt_sectionList[n][i][j] * this->d_length.getValue()[n]);
 }
 
 
