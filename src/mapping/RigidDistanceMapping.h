@@ -82,9 +82,6 @@ public:
     typedef Data<In2VecCoord> In2DataVecCoord;
     typedef Data<In2VecDeriv> In2DataVecDeriv;
     typedef Data<In2MatrixDeriv> In2DataMatrixDeriv;
-    typedef type::Mat<6,6,Real> Mat6x6;
-    typedef type::Mat<3,6,Real> Mat3x6;
-    typedef type::Mat<6,3,Real> Mat6x3;
     typedef type::Mat<4,4,Real> Mat4x4;
 
     typedef typename Out::VecCoord OutVecCoord;
@@ -96,30 +93,17 @@ public:
     typedef Data<OutVecDeriv> OutDataVecDeriv;
     typedef Data<OutMatrixDeriv> OutDataMatrixDeriv;
 
-    typedef MultiLink<RigidDistanceMapping<In1,In2,Out>, sofa::core::State< In1 >, BaseLink::FLAG_STOREPATH|BaseLink::FLAG_STRONGLINK> LinkFromModels1;
-    typedef MultiLink<RigidDistanceMapping<In1,In2,Out>, sofa::core::State< In2 >, BaseLink::FLAG_STOREPATH|BaseLink::FLAG_STRONGLINK> LinkFromModels2;
-    typedef MultiLink<RigidDistanceMapping<In1,In2,Out>, sofa::core::State< Out >, BaseLink::FLAG_STOREPATH|BaseLink::FLAG_STRONGLINK> LinkToModels;
-
     typedef typename SolidTypes<Real>::Transform      Transform ;
     typedef typename SolidTypes< Real>::SpatialVector SpatialVector   ;
 
 protected:
-    //    Data<helper::vector<double>>      d_curv_abs_de ;
-    //    Data<helper::vector<double>>      d_curv_abs_frames ;
-    Data<int>                        d_deformationAxis ;
-    Data<type::vector<int> >         d_indice1 ;
-    Data<type::vector<int> >         d_indice2 ;
+    Data<type::vector<int> >         d_index1 ;
+    Data<type::vector<int> >         d_index2 ;
     Data<Real>                       d_max ;
     Data<Real>                       d_min ;
     Data<Real>                       d_radius ;
-    Data<bool>                       d_drawMapBeam ;
     Data<defaulttype::Vec4f>         d_color;
     Data<type::vector<int> >         d_index;
-
-    /// Input Models container. New inputs are added through addInputModel(In* ).
-    //    LinkFromModels1 m_fromModel1;
-    //    LinkFromModels2 m_fromModel2;
-    //    LinkToModels m_toModel;
 
     core::State<In1>* m_fromModel1;
     core::State<In2>* m_fromModel2;
@@ -151,12 +135,13 @@ protected:
     RigidDistanceMapping() ;
     /// Destructor
     ~RigidDistanceMapping()  override {}
+    /**********************COSSERAT METHODS**************************/
+    sofa::Index  m_minInd;
 public:
-
 
     /**********************SOFA METHODS**************************/
     void init() override;
-    void draw(const core::visual::VisualParams* vparams) override;
+    void draw(const core::visual::VisualParams* vparams) override {}
 
     /**********************MAPPING METHODS**************************/
     void apply(
@@ -183,20 +168,6 @@ public:
             const type::vector< In2DataMatrixDeriv*>&  dataMatOut2Const ,
             const type::vector<const OutDataMatrixDeriv*>&  dataMatInConst) override;
 
-protected:
-    /**********************COSSERAT METHODS**************************/
-    //    defaulttype::Matrix4 computeLogarithm(const double & x, const Matrix4 &gX);
-    //    visualmodel::OglColorMap *colorMap;
-    helper::ColorMap m_colorMap;
-    sofa::Index  m_minInd;
-
 };
-
-//extern template class SOFA_POE_MAPPING_API RigidDistanceMapping<defaulttype::Rigid3Types>;
-
-
-//#if  !defined(SOFA_COMPONENT_RIGID_RIGID_MAPPING_CPP)
-//extern template class SOFA_COSSERAT_MAPPING_API RigidDistanceMapping< sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types >;
-//#endif
 
 } // namespace sofa::component::mapping

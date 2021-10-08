@@ -61,11 +61,8 @@ DiscreteCosseratMapping<TIn1, TIn2, TOut>::DiscreteCosseratMapping()
     , d_color(initData(&d_color, defaulttype::Vec4f (1, 0., 1., 0.8) ,"color", "The default beam color"))
     , d_index(initData(&d_index, "index", "if this parameter is false, you draw the beam with color "
                                                           "according to the force apply to each beam"))
-{
-}
+{}
 
-
-// _________________________________________________________________________________________
 
 template <class TIn1, class TIn2, class TOut>
 void DiscreteCosseratMapping<TIn1, TIn2, TOut>::init()
@@ -83,8 +80,6 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::init()
     // Fill the initial vector
     const OutDataVecCoord* xFromData = m_toModel->read(core::ConstVecCoordId::position());
     const OutVecCoord xFrom = xFromData->getValue();
-    //    WriteAccessor<Data < helper::vector<double>>> curv_abs_output = d_curv_abs_frames;
-    //    curv_abs_output.clear();
 
     m_vecTransform.clear();
     for (unsigned int i = 0; i < xFrom.size(); i++) {
@@ -258,14 +253,12 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>:: applyJ(
 
         auto T = Transform(out[i].getCenter(), out[i].getOrientation());
         Mat6x6 Proj = this->build_projector(T);
-        //std::cout<< "Eta local : "<< eta << std::endl;
 
         outVel[i] = Proj * temp;
 
         if(d_debug.getValue())
             std::cout<< "Frame velocity : "<< i << " = " << temp<< std::endl;
     }
-    //    std::cout << "Inside the apply J, outVel after computation  :  "<< outVel << std::endl;
     dataVecOutVel[0]->endEdit();
     m_index_input = 0;
 }
@@ -284,9 +277,6 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>:: applyJT(
 
     In1VecDeriv& out1 = *dataVecOut1Force[0]->beginEdit();
     In2VecDeriv& out2 = *dataVecOut2Force[0]->beginEdit();
-
-    //Maybe need, in case the apply funcion is not call this must be call before
-    //update_ExponentialSE3(in1);
 
     const OutVecCoord& frame = m_toModel->read(core::ConstVecCoordId::position())->getValue();
     const In1DataVecCoord* x1fromData = m_fromModel1->read(core::ConstVecCoordId::position());
@@ -310,7 +300,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>:: applyJT(
     //Compute output forces
     auto sz = m_indicesVectors.size();
 
-    int index =  m_indicesVectors[sz-1];
+    auto index =  m_indicesVectors[sz-1];
     m_totalBeamForceVectors.clear();
     m_totalBeamForceVectors.resize(sz);
 
@@ -343,7 +333,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>:: applyJT(
         if(d_debug.getValue())
             std::cout << "f at s ="<< s <<" and index"<< index <<  " is : "<< f << std::endl;
 
-        //compte F_tot
+        //compute F_tot
         F_tot += node_F_Vec;
         out1[m_indicesVectors[s]-1] += f;
     }
@@ -401,7 +391,6 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJT(
         typename OutMatrixDeriv::ColConstIterator colItEnd = rowIt.end();
 
         // Creates a constraints if the input constraint is not empty.
-
         if (colIt == colItEnd)
         {
             if (d_debug.getValue()){
@@ -413,8 +402,6 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJT(
         typename In2MatrixDeriv::RowIterator o2 = out2.writeLine(rowIt.index());
 
         NodesInvolved.clear();
-        //NodesConstraintDirection.clear();
-
         while (colIt != colItEnd)
         {
             int childIndex = colIt.index();
@@ -441,7 +428,6 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJT(
 
 
             o1.addCol(indexBeam-1, f);
-            //std::cout<< "colIt :"<< colIt.index() <<" ; indexBeam :"<< indexBeam << " childIndex :"<< childIndex << " local_F : "<< local_F << std::endl;
             std::tuple<int,Vec6> test = std::make_tuple(indexBeam, local_F);
 
             NodesInvolved.push_back(test);
@@ -455,21 +441,13 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJT(
                           << get<1>(NodesInvolved[i]) << "\n ";
         }
 
-
-        //std::cout<<" NodesInvolved before sort "<<NodesInvolved<<std::endl;
-
         // sort the Nodes Invoved by decreasing order
         std::sort(begin(NodesInvolved), end(NodesInvolved),
                   [](std::tuple<int, Vec6> const &t1, std::tuple<int, Vec6> const &t2) {
             return std::get<0>(t1) > std::get<0>(t2); // custom compare function
         } );
 
-        //        for (size_t i = 0; i < NodesInvolved.size(); i++)
-        //            std::cout << "index :" <<get<0>(NodesInvolved[i]) << " force :"
-        //                      << get<1>(NodesInvolved[i]) << "\n ";
-
         NodesInvolvedCompressed.clear();
-
 
         for (unsigned n=0; n<NodesInvolved.size(); n++)
         {
@@ -508,7 +486,6 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJT(
 
         for (unsigned n=0; n<NodesInvolvedCompressed.size(); n++)
         {
-
             std::tuple<int,Vec6> test = NodesInvolvedCompressed[n];
             int numNode= std::get<0>(test);
             int i = numNode;
@@ -537,34 +514,16 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJT(
         }
     }
 
-    ////// END ARTICULATION SYSTEM MAPPING
+    //"""END ARTICULATION SYSTEM MAPPING"""
     dataMatOut1Const[0]->endEdit();
     dataMatOut2Const[0]->endEdit();
 }
 
 
-//___________________________________________________________________________
-
-//template <class TIn1, class TIn2, class TOut>
-//void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyDJT(const core::MechanicalParams* mparams, core::MultiVecDerivId inForce, core::ConstMultiVecDerivId outForce){}
-
-
-//template <class TIn1, class TIn2, class TOut>
-//void DiscreteCosseratMapping<TIn1, TIn2, TOut>::do_applyJT( In1MatrixDeriv& out1, const OutMatrixDeriv& in, In2MatrixDeriv* out2 ){}
-
-//template <class TIn1, class TIn2, class TOut>
-//void DiscreteCosseratMapping<TIn1, TIn2, TOut>:: applyJT(
-//        const core::ConstraintParams* /* cparams */, const helper::vector< In1DataMatrixDeriv*>& dataMatOut1Const ,
-//        const helper::vector< In2DataMatrixDeriv*>&  dataMatOut2Const ,
-//        const helper::vector<const OutDataMatrixDeriv*>& dataMatInConst) {}
-
 template <class TIn1, class TIn2, class TOut>
 void DiscreteCosseratMapping<TIn1, TIn2, TOut>::draw(const core::visual::VisualParams* vparams)
 {
-    //if(!d_debug.getValue()) return;
-
-    ///draw cable
-    ///
+    // draw cable
     typedef RGBAColor RGBAColor;
     const OutDataVecCoord* xfromData = m_toModel->read(core::ConstVecCoordId::position());
     const OutVecCoord xData = xfromData->getValue();
@@ -573,42 +532,30 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::draw(const core::visual::VisualP
     positions.clear();
     Orientation.clear();
     unsigned int sz = xData.size();
-    //    msg_info("DiscreteCosseratMapping")<< " sz : "<< sz;
     for (unsigned int i = 0; i<sz; i++){
         positions.push_back(xData[i].getCenter());
         Orientation.push_back(xData[i].getOrientation());
     }
-    //    for (auto pos : xData)
-    //        positions.push_back(pos.getCenter());
 
     //Get access articulated
     const In1DataVecCoord* artiData = m_fromModel1->read(core::ConstVecCoordId::position());
     const In1VecCoord xPos = artiData->getValue();
 
-
-    //    std::cout << "=============> art :"<< xPos << std::endl;
-
     //Define color map
     Real min = d_min.getValue();
     Real max = d_max.getValue();
-    //helper::ColorMap::evaluator<Real> eval = colorMap->getEvaluator(min, max);
     helper::ColorMap::evaluator<Real> _eval = m_colorMap.getEvaluator(min, max);
 
-//    glClearColor(1, 1, 1, 1);
-//    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glLineWidth(d_radius.getValue());
     glBegin(GL_LINES);
     if(d_drawMapBeam.getValue()){
         defaulttype::Vec4f _color = d_color.getValue();
         RGBAColor colorL = RGBAColor(_color[0],_color[1],_color[2],_color[3]);
         glColor4f(colorL[0], colorL[1], colorL[2],colorL[3]);
-//        vparams->drawTool()->drawLineStrip(positions,radius,colorL);
         for (unsigned int i=0; i<sz-1; i++) {
             vparams->drawTool()->drawLine(positions[i],positions[i+1],colorL);
         }
-
     }else {
-        //        setMaterial(color);œ
         int j = 0;
         type::vector<int> index = d_index.getValue();
         for (unsigned int i=0; i<sz-1; i++) {
@@ -616,44 +563,12 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::draw(const core::visual::VisualP
             RGBAColor color =  RGBAColor::fromVec4(_eval(xPos[j][d_deformationAxis.getValue()]));
             vparams->drawTool()->drawLine(positions[i],positions[i+1],color);
         }
-        //        for (unsigned int i = 0; i<sz; i+=2){
-        //            defaulttype::Vector3 P1 = positions[i];
-        //            defaulttype::Quat q = xData[i].getOrientation();
-        //            defaulttype::Vector3 x,y,z;
-        //            double radius_arrow = 0.1;
-        //            x= q.rotate(defaulttype::Vector3(2.0,0,0));
-        //            y= q.rotate(defaulttype::Vector3(0,2.0,0));
-        //            z= q.rotate(defaulttype::Vector3(0,0,2.0));
-        //
-        //            vparams->drawTool()->drawArrow(P1,(P1 + x)*1.0, radius_arrow, RGBAColor(1.,0.,0.,1.));
-        //            vparams->drawTool()->drawArrow(P1,(P1 + y)*1.0, radius_arrow, RGBAColor(0.,1.,0.,1.));
-        //            vparams->drawTool()->drawArrow(P1,(P1 + z)*1.0, radius_arrow, RGBAColor(0.,0.,1.,1.));
-        //        }
+
     }
     glLineWidth(1);
 
     if (!vparams->displayFlags().getShowMappings())
         if(!d_debug.getValue()) return;
-//    for (unsigned int i = 0;i < m_vecTransform.size(); i++) {
-//
-//        defaulttype::Quat q = m_vecTransform[i].getOrientation();
-//        q.normalize();
-//
-//        defaulttype::Vector3 P1, x,y,z;
-//        P1 = m_vecTransform[i].getCenter();
-//
-//        x= q.rotate(defaulttype::Vector3(1.0,0,0));
-//        y= q.rotate(defaulttype::Vector3(0,1.0,0));
-//        z= q.rotate(defaulttype::Vector3(0,0,1.0));
-//        double radius_arrow = 1.0/2.0;
-//
-//        vparams->drawTool()->drawArrow(P1,(P1 + x)*1.0, radius_arrow, RGBAColor(1.,0.,0.,1.));
-//        vparams->drawTool()->drawArrow(P1,(P1 + y)*1.0, radius_arrow, RGBAColor(0.,1.,0.,1.));
-//        vparams->drawTool()->drawArrow(P1,(P1 + z)*1.0, radius_arrow, RGBAColor(0.,0.,1.,1.));
-//    }
-    //return;
-//    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-//    glClear(GL_COLOR_BUFFER_BIT);
     glEnd();
 }
 
