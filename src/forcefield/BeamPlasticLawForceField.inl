@@ -364,7 +364,7 @@ void BeamPlasticLawForceField<DataTypes>::addForce(const MechanicalParams* mpara
         Real L = this->d_length.getValue()[i];
         Real A = this->m_crossSectionArea;
         Real V = L * A; // Assuming the initial volume is conserved during deformation
-        f[i] = V * m_prevStress[i]; // Previous stress has been updated in computeStressIncrement
+        f[i] -= V * m_prevStress[i]; // Previous stress has been updated in computeStressIncrement
     }
 
     // Save the current strain as a record for the next time step.
