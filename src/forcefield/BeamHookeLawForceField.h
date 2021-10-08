@@ -112,6 +112,8 @@ public :
                               const DataVecCoord& x) const override;
     ////////////////////////////////////////////////////////////////////////////
 
+    Real getRadius();
+
 protected:
     Data<helper::OptionsGroup>   d_crossSectionShape;
 

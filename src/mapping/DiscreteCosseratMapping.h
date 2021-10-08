@@ -30,6 +30,7 @@
 #include <sofa/defaulttype/RigidTypes.h>
 #include "BaseCosserat.h"
 #include <SofaOpenglVisual/OglColorMap.h>
+#include "../forcefield/BeamPlasticLawForceField.h"
 
 namespace sofa
 
@@ -41,6 +42,7 @@ using sofa::type::Matrix4;
 using sofa::type::Vector3;
 using sofa::type::Vec6;
 using std::get;
+using sofa::component::forcefield::BeamPlasticLawForceField;
 
 namespace component
 {
@@ -109,6 +111,8 @@ public:
     typedef MultiLink<DiscreteCosseratMapping<In1,In2,Out>, sofa::core::State< In2 >, BaseLink::FLAG_STOREPATH|BaseLink::FLAG_STRONGLINK> LinkFromModels2;
     typedef MultiLink<DiscreteCosseratMapping<In1,In2,Out>, sofa::core::State< Out >, BaseLink::FLAG_STOREPATH|BaseLink::FLAG_STRONGLINK> LinkToModels;
 
+    typedef SingleLink<DiscreteCosseratMapping<In1,In2,Out>, BeamPlasticLawForceField<In1>, BaseLink::FLAG_STOREPATH|BaseLink::FLAG_STRONGLINK> LinkToPlasticForceField;
+
     typedef typename SolidTypes<Real>::Transform      Transform ;
 
 protected:
@@ -154,6 +158,9 @@ protected:
 
     /*===========COSSERAT VECTORS ======================*/
     //    helper::vector<Matrix4> m_nodesLogarithmeSE3Vectors;
+
+    // Link with Cosserat force field, for visualisation purposes
+    LinkToPlasticForceField l_fromPlasticForceField;
 
 protected:
     /// Constructor    

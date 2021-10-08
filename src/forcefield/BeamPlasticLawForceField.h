@@ -84,6 +84,8 @@ public:
                       const MultiMatrixAccessor* matrix) override;
     ///////////////////////////////////////////////////////////////////////////
 
+    const vector<MechanicalState>& getSectionMechanicalStates();
+
 protected:
 
     Data<Real> d_initialYieldStress;

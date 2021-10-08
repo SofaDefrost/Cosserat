@@ -251,6 +251,10 @@ void BeamHookeLawForceField<DataTypes>::addKToMatrix(const MechanicalParams* mpa
 }
 
 
-
+template<typename DataTypes>
+typename BeamHookeLawForceField<DataTypes>::Real BeamHookeLawForceField<DataTypes>::getRadius()
+{
+    return d_radius.getValue();
+}
 
 } // forcefield

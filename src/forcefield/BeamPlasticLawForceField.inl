@@ -436,4 +436,11 @@ typename BeamPlasticLawForceField<DataTypes>::Real BeamPlasticLawForceField<Data
     return equivalentStress(stressTensor - backStress) - yieldStress;
 }
 
+
+template< class DataTypes>
+const sofa::type::vector<typename BeamPlasticLawForceField<DataTypes>::MechanicalState>& BeamPlasticLawForceField<DataTypes>::getSectionMechanicalStates()
+{
+    return m_sectionMechanicalStates;
+}
+
 } // sofa::component::forcefield
