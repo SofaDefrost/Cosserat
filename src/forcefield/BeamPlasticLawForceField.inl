@@ -248,6 +248,9 @@ void BeamPlasticLawForceField<DataTypes>::computeStressIncrement(unsigned int se
         m_plasticStrain[sectionId] += plasticStrainIncrement;
         m_effectivePlasticStrain[sectionId] += plasticMultiplier;
     }
+
+    // Updating the stress value, wether elastic or plastic
+    m_prevStress[sectionId] = newStressPoint;
 }
 
 
