@@ -58,7 +58,7 @@ DiscreteCosseratMapping<TIn1, TIn2, TOut>::DiscreteCosseratMapping()
                                  "the axis in which we want to show the deformation.\n"))
     , d_drawMapBeam(initData(&d_drawMapBeam, true,"nonColored", "if this parameter is false, you draw the beam with "
                                                                 "color according to the force apply to each beam"))
-    , d_color(initData(&d_color, defaulttype::Vec4f (1, 0., 1., 0.8) ,"color", "The default beam color"))
+    , d_color(initData(&d_color, type::Vec4f (1, 0., 1., 0.8) ,"color", "The default beam color"))
     , d_index(initData(&d_index, "index", "if this parameter is false, you draw the beam with color "
                                                           "according to the force apply to each beam"))
 {
@@ -138,7 +138,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::apply(
     Transform frame0 = Transform(In2::getCPos(in2[0]),In2::getCRot(in2[0]));
     for(unsigned int i=0; i<sz; i++){
         Transform frame = frame0;
-        for (int u = 0; u < m_indicesVectors[i]; u++) {
+        for (unsigned int u = 0; u < m_indicesVectors[i]; u++) {
             frame *= m_nodesExponentialSE3Vectors[u];
         }
         frame *= m_ExponentialSE3Vectors[i];
@@ -231,14 +231,14 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>:: applyJ(
     if (!in2_vecDeriv.empty())
         _baseVelocity = in2_vecDeriv[0];
     //convert to Vec6
-    defaulttype::Vec6 baseVelocity;
+    type::Vec6 baseVelocity;
     for (size_t u=0;u<6;u++) {baseVelocity[u] = _baseVelocity[u];}
 
     //Apply the local transform i.e from SOFA frame to Frederico frame
     const In2VecCoord& xfrom2Data = m_fromModel2->read(core::ConstVecCoordId::position())->getValue();
     Transform Tinverse = Transform(xfrom2Data[0].getCenter(),xfrom2Data[0].getOrientation()).inversed();
     Mat6x6 P = this->build_projector(Tinverse);
-    defaulttype::Vec6 baseLocalVelocity = P * baseVelocity;
+    type::Vec6 baseLocalVelocity = P * baseVelocity;
     m_nodesVelocityVectors.push_back(baseLocalVelocity);
     if(d_debug.getValue())
         std::cout << "Base local Velocity :"<< baseLocalVelocity <<std::endl;
@@ -249,7 +249,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>:: applyJ(
         Mat6x6 Adjoint; Adjoint.clear();
         this->computeAdjoint(t,Adjoint);
 
-        defaulttype::Vec6 Xi_dot = Vec6(in1[i-1],Vector3(0.0,0.0,0.0)) ;
+        type::Vec6 Xi_dot = Vec6(in1[i-1],Vector3(0.0,0.0,0.0)) ;
         Vec6 temp = Adjoint * (m_nodesVelocityVectors[i-1] + m_nodesTangExpVectors[i] * Xi_dot );
         m_nodesVelocityVectors.push_back(temp);
         if(d_debug.getValue())
@@ -264,7 +264,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>:: applyJ(
         Mat6x6 Adjoint; Adjoint.clear();
         this->computeAdjoint(t,Adjoint);
 
-        defaulttype::Vec6 Xi_dot = Vec6(in1[m_indicesVectors[i]-1],Vector3(0.0,0.0,0.0)) ;
+        type::Vec6 Xi_dot = Vec6(in1[m_indicesVectors[i]-1],Vector3(0.0,0.0,0.0)) ;
         Vec6 temp = Adjoint * (m_nodesVelocityVectors[m_indicesVectors[i]-1] + m_framesTangExpVectors[i] * Xi_dot ); // eta
 
         auto T = Transform(out[i].getCenter(), out[i].getOrientation());
@@ -308,13 +308,13 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>:: applyJT(
 
     //convert the input from Deriv type to vec6 type, for the purpose of the matrix vector multiplication
     for (size_t var = 0; var < in.size(); ++var) {
-        defaulttype::Vec6 vec;
+        type::Vec6 vec;
         for(unsigned j = 0; j < 6; j++) vec[j] = in[var][j];
 
         //Convert input from global frame(SOFA) to local frame
         Transform _T = Transform(frame[var].getCenter(),frame[var].getOrientation());
         Mat6x6 P_trans =(this->build_projector(_T)); P_trans.transpose();
-        defaulttype::Vec6 local_F = P_trans * vec;
+        type::Vec6 local_F = P_trans * vec;
         local_F_Vec.push_back(local_F);
     }
 
@@ -433,7 +433,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJT(
 
 
             const OutDeriv valueConst_ = colIt.val();
-            defaulttype::Vec6 valueConst;
+            type::Vec6 valueConst;
             for(unsigned j = 0; j < 6; j++) valueConst[j] = valueConst_[j];
 
             int indexBeam =  m_indicesVectors[childIndex];
@@ -447,7 +447,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJT(
             Mat6x6 temp = m_framesTangExpVectors[childIndex];   // m_framesTangExpVectors[s] computed in applyJ (here we transpose)
             temp.transpose();
 
-            defaulttype::Vec6 local_F =  coAdjoint * P_trans * valueConst; // constraint direction in local frame of the beam.
+            type::Vec6 local_F =  coAdjoint * P_trans * valueConst; // constraint direction in local frame of the beam.
 
 
             Vector3 f = matB_trans * temp * local_F; // constraint direction in the strain space.
@@ -612,7 +612,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::draw(const core::visual::VisualP
     glLineWidth(d_radius.getValue());
     glBegin(GL_LINES);
     if(d_drawMapBeam.getValue()){
-        defaulttype::Vec4f _color = d_color.getValue();
+        type::Vec4f _color = d_color.getValue();
         RGBAColor colorL = RGBAColor(_color[0],_color[1],_color[2],_color[3]);
         glColor4f(colorL[0], colorL[1], colorL[2],colorL[3]);
 //        vparams->drawTool()->drawLineStrip(positions,radius,colorL);
@@ -630,13 +630,13 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::draw(const core::visual::VisualP
             vparams->drawTool()->drawLine(positions[i],positions[i+1],color);
         }
         //        for (unsigned int i = 0; i<sz; i+=2){
-        //            defaulttype::Vector3 P1 = positions[i];
-        //            defaulttype::Quat q = xData[i].getOrientation();
-        //            defaulttype::Vector3 x,y,z;
+        //            type::Vector3 P1 = positions[i];
+        //            type::Quat q = xData[i].getOrientation();
+        //            type::Vector3 x,y,z;
         //            double radius_arrow = 0.1;
-        //            x= q.rotate(defaulttype::Vector3(2.0,0,0));
-        //            y= q.rotate(defaulttype::Vector3(0,2.0,0));
-        //            z= q.rotate(defaulttype::Vector3(0,0,2.0));
+        //            x= q.rotate(type::Vector3(2.0,0,0));
+        //            y= q.rotate(type::Vector3(0,2.0,0));
+        //            z= q.rotate(type::Vector3(0,0,2.0));
         //
         //            vparams->drawTool()->drawArrow(P1,(P1 + x)*1.0, radius_arrow, RGBAColor(1.,0.,0.,1.));
         //            vparams->drawTool()->drawArrow(P1,(P1 + y)*1.0, radius_arrow, RGBAColor(0.,1.,0.,1.));
@@ -652,12 +652,12 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::draw(const core::visual::VisualP
 //        defaulttype::Quat q = m_vecTransform[i].getOrientation();
 //        q.normalize();
 //
-//        defaulttype::Vector3 P1, x,y,z;
+//        type::Vector3 P1, x,y,z;
 //        P1 = m_vecTransform[i].getCenter();
 //
-//        x= q.rotate(defaulttype::Vector3(1.0,0,0));
-//        y= q.rotate(defaulttype::Vector3(0,1.0,0));
-//        z= q.rotate(defaulttype::Vector3(0,0,1.0));
+//        x= q.rotate(type::Vector3(1.0,0,0));
+//        y= q.rotate(type::Vector3(0,1.0,0));
+//        z= q.rotate(type::Vector3(0,0,1.0));
 //        double radius_arrow = 1.0/2.0;
 //
 //        vparams->drawTool()->drawArrow(P1,(P1 + x)*1.0, radius_arrow, RGBAColor(1.,0.,0.,1.));
