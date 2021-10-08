@@ -29,8 +29,8 @@
 ******************************************************************************/
 
 #pragma once
-#include <sofa/defaulttype/Vec.h>
-#include <sofa/defaulttype/Mat.h>
+#include <sofa/type/Vec.h>
+#include <sofa/type/Mat.h>
 #include <sofa/core/behavior/MechanicalState.h>
 #include <sofa/core/objectmodel/Data.h>
 #include <sofa/core/MechanicalParams.h>
@@ -43,8 +43,8 @@
 namespace sofa::component::forcefield
 {
 
-using sofa::defaulttype::Vec ;
-using sofa::defaulttype::Mat ;
+using sofa::type::Vec ;
+using sofa::type::Mat ;
 using sofa::type::vector;
 using sofa::core::MechanicalParams;
 using sofa::defaulttype::BaseMatrix;
