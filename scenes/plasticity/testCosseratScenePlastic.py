@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-    Create the scene with the 
+    Create the scene with the
     Units: mm, kg, s.
 """
 
@@ -25,6 +25,7 @@ def createScene(rootNode):
 
     rootNode.addObject('RequiredPlugin', name='SoftRobots')
     rootNode.addObject('RequiredPlugin', name='BeamAdapter')
+    rootNode.addObject('RequiredPlugin', name='SofaBoundaryCondition')
     rootNode.addObject('RequiredPlugin', name='SofaPython3')
     rootNode.addObject('RequiredPlugin', name='SofaSparseSolver')
     rootNode.addObject('RequiredPlugin', name='SofaOpenglVisual')
@@ -45,7 +46,11 @@ def createScene(rootNode):
 
     rootNode.addObject('FreeMotionAnimationLoop')
     rootNode.addObject('GenericConstraintSolver', tolerance=1e-6, maxIterations=1000)
-    
+
+
+    ############################################################################
+    #                            PLASTIC COSSERAT                              #
+    ############################################################################
 
     #Define: the total lenght of the beam
     tot_length = 100.0
@@ -71,34 +76,26 @@ def createScene(rootNode):
         if i!= nbFramesF-1:
             lines+= [i, i+1]
     print("=============> position : ", position)
-    
-    ############################################################################
-    ############################################################################
-    ###########                       COSSERAT                       ###########
-    ############################################################################
-    ############################################################################
 
-    #################################
-    ##           RigidBase         ##
-    #################################
-    cableNode = rootNode.addChild('cableNode')
-    cableNode.addObject('EulerImplicitSolver', rayleighStiffness="1.2", rayleighMass='1.1')
-    cableNode.addObject('SparseLDLSolver', name='solver', template="CompressedRowSparseMatrixd")
-    cableNode.addObject('GenericConstraintCorrection')
 
-    rigidBaseNode= cableNode.addChild('rigidBase')
+    ############  RigidBase  ############
+
+    plaCableNode = rootNode.addChild('plaCableNode')
+    plaCableNode.addObject('EulerImplicitSolver', rayleighStiffness="1.2", rayleighMass='1.1')
+    plaCableNode.addObject('SparseLDLSolver', name='solver', template="CompressedRowSparseMatrixdouble")
+    plaCableNode.addObject('GenericConstraintCorrection')
+
+    rigidBaseNode= plaCableNode.addChild('rigidBase')
     RigidBaseMO = rigidBaseNode.addObject('MechanicalObject', template='Rigid3d',
-                                             name="RigidBaseMO", position= [0.,0.,0., 0,0,0,1], showObject=1,
+                                             name="RigidBaseMO", position= [0.,0.,0.,0,0,0,1], showObject=1,
                                              showObjectScale=2.)
     rigidBaseNode.addObject('RestShapeSpringsForceField', name='spring', stiffness="5.e8", angularStiffness="5.e8",
                                external_points="0", mstate="@RigidBaseMO", points="0", template="Rigid3d")
-    
-    #################################
-    ## Rate of angular Deformation ##
-    #################################
+
+    ############  Rate of angular Deformation  ############
 
     #Define: the lenght of each beam in a list, the positions of each beam
-    
+
     positionS = []
     longeurS = []
     sum = 0.
@@ -106,34 +103,30 @@ def createScene(rootNode):
     curv_abs_inputS.append(0.0)
     for i in range(nbSectionS):
         positionS.append([0, 0, 0])
-        longeurS.append((((i+1)*lengthS) - i*lengthS))
+        longeurS.append(lengthS)
         sum += longeurS[i]
         curv_abs_inputS.append(sum)
 
     curv_abs_inputS[nbSectionS] = tot_length
-    
-    
+
+
     """ Define: angular rate which is the torsion(x) and bending (y, z) of each section """
     val = 3.14/(2*tot_length)
-    rateAngularDeformNode = cableNode.addChild('rateAngularDeform')
+    rateAngularDeformNode = plaCableNode.addChild('rateAngularDeform')
     rateAngularDeformMO = rateAngularDeformNode.addObject('MechanicalObject',
                                     template='Vec3d', name='rateAngularDeformMO',
-                                    position=positionS, showIndices=0, rest_position=[0.0, val, val])
-    # BeamHookeLawForce = rateAngularDeformNode.addObject('BeamHookeLawForceField',
-                                    # crossSectionShape='circular', length=longeurS,
-                                    # radius=90., youngModulus=5e6)
+                                    position=positionS, showIndices=0, rest_position=[0.0, 0.0, 0.0])
     BeamPlasticLawForce = rateAngularDeformNode.addObject('BeamPlasticLawForceField',
                                     crossSectionShape='circular', length=longeurS,
-                                    radius=90., youngModulus=5e6,
+                                    radius=2., youngModulus=5e6,
                                     initialYieldStress=5e4, plasticModulus=2e5)
-    rateAngularDeformNode.addObject('RestShapeSpringsForceField', name='spring', stiffness="5.e8",
-                               external_points="0", mstate="@rateAngularDeformMO", points="0", template="Vec3d")
+    rateAngularDeformNode.addObject('ConstantForceField', name='Moment', indices="0", forces="0 2e8 2e8")
 
 
-    #################################
-    ##             Frame           ##
-    #################################
-    #Define: local frames related to each section and parameters curv_abs_outputF 
+
+    ############  Frame  ############
+
+    #Define: local frames related to each section and parameters curv_abs_outputF
     framesF = []
     curv_abs_outputF = []
     for i in range(nbFramesF):
@@ -142,6 +135,130 @@ def createScene(rootNode):
         curv_abs_outputF.append(sol)
 
     framesF.append([tot_length, 0, 0, 0, 0, 0, 1])
+    curv_abs_outputF.append(tot_length)
+    print("=============> framesF : ", framesF)
+
+    #The node of the frame needs to inherit from rigidBaseMO and rateAngularDeform
+    mappedFrameNode = rigidBaseNode.addChild('MappedFrames')
+    rateAngularDeformNode.addChild(mappedFrameNode)
+
+    framesMO = mappedFrameNode.addObject('MechanicalObject', template='Rigid3d',
+                                         name="FramesMO", position=framesF,
+                                         showObject=1, showObjectScale=1)
+
+    # The mapping has two inputs: RigidBaseMO and rateAngularDeformMO
+    #                 one output: FramesMO
+    inputMO = rateAngularDeformMO.getLinkPath()
+    inputMO_rigid = RigidBaseMO.getLinkPath()
+    outputMO = framesMO.getLinkPath()
+
+    mappedFrameNode.addObject('DiscreteCosseratMapping', curv_abs_input= curv_abs_inputS,
+                              curv_abs_output=curv_abs_outputF, input1=inputMO, input2=inputMO_rigid,
+                              output=outputMO, forcefield='@../../rateAngularDeform/BeamPlasticLawForceField',
+                              nonColored=False, debug=0)
+
+    ############################################################################
+    #                             PLASTIC MAPPING                              #
+    ############################################################################
+
+    cosCollisionPoints = mappedFrameNode.addChild('cosCollisionPoints')
+    cosColliMeca = cosCollisionPoints.addObject('MechanicalObject', name="cosColliPoins", template="Vec3d",
+                                                position = position3D)
+    cosCollisionPoints.addObject('SkinningMapping', nbRef='2')
+
+
+
+
+
+    ############################################################################
+    #                            ELASTIC COSSERAT                              #
+    ############################################################################
+
+    #Define: the total lenght of the beam
+    tot_length = 100.0
+
+    #Define: the number of section, the total lenght and the lenght of each beam.
+    nbSectionS = 1
+    lengthS = tot_length / nbSectionS
+
+    #Define: the number of frame and the lenght beetween each frame.
+    nbFramesF = 20
+    lengthF = tot_length /nbFramesF
+
+    points = []
+    position = []
+    lines = []
+
+    position3D = []
+    for i in range(nbFramesF):
+        sol = i * lengthF
+        points.append(i)
+        position.append([sol, 0, 1, 0, 0, 0, 1])
+        position3D.append([sol, 0, 1])
+        if i!= nbFramesF-1:
+            lines+= [i, i+1]
+    print("=============> position : ", position)
+
+    #################################
+    ##           RigidBase         ##
+    #################################
+    elaCableNode = rootNode.addChild('elaCableNode')
+    elaCableNode.addObject('EulerImplicitSolver', rayleighStiffness="1.2", rayleighMass='1.1')
+    elaCableNode.addObject('SparseLDLSolver', name='solver', template="CompressedRowSparseMatrixdouble")
+    elaCableNode.addObject('GenericConstraintCorrection')
+
+    rigidBaseNode= elaCableNode.addChild('rigidBase')
+    RigidBaseMO = rigidBaseNode.addObject('MechanicalObject', template='Rigid3d',
+                                             name="RigidBaseMO", position= [0.,0.,10., 0,0,0,1], showObject=1,
+                                             showObjectScale=2.)
+    rigidBaseNode.addObject('RestShapeSpringsForceField', name='spring', stiffness="5.e8", angularStiffness="5.e8",
+                               external_points="0", mstate="@RigidBaseMO", points="0", template="Rigid3d")
+
+    #################################
+    ## Rate of angular Deformation ##
+    #################################
+
+    #Define: the lenght of each beam in a list, the positions of each beam
+
+    positionS = []
+    longeurS = []
+    sum = 0.
+    curv_abs_inputS = []
+    curv_abs_inputS.append(0.0)
+    for i in range(nbSectionS):
+        positionS.append([0, 0, 0])
+        longeurS.append(lengthS)
+        sum += longeurS[i]
+        curv_abs_inputS.append(sum)
+
+    curv_abs_inputS[nbSectionS] = tot_length
+
+
+    """ Define: angular rate which is the torsion(x) and bending (y, z) of each section """
+    val = 3.14/(2*tot_length)
+    rateAngularDeformNode = elaCableNode.addChild('rateAngularDeform')
+    rateAngularDeformMO = rateAngularDeformNode.addObject('MechanicalObject',
+                                    template='Vec3d', name='rateAngularDeformMO',
+                                    position=positionS, showIndices=0, rest_position=[0.0, 0.0, 0.0])
+    BeamHookeLawForce = rateAngularDeformNode.addObject('BeamHookeLawForceField',
+                                    crossSectionShape='circular', length=longeurS,
+                                    radius=2., youngModulus=5e6)
+    rateAngularDeformNode.addObject('ConstantForceField', name='Moment', indices="0", forces="0 2e8 2e8")
+
+
+
+    #################################
+    ##             Frame           ##
+    #################################
+    #Define: local frames related to each section and parameters curv_abs_outputF
+    framesF = []
+    curv_abs_outputF = []
+    for i in range(nbFramesF):
+        sol = i * lengthF
+        framesF.append([sol, 0, 1,  0, 0, 0, 1])
+        curv_abs_outputF.append(sol)
+
+    framesF.append([tot_length, 0, 1, 0, 0, 0, 1])
     curv_abs_outputF.append(tot_length)
     print("=============> framesF : ", framesF)
 
@@ -162,16 +279,16 @@ def createScene(rootNode):
     mappedFrameNode.addObject('DiscreteCosseratMapping', curv_abs_input= curv_abs_inputS,
                                  curv_abs_output=curv_abs_outputF, input1=inputMO, input2=inputMO_rigid,
                                  output=outputMO, debug=0)
+                                 # forcefield='@../../rateAngularDeform/BeamHookeLawForceField',
 
     ############################################################################
-    ############################################################################
-    ###########                        MAPPING                       ###########
-    ############################################################################
+    #                             ELASTIC MAPPING                              #
     ############################################################################
 
     cosCollisionPoints = mappedFrameNode.addChild('cosCollisionPoints')
-    cosColliMeca = cosCollisionPoints.addObject('MechanicalObject', name="cosColliPoins", template="Vec3d", 
+    cosColliMeca = cosCollisionPoints.addObject('MechanicalObject', name="cosColliPoins", template="Vec3d",
                                                 position = position3D)
     cosCollisionPoints.addObject('SkinningMapping', nbRef='2')
+
 
     return rootNode
