@@ -132,7 +132,7 @@ protected:
 
     /// Computes stress increment on a single point of space, from previous stress and current strain
     void computeStressIncrement(unsigned int sectionId, const Coord& strainIncrement,
-                                MechanicalState& pointMechanicalState, Vec3& newStressPoint);
+                                Vec3& newStressPoint);
 
     void updateTangentStiffness(unsigned int sectionId);
 

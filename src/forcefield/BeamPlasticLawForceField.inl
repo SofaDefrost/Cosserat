@@ -42,7 +42,7 @@ BeamPlasticLawForceField<DataTypes>::BeamPlasticLawForceField() :
     if (d_initialYieldStress.getValue() < 0)
     {
         msg_error() << "yield Stress should be positive. Please provide a positive yield"
-            << "stress value for the considered material";
+                    << "stress value for the considered material";
     }
 }
 
@@ -158,7 +158,6 @@ typename BeamPlasticLawForceField<DataTypes>::Vec3 BeamPlasticLawForceField<Data
 template<typename DataTypes>
 void BeamPlasticLawForceField<DataTypes>::computeStressIncrement(unsigned int sectionId,
                                                                  const Coord& strainIncrement,
-                                                                 MechanicalState& pointMechanicalState,
                                                                  Vec3& newStressPoint)
 {
     /// This method implements the radial return algorithm, as in "Numerical Implementation of
@@ -234,9 +233,9 @@ void BeamPlasticLawForceField<DataTypes>::computeStressIncrement(unsigned int se
         const double sqrt6 = sqrt2 * sqrt3;
         Real plasticMultiplier = (shiftDevElasticPredictorNorm - (sqrt2 / sqrt3) * yieldStress) / (mu * sqrt6 * (1 + H / (3 * mu)));
 
-        // Updating plastic variables
         newStressPoint = elasticPredictorStress - sqrt6 * mu * plasticMultiplier * N;
 
+        // Updating plastic variables
         Real newYieldStress = yieldStress + beta * H * plasticMultiplier;
         m_yieldStress[sectionId] = newYieldStress;
         Vec3 newBackStress = backStress + (sqrt2 / sqrt3) * (1 - beta) * H * plasticMultiplier * N;
@@ -287,14 +286,14 @@ void BeamPlasticLawForceField<DataTypes>::updateTangentStiffness(unsigned int se
         for (unsigned int i = 0; i < CN.size(); i++)
             matCN[i][0] = CN[i];
         // NtC = (NC)t because of C symmetry
-        Cep = C - (2 * matCN * matCN.transposed()) / (2 * N * CN + (2.0 / 3.0) * H); //TO DO: check that * operator is actually dot product
+        Cep = C - (2 * matCN * matCN.transposed()) / (2.0 * N * CN + (2.0 / 3.0) * H); //TO DO: check that * operator is actually dot product
 
         // /!\ Warning on the computation above /!\
         // Terms CNNtC in the numerator and NtCN in the denominator are multiplied by 2
         // in order to account for the fact that we are using a reduced notation.
-        // In the same way that the generalised Hooke's law we use in m_genHookesLaw 
+        // In the same way that the generalised Hooke's law we use in m_genHookesLaw
         // differs from the 'complete' 9x9 generalised Hooke's Law components by a
-        // factor 2, we multiply Cep components by 2 to account for the fact that 
+        // factor 2, we multiply Cep components by 2 to account for the fact that
         // multiplication of this matrix by a vector representing a symmetric tensor
         // makes each non-diagonal terms appear twice.
         // NB: this takes into account the fact that C is already expressed here with
@@ -333,8 +332,6 @@ void BeamPlasticLawForceField<DataTypes>::addForce(const MechanicalParams* mpara
 
     VecDeriv& f = *d_f.beginEdit();
     const VecCoord& x = d_x.getValue();
-    // get the rest position (for non straight shape)
-    const VecCoord& x0 = this->mstate->read(VecCoordId::restPosition())->getValue();
 
     f.resize(x.size());
 
@@ -351,7 +348,7 @@ void BeamPlasticLawForceField<DataTypes>::addForce(const MechanicalParams* mpara
 
         // Computation of the stress using the radial return algorithm
         Vec3 newStressPoint = Vec3();
-        computeStressIncrement(i, strainIncrement, m_sectionMechanicalStates[i], newStressPoint);
+        computeStressIncrement(i, strainIncrement, newStressPoint);
 
         // If the beam is in plastic state, we update the tangent stiffness matrix
         updateTangentStiffness(i);
@@ -385,8 +382,9 @@ void BeamPlasticLawForceField<DataTypes>::addDForce(const MechanicalParams* mpar
     Real kFactor = (Real)mparams->kFactorIncludingRayleighDamping(this->rayleighStiffness.getValue());
 
     df.resize(dx.size());
+
     for (unsigned int i = 0; i < dx.size(); i++)
-        df[i] -= (m_Kt_sectionList[i] * dx[i]) * kFactor * d_length.getValue()[i];
+        df[i] -= (m_Kt_sectionList[i] * dx[i]) * kFactor * this->d_length.getValue()[i];
 }
 
 
