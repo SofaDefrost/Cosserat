@@ -49,27 +49,18 @@ RigidDistanceMapping<TIn1, TIn2, TOut>::RigidDistanceMapping()
     : m_fromModel1(NULL)
     , m_fromModel2(NULL)
     , m_toModel(NULL)
-    , d_deformationAxis(initData(&d_deformationAxis, (int)1, "deformationAxis",
-                                 "the axis in which we want to show the deformation.\n"))
-    , d_indice1(initData(&d_indice1, "first_point", "index of the first model \n"))
-    , d_indice2(initData(&d_indice2, "second_point", "index of the second model \n"))
-    , d_max(initData(&d_max, (Real)1.0e-2, "max",
-                                 "the maximum of the deformation.\n"))
-    , d_min(initData(&d_min, (Real)0.0, "min",
-                                 "the minimum of the deformation.\n"))
-
-    , d_radius(initData(&d_radius, (Real)3.0, "radius",
-                                 "the axis in which we want to show the deformation.\n"))
-    , d_drawMapBeam(initData(&d_drawMapBeam, true,"nonColored", "if this parameter is false, you draw the beam with "
-                                                                "color according to the force apply to each beam"))
+    , d_index1(initData(&d_index1, "first_point", "index of the first model \n"))
+    , d_index2(initData(&d_index2, "second_point", "index of the second model \n"))
+    , d_max(initData(&d_max, (Real)1.0e-2, "max", "the maximum of the deformation.\n"))
+    , d_min(initData(&d_min, (Real)0.0, "min", "the minimum of the deformation.\n"))
+    , d_radius(initData(&d_radius, (Real)3.0, "radius", "the axis in which we want to show the deformation.\n"))
     , d_color(initData(&d_color, defaulttype::Vec4f (1, 0., 1., 0.8) ,"color", "The default beam color"))
     , d_index(initData(&d_index, "index", "if this parameter is false, you draw the beam with color "
                                                           "according to the force apply to each beam"))
 {
+        d_debug.setValue(false);
 }
 
-
-// _________________________________________________________________________________________
 
 template <class TIn1, class TIn2, class TOut>
 void RigidDistanceMapping<TIn1, TIn2, TOut>::init()
@@ -80,8 +71,8 @@ void RigidDistanceMapping<TIn1, TIn2, TOut>::init()
         return;
     }
 
-    const type::vector<int> &m1Indices = d_indice1.getValue();
-    const type::vector<int> &m2Indices = d_indice2.getValue();
+    const type::vector<int> &m1Indices = d_index1.getValue();
+    const type::vector<int> &m2Indices = d_index2.getValue();
 
     m_minInd = std::min(m1Indices.size(), m2Indices.size());
     if (m_minInd == 0) {
@@ -109,21 +100,27 @@ void RigidDistanceMapping<TIn1, TIn2, TOut>::apply(
     OutVecCoord& out = *dataVecOutPos[0]->beginEdit();
     out.resize(m_minInd);
 
-    auto &m1Indices = d_indice1.getValue();
-    auto &m2Indices = d_indice2.getValue();
+    auto &m1Indices = d_index1.getValue();
+    auto &m2Indices = d_index2.getValue();
 
     for (sofa::Index pid=0; pid<m_minInd; pid++) {
         int tm1 = m1Indices[pid];
         int tm2 = m2Indices[pid];
-        //        std::cout<< " tm1: " << tm1 << " tm2: " << tm2 << std::endl;
-        std::cout << " in1 :" << in1[tm1] << std::endl;
-        std::cout << " in2 :" << in2[tm2] << std::endl;
+        // dist[i] = in2[i] - in1[0];
         Vector3 outCenter = in2[tm2].getCenter()-in1[tm1].getCenter();
-//        defaulttype::Quat outOri = in2[tm2].getOrientation().inverse() * in1[tm1].getOrientation() ;
         defaulttype::Quat outOri = in2[tm2].getOrientation()* in1[tm1].getOrientation().inverse();
+
+        //pts[i].getCenter() = xfrom[index.getValue()].getOrientation().inverse().rotate( x[i].getCenter() - xfrom[index.getValue()].getCenter() ) ;
+        // Vector3 outCenter = in2[tm2].getCenter()-in1[tm1].getCenter();
+        //defaulttype::Quat outOri = in2[tm2].getOrientation()* in1[tm1].getOrientation().inverse();
+
         outOri.normalize();
         out[pid] = OutCoord(outCenter,outOri); // This difference is in the word space
-        std::cout<< "outPut: " << out[pid]<< std::endl;
+        if (d_debug.getValue()){
+            std::cout << " in1 :" << in1[tm1] << std::endl;
+            std::cout << " in2 :" << in2[tm2] << std::endl;
+            std::cout << " out :" << out[pid] << std::endl;
+        }
     }
 
     dataVecOutPos[0]->endEdit();
@@ -144,17 +141,20 @@ void RigidDistanceMapping<TIn1, TIn2, TOut>:: applyJ(
     OutVecDeriv& outVel = *dataVecOutVel[0]->beginEdit();
 
 
-    const auto &m1Indices = d_indice1.getValue();
-    const auto &m2Indices = d_indice2.getValue();
+    const auto &m1Indices = d_index1.getValue();
+    const auto &m2Indices = d_index2.getValue();
 
     SpatialVector vDOF1, vDOF2;
 
     for (sofa::Index index = 0; index < m_minInd; index++) {
         getVCenter(outVel[index]) = getVCenter(in2Vel[m2Indices[index]]) - getVCenter(in1Vel[m1Indices[index]]);
         getVOrientation(outVel[index]) =  getVOrientation(in2Vel[m2Indices[index]]) - getVOrientation(in1Vel[m1Indices[index]]) ;
-        std::cout << " =====> outVel[m1Indices[index]] : " << outVel[index] << std::endl;
+//        std::cout << " =====> outVel[m1Indices[index]] : " << outVel[index] << std::endl;
     }
     dataVecOutVel[0]->endEdit();
+    if (d_debug.getValue()){
+        std::cout << " =====> outVel[m1Indices[index]] : " << outVel << std::endl;
+    }
 }
 
 
@@ -173,19 +173,24 @@ void RigidDistanceMapping<TIn1, TIn2, TOut>:: applyJT(
     In2VecDeriv& out2Force = *dataVecOut2Force[0]->beginEdit();
 
     //@todo implementation of force modification
-    const auto &m1Indices = d_indice1.getValue();
-    const auto &m2Indices = d_indice2.getValue();
+    const auto &m1Indices = d_index1.getValue();
+    const auto &m2Indices = d_index2.getValue();
 
     for (sofa::Index index = 0; index < m_minInd; index++) {
-        getVCenter(out1Force[m1Indices[index]]) -= getVCenter(inForce[index]);
-        getVCenter(out2Force[m2Indices[index]]) += getVCenter(inForce[index]);
+        getVCenter(     out1Force[m1Indices[index]]) -= getVCenter(     inForce[index]);
         getVOrientation(out1Force[m1Indices[index]]) -= getVOrientation(inForce[index]);
-        getVOrientation(out2Force[m2Indices[index]]) += getVOrientation(inForce[index]);
 
-        std::cout << "========> out1Force[m1Indices[index]] : "<< out1Force[m1Indices[index]]<< std::endl;
-        std::cout << "========> out2Force[m2Indices[index]] : "<< out2Force[m2Indices[index]]<< std::endl;
+        getVCenter(     out2Force[m2Indices[index]]) += getVCenter(     inForce[index]);
+        getVOrientation(out2Force[m2Indices[index]]) += getVOrientation(inForce[index]);
+//        std::cout << "========> inForce : "<< inForce<< std::endl;
+//        std::cout << "========> out1Force[m1Indices[index]] : "<< out1Force[m1Indices[index]]<< std::endl;
+//        std::cout << "========> out2Force[m2Indices[index]] : "<< out2Force[m2Indices[index]] << std::endl;
+//        printf("__________________________________________ \n");
+
     }
-    printf("__________________________________________ \n");
+//    if (d_debug.getValue()){
+
+//    }
     dataVecOut1Force[0]->endEdit();
     dataVecOut2Force[0]->endEdit();
 }
@@ -204,11 +209,10 @@ void RigidDistanceMapping<TIn1, TIn2, TOut>::applyJT(
     In2MatrixDeriv& out2 = *dataMatOut2Const[0]->beginEdit(); // constraints on the reference frame 2
     const OutMatrixDeriv& in = dataMatInConst[0]->getValue(); // input constraints defined on the mapped frames
 
-    const auto &m1Indices = d_indice1.getValue();
-    const auto &m2Indices = d_indice2.getValue();
+    const auto &m1Indices = d_index1.getValue();
+    const auto &m2Indices = d_index2.getValue();
     typename OutMatrixDeriv::RowConstIterator rowItEnd = in.end();
 
-    printf("1. ======================================================================================= \n");
     for (typename OutMatrixDeriv::RowConstIterator rowIt = in.begin(); rowIt != rowItEnd; ++rowIt) {
         typename OutMatrixDeriv::ColConstIterator colIt = rowIt.begin();
         typename OutMatrixDeriv::ColConstIterator colItEnd = rowIt.end();
@@ -218,21 +222,12 @@ void RigidDistanceMapping<TIn1, TIn2, TOut>::applyJT(
         typename In2MatrixDeriv::RowIterator o2 = out2.writeLine(rowIt.index());
 
         int childIndex = colIt.index();
-        std::cout << "Constraint " << rowIt.index() << " ==> childIndex: "<< childIndex << std::endl;
 
         //We compute the parents indices
         auto parentIndex1 = m1Indices[childIndex];
         auto parentIndex2 = m2Indices[childIndex];
 
-        std::cout << "parentIndex1 " << parentIndex1 << " ==> parentIndex2 "<< parentIndex2 << std::endl;
-
         const OutDeriv valueConst_ = colIt.val();
-        std::cout << "valueConst_: "<< valueConst_ << std::endl;
-
-
-        // SpatialVector FNode1, FNode2;
-        // @todo fill here
-        // compute constraint direction in global frame of the beam.
 
         // Compute the mapped Constraint on the beam nodes
         Deriv1 direction1;
@@ -241,25 +236,23 @@ void RigidDistanceMapping<TIn1, TIn2, TOut>::applyJT(
         Deriv2 direction2;
         In2::setDPos(direction2,getVCenter(valueConst_));
         In2::setDRot(direction2,getVOrientation(valueConst_));
-        std::cout << "direction1: " << direction1 << std::endl;
-        std::cout << "direction2: " << direction2 << std::endl;
+
+        if (d_debug.getValue()){
+            printf("1. ======================================================================================= \n");
+            std::cout << "Constraint " << rowIt.index() << " ==> childIndex: "<< childIndex << std::endl;
+            std::cout << "parentIndex1 " << parentIndex1 << " ==> parentIndex2 "<< parentIndex2 << std::endl;
+            std::cout << "valueConst_: "<< valueConst_ << std::endl;
+            std::cout << "direction1: " << direction1 << std::endl;
+            std::cout << "direction2: " << direction2 << std::endl;
+        }
 
         o1.addCol(parentIndex1, direction1);
         o2.addCol(parentIndex2, direction2);
     }
-    printf("2. ======================================================================================= \n");
+    //    printf("2. ======================================================================================= \n");
 
     dataMatOut1Const[0]->endEdit();
     dataMatOut2Const[0]->endEdit();
 }
-
-
-template <class TIn1, class TIn2, class TOut>
-void RigidDistanceMapping<TIn1, TIn2, TOut>::draw(const core::visual::VisualParams* vparams)
-{
-    //if(!d_debug.getValue()) return;
-
-
-}
-
+//
 } // namespace sofa::components::mapping
