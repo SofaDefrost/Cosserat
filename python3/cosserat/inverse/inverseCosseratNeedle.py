@@ -19,7 +19,7 @@ path = os.path.dirname(os.path.abspath(__file__)) + '/../mesh/'
 def createScene(rootNode):
     from stlib3.scene import MainHeader
     MainHeader(rootNode, plugins=["SoftRobots", "SoftRobots.Inverse", "SofaSparseSolver", 'SofaDeformable',
-                                  "SofaPreconditioner", "SofaOpenglVisual", "CosseratPlugin", "BeamAdapter",
+                                  "SofaPreconditioner", "SofaOpenglVisual", "CosseratPlugin",
                                   "SofaGeneralRigid", "SofaImplicitOdeSolver"],
                repositoryPaths=[os.getcwd()])
     rootNode.addObject('VisualStyle',
@@ -28,10 +28,11 @@ def createScene(rootNode):
                                     'showWireframe')
 
     rootNode.addObject('FreeMotionAnimationLoop')
-    qp_solver = rootNode.createObject('QPInverseProblemSolver', printLog='0')
+    qp_solver = rootNode.addObject('QPInverseProblemSolver', printLog='0')
     rootNode.addObject('CollisionPipeline', depth="6", verbose="0", draw="1")
     rootNode.addObject('BruteForceDetection', name="N2")
-    rootNode.addObject('DefaultContactManager', response="FrictionContact", responseParams="mu=0.65")
+    rootNode.addObject('DefaultContactManager',
+                       response="FrictionContact", responseParams="mu=0.65")
     rootNode.addObject('LocalMinDistance', name="Proximity", alarmDistance="0.6", contactDistance="0.44",
                        angleCone="0.01")
 
@@ -46,8 +47,10 @@ def createScene(rootNode):
     ##########################################
     goal = rootNode.addChild('goal')
     goal.addObject('EulerImplicitSolver', firstOrder='1')
-    goal.addObject('CGLinearSolver', iterations='100', tolerance="1e-5", threshold="1e-5")
-    goalPos = goal.addObject('MechanicalObject', name='goalMO', position='90.0 3.0  0.35857')
+    goal.addObject('CGLinearSolver', iterations='100',
+                   tolerance="1e-5", threshold="1e-5")
+    goalPos = goal.addObject(
+        'MechanicalObject', name='goalMO', position='90.0 3.0  0.35857')
     goal.addObject('SphereCollisionModel', radius='2', color="red")
     goal.addObject('UncoupledConstraintCorrection')
 
@@ -55,7 +58,8 @@ def createScene(rootNode):
     # New adds to use the sliding Actuator  #
     #########################################
     cableNode = rootNode.addChild('cableNode')
-    cableNode.addObject('EulerImplicitSolver', firstOrder="0", rayleighStiffness="1.0", rayleighMass='0.1')
+    cableNode.addObject('EulerImplicitSolver', firstOrder="0",
+                        rayleighStiffness="1.0", rayleighMass='0.1')
     cableNode.addObject('SparseLUSolver', name='solver')
     cableNode.addObject('GenericConstraintCorrection')
 
@@ -71,9 +75,9 @@ def createScene(rootNode):
 
     #################################################################
     ##  Sliding actuator to guide the base of the needle, only the  ##
-    ##  translation are tacking into account here.
+    # translation are tacking into account here.
     #################################################################
-    for j in range(0, 3):
+    for j in range(3):
         direction = [0, 0, 0, 0, 0, 0]
         direction[j] = 1
         rigidBaseNode.addObject('SlidingActuator', name="SlidingActuator" + str(j), template='Rigid3d',
@@ -165,7 +169,7 @@ def createScene(rootNode):
     effMO = effector.addObject('MechanicalObject', position=[81., 0., 0.35857])
     effector.addObject('PositionEffector', template='Vec3d', indices="0",
                        effectorGoal="@../../../../goal/goalMO.position")
-    effector.addObject('SkinningMapping', nbRef='1', mapForces='false', mapMasses='false')
-
+    effector.addObject('SkinningMapping', nbRef='1',
+                       mapForces='false', mapMasses='false')
 
     return rootNode

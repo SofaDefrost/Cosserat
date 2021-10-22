@@ -69,12 +69,12 @@ BeamHookeLawForceField<DataTypes>::BeamHookeLawForceField()
                                     "shape of the cross-section. Can be: circular (tube with external radius being radius and internal radius being innerRadius ) or rectangular (lengthY and lengthZ) . Default is circular" )),
       d_youngModululs( initData( &d_youngModululs, 1.0e9, "youngModulus", "Young Modulus describes the stiffness of the material")),
       d_poissonRatio( initData( &d_poissonRatio, 0.45, "poissonRatio", "poisson Ratio describes the compressibility of the material")),
-      d_length( initData( &d_length, "length", "lenght of each beam")),
+      d_length( initData( &d_length, "length", "length of each beam")),
       d_radius( initData( &d_radius, 1.0, "radius", "external radius of the cross section (if circular)")),
       d_innerRadius( initData( &d_innerRadius, 0.0, "innerRadius", "internal radius of the cross section (if circular)")),
       d_lengthY( initData( &d_lengthY, 1.0, "lengthY", "side length of the cross section along local y axis (if rectangular)")),
       d_lengthZ( initData( &d_lengthZ, 1.0, "lengthZ", "side length of the cross section along local z axis (if rectangular)")),
-      d_varianteSections( initData( &d_varianteSections, false, "varianteSections", "In case we have variante beam section this has to be set to true")),
+      d_varianteSections( initData( &d_varianteSections, false, "varianteSections", "In case we have variant beam section this has to be set to true")),
       d_youngModululsList(initData(&d_youngModululsList, "youngModululsList", "The list of Young modulus in case we have sections with variable physical properties")),
       d_poissonRatioList(initData(&d_poissonRatioList, "poissonRatioList", "The list of poisson's ratio in case we have sections with variable physical properties"))
 {
