@@ -35,10 +35,9 @@ set(SOURCE_FILES
     initCosserat.cpp
 
     mapping/BaseCosserat.cpp
-    mapping/DiscreteCosseratMapping.cpp
-
-    mapping/DiscretDynamicCosseratMapping.cpp
     mapping/ProjectionEngine.cpp
+    mapping/DiscreteCosseratMapping.cpp
+    mapping/DiscretDynamicCosseratMapping.cpp
     mapping/DifferenceMultiMapping.cpp
     mapping/RigidDistanceMapping.cpp
 

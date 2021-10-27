@@ -189,7 +189,6 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::apply(
 //}
 
 
-
 template <class TIn1, class TIn2, class TOut>
 void DiscreteCosseratMapping<TIn1, TIn2, TOut>:: applyJ(
         const core::MechanicalParams* /* mparams */, const type::vector< OutDataVecDeriv*>& dataVecOutVel,
@@ -566,7 +565,6 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::draw(const core::visual::VisualP
 
     }
     glLineWidth(1);
-
     if (!vparams->displayFlags().getShowMappings())
         if(!d_debug.getValue()) return;
     glEnd();

@@ -62,8 +62,11 @@ def addEdgeCollision(parentNode, position3D, edges):
     CollisInstrumentCombined.addObject('PointCollisionModel', bothSide="1", group='2')
     CollisInstrumentCombined.addObject('IdentityMapping', name="mapping")
 
+
 def createCosserat(parent, config, config_material, config_simu, name="Cosserat", orientation=None, radius=0.,
-                   last_frame=[], rigidBase=None, _showObjectScale=0.02, solver=None, fixedBase=True):
+                   last_frame=None, rigidBase=None, _showObjectScale=0.02, solver=None, fixedBase=True):
+    if last_frame is None:
+        last_frame = []
     if orientation is None:
         orientation = [0, 0, 0, 1]
     [x, y, z] = config['init_pos']
@@ -83,14 +86,14 @@ def createCosserat(parent, config, config_material, config_simu, name="Cosserat"
     # #           RigidBase         ##
     # ################################
 
-    if  parent.hasObject("EulerImplicitSolver") is False:
+    if parent.hasObject("EulerImplicitSolver") is False:
         base = parent.addChild(name)
         # base.addObject('EulerImplicitSolver',  rayleighStiffness="0.2", rayleighMass='0.1')
         base.addObject('EulerImplicitSolver', rayleighStiffness="1.2", rayleighMass='1.1')
         base.addObject('SparseLDLSolver', name='solver', template="CompressedRowSparseMatrixd")
         base.addObject('GenericConstraintCorrection')
     else:
-        # This means you already defined the solver node and give it as parent of this fonction
+        # This means you already defined the solver node and give it as parent of this function
         base = parent.addChild(name)
 
     # base.addObject('EulerImplicitSolver',  rayleighStiffness="0.2", rayleighMass='0.1')
@@ -101,10 +104,11 @@ def createCosserat(parent, config, config_material, config_simu, name="Cosserat"
         RigidBaseMO = rigidBaseNode.addObject('MechanicalObject', template='Rigid3d',
                                               name="RigidBaseMO", position=[x, y, z] + orientation, showObject=1,
                                               showObjectScale=0.2)
-        if fixedBase :
+        if fixedBase:
             rigidBaseNode.addObject('RestShapeSpringsForceField', name='spring' + str(x), stiffness=stiffness,
-                                angularStiffness=angularStiffness, external_points=0, mstate="@RigidBaseMO", points=0,
-                                template="Rigid3d")
+                                    angularStiffness=angularStiffness, external_points=0, mstate="@RigidBaseMO",
+                                    points=0,
+                                    template="Rigid3d")
     else:
         rigidBaseNode = base.addChild(rigidBase)
         RigidBaseMO = rigidBase.RigidBaseMO
@@ -189,8 +193,9 @@ def createCosserat_2(parent, config, config_material, name="Cosserat", orientati
         #                         angularStiffness=5000, external_points=0, mstate="@RigidBaseMO", points=0,
         #                         template="Rigid3d")
         if controlePointMo is None:
-            rigidBaseNode.addObject('RestShapeSpringsForceField', name='spring', stiffness="1e1", angularStiffness="1e1",
-                                external_points="0", mstate="@RigidBaseMO", points="0", template="Rigid3d")
+            rigidBaseNode.addObject('RestShapeSpringsForceField', name='spring', stiffness="1e1",
+                                    angularStiffness="1e1",
+                                    external_points="0", mstate="@RigidBaseMO", points="0", template="Rigid3d")
         else:
             rigidBaseNode.addObject('RestShapeSpringsForceField', name='spring', stiffness="1.e6",
                                     angularStiffness="1.e6",
