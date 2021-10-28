@@ -9,10 +9,10 @@ on:
 jobs:
   build:
     runs-on: ubuntu-20.04
-    container: defrost/defrost-ubuntu-2004-builder:v20.12
+    container: defrost/defrost-ubuntu-2004-builder:v21.12
     strategy:
       matrix:
-        sofa_version: [v20.12.01, master ]
+        sofa_version: [v21.12.01, master ]
     env:
       SOFA_VERSION: ${{ matrix.sofa_version }}
       SOFA_ROOT: /opt/sofa
@@ -64,7 +64,7 @@ jobs:
           export CCACHE_DIR=$GITHUB_WORKSPACE/.ccache &&
           ccache -z &&
           cmake
-          -DPYTHON_EXECUTABLE=/usr/bin/python3.7
+          -DPYTHON_EXECUTABLE=/usr/bin/python3.8
           -DCMAKE_C_COMPILER_LAUNCHER=ccache
           -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
           -DCMAKE_BUILD_TYPE=Release
