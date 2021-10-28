@@ -53,6 +53,8 @@ set(HEADER_FILES
     src/mapping/ProjectionEngine.inl
     src/mapping/DifferenceMultiMapping.h
     src/mapping/DifferenceMultiMapping.inl
+    src/mapping/RigidDistanceMapping.h
+    src/mapping/RigidDistanceMapping.inl
 
     src/forcefield/BeamHookeLawForceField.h
     src/forcefield/BeamHookeLawForceField.inl
@@ -80,6 +82,7 @@ set(SOURCE_FILES
     src/mapping/DiscretDynamicCosseratMapping.cpp
     src/mapping/ProjectionEngine.cpp
     src/mapping/DifferenceMultiMapping.cpp
+    src/mapping/RigidDistanceMapping.cpp
 
     src/forcefield/BeamHookeLawForceField.cpp
     src/forcefield/CosseratInternalActuation.cpp
@@ -118,12 +121,13 @@ set_target_properties(${PROJECT_NAME} PROPERTIES DEBUG_POSTFIX "_d")
 target_link_libraries(${PROJECT_NAME} SofaCore SofaConstraint SofaSimpleFem SofaBaseMechanics SofaRigid SofaBaseVisual SofaOpenglVisual)
 
 
-if(SofaPython_FOUND)
-    target_link_libraries(${PROJECT_NAME} SofaPython)
-    # Config files and install rules for pythons scripts
-    sofa_install_pythonscripts(PLUGIN_NAME ${PROJECT_NAME} PYTHONSCRIPTS_SOURCE_DIR "python/cosserat")
-endif()
+# if(SofaPython_FOUND)
+#     target_link_libraries(${PROJECT_NAME} SofaPython)
+#     Config files and install rules for pythons scripts
+#     sofa_install_pythonscripts(PLUGIN_NAME ${PROJECT_NAME} PYTHONSCRIPTS_SOURCE_DIR "python/cosserat")
+# endif()
 
+sofa_install_pythonscripts(PLUGIN_NAME ${PROJECT_NAME} PYTHONSCRIPTS_SOURCE_DIR "python")
 if(SofaPython3_FOUND)
     get_filename_component(SP3_ROOT_DIR "${SofaPython3_DIR}/../../.." ABSOLUTE)
     message(STATUS
@@ -132,8 +136,8 @@ if(SofaPython3_FOUND)
             "SP3 location: ${SP3_ROOT_DIR}"
     )
     SP3_add_python_package(
-            SOURCE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/python3/Cosserat
-            TARGET_DIRECTORY Cosserat
+            SOURCE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/python3/cosserat
+            TARGET_DIRECTORY cosserat
     )
 endif()
 

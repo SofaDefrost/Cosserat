@@ -24,7 +24,7 @@ DENSITY = 0.02
 def createScene(rootNode):
 
     rootNode.addObject('RequiredPlugin', name='SoftRobots')
-    rootNode.addObject('RequiredPlugin', name='BeamAdapter')
+    #rootNode.addObject('RequiredPlugin', name='BeamAdapter')
     rootNode.addObject('RequiredPlugin', name='SofaPython3')
     rootNode.addObject('RequiredPlugin', name='SofaSparseSolver')
     rootNode.addObject('RequiredPlugin', name='SofaOpenglVisual')

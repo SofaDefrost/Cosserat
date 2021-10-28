@@ -112,8 +112,6 @@ public:
     typedef typename SolidTypes<Real>::Transform      Transform ;
 
 protected:
-    //    Data<helper::vector<double>>      d_curv_abs_de ;
-    //    Data<helper::vector<double>>      d_curv_abs_output ;
     Data<int>                        d_deformationAxis ;
     Data<Real>                       d_max ;
     Data<Real>                       d_min ;
@@ -121,11 +119,6 @@ protected:
     Data<bool>                       d_drawMapBeam ;
     Data<defaulttype::Vec4f>         d_color;
     Data<type::vector<int> >       d_index;
-
-    /// Input Models container. New inputs are added through addInputModel(In* ).
-    //    LinkFromModels1 m_fromModel1;
-    //    LinkFromModels2 m_fromModel2;
-    //    LinkToModels m_toModel;
 
     core::State<In1>* m_fromModel1;
     core::State<In2>* m_fromModel2;
@@ -138,22 +131,20 @@ protected:
     /// the "this->" approach.
     ///
     using BaseCosserat<TIn1, TIn2, TOut>:: m_indicesVectors ;
-    using BaseCosserat<TIn1, TIn2, TOut>::d_curv_abs_input  ;
-    using BaseCosserat<TIn1, TIn2, TOut>::d_curv_abs_output ;
+    using BaseCosserat<TIn1, TIn2, TOut>::d_curv_abs_section  ;
+    using BaseCosserat<TIn1, TIn2, TOut>::d_curv_abs_frames ;
     using BaseCosserat<TIn1, TIn2, TOut>::m_nodesTangExpVectors;
     using BaseCosserat<TIn1, TIn2, TOut>::m_nodesVelocityVectors;
-    using BaseCosserat<TIn1, TIn2, TOut>::m_ExponentialSE3Vectors;
+    using BaseCosserat<TIn1, TIn2, TOut>::m_framesExponentialSE3Vectors;
     using BaseCosserat<TIn1, TIn2, TOut>::m_framesTangExpVectors ;
     using BaseCosserat<TIn1, TIn2, TOut>::m_totalBeamForceVectors ;
     using BaseCosserat<TIn1, TIn2, TOut>::m_nodesExponentialSE3Vectors ;
     using BaseCosserat<TIn1, TIn2, TOut>::d_debug;
     using BaseCosserat<TIn1, TIn2, TOut>::m_vecTransform ;
-    using BaseCosserat<TIn1, TIn2, TOut>::m_nodeAjointVectors;
+    using BaseCosserat<TIn1, TIn2, TOut>::m_nodeAdjointVectors;
     using BaseCosserat<TIn1, TIn2, TOut>::m_index_input;
     using BaseCosserat<TIn1, TIn2, TOut>::m_indicesVectorsDraw;
 
-    /*===========COSSERAT VECTORS ======================*/
-    //    helper::vector<Matrix4> m_nodesLogarithmeSE3Vectors;
 
 protected:
     /// Constructor    
@@ -193,15 +184,9 @@ public:
             const type::vector<const OutDataMatrixDeriv*>&  dataMatInConst) override;
 
 protected:
-    /**********************COSSERAT METHODS**************************/
-    //    defaulttype::Matrix4 computeLogarithme(const double & x, const Matrix4 &gX);
-    //    visualmodel::OglColorMap *colorMap;
     helper::ColorMap m_colorMap;
 
 };
-
-//extern template class SOFA_POE_MAPPING_API DiscreteCosseratMapping<defaulttype::Vec3Types>;
-
 
 #if  !defined(SOFA_COMPONENT_MAPPING_POE_MAPING_CPP)
 extern template class SOFA_COSSERAT_MAPPING_API DiscreteCosseratMapping< sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types >;
