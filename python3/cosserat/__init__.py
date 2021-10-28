@@ -14,15 +14,15 @@ Contents of the library
 .. autosummary::
     :toctree: _autosummary
 
+    cosserat.cosseratObject
     cosserat.actuators
-    softrobots.inverse
-    softrobots.testScene
+    cosserat.inverse
+    cosserat.testScene
     
 
 """
 
-
-__all__ = ["actuators", "scenes", "needle", "inverse"]
-
 from createFemRegularGrid import createFemCube
 from usefulFunctions import BuildCosseratGeometry
+
+__all__ = ["cosseratObject", "actuators", "scenes", "needle", "inverse"]
