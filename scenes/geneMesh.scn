@@ -34,16 +34,13 @@
 		lloyd="false"
 		perturb="false"
 		ordering="0"
-		exude="true"
-								/>
-			<TetrahedronSetTopologyContainer name="Container"  points="@generator.outputPoints" tetras="@generator.outputTetras"/>
-			<TetrahedronSetTopologyModifier   name="Modifier" />
-			<TetrahedronSetTopologyAlgorithms name="TopoAlgo" />
-			<TetrahedronSetGeometryAlgorithms name="GeomAlgo" />
-
-			<MechanicalObject name="mstate" />
-
-			<TetrahedronFEMForceField />
+		exude="true"/>
+        <TetrahedronSetTopologyContainer name="Container"  points="@generator.outputPoints" tetras="@generator.outputTetras"/>
+        <TetrahedronSetTopologyModifier   name="Modifier" />
+        <TetrahedronSetTopologyAlgorithms name="TopoAlgo" />
+        <TetrahedronSetGeometryAlgorithms name="GeomAlgo" />
+        <MechanicalObject name="mstate" />
+        <TetrahedronFEMForceField />
 
 			<Node name="Triangles">
 						<TriangleSetTopologyContainer name="Container" />

@@ -23,6 +23,7 @@ class Animation(Sofa.Core.Controller):
     """
         Implements the AnimationManager as a PythonScriptController
     """
+
     def __init__(self, *args, **kwargs):
         Sofa.Core.Controller.__init__(self, *args, **kwargs)
         self.rigidBaseMO = args[0]
@@ -32,31 +33,45 @@ class Animation(Sofa.Core.Controller):
         self.angularRate = 0.02
         return
 
+    def _extracted_from_onKeypressedEvent_10(self, qOld, posA, angularRate):
+
+        qNew = Quat.createFromEuler([0., angularRate, 0.], 'ryxz')
+        qNew.normalize()
+        qNew.rotateFromQuat(qOld)
+        for i in range(4):
+            posA[0][i+3] = qNew[i]
+
     def onKeypressedEvent(self, event):
         key = event['key']
         if ord(key) == 19:  # up
             with self.rigidBaseMO.rest_position.writeable() as posA:
                 qOld = Quat()
-                for i in range(0, 4):
+                for i in range(4):
                     qOld[i] = posA[0][i+3]
 
-                qNew = Quat.createFromEuler([0., self.angularRate, 0.], 'ryxz')
-                qNew.normalize()
-                qNew.rotateFromQuat(qOld)
-                for i in range(0, 4):
-                    posA[0][i+3] = qNew[i]
+                self._extracted_from_onKeypressedEvent_10(
+                    self, qOld, posA, self.angularRate)
+                # qNew = Quat.createFromEuler([0., self.angularRate, 0.], 'ryxz')
+                # qNew.normalize()
+                # qNew.rotateFromQuat(qOld)
+                # for i in range(0, 4):
+                #     posA[0][i+3] = qNew[i]
 
         if ord(key) == 21:  # down
             with self.rigidBaseMO.rest_position.writeable() as posA:
                 qOld = Quat()
-                for i in range(0, 4):
+                for i in range(4):
                     qOld[i] = posA[0][i+3]
 
-                qNew = Quat.createFromEuler([0., -self.angularRate,  0.], 'ryxz')
-                qNew.normalize()
-                qNew.rotateFromQuat(qOld)
-                for i in range(0, 4):
-                    posA[0][i+3] = qNew[i]
+                self._extracted_from_onKeypressedEvent_10(
+                    qOld, posA, -self.angularRate)
+
+                # qNew = Quat.createFromEuler(
+                #     [0., -self.angularRate,  0.], 'ryxz')
+                # qNew.normalize()
+                # qNew.rotateFromQuat(qOld)
+                # for i in range(0, 4):
+                #     posA[0][i+3] = qNew[i]
 
         if ord(key) == 18:  # left
             with self.rigidBaseMO.rest_position.writeable() as posA:
@@ -73,12 +88,14 @@ def createScene(rootNode):
 
     MainHeader(rootNode, plugins=["SoftRobots", "SofaSparseSolver", 'SofaDeformable', 'SofaEngine',
                                   'SofaImplicitOdeSolver', 'SofaLoader', 'SofaSimpleFem', "SofaPreconditioner",
-                                  "SofaOpenglVisual", "CosseratPlugin", "BeamAdapter", "SofaConstraint"],
+                                  "SofaOpenglVisual", "CosseratPlugin", "SofaConstraint"],
                repositoryPaths=[os.getcwd()])
-    rootNode.addObject('VisualStyle', displayFlags='showVisualModels showInteractionForceFields showWireframe')
+    rootNode.addObject(
+        'VisualStyle', displayFlags='showVisualModels showInteractionForceFields showWireframe')
 
     rootNode.addObject('FreeMotionAnimationLoop')
-    rootNode.addObject('GenericConstraintSolver', tolerance="1e-20", maxIterations="500", printLog="0")
+    rootNode.addObject('GenericConstraintSolver',
+                       tolerance="1e-20", maxIterations="500", printLog="0")
     # ContactHeader(rootNode, alarmDistance=2.5, contactDistance=2, frictionCoef=0.08)
 
     gravity = [0, 0, 0]
@@ -90,13 +107,15 @@ def createScene(rootNode):
     # FEM Model                              #
     ##########################################
     finger = rootNode.addChild('finger')
-    finger.addObject('EulerImplicitSolver', name='odesolver', firstOrder='0', rayleighMass=0.1, rayleighStiffness=0.1)
+    finger.addObject('EulerImplicitSolver', name='odesolver',
+                     firstOrder='0', rayleighMass=0.1, rayleighStiffness=0.1)
     finger.addObject('SparseLDLSolver', name='preconditioner')
 
     # Add a componant to load a VTK tetrahedral mesh and expose the resulting topology in the scene .
     finger.addObject('MeshVTKLoader', name='loader', filename=path + 'finger.vtk', translation="-17.5 -12.5 7.5",
                      rotation="0 180 0")
-    finger.addObject('TetrahedronSetTopologyContainer', src='@loader', name='container')
+    finger.addObject('TetrahedronSetTopologyContainer',
+                     src='@loader', name='container')
     finger.addObject('TetrahedronSetTopologyModifier')
     # Create a mechanicaobject component to stores the DoFs of the model
     finger.addObject('MechanicalObject', name='tetras', template='Vec3d', showIndices='false', showIndicesScale='4e-5',
@@ -107,10 +126,12 @@ def createScene(rootNode):
     # solved using the Finite Element Method on
     # tetrahedrons.
     finger.addObject('TetrahedronFEMForceField', template='Vec3d',
-                        name='FEM', method='large', poissonRatio='0.45',  youngModulus='500')
+                     name='FEM', method='large', poissonRatio='0.45',  youngModulus='500')
 
-    finger.addObject('BoxROI', name='ROI1', box='-18 -15 -8 2 -3 8', drawBoxes='true')
-    finger.addObject('RestShapeSpringsForceField', points='@ROI1.indices', stiffness='1e12')
+    finger.addObject('BoxROI', name='ROI1',
+                     box='-18 -15 -8 2 -3 8', drawBoxes='true')
+    finger.addObject('RestShapeSpringsForceField',
+                     points='@ROI1.indices', stiffness='1e12')
 
     ##########################################
     # Cable points                           #
@@ -143,14 +164,16 @@ def createScene(rootNode):
     fingerVisu.addObject(
         'MeshSTLLoader', filename=path+"finger.stl", name="loader", translation="-17.5 -12.5 7.5",
         rotation="0 180 0")
-    fingerVisu.addObject('OglModel', src="@loader", template='ExtVec3f', color="0.0 0.7 0.7")
+    fingerVisu.addObject('OglModel', src="@loader",
+                         template='ExtVec3f', color="0.0 0.7 0.7")
     fingerVisu.addObject('BarycentricMapping')
 
     # ###############
     # New adds to use the sliding Actuator
     ###############
     cableNode = rootNode.addChild('cableNode')
-    cableNode.addObject('EulerImplicitSolver', firstOrder="0", rayleighStiffness="0.1", rayleighMass='0.1')
+    cableNode.addObject('EulerImplicitSolver', firstOrder="0",
+                        rayleighStiffness="0.1", rayleighMass='0.1')
     cableNode.addObject('SparseLUSolver', name='solver')
     cableNode.addObject('GenericConstraintCorrection')
 
@@ -167,7 +190,8 @@ def createScene(rootNode):
     ###############
     # Rate of angular Deformation  (2 sections)
     ###############
-    position = [[0., 0., 0.], [0., 0., 0.], [0., 0., 0.], [0., 0., 0.], [0., 0., 0.], [0., 0., 0.]]
+    position = [[0., 0., 0.], [0., 0., 0.], [0., 0., 0.],
+                [0., 0., 0.], [0., 0., 0.], [0., 0., 0.]]
     longeur = [15, 15, 15, 15, 6, 15]  # beams size
     rateAngularDeformNode = cableNode.addChild('rateAngularDeform')
     rateAngularDeformMO = rateAngularDeformNode.addObject('MechanicalObject', template='Vec3d',
@@ -207,15 +231,17 @@ def createScene(rootNode):
     #                              curv_abs_output=curv_abs_output, input1=inputMO, input2=inputMO_rigid,
     #                              output=outputMO, debug='0', max=2.e-3, deformationAxis=1)
     mappedFrameNode.addObject('DiscreteCosseratMapping', curv_abs_input=curv_abs_input,
-                                 curv_abs_output=curv_abs_output, input1=inputMO, input2=inputMO_rigid,
-                                 output=outputMO, debug='0', max=6.e-2, deformationAxis=1, nonColored="0", radius=5)
+                              curv_abs_output=curv_abs_output, input1=inputMO, input2=inputMO_rigid,
+                              output=outputMO, debug='0', max=6.e-2, deformationAxis=1, nonColored="0", radius=5)
 
     # actuators = mappedFrameNode.addObject('actuators')
     # actuator0 = actuators.addObject('SlidingActuator', name="SlidingActuator0", template='Rigid3d',
     #                                    direction='0 0 0 1 0 0', indices=1, maxForce='100000', minForce='-30000')
     cable_position = [[0.0, 0.0, 0.0], [5.0, 0.0, 0.0], [10.0, 0.0, 0.0], [15.0, 0.0, 0.0], [20.0, 0.0, 0.0],
-                      [30.0, 0.0, 0.0], [35.0, 0.0, 0.0], [40.0, 0.0, 0.0], [45.0, 0.0, 0.0],
-                      [55.0, 0.0, 0.0], [60.0, 0.0, 0.0], [66.0, 0.0, 0.0], [71.0, 0.0, 0.0], [76.0, 0.0, 0.0],
+                      [30.0, 0.0, 0.0], [35.0, 0.0, 0.0], [
+                          40.0, 0.0, 0.0], [45.0, 0.0, 0.0],
+                      [55.0, 0.0, 0.0], [60.0, 0.0, 0.0], [66.0, 0.0, 0.0], [
+                          71.0, 0.0, 0.0], [76.0, 0.0, 0.0],
                       [81.0, 0.0, 0.0]]
     #  This create a new node in the scene. This node is appended to the finger's node.
     slidingPoint = mappedFrameNode.addChild('slidingPoint')
@@ -224,14 +250,13 @@ def createScene(rootNode):
     # mechanical modelling. In the case of a cable it is a set of positions specifying
     # the points where the cable is passing by.
     slidingPointMO = slidingPoint.addObject('MechanicalObject', name="cablePos",
-                              position=cable_position, showObject="1", showIndices="0")
+                                            position=cable_position, showObject="1", showIndices="0")
     slidingPoint.addObject('IdentityMapping')
-
 
     mappedPointsNode = slidingPoint.addChild('MappedPoints')
     femPoints.addChild(mappedPointsNode)
     mappedPoints = mappedPointsNode.addObject('MechanicalObject', template='Vec3d', position=FEMpos,
-                                                 name="FramesMO", showObject='1', showObjectScale='1')
+                                              name="FramesMO", showObject='1', showObjectScale='1')
 
     inputCableMO = slidingPointMO.getLinkPath()
     inputFEMCableMO = inputFEMCable.getLinkPath()
@@ -239,8 +264,7 @@ def createScene(rootNode):
 
     mappedPointsNode.addObject('QPSlidingConstraint', name="QPConstraint")
     mappedPointsNode.addObject('DifferenceMultiMapping', name="pointsMulti", input1=inputFEMCableMO,
-                                  input2=inputCableMO, output=outputPointMO, direction="@../../FramesMO.position")
-    ## Get the tree mstate links for the mapping
-
+                               input2=inputCableMO, output=outputPointMO, direction="@../../FramesMO.position")
+    # Get the tree mstate links for the mapping
 
     return rootNode
