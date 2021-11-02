@@ -173,12 +173,15 @@ void BeamPlasticLawForceField<DataTypes>::computeStressIncrement(unsigned int se
     /// NB: we consider that the yield function and the plastic flow are equal (f=g). This
     /// corresponds to an associative flow rule (for plasticity).
 
-    const Mat33& C = m_genHookesLaw;
-
     //// First step = computation of the elastic predictor, as if deformation was entirely elastic
     const MechanicalState mechanicalState = m_sectionMechanicalStates[sectionId];
 
-    Vec3 elasticIncrement = C * strainIncrement;
+    Vec3 elasticIncrement = Vec3();
+    if (!this->d_varianteSections.getValue())
+        elasticIncrement = m_genHookesLaw * strainIncrement;
+    else
+        elasticIncrement = m_genHookesLawList[sectionId] * strainIncrement;
+
     Vec3 elasticPredictorStress = m_prevStress[sectionId] + elasticIncrement;
 
     const Vec3& backStress = m_backStress[sectionId];
@@ -259,17 +262,20 @@ void BeamPlasticLawForceField<DataTypes>::updateTangentStiffness(unsigned int se
 {
     Mat33 Kt = Mat33();
 
-    const Mat33& C = m_genHookesLaw;
+    // TO DO: better way to handle the two cases?
+    Mat33 C = Mat33();
     Real E, nu = 0;
     if (!this->d_varianteSections.getValue())
     {
         E = this->d_youngModulus.getValue();
         nu = this->d_poissonRatio.getValue();
+        C = m_genHookesLaw;
     }
     else
     {
         E = this->d_youngModulusList.getValue()[sectionId];
         nu = this->d_poissonRatioList.getValue()[sectionId];
+        C = m_genHookesLawList[sectionId];
     }
 
     Vec3 currentStressPoint = m_prevStress[sectionId]; //Updated in computeStressIncrement
