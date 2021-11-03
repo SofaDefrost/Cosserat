@@ -44,8 +44,8 @@ using sofa::type::vector;
 
 template <class TIn1, class TIn2, class TOut>
 BaseCosserat<TIn1, TIn2, TOut>::BaseCosserat()
-    : d_curv_abs_input( initData( &d_curv_abs_input, "curv_abs_input", " need to be com...."))
-    , d_curv_abs_output( initData( &d_curv_abs_output, "curv_abs_output", " need to be com...."))
+    : d_curv_abs_section(initData(&d_curv_abs_section, "curv_abs_input", " need to be com...."))
+    , d_curv_abs_frames(initData(&d_curv_abs_frames, "curv_abs_output", " need to be com...."))
     , d_debug( initData( &d_debug, true,"debug", "printf for the debug"))
     , m_fromModel1(NULL)
     , m_fromModel2(NULL)
@@ -99,7 +99,7 @@ void BaseCosserat<TIn1, TIn2, TOut>::computeExponentialSE3(const double & x, con
     Xi[0][3] = 1.0;
 
     if(d_debug.getValue())
-        msg_info("BaseCosserat: ")<< "matix Xi : "<< Xi;
+        msg_info("BaseCosserat: ")<< "matrix Xi : "<< Xi;
 
     if(theta <= std::numeric_limits<double>::epsilon()){
         g_X = I4 + x*Xi;
@@ -109,13 +109,11 @@ void BaseCosserat<TIn1, TIn2, TOut>::computeExponentialSE3(const double & x, con
         g_X = I4 + x*Xi + scalar1*Xi*Xi + scalar2*Xi*Xi*Xi ;
     }
 
-    //    msg_info("BaseCosserat: ")<< "matix g_X : "<< g_X;
-
+    //    msg_info("BaseCosserat: ")<< "matrix g_X : "<< g_X;
     type::Mat3x3 M;
     g_X.getsub(0,0,M);
 
-    //    msg_info("BaseCosserat: ")<< "Sub matix M : "<< g_X;
-
+    //    msg_info("BaseCosserat: ")<< "Sub matrix M : "<< g_X;
     defaulttype::Quat R; R.fromMatrix(M);
     Vector3 T = Vector3(g_X(0,3),g_X(1,3),g_X(2,3));
 
@@ -126,50 +124,50 @@ void BaseCosserat<TIn1, TIn2, TOut>::computeExponentialSE3(const double & x, con
 //Fill exponential vectors
 template <class TIn1, class TIn2, class TOut>
 void BaseCosserat<TIn1, TIn2, TOut>::update_ExponentialSE3(const In1VecCoord & inDeform){
-    //helper::ReadAccessor<Data<helper::vector<double>>> curv_abs_input = d_curv_abs_input;
-    helper::ReadAccessor<Data<type::vector<double>>> curv_abs_output = d_curv_abs_output;
+    //helper::ReadAccessor<Data<helper::vector<double>>> curv_abs_input = d_curv_abs_section;
+    helper::ReadAccessor<Data<type::vector<double>>> curv_abs_frames = d_curv_abs_frames;
     //m_index_input = 0;
 
-    m_ExponentialSE3Vectors.clear();
+    m_framesExponentialSE3Vectors.clear();
     m_nodesExponentialSE3Vectors.clear();
     m_nodesLogarithmeSE3Vectors.clear();
-    size_t sz = curv_abs_output.size();
+    const auto sz = curv_abs_frames.size();
 
     //Compute exponential at frame points
     for (size_t i = 0; i < sz; i++) {
         Transform T ;
 
-        Vector3 k = inDeform[m_indicesVectors[i]-1];
-        double  x = m_framesLenghtVectors[i];
+        const Vector3 k = inDeform[m_indicesVectors[i]-1];
+        const double x = m_framesLengthVectors[i];
         computeExponentialSE3(x,k,T);
-        m_ExponentialSE3Vectors.push_back(T);
+        m_framesExponentialSE3Vectors.push_back(T);
 
         if(d_debug.getValue()){
             msg_info("BaseCosserat:")<< "__________________________________________";
             msg_info("BaseCosserat:")<< "x :"<< x << "; k :"<< k;
-            msg_info("BaseCosserat:")<< "m_ExponentialSE3Vectors :"<< T;
+            msg_info("BaseCosserat:")<< "m_framesExponentialSE3Vectors :"<< T;
         }
     }
 
     //Compute the exponential at the nodes
     m_nodesExponentialSE3Vectors.push_back(Transform(Vector3(0.0,0.0,0.0),defaulttype::Quat(0,0,0,1)));
-    for (size_t j = 0; j < inDeform.size(); j++) {
+    for (auto j = 0; j < inDeform.size(); j++) {
         Vector3 k = inDeform[j];
-        double  x = m_beamLenghtVectors[j];
+        double  x = m_BeamLengthVectors[j];
         Transform T; computeExponentialSE3(x,k,T) ;
         m_nodesExponentialSE3Vectors.push_back(T);
 
         if(d_debug.getValue()){
             msg_info("BaseCosserat:")<< "_________________Beam Node Expo___________________"<<j;
-            msg_info("BaseCosserat:")<< "Node m_ExponentialSE3Vectors :"<< T;
+            msg_info("BaseCosserat:")<< "Node m_framesExponentialSE3Vectors :"<< T;
             msg_info("BaseCosserat:")<< "_________________Beam Node Expo___________________";
         }
         //////////////////
         //        Eigen::Matrix4d gX = convertTransformToMatrix4x4(T);
-        //        Eigen::Matrix4d log_gX= (1.0/x) * computeLogarithme(x, gX);
+        //        Eigen::Matrix4d log_gX= (1.0/x) * computeLogarithm(x, gX);
         //        std::cout << "k : \n"<< k << std::endl;
-        //        std::cout << "The logarithme : \n"<< log_gX << std::endl;
-        //        m_nodesLogarithmeSE3Vectors.push_back(log_gX);
+        //        std::cout << "The logarithm : \n"<< log_gX << std::endl;
+        //        m_nodesLogarithmSE3Vectors.push_back(log_gX);
     }
 }
 
@@ -180,9 +178,9 @@ void BaseCosserat<TIn1, TIn2, TOut>:: computeAdjoint(const Transform & frame, Ma
 {
     Matrix3 R = extract_rotMatrix(frame);
     Vector3 u = frame.getOrigin();
-    Matrix3 tild_u = getTildMatrix(u);
-    Matrix3 tild_u_R = tild_u*R;
-    buildaAdjoint(R, tild_u_R, adjoint);
+    Matrix3 tilde_u = getTildeMatrix(u);
+    Matrix3 tilde_u_R = tilde_u * R;
+    buildAdjoint(R, tilde_u_R, adjoint);
 }
 
 template <class TIn1, class TIn2, class TOut>
@@ -190,18 +188,18 @@ void BaseCosserat<TIn1, TIn2, TOut>:: compute_coAdjoint(const Transform & frame,
 {
     Matrix3 R = extract_rotMatrix(frame);
     Vector3 u = frame.getOrigin();
-    Matrix3 tild_u = getTildMatrix(u);
-    Matrix3 tild_u_R = tild_u*R;
-    build_coaAdjoint(R, tild_u_R, co_adjoint);
+    Matrix3 tilde_u = getTildeMatrix(u);
+    Matrix3 tilde_u_R = tilde_u * R;
+    build_coaAdjoint(R, tilde_u_R, co_adjoint);
 }
 
 template <class TIn1, class TIn2, class TOut>
 void BaseCosserat<TIn1, TIn2, TOut>::compute_adjointVec6(const Vec6& eta, Mat6x6 &adjoint)
 {
-    Matrix3 tildMat = getTildMatrix(Vector3(eta[0],eta[1],eta[2]));
-    adjoint.setsub(0,0,tildMat);
-    adjoint.setsub(3,3,tildMat);
-    adjoint.setsub(3,0,getTildMatrix(Vector3(eta[3],eta[4],eta[5])));
+    Matrix3 tildeMat = getTildeMatrix(Vector3(eta[0], eta[1], eta[2]));
+    adjoint.setsub(0, 0, tildeMat);
+    adjoint.setsub(3, 3, tildeMat);
+    adjoint.setsub(3, 0, getTildeMatrix(Vector3(eta[3], eta[4], eta[5])));
 }
 
 
@@ -209,22 +207,22 @@ void BaseCosserat<TIn1, TIn2, TOut>::compute_adjointVec6(const Vec6& eta, Mat6x6
 template <class TIn1, class TIn2, class TOut>
 void BaseCosserat<TIn1, TIn2, TOut>::compute_Tang_Exp(double & x, const type::Vector3& k, Mat6x6 & TgX){
     double theta = k.norm();
-    Matrix3 tild_p = getTildMatrix(Vector3(1.0,0.0,0.0));
-    Matrix3 tild_k = getTildMatrix(k);
+    Matrix3 tilde_p = getTildeMatrix(Vector3(1.0, 0.0, 0.0));
+    Matrix3 tilde_k = getTildeMatrix(k);
 
     Mat6x6 ad_Xi ;
-    buildaAdjoint(tild_k,tild_p, ad_Xi);
+    buildAdjoint(tilde_k, tilde_p, ad_Xi);
 
-    Mat6x6 Id6;
-    for (unsigned int i =0; i< 6;i++) Id6[i][i]=1.0; //define identity 6x6
+    Mat6x6 Id6 = Mat6x6::Identity() ;
+    //    for (unsigned int i =0; i< 6;i++) Id6[i][i]=1.0; //define identity 6x6
 
     if(theta <= std::numeric_limits<double>::epsilon()){
         double scalar0 = x*x/2.0;
         TgX = x*Id6 + scalar0 * ad_Xi;
     }else {
-        double scalar1= (4.0 -4.0*cos(x*theta)-x*theta*sin(x*theta))/(2.0*theta*theta);
+        double scalar1 = (4.0 -4.0*cos(x*theta)-x*theta*sin(x*theta))/(2.0*theta*theta);
         double scalar2 = (4.0*x*theta + x*theta*cos(x*theta)-5.0*sin(x*theta))/(2.0*theta*theta*theta);
-        double scalar3= (2.0 -2.0*cos(x*theta)-x*theta*sin(x*theta))/(2.0*theta*theta*theta*theta);
+        double scalar3 = (2.0 -2.0*cos(x*theta)-x*theta*sin(x*theta))/(2.0*theta*theta*theta*theta);
         double scalar4 = (2.0*x*theta + x*theta*cos(x*theta)-3.0*sin(x*theta))/(2.0*theta*theta*theta*theta*theta);
 
         TgX = x*Id6 + scalar1*ad_Xi + scalar2*ad_Xi*ad_Xi + scalar3*ad_Xi*ad_Xi*ad_Xi + scalar4*ad_Xi*ad_Xi*ad_Xi*ad_Xi ;
@@ -233,7 +231,7 @@ void BaseCosserat<TIn1, TIn2, TOut>::compute_Tang_Exp(double & x, const type::Ve
 
 
 template <class TIn1, class TIn2, class TOut>
-Matrix4 BaseCosserat<TIn1, TIn2, TOut>::computeLogarithme(const double & x, const Mat4x4 &gX){
+Matrix4 BaseCosserat<TIn1, TIn2, TOut>::computeLogarithm(const double & x, const Mat4x4 &gX){
 
     // Compute theta before everything
     const double theta = computeTheta(x, gX);
@@ -245,24 +243,24 @@ Matrix4 BaseCosserat<TIn1, TIn2, TOut>::computeLogarithme(const double & x, cons
     double sec_theta = 1.0/(cos(x * theta/2.0));
     double cst = (1.0/8) * (csc_theta*csc_theta*csc_theta) * sec_theta;
     double x_theta = x*theta;
-    double cos_2Xtheta = cos(2.0 * x_theta);
-    double cos_Xtheta = cos(x_theta);
-    double sin_2Xtheta = sin(2.0 *x_theta);
-    double sin_Xtheta = sin(x_theta);
+    double cos_2XTheta = cos(2.0 * x_theta);
+    double cos_XTheta = cos(x_theta);
+    double sin_2XTheta = sin(2.0 * x_theta);
+    double sin_XTheta = sin(x_theta);
 
     if(theta <= std::numeric_limits<double>::epsilon()) log_gX = I4;
     else {
-        log_gX  = cst * ((x_theta*cos_2Xtheta - sin_Xtheta)*I4 -
-                         (x_theta*cos_Xtheta + 2.0*x_theta*cos_2Xtheta - sin_Xtheta -sin_2Xtheta)*gX +
-                         (2.0*x_theta*cos_Xtheta + x_theta*cos_2Xtheta-sin_Xtheta - sin_2Xtheta) *(gX*gX)-
-                         (x_theta*cos_Xtheta - sin_Xtheta)*(gX*gX*gX));
+        log_gX  = cst * ((x_theta * cos_2XTheta - sin_XTheta) * I4 -
+                         (x_theta * cos_XTheta + 2.0 * x_theta * cos_2XTheta - sin_XTheta - sin_2XTheta) * gX +
+                         (2.0 * x_theta * cos_XTheta + x_theta * cos_2XTheta - sin_XTheta - sin_2XTheta) * (gX * gX) -
+                         (x_theta * cos_XTheta - sin_XTheta) * (gX * gX * gX));
     }
 
     return log_gX;
 }
 
 //template<class In1VecCoord, class Mat6x6>
-//void computeViolation(In1VecCoord& inDeform, const helper::vector<double> m_framesLenghtVectors, const
+//void computeViolation(In1VecCoord& inDeform, const helper::vector<double> m_framesLengthVectors, const
 //                       size_t sz, std::function<double(int i, int j)> f)
 //{
 
@@ -271,7 +269,7 @@ Matrix4 BaseCosserat<TIn1, TIn2, TOut>::computeLogarithme(const double & x, cons
 //        Mat6x6 temp ;
 
 //        Vector3 k = inDeform[m_indicesVectors[i]-1];
-//        double  x = m_framesLenghtVectors[i];
+//        double  x = m_framesLengthVectors[i];
 //        compute_Tang_Exp(x,k,temp) ;
 //        m_framesTangExpVectors.push_back(temp);
 
@@ -286,16 +284,16 @@ Matrix4 BaseCosserat<TIn1, TIn2, TOut>::computeLogarithme(const double & x, cons
 
 template <class TIn1, class TIn2, class TOut>
 void BaseCosserat<TIn1, TIn2, TOut>::update_TangExpSE3(const In1VecCoord & inDeform, const type::vector<double>
-        &curv_abs_input , const type::vector<double> &curv_abs_output ){
+        &curv_abs_section , const type::vector<double> &curv_abs_frames ){
 
     m_framesTangExpVectors.clear();
-    size_t sz = curv_abs_output.size();
+    auto sz = curv_abs_frames.size();
     //Compute tangExpo at frame points
-    for (size_t i = 0; i < sz; i++) {
+    for (auto i = 0; i < sz; i++) {
         Mat6x6 temp ;
 
         Vector3 k = inDeform[m_indicesVectors[i]-1];
-        double  x = m_framesLenghtVectors[i];
+        double  x = m_framesLengthVectors[i];
         compute_Tang_Exp(x,k,temp) ;
         m_framesTangExpVectors.push_back(temp);
 
@@ -311,9 +309,9 @@ void BaseCosserat<TIn1, TIn2, TOut>::update_TangExpSE3(const In1VecCoord & inDef
     Mat6x6 tangExpO; tangExpO.clear();
     m_nodesTangExpVectors.push_back(tangExpO);
 
-    for (size_t j = 1; j < curv_abs_input.size(); j++) {
+    for (size_t j = 1; j < curv_abs_section.size(); j++) {
         Vector3 k = inDeform[j-1];
-        double  x = m_beamLenghtVectors[j-1];
+        double  x = m_BeamLengthVectors[j - 1];
         Mat6x6 temp; temp.clear();
         compute_Tang_Exp(x,k,temp);
         m_nodesTangExpVectors.push_back(temp);
@@ -332,8 +330,8 @@ template <class TIn1, class TIn2, class TOut>
     const In1DataVecCoord* x1fromData = m_fromModel1->read(core::ConstVecCoordId::position());
     const In1VecCoord x1from = x1fromData->getValue();
 
-    helper::ReadAccessor<Data<type::vector<double>>> curv_abs_input = d_curv_abs_input;
-    //helper::ReadAccessor<Data<helper::vector<double>>> curv_abs_output = d_curv_abs_output;
+    helper::ReadAccessor<Data<type::vector<double>>> curv_abs_input = d_curv_abs_section;
+    //helper::ReadAccessor<Data<helper::vector<double>>> curv_abs_output = d_curv_abs_frames;
 
     Transform out_Trans;
     Mat6x6 Adjoint, Tg;
@@ -369,51 +367,51 @@ template <class TIn1, class TIn2, class TOut>
 void BaseCosserat<TIn1, TIn2, TOut>::initialize()
 {
     //find the beam on which each output frame is located
-    helper::ReadAccessor<Data<type::vector< double>>> curv_abs_input = d_curv_abs_input;
-    helper::ReadAccessor<Data<type::vector<double>>> curv_abs_output = d_curv_abs_output;
+    helper::ReadAccessor<Data<type::vector< double>>> curv_abs_section = d_curv_abs_section;
+    helper::ReadAccessor<Data<type::vector<double>>> curv_abs_frames = d_curv_abs_frames;
 
-    size_t sz = d_curv_abs_output.getValue().size();
+    size_t sz = d_curv_abs_frames.getValue().size();
 
     if(d_debug.getValue())
-        msg_info("BaseCosserat:") << " curv_abs_input "<< d_curv_abs_output.getValue().size()
-        << "; curv_abs_output: "<< d_curv_abs_output.getValue().size();
+        msg_info("BaseCosserat:") << " curv_abs_section " << d_curv_abs_frames.getValue().size()
+                                  << "; curv_abs_frames: " << d_curv_abs_frames.getValue().size();
 
     m_indicesVectors.clear();
-    m_framesLenghtVectors.clear();
-    m_beamLenghtVectors.clear();
+    m_framesLengthVectors.clear();
+    m_BeamLengthVectors.clear();
 
     m_indicesVectorsDraw.clear();
 
     size_t input_index = 1;
 
     for (size_t i=0; i < sz; i++) {
-        if (curv_abs_input[input_index] > curv_abs_output[i]) {
+        if (curv_abs_section[input_index] > curv_abs_frames[i]) {
             m_indicesVectors.push_back(input_index);
             m_indicesVectorsDraw.push_back(input_index);
         }
-        else if(curv_abs_input[input_index] == curv_abs_output[i]){
+        else if(curv_abs_section[input_index] == curv_abs_frames[i]){
             m_indicesVectors.push_back(input_index);
             input_index++;
             m_indicesVectorsDraw.push_back(input_index);
         }
         else {
-            m_indicesVectors.push_back(input_index+1);
-            m_indicesVectorsDraw.push_back(input_index+1);
             input_index++;
+            m_indicesVectors.push_back(input_index);
+            m_indicesVectorsDraw.push_back(input_index);
         }
-        //Fill the vector m_framesLenghtVectors with the distance
+        //Fill the vector m_framesLengthVectors with the distance
         //between frame(output) and the closest beam node toward the base
-        m_framesLenghtVectors.push_back(curv_abs_output[i] - curv_abs_input[m_indicesVectors[i]-1]);
+        m_framesLengthVectors.push_back(curv_abs_frames[i] - curv_abs_section[m_indicesVectors[i] - 1]);
     }
 
-    for (size_t j = 0; j < curv_abs_input.size()-1; j++) {
-        m_beamLenghtVectors.push_back(curv_abs_input[j+1] - curv_abs_input[j]);
+    for (size_t j = 0; j < curv_abs_section.size() - 1; j++) {
+        m_BeamLengthVectors.push_back(curv_abs_section[j + 1] - curv_abs_section[j]);
     }
 
     if(d_debug.getValue()){
         msg_info("BaseCosserat:") << "m_indicesVectors : "<< m_indicesVectors ;
-        msg_info("BaseCosserat:") << "m_framesLenghtVectors : "<< m_framesLenghtVectors ;
-        msg_info("BaseCosserat:") << "m_beamLenghtVectors : "<< m_beamLenghtVectors ;
+        msg_info("BaseCosserat:") << "m_framesLengthVectors : " << m_framesLengthVectors ;
+        msg_info("BaseCosserat:") << "m_BeamLengthVectors : " << m_BeamLengthVectors ;
     }
 }
 
