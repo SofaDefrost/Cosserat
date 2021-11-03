@@ -101,8 +101,8 @@ public:
     typedef typename SolidTypes<Real>::Transform      Transform ;
 
 protected:
-    Data<type::vector<double>>      d_curv_abs_input ;
-    Data<type::vector<double>>      d_curv_abs_output ;
+    Data<type::vector<double>>      d_curv_abs_section ;
+    Data<type::vector<double>>      d_curv_abs_frames ;
     Data<bool>                        d_debug ;
 
     /// Input Models container. New inputs are added through addInputModel(In* ).
@@ -115,26 +115,27 @@ public:
     unsigned int m_index_input;
     OutVecCoord m_vecTransform ;
 
-    type::vector<Transform> m_ExponentialSE3Vectors;
+    type::vector<Transform> m_framesExponentialSE3Vectors;
     type::vector<Transform> m_nodesExponentialSE3Vectors;
     type::vector<Matrix4> m_nodesLogarithmeSE3Vectors;
 
+    // @todo comment or explain more vectors
     type::vector<unsigned int> m_indicesVectors;
     type::vector<unsigned int> m_indicesVectorsDraw;
 
-    type::vector<double> m_beamLenghtVectors;
-    type::vector<double> m_framesLenghtVectors;
+    type::vector<double> m_BeamLengthVectors;
+    type::vector<double> m_framesLengthVectors;
 
     type::vector<Vec6>   m_nodesVelocityVectors;
     type::vector<Mat6x6> m_nodesTangExpVectors;
     type::vector<Mat6x6> m_framesTangExpVectors;
     type::vector<Vec6>   m_totalBeamForceVectors;
 
-    type::vector<Mat6x6> m_nodeAjointVectors;
-    [[maybe_unused]] type::vector<Mat6x6> m_nodeAjointEtaVectors;
-    [[maybe_unused]] type::vector<Mat6x6> m_frameAjointEtaVectors;
-    [[maybe_unused]] type::vector<Mat6x6> m_node_coAjointEtaVectors;
-    [[maybe_unused]] type::vector<Mat6x6> m_frame_coAjointEtaVectors;
+    type::vector<Mat6x6> m_nodeAdjointVectors;
+    [[maybe_unused]] type::vector<Mat6x6> m_nodeAdjointEtaVectors;
+    [[maybe_unused]] type::vector<Mat6x6> m_frameAdjointEtaVectors;
+    [[maybe_unused]] type::vector<Mat6x6> m_node_coAdjointEtaVectors;
+    [[maybe_unused]] type::vector<Mat6x6> m_frame_coAdjointEtaVectors;
 
 
 protected:
@@ -159,11 +160,11 @@ protected:
     void compute_adjointVec6(const Vec6 & frame, Mat6x6 &adjoint);
 
     void update_ExponentialSE3(const In1VecCoord & inDeform);
-    void update_TangExpSE3(const In1VecCoord & inDeform, const type::vector<double> &curv_abs_input , const type::vector<double> &curv_abs_output );
+    void update_TangExpSE3(const In1VecCoord & inDeform, const type::vector<double> &curv_abs_section , const type::vector<double> &curv_abs_frames );
     void compute_Tang_Exp(double & x, const Vector3& k, Mat6x6 & TgX);
 
     [[maybe_unused]] type::Vec6 compute_eta(const Vec6 & baseEta, const In1VecDeriv & k_dot, double abs_input);
-    type::Matrix4 computeLogarithme(const double & x, const Mat4x4 &gX);
+    type::Matrix4 computeLogarithm(const double & x, const Mat4x4 &gX);
     double computeTheta(const double &x, const Mat4x4 &gX){
         double Tr_gx = 0.0;
         for (int i = 0; i<4; i++) {
@@ -215,7 +216,7 @@ public:
         return  P;
     }
 
-    Matrix3 getTildMatrix(const Vector3 & u){
+    Matrix3 getTildeMatrix(const Vector3 & u){
         type::Matrix3 tild;
         tild[0][1] = -u[2];
         tild[0][2] = u[1];
@@ -227,7 +228,7 @@ public:
         return  tild;
     }
 
-    void buildaAdjoint(const Matrix3 &A, const Matrix3 & B, Mat6x6 & Adjoint){
+    void buildAdjoint(const Matrix3 &A, const Matrix3 & B, Mat6x6 & Adjoint){
 
         Adjoint.clear();
         for (unsigned int i = 0; i < 3; i++) {

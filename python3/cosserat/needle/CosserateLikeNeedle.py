@@ -4,6 +4,8 @@
 Based on the work done with SofaPython. See POEMapping.py
 """
 
+from splib3.numerics import Quat
+from createFemRegularGrid import createFemCube
 __authors__ = "younesssss"
 __contact__ = "adagolodjo@protonmail.com, yinoussa.adagolodjo@inria.fr"
 __version__ = "1.0.0"
@@ -14,9 +16,7 @@ import Sofa
 import os
 import sys
 sys.path.append('../')
-from createFemRegularGrid import createFemCube
 
-from splib3.numerics import Quat
 # from stlib3.physics.collision import CollisionMesh
 
 path = os.path.dirname(os.path.abspath(__file__))+'/../mesh/'
@@ -52,21 +52,22 @@ class Animation(Sofa.Core.Controller):
         if key == "+":  # up
             with self.rigidBaseMO.rest_position.writeable() as posA:
                 qOld = Quat()
-                for i in range(0, 4):
+                for i in range(4):
                     qOld[i] = posA[0][i+3]
                 qNew = Quat.createFromEuler([0., self.angularRate, 0.], 'ryxz')
                 qNew.normalize()
                 qNew.rotateFromQuat(qOld)
-                for i in range(0, 4):
+                for i in range(4):
                     posA[0][i+3] = qNew[i]
 
         if key == "-":  # down
             with self.rigidBaseMO.rest_position.writeable() as posA:
                 qOld = Quat()
-                for i in range(0, 4):
+                for i in range(4):
                     qOld[i] = posA[0][i+3]
 
-                qNew = Quat.createFromEuler([0., -self.angularRate,  0.], 'ryxz')
+                qNew = Quat.createFromEuler(
+                    [0., -self.angularRate,  0.], 'ryxz')
                 qNew.normalize()
                 qNew.rotateFromQuat(qOld)
                 for i in range(0, 4):
@@ -89,15 +90,15 @@ class Animation(Sofa.Core.Controller):
                 posA[0][1] += self.rate
 
 
-
-
 def createScene(rootNode):
-    rootNode.addObject('RequiredPlugin', pluginName=pluginNameList, printLog='0')
-    
+    rootNode.addObject(
+        'RequiredPlugin', pluginName=pluginNameList, printLog='0')
+
     rootNode.addObject('VisualStyle', displayFlags='showBehaviorModels hideCollisionModels hideBoundingCollisionModels '
                                                    'showForceFields hideInteractionForceFields showWireframe')
     rootNode.addObject('FreeMotionAnimationLoop')
-    rootNode.addObject('GenericConstraintSolver', tolerance="1e-20", maxIterations="500", printLog="0")
+    rootNode.addObject('GenericConstraintSolver',
+                       tolerance="1e-20", maxIterations="500", printLog="0")
 
     gravity = [0, 0, 0]
     rootNode.gravity.value = gravity
@@ -107,7 +108,8 @@ def createScene(rootNode):
     # New adds to use the sliding Actuator
     ###############
     cableNode = rootNode.addChild('cableNode')
-    cableNode.addObject('EulerImplicitSolver', firstOrder="0", rayleighStiffness="0.1", rayleighMass='0.1')
+    cableNode.addObject('EulerImplicitSolver', firstOrder="0",
+                        rayleighStiffness="0.1", rayleighMass='0.1')
     cableNode.addObject('SparseLUSolver', name='solver')
     cableNode.addObject('GenericConstraintCorrection')
 
@@ -194,20 +196,22 @@ def createScene(rootNode):
     cubeNode = createFemCube(rootNode)
     gelNode = cubeNode.getChild('gelNode')
     femPoints = gelNode.addChild('femPoints')
-    inputFEMCable = femPoints.addObject('MechanicalObject', name="pointsInFEM", position=femPos, showIndices="1")
+    inputFEMCable = femPoints.addObject(
+        'MechanicalObject', name="pointsInFEM", position=femPos, showIndices="1")
     femPoints.addObject('BarycentricMapping')
 
     mappedPointsNode = slidingPoint.addChild('MappedPoints')
     femPoints.addChild(mappedPointsNode)
-    mappedPoints = mappedPointsNode.addObject('MechanicalObject', template='Vec3d', position=femPos, name="FramesMO")
+    mappedPoints = mappedPointsNode.addObject(
+        'MechanicalObject', template='Vec3d', position=femPos, name="FramesMO")
 
     inputCableMO = slidingPointMO.getLinkPath()
     inputFEMCableMO = inputFEMCable.getLinkPath()
     outputPointMO = mappedPoints.getLinkPath()
 
-    mappedPointsNode.addObject('CosseratNeedleSlidingConstraint', name="QPConstraint")
+    mappedPointsNode.addObject(
+        'CosseratNeedleSlidingConstraint', name="QPConstraint")
     mappedPointsNode.addObject('DifferenceMultiMapping', name="pointsMulti", input1=inputFEMCableMO, lastPointIsFixed=0,
                                input2=inputCableMO, output=outputPointMO, direction="@../../FramesMO.position")
 
     return rootNode
-

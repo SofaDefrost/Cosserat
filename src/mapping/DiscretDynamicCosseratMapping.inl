@@ -82,7 +82,7 @@ void DiscretDynamicCosseratMapping<TIn1, TIn2, TOut>::init()
 	// Fill the initial vector
 	const OutDataVecCoord* xfromData = m_toModel->read(core::ConstVecCoordId::position());
 	const OutVecCoord xfrom = xfromData->getValue();
-	//    WriteAccessor<Data < helper::vector<double>>> curv_abs_output = d_curv_abs_output;
+	//    WriteAccessor<Data < helper::vector<double>>> curv_abs_output = d_curv_abs_frames;
 	//    curv_abs_output.clear();
 
 	m_vecTransform.clear();
@@ -132,12 +132,12 @@ void DiscretDynamicCosseratMapping<TIn1, TIn2, TOut>::apply(
 	const In1VecCoord& in1 = dataVecIn1Pos[0]->getValue();
 	const In2VecCoord& in2 = dataVecIn2Pos[0]->getValue();
 
-	size_t sz = d_curv_abs_output.getValue().size();
+	size_t sz = d_curv_abs_frames.getValue().size();
 	OutVecCoord& out = *dataVecOutPos[0]->beginEdit();
 	out.resize(sz);
 
 	//update the Exponential Matrices according to new deformation
-	this->update_ExponentialSE3(in1); // ==> update m_ExponentialSE3Vectors & m_nodesExponentialSE3Vectors
+	this->update_ExponentialSE3(in1); // ==> update m_framesExponentialSE3Vectors & m_nodesExponentialSE3Vectors
 
 	Transform frame0 = Transform(In2::getCPos(in2[0]),In2::getCRot(in2[0]));
 	for(unsigned int i=0; i<sz; i++){
@@ -145,7 +145,7 @@ void DiscretDynamicCosseratMapping<TIn1, TIn2, TOut>::apply(
 		for (unsigned int u = 0; u < m_indicesVectors[i]; u++) {
 			frame *= m_nodesExponentialSE3Vectors[u];
 		}
-		frame *= m_ExponentialSE3Vectors[i];
+		frame *= m_framesExponentialSE3Vectors[i];
 
 		Vector3 v = frame.getOrigin();
 		defaulttype::Quat q = frame.getOrientation();
@@ -172,8 +172,8 @@ void DiscretDynamicCosseratMapping<TIn1, TIn2, TOut>:: applyJ(
 	OutVecDeriv& outVel = *dataVecOutVel[0]->beginEdit();
 
 
-	helper::ReadAccessor<Data<type::vector<double>>> curv_abs_input  = d_curv_abs_input; // This is the vector of X in the paper
-	helper::ReadAccessor<Data<type::vector<double>>> curv_abs_output = d_curv_abs_output;
+	helper::ReadAccessor<Data<type::vector<double>>> curv_abs_input  = d_curv_abs_section; // This is the vector of X in the paper
+	helper::ReadAccessor<Data<type::vector<double>>> curv_abs_output = d_curv_abs_frames;
 	helper::ReadAccessor<Data<bool>> debug = d_debug;
 	m_frameJacobienVector.clear();
 	m_frameJacobienDotVector.clear();
@@ -196,7 +196,7 @@ void DiscretDynamicCosseratMapping<TIn1, TIn2, TOut>:: applyJ(
 	const In2VecCoord& xfrom2Data = m_fromModel2->read(core::ConstVecCoordId::position())->getValue();
 	Transform Tinverse = Transform(xfrom2Data[0].getCenter(),xfrom2Data[0].getOrientation()).inversed();
 	Mat6x6 P = this->build_projector(Tinverse);
-	m_nodeAjointVectors.clear();
+	m_nodeAdjointVectors.clear();
 
     type::Vec6 baseLocalVelocity = P * baseVelocity;
 	m_nodesVelocityVectors.push_back(baseLocalVelocity);
@@ -208,7 +208,7 @@ void DiscretDynamicCosseratMapping<TIn1, TIn2, TOut>:: applyJ(
 		Transform t= m_nodesExponentialSE3Vectors[i].inversed();
 		Mat6x6 Adjoint; Adjoint.clear();
 		this->computeAdjoint(t,Adjoint);
-		m_nodeAjointVectors.push_back(Adjoint); //Add this line because need for the jacobian computation
+		m_nodeAdjointVectors.push_back(Adjoint); //Add this line because need for the jacobian computation
 
 		//Compute velocity (eta) at node i != 0 eq.(13) paper
         type::Vec6 Xi_dot = Vec6(in1[i-1],Vector3(0.0,0.0,0.0)) ;
@@ -222,7 +222,7 @@ void DiscretDynamicCosseratMapping<TIn1, TIn2, TOut>:: applyJ(
 	size_t sz =curv_abs_output.size();
 	outVel.resize(sz);
 	for (size_t i = 0 ; i < sz; i++) {
-		Transform t= m_ExponentialSE3Vectors[i].inversed();
+		Transform t= m_framesExponentialSE3Vectors[i].inversed();
 		Mat6x6 Adjoint; Adjoint.clear();
 		this->computeAdjoint(t,Adjoint);
 
@@ -254,7 +254,7 @@ template <class TIn1, class TIn2, class TOut>
 void DiscretDynamicCosseratMapping<TIn1, TIn2, TOut>::computeJ_Jdot_i(const Mat6x6 &Adjoint, size_t frameId,
                                                                       type::vector<Mat6x3> &J_i, const Vec6& etaFrame,
                                                                       type::vector<Mat6x3> &J_dot_i){
-	size_t sz = d_curv_abs_input.getValue().size();
+	size_t sz = d_curv_abs_section.getValue().size();
 	Mat6x3 Si;
 	Mat6x6 M;
 
@@ -272,7 +272,7 @@ void DiscretDynamicCosseratMapping<TIn1, TIn2, TOut>::computeJ_Jdot_i(const Mat6
 		//std::cout << "frame : "<< frameId << " ==> section :" << i << " ==> u :"<< u << std::endl;
 		if(i < u ){
 			for (int j = u; j>0; j--) {
-				M = M * m_nodeAjointVectors[j] ;
+				M = M * m_nodeAdjointVectors[j] ;
 			}
 			//std::cout << "this->m_nodesTangExpVectors[u] : "<< this->m_nodesTangExpVectors[u]<< std::endl;
 			Mat6x6 temp = M * m_nodesTangExpVectors[u];
@@ -363,7 +363,7 @@ void DiscretDynamicCosseratMapping<TIn1, TIn2, TOut>:: applyJT(
 	for (unsigned int s = sz ; s-- ; ) {
 		Mat6x6 coAdjoint;
 		//
-		this->compute_coAdjoint(m_ExponentialSE3Vectors[s],coAdjoint);  // m_ExponentialSE3Vectors[s] computed in apply
+		this->compute_coAdjoint(m_framesExponentialSE3Vectors[s], coAdjoint);  // m_framesExponentialSE3Vectors[s] computed in apply
 		Vec6 node_F_Vec = coAdjoint * local_F_Vec[s];
 		Mat6x6 temp = m_framesTangExpVectors[s];   // m_framesTangExpVectors[s] computed in applyJ (here we transpose)
 		temp.transpose();
@@ -472,7 +472,7 @@ void DiscretDynamicCosseratMapping<TIn1, TIn2, TOut>::applyJT(
 			P_trans.transpose();
 
 			Mat6x6 coAdjoint;
-			this->compute_coAdjoint(m_ExponentialSE3Vectors[childIndex],coAdjoint);  // m_ExponentialSE3Vectors[s] computed in apply
+			this->compute_coAdjoint(m_framesExponentialSE3Vectors[childIndex], coAdjoint);  // m_framesExponentialSE3Vectors[s] computed in apply
 			Mat6x6 temp = m_framesTangExpVectors[childIndex];   // m_framesTangExpVectors[s] computed in applyJ (here we transpose)
 			temp.transpose();
 
