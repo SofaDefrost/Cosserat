@@ -70,7 +70,6 @@ class PythonController(Sofa.Core.Controller):
 def createScene(rootNode):
 
     rootNode.addObject('RequiredPlugin', name='SoftRobots')
-    rootNode.addObject('RequiredPlugin', name='BeamAdapter')
     rootNode.addObject('RequiredPlugin', name='SofaBoundaryCondition')
     rootNode.addObject('RequiredPlugin', name='SofaPython3')
     rootNode.addObject('RequiredPlugin', name='SofaSparseSolver')
@@ -133,7 +132,7 @@ def createScene(rootNode):
 
     cableNode = rootNode.addChild('cableNode')
     cableNode.addObject('EulerImplicitSolver', rayleighStiffness="1.2", rayleighMass='1.1')
-    cableNode.addObject('SparseLDLSolver', name='solver', template="CompressedRowSparseMatrixdouble")
+    cableNode.addObject('SparseLDLSolver', name='solver', template="CompressedRowSparseMatrixd")
     cableNode.addObject('GenericConstraintCorrection')
 
     rigidBaseNode= cableNode.addChild('rigidBase')
@@ -243,7 +242,7 @@ def createScene(rootNode):
 
     elaCableNode = rootNode.addChild('elaCableNode')
     elaCableNode.addObject('EulerImplicitSolver', rayleighStiffness="1.2", rayleighMass='1.1')
-    elaCableNode.addObject('SparseLDLSolver', name='solver', template="CompressedRowSparseMatrixdouble")
+    elaCableNode.addObject('SparseLDLSolver', name='solver', template="CompressedRowSparseMatrixd")
     elaCableNode.addObject('GenericConstraintCorrection')
 
     rigidBaseNode= elaCableNode.addChild('rigidBase')

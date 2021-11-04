@@ -104,7 +104,7 @@ def createScene(rootNode):
     cosseratBeamNode = rootNode.addChild('cosseratBeamNode')
     cosseratBeamNode.addObject('EulerImplicitSolver', printLog="false", rayleighStiffness="0.043",
                                 rayleighMass="0.01")
-    cosseratBeamNode.addObject('SparseLDLSolver', name='solverImplant', template='CompressedRowSparseMatrixdouble')
+    cosseratBeamNode.addObject('SparseLDLSolver', name='solverImplant', template='CompressedRowSparseMatrixd')
     cosseratBeamNode.addObject('GenericConstraintCorrection')
 
     # -------------------------------------#
@@ -185,7 +185,7 @@ def createScene(rootNode):
                           rayleighStiffness="0.1")
     anatomyNode.addObject('ShewchukPCGLinearSolver', name='linearSolver', iterations='500', tolerance='1.0e-8',
                           preconditioners="precond")
-    anatomyNode.addObject('SparseLDLSolver', name='precond', template='CompressedRowSparseMatrixMat3x3double,')
+    anatomyNode.addObject('SparseLDLSolver', name='precond', template='CompressedRowSparseMatrixMat3x3d,')
     anatomyNode.addObject('MeshTopology', src='@../anatomyRefNode/loader')
     anatomyNode.addObject('MechanicalObject', name='anatomyDoFs', template='Vec3d', showIndices='false',
                           showIndicesScale='4e-5', rx='0', printLog="0", position="@../anatomyRefNode/loader.position")

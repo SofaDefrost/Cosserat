@@ -125,7 +125,7 @@ def createScene(rootNode):
 
     cableNode = rootNode.addChild('cableNode')
     cableNode.addObject('EulerImplicitSolver', rayleighStiffness="1.2", rayleighMass='1.1')
-    cableNode.addObject('SparseLDLSolver', name='solver', template="CompressedRowSparseMatrixdouble")
+    cableNode.addObject('SparseLDLSolver', name='solver', template="CompressedRowSparseMatrixd")
     cableNode.addObject('GenericConstraintCorrection')
 
     rigidBaseNode= cableNode.addChild('rigidBase')
