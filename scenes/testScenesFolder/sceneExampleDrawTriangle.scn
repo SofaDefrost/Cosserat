@@ -1,0 +1,219 @@
+<?xml version="1.0"?>
+
+<Node name="root" dt="0.01" gravity="0 0 0" >
+        <RequiredPlugin pluginName="ConectToRobotPlugin" />
+        <RequiredPlugin pluginName="ConstraintGeometryPlugin" />
+        <RequiredPlugin pluginName="NeedleConstraintPlugin" />
+        <RequiredPlugin pluginName="InverseSimuPlugin" />
+        <RequiredPlugin pluginName="ConectToOptiTrack" />
+        <RequiredPlugin pluginName="ConectPlugin" />
+        <RequiredPlugin pluginName="SofaCUDA" />
+        <RequiredPlugin pluginName="SofaCUDADev" />
+        <RequiredPlugin pluginName="SofaAsyncSolvers" />
+        <RequiredPlugin pluginName="SofaCUDASolvers" />
+        <RequiredPlugin pluginName="RegistrationConstraintPlugin" />
+        <RequiredPlugin pluginName="OpenCVPlugin" />
+        <RequiredPlugin pluginName="BoundaryConditionsPlugin" />
+
+        <VisualStyle displayFlags="showVisualModels hideBehaviorModels hideCollisionModels hideMappings hideForceFields hideWireframe" />
+        <InvSimuAnimationLoop name="animation" epsi="3e-07" dx="0.001" dr="0.001" printlog2="0" />
+        <InvSimuGenericConstraintSolver tolerance="1e-10" maxIt="2000" printLog="false" />
+
+        <!-- $$$$$$$$$$$$$$$$$$$$$$ OPTITRACK SPACE $$$$$$$$$$$$$$$$$$$$$$ -->
+        <ConnectToOptiTrack name="motiveData" bboxRobot="-0.1 0.14 -0.1 0.3 0.35 0.3" bboxGel="-0.1 -0.1 -0.2 0.2 0.12 0.1" />
+        <include  href="xmlFile/gelMarkers.xml" drawRadius="0.001"  />
+
+        <!--    FRONT CAMERA            -->
+        <Node  name="webCam0" >
+            <OpenCVCameraStreamer name="streamer0" cameraID="0" />
+            <OpenCVGaussianFilter winsize="9 9" />
+            <OpenCVSobelFilter />
+        </Node>
+
+        <OpenCVProjectiveStreamer name="calibrator0" listening="1" streamer="webCam0/streamer0" mode="0"
+            projectionMatrix="[254.111 129.508 -656.243 195.457,-367.489 -458.083 -349.731 195.238,-0.619362 0.459157 -0.636841 0.498625]"
+            drawCamera="false" depth="1"  drawzNear="0.001" drawViewPort="0" drawzFar="3" drawscreenPosition="1150 700" drawswapMainView="false" />
+        <!-- <OpenCVViewer name="data/viewer0" streamer="calibrator0" drawcolor="1 1 1 1" drawDebug="false" /> -->
+        <OpenCVViewer name="data/viewer0_mask" streamer="calibrator0" drawcolor="1 1 1 1" drawDebug="false" />
+
+        <!--    TOP CAMERA            -->
+        <OpenCVCameraStreamer name="streamer1" cameraID="1" />
+        <OpenCVProjectiveStreamer listening="1" name="calibrator1" streamer="streamer1" mode="0"
+            projectionMatrix="[392.972 -474.057 -364.477 174.213,294.437 -322.307 525.952 3.6755,-0.299138 -0.953391 0.0395331 0.453871]"
+            drawCamera="false" depth="1" drawzNear="0.001" drawViewPort="false" drawzFar="3" drawscreenPosition="1150 700" drawswapMainView="true" />
+        <!-- <OpenCVViewer name="data/viewer1" streamer="calibrator1" drawcolor="1 1 1 0.8" drawDebug="false" /> -->
+        <OpenCVViewer name="data/viewer1_mask" streamer="calibrator1" drawcolor="1 1 1 1" drawDebug="false" />
+        <include  href="xmlFile/gelDetector.xml" />
+
+        <!-- $$$$$$$$$$$$$$$$$$$$$$ ROBOT AND SUPPORT $$$$$$$$$$$$$$$$$$$$$$ -->
+        <include href="xmlFile/caoTransform.xml" colorId="2" name="calibrationSimu" draw="0.004" />
+        <NeedleSupportCalibrationUmeyamah name="Umeyama" caoTransform="calibrationSimu" allMarkers="@motiveData.trackedMarkers" markers="@motiveData.robotMarkers" epsi="0.00047" nbBindPoints="4" draw="true"  />
+        <MRV1ARobotDriverPos name="robot" listening="0" ipaddr="192.168.122.200"  followvirtual="0" scale="0.001"  />
+        <NewtonDriver name="newton" robotName="robot" caoTransform="calibrationSimu" E="-0.0015 0.027 -0.001 0.5 0.5 0.5 -0.5" dmax="0.005" />
+
+        <MRV1CAOTransform name="calibration" colorId="1" supportMarkerA="-0.0438539 0.0352641 -0.0199452     -0.0440909 0.0050957 0.0201317   -0.0440143 0.005 -0.020  -0.0453803 0.019002 0.00236717   -0.00813656 0.02556 -0.0437589    -0.0235093 0.00803083 -0.0379367" draw="0.001"  transform="@newton.transform" />
+
+        <!-- <include  name="calibration" href="xmlFile/caoTransform.xml" transform="@newton.transform" draw="0.001" /> -->
+
+        <!-- <TargetRobotController caoTransform="calibrationSimu" dX="0.0005" />  -->
+        <!-- $$$$$$$$$$$$$$$$$$$$$$ NEEDLE $$$$$$$$$$$$$$$$$$$$$$ -->
+        <include href="xmlFile/needleDetector.xml" />
+
+        <Node name="Needle">
+            <EulerImplicitSolver  firstOrder="false" rayleighMass="0.1" rayleighStiffness="0.1" />
+            <SparseLUSolver name="needleLU" />
+
+            <InitializedNeedlePose name="needlePose" beamLenght="0.0051" numberOfBeams="25" caoName="../Umeyama" base="@../calibrationSimu.base"  />
+            <EdgeSetTopologyContainer name="Container" position="@needlePose.position" edges="0 1 1 2 2 3 3 4 4 5 5 6 6 7 7 8 8 9 9 10 10 11 11 12 12 13 13 14 14 15 15 16 16 17 17 18 18 19 19 20 20 21 21 22 22 23 23 24" />
+
+            <MechanicalObject name="mstate" template="Rigid"  /> <!-- showObject="1" showObjectScale="0.001" position="@needlePose.positionRigid" -->
+            <MStateStoreAndReload mstate="mstate"  />
+
+            <MyRestShapeSpringsForceField caoTransform="../calibrationSimu" stiffness="1000"  angularStiffness="0.01" />
+            <UniformMass totalmass="0.0001" />
+            <EdgeSetTopologyModifier name="modifier" />
+            <BeamFEMForceField name="FEM" radius="0.0003615" youngModulus="2.9e11" poissonRatio="0.4"/>
+            <!-- <BeamFEMForceField name="FEM" radius="0.0009" youngModulus="2.4e11" poissonRatio="0.4"/>  -->
+            <UpdateNeedleStateAfterRegistration pointTopo="Modifier" />
+
+            <Node name="Collision">
+                  <EdgeSetTopologyContainer name="container" src="@../Container" />
+                  <MechanicalObject name="ms" />
+                  <!-- <MStateStoreAndReload mstate="ms" /> -->
+                  <NeedleGeometry name="needle" />
+                  <BeamLinearMapping localCoord="false" />
+            </Node>
+
+            <Node name="Projective0">
+                  <EdgeSetTopologyContainer name="container" src="@../Container" />
+                  <MechanicalObject name="ms" />
+                  <ProjectiveEdgeContourGeometry name="needle" projectionMatrix="@../../calibrator0.projectionMatrix" />
+                  <BeamLinearMapping localCoord="false" />
+            </Node>
+
+            <Node name="Projective1">
+                  <EdgeSetTopologyContainer name="container" src="@../Container" />
+                  <MechanicalObject name="ms" />
+                  <ProjectiveEdgeContourGeometry name="needle" projectionMatrix="@../../calibrator1.projectionMatrix" />
+                  <BeamLinearMapping localCoord="false" />
+            </Node>
+
+            <Node name="Visu">
+                  <EdgeSetTopologyContainer name="container" src="@../Container" />
+                  <OglModel color="0.000 0.500 1.000" src="@container"  lineWidth="5.0" name="visualModel" />
+                  <BeamLinearMapping localCoord="false" />
+            </Node>
+
+            <LinearSolverConstraintCorrection />
+        </Node>
+
+        <!-- $$$$$$$$$$$$$$$$$$$$$$ TOPOLOGY $$$$$$$$$$$$$$$$$$$$$$ -->
+        <include href="xmlFile/topology.xml" />
+        <Node name="FEM">
+                <VisualStyle displayFlags="showWireframe" />
+                <EulerImplicitSolver firstOrder="false" vdamping="0.5" rayleighMass="0.1" rayleighStiffness="0.1" />
+                <CudaSparseLDLSolver name="precond" template="CompressedRowSparseMatrix3f" />
+
+                <TetrahedronSetTopologyContainer name="Container" position="@../Topology/GelVolume/HexaTop.position" tetrahedra="@../Topology/GelVolume/Container.tetrahedra" />
+                <TetrahedronSetTopologyModifier name="Modifier"/>
+                <MechanicalObject name="mstate" template="Vec3d" />
+                <TetrahedronFEMForceField name="forceField" listening="true" youngModulus="2e3" poissonRatio="0.4" computeVonMisesStress="2" />
+                <UniformMass totalMass="0.01" />
+                <MStateStoreAndReload mstate="mstate" />
+                <ObjectHandler name="1000" sceneOrigin="@../calibrator0.cameraPos" listening="1"  transform="0.0976 0.0104462 0.0216306 -0.17523 -0.904684 0.305895 -0.238969" rotateAroundBarycenter="false" />
+
+                <DrawTrianglesComponent tetrahedron="@Container.tetrahedra" maxStress="1000" transparency="0.7" />
+
+                <Node name="Surface">
+                    <TriangleSetTopologyContainer name="Container"  />
+                    <TriangleSetTopologyModifier name="Modifier"/>
+                    <Tetra2TriangleTopologicalMapping input="@../Container" output="@Container" flipNormals="true"/>
+                    <MechanicalObject name="dofs" rest_position="@../mstate.rest_position" />
+                    <AABBDecorator drawBbox="false" nbox="8 8 8" />
+                    <TriangleGeometry name="triangles" />
+                    <ProjectiveContourGeometry name="surface0" projectionMatrix="@../../calibrator0.projectionMatrix" />
+                    <ProjectiveContourGeometry name="surface1" projectionMatrix="@../../calibrator1.projectionMatrix" />
+                    <IdentityMapping />
+                </Node>
+
+                <Node name="Trajectory">
+                        <VisualStyle displayFlags="hideCollisionModels" />
+                        <EdgeSetTopologyContainer name="Container" />
+                        <EdgeSetTopologyModifier name="Modifier" />
+                        <MechanicalObject name="ms" position=" " />
+                        <NeedleTrajectoryGeometry name="trajectory" entryDist="1" constraintDist="0.007" clearTrajectory="false" />
+                        <MyBarycentricMapping useRestPosition="false"  />
+                </Node>
+
+                <Node name="markersPosOnGel" >
+                         <PointSetTopologyContainer name="Container"  />
+                         <PointSetTopologyModifier name="ModifierPoint"  />
+                         <MechanicalObject name="dofs" position=""/>
+                         <PointGeometry name="markersOngel" />
+                         <BarycentricMapping listening="true" useRestPosition="false"  />
+                </Node >
+                <UpdateStateAfterRegistration name="saved" pointTopo="Modifier" pathToOptkTopo="markersPosOnGel/ModifierPoint" pathToMstate="markersPosOnGel/dofs" markersPose="@../motiveData.gelMarkers" />
+
+                <Node name="Visual" activated="0">
+                        <TriangleSetTopologyContainer name="Container" src="@../../Topology/GelSurface/Container"/>
+                        <OglModel color="1.000 0.000 0.000 0.6" name="visualModel" />
+                        <BarycentricMapping />
+                </Node>
+
+                <Node name="NeedleTraj" >
+                        <MeshObjLoader filename="data/mesh/traj3.obj" name="loader" />
+                        <EdgeSetTopologyContainer name="EdgeContainer" src="@loader" />
+                        <MechanicalObject name="ms" src="@loader" scale3d="0.001 0.001 0.001" dy="-0.003" dz="-0.003"/>
+                        <InterpolationTrajectory name="trajectory" alpha="0.1" scale="0.0" scaleNormal="2.0" />
+                        <BarycentricMapping />
+                </Node>
+                <LinearSolverConstraintCorrection solverName="precond" />
+        </Node>
+
+        <!-- $$$$$$$$$$$$$$$$$$$$$$ CONSTRAINTS ON GEL $$$$$$$$$$$$$$$$$$$$$$ -->
+        <Node activated="1" name="slinding" >
+                <Sliding2DConstraint name="slinding" dst="../FEM/Surface/triangles" from="../gelMarkers/markers"  maxForce="0.0003" draw_normal_scale="0.002" />
+                <Projective2DConstraint name="contour0" dst="../FEM/Surface/surface0" from="../detectorGel/detector3D_0/contour0" maxForce="8e-5" draw_normal_scale="0.002"
+                     projectionMatrix="@../calibrator0.projectionMatrix"  />
+                <Projective2DConstraint name="contour1" dst="../FEM/Surface/surface1" from="../detectorGel/detector3D_1/contour1" maxForce="8e-5" draw_normal_scale="0.002"
+                     projectionMatrix="@../calibrator1.projectionMatrix" />
+                <Projective2DConstraint name="NeedleContour0" dst="../Needle/Projective0/needle" from="../needleDetector/Needle3Ddetector_1/contour1" maxForce="0.001" draw_normal_scale="0.005" projectionMatrix="@../calibrator0.projectionMatrix" />
+                <Projective2DConstraint name="NeedleContour1" dst="../Needle/Projective1/needle" from="../needleDetector/Needle3Ddetector_2/contour2" maxForce="0.002" draw_normal_scale="0.005" projectionMatrix="@../calibrator1.projectionMatrix" />
+        </Node>
+        <Node activated="1" name="pointCloud" >
+                <PosCAOConstraint caoTransform="../calibrationSimu" indice="0" scale="0.04" incr="0.001" needle="../Needle/mstate" />
+                <PointCloudConstraint dst="../FEM/markersPosOnGel/markersOngel" from="../gelMarkers/markers"  maxForce="0.4" draw_normal_scale="0.004" />
+        </Node>
+        <SwapConstrainteNode nodeName1="slinding" nodeName2="pointCloud" modelName="FEM" projSurfaceName1="Surface"  projSurfaceName2="Surface" detectorName1="detectorGel" detectorName2="needleDetector"  />
+<!-- </Node>         -->
+
+        <!--    NEEDLE TRAJECTORY CONSTRAINTS -->
+        <Node name="needleConstraints" activated="true" >
+                <NeedlePenetrationConstraint name="csinside" needle="../Needle/Collision/needle" surface="../FEM/Surface/triangles" trajectory="../FEM/Trajectory/trajectory" draw_normal_scale="0.002" surfaceFriction="0.0" frictionFront="0" frictionBack="0" penetrationForce="0.0" penetrationAngle="-1"/>
+                <PenetrationCstStoreAndReload />
+        </Node>
+        <!--    OBJECTIVES -->
+        <Node name="Objectives" activated="1" >
+                <NeedlePositionObjective name="objective" scale="0.00" factB="1" trajectory="../FEM/NeedleTraj/trajectory" needle="../Needle/Collision/needle" />
+                <NeedleEntryObjective name="entry" scale="0.01" factB="13" angleFilter="0.9999" residual="1e-4" needle="../Needle/Collision/needle" trajectory="../FEM/NeedleTraj/trajectory" useMeanVector="true" />
+                <!-- <NeedleBendingObjective scale="0.01" factB="400" thickness="0.0003" angleFilter="0.9999" residual="1e-4" needle="../Needle/Collision/needle" trajectory="../FEM/NeedleTraj/trajectory" entryPoint="@../needleConstraints/csinside.entry"  />       -->
+
+                <!-- <NeedleShaftObjective scale="0.01" factB="300" angleFilter="0.9999" ray="0.08" residual="1e-4" needle="../Needle/Collision/needle" trajectory="../FEM/NeedleTraj/trajectory" useMeanVector="true" entryPoint="@../needleConstraints/csinside.entry" />    -->
+        </Node>
+
+        <!--    INITIALIZE SCENE -->
+        <InitializeRobotPose  caoTransform="calibrationSimu" nodeName1="needleConstraints" nodeName2="Objectives" needle="../Needle/Collision/ms" reachTarget="@animation.reachTarget"  id="13" drawScale="0.001" initialEndEffectPose="0.0120823 0.185156 0.176938 0.241071 0.339528 -0.893581 0.167687" initialRobotPose="250.027 4.86162 543.995 -2.874 0.777592 -2.73849" trajectory="FEM/NeedleTraj/trajectory" />
+
+</Node>
+
+
+<!--
+257.474 21.1216 548.264 0.080969 -0.929837 0.071938 -0.35167
+
+259.131 9.34577 554.316 -3.04808 0.714407 -3.00499
+
+250.027 4.86162 543.995 -2.874 0.777592 -2.73849
+
+Vec6d(0.0453675,0.156423,1.585,-0.0532521,0.682077,-0.0275733);
+
+ -->
