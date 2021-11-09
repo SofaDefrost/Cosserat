@@ -66,28 +66,26 @@ class Cosserat(Sofa.Prefab):
     def __init__(self, *args, **kwargs):
         Sofa.Prefab.__init__(self, *args, **kwargs)
         self.cosseratGeometry = kwargs['cosseratGeometry']
-        self.needCollisionModel = kwargs['useCollisionModel']
         self.beamMass = self.cosseratGeometry['beamMass']
-        self.parent = kwargs['parent']
+        self.parent = kwargs.get('parent', None)
 
         if self.parent.hasObject("EulerImplicitSolver") is False:
-            print("===> The EulerImplicit is not in the node Yet ")
             self.solverNode = self.addSolverNode()
         else:
             self.solverNode = self.parent
-            print("===> The EulerImplicit is in the node Yet ")
 
         self.rigidBaseNode = self.addRigidBaseNode()
-        [positionS, curv_abs_inputS, longeurS, framesF, curv_abs_outputF, frames3D] = \
+        [positionS, curv_abs_inputS, longeurS, framesF, curv_abs_outputF, self.frames3D] = \
             BuildCosseratGeometry(self.cosseratGeometry)
         self.cosseratCoordinateNode = self.addCosseratCoordinate(positionS, longeurS)
         self.cosseratFrame = self.addCosseratFrame(framesF, curv_abs_inputS, curv_abs_outputF)
-        if self.needCollisionModel:
-            tab_edges = buildEdges(frames3D)
-            self.cosseratFrameCollision = addEdgeCollision(self.cosseratFrame, frames3D, tab_edges)
 
     def init(self):
         pass
+
+    def addCollisionModel(self):
+        tab_edges = buildEdges(self.frames3D)
+        return addEdgeCollision(self.cosseratFrame, self.frames3D, tab_edges)
 
     def addSolverNode(self):
         solverNode = self.addChild('solverNode')
@@ -169,10 +167,11 @@ def createScene(rootNode):
     solverNode.addObject('SparseLDLSolver', name='solver', template="CompressedRowSparseMatrixd")
     solverNode.addObject('GenericConstraintCorrection')
 
-    needCollisionModel = 0  # use this if the collision model if the beam will interact with another object
     cosserat = solverNode.addChild(
-        Cosserat(parent=solverNode, cosseratGeometry=cosserat_config, useCollisionModel=needCollisionModel,
-                 name="cosserat", radius=0.2))
+        Cosserat(parent=solverNode, cosseratGeometry=cosserat_config, name="cosserat", radius=0.2))
+
+    # use this to add the collision if the beam will interact with another object
+    collisionModel = cosserat.addCollisionModel()
 
     # attach force at the beam tip,
     # we can attach this force to non mechanical node thanks to the MechanicalMatrixMapper component
