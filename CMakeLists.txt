@@ -58,10 +58,12 @@ set(HEADER_FILES
 
     src/forcefield/BeamHookeLawForceField.h
     src/forcefield/BeamHookeLawForceField.inl
+    src/forcefield/BeamPlasticLawForceField.h
+    src/forcefield/BeamPlasticLawForceField.inl
     src/forcefield/CosseratInternalActuation.h
     src/forcefield/CosseratInternalActuation.inl
-    src/forcefield/MyUniformVelocityDampingForceField.h
-    src/forcefield/MyUniformVelocityDampingForceField.inl
+    # src/forcefield/MyUniformVelocityDampingForceField.h
+    # src/forcefield/MyUniformVelocityDampingForceField.inl
     
     src/constraint/CosseratSlidingConstraint.h
     src/constraint/CosseratSlidingConstraint.inl
@@ -69,8 +71,8 @@ set(HEADER_FILES
     src/constraint/QPSlidingConstraint.inl
     src/constraint/CosseratNeedleSlidingConstraint.h
     src/constraint/CosseratNeedleSlidingConstraint.inl
-    src/constraint/CosseratUnilateralInteractionConstraint.h
-    src/constraint/CosseratUnilateralInteractionConstraint.inl
+    # src/constraint/CosseratUnilateralInteractionConstraint.h
+    # src/constraint/CosseratUnilateralInteractionConstraint.inl
     )
 
 set(SOURCE_FILES
@@ -85,13 +87,14 @@ set(SOURCE_FILES
     src/mapping/RigidDistanceMapping.cpp
 
     src/forcefield/BeamHookeLawForceField.cpp
+    src/forcefield/BeamPlasticLawForceField.cpp
     src/forcefield/CosseratInternalActuation.cpp
-    src/forcefield/MyUniformVelocityDampingForceField.cpp
+    # src/forcefield/MyUniformVelocityDampingForceField.cpp
 
     src/constraint/CosseratSlidingConstraint.cpp
     src/constraint/QPSlidingConstraint.cpp
     src/constraint/CosseratNeedleSlidingConstraint.cpp
-    src/constraint/CosseratUnilateralInteractionConstraint.cpp
+    # src/constraint/CosseratUnilateralInteractionConstraint.cpp
     #    src/engine/engineQuat.cpp src/engine/engineQuat.h
     )
 

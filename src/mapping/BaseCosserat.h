@@ -29,7 +29,7 @@
 #include <sofa/defaulttype/RigidTypes.h>
 #include <sofa/core/objectmodel/BaseObject.h>
 #include <cmath>
-#include <sofa/defaulttype/Vec.h>
+#include <sofa/type/Vec.h>
 
 
 namespace sofa::component::mapping
@@ -38,8 +38,8 @@ using sofa::defaulttype::SolidTypes ;
 using sofa::core::objectmodel::BaseContext ;
 using sofa::type::Matrix3;
 using sofa::type::Matrix4;
-using sofa::defaulttype::Vector3;
-using sofa::defaulttype::Vec6;
+using sofa::type::Vector3;
+using sofa::type::Vec6;
 using std::get;
 using sofa::core::objectmodel::BaseObject;
 
@@ -154,7 +154,7 @@ public:
 
 protected:
     /**********************COSSERAT METHODS**************************/
-    void computeExponentialSE3(const double &x, const defaulttype::Vector3& k, Transform & Trans);
+    void computeExponentialSE3(const double &x, const type::Vector3& k, Transform & Trans);
     void computeAdjoint(const Transform & frame, Mat6x6 &adjoint);
     void compute_coAdjoint(const Transform & frame, Mat6x6 &co_adjoint);
     void compute_adjointVec6(const Vec6 & frame, Mat6x6 &adjoint);

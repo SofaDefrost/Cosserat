@@ -29,8 +29,8 @@
 ******************************************************************************/
 
 #pragma once
-#include <sofa/defaulttype/Vec.h>
-#include <sofa/defaulttype/Mat.h>
+#include <sofa/type/Vec.h>
+#include <sofa/type/Mat.h>
 #include <sofa/core/behavior/MechanicalState.h>
 #include <sofa/core/objectmodel/Data.h>
 #include <sofa/core/MechanicalParams.h>
@@ -43,8 +43,8 @@
 namespace sofa::component::forcefield
 {
 
-using sofa::defaulttype::Vec ;
-using sofa::defaulttype::Mat ;
+using sofa::type::Vec ;
+using sofa::type::Mat ;
 using sofa::type::vector;
 using sofa::core::MechanicalParams;
 using sofa::defaulttype::BaseMatrix;
@@ -112,10 +112,12 @@ public :
                               const DataVecCoord& x) const override;
     ////////////////////////////////////////////////////////////////////////////
 
+    Real getRadius();
+
 protected:
     Data<helper::OptionsGroup>   d_crossSectionShape;
 
-    Data<double>                      d_youngModululs; /// youngModulus
+    Data<double>                      d_youngModulus; /// youngModulus
     Data<double>                      d_poissonRatio; /// poissonRatio
 
     Data<type::vector<double>>      d_length ; /// length of each beam
@@ -128,18 +130,21 @@ protected:
     Data<Real>          d_lengthY;
     Data<Real>          d_lengthZ;
 
+    /// Cross-section area
+    Real m_crossSectionArea;
+
     //In case we have a beam with different propertise per section
     Data<bool>                      d_varianteSections; /// bool to identify different beams sections
-    Data<type::vector<double>>    d_youngModululsList; /// youngModulus
+    Data<type::vector<double>>    d_youngModulusList; /// youngModulus
     Data<type::vector<double>>    d_poissonRatioList; /// poissonRatio
+
+    bool compute_df;
+    Mat33 m_K_section;
+    type::vector<Mat33> m_K_sectionList;
 
 
 private :
-
-    Mat33 m_K_section;
-    type::vector<Mat33> m_K_sectionList;
-    bool compute_df;
-
+    
     ////////////////////////// Inherited attributes ////////////////////////////
     /// https://gcc.gnu.org/onlinedocs/gcc/Name-lookup.html
     /// Bring inherited attributes and function in the current lookup context.
@@ -147,7 +152,7 @@ private :
     /// the "this->" approach.
     using ForceField<DataTypes>::getContext ;
     using ForceField<DataTypes>::f_printLog ;
-    using ForceField<DataTypes>::mstate ;
+    //using ForceField<DataTypes>::mstate ;
     ////////////////////////////////////////////////////////////////////////////
 };
 
