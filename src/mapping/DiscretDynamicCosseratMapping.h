@@ -36,8 +36,8 @@ using sofa::defaulttype::SolidTypes ;
 using sofa::core::objectmodel::BaseContext ;
 using sofa::type::Matrix3;
 using sofa::type::Matrix4;
-using sofa::defaulttype::Vector3;
-using sofa::defaulttype::Vec6;
+using sofa::type::Vector3;
+using sofa::type::Vec6;
 using std::get;
 
 /*!
@@ -183,7 +183,7 @@ public:
 
     [[maybe_unused]] void computeMassComponent(const double sectionMass){}
     void computeJ_Jdot_i(const Mat6x6 &Adjoint, size_t frameId, type::vector<Mat6x3> &J_i,
-                         const defaulttype::Vec6 &etaFrame, type::vector<Mat6x3> &J_dot_i);
+                         const type::Vec6 &etaFrame, type::vector<Mat6x3> &J_dot_i);
 
 };
 
