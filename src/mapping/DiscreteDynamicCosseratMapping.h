@@ -50,10 +50,10 @@ using std::get;
 
 
 template <class TIn1, class TIn2, class TOut>
-class DiscretDynamicCosseratMapping : public core::Multi2Mapping<TIn1, TIn2, TOut>, public component::mapping::BaseCosserat<TIn1, TIn2, TOut>
+class DiscreteDynamicCosseratMapping : public core::Multi2Mapping<TIn1, TIn2, TOut>, public component::mapping::BaseCosserat<TIn1, TIn2, TOut>
 {
 public:
-    SOFA_CLASS(SOFA_TEMPLATE3(DiscretDynamicCosseratMapping, TIn1,TIn2, TOut), SOFA_TEMPLATE3(core::Multi2Mapping, TIn1, TIn2, TOut) );
+    SOFA_CLASS(SOFA_TEMPLATE3(DiscreteDynamicCosseratMapping, TIn1,TIn2, TOut), SOFA_TEMPLATE3(core::Multi2Mapping, TIn1, TIn2, TOut) );
     typedef core::Multi2Mapping<TIn1, TIn2, TOut> Inherit;
 
     /// Input Model Type
@@ -95,11 +95,11 @@ public:
     typedef Data<OutVecDeriv> OutDataVecDeriv;
     typedef Data<OutMatrixDeriv> OutDataMatrixDeriv;
 
-    typedef MultiLink<DiscretDynamicCosseratMapping<In1,In2,Out>, sofa::core::State< In1 >,
+    typedef MultiLink<DiscreteDynamicCosseratMapping<In1,In2,Out>, sofa::core::State< In1 >,
             BaseLink::FLAG_STOREPATH|BaseLink::FLAG_STRONGLINK> LinkFromModels1;
-    typedef MultiLink<DiscretDynamicCosseratMapping<In1,In2,Out>, sofa::core::State< In2 >,
+    typedef MultiLink<DiscreteDynamicCosseratMapping<In1,In2,Out>, sofa::core::State< In2 >,
             BaseLink::FLAG_STOREPATH|BaseLink::FLAG_STRONGLINK> LinkFromModels2;
-    typedef MultiLink<DiscretDynamicCosseratMapping<In1,In2,Out>, sofa::core::State< Out >,
+    typedef MultiLink<DiscreteDynamicCosseratMapping<In1,In2,Out>, sofa::core::State< Out >,
             BaseLink::FLAG_STOREPATH|BaseLink::FLAG_STRONGLINK> LinkToModels;
 
     typedef typename SolidTypes<Real>::Transform      Transform ;
@@ -111,9 +111,9 @@ protected:
 
 protected:
     /// Constructor
-    DiscretDynamicCosseratMapping() ;
+    DiscreteDynamicCosseratMapping() ;
     /// Destructor
-    ~DiscretDynamicCosseratMapping()  override {}
+    ~DiscreteDynamicCosseratMapping()  override {}
 
     type::vector<type::vector<Mat6x3>> m_frameJacobienVector;
     type::vector<type::vector<Mat6x3>> m_frameJacobienDotVector;
@@ -191,7 +191,7 @@ public:
 
 
 #if  !defined(SOFA_COMPONENT_MAPPING_DYNAMIC_COSSERAT_DISCRET_CPP)
-extern template class SOFA_COSSERAT_MAPPING_API DiscretDynamicCosseratMapping< sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types >;
+extern template class SOFA_COSSERAT_MAPPING_API DiscreteDynamicCosseratMapping< sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types >;
 #endif
 
 } // namespace sofa::componenet::mapping

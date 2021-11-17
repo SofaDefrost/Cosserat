@@ -47,8 +47,8 @@ set(HEADER_FILES
     src/mapping/BaseCosserat.inl
     src/mapping/DiscreteCosseratMapping.h
     src/mapping/DiscreteCosseratMapping.inl
-    src/mapping/DiscretDynamicCosseratMapping.h
-    src/mapping/DiscretDynamicCosseratMapping.inl
+    src/mapping/DiscreteDynamicCosseratMapping.h
+    src/mapping/DiscreteDynamicCosseratMapping.inl
     src/mapping/ProjectionEngine.h
     src/mapping/ProjectionEngine.inl
     src/mapping/DifferenceMultiMapping.h
@@ -71,6 +71,7 @@ set(HEADER_FILES
     src/constraint/CosseratNeedleSlidingConstraint.inl
     src/constraint/CosseratUnilateralInteractionConstraint.h
     src/constraint/CosseratUnilateralInteractionConstraint.inl
+    # src/mapping/LegendrePolynomialsMapping.h
     )
 
 set(SOURCE_FILES
@@ -79,7 +80,7 @@ set(SOURCE_FILES
     src/mapping/BaseCosserat.cpp
     src/mapping/DiscreteCosseratMapping.cpp
 
-    src/mapping/DiscretDynamicCosseratMapping.cpp
+    src/mapping/DiscreteDynamicCosseratMapping.cpp
     src/mapping/ProjectionEngine.cpp
     src/mapping/DifferenceMultiMapping.cpp
     src/mapping/RigidDistanceMapping.cpp
@@ -92,7 +93,7 @@ set(SOURCE_FILES
     src/constraint/QPSlidingConstraint.cpp
     src/constraint/CosseratNeedleSlidingConstraint.cpp
     src/constraint/CosseratUnilateralInteractionConstraint.cpp
-    #    src/engine/engineQuat.cpp src/engine/engineQuat.h
+    # src/mapping/LegendrePolynomialsMapping.cpp
     )
 
 set(README_FILE "Cosserat.txt" )

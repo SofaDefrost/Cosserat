@@ -19,8 +19,7 @@
 *                                                                             *
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
-#ifndef SOFA_COMPONENT_MAPPING_POEMAPING_H
-#define SOFA_COMPONENT_MAPPING_POEMAPING_H
+#pragma once
 
 #include <sofa/core/BaseMapping.h>
 #include <sofa/core/config.h>
@@ -31,23 +30,15 @@
 #include "BaseCosserat.h"
 #include <SofaOpenglVisual/OglColorMap.h>
 
-namespace sofa
-
+namespace sofa::component::mapping
 {
-using sofa::defaulttype::SolidTypes ;
-using sofa::core::objectmodel::BaseContext ;
-using sofa::type::Matrix3;
-using sofa::type::Matrix4;
-using sofa::defaulttype::Vector3;
-using sofa::defaulttype::Vec6;
-using std::get;
-
-namespace component
-{
-//using sofa::component::visualmodel::OglColorMap;
-
-namespace mapping
-{
+    using sofa::defaulttype::SolidTypes ;
+    using sofa::core::objectmodel::BaseContext ;
+    using sofa::type::Matrix3;
+    using sofa::type::Matrix4;
+    using sofa::defaulttype::Vector3;
+    using sofa::defaulttype::Vec6;
+    using std::get;
 
 /*!
  * \class DiscreteCosseratMapping
@@ -57,7 +48,6 @@ namespace mapping
  * https://www.sofa-framework.org/community/doc/programming-with-sofa/create-your-component/
  */
 using mapping::BaseCosserat;
-
 
 template <class TIn1, class TIn2, class TOut>
 class DiscreteCosseratMapping : public core::Multi2Mapping<TIn1, TIn2, TOut>, public component::mapping::BaseCosserat<TIn1, TIn2, TOut>
@@ -192,11 +182,5 @@ protected:
 extern template class SOFA_COSSERAT_MAPPING_API DiscreteCosseratMapping< sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types >;
 #endif
 
-} // mapping
-
-} // namespace componenet
-
-} // namespace sofa
-
-#endif //SOFA_COMPONENT_MAPPING_POEMAPING_H
-
+} // namespace sofa::componenet::mapping
+ //SOFA_COMPONENT_MAPPING_POEMAPING_H
