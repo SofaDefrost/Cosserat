@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 
 import Sofa
-import SofaPython
-from math import sin,cos, sqrt, pi
+from math import sin, cos, sqrt, pi
 import os
-path = os.path.dirname(os.path.abspath(__file__))+'/mesh/'
+
+path = os.path.dirname(os.path.abspath(__file__)) + '/mesh/'
 
 
 # class Animation(Sofa.PythonScriptController):
@@ -68,8 +68,6 @@ path = os.path.dirname(os.path.abspath(__file__))+'/mesh/'
 #             self.rateAngularDeformMO.findData('position').value = posA
 
 
-
-
 # def normalize(q):
 #     norm = sqrt(q[0]*q[0]+q[1]*q[1]+q[2]*q[2]+q[3]*q[3]);
 #     q_return= q
@@ -77,7 +75,6 @@ path = os.path.dirname(os.path.abspath(__file__))+'/mesh/'
 #         q_return[i] = q[i]/sqrt(norm);
 
 #     return q_return
-
 
 
 # #Multiplication of two quaternions (gives the composition of the two rotation)
@@ -92,8 +89,6 @@ path = os.path.dirname(os.path.abspath(__file__))+'/mesh/'
 #     return q1
 
 
-
-
 # #Rotate a vector using a quaternion v'=qvq(-1)
 # def rotate(v,q):
 #     c =[ ]
@@ -103,7 +98,6 @@ path = os.path.dirname(os.path.abspath(__file__))+'/mesh/'
 
 
 #     return c
-
 
 
 # def inverseQuat(q):
@@ -118,11 +112,6 @@ path = os.path.dirname(os.path.abspath(__file__))+'/mesh/'
 #     b_H_a= b_H_a +  inverseQuat( q ) ;
 
 #     return b_H_a
-
-
-
-
-
 
 
 # def composeTransform(a_H_b, b_H_c):
@@ -140,7 +129,6 @@ path = os.path.dirname(os.path.abspath(__file__))+'/mesh/'
 
 # def compute_b_H_c(a_H_b,a_H_c):
 #     return composeTransform(inverseTransform(a_H_b),a_H_c)
-
 
 
 # ######## to be improved:
@@ -163,83 +151,91 @@ path = os.path.dirname(os.path.abspath(__file__))+'/mesh/'
 #     return a_H_result
 
 
-
-
 def createScene(rootNode):
+    rootNode.addObject('RequiredPlugin',
+                       pluginName='SoftRobots SofaPython3 SofaSparseSolver CosseratPlugin', printLog='0')
+    rootNode.addObject('VisualStyle',
+                       displayFlags='hideVisualModels showBehaviorModels showCollisionModels '
+                                    'hideBoundingCollisionModels showForceFields hideInteractionForceFields '
+                                    'hideWireframe')
 
-                rootNode.createObject('RequiredPlugin', pluginName='SoftRobots SofaPython SofaSparseSolver CosseratPlugin BeamAdapter', printLog='0')
-                rootNode.createObject('VisualStyle', displayFlags='hideVisualModels showBehaviorModels showCollisionModels hideBoundingCollisionModels showForceFields hideInteractionForceFields hideWireframe')
+    rootNode.addObject('FreeMotionAnimationLoop')
+    rootNode.addObject('GenericConstraintSolver', tolerance="1e-10", printLog='0')
+    rootNode.findData('dt').value = 0.01
+    rootNode.findData('gravity').value = [0., -9810, 0.]
 
+    rootNode.addObject('EulerImplicitSolver', firstOrder="0", rayleighStiffness="1.0", rayleighMass='0.10')
+    # rootNode.addObject('CGLinearSolver', name='solver', tolerance='1e-20',  threshold='1e-20', verbose='1')
+    rootNode.addObject('SparseLDLSolver', name='solver')
 
-                rootNode.createObject('FreeMotionAnimationLoop')
-                rootNode.createObject('GenericConstraintSolver', tolerance="1e-10", printLog='0')
-                rootNode.gravity = "0 -9810 0"
-                rootNode.dt="0.01"
+    rootNode.addObject('GenericConstraintCorrection')
+    # ##############hresho
+    # # RigidBase
+    # ##############
+    rigidBaseNode = rootNode.addChild('rigidBase')
 
-                rootNode.createObject('EulerImplicitSolver', firstOrder="0", rayleighStiffness="1.0", rayleighMass='0.10')
-                #rootNode.createObject('CGLinearSolver', name='solver', tolerance='1e-20',  threshold='1e-20', verbose='1')
-                rootNode.createObject('SparseLDLSolver', name='solver')
+    RigidBaseMO = rigidBaseNode.addObject('MechanicalObject', template='Rigid3d', name="RigidBaseMO",
+                                          position="0 0 0  0 0 0. 1", showObject='1', showObjectScale='0.1',
+                                          velocity='0 0 0.0 0.0 0 0 0.0 0 0')
+    rigidBaseNode.addObject('RestShapeSpringsForceField', name='spring', stiffness="5000", angularStiffness="5000",
+                            external_points="0", mstate="@RigidBaseMO", points="0", template="Rigid3d")
+    # rigidBaseNode.addObject('UniformMass', totalMass='0.1' )
 
-                rootNode.createObject('GenericConstraintCorrection')
-                ###############hresho
-                ## RigidBase
-                ###############
-                rigidBaseNode= rootNode.createChild('rigidBase')
+    ###############
+    # # Rate of angular Deformation  (2 sections)
+    # (2 series of 3 angles for 2 sections. we suppose that the lenght is 10 for each)
+    ###############
 
-                RigidBaseMO = rigidBaseNode.createObject('MechanicalObject', template='Rigid3d', name="RigidBaseMO", position="0 0 0  0 0 0. 1", showObject='1', showObjectScale='0.1', velocity='0 0 0.0 0.0 0 0 0.0 0 0' )
-                rigidBaseNode.createObject('RestShapeSpringsForceField', name='spring', stiffness="5000", angularStiffness="5000", external_points="0", mstate="@RigidBaseMO", points="0", template="Rigid3d"  )
-                #rigidBaseNode.createObject('UniformMass', totalMass='0.1' )
+    pos = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]
+    rateAngularDeformNode = rootNode.addChild('rateAngularDeform')
+    rateAngularDeformMO = rateAngularDeformNode.addObject('MechanicalObject', template='Vec3d',
+                                                          name='rateAngularDeformMO', position=pos)
+    BeamHookeLawForce = rateAngularDeformNode.addObject('BeamHookeLawForceField', crossSectionShape='circular',
+                                                        length='10 10 10', radius='0.5', youngModulus='5e6')
+    # BeamHookeLawForce = rateAngularDeformNode.addObject('ConstantForceField', forces='0 0 -1500 0 0 -500')
 
-                ###############
-                ## Rate of angular Deformation  (2 sections)
-                # (2 series of 3 angles for 2 sections. we suppose that the lenght is 10 for each)
-                ###############
-                
-                pos = [[0.0,0.0,0.0], [0.0,0.0,0.0], [0.0,0.0,0.0]]
-                rateAngularDeformNode = rootNode.createChild('rateAngularDeform')
-                rateAngularDeformMO = rateAngularDeformNode.createObject('MechanicalObject', template='Vec3d', name='rateAngularDeformMO', position=pos) 
-                BeamHookeLawForce = rateAngularDeformNode.createObject('BeamHookeLawForceField', crossSectionShape='circular', length='10 10 10', radius='0.5', youngModulus='5e6')
-                #BeamHookeLawForce = rateAngularDeformNode.createObject('ConstantForceField', forces='0 0 -1500 0 0 -500')
+    # #############
+    # # Frames
+    # # the node of the frame needs to inherit from rigidBaseMO and rateAngularDeform
+    # #############
+    mappedFrameNode = rigidBaseNode.addChild('MappedFrames')
+    rateAngularDeformNode.addChild(mappedFrameNode)
 
+    frames = []
+    curv_abs_output = []
+    for x in range(13):
+        temp = x * 2.5
+        frames.append([temp, 0, 0, 0, 0, 0, 1])
+        curv_abs_output.append(temp)
 
-                ##############
-                ## Frames
-                ## the node of the frame needs to inherit from rigidBaseMO and rateAngularDeform
-                ##############
-                mappedFrameNode = rigidBaseNode.createChild('MappedFrames')
-                rateAngularDeformNode.addChild(mappedFrameNode)
+    print("===> curv_abs_output ", curv_abs_output)
+    print("===> frames ", frames)
+    framesMO = mappedFrameNode.addObject('MechanicalObject', template='Rigid3d', name="FramesMO", position=frames,
+                                         showObject='1', showObjectScale='1')
 
-                frames = []
-                curv_abs_output = [] 
-                for x in xrange(0,13):
-                	temp = x*2.5
-                	frames.append([temp, 0, 0, 0, 0, 0, 1])
-                	curv_abs_output.append(temp)
+    # forceField = mappedFrameNode.addObject('ConstantForceField', indices="4", forces="-10 0 0 50 0 -100")
+    # mappedFrameNode.addObject('FixedConstraint', fixAll='1')
 
-            	print ("===> curv_abs_output ",curv_abs_output)
-            	print ("===> frames ",frames )	
-                framesMO = mappedFrameNode.createObject('MechanicalObject', template='Rigid3d', name="FramesMO", position=frames, showObject='1', showObjectScale='1' )
+    # The mapping has two inputs: RigidBaseMO and rateAngularDeformMO
+    #                 one output: FramesMO
 
-                #forceFied = mappedFrameNode.createObject('ConstantForceField', indices="4", forces="-10 0 0 50 0 -100")
-                #mappedFrameNode.createObject('FixedConstraint', fixAll='1')
+    inputMO = rateAngularDeformMO.getLinkPath()  # + " " + RigidBaseMO.getLinkPath()
+    # inputMO = rateAngularDeformMO.getLinkPath()
+    inputMO_rigid = RigidBaseMO.getLinkPath()
+    outputMO = framesMO.getLinkPath()
+    # @TODO:
+    mappedFrameNode.addObject('DiscreteCosseratMapping', curv_abs_input='0 10 20 30', curv_abs_output=curv_abs_output,
+                              input1=inputMO, input2=inputMO_rigid, output=outputMO, debug='0')
 
-                # The mapping has two inputs: RigidBaseMO and rateAngularDeformMO
-                #                 one output: FramesMO
+    targetPosNode = rootNode.addChild('targetPos')
+    targetPosNode.addObject('MechanicalObject', template='Rigid3d', name='target', position='5 15 10 0 0 0 1',
+                            showObject='1', showObjectScale='0.1')
+    targetPosNode.addObject('RestShapeSpringsForceField', name='spring', stiffness="5000000000",
+                            angularStiffness="500000000000", external_points="0", mstate="@target", points="0",
+                            template="Rigid3d")
 
-                inputMO = rateAngularDeformMO.getLinkPath() # + " " + RigidBaseMO.getLinkPath()
-                #inputMO = rateAngularDeformMO.getLinkPath()
-                inputMO_rigid = RigidBaseMO.getLinkPath()
-                outputMO = framesMO.getLinkPath()
-                # TODO:
-                mappedFrameNode.createObject('DiscretCosseratMapping', curv_abs_input='0 10 20 30', curv_abs_output=curv_abs_output, input1=inputMO, input2=inputMO_rigid,output=outputMO, debug='0' )
+    rootNode.addObject('BilateralInteractionConstraint', template='Rigid3d',
+                       object2='@rigidBase/MappedFrames/FramesMO', object1='@targetPos/target', first_point='0',
+                       second_point='12')
 
-
-
-                targetPosNode= rootNode.createChild('targetPos')
-                targetPosNode.createObject('MechanicalObject', template='Rigid3d', name='target', position='5 15 10 0 0 0 1', showObject='1', showObjectScale='0.1')
-                targetPosNode.createObject('RestShapeSpringsForceField', name='spring', stiffness="5000000000", angularStiffness="500000000000", external_points="0", mstate="@target", points="0", template="Rigid3d"  )
-
-                rootNode.createObject('BilateralInteractionConstraint', template='Rigid3d', object2='@rigidBase/MappedFrames/FramesMO', object1='@targetPos/target', first_point='0', second_point='12')
-
-
-                return rootNode
+    return rootNode

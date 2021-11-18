@@ -10,6 +10,8 @@
 #include <sofa/defaulttype/SolidTypes.h>
 #include <sofa/defaulttype/RigidTypes.h>
 #include <SofaOpenglVisual/OglColorMap.h>
+#include <sofa/core/Mapping.h>
+#include <boost/math/special_functions/legendre.hpp>
 
 
 namespace sofa::component::mapping {
@@ -17,8 +19,8 @@ namespace sofa::component::mapping {
     using sofa::core::objectmodel::BaseContext;
     using sofa::type::Matrix3;
     using sofa::type::Matrix4;
-    using sofa::defaulttype::Vector3;
-    using sofa::defaulttype::Vec6;
+    using type::Vector3;
+    using type::Vec6;
     using std::get;
 
 /*!
@@ -30,7 +32,7 @@ namespace sofa::component::mapping {
  */
 
 template<class TIn, class TOut>
-class LegendrePolynomialsMapping : public core::Mapping<TIn, TOut>, public component::mapping<TIn, TOut>
+class LegendrePolynomialsMapping : public core::Mapping<TIn, TOut>
 {
 public:
     SOFA_CLASS(SOFA_TEMPLATE2(LegendrePolynomialsMapping,TIn,TOut), SOFA_TEMPLATE2(core::Mapping,TIn,TOut));
@@ -45,24 +47,23 @@ public:
     typedef typename Out::MatrixDeriv OutMatrixDeriv;
     typedef typename In::Real InReal;
     typedef typename In::Deriv InDeriv;
-    typedef typename InDeriv::Pos DPos;
-    typedef typename InDeriv::Rot DRot;
     typedef typename In::VecCoord InVecCoord;
     typedef typename In::VecDeriv InVecDeriv;
     typedef typename In::MatrixDeriv InMatrixDeriv;
     typedef typename Coord::value_type Real;
 
+    Data<sofa::Index> index; ///< input DOF index
+
 protected:
     LegendrePolynomialsMapping();
-    virtual ~LegendrePolynomialsMapping() {}
+    virtual ~LegendrePolynomialsMapping() = default;
+
 
 public:
-    sofa::Size addPoint(const Coord& c);
-    sofa::Size addPoint(const Coord& c, sofa::Index indexFrom);
-
-    void init() override;
 
     /// Compute the local coordinates based on the current output coordinates.
+
+    void init() override;
     void reinit() override;
 
     void apply(const core::MechanicalParams *mparams, Data<VecCoord>& out, const Data<InVecCoord>& in) override;
@@ -73,14 +74,12 @@ public:
 
     void applyJT(const core::ConstraintParams *cparams, Data<InMatrixDeriv>& out, const Data<OutMatrixDeriv>& in) override;
 
-    void applyDJT(const core::MechanicalParams* mparams, core::MultiVecDerivId parentForce, core::ConstMultiVecDerivId  childForce ) override;
-
     void draw(const core::visual::VisualParams* vparams) override;
 
 };
-#if  !defined(SOFA_COMPONENT_MAPPING_SOFA_LEGENDREPOLYNOMIALSMAPPING_CPP)
+#if  !defined(SOFA_COMPONENT_MAPPING_LEGENDREPOLYNOMIALSMAPPING_CPP)
     extern template class SOFA_SOFARIGID_API LegendrePolynomialsMapping< sofa::defaulttype::Vec3Types, sofa::defaulttype::Vec3Types >;
 #endif
 
 }
-#endif //SOFA_LEGENDREPOLYNOMIALSMAPPING_H
+//#endif //SOFA_LEGENDREPOLYNOMIALSMAPPING_H
