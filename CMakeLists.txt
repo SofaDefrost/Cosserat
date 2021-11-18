@@ -71,7 +71,8 @@ set(HEADER_FILES
     src/constraint/CosseratNeedleSlidingConstraint.inl
     src/constraint/CosseratUnilateralInteractionConstraint.h
     src/constraint/CosseratUnilateralInteractionConstraint.inl
-    # src/mapping/LegendrePolynomialsMapping.h
+    src/mapping/LegendrePolynomialsMapping.h
+    src/mapping/LegendrePolynomialsMapping.inl
     )
 
 set(SOURCE_FILES
@@ -93,7 +94,7 @@ set(SOURCE_FILES
     src/constraint/QPSlidingConstraint.cpp
     src/constraint/CosseratNeedleSlidingConstraint.cpp
     src/constraint/CosseratUnilateralInteractionConstraint.cpp
-    # src/mapping/LegendrePolynomialsMapping.cpp
+    src/mapping/LegendrePolynomialsMapping.cpp
     )
 
 set(README_FILE "Cosserat.txt" )
