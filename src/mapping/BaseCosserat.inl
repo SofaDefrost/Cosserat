@@ -80,7 +80,7 @@ void BaseCosserat<TIn1, TIn2, TOut>::reinit()
 
 
 template <class TIn1, class TIn2, class TOut>
-void BaseCosserat<TIn1, TIn2, TOut>::computeExponentialSE3(const double & x, const defaulttype::Vector3& k, Transform & Trans){
+void BaseCosserat<TIn1, TIn2, TOut>::computeExponentialSE3(const double & x, const type::Vector3& k, Transform & Trans){
     Matrix4 I4; I4.identity();
 
     double theta = k.norm();
@@ -205,7 +205,7 @@ void BaseCosserat<TIn1, TIn2, TOut>::compute_adjointVec6(const Vec6& eta, Mat6x6
 
 
 template <class TIn1, class TIn2, class TOut>
-void BaseCosserat<TIn1, TIn2, TOut>::compute_Tang_Exp(double & x, const defaulttype::Vector3& k, Mat6x6 & TgX){
+void BaseCosserat<TIn1, TIn2, TOut>::compute_Tang_Exp(double & x, const type::Vector3& k, Mat6x6 & TgX){
     double theta = k.norm();
     Matrix3 tilde_p = getTildeMatrix(Vector3(1.0, 0.0, 0.0));
     Matrix3 tilde_k = getTildeMatrix(k);
@@ -324,7 +324,7 @@ void BaseCosserat<TIn1, TIn2, TOut>::update_TangExpSE3(const In1VecCoord & inDef
 
 
 template <class TIn1, class TIn2, class TOut>
-[[maybe_unused]] defaulttype::Vec6 BaseCosserat<TIn1, TIn2, TOut>::compute_eta(const defaulttype::Vec6 & baseEta, const In1VecDeriv & k_dot, const double abs_input){
+[[maybe_unused]] type::Vec6 BaseCosserat<TIn1, TIn2, TOut>::compute_eta(const type::Vec6 & baseEta, const In1VecDeriv & k_dot, const double abs_input){
 
     // Fill the initial vector
     const In1DataVecCoord* x1fromData = m_fromModel1->read(core::ConstVecCoordId::position());
@@ -337,7 +337,7 @@ template <class TIn1, class TIn2, class TOut>
     Mat6x6 Adjoint, Tg;
 
 
-    defaulttype::Vec6 Xi_dot;
+    type::Vec6 Xi_dot;
     for(unsigned int i = 0; i < 3; i++) Xi_dot[i] = k_dot[m_index_input][i];
 
 

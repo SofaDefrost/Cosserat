@@ -53,11 +53,13 @@ public:
     typedef typename Coord::value_type Real;
 
     Data<sofa::Index> index; ///< input DOF index
+    Data<unsigned int> d_order; ///< input DOF index
+    Data<type::vector<double>> d_vectorOfCurvilinearAbscissa;
 
 protected:
     LegendrePolynomialsMapping();
     virtual ~LegendrePolynomialsMapping() = default;
-
+    type::vector<type::vector<double>> m_matOfCoeffs;
 
 public:
 
@@ -65,6 +67,7 @@ public:
 
     void init() override;
     void reinit() override;
+    double legendrePoly(unsigned int n, const double x);
 
     void apply(const core::MechanicalParams *mparams, Data<VecCoord>& out, const Data<InVecCoord>& in) override;
 
