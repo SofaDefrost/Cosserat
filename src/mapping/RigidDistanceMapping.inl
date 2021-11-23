@@ -54,7 +54,7 @@ RigidDistanceMapping<TIn1, TIn2, TOut>::RigidDistanceMapping()
     , d_max(initData(&d_max, (Real)1.0e-2, "max", "the maximum of the deformation.\n"))
     , d_min(initData(&d_min, (Real)0.0, "min", "the minimum of the deformation.\n"))
     , d_radius(initData(&d_radius, (Real)3.0, "radius", "the axis in which we want to show the deformation.\n"))
-    , d_color(initData(&d_color, defaulttype::Vec4f (1, 0., 1., 0.8) ,"color", "The default beam color"))
+    , d_color(initData(&d_color, type::Vec4f (1, 0., 1., 0.8) ,"color", "The default beam color"))
     , d_index(initData(&d_index, "index", "if this parameter is false, you draw the beam with color "
                                                           "according to the force apply to each beam"))
 {

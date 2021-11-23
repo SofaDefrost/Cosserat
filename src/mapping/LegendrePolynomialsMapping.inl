@@ -26,37 +26,81 @@ namespace sofa::component::mapping {
     LegendrePolynomialsMapping<TIn, TOut>::LegendrePolynomialsMapping()
         : Inherit()
         , index(initData(&index, (unsigned)0, "index", "input DOF index"))
+        , d_order(initData(&d_order, (unsigned)4, "order", "The order of Legendre polynomials"))
+        , d_vectorOfCurvilinearAbscissa(initData(&d_vectorOfCurvilinearAbscissa, "curvAbscissa", "Vector of curvilinear Abscissa element of [0, 1]"))
     {}
 
     template <class TIn, class TOut>
-    void LegendrePolynomialsMapping<TIn, TOut>::reinit()
-    {
-        const VecCoord& xTo =this->toModel->read(core::ConstVecCoordId::position())->getValue();
-        unsigned int i = 0;
+    double LegendrePolynomialsMapping<TIn, TOut>::legendrePoly(unsigned int n, const double x) {
+        if (n == 0)
+            return 1. ;
+        else if (n == 1 )
+            return x ;
+        else
+            return (((2 * x ) - 1) * x * legendrePoly(n - 1, x) - (n - 1) * legendrePoly(n - 2, x)) / double(n);
     }
+
+    template <class TIn, class TOut>
+    void LegendrePolynomialsMapping<TIn, TOut>::reinit() {
+        m_matOfCoeffs.clear();
+        auto curvAbs = d_vectorOfCurvilinearAbscissa.getValue();
+        auto  sz = curvAbs.size();
+        for (unsigned int i = 0; i < sz; i++){
+            type::vector<double> coeffsOf_i;
+            coeffsOf_i.clear();
+            for (unsigned int order = 0; order < d_order.getValue(); order++)
+                coeffsOf_i.push_back(legendrePoly(order, curvAbs[i]));
+
+            m_matOfCoeffs.push_back(coeffsOf_i);
+        }
+    }
+
+
 
     template <class TIn, class TOut>
     void LegendrePolynomialsMapping<TIn, TOut>::init()
     {
-        this->reinit();
         this->Inherit::init();
+        //Compute the coefficients for each curv_abs at all orders of the polynomials
+        reinit();
     }
+
 
     template <class TIn, class TOut>
     void LegendrePolynomialsMapping<TIn, TOut>::apply(const core::MechanicalParams * /*mparams*/, Data<VecCoord>& dOut, const Data<InVecCoord>& dIn)
     {
-        helper::WriteOnlyAccessor< Data<VecCoord> > out = dOut;
         helper::ReadAccessor< Data<InVecCoord> > in = dIn;
+        helper::WriteOnlyAccessor< Data<VecCoord> > out = dOut;
+        const auto sz = d_vectorOfCurvilinearAbscissa.getValue().size();
+        out.resize(sz);
+
+        for (unsigned int i = 0; i < sz; i++){
+            type::Vector3 Xi ;
+            for (unsigned int j = 0; j < in.size(); j++){
+                Xi += m_matOfCoeffs[i][j] * in[j];
+            }
+            out[i] = Xi;
+        }
     }
 
     template <class TIn, class TOut>
     void LegendrePolynomialsMapping<TIn, TOut>::applyJ(const core::MechanicalParams * /*mparams*/, Data<VecDeriv>& dOut, const Data<InVecDeriv>& dIn)
     {
+        helper::WriteOnlyAccessor< Data<VecDeriv> > velOut = dOut;
+        helper::ReadAccessor< Data<InVecDeriv> > velIn = dIn;
+
         helper::WriteOnlyAccessor< Data<VecDeriv> > out = dOut;
         helper::ReadAccessor< Data<InVecDeriv> > in = dIn;
 
-        for(sofa::Index i=0 ; i<out.size() ; ++i)
+        const auto sz = d_vectorOfCurvilinearAbscissa.getValue().size();
+        out.resize(sz);
+        for(sofa::Index i=0 ; i<velOut.size() ; ++i)
         {
+            Vector3 vel ;
+            for (unsigned int j = 0; j < velIn.size(); j++){
+                vel += m_matOfCoeffs[i][j] * velIn[j];
+            }
+            velOut[i] = vel;
         }
     }
 

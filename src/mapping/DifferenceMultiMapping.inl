@@ -46,7 +46,7 @@ DifferenceMultiMapping<TIn1, TIn2, TOut>::DifferenceMultiMapping()
     : d_direction(initData(&d_direction, "direction","The list of directions of fix points .\n"))
     , d_indices(initData(&d_indices, "indices","Indices of fixe points of the cable"))
     , d_radius(initData(&d_radius, 2.0, "radius", "The size of the cable"))
-    , d_color(initData(&d_color,defaulttype::Vec4f(1,0,0,1), "color","The color of the cable"))
+    , d_color(initData(&d_color,type::Vec4f(1,0,0,1), "color","The color of the cable"))
     , d_drawArrows(initData(&d_drawArrows,false, "drawArrows","The color of the cable"))
     , d_lastPointIsFixed(initData(&d_lastPointIsFixed,true, "lastPointIsFixed","This select the last point as fixed of not,"
                                                                                "When the model is used to model a cable we need to fix the "
@@ -756,7 +756,7 @@ void DifferenceMultiMapping<TIn1, TIn2, TOut>::draw(const core::visual::VisualPa
     vparams->drawTool()->disableLighting();
 
     RGBAColor color = RGBAColor::magenta();
-    std::vector<sofa::defaulttype::Vector3> vertices;
+    std::vector<type::Vector3> vertices;
     if(d_drawArrows.getValue() && d_lastPointIsFixed.getValue()){
         for (size_t i =0 ; i < m_constraints.size(); i++) {
             color = RGBAColor::green();

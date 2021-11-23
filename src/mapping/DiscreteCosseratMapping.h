@@ -36,8 +36,8 @@ namespace sofa::component::mapping
     using sofa::core::objectmodel::BaseContext ;
     using sofa::type::Matrix3;
     using sofa::type::Matrix4;
-    using sofa::defaulttype::Vector3;
-    using sofa::defaulttype::Vec6;
+    using sofa::type::Vector3;
+    using sofa::type::Vec6;
     using std::get;
 
 /*!
@@ -107,7 +107,7 @@ protected:
     Data<Real>                       d_min ;
     Data<Real>                       d_radius ;
     Data<bool>                       d_drawMapBeam ;
-    Data<defaulttype::Vec4f>         d_color;
+    Data<type::Vec4f>         d_color;
     Data<type::vector<int> >       d_index;
 
     core::State<In1>* m_fromModel1;
