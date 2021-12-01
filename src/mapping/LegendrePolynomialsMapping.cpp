@@ -14,6 +14,6 @@ namespace sofa::component::mapping
 
     // Register in the Factory
     int LegendrePolynomialsMappingClass = core::RegisterObject("Set the positions and velocities of points attached to a rigid parent")
-                                   .add< LegendrePolynomialsMapping< sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types > >() ;
+                                   .add< LegendrePolynomialsMapping< sofa::defaulttype::Vec3Types, sofa::defaulttype::Vec3Types > >() ;
     template class SOFA_COSSERAT_MAPPING_API LegendrePolynomialsMapping< sofa::defaulttype::Vec3Types, sofa::defaulttype::Vec3Types >;
 } // namespace sofa::component::mapping
