@@ -26,7 +26,7 @@ namespace sofa::component::mapping {
     LegendrePolynomialsMapping<TIn, TOut>::LegendrePolynomialsMapping()
         : Inherit()
         , index(initData(&index, (unsigned)0, "index", "input DOF index"))
-        , d_order(initData(&d_order, (unsigned)4, "order", "The order of Legendre polynomials"))
+        , d_order(initData(&d_order, (unsigned)3, "order", "The order of Legendre polynomials"))
         , d_vectorOfCurvilinearAbscissa(initData(&d_vectorOfCurvilinearAbscissa, "curvAbscissa", "Vector of curvilinear Abscissa element of [0, 1]"))
     {}
 

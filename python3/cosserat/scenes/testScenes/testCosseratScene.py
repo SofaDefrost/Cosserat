@@ -54,7 +54,7 @@ def createScene(rootNode):
     lengthS = tot_length / nbSectionS
 
     #Define: the number of frame and the lenght beetween each frame.
-    nbFramesF = 20
+    nbFramesF = 10
     lengthF = tot_length /nbFramesF
 
     points = []
