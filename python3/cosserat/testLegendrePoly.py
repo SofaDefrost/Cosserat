@@ -15,7 +15,7 @@ from usefulFunctions import buildEdges, pluginList, BuildCosseratGeometry
 from cosserat.cosseratObject import Cosserat
 
 cosserat_config = {'init_pos': [0., 0., 0.], 'tot_length': 1, 'nbSectionS': 3,
-                   'nbFramesF': 6, 'buildCollisionModel': 1, 'beamMass': 0.22}
+                   'nbFramesF': 12, 'buildCollisionModel': 1, 'beamMass': 0.22}
 
 
 class Animation(Sofa.Core.Controller):
@@ -61,8 +61,8 @@ def createScene(rootNode):
                  name="cosserat", radius=0.1))
 
     beamFrame = cosserat.cosseratFrame
-    beamFrame.addObject('ConstantForceField', name='constForce', showArrowSize=1.e-2, indices=6,
-                        force=[0., -50., 0., 0., 0., 0.])
+    beamFrame.addObject('ConstantForceField', name='constForce', showArrowSize=1.e-2, indices=12,
+                        force=[0., -100., 0., 0., 0., 0.])
 
 
 # def createScene(rootNode):
