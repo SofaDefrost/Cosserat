@@ -45,22 +45,23 @@ namespace sofa::component::mapping {
         m_matOfCoeffs.clear();
         auto curvAbs = d_vectorOfCurvilinearAbscissa.getValue();
         auto  sz = curvAbs.size();
+        std::cout << " curvAbs :" << curvAbs << std::endl;
         for (unsigned int i = 0; i < sz; i++){
             type::vector<double> coeffsOf_i;
             coeffsOf_i.clear();
             for (unsigned int order = 0; order < d_order.getValue(); order++)
                 coeffsOf_i.push_back(legendrePoly(order, curvAbs[i]));
 
+            std::cout << " = = = >coeffsOf_i: " << coeffsOf_i << std::endl;
             m_matOfCoeffs.push_back(coeffsOf_i);
         }
     }
 
 
-
     template <class TIn, class TOut>
     void LegendrePolynomialsMapping<TIn, TOut>::init()
     {
-        this->Inherit::init();
+//        this->Inherit::init();
         //Compute the coefficients for each curv_abs at all orders of the polynomials
         reinit();
     }
@@ -72,14 +73,15 @@ namespace sofa::component::mapping {
         helper::ReadAccessor< Data<InVecCoord> > in = dIn;
         helper::WriteOnlyAccessor< Data<VecCoord> > out = dOut;
         const auto sz = d_vectorOfCurvilinearAbscissa.getValue().size();
-        out.resize(sz);
+        out.resize(sz-1);
 
         for (unsigned int i = 0; i < sz; i++){
             type::Vector3 Xi ;
-            for (unsigned int j = 0; j < in.size(); j++){
+            for (unsigned int j = 0; j < in.size(); j++)
                 Xi += m_matOfCoeffs[i][j] * in[j];
-            }
-            out[i] = Xi;
+
+            std::cout << "= = = > Xi: " << Xi << std::endl;
+            if (i != 0) out[i-1] = Xi;
         }
     }
 
@@ -93,14 +95,15 @@ namespace sofa::component::mapping {
         helper::ReadAccessor< Data<InVecDeriv> > in = dIn;
 
         const auto sz = d_vectorOfCurvilinearAbscissa.getValue().size();
-        out.resize(sz);
-        for(sofa::Index i=0 ; i<velOut.size() ; ++i)
+        out.resize(sz-1);
+        for(sofa::Index i=0 ; i<sz ; ++i)
         {
             Vector3 vel ;
-            for (unsigned int j = 0; j < velIn.size(); j++){
+            for (unsigned int j = 0; j < velIn.size(); j++)
                 vel += m_matOfCoeffs[i][j] * velIn[j];
-            }
-            velOut[i] = vel;
+
+             std::cout << " vel :" << vel << std::endl;
+            if (i != 0) velOut[i-1] = vel;
         }
     }
 
