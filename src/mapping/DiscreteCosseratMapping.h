@@ -107,8 +107,9 @@ protected:
     Data<Real>                       d_min ;
     Data<Real>                       d_radius ;
     Data<bool>                       d_drawMapBeam ;
-    Data<type::Vec4f>         d_color;
-    Data<type::vector<int> >       d_index;
+    Data<type::Vec4f>               d_color;
+    Data<type::vector<int> >        d_index;
+    Data<unsigned int>              d_baseIndex;
 
     core::State<In1>* m_fromModel1;
     core::State<In2>* m_fromModel2;
