@@ -46,7 +46,7 @@ namespace sofa::component::mapping {
         auto curvAbs = d_vectorOfCurvilinearAbscissa.getValue();
         auto  sz = curvAbs.size();
         std::cout << " curvAbs :" << curvAbs << std::endl;
-        for (unsigned int i = 0; i < sz; i++){
+        for (unsigned int i = 1; i < sz; i++){
             type::vector<double> coeffsOf_i;
             coeffsOf_i.clear();
             for (unsigned int order = 0; order < d_order.getValue(); order++)
@@ -75,13 +75,13 @@ namespace sofa::component::mapping {
         const auto sz = d_vectorOfCurvilinearAbscissa.getValue().size();
         out.resize(sz-1);
 
-        for (unsigned int i = 0; i < sz; i++){
+        for (unsigned int i = 0; i < sz-1; i++){
             type::Vector3 Xi ;
             for (unsigned int j = 0; j < in.size(); j++)
                 Xi += m_matOfCoeffs[i][j] * in[j];
 
-            std::cout << "= = = > Xi: " << Xi << std::endl;
-            if (i != 0) out[i-1] = Xi;
+            // std::cout << "= = = > Xi: " << Xi << std::endl;
+            out[i] = Xi;
         }
     }
 
@@ -96,14 +96,14 @@ namespace sofa::component::mapping {
 
         const auto sz = d_vectorOfCurvilinearAbscissa.getValue().size();
         out.resize(sz-1);
-        for(sofa::Index i=0 ; i<sz ; ++i)
+        for(sofa::Index i=0 ; i<sz-1 ; ++i)
         {
             Vector3 vel ;
             for (unsigned int j = 0; j < velIn.size(); j++)
                 vel += m_matOfCoeffs[i][j] * velIn[j];
 
-             std::cout << " vel :" << vel << std::endl;
-            if (i != 0) velOut[i-1] = vel;
+             // std::cout << " vel :" << vel << std::endl;
+            velOut[i] = vel;
         }
     }
 
@@ -112,6 +112,10 @@ namespace sofa::component::mapping {
     {
         helper::WriteAccessor< Data<InVecDeriv> > out = dOut;
         helper::ReadAccessor< Data<VecDeriv> > in = dIn;
+
+        std::cout << "J on mapped DOFs == " << in[0] << "; size :"<< in.size()
+                  << "\nJ on input  DOFs == " << out[0] << "; size :"<< out.size()  << std::endl;
+
 
         for(sofa::Index i=0 ; i<in.size() ; ++i)
         {
@@ -131,10 +135,11 @@ void LegendrePolynomialsMapping<TIn, TOut>::applyJT(const core::ConstraintParams
         InMatrixDeriv& out = *dOut.beginEdit();
         const OutMatrixDeriv& in = dIn.getValue();
 
-        dmsg_info() << "J on mapped DOFs == " << in << msgendl
-                    << "J on input  DOFs == " << out ;
+//         std::cout << "J on mapped DOFs == " << in << "; size :"<< in.size()
+//            << "\nJ on input  DOFs == " << out << "; size :"<< out.size()  << std::endl;
 
         const unsigned int numDofs = this->getFromModel()->getSize();
+//        std::cout << " Number of numDofs : "<< numDofs << std::endl;
 
         // TODO the implementation on the new data structure could maybe be optimized
         typename Out::MatrixDeriv::RowConstIterator rowItEnd = in.end();
