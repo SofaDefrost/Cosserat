@@ -146,7 +146,9 @@ class NonLinearCosserat(Sofa.Prefab):
         print(f'the length is : {longeurS}')
         localCurv = curv_abs_inputS
         # localCurv.pop(0)
-        cosseratCoordinateNode.addObject('LegendrePolynomialsMapping', curvAbscissa=localCurv, order=3)
+        controlPointsAbs = [0.3333333333333333, 0.6666666666666666, 1.0]
+        cosseratCoordinateNode.addObject('LegendrePolynomialsMapping', curvAbscissa=localCurv, order=3,
+                                         controlPointsAbs=controlPointsAbs)
         return cosseratCoordinateNode
 
     def addCosseratFrame(self, framesF, curv_abs_inputS, curv_abs_outputF):
@@ -200,6 +202,12 @@ def createScene(rootNode):
     nonLinearCosserat = solverNode.addChild(
         NonLinearCosserat(parent=solverNode, cosseratGeometry=nonLinearConfig, useCollisionModel=needCollisionModel,
                           name="cosserat", radius=0.1, legendreControlPoints=initialStrain4))
+    cosseratNode = nonLinearCosserat.legendreControlPointsNode
+    cosseratNode.addObject('MechanicalMatrixMapper', template='Vec3,Vec3',
+                                                          object1=cosseratNode.getLinkPath(),
+                                                          object2=cosseratNode.getLinkPath(),
+                                                          name='cosseratCoordinateNodeMapper',
+                                                          nodeToParse=nonLinearCosserat.cosseratCoordinateNode.getLinkPath())
 
     solverNode2 = rootNode.addChild('solverNode2')
     solverNode2.addObject('EulerImplicitSolver', rayleighStiffness="0.2", rayleighMass='0.1')

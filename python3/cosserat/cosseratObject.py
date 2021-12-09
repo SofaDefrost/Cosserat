@@ -79,6 +79,7 @@ class Cosserat(Sofa.Prefab):
             BuildCosseratGeometry(self.cosseratGeometry)
         self.cosseratCoordinateNode = self.addCosseratCoordinate(positionS, longeurS)
         self.cosseratFrame = self.addCosseratFrame(framesF, curv_abs_inputS, curv_abs_outputF)
+        print(f'=== > {curv_abs_inputS}')
 
     def init(self):
         pass

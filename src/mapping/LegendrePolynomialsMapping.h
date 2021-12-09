@@ -43,7 +43,7 @@ public:
     typedef typename Out::VecCoord VecCoord;
     typedef typename Out::VecDeriv VecDeriv;
     typedef typename Out::Coord Coord;
-    typedef typename Out::Deriv Deriv;
+    typedef typename Out::Deriv OutDeriv;
     typedef typename Out::MatrixDeriv OutMatrixDeriv;
     typedef typename In::Real InReal;
     typedef typename In::Deriv InDeriv;
@@ -55,6 +55,7 @@ public:
     Data<sofa::Index> index; ///< input DOF index
     Data<unsigned int> d_order; ///< input DOF index
     Data<type::vector<double>> d_vectorOfCurvilinearAbscissa;
+    Data<type::vector<double>> d_vectorOfContrePointsAbs;
 
 protected:
     LegendrePolynomialsMapping();

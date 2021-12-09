@@ -28,6 +28,7 @@ namespace sofa::component::mapping {
         , index(initData(&index, (unsigned)0, "index", "input DOF index"))
         , d_order(initData(&d_order, (unsigned)3, "order", "The order of Legendre polynomials"))
         , d_vectorOfCurvilinearAbscissa(initData(&d_vectorOfCurvilinearAbscissa, "curvAbscissa", "Vector of curvilinear Abscissa element of [0, 1]"))
+        , d_vectorOfContrePointsAbs(initData(&d_vectorOfContrePointsAbs, "controlPointsAbs", "Vector of curvilinear Abscissa of control points element of [0, 1]"))
     {}
 
     template <class TIn, class TOut>
@@ -52,7 +53,7 @@ namespace sofa::component::mapping {
             for (unsigned int order = 0; order < d_order.getValue(); order++)
                 coeffsOf_i.push_back(legendrePoly(order, curvAbs[i]));
 
-            std::cout << " = = = >coeffsOf_i: " << coeffsOf_i << std::endl;
+            // std::cout << " = = = >coeffsOf_i: " << coeffsOf_i << std::endl;
             m_matOfCoeffs.push_back(coeffsOf_i);
         }
     }
@@ -102,7 +103,7 @@ namespace sofa::component::mapping {
             for (unsigned int j = 0; j < velIn.size(); j++)
                 vel += m_matOfCoeffs[i][j] * velIn[j];
 
-             // std::cout << " vel :" << vel << std::endl;
+            // std::cout << " vel :" << vel << std::endl;
             velOut[i] = vel;
         }
     }
@@ -113,14 +114,16 @@ namespace sofa::component::mapping {
         helper::WriteAccessor< Data<InVecDeriv> > out = dOut;
         helper::ReadAccessor< Data<VecDeriv> > in = dIn;
 
-        std::cout << "J on mapped DOFs == " << in[0] << "; size :"<< in.size()
-                  << "\nJ on input  DOFs == " << out[0] << "; size :"<< out.size()  << std::endl;
+//        std::cout << "J on mapped DOFs == " << in[0] << "; size :"<< in.size()
+//                  << "\nJ on input  DOFs == " << out[0] << "; size :"<< out.size()  << std::endl;
 
-
-        for(sofa::Index i=0 ; i<in.size() ; ++i)
-        {
-
+        for (unsigned int cI = 0; cI < out.size(); cI++){
+            for(sofa::Index i=0 ; i<in.size() ; ++i){
+                //std::cout << " cI:" << cI << " i:"<< i <<" m_matOfCoeffs[i][cI] : "<< (m_matOfCoeffs[i][cI]) * in[i]<< std::endl;
+                out[cI] += (1./m_matOfCoeffs[i][cI]) * in[i];
+            }
         }
+
     }
 
 // RigidMapping::applyJT( InMatrixDeriv& out, const OutMatrixDeriv& in ) //
@@ -139,20 +142,57 @@ void LegendrePolynomialsMapping<TIn, TOut>::applyJT(const core::ConstraintParams
 //            << "\nJ on input  DOFs == " << out << "; size :"<< out.size()  << std::endl;
 
         const unsigned int numDofs = this->getFromModel()->getSize();
-//        std::cout << " Number of numDofs : "<< numDofs << std::endl;
+
+        std::cout << " - - > numDofs : "<< numDofs << std::endl;
 
         // TODO the implementation on the new data structure could maybe be optimized
         typename Out::MatrixDeriv::RowConstIterator rowItEnd = in.end();
 
         for (typename Out::MatrixDeriv::RowConstIterator rowIt = in.begin(); rowIt != rowItEnd; ++rowIt)
         {
-            for (unsigned int ito = 0; ito < numDofs; ito++)
-            {
+            typename OutMatrixDeriv::ColConstIterator colIt = rowIt.begin();
+            typename OutMatrixDeriv::ColConstIterator colItEnd = rowIt.end();
 
+            std::cout << "rowIndexe : "<<rowIt.index() << std::endl;
+
+            if (colIt == colItEnd)
+                continue;
+
+            typename InMatrixDeriv::RowIterator o = out.writeLine(rowIt.index()); // we store the constraint number
+            int indexBeam =  0;
+            while (colIt != colItEnd) {
+                int childIndex = colIt.index();
+                const OutDeriv f_It = colIt.val();
+                /* @todo get parentIndex: here we are contributing as parent for everything right ?
+                    todo get parentIndex: If not, one have to find a way to get this (help @Christian) */
+                //int indexBeam =  0; //m_indicesVectors[childIndex];
+
+                o.addCol(indexBeam, f_It);
+                indexBeam++;
+                indexBeam = (indexBeam == 3) ? 0 : indexBeam;
+                colIt++;
             }
+//            for (unsigned int ito = 0; ito < numDofs; ito++)
+//            {
+//                OutDeriv f;
+//                bool needToInsert = false;
+//
+//                for (typename Out::MatrixDeriv::ColConstIterator colIt = rowIt.begin(); colIt != rowIt.end(); ++colIt) {
+//                    // this used to get the parentIndex, the node on which we are computing the force
+//                    auto childIndex = colIt.index();
+//                    std::cout << "childIndex :"<< childIndex<<std::endl;
+//                    /* @todo get parentIndex: here we are contributing as parent for everything right ?
+//                    todo get parentIndex: If not, one have to find a way to get this (help @Christian) */
+//
+//                    const OutDeriv fIt = colIt.val();
+//                    f += fIt;
+//                }
+//                // std::cout << "The out force :"<< f << std::endl;
+//                o.addCol(ito,f);
+//            }
         }
 
-        dmsg_info() << "new J on input  DOFs = " << out ;
+        std::cout << "new J on input  DOFs = \n" << out.size() << std::endl;
 
         dOut.endEdit();
 }
