@@ -120,7 +120,8 @@ namespace sofa::component::mapping {
         for (unsigned int cI = 0; cI < out.size(); cI++){
             for(sofa::Index i=0 ; i<in.size() ; ++i){
                 //std::cout << " cI:" << cI << " i:"<< i <<" m_matOfCoeffs[i][cI] : "<< (m_matOfCoeffs[i][cI]) * in[i]<< std::endl;
-                out[cI] += (1./m_matOfCoeffs[i][cI]) * in[i];
+                //@todo use alpha factor
+                out[cI] += (m_matOfCoeffs[i][cI]) * in[i];
             }
         }
 
