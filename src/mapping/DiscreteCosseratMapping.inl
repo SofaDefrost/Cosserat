@@ -306,7 +306,6 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>:: applyJT(
 
     //Compute output forces
     auto sz = m_indicesVectors.size();
-
     auto index =  m_indicesVectors[sz-1];
     m_totalBeamForceVectors.clear();
     m_totalBeamForceVectors.resize(sz);
