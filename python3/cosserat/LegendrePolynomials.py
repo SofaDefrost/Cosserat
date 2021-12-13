@@ -53,7 +53,7 @@ def buildMState(sizeAbscissa=6, polyDegree=5):
 
 
 # buildMState(sizeAbscissa=3, polyDegree=4)
-for i in range(4):
-    print(f'===> {legendrePoly(i, 0.99)}')
+# for i in range(4):
+#     print(f'===> {legendrePoly(i, 0.99)}')
 
-# drawLegendre()
+drawLegendre()

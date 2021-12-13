@@ -291,12 +291,14 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>:: applyJT(
     type::vector<Vec6> local_F_Vec;  local_F_Vec.clear();
 
     out1.resize(x1from.size());
+//    for ()
+    std::cout << "Step1 ==> Out force Cosserat Beam "<< out1 << std::endl;
 
     //convert the input from Deriv type to vec6 type, for the purpose of the matrix vector multiplication
     for (unsigned int var = 0; var < in.size(); ++var) {
         type::Vec6 vec;
         for(unsigned j = 0; j < 6; j++) vec[j] = in[var][j];
-
+        std::cout << " inForce i : "<< var << " ==> :  "<< vec<< std::endl;
         //Convert input from global frame(SOFA) to local frame
         Transform _T = Transform(frame[var].getCenter(),frame[var].getOrientation());
         Mat6x6 P_trans =(this->build_projector(_T)); P_trans.transpose();
@@ -315,6 +317,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>:: applyJT(
 
     Mat3x6 matB_trans; matB_trans.clear();
     for(unsigned int k=0; k<3; k++) matB_trans[k][k] = 1.0;
+
 
     for (auto s = sz ; s-- ; ) {
         Mat6x6 coAdjoint;
@@ -339,10 +342,14 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>:: applyJT(
         if(d_debug.getValue())
             std::cout << "f at s ="<< s <<" and index"<< index <<  " is : "<< f << std::endl;
 
+
         //compute F_tot
         F_tot += node_F_Vec;
+        std::cout << "f at s ="<< s <<" and index"<< index <<  " is : "<< f << std::endl;
         out1[m_indicesVectors[s]-1] += f;
     }
+    std::cout << "Step2 ==> Out force Cosserat Beam "<< out1 << std::endl;
+
     Transform frame0 = Transform(frame[0].getCenter(),frame[0].getOrientation());
     Mat6x6 M = this->build_projector(frame0);
     out2[baseIndex] += M * F_tot;
