@@ -46,7 +46,7 @@ namespace sofa::component::mapping {
         m_matOfCoeffs.clear();
         auto curvAbs = d_vectorOfCurvilinearAbscissa.getValue();
         auto  sz = curvAbs.size();
-        std::cout << " curvAbs :" << curvAbs << std::endl;
+        // std::cout << " curvAbs :" << curvAbs << std::endl;
         for (unsigned int i = 1; i < sz; i++){
             type::vector<double> coeffsOf_i;
             coeffsOf_i.clear();
@@ -62,7 +62,7 @@ namespace sofa::component::mapping {
     template <class TIn, class TOut>
     void LegendrePolynomialsMapping<TIn, TOut>::init()
     {
-//        this->Inherit::init();
+        // this->Inherit::init();
         //Compute the coefficients for each curv_abs at all orders of the polynomials
         reinit();
     }
@@ -76,16 +76,16 @@ namespace sofa::component::mapping {
         const auto sz = d_vectorOfCurvilinearAbscissa.getValue().size();
         out.resize(sz-1);
 
-        std::cout<< "Apply :  in " << in[0] <<std::endl;
+        // std::cout<< "Apply :  in " << in[0] <<std::endl;
         for (unsigned int i = 0; i < sz-1; i++){
             type::Vector3 Xi ;
             for (unsigned int j = 0; j < in.size(); j++)
                 Xi += m_matOfCoeffs[i][j] * in[j];
 
-            std::cout << "   Xi : "<< Xi << std::endl;
+            // std::cout << "   Xi : "<< Xi << std::endl;
             out[i] = Xi;
         }
-        std::cout<< " " << std::endl;
+        // std::cout<< " " << std::endl;
     }
 
     template <class TIn, class TOut>
@@ -99,17 +99,17 @@ namespace sofa::component::mapping {
 
         const auto sz = d_vectorOfCurvilinearAbscissa.getValue().size();
         out.resize(sz-1);
-        std::cout<< "ApplyJ : "<< std::endl;
+        // std::cout<< "ApplyJ : "<< std::endl;
         for(sofa::Index i=0 ; i<sz-1 ; ++i)
         {
             Vector3 vel ;
             for (unsigned int j = 0; j < velIn.size(); j++)
                 vel += m_matOfCoeffs[i][j] * velIn[j];
 
-             std::cout << " vel :" << vel << std::endl;
+            // std::cout << " vel :" << vel << std::endl;
             velOut[i] = vel;
         }
-//        std::cout<< "ApplyJ : "<< velIn << "  out : "<< velOut << std::endl;
+        // std::cout<< "ApplyJ : "<< velIn << "  out : "<< velOut << std::endl;
     }
 
     template <class TIn, class TOut>
@@ -121,14 +121,14 @@ namespace sofa::component::mapping {
         out.resize(numDofs);
         for (unsigned int cI = 0; cI < out.size(); cI++){
             for(sofa::Index i=0 ; i<in.size() ; ++i){
-                std::cout << " cI:" << cI << " i:"<< i <<" m_matOfCoeffs[i][cI] : "<< m_matOfCoeffs[i][cI] * in[i]<< std::endl;
+                // std::cout << " cI:" << cI << " i:"<< i <<" m_matOfCoeffs[i][cI] : "<< m_matOfCoeffs[i][cI] * in[i]<< std::endl;
                 //@todo use alpha factor
                 out[cI] += m_matOfCoeffs[i][cI] * in[i];
             }
         }
-                std::cout << "J on mapped DOFs == " << in[0] << "; size :"<< in.size()
-                  << "\nJ on input  DOFs == " << out[0] << "; size :"<< out.size()  << std::endl;
-//        std::cout<< "ApplyJT : "<< in << "  out : "<< out << std::endl;
+        // std::cout << "J on mapped DOFs == " << in[0] << "; size :"<< in.size()
+        //  << "\nJ on input  DOFs == " << out[0] << "; size :"<< out.size()  << std::endl;
+        // std::cout<< "ApplyJT : "<< in << "  out : "<< out << std::endl;
     }
 
 // RigidMapping::applyJT( InMatrixDeriv& out, const OutMatrixDeriv& in ) //
@@ -140,14 +140,13 @@ namespace sofa::component::mapping {
 template <class TIn, class TOut>
 void LegendrePolynomialsMapping<TIn, TOut>::applyJT(const core::ConstraintParams * /*cparams*/, Data<InMatrixDeriv>& dOut, const Data<OutMatrixDeriv>& dIn)
 {
-    return;
         InMatrixDeriv& out = *dOut.beginEdit();
         const OutMatrixDeriv& in = dIn.getValue();
 
         const unsigned int numDofs = this->getFromModel()->getSize();
 
-        // TODO the implementation on the new data structure could maybe be optimized
         typename Out::MatrixDeriv::RowConstIterator rowItEnd = in.end();
+        type::vector<InDeriv> tabF; tabF.resize(numDofs);
 
         for (typename Out::MatrixDeriv::RowConstIterator rowIt = in.begin(); rowIt != rowItEnd; ++rowIt)
         {
@@ -164,13 +163,14 @@ void LegendrePolynomialsMapping<TIn, TOut>::applyJT(const core::ConstraintParams
                 for (unsigned int order = 0; order < numDofs; order++){
                     InDeriv f;
                     f = m_matOfCoeffs[childIndex][order] * f_It;
+                    tabF[order] += f;
                     o.addCol(order, f);
                 }
                 colIt++;
             }
         }
-        std::cout << "applyJT Constraint : new J on input  DOFs = \n" << out<< std::endl;
 
+        std::cout << "applyJT Constraint : new J on input  DOFs = \n" << out << std::endl;
         dOut.endEdit();
 }
 
