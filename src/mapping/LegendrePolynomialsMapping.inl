@@ -76,14 +76,16 @@ namespace sofa::component::mapping {
         const auto sz = d_vectorOfCurvilinearAbscissa.getValue().size();
         out.resize(sz-1);
 
+        std::cout<< "Apply :  in " << in[0] <<std::endl;
         for (unsigned int i = 0; i < sz-1; i++){
             type::Vector3 Xi ;
             for (unsigned int j = 0; j < in.size(); j++)
                 Xi += m_matOfCoeffs[i][j] * in[j];
 
-            // std::cout << "= = = > Xi: " << Xi << std::endl;
+            std::cout << "   Xi : "<< Xi << std::endl;
             out[i] = Xi;
         }
+        std::cout<< " " << std::endl;
     }
 
     template <class TIn, class TOut>
@@ -97,15 +99,17 @@ namespace sofa::component::mapping {
 
         const auto sz = d_vectorOfCurvilinearAbscissa.getValue().size();
         out.resize(sz-1);
+        std::cout<< "ApplyJ : "<< std::endl;
         for(sofa::Index i=0 ; i<sz-1 ; ++i)
         {
             Vector3 vel ;
             for (unsigned int j = 0; j < velIn.size(); j++)
                 vel += m_matOfCoeffs[i][j] * velIn[j];
 
-            // std::cout << " vel :" << vel << std::endl;
+             std::cout << " vel :" << vel << std::endl;
             velOut[i] = vel;
         }
+//        std::cout<< "ApplyJ : "<< velIn << "  out : "<< velOut << std::endl;
     }
 
     template <class TIn, class TOut>
@@ -113,18 +117,18 @@ namespace sofa::component::mapping {
     {
         helper::WriteAccessor< Data<InVecDeriv> > out = dOut;
         helper::ReadAccessor< Data<VecDeriv> > in = dIn;
-
-//        std::cout << "J on mapped DOFs == " << in[0] << "; size :"<< in.size()
-//                  << "\nJ on input  DOFs == " << out[0] << "; size :"<< out.size()  << std::endl;
-
+        const unsigned int numDofs = this->getFromModel()->getSize();
+        out.resize(numDofs);
         for (unsigned int cI = 0; cI < out.size(); cI++){
             for(sofa::Index i=0 ; i<in.size() ; ++i){
-                //std::cout << " cI:" << cI << " i:"<< i <<" m_matOfCoeffs[i][cI] : "<< (m_matOfCoeffs[i][cI]) * in[i]<< std::endl;
+                std::cout << " cI:" << cI << " i:"<< i <<" m_matOfCoeffs[i][cI] : "<< m_matOfCoeffs[i][cI] * in[i]<< std::endl;
                 //@todo use alpha factor
-                out[cI] += (m_matOfCoeffs[i][cI]) * in[i];
+                out[cI] += m_matOfCoeffs[i][cI] * in[i];
             }
         }
-
+                std::cout << "J on mapped DOFs == " << in[0] << "; size :"<< in.size()
+                  << "\nJ on input  DOFs == " << out[0] << "; size :"<< out.size()  << std::endl;
+//        std::cout<< "ApplyJT : "<< in << "  out : "<< out << std::endl;
     }
 
 // RigidMapping::applyJT( InMatrixDeriv& out, const OutMatrixDeriv& in ) //
@@ -136,15 +140,11 @@ namespace sofa::component::mapping {
 template <class TIn, class TOut>
 void LegendrePolynomialsMapping<TIn, TOut>::applyJT(const core::ConstraintParams * /*cparams*/, Data<InMatrixDeriv>& dOut, const Data<OutMatrixDeriv>& dIn)
 {
+    return;
         InMatrixDeriv& out = *dOut.beginEdit();
         const OutMatrixDeriv& in = dIn.getValue();
 
-//         std::cout << "J on mapped DOFs == " << in << "; size :"<< in.size()
-//            << "\nJ on input  DOFs == " << out << "; size :"<< out.size()  << std::endl;
-
         const unsigned int numDofs = this->getFromModel()->getSize();
-
-        std::cout << " - - > numDofs : "<< numDofs << std::endl;
 
         // TODO the implementation on the new data structure could maybe be optimized
         typename Out::MatrixDeriv::RowConstIterator rowItEnd = in.end();
@@ -154,46 +154,22 @@ void LegendrePolynomialsMapping<TIn, TOut>::applyJT(const core::ConstraintParams
             typename OutMatrixDeriv::ColConstIterator colIt = rowIt.begin();
             typename OutMatrixDeriv::ColConstIterator colItEnd = rowIt.end();
 
-            std::cout << "rowIndexe : "<<rowIt.index() << std::endl;
-
             if (colIt == colItEnd)
                 continue;
 
             typename InMatrixDeriv::RowIterator o = out.writeLine(rowIt.index()); // we store the constraint number
-            int indexBeam =  0;
             while (colIt != colItEnd) {
                 int childIndex = colIt.index();
                 const OutDeriv f_It = colIt.val();
-                /* @todo get parentIndex: here we are contributing as parent for everything right ?
-                    todo get parentIndex: If not, one have to find a way to get this (help @Christian) */
-                //int indexBeam =  0; //m_indicesVectors[childIndex];
-
-                o.addCol(indexBeam, f_It);
-                indexBeam++;
-                indexBeam = (indexBeam == 3) ? 0 : indexBeam;
+                for (unsigned int order = 0; order < numDofs; order++){
+                    InDeriv f;
+                    f = m_matOfCoeffs[childIndex][order] * f_It;
+                    o.addCol(order, f);
+                }
                 colIt++;
             }
-//            for (unsigned int ito = 0; ito < numDofs; ito++)
-//            {
-//                OutDeriv f;
-//                bool needToInsert = false;
-//
-//                for (typename Out::MatrixDeriv::ColConstIterator colIt = rowIt.begin(); colIt != rowIt.end(); ++colIt) {
-//                    // this used to get the parentIndex, the node on which we are computing the force
-//                    auto childIndex = colIt.index();
-//                    std::cout << "childIndex :"<< childIndex<<std::endl;
-//                    /* @todo get parentIndex: here we are contributing as parent for everything right ?
-//                    todo get parentIndex: If not, one have to find a way to get this (help @Christian) */
-//
-//                    const OutDeriv fIt = colIt.val();
-//                    f += fIt;
-//                }
-//                // std::cout << "The out force :"<< f << std::endl;
-//                o.addCol(ito,f);
-//            }
         }
-
-        std::cout << "new J on input  DOFs = \n" << out.size() << std::endl;
+        std::cout << "applyJT Constraint : new J on input  DOFs = \n" << out<< std::endl;
 
         dOut.endEdit();
 }
