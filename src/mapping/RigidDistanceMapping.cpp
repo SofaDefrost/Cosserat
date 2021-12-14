@@ -37,7 +37,7 @@ using namespace sofa::defaulttype;
 
 // Register in the Factory
 int RigidDistanceMappingClass = core::RegisterObject("Set the positions and velocities of points attached to a rigid parent")
-        .add< RigidDistanceMapping< sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types > >() ;
+        .add< RigidDistanceMapping< sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types > >(true) ;
 
 
 template class SOFA_COSSERAT_MAPPING_API RigidDistanceMapping< sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types >;

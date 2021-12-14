@@ -24,11 +24,16 @@
 #include "CosseratSlidingConstraint.h"
 #include <sofa/core/visual/VisualParams.h>
 #include <sofa/core/behavior/BaseConstraint.h>
-#include <sofa/defaulttype/RGBAColor.h>
-#include <sofa/defaulttype/Vec.h>
+#include <sofa/type/RGBAColor.h>
+#include <sofa/type/Vec.h>
 
 namespace sofa::component::constraintset
 {
+
+using linearalgebra::BaseVector;
+using type::vector;
+using type::RGBAColor;
+using type::Vector3;
 
 template<class DataTypes>
 CosseratSlidingConstraint<DataTypes>::CosseratSlidingConstraint()
@@ -198,7 +203,7 @@ void CosseratSlidingConstraint<DataTypes>::buildConstraintMatrix(const core::Con
 
 
 template<class DataTypes>
-void CosseratSlidingConstraint<DataTypes>::getConstraintViolation(const core::ConstraintParams *, defaulttype::BaseVector *v, const DataVecCoord &, const DataVecCoord &
+void CosseratSlidingConstraint<DataTypes>::getConstraintViolation(const core::ConstraintParams *, BaseVector *v, const DataVecCoord &, const DataVecCoord &
                                                                   , const DataVecDeriv &, const DataVecDeriv &)
 {
     for (size_t i = 0; i < m_constraints.size(); i++) {
@@ -236,7 +241,7 @@ void CosseratSlidingConstraint<DataTypes>::getConstraintResolution(const Constra
 
 
 template<class DataTypes>
-void CosseratSlidingConstraint<DataTypes>::storeLambda(const ConstraintParams* /*cParams*/, sofa::core::MultiVecDerivId /*res*/, const sofa::defaulttype::BaseVector* lambda)
+void CosseratSlidingConstraint<DataTypes>::storeLambda(const ConstraintParams* /*cParams*/, sofa::core::MultiVecDerivId /*res*/, const BaseVector* lambda)
 {
     Real lamb1,lamb2, lamb3;
     for (size_t i = 0; i < m_constraints.size(); i++) {
@@ -268,7 +273,7 @@ void CosseratSlidingConstraint<DataTypes>::draw(const core::visual::VisualParams
 
     vparams->drawTool()->disableLighting();
 
-    sofa::defaulttype::RGBAColor color;
+    RGBAColor color;
     //    Constraint& c = m_constraints[0];
 
     //    if(c.thirdConstraint<0)
@@ -276,9 +281,9 @@ void CosseratSlidingConstraint<DataTypes>::draw(const core::visual::VisualParams
     //    else if(c.thirdConstraint>0)
     //        color = sofa::defaulttype::RGBAColor::green();
     //    else
-    color = sofa::defaulttype::RGBAColor::magenta();
+    color = RGBAColor::magenta();
 
-    std::vector<sofa::defaulttype::Vector3> vertices;
+    std::vector<Vector3> vertices;
     //    vertices.push_back(DataTypes::getCPos((this->mstate1->read(core::ConstVecCoordId::position())->getValue())[d_m1.getValue()]));
 
     //    vparams->drawTool()->drawPoints(vertices, 10, color);
@@ -290,7 +295,7 @@ void CosseratSlidingConstraint<DataTypes>::draw(const core::visual::VisualParams
     vparams->drawTool()->drawLines(vertices, 1, color);
 
     for (size_t i =0 ; i < m_constraints.size(); i++) {
-        color = sofa::defaulttype::RGBAColor::green();
+        color = RGBAColor::green();
         vertices.push_back(m_constraints[i].P);
         vertices.push_back(m_constraints[i].Q);
         vparams->drawTool()->drawLines(vertices, 1, color);
@@ -305,9 +310,9 @@ template<class DataTypes>
 void CosseratSlidingConstraint<DataTypes>::drawLinesBetweenPoints(const core::visual::VisualParams* vparams)
 {
     const VecCoord & positions  = this->mstate2->read(core::ConstVecCoordId::position())->getValue();
-    sofa::defaulttype::RGBAColor color;
-    color = sofa::defaulttype::RGBAColor::magenta();
-    std::vector<sofa::defaulttype::Vector3> vertices;
+    RGBAColor color;
+    color = RGBAColor::magenta();
+    std::vector<Vector3> vertices;
     for (unsigned int i=0; i<positions.size()-1; i++)
     {
         vertices.push_back(positions[i]);

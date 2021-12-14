@@ -18,8 +18,6 @@ using std::string ;
 #include <sofa/helper/vector.h>
 #include <sofa/core/MultiMapping.h>
 
-#include <sofa/defaulttype/VecTypes.h>
-#include <sofa/defaulttype/RigidTypes.h>
 #include <sofa/core/Multi2Mapping.inl>
 #include <sofa/simulation/SceneLoaderFactory.h>
 
@@ -38,8 +36,8 @@ namespace sofa {
 namespace { // anonymous namespace
 using namespace core;
 using namespace component;
-using defaulttype::Vec;
-using defaulttype::Mat;
+using type::Vec;
+using type::Mat;
 
 
 /**  Test suite for RigidMapping.

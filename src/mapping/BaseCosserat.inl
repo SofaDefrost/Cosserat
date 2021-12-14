@@ -32,7 +32,7 @@
 #include <sofa/helper/AdvancedTimer.h>
 #include <sofa/core/objectmodel/BaseContext.h>
 #include <sofa/helper/logging/Message.h>
-#include "sofa/defaulttype/Quat.h"
+#include "sofa/type/Quat.h"
 
 
 namespace sofa::component::mapping
@@ -114,7 +114,7 @@ void BaseCosserat<TIn1, TIn2, TOut>::computeExponentialSE3(const double & x, con
     g_X.getsub(0,0,M);
 
     //    msg_info("BaseCosserat: ")<< "Sub matrix M : "<< g_X;
-    defaulttype::Quat R; R.fromMatrix(M);
+    type::Quat<SReal> R; R.fromMatrix(M);
     Vector3 T = Vector3(g_X(0,3),g_X(1,3),g_X(2,3));
 
     Trans = Transform(T,R);
@@ -150,7 +150,7 @@ void BaseCosserat<TIn1, TIn2, TOut>::update_ExponentialSE3(const In1VecCoord & i
     }
 
     //Compute the exponential at the nodes
-    m_nodesExponentialSE3Vectors.push_back(Transform(Vector3(0.0,0.0,0.0),defaulttype::Quat(0,0,0,1)));
+    m_nodesExponentialSE3Vectors.push_back(Transform(Vector3(0.0,0.0,0.0),type::Quat<SReal>(0,0,0,1)));
     for (auto j = 0; j < inDeform.size(); j++) {
         Vector3 k = inDeform[j];
         double  x = m_BeamLengthVectors[j];

@@ -28,13 +28,14 @@
 namespace sofa::component::mapping
 {
 
+using namespace sofa::type;
 using namespace sofa::defaulttype;
 
 // Register in the Factory
 int DiscretDynamicCosseratMappingClass = core::RegisterObject("Set the positions and velocities of points attached to a rigid parent")
-        .add< DiscretDynamicCosseratMapping< sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types > >() ;
+        .add< DiscretDynamicCosseratMapping< Vec3Types, Rigid3Types, Rigid3Types > >() ;
 
 
-template class SOFA_COSSERAT_MAPPING_API DiscretDynamicCosseratMapping< sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types >;
+template class SOFA_COSSERAT_MAPPING_API DiscretDynamicCosseratMapping< Vec3Types, Rigid3Types, Rigid3Types >;
 
 } // namespace sofa::component::mapping

@@ -97,6 +97,11 @@ public:
     typedef typename SolidTypes< Real>::SpatialVector SpatialVector   ;
 
 protected:
+
+    core::State<In1>* m_fromModel1;
+    core::State<In2>* m_fromModel2;
+    core::State<Out>* m_toModel;
+
     Data<type::vector<int> >         d_index1 ;
     Data<type::vector<int> >         d_index2 ;
     Data<Real>                       d_max ;
@@ -104,10 +109,6 @@ protected:
     Data<Real>                       d_radius ;
     Data<type::Vec4f>                d_color;
     Data<type::vector<int> >         d_index;
-
-    core::State<In1>* m_fromModel1;
-    core::State<In2>* m_fromModel2;
-    core::State<Out>* m_toModel;
 
     ////////////////////////// Inherited attributes ////////////////////////////
     /// https://gcc.gnu.org/onlinedocs/gcc/Name-lookup.html

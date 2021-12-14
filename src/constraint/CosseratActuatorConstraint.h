@@ -29,7 +29,7 @@
 ******************************************************************************/
 #pragma once
 
-#include <sofa/defaulttype/Vec.h>
+#include <sofa/type/Vec.h>
 #include <sofa/helper/OptionsGroup.h>
 #include<sofa/defaulttype/VecTypes.h>
 #include <sofa/core/behavior/BaseConstraintSet.h>
@@ -40,11 +40,11 @@ namespace sofa::component::constraintset
 {
 
 using sofa::type::vector;
-using sofa::defaulttype::Vec;
-using sofa::defaulttype::Vec3d;
+using sofa::type::Vec;
+using sofa::type::Vec3d;
 using sofa::helper::WriteAccessor;
 using sofa::core::ConstraintParams;
-using sofa::defaulttype::BaseVector;
+using sofa::linearalgebra::BaseVector;
 using sofa::core::visual::VisualParams ;
 using sofa::core::behavior::ConstraintResolution;
 

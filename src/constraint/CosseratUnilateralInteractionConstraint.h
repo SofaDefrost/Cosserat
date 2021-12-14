@@ -34,7 +34,7 @@
 #include <sofa/helper/OptionsGroup.h>
 #include <sofa/defaulttype/config.h>
 #include <SofaConstraint/UnilateralInteractionConstraint.h>
-#include "sofa/defaulttype/Quat.h"
+#include "sofa/type/Quat.h"
 
 #include "../../../SoftRobots/src/SoftRobots/component/constraint/model/CableModel.h"
 #include "../../../SoftRobots/src/SoftRobots/component/behavior/SoftRobotsConstraint.h"
@@ -53,7 +53,7 @@ namespace sofa::component::constraintset
     using sofa::core::objectmodel::Data ;
     using sofa::defaulttype::Vec3dTypes ;
     using sofa::defaulttype::Vec3fTypes ;
-    using sofa::defaulttype::BaseVector ;
+    using sofa::linearalgebra::BaseVector ;
     using sofa::core::ConstraintParams ;
     using sofa::helper::ReadAccessor ;
     using sofa::helper::WriteAccessor;
@@ -228,7 +228,7 @@ namespace sofa::component::constraintset
 
         void storeLambda(const ConstraintParams* cParams,
                                                 core::MultiVecDerivId res,
-                                                const sofa::defaulttype::BaseVector* /*lambda*/) override
+                                                const sofa::linearalgebra::BaseVector* /*lambda*/) override
         {
             SOFA_UNUSED(res);
             SOFA_UNUSED(cParams);
@@ -241,7 +241,7 @@ namespace sofa::component::constraintset
         Data<unsigned int>              d_valueIndex;
         Data<type::vector<size_t>>    d_vectorOfIndices;
         Data<type::Vector3>      d_entryPoint;
-        Data<type::vector<defaulttype::Quat>>      d_direction;
+        Data<type::vector<type::Quat<SReal>>>      d_direction;
 
     protected:
         using SoftRobotsConstraint<DataTypes>::m_state ;

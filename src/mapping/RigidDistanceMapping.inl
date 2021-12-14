@@ -30,7 +30,7 @@
 #include <sofa/core/objectmodel/BaseContext.h>
 #include <sofa/helper/logging/Message.h>
 
-#include "sofa/defaulttype/Quat.h"
+#include "sofa/type/Quat.h"
 #include "BaseCosserat.inl"
 #include "RigidDistanceMapping.h"
 
@@ -108,7 +108,7 @@ void RigidDistanceMapping<TIn1, TIn2, TOut>::apply(
         int tm2 = m2Indices[pid];
         // dist[i] = in2[i] - in1[0];
         Vector3 outCenter = in2[tm2].getCenter()-in1[tm1].getCenter();
-        defaulttype::Quat outOri = in2[tm2].getOrientation()* in1[tm1].getOrientation().inverse();
+        type::Quat<SReal> outOri = in2[tm2].getOrientation()* in1[tm1].getOrientation().inverse();
 
         //pts[i].getCenter() = xfrom[index.getValue()].getOrientation().inverse().rotate( x[i].getCenter() - xfrom[index.getValue()].getCenter() ) ;
         // Vector3 outCenter = in2[tm2].getCenter()-in1[tm1].getCenter();

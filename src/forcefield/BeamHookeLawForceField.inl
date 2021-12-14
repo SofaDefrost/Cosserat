@@ -231,7 +231,7 @@ void BeamHookeLawForceField<DataTypes>::addKToMatrix(const MechanicalParams* mpa
                                                      const MultiMatrixAccessor* matrix)
 {
     MultiMatrixAccessor::MatrixRef mref = matrix->getMatrix(this->mstate);
-    BaseMatrix* mat = mref.matrix;
+    linearalgebra::BaseMatrix* mat = mref.matrix;
     unsigned int offset = mref.offset;
     Real kFact = (Real)mparams->kFactorIncludingRayleighDamping(this->rayleighStiffness.getValue());
 

@@ -47,7 +47,7 @@ using sofa::type::Vec ;
 using sofa::type::Mat ;
 using sofa::type::vector;
 using sofa::core::MechanicalParams;
-using sofa::defaulttype::BaseMatrix;
+using sofa::linearalgebra::BaseMatrix;
 using sofa::core::behavior::ForceField ;
 using sofa::component::linearsolver::CompressedRowSparseMatrix ;
 using sofa::core::behavior::MultiMatrixAccessor ;

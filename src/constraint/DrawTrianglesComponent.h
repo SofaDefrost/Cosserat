@@ -4,9 +4,9 @@
 #include <string>
 
 #include <sofa/core/objectmodel/BaseObject.h>
-#include <sofa/defaulttype/Vec.h>
+#include <sofa/type/Vec.h>
 #include <sofa/simulation/AnimateBeginEvent.h>
-#include <sofa/helper/system/config.h>
+#include <sofa/helper/config.h>
 #include <sofa/core/ObjectFactory.h>
 #include <sofa/defaulttype/RigidTypes.h>
 #include <SofaBaseMechanics/MechanicalObject.h>
