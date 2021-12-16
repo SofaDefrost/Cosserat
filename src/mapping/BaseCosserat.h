@@ -38,8 +38,8 @@ using sofa::defaulttype::SolidTypes ;
 using sofa::core::objectmodel::BaseContext ;
 using sofa::type::Matrix3;
 using sofa::type::Matrix4;
-using sofa::type::Vector3;
-using sofa::type::Vec6;
+using type::Vector3;
+using type::Vec6;
 using std::get;
 using sofa::core::objectmodel::BaseObject;
 

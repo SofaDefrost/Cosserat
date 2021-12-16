@@ -139,8 +139,6 @@ void BeamHookeLawForceField<DataTypes>::reinit()
         size_t szPR = d_poissonRatioList.getValue().size();
         size_t szL  = d_length.getValue().size();
 
-        std::cout<< "BeamHookeLawForceField :" << "szYM : "<< szYM << " szPR "<< szPR << "  szL " << szL<< std::endl;
-
         if((szL != szPR)||(szL != szYM)){
             msg_error("BeamHookeLawForceField")<< "Please, lenght, youngModulusList and poissonRatioList should have the same size";
             return;
@@ -179,8 +177,9 @@ void BeamHookeLawForceField<DataTypes>::addForce(const MechanicalParams* mparams
     const VecCoord& x0 = this->mstate->read(VecCoordId::restPosition())->getValue();
 
     f.resize(x.size());
-    if(x.size()!=d_length.getValue().size()){
-        msg_warning("BeamHookeLawForceField")<<" length should have the same size as x..."<<"\n";
+    unsigned int sz = d_length.getValue().size();
+    if(x.size()!= sz){
+        msg_warning("BeamHookeLawForceField")<<" length : "<< sz <<"should have the same size as x... "<< x.size() <<"\n";
         compute_df = false;
         return;
     }
