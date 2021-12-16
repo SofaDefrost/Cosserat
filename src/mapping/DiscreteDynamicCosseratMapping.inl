@@ -331,7 +331,7 @@ void DiscreteDynamicCosseratMapping<TIn1, TIn2, TOut>:: applyJT(
 	const OutVecCoord& frame = m_toModel->read(core::ConstVecCoordId::position())->getValue();
 	const In1DataVecCoord* x1fromData = m_fromModel1->read(core::ConstVecCoordId::position());
 	const In1VecCoord x1from = x1fromData->getValue();
-    type::vector<Vec6> local_F_Vec ;   local_F_Vec.clear();
+        type::vector<Vec6> local_F_Vec ;   local_F_Vec.clear();
 
 	out1.resize(x1from.size());
 

@@ -40,7 +40,6 @@ using type::Vector3;
 using type::Vec6;
 using std::get;
 
-
 /*!
  * \class RigidDistanceMapping
  * @brief Computes and map the length of the beams
@@ -102,7 +101,7 @@ protected:
     Data<Real>                       d_max ;
     Data<Real>                       d_min ;
     Data<Real>                       d_radius ;
-    Data<type::Vec4f>         d_color;
+    Data<type::Vec4f>                d_color;
     Data<type::vector<int> >         d_index;
     Data<bool>                       d_debug ;
 
