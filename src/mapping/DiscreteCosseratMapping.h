@@ -19,8 +19,7 @@
 *                                                                             *
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
-#ifndef SOFA_COMPONENT_MAPPING_POEMAPING_H
-#define SOFA_COMPONENT_MAPPING_POEMAPING_H
+#pragma once
 
 #include <sofa/core/BaseMapping.h>
 #include <sofa/core/config.h>
@@ -32,24 +31,17 @@
 #include <SofaOpenglVisual/OglColorMap.h>
 #include "../forcefield/BeamPlasticLawForceField.h"
 
-namespace sofa
 
+namespace sofa::component::mapping
 {
-using sofa::defaulttype::SolidTypes ;
-using sofa::core::objectmodel::BaseContext ;
-using sofa::type::Matrix3;
-using sofa::type::Matrix4;
-using sofa::type::Vector3;
-using sofa::type::Vec6;
-using std::get;
-using sofa::component::forcefield::BeamPlasticLawForceField;
-
-namespace component
-{
-//using sofa::component::visualmodel::OglColorMap;
-
-namespace mapping
-{
+    using sofa::component::forcefield::BeamPlasticLawForceField;
+    using sofa::defaulttype::SolidTypes ;
+    using sofa::core::objectmodel::BaseContext ;
+    using sofa::type::Matrix3;
+    using sofa::type::Matrix4;
+    using sofa::type::Vector3;
+    using sofa::type::Vec6;
+    using std::get;
 
 /*!
  * \class DiscreteCosseratMapping
@@ -59,7 +51,6 @@ namespace mapping
  * https://www.sofa-framework.org/community/doc/programming-with-sofa/create-your-component/
  */
 using mapping::BaseCosserat;
-
 
 template <class TIn1, class TIn2, class TOut>
 class DiscreteCosseratMapping : public core::Multi2Mapping<TIn1, TIn2, TOut>, public component::mapping::BaseCosserat<TIn1, TIn2, TOut>
@@ -121,9 +112,9 @@ protected:
     Data<Real>                       d_min ;
     Data<Real>                       d_radius ;
     Data<bool>                       d_drawMapBeam ;
-    Data<sofa::type::Vec4f>         d_color;
-    Data<type::vector<int> >       d_index;
-
+    Data<type::Vec4f>               d_color;
+    Data<type::vector<int> >        d_index;
+    Data<unsigned int>              d_baseIndex;
     core::State<In1>* m_fromModel1;
     core::State<In2>* m_fromModel2;
     core::State<Out>* m_toModel;
@@ -158,9 +149,8 @@ protected:
     DiscreteCosseratMapping() ;
     /// Destructor
     ~DiscreteCosseratMapping()  override {}
+
 public:
-
-
     /**********************SOFA METHODS**************************/
     void init() override;
     void draw(const core::visual::VisualParams* vparams) override;
@@ -199,11 +189,5 @@ protected:
 extern template class SOFA_COSSERAT_MAPPING_API DiscreteCosseratMapping< sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types >;
 #endif
 
-} // mapping
-
-} // namespace componenet
-
-} // namespace sofa
-
-#endif //SOFA_COMPONENT_MAPPING_POEMAPING_H
-
+} // namespace sofa::componenet::mapping
+ //SOFA_COMPONENT_MAPPING_POEMAPING_H

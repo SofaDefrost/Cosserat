@@ -36,10 +36,9 @@ using sofa::defaulttype::SolidTypes ;
 using sofa::core::objectmodel::BaseContext ;
 using sofa::type::Matrix3;
 using sofa::type::Matrix4;
-using sofa::type::Vector3;
-using sofa::type::Vec6;
+using type::Vector3;
+using type::Vec6;
 using std::get;
-
 
 /*!
  * \class RigidDistanceMapping
@@ -51,7 +50,7 @@ using std::get;
 using component::mapping::BaseCosserat;
 //
 template <class TIn1, class TIn2, class TOut>
-class RigidDistanceMapping : public core::Multi2Mapping<TIn1, TIn2, TOut> , public component::mapping::BaseCosserat<TIn1, TIn2, TOut>
+class RigidDistanceMapping : public core::Multi2Mapping<TIn1, TIn2, TOut> //, public component::mapping::BaseCosserat<TIn1, TIn2, TOut>
 {
 public:
     SOFA_CLASS(SOFA_TEMPLATE3(RigidDistanceMapping, TIn1,TIn2, TOut), SOFA_TEMPLATE3(core::Multi2Mapping, TIn1, TIn2, TOut) );
@@ -104,44 +103,21 @@ protected:
     Data<Real>                       d_radius ;
     Data<type::Vec4f>                d_color;
     Data<type::vector<int> >         d_index;
+    Data<bool>                       d_debug ;
 
-    core::State<In1>* m_fromModel1;
-    core::State<In2>* m_fromModel2;
     core::State<Out>* m_toModel;
-
-    ////////////////////////// Inherited attributes ////////////////////////////
-    /// https://gcc.gnu.org/onlinedocs/gcc/Name-lookup.html
-    /// Bring inherited attributes and function in the current lookup context.
-    /// otherwise any access to the base::attribute would require
-    /// the "this->" approach.
-    ///
-    using BaseCosserat<TIn1, TIn2, TOut>::m_indicesVectors ;
-    using BaseCosserat<TIn1, TIn2, TOut>::d_curv_abs_section  ;
-    using BaseCosserat<TIn1, TIn2, TOut>::d_curv_abs_frames ;
-    using BaseCosserat<TIn1, TIn2, TOut>::m_nodesTangExpVectors;
-    using BaseCosserat<TIn1, TIn2, TOut>::m_nodesVelocityVectors;
-    using BaseCosserat<TIn1, TIn2, TOut>::m_framesExponentialSE3Vectors;
-    using BaseCosserat<TIn1, TIn2, TOut>::m_framesTangExpVectors ;
-    using BaseCosserat<TIn1, TIn2, TOut>::m_totalBeamForceVectors ;
-    using BaseCosserat<TIn1, TIn2, TOut>::m_nodesExponentialSE3Vectors ;
-    using BaseCosserat<TIn1, TIn2, TOut>::d_debug;
-    using BaseCosserat<TIn1, TIn2, TOut>::m_vecTransform ;
-    using BaseCosserat<TIn1, TIn2, TOut>::m_nodeAdjointVectors;
-    using BaseCosserat<TIn1, TIn2, TOut>::m_index_input;
-    using BaseCosserat<TIn1, TIn2, TOut>::m_indicesVectorsDraw;
 
 protected:
     /// Constructor    
     RigidDistanceMapping() ;
     /// Destructor
-    ~RigidDistanceMapping()  override {}
-    /**********************COSSERAT METHODS**************************/
-    sofa::Index  m_minInd;
+    ~RigidDistanceMapping()  override = default;
+    sofa::Index  m_minInd{};
 public:
 
     /**********************SOFA METHODS**************************/
     void init() override;
-    void draw(const core::visual::VisualParams* vparams) override {}
+    void draw(const core::visual::VisualParams* /*vparams*/) override {}
 
     /**********************MAPPING METHODS**************************/
     void apply(
@@ -163,7 +139,7 @@ public:
     void applyDJT(const core::MechanicalParams* /*mparams*/, core::MultiVecDerivId /*inForce*/, core::ConstMultiVecDerivId /*outForce*/) override{}
 
     /// This method must be reimplemented by all mappings if they need to support constraints.
-    virtual void applyJT(
+    void applyJT(
             const core::ConstraintParams*  cparams , const type::vector< In1DataMatrixDeriv*>& dataMatOut1Const  ,
             const type::vector< In2DataMatrixDeriv*>&  dataMatOut2Const ,
             const type::vector<const OutDataMatrixDeriv*>&  dataMatInConst) override;
