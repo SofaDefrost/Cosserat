@@ -45,8 +45,8 @@ set(HEADER_FILES
 
     src/mapping/BaseCosserat.h
     src/mapping/BaseCosserat.inl
-    src/mapping/DiscreteCosseratMapping.h
-    src/mapping/DiscreteCosseratMapping.inl
+        src/mapping/DiscreteCosseratMapping.h
+        src/mapping/DiscreteCosseratMapping.inl
     src/mapping/DiscreteDynamicCosseratMapping.h
     src/mapping/DiscreteDynamicCosseratMapping.inl
     src/mapping/ProjectionEngine.h
@@ -79,7 +79,7 @@ set(SOURCE_FILES
     src/initCosserat.cpp
 
     src/mapping/BaseCosserat.cpp
-    src/mapping/DiscreteCosseratMapping.cpp
+        src/mapping/DiscreteCosseratMapping.cpp
 
     src/mapping/DiscreteDynamicCosseratMapping.cpp
     src/mapping/ProjectionEngine.cpp
