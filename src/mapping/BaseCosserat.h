@@ -29,7 +29,7 @@
 #include <sofa/defaulttype/RigidTypes.h>
 #include <sofa/core/objectmodel/BaseObject.h>
 #include <cmath>
-//#include <sofa/defaulttype/Vec.h>
+#include <sofa/type/Vec.h>
 
 
 namespace sofa::component::mapping

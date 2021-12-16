@@ -29,9 +29,12 @@
 #include <sofa/defaulttype/RigidTypes.h>
 #include "BaseCosserat.h"
 #include <SofaOpenglVisual/OglColorMap.h>
+#include "../forcefield/BeamPlasticLawForceField.h"
+
 
 namespace sofa::component::mapping
 {
+    using sofa::component::forcefield::BeamPlasticLawForceField;
     using sofa::defaulttype::SolidTypes ;
     using sofa::core::objectmodel::BaseContext ;
     using sofa::type::Matrix3;
@@ -99,6 +102,8 @@ public:
     typedef MultiLink<DiscreteCosseratMapping<In1,In2,Out>, sofa::core::State< In2 >, BaseLink::FLAG_STOREPATH|BaseLink::FLAG_STRONGLINK> LinkFromModels2;
     typedef MultiLink<DiscreteCosseratMapping<In1,In2,Out>, sofa::core::State< Out >, BaseLink::FLAG_STOREPATH|BaseLink::FLAG_STRONGLINK> LinkToModels;
 
+    typedef SingleLink<DiscreteCosseratMapping<In1,In2,Out>, BeamPlasticLawForceField<In1>, BaseLink::FLAG_STOREPATH|BaseLink::FLAG_STRONGLINK> LinkToPlasticForceField;
+
     typedef typename SolidTypes<Real>::Transform      Transform ;
 
 protected:
@@ -110,7 +115,6 @@ protected:
     Data<type::Vec4f>               d_color;
     Data<type::vector<int> >        d_index;
     Data<unsigned int>              d_baseIndex;
-
     core::State<In1>* m_fromModel1;
     core::State<In2>* m_fromModel2;
     core::State<Out>* m_toModel;
@@ -137,14 +141,16 @@ protected:
     using BaseCosserat<TIn1, TIn2, TOut>::m_indicesVectorsDraw;
 
 
+    // Link with Cosserat force field, for visualisation purposes
+    LinkToPlasticForceField l_fromPlasticForceField;
+
 protected:
     /// Constructor    
     DiscreteCosseratMapping() ;
     /// Destructor
     ~DiscreteCosseratMapping()  override {}
+
 public:
-
-
     /**********************SOFA METHODS**************************/
     void init() override;
     void draw(const core::visual::VisualParams* vparams) override;
