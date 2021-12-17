@@ -41,7 +41,6 @@ endif()
 
 set(HEADER_FILES
     src/initCosserat.h
-
     src/mapping/BaseCosserat.h
     src/mapping/BaseCosserat.inl
     src/mapping/DiscreteCosseratMapping.h
