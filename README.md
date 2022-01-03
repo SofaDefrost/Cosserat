@@ -15,23 +15,21 @@ with a constant cross-section.
    1. __Discrete cosserat approach for soft robot dynamics: A new piece-wise constant strain model with torsion and shears__ [Link to the paper](https://ieeexplore.ieee.org/document/7759808)
    2. __Coupling numerical deformable models in global and reduced coordinates for the simulation of the direct and the inverse kinematics of Soft Robots__ [Link to the paper](https://hal.archives-ouvertes.fr/hal-03192168/document)
 
-   <a href="https://www.youtube.com/embed/qwzKAgw31pU" target="_blank"><img src="http://img.youtube.com/vi/YOUTUBE_VIDEO_ID_HERE/0.jpg" alt="IMAGE ALT TEXT HERE" width="240" height="180" border="10" /></a>
+   <a href="https://www.youtube.com/embed/qwzKAgw31pU" target="_blank"><img src="https://www.youtube.com/embed/qwzKAgw31pU/0.jpg" alt="" width="240" height="180" border="10" /></a>
 
-   [![IMAGE ALT TEXT HERE](http://img.youtube.com/vi/YOUTUBE_VIDEO_ID_HERE/0.jpg)](https://www.youtube.com/embed/qwzKAgw31pU)
 
 2. Pieces-wise Non-constant Strain:
 3. DCM with Plastic model
 
 ### Modelling cochlear implant using Discret Cosserat Model (DCM). 
 
-View 1 | View 2 | View 3
---- | --- | ---
-<img src="/doc/images/multiSectionWithColorMap1.png" width="300" title="DCM as an implant"> | <img src="/doc/images/multiSectionWithColorMap2.png" width="300" title="DCM as an implant"> | <img src="/doc/images/multiSectionWithColorMap3.png" width="300" title="DCM as an implant">
-
+| View 1                                                                                      | View 2                                                                                      | View 3                                                                                      |
+|---------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------|
+| <img src="/doc/images/multiSectionWithColorMap1.png" width="300" title="DCM as an implant"> | <img src="/doc/images/multiSectionWithColorMap2.png" width="300" title="DCM as an implant"> | <img src="/doc/images/multiSectionWithColorMap3.png" width="300" title="DCM as an implant"> |
 
 ### DCM for cable modeling to control deformable robots:
 |Direct simulation of a soft gripper | The study the model convergence |
-|--- |: --- :|
+|--- | --- |
 |<img src="/scenes/mesh/cosseratgripper_2.png" width="400" title="DCM for cable modeling"> | <img src="/doc/images/tenCossseratSections.png" width="400" title="DCM for cable modeling ">|
 
 
