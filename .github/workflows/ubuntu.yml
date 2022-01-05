@@ -1,43 +1,96 @@
-name: Linux
+name: Cosserat Plugin for Ubuntu 20.04
 
 # Controls when the action will run. 
 on:
+  workflow_dispatch:
   pull_request:
     branches: [ master ]
+  push:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  build:
-    runs-on: ubuntu-20.04
-    container: defrost/defrost-ubuntu-2004-builder:v21.12
+  build-and-test:
+    name: Run on ${{ matrix.os }} with SOFA ${{ matrix.sofa_branch }}
+    runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
-        sofa_version: [v21.12.01, master ]
-    env:
-      SOFA_VERSION: ${{ matrix.sofa_version }}
-      SOFA_ROOT: /opt/sofa
+        os: [ubuntu-20.04]  
+        sofa_branch: [master]
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      - name: Checkout source code
-        # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-        uses: actions/checkout@v2
+      - name: Setup SOFA and environment
+        id: sofa
+        uses: sofa-framework/sofa-setup-action@v3
+        with:
+          sofa_root: ${{ github.workspace }}/sofa
+          sofa_version: ${{ matrix.sofa_branch }}
+          sofa_scope: 'standard'
 
-      # Runs a set of commands using the runners shell
-      - name: Download SOFA Release
-        run:  |
-          if [ "$SOFA_VERSION" = "master" ]; then
-              curl --output sofa.zip -L "https://ci.inria.fr/sofa-ci-dev/job/nightly-generate-binaries/lastSuccessfulBuild/CI_SCOPE=binaries_standard/artifact/Linux/*zip*/Linux.zip"
-              unzip sofa.zip -d temp
-              mv temp/Linux/`ls temp/Linux` sofa.zip 
-              rm -rf temp
-              unzip sofa.zip -d temp
-              mv temp/`ls temp` $SOFA_ROOT
+      - name: Checkout source code
+        uses: actions/checkout@v2
+        with:
+          path: ${{ env.WORKSPACE_SRC_PATH }}
+
+      - name: Build and install
+        shell: bash
+        run: |
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            cmd //c "${{ steps.sofa.outputs.vs_vsdevcmd }} \
+              && cd /d $WORKSPACE_BUILD_PATH \
+              && cmake \
+                  -GNinja \
+                  -DCMAKE_PREFIX_PATH="$SOFA_ROOT/lib/cmake" \
+                  -DCMAKE_BUILD_TYPE=Release \
+                  -DCMAKE_INSTALL_PREFIX="$WORKSPACE_INSTALL_PATH" \
+                  ../src \
+              && ninja install"
           else
-              curl --output sofa.zip -L "https://github.com/sofa-framework/sofa/releases/download/$SOFA_VERSION/SOFA_"$SOFA_VERSION"_Linux.zip"
-              unzip sofa.zip -d temp
-              mv temp/`ls temp` $SOFA_ROOT
+            cd "$WORKSPACE_BUILD_PATH"
+            ccache -z
+            cmake \
+              -GNinja \
+              -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+              -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+              -DCMAKE_PREFIX_PATH=$SOFA_ROOT/lib/cmake \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_INSTALL_PREFIX="$WORKSPACE_INSTALL_PATH" \
+              ../src
+            ninja install
+            echo ${CCACHE_BASEDIR}
+            ccache -s
           fi
+
+      - name: Create artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: CosseratPlugin_${{ steps.sofa.outputs.run_branch }}_for-SOFA-${{ steps.sofa.outputs.sofa_version }}_${{ runner.os }}
+          path: ${{ env.WORKSPACE_INSTALL_PATH }}
+
+      - name: Install artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: CosseratPlugin_${{ steps.sofa.outputs.run_branch }}_for-SOFA-${{ steps.sofa.outputs.sofa_version }}_${{ runner.os }}
+          path: ${{ env.WORKSPACE_ARTIFACT_PATH }}
+           
+      - name: Check environment for tests
+        shell: bash
+        run: |
+          echo '------ ls -la "$WORKSPACE_SRC_PATH" ------'
+          ls -la "$WORKSPACE_SRC_PATH"
+          echo '------ ls -la "$WORKSPACE_BUILD_PATH" ------'
+          ls -la "$WORKSPACE_BUILD_PATH"
+          echo '------ ls -la "$WORKSPACE_INSTALL_PATH" ------'
+          ls -la "$WORKSPACE_INSTALL_PATH"
+          echo '------ ls -la "$WORKSPACE_ARTIFACT_PATH" ------'
+          ls -la "$WORKSPACE_ARTIFACT_PATH"
+          echo '----------------------'
+          echo "SOFA_ROOT = $SOFA_ROOT"
+          echo '----------------------'
+          python -c "import sys; print('sys.version = ' + str(sys.version)); print('sys.path = ' + str(sys.path))"
+
+
       - name: Get Time
         id: time
         uses: nanzm/get-time-action@v1.0
@@ -45,38 +98,33 @@ jobs:
           timeZone: 8
           format: 'YYYY-MM-DD-HH-mm-ss'
 
-      - name: ccache cache files
-        uses: actions/cache@v2
-        if: ${{ always() }}
-        with:
-          path: .ccache
-          key: ubuntu-ccache-${{ steps.time.outputs.time }}
-          restore-keys: |
-            ubuntu-ccache-
+      - name: Checkout source code
+        uses: actions/checkout@v2
 
-      - name: Build sofa cosserat plugin inside SOFA 
-        env:
-          CCACHE_COMPRESS: true
-          CCACHE_COMPRESSLEVEL: 6
-          CCACHE_MAXSIZE: "500M"
-        run:
-          export CCACHE_BASEDIR=$GITHUB_WORKSPACE &&
-          export CCACHE_DIR=$GITHUB_WORKSPACE/.ccache &&
-          ccache -z &&
-          cmake
-          -DPYTHON_EXECUTABLE=/usr/bin/python3.8
-          -DCMAKE_C_COMPILER_LAUNCHER=ccache
-          -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
-          -DCMAKE_BUILD_TYPE=Release
-          -DCMAKE_INSTALL_PREFIX=CosseratPlugin
-          .
-          && make && make install
-          && tar czvf CosseratPlugin.tar.gz CosseratPlugin
-          && echo ${CCACHE_BASEDIR}
-          && ccache -s
-
-      - name: Archive production
-        uses: actions/upload-artifact@v2
+deploy:
+    name: Deploy artifacts
+    if: always() && startsWith(github.ref, 'refs/heads/') # we are on a branch (not a PR)
+    needs: [build-and-test]
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Get artifacts
+        uses: actions/download-artifact@v2
         with:
-          name: CosseratPlugin_${{ matrix.sofa_version }}
-          path: CosseratPlugin.tar.gz
+          path: artifacts
+
+      - name: Zip artifacts
+        shell: bash
+        run: |
+          cd $GITHUB_WORKSPACE/artifacts
+          for artifact in *; do
+            zip $artifact.zip -r $artifact/*
+          done
+      - name: Upload release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: ${{ github.ref_name }}
+          tag_name: release-${{ github.ref_name }}
+          fail_on_unmatched_files: true 
+          files: |
+            artifacts/CosseratPlugin_*_Linux.zip
