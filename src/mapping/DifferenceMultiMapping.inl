@@ -30,7 +30,7 @@
 
 #include <sofa/core/objectmodel/BaseContext.h>
 #include <sofa/helper/logging/Message.h>
-#include <sofa/helper/types/RGBAColor.h>
+#include <sofa/type/RGBAColor.h>
 
 #include "DifferenceMultiMapping.h"
 
@@ -39,7 +39,7 @@ namespace sofa::component::mapping
 using sofa::core::objectmodel::BaseContext ;
 using sofa::helper::AdvancedTimer;
 using sofa::helper::WriteAccessor;
-using sofa::helper::types::RGBAColor ;
+using sofa::type::RGBAColor ;
 
 template <class TIn1, class TIn2, class TOut>
 DifferenceMultiMapping<TIn1, TIn2, TOut>::DifferenceMultiMapping()
@@ -750,7 +750,7 @@ void DifferenceMultiMapping<TIn1, TIn2, TOut>::draw(const core::visual::VisualPa
     if (!vparams->displayFlags().getShowInteractionForceFields())
         return;
 
-    typedef sofa::helper::types::RGBAColor RGBAColor;
+    typedef sofa::type::RGBAColor RGBAColor;
     vparams->drawTool()->saveLastState();
     vparams->drawTool()->disableLighting();
 

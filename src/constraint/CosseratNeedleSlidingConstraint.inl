@@ -31,7 +31,7 @@
 #pragma once
 
 #include <sofa/core/visual/VisualParams.h>
-#include <sofa/defaulttype/Vec.h>
+#include <sofa/type/Vec.h>
 #include <SofaConstraint/BilateralInteractionConstraint.h>
 
 #include "CosseratNeedleSlidingConstraint.h"
@@ -44,10 +44,10 @@ using sofa::helper::WriteAccessor;
 
 using sofa::core::objectmodel::ComponentState;
 using sofa::core::visual::VisualParams;
-using sofa::defaulttype::BaseVector;
+using sofa::linearalgebra::BaseVector;
 using sofa::helper::ReadAccessor;
-using sofa::defaulttype::Vec4f;
-using sofa::defaulttype::Vector3;
+using sofa::type::Vec4f;
+using sofa::type::Vector3;
 using sofa::type::vector;
 using sofa::helper::OptionsGroup;
 

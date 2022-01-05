@@ -26,7 +26,7 @@
 #include <sofa/core/behavior/MechanicalState.h>
 #include <iostream>
 #include <sofa/core/DataEngine.h>
-#include <sofa/defaulttype/Vec.h>
+#include <sofa/type/Vec.h>
 #include <sofa/simulation/AnimateBeginEvent.h>
 
 namespace sofa {

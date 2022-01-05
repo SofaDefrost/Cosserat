@@ -31,7 +31,7 @@
 #pragma once
 
 #include <sofa/core/visual/VisualParams.h>
-#include <sofa/defaulttype/Vec.h>
+#include <sofa/type/Vec.h>
 #include <SofaConstraint/BilateralInteractionConstraint.h>
 
 #include "CosseratUnilateralInteractionConstraint.h"
@@ -44,10 +44,10 @@ namespace sofa::component::constraintset
 
     using sofa::core::objectmodel::ComponentState;
     using sofa::core::visual::VisualParams;
-    using sofa::defaulttype::BaseVector;
+    using sofa::linearalgebra::BaseVector;
     using sofa::helper::ReadAccessor;
-    using sofa::defaulttype::Vec4f;
-    using sofa::defaulttype::Vector3;
+    using sofa::type::Vec4f;
+    using sofa::type::Vector3;
     using sofa::type::vector;
     using sofa::helper::OptionsGroup;
 
@@ -63,7 +63,7 @@ namespace sofa::component::constraintset
                                     "If unspecified the default value is {0}"))
             , d_vectorOfIndices(initData(&d_vectorOfIndices, "vectorOfIndices",
                                          "vector of indices on witch we have to apply the constraint.\n"))
-            , d_entryPoint(initData(&d_entryPoint, defaulttype::Vector3(24.95, 0., 0), "entryPoint",
+            , d_entryPoint(initData(&d_entryPoint, type::Vector3(24.95, 0., 0), "entryPoint",
                                     "The predefined entry point, this point can also be determined automatically"
                                     "but not implemented here.\n"))
             , d_direction(initData(&d_direction, "direction",
@@ -93,13 +93,13 @@ namespace sofa::component::constraintset
     }
 
     template<class DataTypes>
-    defaulttype::Vector3 CosseratUnilateralInteractionConstraint<DataTypes>::findEntryPoint()
+    type::Vector3 CosseratUnilateralInteractionConstraint<DataTypes>::findEntryPoint()
     {
         /// @todo:1- find the entry automatically, this is need in the case of needle insertion
         /// can also be necessary when the volume is deforming
         /// @todo:2- Build unitest function
 
-        return defaulttype::Vector3(0.0f,0.0f,0.0f);
+        return type::Vector3(0.0f,0.0f,0.0f);
     }
 
     template<class DataTypes>
@@ -142,7 +142,7 @@ namespace sofa::component::constraintset
 
         //printf("=================================  \n");
         if ((!direction.empty()) && (direction.size() == positions.size())){
-            defaulttype::Vector3 vx, vy, vz;
+            type::Vector3 vx, vy, vz;
             for (auto index : indices)
             {
                 type::Quat q =direction[index]; q.normalize();

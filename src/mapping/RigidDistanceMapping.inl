@@ -30,7 +30,7 @@
 #include <sofa/core/objectmodel/BaseContext.h>
 #include <sofa/helper/logging/Message.h>
 
-#include "sofa/defaulttype/Quat.h"
+#include "sofa/type/Quat.h"
 #include "BaseCosserat.inl"
 #include "RigidDistanceMapping.h"
 
@@ -106,7 +106,7 @@ void RigidDistanceMapping<TIn1, TIn2, TOut>::apply(
         int tm1 = m1Indices[pid];
         int tm2 = m2Indices[pid];
         Vector3 outCenter = in2[tm2].getCenter()-in1[tm1].getCenter();
-        defaulttype::Quat outOri = in2[tm2].getOrientation()* in1[tm1].getOrientation().inverse();
+        type::Quat outOri = in2[tm2].getOrientation()* in1[tm1].getOrientation().inverse();
 
         outOri.normalize();
         out[pid] = OutCoord(outCenter,outOri); // This difference is in the word space
