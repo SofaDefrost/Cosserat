@@ -13,7 +13,7 @@ using std::string ;
 #include <SofaEigen2Solver/EigenSparseMatrix.h>
 #include <SofaBaseMechanics/MechanicalObject.h>
 
-#include "../../src/mapping/DiscretCosseratMapping.inl"
+#include "../../src/mapping/DiscreteCosseratMapping.inl"
 #include <SceneCreator/SceneCreator.h>
 #include <sofa/helper/vector.h>
 #include <sofa/core/MultiMapping.h>

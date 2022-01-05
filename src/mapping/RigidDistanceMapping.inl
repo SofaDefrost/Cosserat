@@ -30,7 +30,7 @@
 #include <sofa/core/objectmodel/BaseContext.h>
 #include <sofa/helper/logging/Message.h>
 
-#include "sofa/defaulttype/Quat.h"
+#include "sofa/type/Quat.h"
 #include "BaseCosserat.inl"
 #include "RigidDistanceMapping.h"
 
@@ -46,9 +46,7 @@ namespace sofa::component::mapping
 
 template <class TIn1, class TIn2, class TOut>
 RigidDistanceMapping<TIn1, TIn2, TOut>::RigidDistanceMapping()
-    : m_fromModel1(NULL)
-    , m_fromModel2(NULL)
-    , m_toModel(NULL)
+    : m_toModel(NULL)
     , d_index1(initData(&d_index1, "first_point", "index of the first model \n"))
     , d_index2(initData(&d_index2, "second_point", "index of the second model \n"))
     , d_max(initData(&d_max, (Real)1.0e-2, "max", "the maximum of the deformation.\n"))
@@ -57,6 +55,7 @@ RigidDistanceMapping<TIn1, TIn2, TOut>::RigidDistanceMapping()
     , d_color(initData(&d_color, type::Vec4f (1, 0., 1., 0.8) ,"color", "The default beam color"))
     , d_index(initData(&d_index, "index", "if this parameter is false, you draw the beam with color "
                                                           "according to the force apply to each beam"))
+    , d_debug(initData(&d_debug, false, "debug", "show debug output.\n"))
 {
         d_debug.setValue(false);
 }
@@ -106,13 +105,8 @@ void RigidDistanceMapping<TIn1, TIn2, TOut>::apply(
     for (sofa::Index pid=0; pid<m_minInd; pid++) {
         int tm1 = m1Indices[pid];
         int tm2 = m2Indices[pid];
-        // dist[i] = in2[i] - in1[0];
         Vector3 outCenter = in2[tm2].getCenter()-in1[tm1].getCenter();
-        defaulttype::Quat outOri = in2[tm2].getOrientation()* in1[tm1].getOrientation().inverse();
-
-        //pts[i].getCenter() = xfrom[index.getValue()].getOrientation().inverse().rotate( x[i].getCenter() - xfrom[index.getValue()].getCenter() ) ;
-        // Vector3 outCenter = in2[tm2].getCenter()-in1[tm1].getCenter();
-        //defaulttype::Quat outOri = in2[tm2].getOrientation()* in1[tm1].getOrientation().inverse();
+        type::Quat outOri = in2[tm2].getOrientation()* in1[tm1].getOrientation().inverse();
 
         outOri.normalize();
         out[pid] = OutCoord(outCenter,outOri); // This difference is in the word space
@@ -149,7 +143,6 @@ void RigidDistanceMapping<TIn1, TIn2, TOut>:: applyJ(
     for (sofa::Index index = 0; index < m_minInd; index++) {
         getVCenter(outVel[index]) = getVCenter(in2Vel[m2Indices[index]]) - getVCenter(in1Vel[m1Indices[index]]);
         getVOrientation(outVel[index]) =  getVOrientation(in2Vel[m2Indices[index]]) - getVOrientation(in1Vel[m1Indices[index]]) ;
-//        std::cout << " =====> outVel[m1Indices[index]] : " << outVel[index] << std::endl;
     }
     dataVecOutVel[0]->endEdit();
     if (d_debug.getValue()){
@@ -182,15 +175,7 @@ void RigidDistanceMapping<TIn1, TIn2, TOut>:: applyJT(
 
         getVCenter(     out2Force[m2Indices[index]]) += getVCenter(     inForce[index]);
         getVOrientation(out2Force[m2Indices[index]]) += getVOrientation(inForce[index]);
-//        std::cout << "========> inForce : "<< inForce<< std::endl;
-//        std::cout << "========> out1Force[m1Indices[index]] : "<< out1Force[m1Indices[index]]<< std::endl;
-//        std::cout << "========> out2Force[m2Indices[index]] : "<< out2Force[m2Indices[index]] << std::endl;
-//        printf("__________________________________________ \n");
-
     }
-//    if (d_debug.getValue()){
-
-//    }
     dataVecOut1Force[0]->endEdit();
     dataVecOut2Force[0]->endEdit();
 }
@@ -249,10 +234,7 @@ void RigidDistanceMapping<TIn1, TIn2, TOut>::applyJT(
         o1.addCol(parentIndex1, direction1);
         o2.addCol(parentIndex2, direction2);
     }
-    //    printf("2. ======================================================================================= \n");
-
     dataMatOut1Const[0]->endEdit();
     dataMatOut2Const[0]->endEdit();
 }
-//
 } // namespace sofa::components::mapping

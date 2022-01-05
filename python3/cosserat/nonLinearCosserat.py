@@ -13,7 +13,12 @@ from dataclasses import dataclass
 import Sofa
 from usefulFunctions import buildEdges, pluginList, BuildCosseratGeometry
 
-cosserat_config = {'init_pos': [0., 0., 0.], 'tot_length': 6, 'nbSectionS': 6,
+from cosserat.cosseratObject import Cosserat
+
+linearConfig = {'init_pos': [0., 0., 0.], 'tot_length': 1, 'nbSectionS': 15,
+                'nbFramesF': 30, 'buildCollisionModel': 1, 'beamMass': 0.22}
+
+nonLinearConfig = {'init_pos': [0., 0., 0.], 'tot_length': 1, 'nbSectionS': 8,
                    'nbFramesF': 12, 'buildCollisionModel': 1, 'beamMass': 0.22}
 
 
@@ -30,7 +35,7 @@ def addEdgeCollision(parentNode, position3D, edges):
     return collisInstrumentCombined
 
 
-class Cosserat(Sofa.Prefab):
+class NonLinearCosserat(Sofa.Prefab):
     """ActuatedArm is a reusable sofa model of a S90 servo motor and the tripod actuation arm.
            Parameters:
                -parent:        node where the ServoArm will be attached
@@ -66,27 +71,30 @@ class Cosserat(Sofa.Prefab):
     def __init__(self, *args, **kwargs):
         Sofa.Prefab.__init__(self, *args, **kwargs)
         self.cosseratGeometry = kwargs['cosseratGeometry']
+        self.needCollisionModel = kwargs['useCollisionModel']
         self.beamMass = self.cosseratGeometry['beamMass']
-        self.parent = kwargs.get('parent', None)
+        self.parent = kwargs['parent']
+        self.legendreControlPos = kwargs['legendreControlPoints']
 
         if self.parent.hasObject("EulerImplicitSolver") is False:
+            print("===> The EulerImplicit is not in the node Yet ")
             self.solverNode = self.addSolverNode()
         else:
             self.solverNode = self.parent
-
+            print("===> The EulerImplicit is in the node Yet ")
+        # self.solverNode = self.parent
         self.rigidBaseNode = self.addRigidBaseNode()
-        [positionS, curv_abs_inputS, longeurS, framesF, curv_abs_outputF, self.frames3D] = \
+        [positionS, curv_abs_inputS, sectionLength, framesF, curv_abs_outputF, frames3D] = \
             BuildCosseratGeometry(self.cosseratGeometry)
-        self.cosseratCoordinateNode = self.addCosseratCoordinate(positionS, longeurS)
+        self.legendreControlPointsNode = self.addLegendrePolynomialsNode()
+        self.cosseratCoordinateNode = self.addCosseratCoordinate(positionS, sectionLength, curv_abs_inputS)
         self.cosseratFrame = self.addCosseratFrame(framesF, curv_abs_inputS, curv_abs_outputF)
-        print(f'=== > {curv_abs_inputS}')
+        if self.needCollisionModel:
+            tab_edges = buildEdges(frames3D)
+            self.cosseratFrameCollision = addEdgeCollision(self.cosseratFrame, frames3D, tab_edges)
 
     def init(self):
         pass
-
-    def addCollisionModel(self):
-        tab_edges = buildEdges(self.frames3D)
-        return addEdgeCollision(self.cosseratFrame, self.frames3D, tab_edges)
 
     def addSolverNode(self):
         solverNode = self.addChild('solverNode')
@@ -115,17 +123,35 @@ class Cosserat(Sofa.Prefab):
                                     mstate="@RigidBaseMO", points=0, template="Rigid3d")
         return rigidBaseNode
 
-    def addCosseratCoordinate(self, positionS, longeurS):
-        cosseratCoordinateNode = self.solverNode.addChild('cosseratCoordinate')
+    def addLegendrePolynomialsNode(self):
+        legendreControlPointsNode = self.solverNode.addChild('legendreControlPointsNode')
+        # legendreControlPointsNode.addObject('EulerImplicitSolver', rayleighStiffness="0.2", rayleighMass='0.1')
+        # legendreControlPointsNode.addObject('CGLinearSolver', tolerance=1.e-12, iterations=1, threshold=1.e-18)
+        legendreControlPointsNode.addObject('MechanicalObject',
+                                            template='Vec3d', name='legendreControlPointsMO',
+                                            position=self.legendreControlPos, rest_position=self.legendreControlPos,
+                                            showIndices=0)
+        return legendreControlPointsNode
+
+    def addCosseratCoordinate(self, positionS, longeurS, curv_abs_inputS):
+        cosseratCoordinateNode = self.legendreControlPointsNode.addChild('cosseratCoordinate')
+        positionXi = [[0., 0., 0.] for _ in range(len(curv_abs_inputS)-1)]
         cosseratCoordinateNode.addObject('MechanicalObject',
-                                         template='Vec3d', name='cosseratCoordinateMO',
-                                         position=positionS,
+                                         template='Vec3d', name='cosseratCoordinateMO', position=positionXi,
                                          showIndices=0)
         cosseratCoordinateNode.addObject('BeamHookeLawForceField', crossSectionShape=self.shape.value,
-                                         length=longeurS, youngModulus=self.youngModulus.value,
+                                         length=longeurS,
+                                         youngModulus=self.youngModulus.value,
                                          poissonRatio=self.poissonRatio.value,
                                          radius=self.radius.value,
                                          lengthY=self.length_Y.value, lengthZ=self.length_Z.value)
+        print(f'the curv_abs_inputS is : {curv_abs_inputS}')
+        print(f'the length is : {longeurS}')
+        localCurv = curv_abs_inputS
+        # localCurv.pop(0)
+        controlPointsAbs = [0.3333333333333333, 0.6666666666666666, 1.0]
+        cosseratCoordinateNode.addObject('LegendrePolynomialsMapping', curvAbscissa=localCurv, order=3,
+                                         controlPointsAbs=controlPointsAbs, applyRestPosition=True)
         return cosseratCoordinateNode
 
     def addCosseratFrame(self, framesF, curv_abs_inputS, curv_abs_outputF):
@@ -134,7 +160,8 @@ class Cosserat(Sofa.Prefab):
         self.cosseratCoordinateNode.addChild(cosseratInSofaFrameNode)
         framesMO = cosseratInSofaFrameNode.addObject('MechanicalObject', template='Rigid3d',
                                                      name="FramesMO", position=framesF,
-                                                     showObject=1, showObjectScale=0.1)
+                                                     showObject=1, showObjectScale=0.05)
+        print(f'curvAbs inside frame :{curv_abs_inputS}')
         cosseratInSofaFrameNode.addObject('UniformMass', totalMass=self.beamMass, showAxisSizeFactor='0')
         cosseratInSofaFrameNode.addObject('DiscreteCosseratMapping', curv_abs_input=curv_abs_inputS,
                                           curv_abs_output=curv_abs_outputF, name='cosseratMapping',
@@ -149,6 +176,13 @@ class Cosserat(Sofa.Prefab):
         return cosseratInSofaFrameNode
 
 
+initialStrain1 = [[0., 0., 0], [0., 0., 0], [0., 0., 0]]
+initialStrain2 = [[0., 0., -0.52475341], [0., 0., -0.3098944], [0., 0., -0.10211416]]
+initialStrain3 = [[0., 0., -0.96779204], [0., 0., -0.55894208], [0., 0., -0.18167142]]
+# initialStrain4 = [[0., 0., -0.96770587], [0., 0., -0.55875284], [0., 0., -0.18155108]]
+initialStrain4 = [[0., 0., 0], [0., 0., 0], [0., 0., 1]]
+
+
 def createScene(rootNode):
     rootNode.addObject('RequiredPlugin', name='plugins', pluginName=[pluginList,
                                                                      ['SofaEngine', 'SofaLoader', 'SofaSimpleFem',
@@ -159,25 +193,36 @@ def createScene(rootNode):
     rootNode.findData('dt').value = 0.01
     rootNode.findData('gravity').value = [0., -9.81, 0.]
     rootNode.addObject('BackgroundSetting', color='0 0.168627 0.211765')
-    rootNode.addObject('FreeMotionAnimationLoop')
-    rootNode.addObject('GenericConstraintSolver', tolerance=1e-5, maxIterations=5e2)
+    # rootNode.addObject('FreeMotionAnimationLoop')
+    # rootNode.addObject('GenericConstraintSolver', tolerance=1e-5, maxIterations=5e2)
     rootNode.addObject('Camera', position="-35 0 280", lookAt="0 0 0")
 
     solverNode = rootNode.addChild('solverNode')
     solverNode.addObject('EulerImplicitSolver', rayleighStiffness="0.2", rayleighMass='0.1')
     solverNode.addObject('SparseLDLSolver', name='solver', template="CompressedRowSparseMatrixd")
-    solverNode.addObject('GenericConstraintCorrection')
+    # solverNode.addObject('CGLinearSolver', tolerance=1.e-12, iterations=1000, threshold=1.e-18)
 
-    cosserat = solverNode.addChild(
-        Cosserat(parent=solverNode, cosseratGeometry=cosserat_config, name="cosserat", radius=0.2))
+    needCollisionModel = 0  # use this if the collision model if the beam will interact with another object
+    nonLinearCosserat = solverNode.addChild(
+        NonLinearCosserat(parent=solverNode, cosseratGeometry=nonLinearConfig, useCollisionModel=needCollisionModel,
+                          name="cosserat", radius=0.1, legendreControlPoints=initialStrain4))
+    cosseratNode = nonLinearCosserat.legendreControlPointsNode
+    cosseratNode.addObject('MechanicalMatrixMapper', template='Vec3,Vec3',
+                                                          object1=cosseratNode.getLinkPath(),
+                                                          object2=cosseratNode.getLinkPath(),
+                                                          name='cosseratCoordinateNodeMapper',
+                                                          nodeToParse=nonLinearCosserat.cosseratCoordinateNode.getLinkPath())
 
-    # use this to add the collision if the beam will interact with another object
-    collisionModel = cosserat.addCollisionModel()
-
-    # attach force at the beam tip,
-    # we can attach this force to non mechanical node thanks to the MechanicalMatrixMapper component
-    beamFrame = cosserat.cosseratFrame
-    beamFrame.addObject('ConstantForceField', name='constForce', showArrowSize=1.e-2, indices=12,
-                        force=[0., -100., 0., 0., 0., 0.])
+    # solverNode2 = rootNode.addChild('solverNode2')
+    # solverNode2.addObject('EulerImplicitSolver', rayleighStiffness="0.2", rayleighMass='0.1')
+    # solverNode2.addObject('SparseLDLSolver', name='solver', template="CompressedRowSparseMatrixd")
+    # solverNode2.addObject('GenericConstraintCorrection')
+    # cosserat2 = solverNode2.addChild(
+    #     Cosserat(parent=solverNode2, cosseratGeometry=linearConfig, useCollisionModel=needCollisionModel,
+    #              name="cosserat2", radius=0.1))
+    #
+    # beamFrame2 = cosserat2.cosseratFrame
+    # beamFrame2.addObject('ConstantForceField', name='constForce', showArrowSize=0, indices=30,
+    #                      force=[0., -100., 0., 0., 0., 0.])
 
     return rootNode
