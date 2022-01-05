@@ -70,6 +70,28 @@ class InsertionController(Sofa.Core.Controller):
             self.backwards = not self.backwards
 
 
+# Controller for the insertion of a Cosserat beam cather-like model, with interactive controls:
+#   - Ctrl + UpArrow : move the beam in the direction of positive X avis of the global frame
+#   - Ctrl + DownArrow : move the beam in the direction of negative X avis of the global frame
+#   - Ctrl + RightArrow : rotate the beam counterclockwise around the X axis of the local frame
+#   - Ctrl + LeftArrow : rotate the beam clockwise around the X axis of the local frame
+#   - Ctrl + A : Start/stop automatic insertion
+#   - Ctrl + C : Change the model displacement (push/pull)
+#
+# Required structure of the scene :
+# * rootNode
+#   * controlPointNode
+#       controlPointMO (Rigid)
+#   * cosseratBeamNode
+#       MechanicalMatrixMapper
+#       * rigidBaseNode
+#           RigidBaseMO (Rigid)
+#           * MappedFrames
+#               FramesMO (Rigid)
+#               controlSpring (RestShapeSpringsForceField)
+#               mapping (DiscreteCosseratMapping)
+#       * rateAngularDeform
+#           rateAngularDeformMO (Cosserat strains)
 class InteractiveInsertionController(Sofa.Core.Controller):
 
     def __init__(self, rootNode, initFrameId, insertionRate, insertionDirection, switchFrameDistance,
@@ -143,7 +165,7 @@ class InteractiveInsertionController(Sofa.Core.Controller):
                 print("Automatic insertion started")
             self.autoInsertion = not self.autoInsertion
 
-        # Pressing R key inverse the insertion (switch between pushing and pulling)
+        # Pressing C key inverse the insertion (switch between pushing and pulling)
         if event['key'] == 'C':
             if self.backwards:
                 print("Now pushing the catheter")
@@ -252,6 +274,28 @@ class ColorMapController(Sofa.Core.Controller):
             forceIntensity += [self.springStiffness*euclDist]
         self.DataDisplay.pointData = forceIntensity
 
+
+# Controller to apply a bending moment on a Cosserat beam cather-like model:
+#   - Ctrl + B : Start/stop applying a bending moment on predefined sections of the beam model
+#   - Ctrl + F : Start/stop a fixed constraint on the Cosserat DoFs for a predefined part of the beam model
+#   - Ctrl + T : Start/stop base fixation (using the control point) to prevent motion during bending
+#
+# Required structure of the scene :
+# * rootNode
+#   * controlPointNode
+#       controlPointMO (Rigid)
+#   * cosseratBeamNode
+#       MechanicalMatrixMapper
+#       * rigidBaseNode
+#           RigidBaseMO (Rigid)
+#           * MappedFrames
+#               FramesMO (Rigid)
+#               controlSpring (RestShapeSpringsForceField)
+#               mapping (DiscreteCosseratMapping)
+#       * rateAngularDeform
+#           rateAngularDeformMO (Cosserat strains)
+#           bendingMoment (ConstantForceField)
+#           fixation (FixedConstraint)
 class BendingController(Sofa.Core.Controller):
 
     def __init__(self, rootNode, cosseratNode, frameNode, bendingMoment, fixedIndices, momentAxis, *args, **kwargs):
