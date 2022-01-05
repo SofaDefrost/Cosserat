@@ -175,7 +175,7 @@ if (NOT GTest_FOUND)
 endif ()
 
 
-option(COSSERAT_BUILD_TESTS "Build unit tests" ON )
+option(COSSERAT_BUILD_TESTS "Build unit tests" OFF )
 if(COSSERAT_BUILD_TESTS)
     add_subdirectory(Tests)
 endif()
