@@ -29,8 +29,9 @@
 ******************************************************************************/
 #pragma once
 
-#include <sofa/defaulttype/Vec.h>
-#include <sofa/defaulttype/Mat.h>
+#include <sofa/type/Vec.h>
+#include <sofa/type/Mat.h>
+#include <sofa/defaulttype/BaseMatrix.h>
 #include <sofa/core/behavior/MechanicalState.h>
 #include <sofa/core/objectmodel/Data.h>
 #include <sofa/core/MechanicalParams.h>
@@ -43,8 +44,8 @@
 namespace sofa::component::forcefield
 {
 
-using sofa::defaulttype::Vec ;
-using sofa::defaulttype::Mat ;
+using sofa::type::Vec ;
+using sofa::type::Mat ;
 using sofa::type::vector;
 using sofa::core::MechanicalParams;
 using sofa::defaulttype::BaseMatrix;
@@ -77,7 +78,7 @@ public :
     typedef Mat<3, 3, Real>             Mat33;
 
     typedef CompressedRowSparseMatrix<Mat33> CSRMat33B66;
-    typedef defaulttype::Vector3 vector3;
+    typedef type::Vector3 vector3;
 
     typedef typename CompressedRowSparseMatrix<Mat33>::ColBlockConstIterator _3_3_ColBlockConstIterator;
     typedef typename CompressedRowSparseMatrix<Mat33>::RowBlockConstIterator _3_3_RowBlockConstIterator;
@@ -147,8 +148,8 @@ private :
 
     //Gaussian quadrature parameters for 2 points
 
-    defaulttype::Vec2 m_gaussCoeff = defaulttype::Vec2(1.0/sqrt(3.0),0.57735); // Gauss quadrature coefficients
-    defaulttype::Vec2 m_gaussWeights = defaulttype::Vec2(1.0,1.0);   //Gauss quadrature weights
+    type::Vec2 m_gaussCoeff = type::Vec2(1.0/sqrt(3.0),0.57735); // Gauss quadrature coefficients
+    type::Vec2 m_gaussWeights = type::Vec2(1.0,1.0);   //Gauss quadrature weights
 
 
 
