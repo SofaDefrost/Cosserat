@@ -269,7 +269,7 @@ class BendingController(Sofa.Core.Controller):
         self.nbIterations = 0
         self.bendingActivated = False
         self.fixationActivated = False
-        self.tipFixationActivated = False
+        self.baseFixationActivated = False
 
     def onAnimateBeginEvent(self, event):  # called at each begin of animation step
 
@@ -280,13 +280,12 @@ class BendingController(Sofa.Core.Controller):
         pass
 
     def onKeypressedEvent(self, event):
-        # Pressing B key activates/deactivates the bending of the Cosserat beam
         if event['key'] == 'B':
             self.triggerBendingMoment()
         if event['key'] == 'F':
             self.triggerFixation()
         if event['key'] == 'T':
-            self.triggerTipFixation()
+            self.triggerBaseFixation()
 
     def triggerBendingMoment(self):
         with self.cosseratNode.bendingMoment.forces.writeable() as moment:
@@ -311,11 +310,10 @@ class BendingController(Sofa.Core.Controller):
                         moment[i] = [0.0, 0.0, self.bendingMoment]
                 else:
                     print("Only a cardinal axis is expected to apply the bending moment around, please specify "
-                          "'x', 'y', or 'z' as a value for parameter momentAxis. By default, the moement is applied "
+                          "'x', 'y', or 'z' as a value for parameter momentAxis. By default, the moment is applied "
                           "around the x axis")
                     moment[0] = [self.bendingMoment, 0.0, 0.0]
                 self.bendingActivated = True
-
 
     def triggerFixation(self):
 
@@ -331,12 +329,12 @@ class BendingController(Sofa.Core.Controller):
             self.cosseratNode.fixation.indices = self.fixedIndices
             self.fixationActivated = True
 
-    def triggerTipFixation(self):
+    def triggerBaseFixation(self):
 
-        if self.tipFixationActivated:
-            # Tip fixation is currently activated, it should be deactivated
-            print("Tip fixation deactivated")
-            self.tipFixationActivated = False
+        if self.baseFixationActivated:
+            # Base fixation is currently activated, it should be deactivated
+            print("Base fixation deactivated")
+            self.baseFixationActivated = False
 
             # Moving the control point back to its original position, before bending
             self.frameNode.controlSpring.points = self.previousAttachedFrameId
@@ -344,9 +342,9 @@ class BendingController(Sofa.Core.Controller):
             with controlPointNode.controlPointMO.position.writeable() as controlPointPos:
                 controlPointPos[0] = self.frameNode.FramesMO.position.value[self.previousAttachedFrameId[0]]
         else:
-            # self.tipFixationActivated = False => tip fixation should be reactivated
-            print("Tip fixation activated")
-            self.tipFixationActivated = True
+            # self.baseFixationActivated = False => Base fixation should be reactivated
+            print("Base fixation activated")
+            self.baseFixationActivated = True
 
             # Moving the control point to the beam base, in order to prevent motion during tip bending
             self.previousAttachedFrameId = np.array(self.frameNode.controlSpring.points.value)  # copy
