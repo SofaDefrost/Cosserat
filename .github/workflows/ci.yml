@@ -1,4 +1,4 @@
-name: Cosserat Plugin for Ubuntu 20.04
+name: CI
 
 # Controls when the action will run. 
 on:
@@ -101,30 +101,30 @@ jobs:
       - name: Checkout source code
         uses: actions/checkout@v2
 
-deploy:
-    name: Deploy artifacts
-    if: always() && startsWith(github.ref, 'refs/heads/') # we are on a branch (not a PR)
-    needs: [build-and-test]
-    runs-on: ubuntu-latest
-    continue-on-error: true
-    steps:
-      - name: Get artifacts
-        uses: actions/download-artifact@v2
-        with:
-          path: artifacts
+  deploy:
+      name: Deploy artifacts
+      if: always() && startsWith(github.ref, 'refs/heads/') # we are on a branch (not a PR)
+      needs: [build-and-test]
+      runs-on: ubuntu-latest
+      continue-on-error: true
+      steps:
+        - name: Get artifacts
+          uses: actions/download-artifact@v2
+          with:
+            path: artifacts
 
-      - name: Zip artifacts
-        shell: bash
-        run: |
-          cd $GITHUB_WORKSPACE/artifacts
-          for artifact in *; do
-            zip $artifact.zip -r $artifact/*
-          done
-      - name: Upload release
-        uses: softprops/action-gh-release@v1
-        with:
-          name: ${{ github.ref_name }}
-          tag_name: release-${{ github.ref_name }}
-          fail_on_unmatched_files: true 
-          files: |
-            artifacts/CosseratPlugin_*_Linux.zip
+        - name: Zip artifacts
+          shell: bash
+          run: |
+            cd $GITHUB_WORKSPACE/artifacts
+            for artifact in *; do
+              zip $artifact.zip -r $artifact/*
+            done
+        - name: Upload release
+          uses: softprops/action-gh-release@v1
+          with:
+            name: ${{ github.ref_name }}
+            tag_name: release-${{ github.ref_name }}
+            fail_on_unmatched_files: true 
+            files: |
+              artifacts/CosseratPlugin_*_Linux.zip
