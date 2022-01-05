@@ -237,6 +237,108 @@ class InteractiveInsertionController(Sofa.Core.Controller):
                                                                   newControlPointQuat[3], newControlPointQuat[0]]])
 
 
+# Smooth controller for the insertion of a Cosserat beam cather-like model. The
+# idea of this controller is to have a fixed control point in the scene
+# (typically representing a point of insertion in an anatomy), which is attached
+# to a second 'set' of frames, composed of only one frame. Based on the user
+# inputs, we change only the position and orientation of this frame, to allow
+# for smoother control.
+# Required structure of the scene :
+# * rootNode
+#   * controlPointNode
+#       controlPointMO (Rigid)
+#   * cosseratBeamNode
+#       MechanicalMatrixMapper
+#       * rigidBaseNode
+#           RigidBaseMO (Rigid)
+#           * MappedFrames
+#               FramesMO (Rigid)
+#               DiscreteCosseratMapping
+#           * ControlMappedFrame
+#               ControlFrameMO (1 Rigid)
+#               DiscreteCosseratMapping
+#               RestShapeSpringsForceField (to control point)
+#       * rateAngularDeform
+#           rateAngularDeformMO (Cosserat strains)
+class SmoothInsertionController(Sofa.Core.Controller):
+
+    def __init__(self, rootNode, incrementDistance, incrementAngle, *args, **kwargs):
+        # These are needed (and the normal way to override from a python class)
+        Sofa.Core.Controller.__init__(self, *args, **kwargs)
+
+        self.rootNode = rootNode
+        self.controlPointNode = rootNode.getChild('controlPointNode')
+        if self.controlPointNode is None:
+            raise NameError('[SmoothInsertionController]: Node \'controlPointNode\' not found. Your scene should '
+                            'contain a node named \'controlPointNode\' among the children of the root node in order '
+                            'to use this controller')
+        self.controlPointMO = self.controlPointNode.controlPointMO
+        cosseratBeamNode = rootNode.getChild('cosseratBeamNode')
+        self.rigidBaseNode = cosseratBeamNode.getChild('rigidBaseNode')
+        self.mappedFramesNode = self.rigidBaseNode.getChild('MappedFrames')
+
+        self.incrementDistance = incrementDistance
+        self.incrementAngle = incrementAngle
+
+        # constructs a grid of indices to access only position DoFs of the rigid particle
+        self.posDoFsIdGrid = np.ix_([0], [0, 1, 2])
+        self.posDoFsIdGridSingle = np.ix_([0, 1, 2])
+        # constructs a grid of indices to access only orientation DoFs of the rigid particle
+        self.quatDoFsIdGrid = np.ix_([0], [3, 4, 5, 6])
+
+        # Computing the incremental quaternions for rotation
+        # Taking the X axis associated to the control point Rigid frame as rotation axis
+        auxQuat = self.controlPointMO.position.value[self.quatDoFsIdGrid]  # np matrix of size 1x4
+        controlPointQuat = Quat(auxQuat[0])
+        controlPointXAxis = controlPointQuat.rotate(np.array([1.0, 0.0, 0.0]))
+        qw = math.cos(math.radians(self.incrementAngle) / 2)
+        plusQuat = controlPointXAxis * math.sin(math.radians(self.incrementAngle) / 2)
+        minusQuat = -plusQuat
+        self.plusQuat = Quat(np.insert(plusQuat, 0, qw))
+        self.minusQuat = Quat(np.insert(minusQuat, 0, qw))
+
+        self.totalTime = 0.0
+        self.nbIterations = 0
+        self.autoInsertion = False
+        self.backwards = False
+
+    def onAnimateBeginEvent(self, event):  # called at each begin of animation step
+        self.totalTime = self.totalTime + self.rootNode.findData('dt').value
+        self.nbIterations = self.nbIterations + 1
+
+    def onAnimateEndEvent(self, event):  # called at each end of animation step
+        pass
+
+    def onKeypressedEvent(self, event):
+        # Pressing A key activates/deactivates the automatic insertion (in the X axis direction)
+        if event['key'] == 'A':
+            if self.autoInsertion:
+                print("Automatic insertion stopped")
+            else:
+                print("Automatic insertion started")
+            self.autoInsertion = not self.autoInsertion
+
+        # Pressing C key inverse the insertion (switch between pushing and pulling)
+        if event['key'] == 'C':
+            if self.backwards:
+                print("Now pushing the catheter")
+            else:
+                print("Now pulling the catheter")
+            self.backwards = not self.backwards
+
+        if event['key'] == Key.uparrow:  # Up arrow
+            pass
+
+        if event['key'] == Key.downarrow:  # Down arrow
+            pass
+
+        if event['key'] == Key.leftarrow:  # Left arrow
+            pass
+
+        if event['key'] == Key.rightarrow:  # Right arrow
+            pass
+
+
 class ColorMapController(Sofa.Core.Controller):
 
     def __init__(self, rootNode, springStiffness, *args, **kwargs):
