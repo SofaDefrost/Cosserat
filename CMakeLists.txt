@@ -15,8 +15,16 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 include(cmake/environment.cmake)
+
 find_package(SofaFramework REQUIRED)
-sofa_find_package(Sofa.GL QUIET)
+find_package(SofaBaseMechanics REQUIRED)
+find_package(SofaConstraint REQUIRED)
+find_package(SofaUserInteraction REQUIRED)
+find_package(Sofa.GL REQUIRED)
+
+find_package(SofaImplicitField QUIET)
+find_package(SofaAdvancedConstraint QUIET)
+sofa_find_package(SofaBaseTopology REQUIRED)
 
 option(COSSERAT_IGNORE_ERRORS "Enable this option to ignore the recommendations and generate anyway." ON)
 
@@ -118,7 +126,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC "$<INSTALL_INTERFACE:include>"
 
 set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "-DSOFA_BUILD_COSSERAT")
 set_target_properties(${PROJECT_NAME} PROPERTIES DEBUG_POSTFIX "_d")
-target_link_libraries(${PROJECT_NAME} SofaCore SofaConstraint SofaSimpleFem SofaBaseMechanics SofaRigid SofaBaseVisual SofaOpenglVisual)
+target_link_libraries(${PROJECT_NAME} Sofa.Helper SofaCore SofaBaseTopology SofaConstraint SofaSimpleFem SofaBaseMechanics SofaRigid SofaBaseVisual SofaUserInteraction)
 
 if(Sofa.GL_FOUND)
     target_link_libraries(${PROJECT_NAME} Sofa.GL)
