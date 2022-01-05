@@ -25,8 +25,8 @@
 #include "ProjectionEngine.h"
 #include <sofa/core/visual/VisualParams.h>
 #include <sofa/core/behavior/BaseConstraint.h>
-#include <sofa/defaulttype/RGBAColor.h>
-#include <sofa/defaulttype/Vec.h>
+#include <sofa/type/RGBAColor.h>
+#include <sofa/type/Vec.h>
 namespace sofa
 {
 
@@ -219,7 +219,7 @@ void ProjectionEngine<DataTypes>::draw(const core::visual::VisualParams* vparams
 
     vparams->drawTool()->disableLighting();
 
-    sofa::defaulttype::RGBAColor color;
+    sofa::type::RGBAColor color;
     //    Constraint& c = m_constraints[0];
 
     //    if(c.thirdConstraint<0)
@@ -227,9 +227,9 @@ void ProjectionEngine<DataTypes>::draw(const core::visual::VisualParams* vparams
     //    else if(c.thirdConstraint>0)
     //        color = sofa::defaulttype::RGBAColor::green();
     //    else
-    color = sofa::defaulttype::RGBAColor::magenta();
+    color = sofa::type::RGBAColor::magenta();
 
-    std::vector<sofa::defaulttype::Vector3> vertices;
+    std::vector<sofa::type::Vector3> vertices;
     //    vertices.push_back(DataTypes::getCPos((this->mstate1->read(core::ConstVecCoordId::position())->getValue())[d_m1.getValue()]));
 
     //    vparams->drawTool()->drawPoints(vertices, 10, color);
@@ -241,7 +241,7 @@ void ProjectionEngine<DataTypes>::draw(const core::visual::VisualParams* vparams
     vparams->drawTool()->drawLines(vertices, 1, color);
 
     for (size_t i =0 ; i < m_constraints.size(); i++) {
-        color = sofa::defaulttype::RGBAColor::green();
+        color = sofa::type::RGBAColor::green();
         vertices.push_back(m_constraints[i].P);
         vertices.push_back(m_constraints[i].Q);
         vparams->drawTool()->drawLines(vertices, 1, color);
@@ -256,9 +256,9 @@ template<class DataTypes>
 void ProjectionEngine<DataTypes>::drawLinesBetweenPoints(const core::visual::VisualParams* vparams)
 {
     const VecCoord & positions  = d_dest.getValue(); // this->mstate2->read(core::ConstVecCoordId::position())->getValue();
-    sofa::defaulttype::RGBAColor color;
-    color = sofa::defaulttype::RGBAColor::magenta();
-    std::vector<sofa::defaulttype::Vector3> vertices;
+    sofa::type::RGBAColor color;
+    color = sofa::type::RGBAColor::magenta();
+    std::vector<sofa::type::Vector3> vertices;
     for (unsigned int i=0; i<positions.size()-1; i++)
     {
         vertices.push_back(positions[i]);

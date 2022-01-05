@@ -31,7 +31,7 @@
 #include <sofa/helper/AdvancedTimer.h>
 #include <sofa/core/objectmodel/BaseContext.h>
 #include <sofa/helper/logging/Message.h>
-#include "sofa/defaulttype/Quat.h"
+#include "sofa/type/Quat.h"
 
 
 namespace sofa::component::mapping
@@ -148,7 +148,7 @@ void DiscreteDynamicCosseratMapping<TIn1, TIn2, TOut>::apply(
 		frame *= m_framesExponentialSE3Vectors[i];
 
 		Vector3 v = frame.getOrigin();
-		defaulttype::Quat q = frame.getOrientation();
+		type::Quat q = frame.getOrientation();
 		out[i] = OutCoord(v,q);
 	}
 
