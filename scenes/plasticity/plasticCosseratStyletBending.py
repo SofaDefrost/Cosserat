@@ -60,7 +60,8 @@ beamPoissonRatioList = [poissonRatio]*nbSections
 
 # ----- Miscellaneous parameters ----- #
 
-beamInsertionRate = [0.02, 0., 0.]
+beamInsertionRate = 0.02
+beamInsertionDirection = np.array([1.0, 0., 0.])
 forceEstimationSpringStiffness = 1e8
 bendingIndices = nbSections-1
 
@@ -212,9 +213,17 @@ def createScene(rootNode):
     # -----    Python controllers    ----- #
     # -------------------------------------#
 
+    switchFrameDistance = 0.75 * totLength / nbFrames
+    incrementAngle = 5.0  # in degrees
     rootNode.addObject(InsertionController(rootNode=rootNode, insertionRate=beamInsertionRate,
-                                           name="InsertionController"))
+                                           insertionDirection=beamInsertionDirection, name="InsertionController"))
+    # rootNode.addObject(InteractiveInsertionController(rootNode=rootNode, initFrameId=nbFrames - 1,
+    #                                                   insertionRate=beamInsertionRate,
+    #                                                   insertionDirection=beamInsertionDirection,
+    #                                                   switchFrameDistance=switchFrameDistance,
+    #                                                   incrementAngle=incrementAngle,
+    #                                                   name="InsertionController"))
 
     rootNode.addObject(BendingController(rootNode=rootNode, cosseratNode=rateAngularDeformNode,
-                                         bendingMoment=beamBendingMoment, fixedIndices=fixedSections,
-                                         momentAxis='y', name="BendingController"))
+                                         frameNode=mappedFrameNode, bendingMoment=beamBendingMoment,
+                                         fixedIndices=fixedSections, momentAxis='y', name="BendingController"))

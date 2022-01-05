@@ -58,7 +58,8 @@ beamPoissonRatioList = [poissonRatio]*nbSections
 
 # ----- Miscellaneous parameters ----- #
 
-beamInsertionRate = [0.04, 0., 0.]
+beamInsertionRate = 0.04
+beamInsertionDirection = np.array([1.0, 0., 0.])
 forceEstimationSpringStiffness = 1e8
 
 # Friction parameter contact
@@ -204,8 +205,16 @@ def createScene(rootNode):
     # -----    Python controllers    ----- #
     # -------------------------------------#
 
+    switchFrameDistance = 0.75 * totLength / nbFrames
+    incrementAngle = 5.0  # in degrees
     rootNode.addObject(InsertionController(rootNode=rootNode, insertionRate=beamInsertionRate,
-                                           name="InsertionController"))
+                                           insertionDirection=beamInsertionDirection, name="InsertionController"))
+    # rootNode.addObject(InteractiveInsertionController(rootNode=rootNode, initFrameId=nbFrames - 1,
+    #                                                   insertionRate=beamInsertionRate,
+    #                                                   insertionDirection=beamInsertionDirection,
+    #                                                   switchFrameDistance=switchFrameDistance,
+    #                                                   incrementAngle=incrementAngle,
+    #                                                   name="InsertionController"))
 
     # -------------------------------------#
     # -----        Colour map        ----- #
