@@ -151,7 +151,9 @@ void BaseCosserat<TIn1, TIn2, TOut>::update_ExponentialSE3(const In1VecCoord & i
     }
 
     //Compute the exponential at the nodes
-    m_nodesExponentialSE3Vectors.push_back(Transform(Vector3(0.0,0.0,0.0),type::Quat(0,0,0,1)));
+
+    m_nodesExponentialSE3Vectors.push_back(Transform(Vector3(0.0,0.0,0.0),type::Quat(0.,0.,0.,1.)));
+
     for (unsigned int  j = 0; j < inDeform.size(); j++) {
         Vector3 k = inDeform[j];
         double  x = m_BeamLengthVectors[j];
