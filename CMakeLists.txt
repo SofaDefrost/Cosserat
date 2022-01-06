@@ -72,8 +72,7 @@ set(HEADER_FILES
 
     src/constraint/CosseratSlidingConstraint.h
     src/constraint/CosseratSlidingConstraint.inl
-    src/constraint/QPSlidingConstraint.h
-    src/constraint/QPSlidingConstraint.inl
+    
     
     src/mapping/LegendrePolynomialsMapping.h
     src/mapping/LegendrePolynomialsMapping.inl
@@ -93,9 +92,7 @@ set(SOURCE_FILES
     src/forcefield/BeamHookeLawForceField.cpp
     src/forcefield/BeamPlasticLawForceField.cpp
     src/forcefield/CosseratInternalActuation.cpp
-
     src/constraint/CosseratSlidingConstraint.cpp
-    src/constraint/QPSlidingConstraint.cpp    
     src/mapping/LegendrePolynomialsMapping.cpp
     )
 
@@ -112,11 +109,14 @@ if(SoftRobots_FOUND)
 
         src/constraint/CosseratNeedleSlidingConstraint.h
         src/constraint/CosseratNeedleSlidingConstraint.inl
+        src/constraint/QPSlidingConstraint.h
+        src/constraint/QPSlidingConstraint.inl
         )
     list(APPEND SOURCE_FILES
         src/constraint/CosseratActuatorConstraint.cpp
         src/constraint/CosseratNeedleSlidingConstraint.cpp
         src/constraint/CosseratUnilateralInteractionConstraint.cpp
+        src/constraint/QPSlidingConstraint.cpp    
         )
 endif()
 
