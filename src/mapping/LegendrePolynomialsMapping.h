@@ -9,8 +9,8 @@
 #include "../initCosserat.h"
 #include <sofa/defaulttype/SolidTypes.h>
 #include <sofa/defaulttype/RigidTypes.h>
-#include <SofaOpenglVisual/OglColorMap.h>
 #include <sofa/core/Mapping.h>
+#include <sofa/helper/ColorMap.h>
 #include <boost/math/special_functions/legendre.hpp>
 
 
