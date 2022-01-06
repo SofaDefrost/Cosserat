@@ -36,8 +36,8 @@
 #include <SofaConstraint/UnilateralInteractionConstraint.h>
 #include "sofa/type/Quat.h"
 
-#include "../../../SoftRobots/src/SoftRobots/component/constraint/model/CableModel.h"
-#include "../../../SoftRobots/src/SoftRobots/component/behavior/SoftRobotsConstraint.h"
+#include <SoftRobots/component/constraint/model/CableModel.h>
+#include <SoftRobots/component/behavior/SoftRobotsConstraint.h>
 
 template class SOFA_SOFACONSTRAINT_API sofa::component::constraintset::UnilateralInteractionConstraint<sofa::defaulttype::Vec3Types>;
 

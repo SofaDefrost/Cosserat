@@ -28,7 +28,7 @@
 #include <sofa/defaulttype/SolidTypes.h>
 #include <sofa/defaulttype/RigidTypes.h>
 #include "BaseCosserat.h"
-#include <SofaOpenglVisual/OglColorMap.h>
+#include <sofa/helper/ColorMap.h>
 
 namespace sofa::component::mapping
 {
