@@ -55,7 +55,6 @@ using std::endl ;
 namespace sofa::component::forcefield
 {
 
-using sofa::component::linearsolver::DefaultMultiMatrixAccessor ;
 using sofa::core::behavior::MultiMatrixAccessor ;
 using sofa::core::behavior::BaseMechanicalState ;
 using sofa::helper::WriteAccessor ;

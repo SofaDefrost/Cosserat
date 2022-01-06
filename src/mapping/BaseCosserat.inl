@@ -132,7 +132,7 @@ void BaseCosserat<TIn1, TIn2, TOut>::update_ExponentialSE3(const In1VecCoord & i
     m_framesExponentialSE3Vectors.clear();
     m_nodesExponentialSE3Vectors.clear();
     m_nodesLogarithmeSE3Vectors.clear();
-    const auto sz = curv_abs_frames.size();
+    const unsigned int sz = curv_abs_frames.size();
 
     //Compute exponential at frame points
     for (size_t i = 0; i < sz; i++) {
@@ -152,7 +152,7 @@ void BaseCosserat<TIn1, TIn2, TOut>::update_ExponentialSE3(const In1VecCoord & i
 
     //Compute the exponential at the nodes
     m_nodesExponentialSE3Vectors.push_back(Transform(Vector3(0.0,0.0,0.0),type::Quat(0,0,0,1)));
-    for (auto j = 0; j < inDeform.size(); j++) {
+    for (unsigned int  j = 0; j < inDeform.size(); j++) {
         Vector3 k = inDeform[j];
         double  x = m_BeamLengthVectors[j];
         Transform T; computeExponentialSE3(x,k,T) ;
@@ -288,9 +288,9 @@ void BaseCosserat<TIn1, TIn2, TOut>::update_TangExpSE3(const In1VecCoord & inDef
         &curv_abs_section , const type::vector<double> &curv_abs_frames ){
 
     m_framesTangExpVectors.clear();
-    auto sz = curv_abs_frames.size();
+    unsigned int sz = curv_abs_frames.size();
     //Compute tangExpo at frame points
-    for (auto i = 0; i < sz; i++) {
+    for (unsigned int i = 0; i < sz; i++) {
         Mat6x6 temp ;
 
         Vector3 k = inDeform[m_indicesVectors[i]-1];
