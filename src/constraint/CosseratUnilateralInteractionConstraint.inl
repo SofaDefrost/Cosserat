@@ -210,13 +210,14 @@ namespace sofa::component::constraintset
         }
     }
 
+
     template<class DataTypes>
     void CosseratUnilateralInteractionConstraint<DataTypes>::getConstraintResolution(const ConstraintParams*,
                                                                  std::vector<core::behavior::ConstraintResolution*>& resTab,
                                                                  unsigned int& offset)
     {
         double dampingCoefficient = d_dampingCoefficient.getValue();
-        for (auto index : d_vectorOfIndices.getValue()){
+        for (unsigned int index : d_vectorOfIndices.getValue()){
             resTab[offset+0] = new MyUnilateralConstraintResolutionWithFriction(dampingCoefficient);
             resTab[offset+1] = new MyUnilateralConstraintResolutionWithFriction(dampingCoefficient);
             resTab[offset+2] = new MyUnilateralConstraintResolutionWithFriction(dampingCoefficient);

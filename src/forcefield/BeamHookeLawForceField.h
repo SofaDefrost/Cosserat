@@ -35,7 +35,7 @@
 #include <sofa/core/objectmodel/Data.h>
 #include <sofa/core/MechanicalParams.h>
 #include <SofaBaseLinearSolver/CompressedRowSparseMatrix.h>
-#include <SofaBaseLinearSolver/DefaultMultiMatrixAccessor.h>
+#include <sofa/core/behavior/MultiMatrixAccessor.h>
 #include <sofa/core/behavior/ForceField.inl>
 #include <sofa/defaulttype/BaseMatrix.h>
 #include <sofa/helper/OptionsGroup.h>

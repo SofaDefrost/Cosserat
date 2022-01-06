@@ -26,8 +26,8 @@
 #include <sofa/core/visual/VisualParams.h>
 #include <sofa/core/behavior/MechanicalState.h>
 #include <string>
-#include <sofa/core/visual/VisualParams.h>
-
+#include <sofa/gl/template.h>
+#include <sofa/helper/visual/DrawTool.h>
 #include <sofa/helper/AdvancedTimer.h>
 #include <sofa/core/objectmodel/BaseContext.h>
 #include <sofa/helper/logging/Message.h>
