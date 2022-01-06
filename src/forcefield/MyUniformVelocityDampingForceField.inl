@@ -24,7 +24,7 @@
 #include "MyUniformVelocityDampingForceField.h"
 #include <sofa/defaulttype/BaseMatrix.h>
 #include <sofa/core/MechanicalParams.h>
-#include <SofaBaseLinearSolver/FullVector.h>
+#include <sofa/linearalgebra/FullVector.h>
 #include <sofa/core/behavior/ForceField.inl>
 #include <sofa/core/behavior/MechanicalState.h>
 #include <algorithm>
