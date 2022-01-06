@@ -210,7 +210,7 @@ namespace sofa::component::constraintset
         }
     }
 
-    
+
     template<class DataTypes>
     void CosseratUnilateralInteractionConstraint<DataTypes>::getConstraintResolution(const ConstraintParams*,
                                                                  std::vector<core::behavior::ConstraintResolution*>& resTab,
