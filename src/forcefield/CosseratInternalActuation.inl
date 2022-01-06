@@ -267,7 +267,7 @@ void CosseratInternalActuation<DataTypes>::addKToMatrix(const MechanicalParams* 
                                                         const MultiMatrixAccessor* matrix)
 {
     MultiMatrixAccessor::MatrixRef mref = matrix->getMatrix(this->mstate);
-    BaseMatrix* mat = mref.matrix;
+    sofa::linearalgebra::BaseMatrix* mat = mref.matrix;
     unsigned int offset = mref.offset;
     Real kFact = (Real)mparams->kFactorIncludingRayleighDamping(this->rayleighStiffness.getValue());
 
