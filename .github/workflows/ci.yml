@@ -56,12 +56,12 @@ jobs:
               -DCMAKE_PREFIX_PATH=$SOFA_ROOT/lib/cmake \
               -DCMAKE_BUILD_TYPE=Release \
               -DCMAKE_INSTALL_PREFIX="$WORKSPACE_INSTALL_PATH" \
-              ../src
-            ninja install
+              ../src  \
+            && ninja install
             echo ${CCACHE_BASEDIR}
             ccache -s
           fi
-
+          
       - name: Create artifact
         uses: actions/upload-artifact@v2
         with:
@@ -89,7 +89,6 @@ jobs:
           echo "SOFA_ROOT = $SOFA_ROOT"
           echo '----------------------'
           python -c "import sys; print('sys.version = ' + str(sys.version)); print('sys.path = ' + str(sys.path))"
-
 
       - name: Get Time
         id: time
