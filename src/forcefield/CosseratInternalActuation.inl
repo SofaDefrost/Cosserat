@@ -29,7 +29,7 @@
 ******************************************************************************/
 #pragma once
 #include "CosseratInternalActuation.h"
-#include <SofaBaseLinearSolver/FullVector.h>
+#include <sofa/linearalgebra/FullVector.h>
 #include <sofa/core/behavior/ForceField.inl>
 #include <sofa/core/behavior/MechanicalState.h>
 #include <algorithm>
