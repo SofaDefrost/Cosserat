@@ -24,6 +24,7 @@ find_package(Sofa.GL REQUIRED)
 
 find_package(SofaImplicitField QUIET)
 find_package(SofaAdvancedConstraint QUIET)
+
 sofa_find_package(SofaBaseTopology REQUIRED)
 
 option(COSSERAT_IGNORE_ERRORS "Enable this option to ignore the recommendations and generate anyway." ON)
@@ -73,10 +74,7 @@ set(HEADER_FILES
     src/constraint/CosseratSlidingConstraint.inl
     src/constraint/QPSlidingConstraint.h
     src/constraint/QPSlidingConstraint.inl
-    src/constraint/CosseratNeedleSlidingConstraint.h
-    src/constraint/CosseratNeedleSlidingConstraint.inl
-    src/constraint/CosseratUnilateralInteractionConstraint.h
-    src/constraint/CosseratUnilateralInteractionConstraint.inl
+    
     src/mapping/LegendrePolynomialsMapping.h
     src/mapping/LegendrePolynomialsMapping.inl
 
@@ -97,11 +95,10 @@ set(SOURCE_FILES
     src/forcefield/CosseratInternalActuation.cpp
 
     src/constraint/CosseratSlidingConstraint.cpp
-    src/constraint/QPSlidingConstraint.cpp
-    src/constraint/CosseratNeedleSlidingConstraint.cpp
-    src/constraint/CosseratUnilateralInteractionConstraint.cpp
+    src/constraint/QPSlidingConstraint.cpp    
     src/mapping/LegendrePolynomialsMapping.cpp
     )
+
 
 set(README_FILE "Cosserat.txt" )
 
@@ -110,9 +107,16 @@ if(SoftRobots_FOUND)
     list(APPEND HEADER_FILES
         src/constraint/CosseratActuatorConstraint.h
         src/constraint/CosseratActuatorConstraint.inl
+        src/constraint/CosseratUnilateralInteractionConstraint.h
+        src/constraint/CosseratUnilateralInteractionConstraint.inl
+
+        src/constraint/CosseratNeedleSlidingConstraint.h
+        src/constraint/CosseratNeedleSlidingConstraint.inl
         )
     list(APPEND SOURCE_FILES
         src/constraint/CosseratActuatorConstraint.cpp
+        src/constraint/CosseratNeedleSlidingConstraint.cpp
+        src/constraint/CosseratUnilateralInteractionConstraint.cpp
         )
 endif()
 
