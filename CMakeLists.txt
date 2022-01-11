@@ -157,9 +157,6 @@ sofa_create_package_with_targets(
     RELOCATABLE "plugins"
     )
 
-install(DIRECTORY docs DESTINATION .)
-install(FILES "README.md" "LICENSE" "CHANGELOG" DESTINATION .)
-
 # find_package(GTest CONFIG QUIET)
 # if (NOT GTest_FOUND)
 #     # This find_package needs to be executed at MOST once, else it will fails on the second call
