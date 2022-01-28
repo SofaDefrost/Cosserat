@@ -11,7 +11,7 @@ __date__ = "October, 26 2021"
 
 from dataclasses import dataclass
 import Sofa
-from usefulFunctions import buildEdges, pluginList, BuildCosseratGeometry
+from cosserat.usefulFunctions import buildEdges, pluginList, BuildCosseratGeometry
 
 cosserat_config = {'init_pos': [0., 0., 0.], 'tot_length': 6, 'nbSectionS': 6,
                    'nbFramesF': 12, 'buildCollisionModel': 1, 'beamMass': 0.22}

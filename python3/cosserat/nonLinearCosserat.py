@@ -11,9 +11,8 @@ __date__ = "October, 26 2021"
 
 from dataclasses import dataclass
 import Sofa
-from usefulFunctions import buildEdges, pluginList, BuildCosseratGeometry
+from cosserat.usefulFunctions import buildEdges, pluginList, BuildCosseratGeometry
 
-from cosserat.cosseratObject import Cosserat
 
 linearConfig = {'init_pos': [0., 0., 0.], 'tot_length': 1, 'nbSectionS': 15,
                 'nbFramesF': 30, 'buildCollisionModel': 1, 'beamMass': 0.22}
@@ -75,6 +74,7 @@ class NonLinearCosserat(Sofa.Prefab):
         self.beamMass = self.cosseratGeometry['beamMass']
         self.parent = kwargs['parent']
         self.legendreControlPos = kwargs['legendreControlPoints']
+        self.polynomOrder = kwargs['order']
 
         if self.parent.hasObject("EulerImplicitSolver") is False:
             # print("===> The EulerImplicit is not in the node Yet ")
@@ -145,12 +145,15 @@ class NonLinearCosserat(Sofa.Prefab):
                                          poissonRatio=self.poissonRatio.value,
                                          radius=self.radius.value,
                                          lengthY=self.length_Y.value, lengthZ=self.length_Z.value)
-        # print(f'the curv_abs_inputS is : {curv_abs_inputS}')
-        # print(f'the length is : {longeurS}')
+        print(f'====> the curv_abs_inputS is : {curv_abs_inputS}')
         localCurv = curv_abs_inputS
         # localCurv.pop(0)
-        controlPointsAbs = [0.3333333333333333, 0.6666666666666666, 1.0]
-        cosseratCoordinateNode.addObject('LegendrePolynomialsMapping', curvAbscissa=localCurv, order=3,
+        # print(f'====> localCurv : {localCurv}')
+        controlPointsAbs = [k*(1./self.polynomOrder) for k in range(1, self.polynomOrder)]
+        # controlPointsAbs = [0.3333333333333333, 0.6666666666666666, 1.0]
+        controlPointsAbs.append(1.0)
+        print(f'==============================> {controlPointsAbs}')
+        cosseratCoordinateNode.addObject('LegendrePolynomialsMapping', curvAbscissa=localCurv, order=self.polynomOrder,
                                          controlPointsAbs=controlPointsAbs, applyRestPosition=True)
         return cosseratCoordinateNode
 
@@ -207,7 +210,7 @@ def createScene(rootNode):
     needCollisionModel = 0  # use this if the collision model if the beam will interact with another object
     nonLinearCosserat = solverNode.addChild(
         NonLinearCosserat(parent=solverNode, cosseratGeometry=nonLinearConfig, useCollisionModel=needCollisionModel,
-                          name="cosserat", radius=0.1, legendreControlPoints=initialStrain4))
+                          name="cosserat", radius=0.1, legendreControlPoints=initialStrain4, order=3))
     cosseratNode = nonLinearCosserat.legendreControlPointsNode
     cosseratNode.addObject('MechanicalMatrixMapper', template='Vec3,Vec3',
                            object1=cosseratNode.getLinkPath(),
@@ -218,4 +221,5 @@ def createScene(rootNode):
     beamFrame = nonLinearCosserat.cosseratFrame
     beamFrame.addObject('ConstantForceField', name='constForce', showArrowSize=1.e-8, indices=12,
                         force=[0., 0., 0., 0., 0., 450.])
+
     return rootNode
