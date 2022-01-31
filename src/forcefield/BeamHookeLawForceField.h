@@ -116,11 +116,9 @@ public :
 
 protected:
     Data<helper::OptionsGroup>   d_crossSectionShape;
-
-    Data<double>                      d_youngModulus; /// youngModulus
-    Data<double>                      d_poissonRatio; /// poissonRatio
-
-    Data<type::vector<double>>      d_length ; /// length of each beam
+    Data<Real>                 d_youngModulus; /// youngModulus
+    Data<Real>                 d_poissonRatio; /// poissonRatio
+    Data<type::vector<Real>>   d_length ; /// length of each beam
 
     /// Circular Cross Section
     Data<Real>          d_radius;
@@ -135,8 +133,8 @@ protected:
 
     //In case we have a beam with different propertise per section
     Data<bool>                      d_varianteSections; /// bool to identify different beams sections
-    Data<type::vector<double>>    d_youngModulusList; /// youngModulus
-    Data<type::vector<double>>    d_poissonRatioList; /// poissonRatio
+    Data<type::vector<Real>>    d_youngModulusList; /// youngModulus
+    Data<type::vector<Real>>    d_poissonRatioList; /// poissonRatio
 
     bool compute_df;
     Mat33 m_K_section;
