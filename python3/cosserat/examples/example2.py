@@ -18,12 +18,12 @@ from math import sqrt
 # @todo ================ Unit: N, m, Kg, Pa  ================
 LegendrePolyOrder = 3
 initialStrain = [[0., 0., 0], [0., 0., 0], [0., 0., 0]]
-coeff = 3.05e-1
-YM = 1.e8
+YM = 4.015e8
 rayleighStiffness = 0.2  # Nope
-F1 = [0., 0., 0., 0., (coeff*1.)/sqrt(2), (coeff*1.)/sqrt(2)]  # Nope
-Rb = 0.01/2. # beam radius in m
-length = 1  # in m
+coeff = 1.8
+F1 = [0., coeff, 0., 0., 0., 0.]  # Nope
+Rb = 0.01/2  # @todo ==> 0.57/2. # beam radius in m
+length = 1  # @todo ==>  100 # in m
 nbSection = 5  # P_{k_2}=P_{k_3}
 
 nonLinearConfig = {'init_pos': [0., 0., 0.], 'tot_length': length, 'nbSectionS': nbSection,

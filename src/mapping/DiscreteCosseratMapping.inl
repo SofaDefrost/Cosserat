@@ -50,15 +50,15 @@ DiscreteCosseratMapping<TIn1, TIn2, TOut>::DiscreteCosseratMapping()
     , m_toModel(NULL)
     , d_deformationAxis(initData(&d_deformationAxis, (int)1, "deformationAxis",
                                  "the axis in which we want to show the deformation.\n"))
-    , d_max(initData(&d_max, (Real)1.0e-2, "max",
+    , d_max(initData(&d_max, (Real2)1.0e-2, "max",
                                  "the maximum of the deformation.\n"))
-    , d_min(initData(&d_min, (Real)0.0, "min",
+    , d_min(initData(&d_min, (Real2)0.0, "min",
                                  "the minimum of the deformation.\n"))
-    , d_radius(initData(&d_radius, (Real)3.0, "radius",
+    , d_radius(initData(&d_radius, (Real2)0.005, "radius",
                                  "the axis in which we want to show the deformation.\n"))
     , d_drawMapBeam(initData(&d_drawMapBeam, true,"nonColored", "if this parameter is false, you draw the beam with "
                                                                 "color according to the force apply to each beam"))
-    , d_color(initData(&d_color, type::Vec4f (1, 0., 1., 0.8) ,"color", "The default beam color"))
+    , d_color(initData(&d_color, type::Vec4f (40/255.0, 104/255.0, 137/255.0, 0.8) ,"color", "The default beam color"))
     , d_index(initData(&d_index, "index", "if this parameter is false, you draw the beam with color "
                                                           "according to the force apply to each beam"))
     , d_baseIndex(initData(&d_baseIndex, (unsigned int) 0, "baseIndex", "This parameter defines the index of the rigid "
@@ -539,7 +539,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::draw(const core::visual::VisualP
     const OutDataVecCoord* xfromData = m_toModel->read(core::ConstVecCoordId::position());
     const OutVecCoord xData = xfromData->getValue();
     type::vector<Vector3> positions;
-    type::vector<sofa::type::Quat<Real>> Orientation;
+    type::vector<sofa::type::Quat<Real2>> Orientation;
     positions.clear();
     Orientation.clear();
     unsigned int sz = xData.size();
@@ -573,12 +573,18 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::draw(const core::visual::VisualP
                 vparams->drawTool()->drawCylinder(positions[i], positions[i+1], radius, drawColor);
         }
     }
+    else
+    {
+        RGBAColor drawColor = d_color.getValue();
+        for (unsigned int i=0; i<sz-1; i++)
+            vparams->drawTool()->drawCylinder(positions[i], positions[i+1], d_radius.getValue(), drawColor);
+    }
 
 
     //Define color map
-    Real min = d_min.getValue();
-    Real max = d_max.getValue();
-    helper::ColorMap::evaluator<Real> _eval = m_colorMap.getEvaluator(min, max);
+    Real2 min = d_min.getValue();
+    Real2 max = d_max.getValue();
+    helper::ColorMap::evaluator<Real2> _eval = m_colorMap.getEvaluator(min, max);
 
     glLineWidth(d_radius.getValue());
     glBegin(GL_LINES);
