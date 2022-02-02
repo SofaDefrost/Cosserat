@@ -33,8 +33,8 @@
 #include<sofa/defaulttype/VecTypes.h>
 #include <sofa/helper/OptionsGroup.h>
 
-#include "../../../SoftRobots/src/SoftRobots/component/constraint/model/CableModel.h"
-#include "../../../SoftRobots/src/SoftRobots/component/behavior/SoftRobotsConstraint.h"
+#include <SoftRobots/component/constraint/model/CableModel.h>
+#include <SoftRobots/component/behavior/SoftRobotsConstraint.h>
 
 namespace sofa::component::constraintset
 {

@@ -34,15 +34,106 @@ namespace sofa::component::forcefield
 template<typename DataTypes>
 BeamPlasticLawForceField<DataTypes>::BeamPlasticLawForceField() :
     Inherit1(),
-    d_initialYieldStress(initData(&d_initialYieldStress, "initialYieldStress",
-        "Yield stress of the considered material, prior to any elastic deformation")),
-    d_plasticModulus(initData(&d_plasticModulus, "plasticModulus",
-        "Approximation of the plastic modulus as a constant. Can be deduced from a generic law such as Ramberg-Osgood's"))
+    d_initialYieldStresses(initData(&d_initialYieldStresses, "initialYieldStresses",
+        "Vector of yield stresses of the considered material(s), prior to any elastic deformation. A value is expected for each beam element")),
+    d_plasticModuli(initData(&d_plasticModuli, "plasticModuli",
+        "Approximation of the plastic modulus as a constant. Can be deduced from a generic law such as Ramberg-Osgood's. A value is expected for each beam element")),
+    d_mixedHardeningCoefficients(initData(&d_mixedHardeningCoefficients, "mixedHardeningCoefficients",
+        "For each beam: coefficient determining the proportion of kinematic and isotropic hardening. 0 = purely kinematic, 1 = purely isotropic"))
 {
-    if (d_initialYieldStress.getValue() < 0)
+    size_t nbBeams = this->d_length.getValue().size();
+
+    // Checking the number of yield stress parameters
+    size_t nbYieldStressParameters = d_initialYieldStresses.getValue().size();
+    if (nbYieldStressParameters != nbBeams)
     {
-        msg_error() << "yield Stress should be positive. Please provide a positive yield"
-                    << "stress value for the considered material";
+        // If only one value is provided, we use this value for all beam elements, by default
+        if (nbYieldStressParameters == 1)
+        {
+            msg_info() << "Only one value was provided for the material yield stresses."
+                       << "This value will be used for all beam elements as if they were"
+                       << "made in the same material. If your Cosserat beam model involves"
+                       << "several materials, you should provide a list of yield stresses"
+                       << "values instead.";
+            Real uniqueYieldStress = d_initialYieldStresses.getValue()[0];
+            vector<Real>& initialYieldStresses = *d_initialYieldStresses.beginEdit();
+            initialYieldStresses.resize(nbBeams, uniqueYieldStress);
+            d_initialYieldStresses.endEdit();
+        }
+        else
+        {
+            msg_error() << "The number of yield stress parameters doesn't match the"
+                        << "number of beam elements.";
+        }
+    }
+
+    // Checking the number of plastic modulus parameters
+    size_t nbPlasticModulusParameters = d_plasticModuli.getValue().size();
+    if (nbPlasticModulusParameters != nbBeams)
+    {
+        // If only one value is provided, we use this value for all beam elements, by default
+        if (nbPlasticModulusParameters == 1)
+        {
+            msg_info() << "Only one value was provided for the material plastic moduli."
+                       << "This value will be used for all beam elements as if they were"
+                       << "made in the same material. If your Cosserat beam model involves"
+                       << "several materials, you should provide a list of plastic modulus"
+                       << "values instead.";
+            Real uniquePlasticModulus = d_plasticModuli.getValue()[0];
+            vector<Real>& plasticModuli = *d_plasticModuli.beginEdit();
+            plasticModuli.resize(nbBeams, uniquePlasticModulus);
+            d_plasticModuli.endEdit();
+        }
+        else
+        {
+            msg_error() << "The number of plastic modulus parameters doesn't match the"
+                        << "number of beam elements.";
+        }
+    }
+
+    // Checking the number of mixed hardening parameters
+    size_t nbMixedHardeningCoefficients = d_mixedHardeningCoefficients.getValue().size();
+    if (nbMixedHardeningCoefficients != nbBeams)
+    {
+        // If only one value is provided, we use this value for all beam elements, by default
+        if (nbMixedHardeningCoefficients == 1)
+        {
+            msg_info() << "Only one value was provided for the material mixed hardening coefficients."
+                       << "This value will be used for all beam elements as if they were"
+                       << "made in the same material. If your Cosserat beam model involves"
+                       << "several materials, you should provide a list of coefficients for"
+                       << "mixed hardening instead.";
+            Real uniqueHardeningCoefficient = d_mixedHardeningCoefficients.getValue()[0];
+            vector<Real>& mixedHardeningCoefficients = *d_mixedHardeningCoefficients.beginEdit();
+            mixedHardeningCoefficients.resize(nbBeams, uniqueHardeningCoefficient);
+            d_mixedHardeningCoefficients.endEdit();
+        }
+        else
+        {
+            msg_error() << "The number of hardening coefficient parameters doesn't match the"
+                        << "number of beam elements.";
+        }
+    }
+
+    // Checking the integrity of each parameter
+    // TO DO: there probably is a more efficient way to access vector component data
+    for (unsigned int beamId = 0; beamId < nbBeams; beamId++)
+    {
+        if (d_initialYieldStresses.getValue()[beamId] < 0)
+        {
+            msg_error() << "yield Stress should be positive. Please provide a positive yield"
+                        << "stress value for the considered material";
+        }
+        if (d_plasticModuli.getValue()[beamId] < 0)
+        {
+            msg_error() << "Plastic modulus should be positive. Please provide a positive plastic"
+                        << "modulus value for the considered material";
+        }
+        if (d_mixedHardeningCoefficients.getValue()[beamId] < 0 || d_mixedHardeningCoefficients.getValue()[beamId] > 1)
+        {
+            msg_error() << "Mixed hardening coefficients should be between 0 and 1 (0 = purely kinematic, 1 = purely isotropic)."
+                        << "Please provide a value between 0 and 1 for the considered material";
+        }
     }
 }
 
@@ -71,18 +162,6 @@ void BeamPlasticLawForceField<DataTypes>::reinit()
     m_sectionMechanicalStates.clear();
     m_sectionMechanicalStates.resize(nbSections, MechanicalState::ELASTIC);
 
-    // Initialisaiton of the tangent stiffness matrices with the elastic stiffness matrices
-    m_Kt_sectionList.clear();
-    if (!this->d_varianteSections.getValue())
-    {
-        m_Kt_sectionList.resize(nbSections, this->m_K_section);
-    }
-    else
-    {
-        for (unsigned int i = 0; i < nbSections; i++)
-            m_Kt_sectionList.push_back(this->m_K_sectionList[i]);
-    }
-
     // Computation of the generalised Hooke's law
     // As we are working with only 3 components of the strain tensor,
     // the generalised Hooke's law is reduced to a 3x3 diagonal matrix
@@ -108,12 +187,21 @@ void BeamPlasticLawForceField<DataTypes>::reinit()
         }
     }
 
+    // Initialisation of the tangent stiffness matrices
+    // At the beginning of the simulation, the tangent stiffness matrix is actually
+    // a linear elastic stifness matrix
+    m_Kt_sectionList.clear();
+    m_Kt_sectionList.resize(nbSections);
+    for (unsigned int segmentId=0; segmentId < nbSections; segmentId++)
+        updateTangentStiffness(segmentId);
+
     // Initialisation of plasticity parameters
     m_backStress.clear();
     m_backStress.resize(nbSections, Vec3());
 
     m_yieldStress.clear();
-    m_yieldStress.resize(nbSections, d_initialYieldStress.getValue());
+    for (unsigned int beamId=0; beamId < nbSections; beamId++)
+        m_yieldStress.push_back(d_initialYieldStresses.getValue()[beamId]);
 
     //By default, no plastic deformation => no history
     m_plasticStrain.clear();
@@ -131,8 +219,9 @@ void BeamPlasticLawForceField<DataTypes>::reinit()
     // available precision limit (e.g. std::numeric_limits<double>::epsilon()).
     // We rely on the value of the initial Yield stress, as we can expect plastic
     // deformation to occur inside a relatively small intervl of stresses around this value.
-    const int orderOfMagnitude = d_initialYieldStress.getValue(); //Should use std::abs, but d_initialYieldStress > 0
+    const int orderOfMagnitude = d_initialYieldStresses.getValue()[0]; //Should use std::abs, but d_initialYieldStresses[i] > 0
     m_stressComparisonThreshold = std::numeric_limits<double>::epsilon() * orderOfMagnitude;
+//    std::cout << "Comparison threshold : " << m_stressComparisonThreshold << std::endl;
 }
 
 
@@ -215,7 +304,7 @@ void BeamPlasticLawForceField<DataTypes>::computeStressIncrement(unsigned int se
         Vec3 N = shiftedDeviatoricElasticPredictor / shiftDevElasticPredictorNorm;
 
         // Indicates the proportion of Kinematic vs isotropic hardening. beta=0 <=> kinematic, beta=1 <=> isotropic
-        const Real beta = 0.5;
+        const Real beta = d_mixedHardeningCoefficients.getValue()[sectionId];
 
         Real E, nu = 0;
         if (!this->d_varianteSections.getValue())
@@ -231,7 +320,7 @@ void BeamPlasticLawForceField<DataTypes>::computeStressIncrement(unsigned int se
         const Real mu = E / (2 * (1 + nu)); // Lame coefficient
 
         // Plastic modulus
-        const Real H = d_plasticModulus.getValue();
+        const Real H = d_plasticModuli.getValue()[sectionId];
 
         // Computation of the plastic multiplier
         const double sqrt2 = helper::rsqrt(2.0);
@@ -264,23 +353,14 @@ void BeamPlasticLawForceField<DataTypes>::updateTangentStiffness(unsigned int se
 
     // TO DO: better way to handle the two cases?
     Mat33 C = Mat33();
-    Real E, nu = 0;
     if (!this->d_varianteSections.getValue())
-    {
-        E = this->d_youngModulus.getValue();
-        nu = this->d_poissonRatio.getValue();
         C = m_genHookesLaw;
-    }
     else
-    {
-        E = this->d_youngModulusList.getValue()[sectionId];
-        nu = this->d_poissonRatioList.getValue()[sectionId];
         C = m_genHookesLawList[sectionId];
-    }
 
     Vec3 currentStressPoint = m_prevStress[sectionId]; //Updated in computeStressIncrement
 
-    Real H = d_plasticModulus.getValue();
+    Real H = d_plasticModuli.getValue()[sectionId];
 
     Mat33 Cep = Mat33();
     // Cep
@@ -299,20 +379,20 @@ void BeamPlasticLawForceField<DataTypes>::updateTangentStiffness(unsigned int se
             matCN[i][0] = CN[i];
         // NtC = (NC)t because of C symmetry
         Cep = C - (2 * matCN * matCN.transposed()) / (2.0 * N * CN + (2.0 / 3.0) * H); //TO DO: check that * operator is actually dot product
-
-        // /!\ Warning on the computation above /!\
-        // Terms CNNtC in the numerator and NtCN in the denominator are multiplied by 2
-        // in order to account for the fact that we are using a reduced notation.
-        // In the same way that the generalised Hooke's law we use in m_genHookesLaw
-        // differs from the 'complete' 9x9 generalised Hooke's Law components by a
-        // factor 2, we multiply Cep components by 2 to account for the fact that
-        // multiplication of this matrix by a vector representing a symmetric tensor
-        // makes each non-diagonal terms appear twice.
-        // NB: this takes into account the fact that C is already expressed here with
-        // a factor 2.
-        // /!\ This should be used with serious caution in all computations, as it
-        // always has to be coherent with the actual complete tensor computation.
-        // TO DO: better way to implement this ?
+        /* /!\ Warning on the computation above /!\
+         * Terms CNNtC in the numerator and NtCN in the denominator are multiplied by 2
+         * in order to account for the fact that we are using a reduced notation.
+         * In the same way that the generalised Hooke's law we use in m_genHookesLaw
+         * differs from the 'complete' 9x9 generalised Hooke's Law components by a
+         * factor 2, we multiply Cep components by 2 to account for the fact that
+         * multiplication of this matrix by a vector representing a symmetric tensor
+         * makes each non-diagonal terms appear twice.
+         * NB: this takes into account the fact that C is already expressed here with
+         * a factor 2.
+         * /!\ This should be used with serious caution in all computations, as it
+         * always has to be coherent with the actual complete tensor computation.
+         * TO DO: better way to implement this ?
+         */
     }
 
     // Integration step, consisting only in multiplication by the element volume, as
@@ -363,7 +443,9 @@ void BeamPlasticLawForceField<DataTypes>::addForce(const MechanicalParams* mpara
         computeStressIncrement(i, strainIncrement, newStressPoint);
 
         // If the beam is in plastic state, we update the tangent stiffness matrix
-        updateTangentStiffness(i);
+        const MechanicalState mechanicalState = m_sectionMechanicalStates[i];
+        if (mechanicalState == MechanicalState::PLASTIC)
+            updateTangentStiffness(i);
 
         // Computation of internal forces from stress
         // As stress and strain are uniform over the segment, spatial integration reduces to the segment volume

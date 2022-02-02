@@ -29,7 +29,7 @@
 ******************************************************************************/
 #pragma once
 #include "CosseratInternalActuation.h"
-#include <SofaBaseLinearSolver/FullVector.h>
+#include <sofa/linearalgebra/FullVector.h>
 #include <sofa/core/behavior/ForceField.inl>
 #include <sofa/core/behavior/MechanicalState.h>
 #include <algorithm>
@@ -214,7 +214,7 @@ void CosseratInternalActuation<DataTypes>::addForce(const MechanicalParams* mpar
     {
         //compute the tension internal force
         //(const double &Li, const double& Li_1, const VecCoord& x, const int id, Coord & integral)
-        Coord integral =  Coord(0.0,0.0,0.0);
+        // Coord integral =  Coord(0.0,0.0,0.0);
         double Li = 0.0; double Li_1 = 0.0;
 
         for(unsigned j=0; j<=i; j++) Li += d_length.getValue()[j] ;
@@ -267,7 +267,7 @@ void CosseratInternalActuation<DataTypes>::addKToMatrix(const MechanicalParams* 
                                                         const MultiMatrixAccessor* matrix)
 {
     MultiMatrixAccessor::MatrixRef mref = matrix->getMatrix(this->mstate);
-    BaseMatrix* mat = mref.matrix;
+    sofa::linearalgebra::BaseMatrix* mat = mref.matrix;
     unsigned int offset = mref.offset;
     Real kFact = (Real)mparams->kFactorIncludingRayleighDamping(this->rayleighStiffness.getValue());
 
