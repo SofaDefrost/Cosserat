@@ -70,6 +70,28 @@ class InsertionController(Sofa.Core.Controller):
             self.backwards = not self.backwards
 
 
+# Controller for the insertion of a Cosserat beam cather-like model, with interactive controls:
+#   - Ctrl + UpArrow : move the beam in the direction of positive X avis of the global frame
+#   - Ctrl + DownArrow : move the beam in the direction of negative X avis of the global frame
+#   - Ctrl + RightArrow : rotate the beam counterclockwise around the X axis of the local frame
+#   - Ctrl + LeftArrow : rotate the beam clockwise around the X axis of the local frame
+#   - Ctrl + A : Start/stop automatic insertion
+#   - Ctrl + C : Change the model displacement (push/pull)
+#
+# Required structure of the scene :
+# * rootNode
+#   * controlPointNode
+#       controlPointMO (Rigid)
+#   * cosseratBeamNode
+#       MechanicalMatrixMapper
+#       * rigidBaseNode
+#           RigidBaseMO (Rigid)
+#           * MappedFrames
+#               FramesMO (Rigid)
+#               controlSpring (RestShapeSpringsForceField)
+#               mapping (DiscreteCosseratMapping)
+#       * rateAngularDeform
+#           rateAngularDeformMO (Cosserat strains)
 class InteractiveInsertionController(Sofa.Core.Controller):
 
     def __init__(self, rootNode, initFrameId, insertionRate, insertionDirection, switchFrameDistance,
@@ -143,7 +165,7 @@ class InteractiveInsertionController(Sofa.Core.Controller):
                 print("Automatic insertion started")
             self.autoInsertion = not self.autoInsertion
 
-        # Pressing R key inverse the insertion (switch between pushing and pulling)
+        # Pressing C key inverse the insertion (switch between pushing and pulling)
         if event['key'] == 'C':
             if self.backwards:
                 print("Now pushing the catheter")
@@ -215,6 +237,108 @@ class InteractiveInsertionController(Sofa.Core.Controller):
                                                                   newControlPointQuat[3], newControlPointQuat[0]]])
 
 
+# Smooth controller for the insertion of a Cosserat beam cather-like model. The
+# idea of this controller is to have a fixed control point in the scene
+# (typically representing a point of insertion in an anatomy), which is attached
+# to a second 'set' of frames, composed of only one frame. Based on the user
+# inputs, we change only the position and orientation of this frame, to allow
+# for smoother control.
+# Required structure of the scene :
+# * rootNode
+#   * controlPointNode
+#       controlPointMO (Rigid)
+#   * cosseratBeamNode
+#       MechanicalMatrixMapper
+#       * rigidBaseNode
+#           RigidBaseMO (Rigid)
+#           * MappedFrames
+#               FramesMO (Rigid)
+#               DiscreteCosseratMapping
+#           * ControlMappedFrame
+#               ControlFrameMO (1 Rigid)
+#               DiscreteCosseratMapping
+#               RestShapeSpringsForceField (to control point)
+#       * rateAngularDeform
+#           rateAngularDeformMO (Cosserat strains)
+class SmoothInsertionController(Sofa.Core.Controller):
+
+    def __init__(self, rootNode, incrementDistance, incrementAngle, *args, **kwargs):
+        # These are needed (and the normal way to override from a python class)
+        Sofa.Core.Controller.__init__(self, *args, **kwargs)
+
+        self.rootNode = rootNode
+        self.controlPointNode = rootNode.getChild('controlPointNode')
+        if self.controlPointNode is None:
+            raise NameError('[SmoothInsertionController]: Node \'controlPointNode\' not found. Your scene should '
+                            'contain a node named \'controlPointNode\' among the children of the root node in order '
+                            'to use this controller')
+        self.controlPointMO = self.controlPointNode.controlPointMO
+        cosseratBeamNode = rootNode.getChild('cosseratBeamNode')
+        self.rigidBaseNode = cosseratBeamNode.getChild('rigidBaseNode')
+        self.mappedFramesNode = self.rigidBaseNode.getChild('MappedFrames')
+
+        self.incrementDistance = incrementDistance
+        self.incrementAngle = incrementAngle
+
+        # constructs a grid of indices to access only position DoFs of the rigid particle
+        self.posDoFsIdGrid = np.ix_([0], [0, 1, 2])
+        self.posDoFsIdGridSingle = np.ix_([0, 1, 2])
+        # constructs a grid of indices to access only orientation DoFs of the rigid particle
+        self.quatDoFsIdGrid = np.ix_([0], [3, 4, 5, 6])
+
+        # Computing the incremental quaternions for rotation
+        # Taking the X axis associated to the control point Rigid frame as rotation axis
+        auxQuat = self.controlPointMO.position.value[self.quatDoFsIdGrid]  # np matrix of size 1x4
+        controlPointQuat = Quat(auxQuat[0])
+        controlPointXAxis = controlPointQuat.rotate(np.array([1.0, 0.0, 0.0]))
+        qw = math.cos(math.radians(self.incrementAngle) / 2)
+        plusQuat = controlPointXAxis * math.sin(math.radians(self.incrementAngle) / 2)
+        minusQuat = -plusQuat
+        self.plusQuat = Quat(np.insert(plusQuat, 0, qw))
+        self.minusQuat = Quat(np.insert(minusQuat, 0, qw))
+
+        self.totalTime = 0.0
+        self.nbIterations = 0
+        self.autoInsertion = False
+        self.backwards = False
+
+    def onAnimateBeginEvent(self, event):  # called at each begin of animation step
+        self.totalTime = self.totalTime + self.rootNode.findData('dt').value
+        self.nbIterations = self.nbIterations + 1
+
+    def onAnimateEndEvent(self, event):  # called at each end of animation step
+        pass
+
+    def onKeypressedEvent(self, event):
+        # Pressing A key activates/deactivates the automatic insertion (in the X axis direction)
+        if event['key'] == 'A':
+            if self.autoInsertion:
+                print("Automatic insertion stopped")
+            else:
+                print("Automatic insertion started")
+            self.autoInsertion = not self.autoInsertion
+
+        # Pressing C key inverse the insertion (switch between pushing and pulling)
+        if event['key'] == 'C':
+            if self.backwards:
+                print("Now pushing the catheter")
+            else:
+                print("Now pulling the catheter")
+            self.backwards = not self.backwards
+
+        if event['key'] == Key.uparrow:  # Up arrow
+            pass
+
+        if event['key'] == Key.downarrow:  # Down arrow
+            pass
+
+        if event['key'] == Key.leftarrow:  # Left arrow
+            pass
+
+        if event['key'] == Key.rightarrow:  # Right arrow
+            pass
+
+
 class ColorMapController(Sofa.Core.Controller):
 
     def __init__(self, rootNode, springStiffness, *args, **kwargs):
@@ -253,6 +377,27 @@ class ColorMapController(Sofa.Core.Controller):
         self.DataDisplay.pointData = forceIntensity
 
 
+# Controller to apply a bending moment on a Cosserat beam cather-like model:
+#   - Ctrl + B : Start/stop applying a bending moment on predefined sections of the beam model
+#   - Ctrl + F : Start/stop a fixed constraint on the Cosserat DoFs for a predefined part of the beam model
+#   - Ctrl + T : Start/stop base fixation (using the control point) to prevent motion during bending
+#
+# Required structure of the scene :
+# * rootNode
+#   * controlPointNode
+#       controlPointMO (Rigid)
+#   * cosseratBeamNode
+#       MechanicalMatrixMapper
+#       * rigidBaseNode
+#           RigidBaseMO (Rigid)
+#           * MappedFrames
+#               FramesMO (Rigid)
+#               controlSpring (RestShapeSpringsForceField)
+#               mapping (DiscreteCosseratMapping)
+#       * rateAngularDeform
+#           rateAngularDeformMO (Cosserat strains)
+#           bendingMoment (ConstantForceField)
+#           fixation (FixedConstraint)
 class BendingController(Sofa.Core.Controller):
 
     def __init__(self, rootNode, cosseratNode, frameNode, bendingMoment, fixedIndices, momentAxis, *args, **kwargs):
@@ -270,7 +415,7 @@ class BendingController(Sofa.Core.Controller):
         self.nbIterations = 0
         self.bendingActivated = False
         self.fixationActivated = False
-        self.tipFixationActivated = False
+        self.baseFixationActivated = False
 
     def onAnimateBeginEvent(self, event):  # called at each begin of animation step
 
@@ -281,13 +426,12 @@ class BendingController(Sofa.Core.Controller):
         pass
 
     def onKeypressedEvent(self, event):
-        # Pressing B key activates/deactivates the bending of the Cosserat beam
         if event['key'] == 'B':
             self.triggerBendingMoment()
         if event['key'] == 'F':
             self.triggerFixation()
         if event['key'] == 'T':
-            self.triggerTipFixation()
+            self.triggerBaseFixation()
 
     def triggerBendingMoment(self):
         with self.cosseratNode.bendingMoment.forces.writeable() as moment:
@@ -312,11 +456,10 @@ class BendingController(Sofa.Core.Controller):
                         moment[i] = [0.0, 0.0, self.bendingMoment]
                 else:
                     print("Only a cardinal axis is expected to apply the bending moment around, please specify "
-                          "'x', 'y', or 'z' as a value for parameter momentAxis. By default, the moement is applied "
+                          "'x', 'y', or 'z' as a value for parameter momentAxis. By default, the moment is applied "
                           "around the x axis")
                     moment[0] = [self.bendingMoment, 0.0, 0.0]
                 self.bendingActivated = True
-
 
     def triggerFixation(self):
 
@@ -332,12 +475,12 @@ class BendingController(Sofa.Core.Controller):
             self.cosseratNode.fixation.indices = self.fixedIndices
             self.fixationActivated = True
 
-    def triggerTipFixation(self):
+    def triggerBaseFixation(self):
 
-        if self.tipFixationActivated:
-            # Tip fixation is currently activated, it should be deactivated
-            print("Tip fixation deactivated")
-            self.tipFixationActivated = False
+        if self.baseFixationActivated:
+            # Base fixation is currently activated, it should be deactivated
+            print("Base fixation deactivated")
+            self.baseFixationActivated = False
 
             # Moving the control point back to its original position, before bending
             self.frameNode.controlSpring.points = self.previousAttachedFrameId
@@ -345,9 +488,9 @@ class BendingController(Sofa.Core.Controller):
             with controlPointNode.controlPointMO.position.writeable() as controlPointPos:
                 controlPointPos[0] = self.frameNode.FramesMO.position.value[self.previousAttachedFrameId[0]]
         else:
-            # self.tipFixationActivated = False => tip fixation should be reactivated
-            print("Tip fixation activated")
-            self.tipFixationActivated = True
+            # self.baseFixationActivated = False => Base fixation should be reactivated
+            print("Base fixation activated")
+            self.baseFixationActivated = True
 
             # Moving the control point to the beam base, in order to prevent motion during tip bending
             self.previousAttachedFrameId = np.array(self.frameNode.controlSpring.points.value)  # copy
