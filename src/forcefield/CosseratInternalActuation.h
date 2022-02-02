@@ -31,11 +31,11 @@
 
 #include <sofa/type/Vec.h>
 #include <sofa/type/Mat.h>
-#include <sofa/defaulttype/BaseMatrix.h>
+#include <sofa/linearalgebra/BaseMatrix.h>
 #include <sofa/core/behavior/MechanicalState.h>
 #include <sofa/core/objectmodel/Data.h>
 #include <sofa/core/MechanicalParams.h>
-#include <SofaBaseLinearSolver/CompressedRowSparseMatrix.h>
+#include <sofa/linearalgebra/CompressedRowSparseMatrix.h>
 #include <SofaBaseLinearSolver/DefaultMultiMatrixAccessor.h>
 #include <sofa/core/behavior/ForceField.inl>
 
@@ -48,9 +48,8 @@ using sofa::type::Vec ;
 using sofa::type::Mat ;
 using sofa::type::vector;
 using sofa::core::MechanicalParams;
-using sofa::defaulttype::BaseMatrix;
 using sofa::core::behavior::ForceField ;
-using sofa::component::linearsolver::CompressedRowSparseMatrix ;
+using sofa::linearalgebra::CompressedRowSparseMatrix ;
 using sofa::core::behavior::MultiMatrixAccessor ;
 
 using sofa::helper::OptionsGroup;

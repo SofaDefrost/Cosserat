@@ -30,21 +30,19 @@
 #pragma once
 
 #include "BeamHookeLawForceField.h"
-#include <SofaBaseLinearSolver/FullVector.h>
+#include <sofa/linearalgebra/FullVector.h>
 #include <sofa/core/behavior/MechanicalState.h>
 
-using sofa::core::behavior::MechanicalState ;
-using sofa::core::objectmodel::BaseContext ;
-
 #include <sofa/core/behavior/ForceField.inl>
+using sofa::core::behavior::MechanicalState ;
+
+using sofa::core::objectmodel::BaseContext ;
 using sofa::helper::ReadAccessor ;
 using sofa::helper::WriteAccessor ;
 using sofa::core::VecCoordId;
 
 // ??
 #include <sofa/helper/OptionsGroup.h>
-
-
 #include <iostream>
 using std::cout ;
 using std::endl ;
@@ -55,7 +53,6 @@ using std::endl ;
 namespace sofa::component::forcefield
 {
 
-using sofa::component::linearsolver::DefaultMultiMatrixAccessor ;
 using sofa::core::behavior::MultiMatrixAccessor ;
 using sofa::core::behavior::BaseMechanicalState ;
 using sofa::helper::WriteAccessor ;

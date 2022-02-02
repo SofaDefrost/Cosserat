@@ -89,11 +89,17 @@ public:
 
 protected:
 
-    Data<Real> d_initialYieldStress;
+    Data<vector<Real>> d_initialYieldStresses;
 
     // TO DO: Plastic modulus should not be a constant. Is this approximation relevant ?
     // Otherwise a generic law such as Ramberg-Osgood should be use. (Cf Plugin BeamPlastic)
-    Data<Real> d_plasticModulus; ///Linearisation coefficient for the plastic behaviour law
+    Data<vector<Real>> d_plasticModuli; ///Linearisation coefficient for the plastic behaviour law
+
+    /// Coefficients to determine the porportion of isotropic and kinematic hardening
+    /// 0 = purely kinematic
+    /// 1 = purely isotropic
+    Data<vector<Real>> d_mixedHardeningCoefficients;
+
 
     // Threshold used to compare stress tensor norms to 0. See detailed explanation
     // at the computation of the threshold in the init() method.
@@ -113,6 +119,10 @@ protected:
     vector<Real> m_effectivePlasticStrain;
 
     vector<Vec3> m_backStress; /// Centre of the yield surface, in stress space (one for each length section)
+    // NB: the distinction between d_initialYieldStresses and m_yieldStress allows to handle the evolution of
+    // the yield stresses internally, without accessing any user data. The evolution of yield stress should
+    // depend entirely on the plasticity method, and it doesn't make sense for a user to have access to it
+    // (left aside for the parameter initialisation).
     vector<Real> m_yieldStress; /// Elastic limit, varying if plastic deformation occurs (one for each length section)
 
     /// Generalised Hooke's law, reduced to the considered strain and stress components

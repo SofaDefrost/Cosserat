@@ -15,8 +15,17 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 include(cmake/environment.cmake)
+
 find_package(SofaFramework REQUIRED)
-sofa_find_package(Sofa.GL QUIET)
+find_package(SofaBaseMechanics REQUIRED)
+find_package(SofaConstraint REQUIRED)
+find_package(SofaUserInteraction REQUIRED)
+find_package(Sofa.GL REQUIRED)
+
+find_package(SofaImplicitField QUIET)
+find_package(SofaAdvancedConstraint QUIET)
+
+sofa_find_package(SofaBaseTopology REQUIRED)
 
 option(COSSERAT_IGNORE_ERRORS "Enable this option to ignore the recommendations and generate anyway." ON)
 
@@ -63,12 +72,8 @@ set(HEADER_FILES
 
     src/constraint/CosseratSlidingConstraint.h
     src/constraint/CosseratSlidingConstraint.inl
-    src/constraint/QPSlidingConstraint.h
-    src/constraint/QPSlidingConstraint.inl
-    src/constraint/CosseratNeedleSlidingConstraint.h
-    src/constraint/CosseratNeedleSlidingConstraint.inl
-    src/constraint/CosseratUnilateralInteractionConstraint.h
-    src/constraint/CosseratUnilateralInteractionConstraint.inl
+    
+    
     src/mapping/LegendrePolynomialsMapping.h
     src/mapping/LegendrePolynomialsMapping.inl
 
@@ -87,13 +92,10 @@ set(SOURCE_FILES
     src/forcefield/BeamHookeLawForceField.cpp
     src/forcefield/BeamPlasticLawForceField.cpp
     src/forcefield/CosseratInternalActuation.cpp
-
     src/constraint/CosseratSlidingConstraint.cpp
-    src/constraint/QPSlidingConstraint.cpp
-    src/constraint/CosseratNeedleSlidingConstraint.cpp
-    src/constraint/CosseratUnilateralInteractionConstraint.cpp
     src/mapping/LegendrePolynomialsMapping.cpp
     )
+
 
 set(README_FILE "Cosserat.txt" )
 
@@ -102,9 +104,19 @@ if(SoftRobots_FOUND)
     list(APPEND HEADER_FILES
         src/constraint/CosseratActuatorConstraint.h
         src/constraint/CosseratActuatorConstraint.inl
+        src/constraint/CosseratUnilateralInteractionConstraint.h
+        src/constraint/CosseratUnilateralInteractionConstraint.inl
+
+        src/constraint/CosseratNeedleSlidingConstraint.h
+        src/constraint/CosseratNeedleSlidingConstraint.inl
+        src/constraint/QPSlidingConstraint.h
+        src/constraint/QPSlidingConstraint.inl
         )
     list(APPEND SOURCE_FILES
         src/constraint/CosseratActuatorConstraint.cpp
+        src/constraint/CosseratNeedleSlidingConstraint.cpp
+        src/constraint/CosseratUnilateralInteractionConstraint.cpp
+        src/constraint/QPSlidingConstraint.cpp    
         )
 endif()
 
@@ -118,7 +130,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC "$<INSTALL_INTERFACE:include>"
 
 set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "-DSOFA_BUILD_COSSERAT")
 set_target_properties(${PROJECT_NAME} PROPERTIES DEBUG_POSTFIX "_d")
-target_link_libraries(${PROJECT_NAME} SofaCore SofaConstraint SofaSimpleFem SofaBaseMechanics SofaRigid SofaBaseVisual SofaOpenglVisual)
+target_link_libraries(${PROJECT_NAME} Sofa.Helper SofaCore SofaBaseTopology SofaConstraint SofaSimpleFem SofaBaseMechanics SofaRigid SofaBaseVisual SofaUserInteraction)
 
 if(Sofa.GL_FOUND)
     target_link_libraries(${PROJECT_NAME} Sofa.GL)
@@ -175,7 +187,7 @@ if (NOT GTest_FOUND)
 endif ()
 
 
-option(COSSERAT_BUILD_TESTS "Build unit tests" ON )
+option(COSSERAT_BUILD_TESTS "Build unit tests" OFF )
 if(COSSERAT_BUILD_TESTS)
     add_subdirectory(Tests)
 endif()
