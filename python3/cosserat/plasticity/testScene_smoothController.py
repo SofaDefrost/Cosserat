@@ -17,11 +17,11 @@ from CosseratBeamControllers import *  # InsertionController, ColorMapController
 # /!\ Anatomic mesh in cm /!\
 
 totLength = 20.0
-nbSections = 5
+nbBeams = 5
 nbFrames = 34
-beamCreatorResult = generateRegularSectionsAndFrames(totLength, nbSections, nbFrames)
+beamCreatorResult = generateRegularSectionsAndFrames(totLength, nbBeams, nbFrames)
 
-beamSectionLengths = beamCreatorResult['sectionLengths']
+beamLengths = beamCreatorResult['sectionLengths']
 beamCurvAbsInput = beamCreatorResult['curvAbsInput']
 beamSectionDoFs = beamCreatorResult['sectionDoFs']
 beamFrameRigidDoFs = beamCreatorResult['frameRigidDoFs']
@@ -43,11 +43,12 @@ anatomyMeshFile = 'Meshes/cylinder_varying_diameter_mesh.stl'
 # ----- BeamHookeLawForceField lists ----- #
 
 ## Random params
-poissonRatio = 0.3
 youngModulus = 2.00e4 # in cm
+poissonRatio = 0.3
 beamYieldStress = 2.20e2
-beamPlasticModulus = 34628.0
+beamPlasticModulus = youngModulus / 10.0
 beamBendingMoment = 3.0e2
+mixedHardeningCoefficient = 0.5
 ## Params in SI:
 # youngModulus = 2.00e11 # in cm
 # beamYieldStress = 2.20e8
@@ -57,15 +58,19 @@ beamBendingMoment = 3.0e2
 # beamYieldStress = 2.20e6
 # beamPlasticModulus = 346285888.7
 # beamBendingMoment = 3.0e6
-beamYoungModulusList = [youngModulus]*nbSections
-beamPoissonRatioList = [poissonRatio]*nbSections
+
+beamYoungModulusList = [youngModulus]*nbBeams
+beamPoissonRatioList = [poissonRatio]*nbBeams
+yieldStressList = [beamYieldStress]*nbBeams
+plasticModulusList = [beamPlasticModulus]*nbBeams
+hardeningCoefficientList = [mixedHardeningCoefficient]*nbBeams
 
 # ----- Miscellaneous parameters ----- #
 
 beamInsertionRate = 0.02
 beamInsertionDirection = np.array([1.0, 0., 0.])
 forceEstimationSpringStiffness = 1e8
-bendingIndices = nbSections-1
+bendingIndices = nbBeams-1
 
 # Friction parameter contact
 frictionCoefficient = 0.1
@@ -134,16 +139,17 @@ def createScene(rootNode):
     rateAngularDeformNode = cosseratBeamNode.addChild('rateAngularDeform')
     rateAngularDeformMO = rateAngularDeformNode.addObject('MechanicalObject', template='Vec3d',
                                                           position=beamSectionDoFs, name='rateAngularDeformMO')
-    rateAngularDeformNode.addObject('BeamPlasticLawForceField', name="beamHookeLaw",
+    rateAngularDeformNode.addObject('BeamPlasticLawForceField', name="beamForceField",
                                     crossSectionShape=beamCrossSectionShape,
-                                    radius=sectionRadius, youngModulus='2e4', varianteSections="true",
-                                    length=beamCreatorResult['sectionLengths'], poissonRatioList=beamPoissonRatioList,
+                                    radius=sectionRadius, varianteSections="true",
+                                    length=beamLengths, poissonRatioList=beamPoissonRatioList,
                                     youngModulusList=beamYoungModulusList,
-                                    initialYieldStress=beamYieldStress, plasticModulus=beamPlasticModulus)
-
+                                    initialYieldStresses=yieldStressList,
+                                    plasticModuli=plasticModulusList,
+                                    mixedHardeningCoefficients= hardeningCoefficientList)
     # rateAngularDeformNode.addObject('ConstantForceField', name='bendingMoment', indices=bendingIndices,
     #                                 forces=[0., 0., 0.])
-    # fixedSections = list(range(nbSections - 2))
+    # fixedSections = list(range(nbBeams - 2))
     # rateAngularDeformNode.addObject('FixedConstraint', name="fixation", indices=fixedSections)
 
     # -------------------------------------#
@@ -164,7 +170,7 @@ def createScene(rootNode):
     mappedFrameNode.addObject('DiscreteCosseratMapping', name="mapping", input1=inputMO, input2=inputMO_rigid,
                               output=outputMO, debug='0', nonColored=False,
                               curv_abs_input=beamCurvAbsInput, curv_abs_output=beamCurvAbsOutput,
-                              forcefield='@../../rateAngularDeform/beamHookeLaw')
+                              forcefield='@../../rateAngularDeform/beamForceField')
     cosseratBeamNode.addObject('MechanicalMatrixMapper', name='mechanicalMatrixMapper', template='Vec3,Rigid3',
                                object1=inputMO, object2=inputMO_rigid, nodeToParse=mappedFrameNode.getLinkPath())
 
@@ -180,14 +186,14 @@ def createScene(rootNode):
     mappedFrameNode2.addObject('DiscreteCosseratMapping', name="controlMapping", input1=inputMO, input2=inputMO_rigid,
                                output=outputMO2, debug='0', nonColored=False,
                                curv_abs_input=beamCurvAbsInput, curv_abs_output=frameInitPos[0],
-                               forcefield='@../../rateAngularDeform/beamHookeLaw')
+                               forcefield='@../../rateAngularDeform/beamForceField')
     # TO DO : is the second MechanicalMatrixMapper correct ?
     cosseratBeamNode.addObject('MechanicalMatrixMapper', name='controlMechanicalMatrixMapper', template='Vec3,Rigid3',
                                object1=inputMO, object2=inputMO_rigid, nodeToParse=mappedFrameNode2.getLinkPath())
     mappedFrameNode2.addObject('UniformMass', totalMass=totalMass/nbFrames, showAxisSizeFactor='0.')
     mappedFrameNode2.addObject('RestShapeSpringsForceField', name='controlSpring', stiffness="1.e6",
                                angularStiffness="1.e6", external_rest_shape="@../../../controlPointNode/controlPointMO",
-                               external_points=0, mstate="@FramesMO", points=0, template="Rigid3d", drawSpring=1)
+                               external_points=0, mstate="@Frames2MO", points=0, template="Rigid3d", drawSpring=1)
 
     # -------------------------------------#
     # -----    Python controllers    ----- #
