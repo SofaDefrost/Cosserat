@@ -158,18 +158,18 @@ class NonLinearCosserat(Sofa.Prefab):
         framesMO = cosseratInSofaFrameNode.addObject('MechanicalObject', template='Rigid3d',
                                                      name="FramesMO", position=framesF,
                                                      showObject=int(self.showObject.value), showObjectScale=0.05)
-
-        cosseratInSofaFrameNode.addObject('UniformMass', totalMass=self.beamMass, showAxisSizeFactor='0')
+        if self.beamMass != 0.:
+            cosseratInSofaFrameNode.addObject('UniformMass', totalMass=self.beamMass, showAxisSizeFactor='0')
         cosseratInSofaFrameNode.addObject('DiscreteCosseratMapping', curv_abs_input=curv_abs_inputS,
                                           curv_abs_output=curv_abs_outputF, name='cosseratMapping',
                                           input1=self.cosseratCoordinateNode.cosseratCoordinateMO.getLinkPath(),
                                           input2=self.rigidBaseNode.RigidBaseMO.getLinkPath(),
                                           output=framesMO.getLinkPath(), debug=0, radius=self.radius)
-
-        self.solverNode.addObject('MechanicalMatrixMapper', template='Vec3,Rigid3',
-                                  object1=self.cosseratCoordinateNode.cosseratCoordinateMO.getLinkPath(),
-                                  object2=self.rigidBaseNode.RigidBaseMO.getLinkPath(),
-                                  nodeToParse=cosseratInSofaFrameNode.getLinkPath())
+        if self.beamMass != 0.:
+            self.solverNode.addObject('MechanicalMatrixMapper', template='Vec3,Rigid3',
+                                      object1=self.cosseratCoordinateNode.cosseratCoordinateMO.getLinkPath(),
+                                      object2=self.rigidBaseNode.RigidBaseMO.getLinkPath(),
+                                      nodeToParse=cosseratInSofaFrameNode.getLinkPath())
         return cosseratInSofaFrameNode
 
 
