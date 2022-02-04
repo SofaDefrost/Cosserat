@@ -232,7 +232,6 @@ void BeamHookeLawForceField<DataTypes>::addKToMatrix(const MechanicalParams* mpa
     Real kFact = (Real)mparams->kFactorIncludingRayleighDamping(this->rayleighStiffness.getValue());
 
     const VecCoord& pos = this->mstate->read(core::ConstVecCoordId::position())->getValue();
-
     for (unsigned int n=0; n<pos.size(); n++)
     {
         if(!d_varianteSections.getValue())

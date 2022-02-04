@@ -20,11 +20,15 @@ from math import sqrt
 # @todo ================ Unit: N, m, Kg, Pa  ================
 #LegendrePolyOrder = 3
 #initialStrain = [[0., 0., 0], [0., 0., 0], [0., 0., 0]]
-coeff = 0.3
 YM = 1.0e8
 PR = 0.
-rayleighStiffness = 0.2  # Nope
-F1 = [0., 0., 0., 0., (coeff*1.)/sqrt(2), (coeff*1.)/sqrt(2)]  # Nope
+rayleighStiffness = 1.e-3  # Nope
+firstOrder = 1
+
+# Force
+coeff = 0.3
+F1 = [0., 0., 0., 0., (coeff*1.)/sqrt(2), (coeff*1.)/sqrt(2)]  #
+
 Rb = 0.01/2. # beam radius in m
 length = 1  # in m
 nbSection = 5  # P_{k_2}=P_{k_3}
@@ -51,14 +55,15 @@ def createScene(rootNode):
     rootNode.addObject('Camera', position="-35 0 280", lookAt="0 0 0")
 
     solverNode = rootNode.addChild('solverNode')
-    solverNode.addObject('EulerImplicitSolver', rayleighStiffness=rayleighStiffness, rayleighMass='0.', firstOrder=1)
+    solverNode.addObject('EulerImplicitSolver', rayleighStiffness=rayleighStiffness, rayleighMass='0.',
+                         firstOrder=firstOrder)
     solverNode.addObject('SparseLDLSolver', name='solver', template="CompressedRowSparseMatrixd")
     solverNode.addObject('GenericConstraintCorrection')
 
     needCollisionModel = 0  # use this if the collision model if the beam will interact with another object
     cosserat = solverNode.addChild(
         Cosserat(parent=solverNode, cosseratGeometry=beamConfig, useCollisionModel=beamConfig['buildCollisionModel'],
-                 name="cosserat", radius=Rb, youngModulus=YM, poissonRatio=PR))
+                 name="cosserat", radius=Rb, youngModulus=YM, poissonRatio=PR, rayleighStiffness=rayleighStiffness))
 
     # attach force at the beam tip,
     # we can attach this force to non mechanical node thanks to the MechanicalMatrixMapper component

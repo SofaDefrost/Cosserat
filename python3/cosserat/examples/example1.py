@@ -16,16 +16,20 @@ from cosserat.usefulFunctions import buildEdges, pluginList, BuildCosseratGeomet
 from math import sqrt
 
 # @todo ================ Unit: N, m, Kg, Pa  ================
-LegendrePolyOrder = 3
-initialStrain = [[0., 0., 0], [0., 0., 0], [0., 0., 0]]
-coeff = 0.01
+LegendrePolyOrder = 5 # P_{k_2}=P_{k_3}
+initialStrain = [[0., 0., 0], [0., 0., 0], [0., 0., 0], [0., 0., 0], [0., 0., 0]]
+
 YM = 1.0e8
-PR = 0.2
-rayleighStiffness = 0.2  # Nope
-F1 = [0., 0., 0., 0., (coeff*1.)/sqrt(2), (coeff*1.)/sqrt(2)]  # Nope
+PR = 0.
+rayleighStiffness = 1.e-3  # Nope
+firstOrder = 1
+
+coeff = 0.3
+F1 = [0., 0., 0., 0., (coeff*1.)/sqrt(2), (coeff*1.)/sqrt(2)]  # N
+
 Rb = 0.01/2. # beam radius in m
 length = 1  # in m
-nbSection = 5  # P_{k_2}=P_{k_3}
+nbSection = 5  #
 deltaT = 0.02  # s
 
 nonLinearConfig = {'init_pos': [0., 0., 0.], 'tot_length': length, 'nbSectionS': nbSection,
@@ -48,7 +52,8 @@ def createScene(rootNode):
     rootNode.addObject('Camera', position="-35 0 280", lookAt="0 0 0")
 
     solverNode = rootNode.addChild('solverNode')
-    solverNode.addObject('EulerImplicitSolver', rayleighStiffness="0.001", rayleighMass='0.', firstOrder="1")
+    solverNode.addObject('EulerImplicitSolver', rayleighStiffness=rayleighStiffness, rayleighMass='0.',
+                         firstOrder=firstOrder)
     solverNode.addObject('SparseLDLSolver', name='solver', template="CompressedRowSparseMatrixd")
     # solverNode.addObject('SparseLUSolver', name='solver', template="CompressedRowSparseMatrixd")
     # solverNode.addObject('CGLinearSolver', tolerance=1.e-12, iterations=1000, threshold=1.e-18)
@@ -57,7 +62,7 @@ def createScene(rootNode):
     nonLinearCosserat = solverNode.addChild(
         nonCosserat(parent=solverNode, cosseratGeometry=nonLinearConfig, useCollisionModel=needCollisionModel,
                     name="cosserat", radius=Rb, youngModulus=YM, legendreControlPoints=initialStrain, poissonRatio=PR,
-                    order=LegendrePolyOrder))
+                    order=LegendrePolyOrder, rayleighStiffness=rayleighStiffness))
     cosseratNode = nonLinearCosserat.legendreControlPointsNode
     cosseratNode.addObject('MechanicalMatrixMapper', template='Vec3,Vec3',
                            object1=cosseratNode.getLinkPath(),
