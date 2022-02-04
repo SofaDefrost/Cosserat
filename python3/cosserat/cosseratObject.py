@@ -60,6 +60,8 @@ class Cosserat(Sofa.Prefab):
         {'name': 'radius', 'type': 'double', 'help': 'the radius in case of circular section', 'default': 1.0},
         {'name': 'length_Y', 'type': 'double', 'help': 'the radius in case of circular section', 'default': 1.0},
         {'name': 'length_Z', 'type': 'double', 'help': 'the radius in case of circular section', 'default': 1.0},
+        {'name': 'rayleighStiffness', 'type': 'double', 'help': 'Rayleigh damping - stiffness matrix coefficient',
+         'default': 0.0},
         {'name': 'attachingToLink', 'type': 'string', 'help': 'a rest shape force field will constraint the object '
                                                               'to follow arm position', 'default': '1'},
         {'name': 'showObject', 'type': 'string', 'help': ' Draw object arrow ', 'default': '0'}]
@@ -127,6 +129,7 @@ class Cosserat(Sofa.Prefab):
                                          length=longeurS, youngModulus=self.youngModulus.value,
                                          poissonRatio=self.poissonRatio.value,
                                          radius=self.radius.value,
+                                         rayleighStiffness=self.rayleighStiffness.value,
                                          lengthY=self.length_Y.value, lengthZ=self.length_Z.value)
         return cosseratCoordinateNode
 
