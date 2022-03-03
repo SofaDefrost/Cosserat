@@ -16,6 +16,8 @@ from cosserat.usefulFunctions import buildEdges, pluginList, BuildCosseratGeomet
 from math import sqrt
 
 # @todo ================ Unit: N, m, Kg, Pa  ================
+from splib3.numerics import Quat
+
 LegendrePolyOrder = 3
 initialStrain = [[0., 0., 0], [0., 0., 0], [0., 0., 0]]
 YM = 4.015e8
@@ -29,6 +31,21 @@ nbSection = 5  # P_{k_2}=P_{k_3}
 nonLinearConfig = {'init_pos': [0., 0., 0.], 'tot_length': length, 'nbSectionS': nbSection,
                    'nbFramesF': 15, 'buildCollisionModel': 0, 'beamMass': 0.2}
 
+
+class ForceController(Sofa.Core.Controller):
+    def __init__(self, *args, **kwargs):
+        Sofa.Core.Controller.__init__(self, *args, **kwargs)
+        self.frames = kwargs['cosseratFrames']
+        self.size = nonLinearConfig['nbFramesF']
+        self.applyForce = True
+        # self.cosseratGeometry = kwargs['cosseratGeometry']
+
+    def onAnimateEndEvent(self, event):
+        if self.applyForce:
+            position = self.frames.position[self.size]  # get the last rigid of the cosserat frame
+            orientation = Quat(position[3], position[4], position[5], position[6])  # get the orientation
+            # Get the force direction in order to remain orthogonal to the last section of beam
+            forceVector = orientation.rotate([0., 1., 0.])
 
 def createScene(rootNode):
     rootNode.addObject('RequiredPlugin', name='plugins', pluginName=[pluginList,
