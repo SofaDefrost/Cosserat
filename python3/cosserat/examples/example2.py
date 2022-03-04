@@ -22,8 +22,8 @@ LegendrePolyOrder = 3
 initialStrain = [[0., 0., 0], [0., 0., 0], [0., 0., 0]]
 YM = 4.015e8
 rayleighStiffness = 0.2  # Nope
-coeff = 1.8
-F1 = [0., coeff, 0., 0., 0., 0.]  # Nope
+forceCoeff = 8.0
+F1 = [0., forceCoeff, 0., 0., 0., 0.]  # Nope
 Rb = 0.01/2  # @todo ==> 0.57/2. # beam radius in m
 length = 1  # @todo ==>  100 # in m
 nbSection = 5  # P_{k_2}=P_{k_3}
@@ -36,8 +36,10 @@ class ForceController(Sofa.Core.Controller):
     def __init__(self, *args, **kwargs):
         Sofa.Core.Controller.__init__(self, *args, **kwargs)
         self.frames = kwargs['cosseratFrames']
+        self.forceNode = kwargs['forceNode']
         self.size = nonLinearConfig['nbFramesF']
         self.applyForce = True
+        self.forceCoeff = 1.8
         # self.cosseratGeometry = kwargs['cosseratGeometry']
 
     def onAnimateEndEvent(self, event):
@@ -45,7 +47,21 @@ class ForceController(Sofa.Core.Controller):
             position = self.frames.position[self.size]  # get the last rigid of the cosserat frame
             orientation = Quat(position[3], position[4], position[5], position[6])  # get the orientation
             # Get the force direction in order to remain orthogonal to the last section of beam
-            forceVector = orientation.rotate([0., 1., 0.])
+            with self.forceNode.force.writeable() as force:
+                vec = orientation.rotate([0., self.forceCoeff, 0.])
+                # print(f' The new vec is : {vec}')
+                for count in range(3):
+                    force[count] = vec[count]
+
+    def onKeypressedEvent(self, event):
+        key = event['key']
+        if key == "+":
+            self.forceCoeff += 0.2
+            print(f' The new force coeff is : {self.forceCoeff}')
+        elif key == "-":
+            self.forceCoeff -= 0.2
+            print(f' The new force coeff is : {self.forceCoeff}')
+
 
 def createScene(rootNode):
     rootNode.addObject('RequiredPlugin', name='plugins', pluginName=[pluginList,
@@ -82,8 +98,13 @@ def createScene(rootNode):
 
     beamFrame = nonLinearCosserat.cosseratFrame
 
-    beamFrame.addObject('ConstantForceField', name='constForce', showArrowSize=1.e-8,
+    constForce = beamFrame.addObject('ConstantForceField', name='constForce', showArrowSize=0.02,
                         indices=nonLinearConfig['nbFramesF'], force=F1)
+
+    nonLinearCosserat = solverNode.addObject(
+        ForceController(parent=solverNode, cosseratFrames=beamFrame.FramesMO, forceNode=constForce))
+
+
 
     # # solverNode2 = rootNode.addChild('solverNode2')
     # # solverNode2.addObject('EulerImplicitSolver', rayleighStiffness="0.2", rayleighMass='0.1')

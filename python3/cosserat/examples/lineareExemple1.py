@@ -23,7 +23,7 @@ from math import sqrt
 YM = 1.0e8
 PR = 0.
 rayleighStiffness = 1.e-3  # Nope
-firstOrder = 1
+firstOrder = 0
 
 # Force
 coeff = 0.3
@@ -67,7 +67,7 @@ def createScene(rootNode):
 
     # attach force at the beam tip,
     # we can attach this force to non mechanical node thanks to the MechanicalMatrixMapper component
-    beamFrame = cosserat.cosseratFrame
-    beamFrame.addObject('ConstantForceField', name='constForce', showArrowSize=1.e-2, indices=nbFrames,
-                        force=F1)
+    # beamFrame = cosserat.cosseratFrame
+    # beamFrame.addObject('ConstantForceField', name='constForce', showArrowSize=1.e-2, indices=nbFrames,
+    #                     force=F1)
 
