@@ -99,12 +99,12 @@ void BeamHookeLawForceField<DataTypes>::reinit()
     /// @info: parameters for the test 1
     Real coeff = 0.3;
     Real C = coeff/std::sqrt(2.); // here the couple at the tip of the beam
-    Real EA = 1.e4;
-    Real GA = 1.e4;
-    Real EI = 1.e2;
-    Real GI = 1.e2;
-    Real rad = EI/C; // The radius as compute by the method
-    d_radius.setValue(rad);
+    Real EA = 3.1416e4;
+    Real GA = 3.1416e4;
+    Real EI = 0.7854;
+    Real GI = 1.5708;
+//    Real rad = EI/C; // The radius as compute by the method
+//    d_radius.setValue(rad);
 
     if ( d_crossSectionShape.getValue().getSelectedItem() == "rectangular" )
     {
