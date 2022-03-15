@@ -16,7 +16,7 @@ from cosserat.usefulFunctions import buildEdges, pluginList, BuildCosseratGeomet
 from math import sqrt
 
 # @todo ================ Unit: N, m, Kg, Pa  ================
-LegendrePolyOrder = 5 # P_{k_2}=P_{k_3}
+LegendrePolyOrder = 5  # P_{k_2}=P_{k_3}
 initialStrain = [[0., 0., 0], [0., 0., 0], [0., 0., 0], [0., 0., 0], [0., 0., 0]]
 
 YM = 1.0e8
@@ -24,10 +24,12 @@ PR = 0.
 rayleighStiffness = 1.e-3  # Nope
 firstOrder = 1
 
+EI = 1.e2
 coeff = 0.3
+
 F1 = [0., 0., 0., 0., (coeff*1.)/sqrt(2), (coeff*1.)/sqrt(2)]  # N
 
-Rb = 0.01/2. # beam radius in m
+Rb = 0.01/2.  # beam radius in m
 length = 1  # in m
 nbSection = 5  #
 deltaT = 0.02  # s

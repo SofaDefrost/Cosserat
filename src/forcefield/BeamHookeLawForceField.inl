@@ -96,6 +96,16 @@ void BeamHookeLawForceField<DataTypes>::reinit()
 {
     Real Iy, Iz, J;
     Real A;
+    /// @info: parameters for the test 1
+    Real coeff = 0.3;
+    Real C = coeff/std::sqrt(2.); // here the couple at the tip of the beam
+    Real EA = 1.e4;
+    Real GA = 1.e4;
+    Real EI = 1.e2;
+    Real GI = 1.e2;
+    Real rad = EI/C; // The radius as compute by the method
+    d_radius.setValue(rad);
+
     if ( d_crossSectionShape.getValue().getSelectedItem() == "rectangular" )
     {
         Real Ly = d_lengthY.getValue();
@@ -105,12 +115,10 @@ void BeamHookeLawForceField<DataTypes>::reinit()
         Iz=Lz*Ly*Ly*Ly/12.0;
         J=Iy + Iz;
         A = Ly*Lz;
-
     }
     else //circular section
     {
         msg_info() << "Cross section shape." << d_crossSectionShape.getValue().getSelectedItem() ;
-
         Real r = d_radius.getValue();
         Real rInner = d_innerRadius.getValue();
         Iz = M_PI*(r*r*r*r - rInner*rInner*rInner*rInner)/4.0;
@@ -122,13 +130,20 @@ void BeamHookeLawForceField<DataTypes>::reinit()
     m_crossSectionArea = A;
 
     if(!d_varianteSections.getValue()){
+        /// @todo first test value
+        // @todo maybe but add this ass input data of the component
 
         Real E= d_youngModulus.getValue();
         Real G= E/(2.0*(1.0+d_poissonRatio.getValue()));
+        // This stiffness matrix could be a 6*6 matrix but since we are
+        // only using computing torsion and bends we only need 3*3 matrix
+        m_K_section[0][0] = 2*GI ; // G*J;
+        m_K_section[1][1] = EI; //E*Iy;
+        m_K_section[2][2] = EI; //E*Iz;
+        //m_K_section[3][3] = E*A+100;
+        //m_K_section[4][4] = G*A+100;
+        //m_K_section[5][5] = G*A;
 
-        m_K_section[0][0] = G*J;
-        m_K_section[1][1] = E*Iy;
-        m_K_section[2][2] = E*Iz;
     }else {
         msg_info("BeamHookeLawForceField")<< "=====> Multi section";
         m_K_sectionList.clear();
@@ -137,7 +152,8 @@ void BeamHookeLawForceField<DataTypes>::reinit()
         size_t szL  = d_length.getValue().size();
 
         if((szL != szPR)||(szL != szYM)){
-            msg_error("BeamHookeLawForceField")<< "Please, lenght, youngModulusList and poissonRatioList should have the same size";
+            msg_error("BeamHookeLawForceField")<< "Please, length, youngModulusList and "
+                                                  "poissonRatioList should have the same size";
             return;
         }
 
@@ -170,7 +186,7 @@ void BeamHookeLawForceField<DataTypes>::addForce(const MechanicalParams* mparams
     }
     VecDeriv& f = *d_f.beginEdit();
     const VecCoord& x = d_x.getValue();
-    // get the rest position (for non straight shape)
+    // get the rest position (for non-straight shape)
     const VecCoord& x0 = this->mstate->read(VecCoordId::restPosition())->getValue();
 
     f.resize(x.size());
