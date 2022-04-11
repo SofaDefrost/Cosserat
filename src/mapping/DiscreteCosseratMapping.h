@@ -30,11 +30,13 @@
 #include "BaseCosserat.h"
 #include <sofa/helper/ColorMap.h>
 #include "../forcefield/BeamPlasticLawForceField.h"
+#include "../forcefield/BeamHookeLawForceField.h"
 
 
 namespace sofa::component::mapping
 {
     using sofa::component::forcefield::BeamPlasticLawForceField;
+    using sofa::component::forcefield::BeamHookeLawForceField;
     using sofa::defaulttype::SolidTypes ;
     using sofa::core::objectmodel::BaseContext ;
     using sofa::type::Matrix3;
@@ -65,60 +67,63 @@ public:
 
     /// Output Model Type
     typedef TOut Out;
-
-    typedef typename In1::Coord             Coord1       ;
-    typedef typename In1::Deriv             Deriv1  ;
-    typedef typename In1::VecCoord In1VecCoord;
-    typedef typename In1::VecDeriv In1VecDeriv;
-    typedef typename In1::MatrixDeriv In1MatrixDeriv;
-    typedef Data<In1VecCoord> In1DataVecCoord;
-    typedef Data<In1VecDeriv> In1DataVecDeriv;
-    typedef Data<In1MatrixDeriv> In1DataMatrixDeriv;
+    typedef typename In2::Coord::value_type Real1;
+    typedef typename In1::Coord             Coord1;
+    typedef typename In1::Deriv             Deriv1;
+    typedef typename In1::VecCoord          In1VecCoord;
+    typedef typename In1::VecDeriv          In1VecDeriv;
+    typedef typename In1::MatrixDeriv       In1MatrixDeriv;
+    typedef Data<In1VecCoord>               In1DataVecCoord;
+    typedef Data<In1VecDeriv>               In1DataVecDeriv;
+    typedef Data<In1MatrixDeriv>            In1DataMatrixDeriv;
     
-    typedef typename In2::Coord::value_type Real          ;
+    typedef typename In2::Coord::value_type Real2;
     typedef typename In2::Coord             Coord2         ;
     typedef typename In2::Deriv             Deriv2         ;
-    typedef typename In2::VecCoord In2VecCoord;
-    typedef typename In2::VecDeriv In2VecDeriv;
-    typedef typename In2::MatrixDeriv In2MatrixDeriv;
-    typedef Data<In2VecCoord> In2DataVecCoord;
-    typedef Data<In2VecDeriv> In2DataVecDeriv;
-    typedef Data<In2MatrixDeriv> In2DataMatrixDeriv;
-    typedef type::Mat<6,6,Real> Mat6x6;
-    typedef type::Mat<3,6,Real> Mat3x6;
-    typedef type::Mat<6,3,Real> Mat6x3;
-    typedef type::Mat<4,4,Real> Mat4x4;
+    typedef typename In2::VecCoord          In2VecCoord;
+    typedef typename In2::VecDeriv          In2VecDeriv;
+    typedef typename In2::MatrixDeriv       In2MatrixDeriv;
+    typedef Data<In2VecCoord>               In2DataVecCoord;
+    typedef Data<In2VecDeriv>               In2DataVecDeriv;
+    typedef Data<In2MatrixDeriv>            In2DataMatrixDeriv;
+    typedef type::Mat<6,6,Real2>            Mat6x6;
+    typedef type::Mat<3,6,Real2>            Mat3x6;
+    typedef type::Mat<6,3,Real2>            Mat6x3;
+    typedef type::Mat<4,4,Real2>            Mat4x4;
 
-    typedef typename Out::VecCoord OutVecCoord;
-    typedef typename Out::Coord OutCoord;
-    typedef typename Out::Deriv OutDeriv;
-    typedef typename Out::VecDeriv OutVecDeriv;
-    typedef typename Out::MatrixDeriv OutMatrixDeriv;
-    typedef Data<OutVecCoord> OutDataVecCoord;
-    typedef Data<OutVecDeriv> OutDataVecDeriv;
-    typedef Data<OutMatrixDeriv> OutDataMatrixDeriv;
+    typedef typename Out::VecCoord          OutVecCoord;
+    typedef typename Out::Coord             OutCoord;
+    typedef typename Out::Deriv             OutDeriv;
+    typedef typename Out::VecDeriv          OutVecDeriv;
+    typedef typename Out::MatrixDeriv       OutMatrixDeriv;
+    typedef Data<OutVecCoord>               OutDataVecCoord;
+    typedef Data<OutVecDeriv>               OutDataVecDeriv;
+    typedef Data<OutMatrixDeriv>            OutDataMatrixDeriv;
+    typedef typename SolidTypes<Real2>::Transform      Transform ;
 
+protected:
+    Data<int>                               d_deformationAxis;
+    Data<Real2>                             d_max;
+    Data<Real2>                             d_min;
+    Data<Real1>                             d_radius ;
+    Data<bool>                              d_drawMapBeam ;
+    Data<type::Vec4f>                       d_color;
+    Data<type::vector<int> >                d_index;
+    Data<unsigned int>                      d_baseIndex;
+    core::State<In1>*                       m_fromModel1;
+    core::State<In2>*                       m_fromModel2;
+    core::State<Out>*                       m_toModel;
+
+public:
     typedef MultiLink<DiscreteCosseratMapping<In1,In2,Out>, sofa::core::State< In1 >, BaseLink::FLAG_STOREPATH|BaseLink::FLAG_STRONGLINK> LinkFromModels1;
     typedef MultiLink<DiscreteCosseratMapping<In1,In2,Out>, sofa::core::State< In2 >, BaseLink::FLAG_STOREPATH|BaseLink::FLAG_STRONGLINK> LinkFromModels2;
     typedef MultiLink<DiscreteCosseratMapping<In1,In2,Out>, sofa::core::State< Out >, BaseLink::FLAG_STOREPATH|BaseLink::FLAG_STRONGLINK> LinkToModels;
 
     typedef SingleLink<DiscreteCosseratMapping<In1,In2,Out>, BeamPlasticLawForceField<In1>, BaseLink::FLAG_STOREPATH|BaseLink::FLAG_STRONGLINK> LinkToPlasticForceField;
 
-    typedef typename SolidTypes<Real>::Transform      Transform ;
+
 
 protected:
-    Data<int>                        d_deformationAxis ;
-    Data<Real>                       d_max ;
-    Data<Real>                       d_min ;
-    Data<Real>                       d_radius ;
-    Data<bool>                       d_drawMapBeam ;
-    Data<type::Vec4f>               d_color;
-    Data<type::vector<int> >        d_index;
-    Data<unsigned int>              d_baseIndex;
-    core::State<In1>* m_fromModel1;
-    core::State<In2>* m_fromModel2;
-    core::State<Out>* m_toModel;
-
     ////////////////////////// Inherited attributes ////////////////////////////
     /// https://gcc.gnu.org/onlinedocs/gcc/Name-lookup.html
     /// Bring inherited attributes and function in the current lookup context.
@@ -139,7 +144,6 @@ protected:
     using BaseCosserat<TIn1, TIn2, TOut>::m_nodeAdjointVectors;
     using BaseCosserat<TIn1, TIn2, TOut>::m_index_input;
     using BaseCosserat<TIn1, TIn2, TOut>::m_indicesVectorsDraw;
-
 
     // Link with Cosserat force field, for visualisation purposes
     LinkToPlasticForceField l_fromPlasticForceField;

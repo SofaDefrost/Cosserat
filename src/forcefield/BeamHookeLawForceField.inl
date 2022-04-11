@@ -232,16 +232,15 @@ void BeamHookeLawForceField<DataTypes>::addKToMatrix(const MechanicalParams* mpa
     Real kFact = (Real)mparams->kFactorIncludingRayleighDamping(this->rayleighStiffness.getValue());
 
     const VecCoord& pos = this->mstate->read(core::ConstVecCoordId::position())->getValue();
-
     for (unsigned int n=0; n<pos.size(); n++)
     {
         if(!d_varianteSections.getValue())
-            for(int i = 0; i < 3; i++)
-                for (int j = 0; j< 3; j++)
+            for(unsigned int i = 0; i < 3; i++)
+                for (unsigned int j = 0; j< 3; j++)
                     mat->add(offset + i + 3*n, offset + j + 3*n, -kFact * m_K_section[i][j]*d_length.getValue()[n]);
         else
-            for(int i = 0; i < 3; i++)
-                for (int j = 0; j< 3; j++)
+            for(unsigned int i = 0; i < 3; i++)
+                for (unsigned int j = 0; j< 3; j++)
                     mat->add(offset + i + 3*n, offset + j + 3*n, -kFact * m_K_sectionList[n][i][j] * d_length.getValue()[n]);
     }
 }
