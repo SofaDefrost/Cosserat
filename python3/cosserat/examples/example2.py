@@ -18,18 +18,19 @@ from math import sqrt
 # @todo ================ Unit: N, m, Kg, Pa  ================
 from splib3.numerics import Quat
 
-LegendrePolyOrder = 3
-initialStrain = [[0., 0., 0], [0., 0., 0], [0., 0., 0]]
+LegendrePolyOrder = 5
+# initialStrain = [[0., 0., 0], [0., 0., 0], [0., 0., 0]]
+initialStrain = [[0., 0., 0], [0., 0., 0], [0., 0., 0], [0., 0., 0], [0., 0., 0]]
 YM = 4.015e8
 rayleighStiffness = 0.2  # Nope
-forceCoeff = 8.0
+forceCoeff = 0.05
 F1 = [0., forceCoeff, 0., 0., 0., 0.]  # Nope
 Rb = 0.01/2  # @todo ==> 0.57/2. # beam radius in m
 length = 1  # @todo ==>  100 # in m
 nbSection = 5  # P_{k_2}=P_{k_3}
 
 nonLinearConfig = {'init_pos': [0., 0., 0.], 'tot_length': length, 'nbSectionS': nbSection,
-                   'nbFramesF': 15, 'buildCollisionModel': 0, 'beamMass': 0.2}
+                   'nbFramesF': 15, 'buildCollisionModel': 0, 'beamMass': 0.}
 
 
 class ForceController(Sofa.Core.Controller):
@@ -39,7 +40,7 @@ class ForceController(Sofa.Core.Controller):
         self.forceNode = kwargs['forceNode']
         self.size = nonLinearConfig['nbFramesF']
         self.applyForce = True
-        self.forceCoeff = 1.8
+        self.forceCoeff = forceCoeff
         # self.cosseratGeometry = kwargs['cosseratGeometry']
 
     def onAnimateEndEvent(self, event):
