@@ -97,7 +97,7 @@ if(SoftRobots_FOUND)
     list(APPEND SOURCE_FILES
         src/constraint/CosseratActuatorConstraint.cpp
         src/constraint/CosseratNeedleSlidingConstraint.cpp
-        src/constraint/CosseratUnilateralInteractionConstraint.cpp
+#         src/constraint/CosseratUnilateralInteractionConstraint.cpp
         src/constraint/QPSlidingConstraint.cpp    
         )
 endif()
