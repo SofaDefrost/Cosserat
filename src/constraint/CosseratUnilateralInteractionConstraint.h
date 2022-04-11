@@ -33,13 +33,16 @@
 #include<sofa/defaulttype/VecTypes.h>
 #include <sofa/helper/OptionsGroup.h>
 #include <sofa/defaulttype/config.h>
-#include <SofaConstraint/UnilateralInteractionConstraint.h>
+//#include <SofaConstraint/UnilateralInteractionConstraint.h>
+#include <sofa/component/constraint/lagrangian/model/UnilateralInteractionConstraint.h>
 #include "sofa/type/Quat.h"
-
+#include <sofa/defaulttype/VecTypes.h>
 #include <SoftRobots/component/constraint/model/CableModel.h>
 #include <SoftRobots/component/behavior/SoftRobotsConstraint.h>
+#include <sofa/core/behavior/ConstraintResolution.h>
+using sofa::component::constraint::lagrangian::model::UnilateralInteractionConstraint;
 
-template class SOFA_SOFACONSTRAINT_API sofa::component::constraintset::UnilateralInteractionConstraint<sofa::defaulttype::Vec3Types>;
+template class SOFA_SOFACONSTRAINT_API sofa::component::constraint::lagrangian::model::UnilateralInteractionConstraint<sofa::defaulttype::Vec3Types>;
 
 namespace sofa::component::constraintset
 {
@@ -55,7 +58,8 @@ namespace sofa::component::constraintset
     using sofa::helper::WriteAccessor;
     using sofa::core::VecCoordId ;
     using sofa::type::vector;
-    using sofa::core::behavior::ConstraintResolution ;
+//    using sofa::core::behavior::ConstraintResolution ;
+    using sofa::component::constraint::lagrangian::model::BilateralConstraintResolution;
 
     class MyPreviousForcesContainer
     {
@@ -85,8 +89,8 @@ namespace sofa::component::constraintset
         std::deque<double> forces;
         bool resetFlag; // We delete all forces that were not read
     };
-
-    class SOFA_SOFACONSTRAINT_API MyUnilateralConstraintResolutionWithFriction : public ConstraintResolution
+    //template<class DataTypes>
+class SOFA_SOFACONSTRAINT_API MyUnilateralConstraintResolutionWithFriction :public core::behavior::ConstraintResolution::ConstraintResolution
     {
     public:
         MyUnilateralConstraintResolutionWithFriction(double dampingFactor, MyPreviousForcesContainer* prev = nullptr, bool* active = nullptr)

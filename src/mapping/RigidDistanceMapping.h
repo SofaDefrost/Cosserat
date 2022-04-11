@@ -50,7 +50,7 @@ using std::get;
 using component::mapping::BaseCosserat;
 //
 template <class TIn1, class TIn2, class TOut>
-class RigidDistanceMapping : public core::Multi2Mapping<TIn1, TIn2, TOut> //, public component::mapping::BaseCosserat<TIn1, TIn2, TOut>
+class RigidDistanceMapping : public core::Multi2Mapping<TIn1, TIn2, TOut>
 {
 public:
     SOFA_CLASS(SOFA_TEMPLATE3(RigidDistanceMapping, TIn1,TIn2, TOut), SOFA_TEMPLATE3(core::Multi2Mapping, TIn1, TIn2, TOut) );
