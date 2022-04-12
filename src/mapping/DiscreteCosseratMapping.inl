@@ -43,6 +43,7 @@ namespace sofa::component::mapping
     using sofa::defaulttype::SolidTypes ;
     using sofa::type::RGBAColor;
 
+
 template <class TIn1, class TIn2, class TOut>
 DiscreteCosseratMapping<TIn1, TIn2, TOut>::DiscreteCosseratMapping()
     : m_fromModel1(NULL)
