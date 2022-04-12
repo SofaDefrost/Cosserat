@@ -33,7 +33,6 @@
 #include <sofa/core/visual/VisualParams.h>
 #include <sofa/type/Vec.h>
 #include <SofaConstraint/BilateralInteractionConstraint.h>
-
 #include "CosseratNeedleSlidingConstraint.h"
 
 namespace sofa::component::constraintset
@@ -50,6 +49,7 @@ using sofa::type::Vec4f;
 using sofa::type::Vector3;
 using sofa::type::vector;
 using sofa::helper::OptionsGroup;
+using sofa::component::constraint::lagrangian::model::BilateralConstraintResolution;
 
 template<class DataTypes>
 CosseratNeedleSlidingConstraint<DataTypes>::CosseratNeedleSlidingConstraint(MechanicalState* object)

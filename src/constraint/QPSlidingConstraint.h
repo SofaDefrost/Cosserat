@@ -35,6 +35,7 @@
 
 #include <SoftRobots/component/constraint/model/CableModel.h>
 #include <SoftRobots/component/behavior/SoftRobotsConstraint.h>
+#include <SofaConstraint/BilateralInteractionConstraint.h>
 
 namespace sofa::component::constraintset
 {
@@ -50,6 +51,7 @@ using sofa::helper::ReadAccessor ;
 using sofa::core::VecCoordId ;
 
 using sofa::core::behavior::ConstraintResolution ;
+//using sofa::component::constraint::lagrangian::model::ConstraintResolution;
 
 
 class SlidingForceConstraintResolution : public ConstraintResolution

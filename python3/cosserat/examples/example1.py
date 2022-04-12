@@ -22,20 +22,20 @@ initialStrain = [[0., 0., 0], [0., 0., 0], [0., 0., 0], [0., 0., 0], [0., 0., 0]
 YM = 1.0e8
 PR = 0.
 rayleighStiffness = 1.e-3  # Nope
-firstOrder = 1
+firstOrder = 0
 
 EI = 1.e2
 coeff = 1
 
 F1 = [0., 0., 0., 0., (coeff*1.)/sqrt(2), (coeff*1.)/sqrt(2)]  # N
 
-Rb = 0.01  # beam radius in m
+Rb = 0.02/2.  # beam radius in m
 length = 1  # in m
 nbSection = 5  #
 deltaT = 0.02  # s
 
 nonLinearConfig = {'init_pos': [0., 0., 0.], 'tot_length': length, 'nbSectionS': nbSection,
-                   'nbFramesF': 15, 'buildCollisionModel': 0, 'beamMass': 0.}
+                   'nbFramesF': 30, 'buildCollisionModel': 0, 'beamMass': 0.}
 
 
 class ForceController(Sofa.Core.Controller):
