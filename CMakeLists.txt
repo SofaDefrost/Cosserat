@@ -86,8 +86,8 @@ if(SoftRobots_FOUND)
     list(APPEND HEADER_FILES
         src/constraint/CosseratActuatorConstraint.h
         src/constraint/CosseratActuatorConstraint.inl
-        src/constraint/CosseratUnilateralInteractionConstraint.h
-        src/constraint/CosseratUnilateralInteractionConstraint.inl
+#        src/constraint/CosseratUnilateralInteractionConstraint.h
+#        src/constraint/CosseratUnilateralInteractionConstraint.inl
 
         src/constraint/CosseratNeedleSlidingConstraint.h
         src/constraint/CosseratNeedleSlidingConstraint.inl
