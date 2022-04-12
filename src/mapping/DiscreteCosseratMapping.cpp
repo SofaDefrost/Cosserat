@@ -32,7 +32,7 @@ using namespace sofa::defaulttype;
 
 // Register in the Factory
 int DiscreteCosseratMappingClass = core::RegisterObject("Set the positions and velocities of points attached to a rigid parent")
-        .add< DiscreteCosseratMapping< sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types > >() ;
+        .add< DiscreteCosseratMapping< sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types > >(true) ;
 
 template class SOFA_COSSERAT_MAPPING_API DiscreteCosseratMapping< sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types >;
 

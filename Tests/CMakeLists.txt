@@ -16,7 +16,7 @@ set(HEADER_FILES
 set(SOURCE_FILES
         Example.cpp
         constraint/ExampleTest.cpp
-        constraint/CosseratUnilateralInteractionConstraintTest.cpp
+#        constraint/CosseratUnilateralInteractionConstraintTest.cpp
         forcefield/BeamHookeLawForceFieldTest.cpp
     )
 
