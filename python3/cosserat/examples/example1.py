@@ -25,7 +25,7 @@ rayleighStiffness = 1.e-3  # Nope
 firstOrder = 1
 
 EI = 1.e2
-coeff = 2
+coeff = 1
 
 F1 = [0., 0., 0., 0., (coeff*1.)/sqrt(2), (coeff*1.)/sqrt(2)]  # N
 
@@ -36,6 +36,34 @@ deltaT = 0.02  # s
 
 nonLinearConfig = {'init_pos': [0., 0., 0.], 'tot_length': length, 'nbSectionS': nbSection,
                    'nbFramesF': 15, 'buildCollisionModel': 0, 'beamMass': 0.}
+
+
+class ForceController(Sofa.Core.Controller):
+    def __init__(self, *args, **kwargs):
+        Sofa.Core.Controller.__init__(self, *args, **kwargs)
+        self.frames = kwargs['cosseratFrames']
+        self.forceNode = kwargs['forceNode']
+        self.size = nonLinearConfig['nbFramesF']
+        self.applyForce = True
+        self.forceCoeff = coeff
+        # self.cosseratGeometry = kwargs['cosseratGeometry']
+
+    def onAnimateEndEvent(self, event):
+        if self.applyForce:
+            with self.forceNode.force.writeable() as force:
+                vec = [0., 0., 0., 0., (self.forceCoeff * 1.) / sqrt(2), (self.forceCoeff * 1.) / sqrt(2)]
+                for i, v in enumerate(vec):
+                    force[i] = v
+                # print(f' The new force: {force}')
+
+    def onKeypressedEvent(self, event):
+        key = event['key']
+        if key == "+":
+            self.forceCoeff += 1
+            print(f' The new force coeff is : {self.forceCoeff}')
+        elif key == "-":
+            self.forceCoeff -= 1
+            print(f' The new force coeff is : {self.forceCoeff}')
 
 
 def createScene(rootNode):
@@ -74,8 +102,12 @@ def createScene(rootNode):
 
     beamFrame = nonLinearCosserat.cosseratFrame
 
-    beamFrame.addObject('ConstantForceField', name='constForce', showArrowSize=1.e-8,
+    constForce = beamFrame.addObject('ConstantForceField', name='constForce', showArrowSize=1.e-8,
                         indices=nonLinearConfig['nbFramesF'], force=F1)
+
+    nonLinearCosserat = solverNode.addObject(
+        ForceController(parent=solverNode, cosseratFrames=beamFrame.FramesMO, forceNode=constForce))
+
 
     # # solverNode2 = rootNode.addChild('solverNode2')
     # # solverNode2.addObject('EulerImplicitSolver', rayleighStiffness="0.2", rayleighMass='0.1')

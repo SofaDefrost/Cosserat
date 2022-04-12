@@ -97,12 +97,18 @@ void BeamHookeLawForceField<DataTypes>::reinit()
     Real Iy, Iz, J;
     Real A;
     /// @info: parameters for the test 1
-    Real coeff = 0.3;
-    Real C = coeff/std::sqrt(2.); // here the couple at the tip of the beam
+
     Real EA = 3.1416e4;
     Real GA = 3.1416e4;
     Real EI = 0.7854;
     Real GI = 1.5708;
+    /// @info: parameters for the test 2
+    //    Real coeff = 0.3;
+    //    Real C = coeff/std::sqrt(2.); // here the couple at the tip of the beam
+    //    Real EA = 3.61e8;
+    //    Real GA = 1.61e8;
+    //    Real EI = 3.5e7;
+    //    Real GI = 3.5e7;
 //    Real rad = EI/C; // The radius as compute by the method
 //    d_radius.setValue(rad);
 
