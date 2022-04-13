@@ -64,9 +64,8 @@ class Cosserat(Sofa.Prefab):
         {'name': 'rayleighStiffness', 'type': 'double', 'help': 'Rayleigh damping - stiffness matrix coefficient',
          'default': 0.0},
         {'name': 'attachingToLink', 'type': 'string', 'help': 'a rest shape force field will constraint the object '
-                                                              'to follow arm position', 'default': '1'},
+                                                              'to follow arm position', 'default': '0'},
         {'name': 'showObject', 'type': 'string', 'help': ' Draw object arrow ', 'default': '0'}]
-
 
     def __init__(self, *args, **kwargs):
         Sofa.Prefab.__init__(self, *args, **kwargs)
@@ -117,10 +116,11 @@ class Cosserat(Sofa.Prefab):
 
         # one can choose to set this to false and directly attach the beam base
         # to a control object in order to be able to drive it.
-        # if int(self.attachingToLink.value):
-        #     rigidBaseNode.addObject('RestShapeSpringsForceField', name='spring',
-        #                             stiffness=1e8, angularStiffness=1.e8, external_points=0,
-        #                             mstate="@RigidBaseMO", points=0, template="Rigid3d")
+        if int(self.attachingToLink.value):
+            print("Adding the rest shape to the base")
+            rigidBaseNode.addObject('RestShapeSpringsForceField', name='spring',
+                                    stiffness=5000, angularStiffness=5000, external_points=0,
+                                    mstate="@RigidBaseMO", points=0, template="Rigid3d")
         return rigidBaseNode
 
     def addCosseratCoordinate(self, positionS, longeurS):
