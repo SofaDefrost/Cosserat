@@ -81,8 +81,9 @@ def createScene(rootNode):
 
     solverNode = rootNode.addChild('solverNode')
     solverNode.addObject('EulerImplicitSolver', rayleighStiffness="0.2", rayleighMass='0.')
-    solverNode.addObject('SparseLDLSolver', name='solver', template="CompressedRowSparseMatrixd")
-    # solverNode.addObject('SparseLUSolver', name='solver', template="CompressedRowSparseMatrixd")
+    # solverNode.addObject('SparseLDLSolver', name='solver', template="CompressedRowSparseMatrixd")
+    solverNode.addObject('EigenSimplicialLDLT', name='solver', template="CompressedRowSparseMatrixMat3x3d" )
+
     # solverNode.addObject('CGLinearSolver', tolerance=1.e-12, iterations=1000, threshold=1.e-18)
 
     needCollisionModel = 0  # use this if the collision model if the beam will interact with another object
