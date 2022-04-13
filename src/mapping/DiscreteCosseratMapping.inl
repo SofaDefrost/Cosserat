@@ -80,11 +80,10 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::init()
         return;
     }
 
-    // @Camille this should be an information not a warning
-    //    if(!l_fromPlasticForceField)
-    //        msg_warning() << "No Cosserat plastic force field found, no visual representation of such forcefield will be displayed.";
+    if(!l_fromPlasticForceField)
+        msg_info() << "No Cosserat plastic force field found, no visual representation of such forcefield will be displayed.";
     m_fromModel1 = this->getFromModels1()[0]; // Cosserat deformations (torsion and bending), in local frame
-    m_fromModel2 = this->getFromModels2()[d_baseIndex.getValue()]; // Cosserat base, in global frame
+    m_fromModel2 = this->getFromModels2()[0]; // Cosserat base, in global frame
     m_toModel = this->getToModels()[0];  // Cosserat rigid frames, in global frame
 
     // Fill the initial vector
@@ -533,6 +532,8 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJT(
 template <class TIn1, class TIn2, class TOut>
 void DiscreteCosseratMapping<TIn1, TIn2, TOut>::draw(const core::visual::VisualParams* vparams)
 {
+    if (!vparams->displayFlags().getShowMechanicalMappings()) return;
+
     // draw cable
     typedef RGBAColor RGBAColor;
     typedef typename BeamPlasticLawForceField<In1>::MechanicalState MechanicalState;
