@@ -33,13 +33,11 @@ class Animation(Sofa.Core.Controller):
 
         self.rate = 0.2
         self.angularRate = 0.02
-        return
 
-    def _extracted_from_onKeypressedEvent_10(qOld, posA, angularRate):
-
-        qNew = Quat.createFromEuler([0., angularRate, 0.], 'ryxz')
+    def applyRotation(self, _qOld, posA):
+        qNew = Quat.createFromEuler([0., self.angularRate, 0.], 'ryxz')
         qNew.normalize()
-        qNew.rotateFromQuat(qOld)
+        qNew.rotateFromQuat(_qOld)
         for i in range(4):
             posA[0][i + 3] = qNew[i]
 
@@ -50,24 +48,25 @@ class Animation(Sofa.Core.Controller):
                 qOld = Quat()
                 for i in range(4):
                     qOld[i] = posA[0][i + 3]
-
-                self._extracted_from_onKeypressedEvent_10(qOld, posA, self.angularRate)
+                self.applyRotation(qOld, posA)
 
         if ord(key) == 21:  # down
             with self.rigidBaseMO.rest_position.writeable() as posA:
                 qOld = Quat()
                 for i in range(4):
                     qOld[i] = posA[0][i + 3]
-
-                self._extracted_from_onKeypressedEvent_10(
-                    qOld, posA, -self.angularRate)
+                self.applyRotation(qOld, posA)
 
         if ord(key) == 18:  # left
             with self.rigidBaseMO.rest_position.writeable() as posA:
+                print(f' The position at beginning is : {posA}')
                 posA[0][0] -= self.rate
+                print(f' The position at the end is : {posA}')
         if ord(key) == 20:  # right
             with self.rigidBaseMO.rest_position.writeable() as posA:
+                print(f' The position at beginning is : {posA}')
                 posA[0][0] += self.rate
+                print(f' The position at the end is : {posA}')
 
 
 def createScene(rootNode):
@@ -87,6 +86,7 @@ def createScene(rootNode):
     solverNode = rootNode.addChild('solverNode')
     solverNode.addObject('EulerImplicitSolver', rayleighStiffness="0.2", rayleighMass='0.1')
     solverNode.addObject('SparseLDLSolver', name='solver', template="CompressedRowSparseMatrixd")
+    # solverNode.addObject('SparseLUSolver', name='solver')
     solverNode.addObject('GenericConstraintCorrection')
 
     cosserat_config0 = {'init_pos': [0., 2., 0.], 'tot_length': 20, 'nbSectionS': 20,
@@ -95,8 +95,8 @@ def createScene(rootNode):
                         'nbFramesF': 40, 'beamMass': 0.22}
 
     cosserat0 = solverNode.addChild(
-        Cosserat(parent=solverNode, cosseratGeometry=cosserat_config0, name="cosseratBeam0", radius=0.2,
-                 position=[[0., 2, 0., 0, 0, 0, 1]]))
+        Cosserat(parent=solverNode, cosseratGeometry=cosserat_config0, name="cosseratBeam0", radius=0.2, showObject='1',
+                 attachingToLink='1', position=[[0., 2, 0., 0, 0, 0, 1]]))
 
     # create slidingPoint
     FemPos = [[i * 4, 0., 0.] for i in range(6)]
@@ -107,8 +107,8 @@ def createScene(rootNode):
     femPoints.addObject('SkinningMapping', nbRef='1')
 
     cosserat1 = solverNode.addChild(
-        Cosserat(parent=solverNode, cosseratGeometry=cosserat_config1, name="cosseratBeam1", radius=0.2,
-                 position=[[0., -2, 0., 0, 0, 0, 1]]))
+        Cosserat(parent=solverNode, cosseratGeometry=cosserat_config1, name="cosseratBeam1", radius=0.2, showObject='1',
+                 attachingToLink='1',position=[[0., -2, 0., 0, 0, 0, 1]]))
 
     cable_position = [[i*2., 2., 0.] for i in range(11)]
 
@@ -126,11 +126,13 @@ def createScene(rootNode):
     inputFEMCableMO = inputFEMCable.getLinkPath()
     outputPointMO = mappedPoints.getLinkPath()
 
+    controller = solverNode.addObject(
+        Animation(cosserat1.rigidBaseNode.RigidBaseMO, cosserat1.cosseratCoordinateNode.cosseratCoordinateMO))
+
     mappedPointsNode.addObject('QPSlidingConstraint', name="QPConstraint")
+    # mappedPointsNode.addObject('CosseratSlidingConstraint', name="QPConstraint")
     mappedPointsNode.addObject('DifferenceMultiMapping', name="pointsMulti", input1=inputFEMCableMO,
                                input2=inputCableMO, output=outputPointMO, direction="@../../FramesMO.position")
 
-    animate = Animation(cosserat1.rigidBaseNode.RigidBaseMO, cosserat1.cosseratCoordinateNode.cosseratCoordinateMO)
-    rootNode.addObject(animate)
-
+    # solverNode.addObject('LinearSolverConstraintCorrection')
     return rootNode
