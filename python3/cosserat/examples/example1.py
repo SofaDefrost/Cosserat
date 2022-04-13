@@ -24,10 +24,12 @@ PR = 0.
 rayleighStiffness = 1.e-3  # Nope
 firstOrder = 0
 
-coeff = 0.05
+EI = 1.e2
+coeff = 1
+
 F1 = [0., 0., 0., 0., (coeff*1.)/sqrt(2), (coeff*1.)/sqrt(2)]  # N
 
-Rb = 0.01/2.  # beam radius in m
+Rb = 0.02/2.  # beam radius in m
 length = 1  # in m
 nbSection = 5  #
 deltaT = 0.02  # s
@@ -57,10 +59,10 @@ class ForceController(Sofa.Core.Controller):
     def onKeypressedEvent(self, event):
         key = event['key']
         if key == "+":
-            self.forceCoeff += deltaT
+            self.forceCoeff += 1
             print(f' The new force coeff is : {self.forceCoeff}')
         elif key == "-":
-            self.forceCoeff -= deltaT
+            self.forceCoeff -= 1
             print(f' The new force coeff is : {self.forceCoeff}')
 
 
