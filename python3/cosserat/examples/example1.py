@@ -29,11 +29,13 @@ coeff = 1
 
 F1 = [0., 0., 0., 0., (coeff*1.)/sqrt(2), (coeff*1.)/sqrt(2)]  # N
 
+### Inertia parameter
 Rb = 0.02/2.  # beam radius in m
 length = 1  # in m
 nbSection = 5  #
 deltaT = 0.02  # s
 
+inertialParams = {'GI': 1.5708, 'GA': 3.1416e4, 'EI': 0.7854, 'EA': 3.1416e4, 'L': length,  'Rb': Rb}
 nonLinearConfig = {'init_pos': [0., 0., 0.], 'tot_length': length, 'nbSectionS': nbSection,
                    'nbFramesF': 30, 'buildCollisionModel': 0, 'beamMass': 0.}
 
@@ -90,9 +92,10 @@ def createScene(rootNode):
 
     needCollisionModel = 0  # use this if the collision model if the beam will interact with another object
     nonLinearCosserat = solverNode.addChild(
-        nonCosserat(parent=solverNode, cosseratGeometry=nonLinearConfig, useCollisionModel=needCollisionModel,
-                    name="cosserat", radius=Rb, youngModulus=YM, legendreControlPoints=initialStrain, poissonRatio=PR,
-                    order=LegendrePolyOrder, rayleighStiffness=rayleighStiffness))
+        nonCosserat(parent=solverNode, cosseratGeometry=nonLinearConfig, inertialParams=inertialParams,
+                    useCollisionModel=needCollisionModel, name="cosserat", radius=Rb, youngModulus=YM,
+                    legendreControlPoints=initialStrain, poissonRatio=PR,order=LegendrePolyOrder,
+                    rayleighStiffness=rayleighStiffness))
     cosseratNode = nonLinearCosserat.legendreControlPointsNode
     cosseratNode.addObject('MechanicalMatrixMapper', template='Vec3,Vec3',
                            object1=cosseratNode.getLinkPath(),

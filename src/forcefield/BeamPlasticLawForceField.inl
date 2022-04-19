@@ -73,7 +73,7 @@ void BeamPlasticLawForceField<DataTypes>::reinit()
 
     // Initialisaiton of the tangent stiffness matrices with the elastic stiffness matrices
     m_Kt_sectionList.clear();
-    if (!this->d_varianteSections.getValue())
+    if (!this->d_variantSections.getValue())
     {
         m_Kt_sectionList.resize(nbSections, this->m_K_section);
     }
@@ -87,7 +87,7 @@ void BeamPlasticLawForceField<DataTypes>::reinit()
     // As we are working with only 3 components of the strain tensor,
     // the generalised Hooke's law is reduced to a 3x3 diagonal matrix
     // (instead of a 4th order tensor represented as a 9x9 matrix)
-    if (!this->d_varianteSections.getValue()) {
+    if (!this->d_variantSections.getValue()) {
 
         Real E = this->d_youngModulus.getValue();
         Real nu = this->d_poissonRatio.getValue();
@@ -177,7 +177,7 @@ void BeamPlasticLawForceField<DataTypes>::computeStressIncrement(unsigned int se
     const MechanicalState mechanicalState = m_sectionMechanicalStates[sectionId];
 
     Vec3 elasticIncrement = Vec3();
-    if (!this->d_varianteSections.getValue())
+    if (!this->d_variantSections.getValue())
         elasticIncrement = m_genHookesLaw * strainIncrement;
     else
         elasticIncrement = m_genHookesLawList[sectionId] * strainIncrement;
@@ -218,7 +218,7 @@ void BeamPlasticLawForceField<DataTypes>::computeStressIncrement(unsigned int se
         const Real beta = 0.5;
 
         Real E, nu = 0;
-        if (!this->d_varianteSections.getValue())
+        if (!this->d_variantSections.getValue())
         {
             E = this->d_youngModulus.getValue();
             nu = this->d_poissonRatio.getValue();
@@ -265,7 +265,7 @@ void BeamPlasticLawForceField<DataTypes>::updateTangentStiffness(unsigned int se
     // TO DO: better way to handle the two cases?
     Mat33 C = Mat33();
     Real E, nu = 0;
-    if (!this->d_varianteSections.getValue())
+    if (!this->d_variantSections.getValue())
     {
         E = this->d_youngModulus.getValue();
         nu = this->d_poissonRatio.getValue();

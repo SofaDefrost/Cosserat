@@ -13,7 +13,6 @@ from dataclasses import dataclass
 import Sofa
 from cosserat.usefulFunctions import buildEdges, pluginList, BuildCosseratGeometry
 
-
 linearConfig = {'init_pos': [0., 0., 0.], 'tot_length': 1, 'nbSectionS': 15,
                 'nbFramesF': 30, 'buildCollisionModel': 1, 'beamMass': 0.22}
 
@@ -64,7 +63,8 @@ class NonLinearCosserat(Sofa.Prefab):
         {'name': 'radius', 'type': 'double', 'help': 'the radius in case of circular section', 'default': 1.0},
         {'name': 'length_Y', 'type': 'double', 'help': 'the radius in case of circular section', 'default': 1.0},
         {'name': 'length_Z', 'type': 'double', 'help': 'the radius in case of circular section', 'default': 1.0},
-        {'name': 'rayleighStiffness', 'type': 'double', 'help': 'Rayleigh damping - stiffness matrix coefficient', 'default': 0.0},
+        {'name': 'rayleighStiffness', 'type': 'double', 'help': 'Rayleigh damping - stiffness matrix coefficient',
+         'default': 0.0},
         {'name': 'attachingToLink', 'type': 'string', 'help': 'a rest shape force field will constraint the object '
                                                               'to follow arm position', 'default': '1'},
         {'name': 'showObject', 'type': 'string', 'help': ' Draw object arrow ', 'default': '0'}]
@@ -77,11 +77,16 @@ class NonLinearCosserat(Sofa.Prefab):
         self.parent = kwargs['parent']
         self.legendreControlPos = kwargs['legendreControlPoints']
         self.polynomOrder = kwargs['order']
+        self.useInertiaParams = False
         if self.parent.hasObject("EulerImplicitSolver") is False:
             self.solverNode = self.addSolverNode()
         else:
             self.solverNode = self.parent
         # self.solverNode = self.parent
+        if 'inertialParams' in kwargs:
+            self.useInertiaParams = True
+            self.inertialParams = kwargs['inertialParams']
+
         self.rigidBaseNode = self.addRigidBaseNode()
         [positionS, curv_abs_inputS, sectionLength, framesF, curv_abs_outputF, frames3D] = \
             BuildCosseratGeometry(self.cosseratGeometry)
@@ -91,6 +96,8 @@ class NonLinearCosserat(Sofa.Prefab):
         if self.needCollisionModel:
             tab_edges = buildEdges(frames3D)
             self.cosseratFrameCollision = addEdgeCollision(self.cosseratFrame, frames3D, tab_edges)
+        # Inertia parameters
+
 
     def init(self):
         pass
@@ -138,16 +145,26 @@ class NonLinearCosserat(Sofa.Prefab):
         cosseratCoordinateNode.addObject('MechanicalObject',
                                          template='Vec3d', name='cosseratCoordinateMO', position=positionXi,
                                          showIndices=0)
-        cosseratCoordinateNode.addObject('BeamHookeLawForceField', crossSectionShape=self.shape.value,
-                                         length=longeurS,
-                                         youngModulus=self.youngModulus.value,
-                                         poissonRatio=self.poissonRatio.value,
-                                         rayleighStiffness=self.rayleighStiffness.value,
-                                         radius=self.radius.value,
-                                         lengthY=self.length_Y.value, lengthZ=self.length_Z.value)
+        if self.useInertiaParams is False:
+            print('========> The useInertiaParams is false')
+            cosseratCoordinateNode.addObject('BeamHookeLawForceField', crossSectionShape=self.shape.value,
+                                             length=longeurS, radius=self.radius.value,
+                                             youngModulus=self.youngModulus.value, poissonRatio=self.poissonRatio.value,
+                                             rayleighStiffness=self.rayleighStiffness.value,
+                                             lengthY=self.length_Y.value, lengthZ=self.length_Z.value)
+        else:
+            GA = self.inertialParams['GA']
+            GI = self.inertialParams['GI']
+            EA = self.inertialParams['EA']
+            EI = self.inertialParams['EI']
+            print(f'{GA}')
+            cosseratCoordinateNode.addObject('BeamHookeLawForceField', crossSectionShape=self.shape.value,
+                                             length=longeurS, radius=self.radius.value, useInertiaParams=True,
+                                             GI=GI, GA=GA, EI=EI, EA=EA, rayleighStiffness=self.rayleighStiffness.value,
+                                             lengthY=self.length_Y.value, lengthZ=self.length_Z.value)
 
         localCurv = curv_abs_inputS
-        controlPointsAbs = [k*(1./self.polynomOrder) for k in range(1, self.polynomOrder)]
+        controlPointsAbs = [k * (1. / self.polynomOrder) for k in range(1, self.polynomOrder)]
         controlPointsAbs.append(1.0)
         cosseratCoordinateNode.addObject('LegendrePolynomialsMapping', curvAbscissa=localCurv, order=self.polynomOrder,
                                          controlPointsAbs=controlPointsAbs, applyRestPosition=True)
