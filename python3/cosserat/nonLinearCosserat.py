@@ -78,6 +78,7 @@ class NonLinearCosserat(Sofa.Prefab):
         self.legendreControlPos = kwargs['legendreControlPoints']
         self.polynomOrder = kwargs['order']
         self.useInertiaParams = False
+        self.totalLength = self.cosseratGeometry['tot_length']
         if self.parent.hasObject("EulerImplicitSolver") is False:
             self.solverNode = self.addSolverNode()
         else:
@@ -146,7 +147,6 @@ class NonLinearCosserat(Sofa.Prefab):
                                          template='Vec3d', name='cosseratCoordinateMO', position=positionXi,
                                          showIndices=0)
         if self.useInertiaParams is False:
-            print('========> The useInertiaParams is false')
             cosseratCoordinateNode.addObject('BeamHookeLawForceField', crossSectionShape=self.shape.value,
                                              length=longeurS, radius=self.radius.value,
                                              youngModulus=self.youngModulus.value, poissonRatio=self.poissonRatio.value,
@@ -162,8 +162,9 @@ class NonLinearCosserat(Sofa.Prefab):
                                              length=longeurS, radius=self.radius.value, useInertiaParams=True,
                                              GI=GI, GA=GA, EI=EI, EA=EA, rayleighStiffness=self.rayleighStiffness.value,
                                              lengthY=self.length_Y.value, lengthZ=self.length_Z.value)
-
-        localCurv = curv_abs_inputS
+        print(f'==========> curv_abs_inputS: {curv_abs_inputS}')
+        localCurv = [x/self.totalLength for x in curv_abs_inputS]
+        print(f'==========> localCurv: {localCurv}')
         controlPointsAbs = [k * (1. / self.polynomOrder) for k in range(1, self.polynomOrder)]
         controlPointsAbs.append(1.0)
         cosseratCoordinateNode.addObject('LegendrePolynomialsMapping', curvAbscissa=localCurv, order=self.polynomOrder,
