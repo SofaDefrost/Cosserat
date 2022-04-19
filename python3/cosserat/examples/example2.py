@@ -21,16 +21,20 @@ from splib3.numerics import Quat
 LegendrePolyOrder = 5
 # initialStrain = [[0., 0., 0], [0., 0., 0], [0., 0., 0]]
 initialStrain = [[0., 0., 0], [0., 0., 0], [0., 0., 0], [0., 0., 0], [0., 0., 0]]
+
 YM = 4.015e8
 rayleighStiffness = 0.2  # Nope
-forceCoeff = 0.05
+forceCoeff = 100
 F1 = [0., forceCoeff, 0., 0., 0., 0.]  # Nope
-Rb = 0.01/2  # @todo ==> 0.57/2. # beam radius in m
-length = 1  # @todo ==>  100 # in m
-nbSection = 5  # P_{k_2}=P_{k_3}
+Rb = 0.57/2.  # @todo ==> 0.57/2. # beam radius in m
+length = 100.  # @todo ==>  100 # in m
+nbSection = 30  # P_{k_2}=P_{k_3}
+nbFrames = 60
+firstOrder = 1
 
+inertialParams = {'GI': 3.5e7, 'GA': 1.61e8, 'EI': 3.5e7, 'EA': 1.61e8, 'L': length,  'Rb': Rb}
 nonLinearConfig = {'init_pos': [0., 0., 0.], 'tot_length': length, 'nbSectionS': nbSection,
-                   'nbFramesF': 15, 'buildCollisionModel': 0, 'beamMass': 0.}
+                   'nbFramesF': nbFrames, 'buildCollisionModel': 0, 'beamMass': 0.}
 
 
 class ForceController(Sofa.Core.Controller):
@@ -53,11 +57,15 @@ class ForceController(Sofa.Core.Controller):
                 # print(f' The new vec is : {vec}')
                 for count in range(3):
                     force[count] = vec[count]
+            if self.forceCoeff < 13.1e4:
+                self.forceCoeff += 100
+            else:
+                print(f' The new force coeff is : {self.forceCoeff}')
 
     def onKeypressedEvent(self, event):
         key = event['key']
         if key == "+":
-            self.forceCoeff += 0.2
+            self.forceCoeff += 10
             print(f' The new force coeff is : {self.forceCoeff}')
         elif key == "-":
             self.forceCoeff -= 0.2
@@ -70,19 +78,21 @@ def createScene(rootNode):
                                                                       'SofaExporter']])
     rootNode.addObject('VisualStyle', displayFlags='showVisualModels showBehaviorModels hideCollisionModels '
                                                    'hideBoundingCollisionModels hireForceFields '
-                                                   'hideInteractionForceFields hideWireframe')
+                                                   'hideInteractionForceFields hideWireframe showMechanicalMappings')
     rootNode.findData('dt').value = 0.02
     # rootNode.findData('gravity').value = [0., -9.81, 0.]
     rootNode.findData('gravity').value = [0., 0., 0.]
-    rootNode.addObject('BackgroundSetting', color='0 0.168627 0.211765')
+    # rootNode.addObject('BackgroundSetting', color='0 0.168627 0.211765')
     # rootNode.addObject('FreeMotionAnimationLoop')
     # rootNode.addObject('GenericConstraintSolver', tolerance=1e-5, maxIterations=5e2)
     rootNode.addObject('Camera', position="-35 0 280", lookAt="0 0 0")
 
     solverNode = rootNode.addChild('solverNode')
-    solverNode.addObject('EulerImplicitSolver', rayleighStiffness="0.2", rayleighMass='0.')
-    # solverNode.addObject('SparseLDLSolver', name='solver', template="CompressedRowSparseMatrixd")
-    solverNode.addObject('EigenSimplicialLDLT', name='solver', template="CompressedRowSparseMatrixMat3x3d" )
+    # solverNode.addObject('EulerImplicitSolver', rayleighStiffness="0.", rayleighMass='0.')
+    solverNode.addObject('EulerImplicitSolver', rayleighStiffness=0, rayleighMass='0.',
+                         firstOrder=firstOrder)
+    solverNode.addObject('SparseLDLSolver', name='solver', template="CompressedRowSparseMatrixd")
+    # solverNode.addObject('EigenSimplicialLDLT', name='solver', template="CompressedRowSparseMatrixMat3x3d" )
 
     # solverNode.addObject('CGLinearSolver', tolerance=1.e-12, iterations=1000, threshold=1.e-18)
 
@@ -90,7 +100,7 @@ def createScene(rootNode):
     nonLinearCosserat = solverNode.addChild(
         nonCosserat(parent=solverNode, cosseratGeometry=nonLinearConfig, useCollisionModel=needCollisionModel,
                     name="cosserat", radius=Rb, youngModulus=YM, legendreControlPoints=initialStrain,
-                    order=LegendrePolyOrder))
+                    order=LegendrePolyOrder, inertialParams=inertialParams,))
     cosseratNode = nonLinearCosserat.legendreControlPointsNode
     cosseratNode.addObject('MechanicalMatrixMapper', template='Vec3,Vec3',
                            object1=cosseratNode.getLinkPath(),
@@ -100,23 +110,10 @@ def createScene(rootNode):
 
     beamFrame = nonLinearCosserat.cosseratFrame
 
-    constForce = beamFrame.addObject('ConstantForceField', name='constForce', showArrowSize=0.02,
+    constForce = beamFrame.addObject('ConstantForceField', name='constForce', showArrowSize=1.e-5,
                         indices=nonLinearConfig['nbFramesF'], force=F1)
 
     nonLinearCosserat = solverNode.addObject(
         ForceController(parent=solverNode, cosseratFrames=beamFrame.FramesMO, forceNode=constForce))
-
-
-
-    # # solverNode2 = rootNode.addChild('solverNode2')
-    # # solverNode2.addObject('EulerImplicitSolver', rayleighStiffness="0.2", rayleighMass='0.1')
-    # # solverNode2.addObject('SparseLDLSolver', name='solver', template="CompressedRowSparseMatrixd")
-    # # solverNode2.addObject('GenericConstraintCorrection')
-    # # cosserat2 = solverNode2.addChild(Cosserat(parent=solverNode2, cosseratGeometry=linearConfig,
-    # #                                           useCollisionModel=needCollisionModel, name="cosserat2", radius=0.1))
-    #
-    # beamFrame2 = cosserat2.cosseratFrame
-    # beamFrame2.addObject('ConstantForceField', name='constForce', showArrowSize=0, indices=12,
-    #                      force=[0., 0., 0., 0., 450., 0.])
 
     return rootNode
