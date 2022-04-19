@@ -67,14 +67,12 @@ CosseratNeedleSlidingConstraint<DataTypes>::CosseratNeedleSlidingConstraint(Mech
                            "force = the contstraint will impose the force provided in data value[valueIndex] \n"
                            "If unspecified, the default value is displacement"))
 {
-
 }
 
 template<class DataTypes>
 CosseratNeedleSlidingConstraint<DataTypes>::~CosseratNeedleSlidingConstraint()
 {
 }
-
 
 template<class DataTypes>
 void CosseratNeedleSlidingConstraint<DataTypes>::init()
@@ -83,7 +81,6 @@ void CosseratNeedleSlidingConstraint<DataTypes>::init()
 
     internalInit();
 }
-
 
 template<class DataTypes>
 void CosseratNeedleSlidingConstraint<DataTypes>::reinit()
@@ -108,8 +105,6 @@ void CosseratNeedleSlidingConstraint<DataTypes>::internalInit()
     }
 }
 
-
-
 template<class DataTypes>
 void CosseratNeedleSlidingConstraint<DataTypes>::buildConstraintMatrix(const ConstraintParams* cParams, DataMatrixDeriv &cMatrix, unsigned int &cIndex, const DataVecCoord &x)
 {
@@ -133,7 +128,6 @@ void CosseratNeedleSlidingConstraint<DataTypes>::buildConstraintMatrix(const Con
     m_nbLines = cIndex - m_constraintId;
 }
 
-
 template<class DataTypes>
 void CosseratNeedleSlidingConstraint<DataTypes>::getConstraintViolation(const ConstraintParams* cParams,
                                                                         BaseVector *resV,
@@ -145,8 +139,6 @@ void CosseratNeedleSlidingConstraint<DataTypes>::getConstraintViolation(const Co
     SOFA_UNUSED(cParams);
     ReadAccessor<Data<VecCoord>> positions = m_state->readPositions();
 
-    msg_info("CosseratNeedleSlidingConstraint") << "The size of constraint is "<< positions.size();
-
     if(Jdx->size()==0){
         for (unsigned int i = 0; i < positions.size(); i++){
             Real dfree1 =  positions[i][1];
@@ -155,14 +147,12 @@ void CosseratNeedleSlidingConstraint<DataTypes>::getConstraintViolation(const Co
             resV->set(m_constraintId + 2*i   , dfree1);
             resV->set(m_constraintId + 2*i +1, dfree2);
         }
-
     }else{
         for (unsigned int i = 0; i < positions.size(); i++){
             Real dfree1 = Jdx->element(2*i)   + positions[i][1];
             Real dfree2 = Jdx->element(2*i+1) + positions[i][2];
             resV->set(m_constraintId + 2*i   , dfree1);
             resV->set(m_constraintId + 2*i +1, dfree2);
-
         }
     }
 }
@@ -181,14 +171,11 @@ void CosseratNeedleSlidingConstraint<DataTypes>::getConstraintResolution(const C
     }
 }
 
-
 template<class DataTypes>
 void CosseratNeedleSlidingConstraint<DataTypes>::draw(const VisualParams* vparams)
 {
     if(d_componentState.getValue() != ComponentState::Valid)
         return ;
-
 }
-
-} // namespace sofa
+} // namespace sofa::component::constraintset
 
