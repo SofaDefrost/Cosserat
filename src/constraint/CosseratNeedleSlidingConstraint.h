@@ -50,29 +50,6 @@ using sofa::core::ConstraintParams ;
 using sofa::helper::ReadAccessor ;
 using sofa::core::VecCoordId ;
 
-//using sofa::core::behavior::ConstraintResolution ;
-
-
-//class SlidingForceConstraintResolution : public ConstraintResolution
-//{
-//public:
-//    SlidingForceConstraintResolution(const double& imposedForce, const double& min, const double& max);
-
-//    //////////////////// Inherited from ConstraintResolution ////////////////////
-//    virtual void init(int line, double** w, double *force) override;
-//    virtual void resolution(int line, double** w, double* d, double* force, double* dfree) override;
-//    /////////////////////////////////////////////////////////////////////////////
-
-//protected:
-
-//    double      m_wActuatorActuator;
-//    double      m_imposedForce;
-//    double      m_minDisplacement;
-//    double      m_maxDisplacement;
-
-//};
-
-
 /**
  * This class contains common implementation of cable constraints
 */
