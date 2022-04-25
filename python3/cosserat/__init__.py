@@ -22,4 +22,4 @@ Contents of the library
 
 """
 
-__all__ = ["cosseratObject", "actuators", "scenes", "needle", "inverse"]
+__all__ = ["cosseratObject", "nonLinearCosserat", "actuators", "scenes", "needle", "inverse", "usefulFunctions"]

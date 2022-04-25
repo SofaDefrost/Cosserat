@@ -170,7 +170,7 @@ void LegendrePolynomialsMapping<TIn, TOut>::applyJT(const core::ConstraintParams
             }
         }
 
-        std::cout << "applyJT Constraint : new J on input  DOFs = \n" << out << std::endl;
+        // std::cout << "applyJT Constraint : new J on input  DOFs = \n" << out << std::endl;
         dOut.endEdit();
 }
 
