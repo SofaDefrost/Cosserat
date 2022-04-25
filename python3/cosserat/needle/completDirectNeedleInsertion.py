@@ -90,16 +90,19 @@ def createScene(rootNode):
     ###############
     rigidBaseNode = cableNode.addChild('rigidBase')
     RigidBaseMO = rigidBaseNode.addObject('MechanicalObject', template='Rigid3d', name="RigidBaseMO",
-                                          position="0 0 0  0 0 0 1", translation="-40. 0. 0.", showObject='1', showObjectScale='5.')
+                                          position="0 0 0  0 0 0 1", translation="-40. 0. 0.", showObject='1',
+                                          showObjectScale='5.')
     rigidBaseNode.addObject('RestShapeSpringsForceField', name='spring', stiffness="50000",
                             angularStiffness="50000", external_points="0", mstate="@RigidBaseMO", points="0",
                             template="Rigid3d")
 
-    ###############
+    #############################################
     # Rate of angular Deformation  (2 sections)
-    ###############
+    #############################################
+    cosserat_config = {'init_pos': [0., 0., 0.], 'tot_length': 80, 'nbSectionS': 8,
+                       'nbFramesF': 16, 'buildCollisionModel': 0, 'beamMass': 0.22}
     [positionS, curv_abs_inputS, longeurS, framesF, curv_abs_outputF, cable_positionF] = \
-        BuildCosseratGeometry(nbSection=8, nbFrames=16, totalLength=80)
+        BuildCosseratGeometry(cosserat_config)
 
     rateAngularDeformNode = cableNode.addChild('rateAngularDeform')
     rateAngularDeformMO = rateAngularDeformNode.addObject(
@@ -136,7 +139,6 @@ def createScene(rootNode):
     needleCollision.addObject('EdgeSetTopologyContainer', name="Container", position=cable_positionF, edges=edgeList)
     needleCollisionMO = needleCollision.addObject('MechanicalObject', name="cablePos", position=cable_positionF,
                                                   showObject="1", showIndices="0")
-    needleCollision.addObject('NeedleGeometry', name='Needle')  # ### NeedleConstriantPlugin
     needleCollision.addObject('IdentityMapping')
 
     # Create FEM Node
@@ -150,12 +152,10 @@ def createScene(rootNode):
     Trajectory.addObject('EdgeSetTopologyContainer', name="Container", position=femPos, edges=edgeTrajectory)
     Trajectory.addObject('EdgeSetTopologyModifier', name='Modifier')
     Trajectory.addObject('MechanicalObject', name="pointsInFEM", position=femPos, showIndices="1")
-    Trajectory.addObject('NeedleTrajectoryGeometry', drawRadius=0.2, name="trajectory", entryDist="1",
-                         constraintDist="3", clearTrajectory="true")
     Trajectory.addObject('BarycentricMapping')
 
     constraintPoints = gelNode.addChild('constraintPoints')
-    inputConstraintPointsMO = constraintPoints.addObject('MechanicalObject', name="pointsInFEM", position=[40., 0., 0.],
+    inputConstraintPointsMO = constraintPoints.addObject('MechanicalObject', name="pointsInFEM", position=femPos,
                                                          showIndices="1")
     constraintPoints.addObject('BarycentricMapping')
 
@@ -168,12 +168,13 @@ def createScene(rootNode):
     outputPointMO = mappedPoints.getLinkPath()
 
     mappedPointsNode.addObject('CosseratNeedleSlidingConstraint', name="QPConstraint")
+
     diffMapping = mappedPointsNode.addObject('DifferenceMultiMapping', name="pointsMulti", input1=inputFEMCableMO,
                                              lastPointIsFixed=0, input2=inputCableMO, output=outputPointMO,
                                              direction="@../../FramesMO.position")
     mappedPointsNode.addObject(AddPointProcess(inputConstraintPointsMO, needleCollisionMO, diffMapping))
 
-    # return rootNode
+    return rootNode
 
 
 def main():

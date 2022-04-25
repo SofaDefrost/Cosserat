@@ -11,9 +11,8 @@ __date__ = "October, 26 2021"
 
 from dataclasses import dataclass
 import Sofa
-from usefulFunctions import buildEdges, pluginList, BuildCosseratGeometry
+from cosserat.usefulFunctions import buildEdges, pluginList, BuildCosseratGeometry
 
-from cosserat.cosseratObject import Cosserat
 
 linearConfig = {'init_pos': [0., 0., 0.], 'tot_length': 1, 'nbSectionS': 15,
                 'nbFramesF': 30, 'buildCollisionModel': 1, 'beamMass': 0.22}
@@ -65,8 +64,10 @@ class NonLinearCosserat(Sofa.Prefab):
         {'name': 'radius', 'type': 'double', 'help': 'the radius in case of circular section', 'default': 1.0},
         {'name': 'length_Y', 'type': 'double', 'help': 'the radius in case of circular section', 'default': 1.0},
         {'name': 'length_Z', 'type': 'double', 'help': 'the radius in case of circular section', 'default': 1.0},
+        {'name': 'rayleighStiffness', 'type': 'double', 'help': 'Rayleigh damping - stiffness matrix coefficient', 'default': 0.0},
         {'name': 'attachingToLink', 'type': 'string', 'help': 'a rest shape force field will constraint the object '
-                                                              'to follow arm position', 'default': '1'}]
+                                                              'to follow arm position', 'default': '1'},
+        {'name': 'showObject', 'type': 'string', 'help': ' Draw object arrow ', 'default': '0'}]
 
     def __init__(self, *args, **kwargs):
         Sofa.Prefab.__init__(self, *args, **kwargs)
@@ -75,13 +76,11 @@ class NonLinearCosserat(Sofa.Prefab):
         self.beamMass = self.cosseratGeometry['beamMass']
         self.parent = kwargs['parent']
         self.legendreControlPos = kwargs['legendreControlPoints']
-
+        self.polynomOrder = kwargs['order']
         if self.parent.hasObject("EulerImplicitSolver") is False:
-            print("===> The EulerImplicit is not in the node Yet ")
             self.solverNode = self.addSolverNode()
         else:
             self.solverNode = self.parent
-            print("===> The EulerImplicit is in the node Yet ")
         # self.solverNode = self.parent
         self.rigidBaseNode = self.addRigidBaseNode()
         [positionS, curv_abs_inputS, sectionLength, framesF, curv_abs_outputF, frames3D] = \
@@ -114,7 +113,7 @@ class NonLinearCosserat(Sofa.Prefab):
             positions.append(_pos)
         rigidBaseNode.addObject('MechanicalObject', template='Rigid3d', name="RigidBaseMO",
                                 showObjectScale=0.2, translation=trans,
-                                position=positions, rotation=rot, showObject=1)
+                                position=positions, rotation=rot, showObject=int(self.showObject.value))
         # one can choose to set this to false and directly attach the beam base
         # to a control object in order to be able to drive it.
         if int(self.attachingToLink.value):
@@ -135,7 +134,7 @@ class NonLinearCosserat(Sofa.Prefab):
 
     def addCosseratCoordinate(self, positionS, longeurS, curv_abs_inputS):
         cosseratCoordinateNode = self.legendreControlPointsNode.addChild('cosseratCoordinate')
-        positionXi = [[0., 0., 0.] for _ in range(len(curv_abs_inputS)-1)]
+        positionXi = [[0., 0., 0.] for _ in range(len(curv_abs_inputS) - 1)]
         cosseratCoordinateNode.addObject('MechanicalObject',
                                          template='Vec3d', name='cosseratCoordinateMO', position=positionXi,
                                          showIndices=0)
@@ -143,14 +142,14 @@ class NonLinearCosserat(Sofa.Prefab):
                                          length=longeurS,
                                          youngModulus=self.youngModulus.value,
                                          poissonRatio=self.poissonRatio.value,
+                                         rayleighStiffness=self.rayleighStiffness.value,
                                          radius=self.radius.value,
                                          lengthY=self.length_Y.value, lengthZ=self.length_Z.value)
-        print(f'the curv_abs_inputS is : {curv_abs_inputS}')
-        print(f'the length is : {longeurS}')
+
         localCurv = curv_abs_inputS
-        # localCurv.pop(0)
-        controlPointsAbs = [0.3333333333333333, 0.6666666666666666, 1.0]
-        cosseratCoordinateNode.addObject('LegendrePolynomialsMapping', curvAbscissa=localCurv, order=3,
+        controlPointsAbs = [k*(1./self.polynomOrder) for k in range(1, self.polynomOrder)]
+        controlPointsAbs.append(1.0)
+        cosseratCoordinateNode.addObject('LegendrePolynomialsMapping', curvAbscissa=localCurv, order=self.polynomOrder,
                                          controlPointsAbs=controlPointsAbs, applyRestPosition=True)
         return cosseratCoordinateNode
 
@@ -160,27 +159,23 @@ class NonLinearCosserat(Sofa.Prefab):
         self.cosseratCoordinateNode.addChild(cosseratInSofaFrameNode)
         framesMO = cosseratInSofaFrameNode.addObject('MechanicalObject', template='Rigid3d',
                                                      name="FramesMO", position=framesF,
-                                                     showObject=1, showObjectScale=0.05)
-        print(f'curvAbs inside frame :{curv_abs_inputS}')
-        cosseratInSofaFrameNode.addObject('UniformMass', totalMass=self.beamMass, showAxisSizeFactor='0')
+                                                     showObject=int(self.showObject.value), showObjectScale=0.05)
+        if self.beamMass != 0.:
+            cosseratInSofaFrameNode.addObject('UniformMass', totalMass=self.beamMass, showAxisSizeFactor='0')
         cosseratInSofaFrameNode.addObject('DiscreteCosseratMapping', curv_abs_input=curv_abs_inputS,
                                           curv_abs_output=curv_abs_outputF, name='cosseratMapping',
                                           input1=self.cosseratCoordinateNode.cosseratCoordinateMO.getLinkPath(),
                                           input2=self.rigidBaseNode.RigidBaseMO.getLinkPath(),
-                                          output=framesMO.getLinkPath(), debug=0, radius=0)
-
-        self.solverNode.addObject('MechanicalMatrixMapper', template='Vec3,Rigid3',
-                                  object1=self.cosseratCoordinateNode.cosseratCoordinateMO.getLinkPath(),
-                                  object2=self.rigidBaseNode.RigidBaseMO.getLinkPath(),
-                                  nodeToParse=cosseratInSofaFrameNode.getLinkPath())
+                                          output=framesMO.getLinkPath(), debug=0, radius=self.radius)
+        if self.beamMass != 0.:
+            self.solverNode.addObject('MechanicalMatrixMapper', template='Vec3,Rigid3',
+                                      object1=self.cosseratCoordinateNode.cosseratCoordinateMO.getLinkPath(),
+                                      object2=self.rigidBaseNode.RigidBaseMO.getLinkPath(),
+                                      nodeToParse=cosseratInSofaFrameNode.getLinkPath())
         return cosseratInSofaFrameNode
 
 
-initialStrain1 = [[0., 0., 0], [0., 0., 0], [0., 0., 0]]
-initialStrain2 = [[0., 0., -0.52475341], [0., 0., -0.3098944], [0., 0., -0.10211416]]
-initialStrain3 = [[0., 0., -0.96779204], [0., 0., -0.55894208], [0., 0., -0.18167142]]
-# initialStrain4 = [[0., 0., -0.96770587], [0., 0., -0.55875284], [0., 0., -0.18155108]]
-initialStrain4 = [[0., 0., 0], [0., 0., 0], [0., 0., 1]]
+initialStrain = [[0., 0., 0], [0., 0., 0], [0., 0., 0]]
 
 
 def createScene(rootNode):
@@ -191,7 +186,8 @@ def createScene(rootNode):
                                                    'hideBoundingCollisionModels hireForceFields '
                                                    'hideInteractionForceFields hideWireframe')
     rootNode.findData('dt').value = 0.01
-    rootNode.findData('gravity').value = [0., -9.81, 0.]
+    # rootNode.findData('gravity').value = [0., -9.81, 0.]
+    rootNode.findData('gravity').value = [0., 0., 0.]
     rootNode.addObject('BackgroundSetting', color='0 0.168627 0.211765')
     # rootNode.addObject('FreeMotionAnimationLoop')
     # rootNode.addObject('GenericConstraintSolver', tolerance=1e-5, maxIterations=5e2)
@@ -200,29 +196,22 @@ def createScene(rootNode):
     solverNode = rootNode.addChild('solverNode')
     solverNode.addObject('EulerImplicitSolver', rayleighStiffness="0.2", rayleighMass='0.1')
     solverNode.addObject('SparseLDLSolver', name='solver', template="CompressedRowSparseMatrixd")
+    # solverNode.addObject('SparseLUSolver', name='solver', template="CompressedRowSparseMatrixd")
     # solverNode.addObject('CGLinearSolver', tolerance=1.e-12, iterations=1000, threshold=1.e-18)
 
     needCollisionModel = 0  # use this if the collision model if the beam will interact with another object
     nonLinearCosserat = solverNode.addChild(
         NonLinearCosserat(parent=solverNode, cosseratGeometry=nonLinearConfig, useCollisionModel=needCollisionModel,
-                          name="cosserat", radius=0.1, legendreControlPoints=initialStrain4))
+                          name="cosserat", radius=0.1, legendreControlPoints=initialStrain, order=3))
     cosseratNode = nonLinearCosserat.legendreControlPointsNode
     cosseratNode.addObject('MechanicalMatrixMapper', template='Vec3,Vec3',
-                                                          object1=cosseratNode.getLinkPath(),
-                                                          object2=cosseratNode.getLinkPath(),
-                                                          name='cosseratCoordinateNodeMapper',
-                                                          nodeToParse=nonLinearCosserat.cosseratCoordinateNode.getLinkPath())
+                           object1=cosseratNode.getLinkPath(),
+                           object2=cosseratNode.getLinkPath(),
+                           name='cosseratCoordinateNodeMapper',
+                           nodeToParse=nonLinearCosserat.cosseratCoordinateNode.getLinkPath())
 
-    # solverNode2 = rootNode.addChild('solverNode2')
-    # solverNode2.addObject('EulerImplicitSolver', rayleighStiffness="0.2", rayleighMass='0.1')
-    # solverNode2.addObject('SparseLDLSolver', name='solver', template="CompressedRowSparseMatrixd")
-    # solverNode2.addObject('GenericConstraintCorrection')
-    # cosserat2 = solverNode2.addChild(
-    #     Cosserat(parent=solverNode2, cosseratGeometry=linearConfig, useCollisionModel=needCollisionModel,
-    #              name="cosserat2", radius=0.1))
-    #
-    # beamFrame2 = cosserat2.cosseratFrame
-    # beamFrame2.addObject('ConstantForceField', name='constForce', showArrowSize=0, indices=30,
-    #                      force=[0., -100., 0., 0., 0., 0.])
+    beamFrame = nonLinearCosserat.cosseratFrame
+    beamFrame.addObject('ConstantForceField', name='constForce', showArrowSize=1.e-8, indices=12,
+                        force=[0., 0., 0., 0., 0., 450.])
 
     return rootNode
