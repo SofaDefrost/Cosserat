@@ -52,8 +52,6 @@ set(HEADER_FILES
     src/mapping/RigidDistanceMapping.inl
     src/forcefield/BeamHookeLawForceField.h
     src/forcefield/BeamHookeLawForceField.inl
-    src/forcefield/BeamPlasticLawForceField.h
-    src/forcefield/BeamPlasticLawForceField.inl
     src/forcefield/CosseratInternalActuation.h
     src/forcefield/CosseratInternalActuation.inl
     src/constraint/CosseratSlidingConstraint.h
@@ -72,7 +70,6 @@ set(SOURCE_FILES
     src/mapping/DifferenceMultiMapping.cpp
     src/mapping/RigidDistanceMapping.cpp
     src/forcefield/BeamHookeLawForceField.cpp
-    src/forcefield/BeamPlasticLawForceField.cpp
     src/forcefield/CosseratInternalActuation.cpp
     src/constraint/CosseratSlidingConstraint.cpp
     src/mapping/LegendrePolynomialsMapping.cpp
