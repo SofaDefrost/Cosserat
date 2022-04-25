@@ -137,4 +137,4 @@ jobs:
             fail_on_unmatched_files: true 
             files: |
               artifacts/CosseratPlugin_*_Linux.zip
-              artifacts/SoftRobots_*_Windows.zip
+              artifacts/CosseratPlugin_*_Windows.zip

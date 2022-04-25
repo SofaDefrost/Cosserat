@@ -27,7 +27,7 @@ def legendrePoly(n, x):
 
 
 def drawLegendre():
-    x = np.linspace(0.0, 1, 100)
+    x = np.linspace(0, 1, 100)
     # print(f'x = {x}')
     for i in range(1, 5):
         # print(f"LX : {legendrePoly(i, x)}")
