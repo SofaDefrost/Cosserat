@@ -231,8 +231,9 @@ namespace sofa::component::forcefield
         unsigned int offset = mref.offset;
         Real kFact = (Real)mparams->kFactorIncludingRayleighDamping(this->rayleighStiffness.getValue());
 
-        const VecCoord& pos = this->mstate->read(core::ConstVecCoordId::position())->getValue();
-        for (unsigned int n=0; n<pos.size(); n++)
+        unsigned int nbBeams = d_length.getValue().size();
+
+        for (unsigned int n=0; n<nbBeams; n++)
         {
             if(!d_varianteSections.getValue())
                 for(unsigned int i = 0; i < 3; i++)
