@@ -596,7 +596,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::draw(const core::visual::VisualP
             else if(sectionMechanicalStates[sectionId] == MechanicalState::PLASTIC)
                 drawColor = RGBAColor(40/255.0, 104/255.0, 137/255.0, 0.8); // Blue
             else // MechanicalState::POSTPLASTIC
-                drawColor = RGBAColor(76/255.0, 154/255.0, 50/255.0, 0.8);; // Green
+                drawColor = RGBAColor(76/255.0, 154/255.0, 50/255.0, 0.8); // Green
 
             for (unsigned int i=0; i<sz-1; i++)
                 vparams->drawTool()->drawCylinder(positions[i], positions[i+1], radius, drawColor);
