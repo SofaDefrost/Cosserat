@@ -66,7 +66,16 @@ DiscreteCosseratMapping<TIn1, TIn2, TOut>::DiscreteCosseratMapping()
                                                                         "take another value if the rigid base is given "
                                                                         "by another body."))
     , l_fromPlasticForceField(initLink("forcefield","Path to the Cosserat force field component in scene"))
-{}
+{
+    this->addUpdateCallback("updateFrames", {&d_curv_abs_section, &d_curv_abs_frames, &d_debug}, [this](const core::DataTracker& t)
+    {
+        SOFA_UNUSED(t);
+        this->initialize();
+        const In1VecCoord& inDeform = m_fromModel1->read(core::ConstVecCoordId::position())->getValue();
+        this->update_ExponentialSE3(inDeform);
+        return sofa::core::objectmodel::ComponentState::Valid;
+    }, {});
+}
 
 
 
@@ -112,6 +121,11 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::apply(
 {
 
     if(dataVecOutPos.empty() || dataVecIn1Pos.empty() || dataVecIn2Pos.empty())
+        return;
+
+    // Checking the componentState, to trigger a callback if other data fields (specifically
+    // d_curv_abs_section and d_curv_abs_frames) were changed
+    if (this->d_componentState.getValue() != sofa::core::objectmodel::ComponentState::Valid)
         return;
 
     ///Do Apply
@@ -206,6 +220,12 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>:: applyJ(
 
     if(dataVecOutVel.empty() || dataVecIn1Vel.empty() ||dataVecIn2Vel.empty() )
         return;
+
+    // Checking the componentState, to trigger a callback if other data fields (specifically
+    // d_curv_abs_section and d_curv_abs_frames) were changed
+    if (this->d_componentState.getValue() != sofa::core::objectmodel::ComponentState::Valid)
+        return;
+
     const In1VecDeriv& in1 = dataVecIn1Vel[0]->getValue();
     const In2VecDeriv& in2_vecDeriv = dataVecIn2Vel[0]->getValue();
     OutVecDeriv& outVel = *dataVecOutVel[0]->beginEdit();
@@ -281,6 +301,11 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>:: applyJT(
         const type::vector<const OutDataVecDeriv*>& dataVecInForce)  {
 
     if(dataVecOut1Force.empty() || dataVecInForce.empty() || dataVecOut2Force.empty())
+        return;
+
+    // Checking the componentState, to trigger a callback if other data fields (specifically
+    // d_curv_abs_section and d_curv_abs_frames) were changed
+    if (this->d_componentState.getValue() != sofa::core::objectmodel::ComponentState::Valid)
         return;
 
     const OutVecDeriv& in = dataVecInForce[0]->getValue();
@@ -370,6 +395,11 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJT(
         const type::vector<const OutDataMatrixDeriv*>& dataMatInConst)
 {
     if(dataMatOut1Const.empty() || dataMatOut2Const.empty() || dataMatInConst.empty() )
+        return;
+
+    // Checking the componentState, to trigger a callback if other data fields (specifically
+    // d_curv_abs_section and d_curv_abs_frames) were changed
+    if (this->d_componentState.getValue() != sofa::core::objectmodel::ComponentState::Valid)
         return;
 
     //We need only one input In model and input Root model (if present)
