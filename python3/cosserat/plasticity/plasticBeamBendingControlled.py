@@ -47,7 +47,7 @@ class BendingController(Sofa.Core.Controller):
 
     def triggerBendingMoment(self):
         root = self.getContext()
-        with root.cableNode.rateAngularDeform.Moment.forces.writeable() as moment:
+        with root.beamNode.rateAngularDeform.Moment.forces.writeable() as moment:
             if (self.activated):
                 # Bending moment is currently activated, it should be deactivated
                 print("Bending moment deactivated")
@@ -63,27 +63,24 @@ class BendingController(Sofa.Core.Controller):
 # -----        SOFA scene        ----- #
 # -------------------------------------#
 
+pluginNameList = 'Sofa.Component.LinearSolver.Direct' \
+                 ' Sofa.Component.MechanicalLoad' \
+                 ' Sofa.Component.ODESolver.Backward' \
+                 ' Sofa.Component.SolidMechanics.Spring' \
+                 ' Sofa.Component.StateContainer' \
+                 ' Sofa.Component.Visual' \
+                 ' SofaPython3 CosseratPlugin'
+
+visualFlagList = 'showVisualModels showBehaviorModels showCollisionModels' \
+                 ' hideBoundingCollisionModels hideForceFields' \
+                 ' hideInteractionForceFields hideWireframe' \
+                 ' showMechanicalMappings'
+
 def createScene(rootNode):
 
-    rootNode.addObject('RequiredPlugin', name='SoftRobots')
-    rootNode.addObject('RequiredPlugin', name='BeamAdapter')
-    rootNode.addObject('RequiredPlugin', name='SofaBoundaryCondition')
-    rootNode.addObject('RequiredPlugin', name='SofaPython3')
-    rootNode.addObject('RequiredPlugin', name='SofaSparseSolver')
-    rootNode.addObject('RequiredPlugin', name='SofaOpenglVisual')
-    rootNode.addObject('RequiredPlugin', name='SofaConstraint')
-    rootNode.addObject('RequiredPlugin', name='SofaLoader')
-    rootNode.addObject('RequiredPlugin', name='SofaImplicitOdeSolver')
-    rootNode.addObject('RequiredPlugin', name='SofaMeshCollision')
-    rootNode.addObject('RequiredPlugin', name='SofaRigid')
-    rootNode.addObject('RequiredPlugin', name='CosseratPlugin')
-    rootNode.addObject('RequiredPlugin', name='SofaDeformable')
-    rootNode.addObject('RequiredPlugin', name='SofaGeneralLinearSolver')
-    rootNode.addObject('RequiredPlugin', name='SofaGeneralRigid')
+    rootNode.addObject('RequiredPlugin', pluginName=pluginNameList, printLog='0')
+    rootNode.addObject('VisualStyle', displayFlags=visualFlagList)
 
-    rootNode.addObject('VisualStyle', displayFlags='showVisualModels showBehaviorModels showCollisionModels'
-                                                   'hideBoundingCollisionModels hideForceFields'
-                                                   'hideInteractionForceFields hideWireframe')
     rootNode.addObject('DefaultVisualManagerLoop')
     rootNode.findData('dt').value = DT
     rootNode.findData('gravity').value = [0., 0., -GRAVITY]
@@ -109,11 +106,11 @@ def createScene(rootNode):
 
     # ----- Rigid base ----- #
 
-    cableNode = rootNode.addChild('cableNode')
-    cableNode.addObject('EulerImplicitSolver', rayleighStiffness="1.2", rayleighMass='1.1')
-    cableNode.addObject('SparseLDLSolver', name='solver', template="CompressedRowSparseMatrixd")
+    beamNode = rootNode.addChild('beamNode')
+    beamNode.addObject('EulerImplicitSolver', rayleighStiffness="1.2", rayleighMass='1.1')
+    beamNode.addObject('SparseLDLSolver', name='solver', template="CompressedRowSparseMatrixd")
 
-    rigidBaseNode= cableNode.addChild('rigidBase')
+    rigidBaseNode= beamNode.addChild('rigidBase')
     RigidBaseMO = rigidBaseNode.addObject('MechanicalObject', template='Rigid3d',
                                           name="RigidBaseMO", position=[0., 0., 0., 0, 0, 0, 1], showObject=1,
                                           showObjectScale=2.)
@@ -136,7 +133,7 @@ def createScene(rootNode):
     beamCurvAbscissa[nbBeams] = totalLength
 
     # Define angular rate which is the torsion(x) and bending (y, z) of each section
-    rateAngularDeformNode = cableNode.addChild('rateAngularDeform')
+    rateAngularDeformNode = beamNode.addChild('rateAngularDeform')
     rateAngularDeformMO = rateAngularDeformNode.addObject('MechanicalObject',
                                                           template='Vec3d',
                                                           name='rateAngularDeformMO',
