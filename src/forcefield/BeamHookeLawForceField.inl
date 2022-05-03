@@ -233,6 +233,15 @@ namespace sofa::component::forcefield
 
         unsigned int nbBeams = d_length.getValue().size();
 
+        // Check on the number of beams compared to the size of the associated MechanicalObject
+        // NB: this is already checked in addForce. Should it be checked once only during initialisation ?
+        const unsigned int mstateSize = this->mstate->read(core::ConstVecCoordId::position())->getValue().size();
+        if (nbBeams > mstateSize)
+        {
+            msg_error("BeamHookeLawForceField") << "The number of beams defined in the force field should be inferior "
+                                                << "(or equal) to the size of the associated MechanicalObject.\n";
+        }
+
         for (unsigned int n=0; n<nbBeams; n++)
         {
             if(!d_varianteSections.getValue())

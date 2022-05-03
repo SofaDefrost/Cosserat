@@ -154,7 +154,14 @@ void BaseCosserat<TIn1, TIn2, TOut>::update_ExponentialSE3(const In1VecCoord & i
 
     m_nodesExponentialSE3Vectors.push_back(Transform(Vector3(0.0,0.0,0.0),type::Quat(0.,0.,0.,1.)));
 
-    for (unsigned int  j = 0; j < m_BeamLengthVectors.size(); j++) {
+    // Check on the number of beams compared to the size of the associated MechanicalObject
+    const unsigned int nbBeams = m_BeamLengthVectors.size();
+    if (nbBeams > sz)
+    {
+        msg_error("BaseCosserat") << "The number of beams defined in the Cosserat mapping should be inferior "
+                                  << "(or equal) to the size of the associated MechanicalObject.\n";
+    }
+    for (unsigned int  j = 0; j < nbBeams; j++) {
         Vector3 k = inDeform[j];
         double  x = m_BeamLengthVectors[j];
         Transform T; computeExponentialSE3(x,k,T) ;
