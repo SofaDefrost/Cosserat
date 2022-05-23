@@ -64,7 +64,7 @@ class Cosserat(Sofa.Prefab):
         {'name': 'rayleighStiffness', 'type': 'double', 'help': 'Rayleigh damping - stiffness matrix coefficient',
          'default': 0.0},
         {'name': 'attachingToLink', 'type': 'string', 'help': 'a rest shape force field will constraint the object '
-                                                              'to follow arm position', 'default': '0'},
+                                                              'to follow arm position', 'default': '1'},
         {'name': 'showObject', 'type': 'string', 'help': ' Draw object arrow ', 'default': '0'}]
 
     def __init__(self, *args, **kwargs):
@@ -72,12 +72,17 @@ class Cosserat(Sofa.Prefab):
         self.cosseratGeometry = kwargs['cosseratGeometry']
         self.beamMass = self.cosseratGeometry['beamMass']
         self.parent = kwargs.get('parent', None)
+        self.useInertiaParams = False
 
         if self.parent.hasObject("EulerImplicitSolver") is False:
             print('The code does not have parent EulerImplicite')
             self.solverNode = self.addSolverNode()
         else:
             self.solverNode = self.parent
+
+        if 'inertialParams' in kwargs:
+            self.useInertiaParams = True
+            self.inertialParams = kwargs['inertialParams']
 
         self.rigidBaseNode = self.addRigidBaseNode()
         [positionS, curv_abs_inputS, longeurS, framesF, curv_abs_outputF, self.frames3D] = \
@@ -121,8 +126,9 @@ class Cosserat(Sofa.Prefab):
         if int(self.attachingToLink.value):
             print("Adding the rest shape to the base")
             rigidBaseNode.addObject('RestShapeSpringsForceField', name='spring',
-                                    stiffness=5000, angularStiffness=5000, external_points=0,
+                                    stiffness=1e8, angularStiffness=1.e8, external_points=0,
                                     mstate="@RigidBaseMO", points=0, template="Rigid3d")
+
         return rigidBaseNode
 
     def addCosseratCoordinate(self, positionS, longeurS):
@@ -131,12 +137,28 @@ class Cosserat(Sofa.Prefab):
                                          template='Vec3d', name='cosseratCoordinateMO',
                                          position=positionS,
                                          showIndices=0)
-        cosseratCoordinateNode.addObject('BeamHookeLawForceField', crossSectionShape=self.shape.value,
-                                         length=longeurS, youngModulus=self.youngModulus.value,
-                                         poissonRatio=self.poissonRatio.value,
-                                         radius=self.radius.value,
-                                         rayleighStiffness=self.rayleighStiffness.value,
-                                         lengthY=self.length_Y.value, lengthZ=self.length_Z.value)
+        # cosseratCoordinateNode.addObject('BeamHookeLawForceField', crossSectionShape=self.shape.value,
+        #                                  length=longeurS, youngModulus=self.youngModulus.value,
+        #                                  poissonRatio=self.poissonRatio.value,
+        #                                  radius=self.radius.value,
+        #                                  rayleighStiffness=self.rayleighStiffness.value,
+        #                                  lengthY=self.length_Y.value, lengthZ=self.length_Z.value)
+        if self.useInertiaParams is False:
+            cosseratCoordinateNode.addObject('BeamHookeLawForceField', crossSectionShape=self.shape.value,
+                                             length=longeurS, radius=self.radius.value,
+                                             youngModulus=self.youngModulus.value, poissonRatio=self.poissonRatio.value,
+                                             rayleighStiffness=self.rayleighStiffness.value,
+                                             lengthY=self.length_Y.value, lengthZ=self.length_Z.value)
+        else:
+            GA = self.inertialParams['GA']
+            GI = self.inertialParams['GI']
+            EA = self.inertialParams['EA']
+            EI = self.inertialParams['EI']
+            print(f'{GA}')
+            cosseratCoordinateNode.addObject('BeamHookeLawForceField', crossSectionShape=self.shape.value,
+                                             length=longeurS, radius=self.radius.value, useInertiaParams=True,
+                                             GI=GI, GA=GA, EI=EI, EA=EA, rayleighStiffness=self.rayleighStiffness.value,
+                                             lengthY=self.length_Y.value, lengthZ=self.length_Z.value)
         return cosseratCoordinateNode
 
     def addCosseratFrame(self, framesF, curv_abs_inputS, curv_abs_outputF):

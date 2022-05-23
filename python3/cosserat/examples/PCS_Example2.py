@@ -97,23 +97,15 @@ def createScene(rootNode):
     # solverNode.addObject('CGLinearSolver', tolerance=1.e-12, iterations=1000, threshold=1.e-18)
 
     needCollisionModel = 0  # use this if the collision model if the beam will interact with another object
-    nonLinearCosserat = solverNode.addChild(
-        nonCosserat(parent=solverNode, cosseratGeometry=nonLinearConfig, useCollisionModel=needCollisionModel,
-                    name="cosserat", radius=Rb, youngModulus=YM, legendreControlPoints=initialStrain,
-                    order=LegendrePolyOrder, inertialParams=inertialParams))
-    cosseratNode = nonLinearCosserat.legendreControlPointsNode
-    cosseratNode.addObject('MechanicalMatrixMapper', template='Vec3,Vec3',
-                           object1=cosseratNode.getLinkPath(),
-                           object2=cosseratNode.getLinkPath(),
-                           name='cosseratCoordinateNodeMapper',
-                           nodeToParse=nonLinearCosserat.cosseratCoordinateNode.getLinkPath())
+    PCS_Cosserat = solverNode.addChild(
+        Cosserat(parent=solverNode, cosseratGeometry=nonLinearConfig, useCollisionModel=needCollisionModel,
+                 inertialParams=inertialParams, name="cosserat", radius=Rb, youngModulus=YM))
 
-    beamFrame = nonLinearCosserat.cosseratFrame
+    beamFrame = PCS_Cosserat.cosseratFrame
 
-    constForce = beamFrame.addObject('ConstantForceField', name='constForce', showArrowSize=1.e-5,
+    constForce = beamFrame.addObject('ConstantForceField', name='constForce', showArrowSize=0.02,
                         indices=nonLinearConfig['nbFramesF'], force=F1)
 
-    nonLinearCosserat = solverNode.addObject(
-        ForceController(parent=solverNode, cosseratFrames=beamFrame.FramesMO, forceNode=constForce))
+    solverNode.addObject(ForceController(parent=solverNode, cosseratFrames=beamFrame.FramesMO, forceNode=constForce))
 
     return rootNode
