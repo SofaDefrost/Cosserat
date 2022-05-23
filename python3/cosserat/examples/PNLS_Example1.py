@@ -71,7 +71,7 @@ def createScene(rootNode):
                                                                      ['SofaEngine', 'SofaLoader', 'SofaSimpleFem',
                                                                       'SofaExporter']])
     rootNode.addObject('VisualStyle', displayFlags='showVisualModels showBehaviorModels hideCollisionModels '
-                                                   'hideBoundingCollisionModels hireForceFields '
+                                                   'hideBoundingCollisionModels hireForceFields showMechanicalMappings'
                                                    'hideInteractionForceFields hideWireframe')
     rootNode.findData('dt').value = deltaT
     # rootNode.findData('gravity').value = [0., -9.81, 0.]

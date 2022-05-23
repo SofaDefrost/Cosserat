@@ -74,6 +74,7 @@ class Cosserat(Sofa.Prefab):
         self.parent = kwargs.get('parent', None)
 
         if self.parent.hasObject("EulerImplicitSolver") is False:
+            print('The code does not have parent EulerImplicite')
             self.solverNode = self.addSolverNode()
         else:
             self.solverNode = self.parent
@@ -81,6 +82,7 @@ class Cosserat(Sofa.Prefab):
         self.rigidBaseNode = self.addRigidBaseNode()
         [positionS, curv_abs_inputS, longeurS, framesF, curv_abs_outputF, self.frames3D] = \
             BuildCosseratGeometry(self.cosseratGeometry)
+
         self.cosseratCoordinateNode = self.addCosseratCoordinate(positionS, longeurS)
         self.cosseratFrame = self.addCosseratFrame(framesF, curv_abs_inputS, curv_abs_outputF)
         # print(f'=== > {curv_abs_inputS}')
@@ -100,7 +102,7 @@ class Cosserat(Sofa.Prefab):
         return solverNode
 
     def addRigidBaseNode(self):
-        rigidBaseNode = self.addChild('rigidBase')
+        rigidBaseNode = self.solverNode.addChild('rigidBase')
 
         trans = [t for t in self.translation.value]
         rot = [r for r in self.rotation.value]
@@ -124,7 +126,7 @@ class Cosserat(Sofa.Prefab):
         return rigidBaseNode
 
     def addCosseratCoordinate(self, positionS, longeurS):
-        cosseratCoordinateNode = self.addChild('cosseratCoordinate')
+        cosseratCoordinateNode = self.solverNode.addChild('cosseratCoordinate')
         cosseratCoordinateNode.addObject('MechanicalObject',
                                          template='Vec3d', name='cosseratCoordinateMO',
                                          position=positionS,
@@ -146,6 +148,7 @@ class Cosserat(Sofa.Prefab):
                                                      showObject=int(self.showObject.value), showObjectScale=0.1)
         if self.beamMass != 0.:
             cosseratInSofaFrameNode.addObject('UniformMass', totalMass=self.beamMass, showAxisSizeFactor='0')
+
         cosseratInSofaFrameNode.addObject('DiscreteCosseratMapping', curv_abs_input=curv_abs_inputS,
                                           curv_abs_output=curv_abs_outputF, name='cosseratMapping',
                                           input1=self.cosseratCoordinateNode.cosseratCoordinateMO.getLinkPath(),
