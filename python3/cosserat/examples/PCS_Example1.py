@@ -16,25 +16,28 @@ from cosserat.usefulFunctions import buildEdges, pluginList, BuildCosseratGeomet
 from math import sqrt
 
 # @todo ================ Unit: N, m, Kg, Pa  ================
-from splib3.numerics import Quat
-
-LegendrePolyOrder = 5
-# initialStrain = [[0., 0., 0], [0., 0., 0], [0., 0., 0]]
+LegendrePolyOrder = 5  # P_{k_2}=P_{k_3}
 initialStrain = [[0., 0., 0], [0., 0., 0], [0., 0., 0], [0., 0., 0], [0., 0., 0]]
 
-YM = 4.015e8
-rayleighStiffness = 0.2  # Nope
-forceCoeff = 100
-F1 = [0., forceCoeff, 0., 0., 0., 0.]  # Nope
-Rb = 0.57/2.  # @todo ==> 0.57/2. # beam radius in m
-length = 100.  # @todo ==>  100 # in m
-nbSection = 30  # P_{k_2}=P_{k_3}
-nbFrames = 60
+YM = 1.0e8
+PR = 0.
+rayleighStiffness = 1.e-3  # Nope
 firstOrder = 1
 
-inertialParams = {'GI': 3.5e7, 'GA': 1.61e8, 'EI': 3.5e7, 'EA': 1.61e8, 'L': length,  'Rb': Rb}
+EI = 1.e2
+coeff = 0
+
+F1 = [0., 0., 0., 0., (coeff*1.)/sqrt(2), (coeff*1.)/sqrt(2)]  # N
+
+### Inertia parameter
+Rb = 0.02/2.  # beam radius in m
+length = 1.  # in m
+nbSection = 5  #
+deltaT = 0.02  # s
+
+inertialParams = {'GI': 1.5708, 'GA': 3.1416e4, 'EI': 0.7854, 'EA': 3.1416e4, 'L': length,  'Rb': Rb}
 nonLinearConfig = {'init_pos': [0., 0., 0.], 'tot_length': length, 'nbSectionS': nbSection,
-                   'nbFramesF': nbFrames, 'buildCollisionModel': 0, 'beamMass': 0.}
+                   'nbFramesF': 30, 'buildCollisionModel': 0, 'beamMass': 0.}
 
 
 class ForceController(Sofa.Core.Controller):
@@ -44,31 +47,24 @@ class ForceController(Sofa.Core.Controller):
         self.forceNode = kwargs['forceNode']
         self.size = nonLinearConfig['nbFramesF']
         self.applyForce = True
-        self.forceCoeff = forceCoeff
+        self.forceCoeff = coeff
         # self.cosseratGeometry = kwargs['cosseratGeometry']
 
     def onAnimateEndEvent(self, event):
         if self.applyForce:
-            position = self.frames.position[self.size]  # get the last rigid of the cosserat frame
-            orientation = Quat(position[3], position[4], position[5], position[6])  # get the orientation
-            # Get the force direction in order to remain orthogonal to the last section of beam
             with self.forceNode.force.writeable() as force:
-                vec = orientation.rotate([0., self.forceCoeff, 0.])
-                # print(f' The new vec is : {vec}')
-                for count in range(3):
-                    force[count] = vec[count]
-            if self.forceCoeff < 13.1e4:
-                self.forceCoeff += 100
-            else:
-                print(f' The new force coeff is : {self.forceCoeff}')
+                vec = [0., 0., 0., 0., (self.forceCoeff * 1.) / sqrt(2), (self.forceCoeff * 1.) / sqrt(2)]
+                for i, v in enumerate(vec):
+                    force[i] = v
+                # print(f' The new force: {force}')
 
     def onKeypressedEvent(self, event):
         key = event['key']
         if key == "+":
-            self.forceCoeff += 10
+            self.forceCoeff += 1
             print(f' The new force coeff is : {self.forceCoeff}')
         elif key == "-":
-            self.forceCoeff -= 0.2
+            self.forceCoeff -= 1
             print(f' The new force coeff is : {self.forceCoeff}')
 
 
@@ -79,7 +75,7 @@ def createScene(rootNode):
     rootNode.addObject('VisualStyle', displayFlags='showVisualModels showBehaviorModels hideCollisionModels '
                                                    'hideBoundingCollisionModels hireForceFields '
                                                    'hideInteractionForceFields hideWireframe showMechanicalMappings')
-    rootNode.findData('dt').value = 0.02
+    rootNode.findData('dt').value = deltaT
     # rootNode.findData('gravity').value = [0., -9.81, 0.]
     rootNode.findData('gravity').value = [0., 0., 0.]
     # rootNode.addObject('BackgroundSetting', color='0 0.168627 0.211765')
@@ -88,32 +84,28 @@ def createScene(rootNode):
     rootNode.addObject('Camera', position="-35 0 280", lookAt="0 0 0")
 
     solverNode = rootNode.addChild('solverNode')
-    # solverNode.addObject('EulerImplicitSolver', rayleighStiffness="0.", rayleighMass='0.')
-    solverNode.addObject('EulerImplicitSolver', rayleighStiffness=0, rayleighMass='0.',
+    solverNode.addObject('EulerImplicitSolver', rayleighStiffness=rayleighStiffness, rayleighMass='0.',
                          firstOrder=firstOrder)
     solverNode.addObject('SparseLDLSolver', name='solver', template="CompressedRowSparseMatrixd")
-    # solverNode.addObject('EigenSimplicialLDLT', name='solver', template="CompressedRowSparseMatrixMat3x3d" )
-
+    # solverNode.addObject('SparseLUSolver', name='solver', template="CompressedRowSparseMatrixd")
     # solverNode.addObject('CGLinearSolver', tolerance=1.e-12, iterations=1000, threshold=1.e-18)
 
     needCollisionModel = 0  # use this if the collision model if the beam will interact with another object
-    nonLinearCosserat = solverNode.addChild(
-        nonCosserat(parent=solverNode, cosseratGeometry=nonLinearConfig, useCollisionModel=needCollisionModel,
-                    name="cosserat", radius=Rb, youngModulus=YM, legendreControlPoints=initialStrain,
-                    order=LegendrePolyOrder, inertialParams=inertialParams))
-    cosseratNode = nonLinearCosserat.legendreControlPointsNode
-    cosseratNode.addObject('MechanicalMatrixMapper', template='Vec3,Vec3',
-                           object1=cosseratNode.getLinkPath(),
-                           object2=cosseratNode.getLinkPath(),
-                           name='cosseratCoordinateNodeMapper',
-                           nodeToParse=nonLinearCosserat.cosseratCoordinateNode.getLinkPath())
+    PCS_Cosserat = solverNode.addChild(
+        Cosserat(parent=solverNode, cosseratGeometry=nonLinearConfig, inertialParams=inertialParams,
+                 inertialParams = inertialParams, useCollisionModel=needCollisionModel, name="cosserat", radius=Rb,
+                 youngModulus=YM, poissonRatio=PR, rayleighStiffness=rayleighStiffness))
+    # cosseratNode = nonLinearCosserat.legendreControlPointsNode
+    # cosseratNode.addObject('MechanicalMatrixMapper', template='Vec3,Vec3',
+    #                        object1=cosseratNode.getLinkPath(),
+    #                        object2=cosseratNode.getLinkPath(),
+    #                        name='cosseratCoordinateNodeMapper',
+    #                        nodeToParse=nonLinearCosserat.cosseratCoordinateNode.getLinkPath())
 
-    beamFrame = nonLinearCosserat.cosseratFrame
+    beamFrame = PCS_Cosserat.cosseratFrame
+    constForce = beamFrame.addObject('ConstantForceField', name='constForce', showArrowSize=1.e-8,
+                                     indices=nonLinearConfig['nbFramesF'], force=F1)
 
-    constForce = beamFrame.addObject('ConstantForceField', name='constForce', showArrowSize=1.e-5,
-                        indices=nonLinearConfig['nbFramesF'], force=F1)
-
-    nonLinearCosserat = solverNode.addObject(
-        ForceController(parent=solverNode, cosseratFrames=beamFrame.FramesMO, forceNode=constForce))
+    solverNode.addObject(ForceController(parent=solverNode, cosseratFrames=beamFrame.FramesMO, forceNode=constForce))
 
     return rootNode
