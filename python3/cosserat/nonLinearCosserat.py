@@ -79,6 +79,7 @@ class NonLinearCosserat(Sofa.Prefab):
         self.polynomOrder = kwargs['order']
         self.useInertiaParams = False
         self.totalLength = self.cosseratGeometry['tot_length']
+        self.activatedMMM = kwargs['activatedMMM']
         if self.parent.hasObject("EulerImplicitSolver") is False:
             self.solverNode = self.addSolverNode()
         else:
@@ -126,7 +127,7 @@ class NonLinearCosserat(Sofa.Prefab):
         # to a control object in order to be able to drive it.
         if int(self.attachingToLink.value):
             rigidBaseNode.addObject('RestShapeSpringsForceField', name='spring',
-                                    stiffness=1e8, angularStiffness=1.e8, external_points=0,
+                                    stiffness=1e14, angularStiffness=1.e14, external_points=0,
                                     mstate="@RigidBaseMO", points=0, template="Rigid3d")
         return rigidBaseNode
 
@@ -185,7 +186,7 @@ class NonLinearCosserat(Sofa.Prefab):
                                           input1=self.cosseratCoordinateNode.cosseratCoordinateMO.getLinkPath(),
                                           input2=self.rigidBaseNode.RigidBaseMO.getLinkPath(),
                                           output=framesMO.getLinkPath(), debug=0, radius=self.radius)
-        if self.beamMass != 0.:
+        if self.beamMass != 0. or self.activatedMMM == True:
             self.solverNode.addObject('MechanicalMatrixMapper', template='Vec3,Rigid3',
                                       object1=self.cosseratCoordinateNode.cosseratCoordinateMO.getLinkPath(),
                                       object2=self.rigidBaseNode.RigidBaseMO.getLinkPath(),

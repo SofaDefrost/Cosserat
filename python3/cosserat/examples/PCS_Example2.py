@@ -26,8 +26,8 @@ YM = 4.015e8
 rayleighStiffness = 0.2  # Nope
 forceCoeff = 100
 F1 = [0., forceCoeff, 0., 0., 0., 0.]  # Nope
-Rb = 0.57/2.  # @todo ==> 0.57/2. # beam radius in m
-length = 100.  # @todo ==>  100 # in m
+Rb = 0.57/2.  # @todo ==> beam radius in m
+length = 100.  # @todo ==>  beam length in m
 nbSection = 30  # P_{k_2}=P_{k_3}
 nbFrames = 60
 firstOrder = 1
