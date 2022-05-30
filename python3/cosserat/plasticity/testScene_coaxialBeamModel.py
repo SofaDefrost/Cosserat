@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Created on Thu Oct 5 2021
+Created on April 22 2022
 
 @author: ckrewcun
-Most of the code is duplicated from python3/cosserat/scenes/testScenes/testCosseratScene
 """
 
 import Sofa
@@ -65,13 +64,14 @@ class BendingController(Sofa.Core.Controller):
 # -------------------------------------#
 
 pluginNameList = 'SofaPython3 CosseratPlugin' \
-                 ' Sofa.Component.LinearSolver.Iterative' \
                  ' Sofa.Component.MechanicalLoad' \
                  ' Sofa.Component.ODESolver.Backward' \
                  ' Sofa.Component.SolidMechanics.Spring' \
                  ' Sofa.Component.StateContainer' \
-                 ' Sofa.Component.Visual'
-                 # ' Sofa.Component.LinearSolver.Direct' \
+                 ' Sofa.Component.Visual ' \
+                 ' Sofa.Component.Constraint.Projective ' \
+                 ' Sofa.Component.LinearSolver.Direct'
+                 # ' Sofa.Component.LinearSolver.Iterative'
 
 visualFlagList = 'showVisualModels showBehaviorModels showCollisionModels' \
                  ' hideBoundingCollisionModels hideForceFields' \
@@ -106,8 +106,11 @@ def createScene(rootNode):
 
     beamNode = rootNode.addChild('beamNode')
     beamNode.addObject('EulerImplicitSolver', rayleighStiffness="1.2", rayleighMass='1.1')
-    beamNode.addObject('CGLinearSolver', name="solver",
-                       iterations='100', tolerance='1e-5', threshold='1e-5')
+    # beamNode.addObject('CGLinearSolver', name="solver",
+    #                    iterations='100', tolerance='1e-5', threshold='1e-5')
+    beamNode.addObject('SparseLUSolver',
+                               template='CompressedRowSparseMatrixd',
+                               printLog="false")
 
     rigidBaseNode= beamNode.addChild('rigidBase')
     RigidBaseMO = rigidBaseNode.addObject('MechanicalObject', template='Rigid3d',
@@ -119,17 +122,13 @@ def createScene(rootNode):
     # ----- Rate of angular deformation ----- #
     # Define the length of each beam in a list, the positions of each beam
 
+
+
     beamStrainDoFs = []
     beamLengths = []
     sum = 0.
     beamCurvAbscissa = []
     beamCurvAbscissa.append(0.0)
-    for i in range(nbBeams):
-        beamStrainDoFs.append([0, 0, 0])
-        beamLengths.append(oneBeamLength)
-        sum += beamLengths[i]
-        beamCurvAbscissa.append(sum)
-    beamCurvAbscissa[nbBeams] = totalLength
 
     # EXPERIMENTAL: insertion navigation
     # Increasing the number of DoFs and the corresponding parameters.
@@ -144,8 +143,14 @@ def createScene(rootNode):
     for i in range(0, nbStockBeams):
         beamStrainDoFs.append([0, 0, 0])
         beamLengths.append(0)
-        beamLengths.append(0)
+        beamCurvAbscissa.append(0)
+
+    for i in range(nbBeams):
+        beamStrainDoFs.append([0, 0, 0])
+        beamLengths.append(oneBeamLength)
+        sum += beamLengths[i+nbStockBeams]
         beamCurvAbscissa.append(sum)
+    beamCurvAbscissa[nbBeams+nbStockBeams] = totalLength
 
     # Define angular rate which is the torsion(x) and bending (y, z) of each section
     rateAngularDeformNode = beamNode.addChild('rateAngularDeform')
@@ -181,15 +186,15 @@ def createScene(rootNode):
     bendingForces = np.array([0, beamBendingMoment, beamBendingMoment])
     # momentIndices = range(1, nbBeams)
     momentIndices = [nbBeams-1]
-    rateAngularDeformNode.addObject('ConstantForceField', name='Moment',
-                                    indices=momentIndices,
-                                    forces=bendingForces)
+    # rateAngularDeformNode.addObject('ConstantForceField', name='Moment',
+    #                                 indices=momentIndices,
+    #                                 forces=bendingForces)
 
     # EXPERIMENTAL: navigation simulation
     # Adding constraints on the additional beams which are not meant to be
     # simulated yieldStress
-    fixedIndices = range(nbBeams, nbBeams+nbStockBeams)
-    print(fixedIndices)
+    # fixedIndices = list(range(nbBeams, nbBeams+nbStockBeams))
+    fixedIndices = list(range(0, nbStockBeams))
     rateAngularDeformNode.addObject('FixedConstraint', name='FixedConstraint',
                                     indices=fixedIndices)
 
@@ -226,6 +231,10 @@ def createScene(rootNode):
                               curv_abs_output=framesCurvAbscissa, input1=inputMO, input2=inputMO_rigid,
                               output=outputMO, forcefield='@../../rateAngularDeform/beamForceField',
                               nonColored=False, debug=0)
+
+    mappedFrameNode.addObject('ConstantForceField', name='Moment',
+                              indices=nbFrames-4,
+                              forces=np.array([0, 0, 0, 0, 0, 8e4]))
 
     # ----- Python controller ----- #
 
