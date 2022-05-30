@@ -95,7 +95,8 @@ def createScene(rootNode):
         nonCosserat(parent=solverNode, cosseratGeometry=nonLinearConfig, inertialParams=inertialParams,
                     useCollisionModel=needCollisionModel, name="cosserat", radius=Rb, youngModulus=YM,
                     legendreControlPoints=initialStrain, poissonRatio=PR,order=LegendrePolyOrder,
-                    rayleighStiffness=rayleighStiffness))
+                    rayleighStiffness=rayleighStiffness,
+                    activatedMMM=False))
     cosseratNode = nonLinearCosserat.legendreControlPointsNode
     cosseratNode.addObject('MechanicalMatrixMapper', template='Vec3,Vec3',
                            object1=cosseratNode.getLinkPath(),
