@@ -255,6 +255,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>:: applyJ(
     auto sz = curv_abs_frames.size();
     outVel.resize(sz);
     for (unsigned int i = 0 ; i < sz; i++) {
+        // Get inverse in order to compute Ad^{-1}_{g_n(X)}
         Transform Trans = m_framesExponentialSE3Vectors[i].inversed();
         Mat6x6 Adjoint; Adjoint.clear();
         this->computeAdjoint(Trans, Adjoint);

@@ -205,6 +205,7 @@ void DiscreteDynamicCosseratMapping<TIn1, TIn2, TOut>:: applyJ(
 
 	//Compute velocity at nodes
 	for (size_t i = 1 ; i < curv_abs_input.size(); i++) {
+                // Get inverse in order to compute Ad^{-1}_{g_n(X)}
 		Transform t= m_nodesExponentialSE3Vectors[i].inversed();
 		Mat6x6 Adjoint; Adjoint.clear();
 		this->computeAdjoint(t,Adjoint);
@@ -226,11 +227,12 @@ void DiscreteDynamicCosseratMapping<TIn1, TIn2, TOut>:: applyJ(
 		Mat6x6 Adjoint; Adjoint.clear();
 		this->computeAdjoint(t,Adjoint);
 
-        type::Vec6 Xi_dot = Vec6(in1[m_indicesVectors[i]-1],Vector3(0.0,0.0,0.0)) ;
+                type::Vec6 Xi_dot = Vec6(in1[m_indicesVectors[i]-1],Vector3(0.0,0.0,0.0)) ;
 		Vec6 etaFrame = Adjoint * (m_nodesVelocityVectors[m_indicesVectors[i]-1] + m_framesTangExpVectors[i] * Xi_dot ); // eta
 
 		//Compute here jacobien and jacobien_dot
-        type::vector<Mat6x3> J_i, J_dot_i;
+                //this is needed for the computation of the acceleration vector
+                type::vector<Mat6x3> J_i, J_dot_i;
 		computeJ_Jdot_i(Adjoint, i, J_i, etaFrame, J_dot_i);
 		m_frameJacobienVector.push_back(J_i);
 		m_frameJacobienVector.push_back(J_dot_i);
