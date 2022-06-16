@@ -162,11 +162,23 @@ void BeamPlasticLawForceField<DataTypes>::reinit()
     m_sectionMechanicalStates.clear();
     m_sectionMechanicalStates.resize(nbSections, MechanicalState::ELASTIC);
 
+    // Initialisaiton of the tangent stiffness matrices with the elastic stiffness matrices
+    m_Kt_sectionList.clear();
+    if (!this->d_variantSections.getValue())
+    {
+        m_Kt_sectionList.resize(nbSections, this->m_K_section);
+    }
+    else
+    {
+        for (unsigned int i = 0; i < nbSections; i++)
+            m_Kt_sectionList.push_back(this->m_K_sectionList[i]);
+    }
+
     // Computation of the generalised Hooke's law
     // As we are working with only 3 components of the strain tensor,
     // the generalised Hooke's law is reduced to a 3x3 diagonal matrix
     // (instead of a 4th order tensor represented as a 9x9 matrix)
-    if (!this->d_varianteSections.getValue()) {
+    if (!this->d_variantSections.getValue()) {
 
         Real E = this->d_youngModulus.getValue();
         Real nu = this->d_poissonRatio.getValue();
@@ -266,7 +278,7 @@ void BeamPlasticLawForceField<DataTypes>::computeStressIncrement(unsigned int se
     const MechanicalState mechanicalState = m_sectionMechanicalStates[sectionId];
 
     Vec3 elasticIncrement = Vec3();
-    if (!this->d_varianteSections.getValue())
+    if (!this->d_variantSections.getValue())
         elasticIncrement = m_genHookesLaw * strainIncrement;
     else
         elasticIncrement = m_genHookesLawList[sectionId] * strainIncrement;
@@ -307,7 +319,7 @@ void BeamPlasticLawForceField<DataTypes>::computeStressIncrement(unsigned int se
         const Real beta = d_mixedHardeningCoefficients.getValue()[sectionId];
 
         Real E, nu = 0;
-        if (!this->d_varianteSections.getValue())
+        if (!this->d_variantSections.getValue())
         {
             E = this->d_youngModulus.getValue();
             nu = this->d_poissonRatio.getValue();
@@ -353,7 +365,11 @@ void BeamPlasticLawForceField<DataTypes>::updateTangentStiffness(unsigned int se
 
     // TO DO: better way to handle the two cases?
     Mat33 C = Mat33();
-    if (!this->d_varianteSections.getValue())
+    Real E, nu = 0;
+    if (!this->d_variantSections.getValue())
+    {
+        E = this->d_youngModulus.getValue();
+        nu = this->d_poissonRatio.getValue();
         C = m_genHookesLaw;
     else
         C = m_genHookesLawList[sectionId];

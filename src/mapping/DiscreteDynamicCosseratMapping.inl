@@ -208,14 +208,16 @@ void DiscreteDynamicCosseratMapping<TIn1, TIn2, TOut>:: applyJ(
 		Transform t= m_nodesExponentialSE3Vectors[i].inversed();
 		Mat6x6 Adjoint; Adjoint.clear();
 		this->computeAdjoint(t,Adjoint);
-		m_nodeAdjointVectors.push_back(Adjoint); //Add this line because need for the jacobian computation
+                //Add this line because need for the jacobian computation
+		m_nodeAdjointVectors.push_back(Adjoint);
 
-		//Compute velocity (eta) at node i != 0 eq.(13) paper
+        //Compute velocity (eta) at node i != 0 eq.(13) paper
         type::Vec6 Xi_dot = Vec6(in1[i-1],Vector3(0.0,0.0,0.0)) ;
-		Vec6 temp = Adjoint * (m_nodesVelocityVectors[i-1] + m_nodesTangExpVectors[i] * Xi_dot );
-		m_nodesVelocityVectors.push_back(temp);
-		if(debug)
-			std::cout<< "Node velocity : "<< i << " = " << temp<< std::endl;
+        Vec6 temp = Adjoint * (m_nodesVelocityVectors[i-1] +
+                               m_nodesTangExpVectors[i] * Xi_dot );
+        m_nodesVelocityVectors.push_back(temp);
+        if(debug)
+                std::cout<< "Node velocity : "<< i << " = " << temp<< std::endl;
 	}
 
 	const OutVecCoord& out = m_toModel->read(core::ConstVecCoordId::position())->getValue();
@@ -226,24 +228,26 @@ void DiscreteDynamicCosseratMapping<TIn1, TIn2, TOut>:: applyJ(
 		Mat6x6 Adjoint; Adjoint.clear();
 		this->computeAdjoint(t,Adjoint);
 
-        type::Vec6 Xi_dot = Vec6(in1[m_indicesVectors[i]-1],Vector3(0.0,0.0,0.0)) ;
-		Vec6 etaFrame = Adjoint * (m_nodesVelocityVectors[m_indicesVectors[i]-1] + m_framesTangExpVectors[i] * Xi_dot ); // eta
+        type::Vec6 Xi_dot = Vec6(in1[m_indicesVectors[i]-1],
+                                         Vector3(0.0,0.0,0.0)) ;
+        // eta
+        Vec6 etaFrame = Adjoint * (m_nodesVelocityVectors[m_indicesVectors[i]-1]
+                                   + m_framesTangExpVectors[i] * Xi_dot );
 
-		//Compute here jacobien and jacobien_dot
+        //Compute here jacobien and jacobien_dot
         type::vector<Mat6x3> J_i, J_dot_i;
-		computeJ_Jdot_i(Adjoint, i, J_i, etaFrame, J_dot_i);
-		m_frameJacobienVector.push_back(J_i);
-		m_frameJacobienVector.push_back(J_dot_i);
+        computeJ_Jdot_i(Adjoint, i, J_i, etaFrame, J_dot_i);
+        m_frameJacobienVector.push_back(J_i);
+        m_frameJacobienVector.push_back(J_dot_i);
 
-		//Convert from Federico node to Sofa node
-		Transform _T = Transform(out[i].getCenter(),out[i].getOrientation());
-		Mat6x6 _P = this->build_projector(_T);
-		//std::cout<< "Eta local : "<< eta << std::endl;
+        //Convert from Federico node to Sofa node
+        Transform _T = Transform(out[i].getCenter(),out[i].getOrientation());
+        Mat6x6 _P = this->build_projector(_T);
+        //std::cout<< "Eta local : "<< eta << std::endl;
 
-		outVel[i] = _P * etaFrame;
-
-		if(debug)
-			std::cout<< "Frame velocity : "<< i << " = " << etaFrame<< std::endl;
+        outVel[i] = _P * etaFrame;
+        if(debug)
+          std::cout<< "Frame velocity : "<< i << " = " << etaFrame<< std::endl;
 	}
 	//    std::cout << "Inside the apply J, outVel after computation  :  "<< outVel << std::endl;
 	dataVecOutVel[0]->endEdit();
