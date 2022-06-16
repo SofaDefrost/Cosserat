@@ -71,13 +71,17 @@ namespace sofa::component::forcefield
               d_innerRadius( initData( &d_innerRadius, 0.0, "innerRadius", "internal radius of the cross section (if circular)")),
               d_lengthY( initData( &d_lengthY, 1.0, "lengthY", "side length of the cross section along local y axis (if rectangular)")),
               d_lengthZ( initData( &d_lengthZ, 1.0, "lengthZ", "side length of the cross section along local z axis (if rectangular)")),
-              d_varianteSections( initData( &d_varianteSections, false, "varianteSections", "In case we have variant beam sections this has to be set to true")),
+              d_variantSections(initData(&d_variantSections, false, "variantSections", "In case we have variant beam sections this has to be set to true")),
               d_youngModulusList(initData(&d_youngModulusList, "youngModulusList", "The list of Young modulus in case we have sections with variable physical properties")),
-              d_poissonRatioList(initData(&d_poissonRatioList, "poissonRatioList", "The list of poisson's ratio in case we have sections with variable physical properties"))
+              d_poissonRatioList(initData(&d_poissonRatioList, "poissonRatioList", "The list of poisson's ratio in case we have sections with variable physical properties")),
+              d_useInertiaParams(initData(&d_useInertiaParams, false, "useInertiaParams", "If the inertia parameters are given by the user, there is no longer any need to use @d_youngModulus and @d_poissonRatio.")),
+              d_GI(initData(&d_GI, "GI", "The inertia parameter, GI")),
+              d_GA(initData(&d_GA, "GA", "The inertia parameter, GA")),
+              d_EA(initData(&d_EA, "EA", "The inertia parameter, EA")),
+              d_EI(initData(&d_EI, "EI", "The inertia parameter, EI"))
     {
         compute_df=true;
     }
-
 
     template<typename DataTypes>
     BeamHookeLawForceField<DataTypes>::~BeamHookeLawForceField()
@@ -121,23 +125,32 @@ namespace sofa::component::forcefield
         }
         m_crossSectionArea = A;
 
-        if(!d_varianteSections.getValue()){
+        if(!d_variantSections.getValue()){
+            if(!d_useInertiaParams.getValue()){
+                Real E= d_youngModulus.getValue();
+                Real G= E/(2.0*(1.0+d_poissonRatio.getValue()));
 
-            Real E= d_youngModulus.getValue();
-            Real G= E/(2.0*(1.0+d_poissonRatio.getValue()));
+                m_K_section[0][0] = G*J;
+                m_K_section[1][1] = E*Iy;
+                m_K_section[2][2] = E*Iz;
+            } else{
+                msg_info("BeamHookeLawForceField")<< "Pre-calculated inertia parameters are used for the computation "
+                                                     "of the stiffness matrix.";
+                m_K_section[0][0] = d_GI.getValue();
+                m_K_section[1][1] = d_EI.getValue();
+                m_K_section[2][2] = d_EI.getValue();
+            }
 
-            m_K_section[0][0] = G*J;
-            m_K_section[1][1] = E*Iy;
-            m_K_section[2][2] = E*Iz;
         }else {
-            msg_info("BeamHookeLawForceField")<< "=====> Multi section";
+            msg_info("BeamHookeLawForceField")<< "Multi section beam are used for the simulation!";
             m_K_sectionList.clear();
             size_t szYM = d_youngModulusList.getValue().size();
             size_t szPR = d_poissonRatioList.getValue().size();
             size_t szL  = d_length.getValue().size();
 
             if((szL != szPR)||(szL != szYM)){
-                msg_error("BeamHookeLawForceField")<< "Please, lenght, youngModulusList and poissonRatioList should have the same size";
+                msg_error("BeamHookeLawForceField")<< "Please the size of the data length, youngModulusList and "
+                                                      "poissonRatioList should be the same !";
                 return;
             }
 
@@ -151,6 +164,9 @@ namespace sofa::component::forcefield
                 _m_K_section[2][2] = E*Iz;
                 m_K_sectionList.push_back(_m_K_section);
             }
+            msg_info("BeamHookeLawForceField")<< "If you plan to use a multi section beam with (different "
+                                                 "mechanical properties) and pre-calculated inertia parameters "
+                                                 "(GI, GA, etc.), this is not yet supported.";
         }
     }
 
@@ -181,7 +197,7 @@ namespace sofa::component::forcefield
             return;
         }
 
-        if(!d_varianteSections.getValue())
+        if(!d_variantSections.getValue())
             for (unsigned int i=0; i<x.size(); i++)
                 f[i] -= (m_K_section * (x[i] - x0[i])) * d_length.getValue()[i];
         else
@@ -204,7 +220,7 @@ namespace sofa::component::forcefield
         Real kFactor = (Real)mparams->kFactorIncludingRayleighDamping(this->rayleighStiffness.getValue());
 
         df.resize(dx.size());
-        if(!d_varianteSections.getValue())
+        if(!d_variantSections.getValue())
             for (unsigned int i=0; i<dx.size(); i++)
                 df[i] -= (m_K_section * dx[i])*kFactor* d_length.getValue()[i];
         else
@@ -244,7 +260,7 @@ namespace sofa::component::forcefield
 
         for (unsigned int n=0; n<nbBeams; n++)
         {
-            if(!d_varianteSections.getValue())
+            if(!d_variantSections.getValue())
                 for(unsigned int i = 0; i < 3; i++)
                     for (unsigned int j = 0; j< 3; j++)
                         mat->add(offset + i + 3*n, offset + j + 3*n, -kFact * m_K_section[i][j]*d_length.getValue()[n]);
