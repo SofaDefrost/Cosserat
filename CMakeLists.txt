@@ -12,6 +12,7 @@ find_package(SofaRigid REQUIRED)
 find_package(SofaMiscMapping REQUIRED)
 find_package(SofaEngine REQUIRED)
 find_package(SofaSparseSolver REQUIRED)
+find_package(SofaBaseLinearSolver REQUIRED)
 
 sofa_find_package(Sofa.GL QUIET)
 sofa_find_package(SofaBaseTopology REQUIRED)
