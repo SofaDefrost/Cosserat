@@ -123,23 +123,26 @@ protected:
     /// Circular Cross Section
     Data<Real>          d_radius;
     Data<Real>          d_innerRadius;
-
     /// Rectangular Cross Section
     Data<Real>          d_lengthY;
     Data<Real>          d_lengthZ;
-
-    /// Cross-section area
-    Real m_crossSectionArea;
-
-    //In case we have a beam with different propertise per section
-    Data<bool>                      d_varianteSections; /// bool to identify different beams sections
+    //In case we have a beam with different properties per section
+    Data<bool>                  d_variantSections; /// bool to identify different beams sections
     Data<type::vector<Real>>    d_youngModulusList; /// youngModulus
     Data<type::vector<Real>>    d_poissonRatioList; /// poissonRatio
+    /// If the inertia parameters are given by the user, there is no longer any need to use YG.
+    Data<bool>  d_useInertiaParams;
+    Data<Real>  d_GI;
+    Data<Real>  d_GA;
+    Data<Real>  d_EA;
+    Data<Real>  d_EI;
 
     bool compute_df;
     Mat33 m_K_section;
     type::vector<Mat33> m_K_sectionList;
 
+    /// Cross-section area
+    Real m_crossSectionArea;
 
 private :
     
