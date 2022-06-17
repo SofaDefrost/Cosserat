@@ -139,10 +139,10 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::apply(
     out.resize(sz);
     const auto baseIndex = d_baseIndex.getValue();
 
-    // update the Exponential Matrices according to new deformation
+    // update the Exponential matrices according to new deformation
     // Here we update m_framesExponentialSE3Vectors & m_nodesExponentialSE3Vectors
     this->update_ExponentialSE3(in1);
-    /* Go from Cossserat to SOFA frame*/
+    /* from cossserat to SOFA frame*/
     Transform frame0 = Transform(In2::getCPos(in2[baseIndex]),In2::getCRot(in2[baseIndex]));
     for(unsigned int i=0; i<sz; i++){
         Transform frame = frame0;
@@ -155,7 +155,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::apply(
         type::Quat q = frame.getOrientation();
         out[i] = OutCoord(v,q);
     }
-    // @todo do this another place
+    // @todo
     m_index_input = 0;
     dataVecOutPos[0]->endEdit();
 }
@@ -355,7 +355,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>:: applyJT(
         temp.transpose();
         Vector3 f = matB_trans * temp * node_F_Vec;
 
-        if(index != m_indicesVectors[s]){ // TODO to be replaced by while
+        if(index != m_indicesVectors[s]){
             index--;
             //bring F_tot to the reference of the new beam
             this->compute_coAdjoint(m_nodesExponentialSE3Vectors[index],coAdjoint);  //m_nodesExponentialSE3Vectors computed in apply
