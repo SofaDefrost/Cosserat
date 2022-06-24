@@ -193,5 +193,4 @@ protected:
 extern template class SOFA_COSSERATPLUGIN_API DiscreteCosseratMapping< sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types >;
 #endif
 
-} // namespace sofa::componenet::mapping
- //SOFA_COSSERATPLUGIN_CPP_POEMAPING_H
+} // namespace sofa::component::mapping
