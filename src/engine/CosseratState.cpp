@@ -23,35 +23,48 @@
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
 
-#pragma once
-#include "PhysicalState.inl"
+#define SOFA_COMPONENT_CONTAINER_TEMPERATURESTATE_CPP
+#include "TemperatureState.inl"
 #include <sofa/core/ObjectFactory.h>
 #include <SofaBaseMechanics/MechanicalObject.h>
 
-namespace sofa::component::container
+namespace sofa
+{
+
+namespace component
+{
+
+namespace container
 {
 
 using namespace core::behavior;
 using namespace defaulttype;
 
-SOFA_DECL_CLASS(PhysicalState)
+SOFA_DECL_CLASS(TemperatureState)
 
-int PhysicalStateClass = core::RegisterObject("Cosserat state vectors: torsion, bending on Y, bensing on z !")
-.add< PhysicalState<Vec3Types> >(true) // default template
-.add< PhysicalState<Vec2Types> >()
-.add< PhysicalState<Vec1Types> >()
-.add< PhysicalState<Vec6Types> >()
-.add< PhysicalState<Rigid3Types> >()
-.add< PhysicalState<Rigid2Types> >()
+int TemperatureStateClass = core::RegisterObject("electrical state vectors")
+.add< TemperatureState<Vec3Types> >(true) // default template
+.add< TemperatureState<Vec2Types> >()
+.add< TemperatureState<Vec1Types> >()
+.add< TemperatureState<Vec6Types> >()
+.add< TemperatureState<Rigid3Types> >()
+.add< TemperatureState<Rigid2Types> >()
+
 ;
 
 // template specialization must be in the same namespace as original namespace for GCC 4.1
 // g++ 4.1 requires template instantiations to be declared on a parent namespace from the template class.
-template class PhysicalState<Vec3Types>;
-template class PhysicalState<Vec2Types>;
-template class PhysicalState<Vec1Types>;
-template class PhysicalState<Vec6Types>;
-template class PhysicalState<Rigid3Types>;
-template class PhysicalState<Rigid2Types>;
+template class TemperatureState<Vec3Types>;
+template class TemperatureState<Vec2Types>;
+template class TemperatureState<Vec1Types>;
+template class TemperatureState<Vec6Types>;
+template class TemperatureState<Rigid3Types>;
+template class TemperatureState<Rigid2Types>;
 
-} // namespace sofa::component::container
+
+
+}
+
+} // namespace component
+
+} // namespace sofa

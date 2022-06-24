@@ -22,38 +22,49 @@
 *                                                                             *
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
-#pragma once
+#ifndef SOFA_COMPONENT_CONTAINER_TEMPERATURESTATE_H
+#define SOFA_COMPONENT_CONTAINER_TEMPERATURESTATE_H
 
-#include <sofa/component/statecontainer/MechanicalObject.h>
+#include <SofaBaseMechanics/MechanicalObject.h>
 #include <sofa/core/behavior/MechanicalState.h>
+#include <sofa/helper/vector.h>
 
-namespace sofa::component::container
+namespace sofa
+{
+
+namespace component
+{
+
+namespace container
 {
 
 using namespace core::behavior;
 using namespace core::objectmodel;
 using namespace sofa::defaulttype;
 using namespace sofa::core::topology;
+using sofa::defaulttype::Vector3;
+
 template <class DataTypes>
-class PhysicalState : public sofa::component::statecontainer::MechanicalObject<DataTypes>
+class TemperatureState : public sofa::component::container::MechanicalObject<DataTypes>
 {
 public:
-    SOFA_CLASS(SOFA_TEMPLATE(PhysicalState, DataTypes),SOFA_TEMPLATE(statecontainer::MechanicalObject, DataTypes));
+    SOFA_CLASS(SOFA_TEMPLATE(TemperatureState, DataTypes),SOFA_TEMPLATE(sofa::core::behavior::MechanicalState, DataTypes));
 
-    typedef statecontainer::MechanicalObject<DataTypes>      Inherited;
+    typedef sofa::core::behavior::MechanicalState<DataTypes>      Inherited;
     typedef typename DataTypes::VecCoord VecCoord;
     typedef typename DataTypes::VecDeriv VecDeriv;
     typedef typename DataTypes::Coord    Coord   ;
     typedef typename DataTypes::Deriv    Deriv   ;
     typedef typename Coord::value_type   Real    ;
 
-    ///@todo assumes the mechanical object type (3D)
-    typedef StdVectorTypes< type::Vec3 , type::Vec6, Real >     CosseratTypes ;
+    /// assumes the mechanical object type (3D)
+    typedef Vec<3,Real>                            Vec3;
+    typedef StdVectorTypes< Vec3, Vec3, Real >     MechanicalTypes ;
 
 
-    PhysicalState();
+    TemperatureState();
 
-    ///@todo, just a test function, to compute the BoundingBox
+    /// Function to compute the BoundingBox
     void computeBBox(const core::ExecParams* params);
 
     /// Boolean to activate the computation of BoundingBox
@@ -61,4 +72,12 @@ public:
 
 };
 
-} // namespace sofa::component::container
+
+
+} // namespace container
+
+} // namespace component
+
+} // namespace sofa
+
+#endif //SOFA_COMPONENT_CONTAINER_TEMPERATURESTATE_H

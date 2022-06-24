@@ -22,27 +22,34 @@
 *                                                                             *
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
+#ifndef SOFA_COMPONENT_CONTAINER_TEMPERATURESTATE_INL
+#define SOFA_COMPONENT_CONTAINER_TEMPERATURESTATE_INL
 
-#pragma once
-#include "PhysicalState.h"
+#include "TemperatureState.h"
 
-namespace sofa::component::container
+
+namespace sofa
 {
 
+namespace component
+{
+
+namespace container
+{
 using namespace std;
 using namespace sofa::core;
 using namespace sofa::core::topology;
 using namespace sofa::defaulttype;
 
 template <class DataTypes>
-PhysicalState<DataTypes>::PhysicalState()
+TemperatureState<DataTypes>::TemperatureState()
     : computeBoundingBox ( initData(&computeBoundingBox, (bool) true, "computeBoundingBox","Boolean to activate the computation of BoundingBox") )
 {
 }
 
 
 template <class DataTypes>
-void PhysicalState<DataTypes>::computeBBox(const core::ExecParams* params)
+void TemperatureState<DataTypes>::computeBBox(const core::ExecParams* params)
 {
     if ( computeBoundingBox.getValue())
     {
@@ -51,4 +58,12 @@ void PhysicalState<DataTypes>::computeBBox(const core::ExecParams* params)
     }
 }
 
-} // namespace sofa::component::container
+
+
+} // namespace container
+
+} // namespace component
+
+} // namespace sofa
+
+#endif //SOFA_COMPONENT_CONTAINER_TEMPERATURESTATE_INL
