@@ -19,14 +19,14 @@
 *                                                                             *
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
-#pragma once
+#pragma once  SOFA_COMPONENT_MAPPING_DYNAMIC_COSSERAT_DISCRET_H
 
 #include <sofa/core/BaseMapping.h>
 #include <sofa/core/Multi2Mapping.h>
 #include "../initCosserat.h"
+#include <sofa/defaulttype/SolidTypes.h>
 #include <sofa/defaulttype/RigidTypes.h>
 #include "BaseCosserat.h"
-#include <sofa/defaulttype/SolidTypes.h>
 
 
 
