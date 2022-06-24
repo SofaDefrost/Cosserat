@@ -82,9 +82,9 @@ public:
     void draw(const core::visual::VisualParams* vparams) override;
 
 };
+
 #if !defined(SOFA_COSSERATPLUGIN_CPP_LegendrePolynomialsMapping)
-    extern template class SOFA_SOFARIGID_API LegendrePolynomialsMapping< sofa::defaulttype::Vec3Types, sofa::defaulttype::Vec3Types >;
+extern template class SOFA_SOFARIGID_API LegendrePolynomialsMapping< sofa::defaulttype::Vec3Types, sofa::defaulttype::Vec3Types >;
 #endif
 
 }
-//#endif //SOFA_LEGENDREPOLYNOMIALSMAPPING_H
