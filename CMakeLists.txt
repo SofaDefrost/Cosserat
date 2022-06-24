@@ -61,6 +61,8 @@ set(HEADER_FILES
     src/constraint/CosseratSlidingConstraint.inl    
     src/mapping/LegendrePolynomialsMapping.h
     src/mapping/LegendrePolynomialsMapping.inl
+    src/engine/PhysicalState.h
+    src/engine/PhysicalState.inl
 
     )
 
@@ -77,6 +79,7 @@ set(SOURCE_FILES
     src/forcefield/CosseratInternalActuation.cpp
     src/constraint/CosseratSlidingConstraint.cpp
     src/mapping/LegendrePolynomialsMapping.cpp
+    src/engine/PhysicalState.cpp
     )
 
 
