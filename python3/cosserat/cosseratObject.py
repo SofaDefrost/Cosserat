@@ -11,6 +11,10 @@ __date__ = "October, 26 2021"
 
 # from dataclasses import dataclass
 import Sofa
+<<<<<<< Updated upstream
+=======
+from cosserat.usefulFunctions import buildEdges, pluginList, BuildCosseratGeometry
+>>>>>>> Stashed changes
 from splib3.numerics import Quat
 
 from cosserat.usefulFunctions import buildEdges, pluginList, BuildCosseratGeometry
@@ -107,7 +111,7 @@ class Cosserat(Sofa.Prefab):
         return solverNode
 
     def addRigidBaseNode(self):
-        rigidBaseNode = self.solverNode.addChild('rigidBase')
+        rigidBaseNode = self.addChild('rigidBase')
 
         trans = [t for t in self.translation.value]
         rot = [r for r in self.rotation.value]
@@ -118,6 +122,7 @@ class Cosserat(Sofa.Prefab):
             positions.append(_pos)
 
         rigidBaseNode.addObject('MechanicalObject', template='Rigid3d', name="RigidBaseMO",
+<<<<<<< Updated upstream
                                 showObjectScale=0.2, translation=trans, position=positions,
                                 rotation=rot, showObject=int(self.showObject.value))
 
@@ -129,10 +134,20 @@ class Cosserat(Sofa.Prefab):
                                     stiffness=1e8, angularStiffness=1.e8, external_points=0,
                                     mstate="@RigidBaseMO", points=0, template="Rigid3d")
 
+=======
+                                showObjectScale=0.2, translation=trans,
+                                position=positions, rotation=rot, showObject=0)
+        # one can choose to set this to false and directly attach the beam base
+        # to a control object in order to be able to drive it.
+        # if int(self.attachingToLink.value):
+        #     rigidBaseNode.addObject('RestShapeSpringsForceField', name='spring',
+        #                             stiffness=1e8, angularStiffness=1.e8, external_points=0,
+        #                             mstate="@RigidBaseMO", points=0, template="Rigid3d")
+>>>>>>> Stashed changes
         return rigidBaseNode
 
     def addCosseratCoordinate(self, positionS, longeurS):
-        cosseratCoordinateNode = self.solverNode.addChild('cosseratCoordinate')
+        cosseratCoordinateNode = self.addChild('cosseratCoordinate')
         cosseratCoordinateNode.addObject('MechanicalObject',
                                          template='Vec3d', name='cosseratCoordinateMO',
                                          position=positionS,
@@ -167,20 +182,33 @@ class Cosserat(Sofa.Prefab):
         self.cosseratCoordinateNode.addChild(cosseratInSofaFrameNode)
         framesMO = cosseratInSofaFrameNode.addObject('MechanicalObject', template='Rigid3d',
                                                      name="FramesMO", position=framesF,
+<<<<<<< Updated upstream
                                                      showObject=int(self.showObject.value), showObjectScale=0.1)
         if self.beamMass != 0.:
             cosseratInSofaFrameNode.addObject('UniformMass', totalMass=self.beamMass, showAxisSizeFactor='0')
 
+=======
+                                                     showObject=0, showObjectScale=0.1)
+        cosseratInSofaFrameNode.addObject('UniformMass', totalMass=self.beamMass, showAxisSizeFactor='0')
+>>>>>>> Stashed changes
         cosseratInSofaFrameNode.addObject('DiscreteCosseratMapping', curv_abs_input=curv_abs_inputS,
                                           curv_abs_output=curv_abs_outputF, name='cosseratMapping',
                                           input1=self.cosseratCoordinateNode.cosseratCoordinateMO.getLinkPath(),
                                           input2=self.rigidBaseNode.RigidBaseMO.getLinkPath(),
                                           output=framesMO.getLinkPath(), debug=0, radius=0)
+<<<<<<< Updated upstream
         if self.beamMass != 0.:
             self.solverNode.addObject('MechanicalMatrixMapper', template='Vec3,Rigid3',
                                       object1=self.cosseratCoordinateNode.cosseratCoordinateMO.getLinkPath(),
                                       object2=self.rigidBaseNode.RigidBaseMO.getLinkPath(),
                                       nodeToParse=cosseratInSofaFrameNode.getLinkPath())
+=======
+
+        self.addObject('MechanicalMatrixMapper', template='Vec3,Rigid3',
+                       object1=self.cosseratCoordinateNode.cosseratCoordinateMO.getLinkPath(),
+                       object2=self.rigidBaseNode.RigidBaseMO.getLinkPath(),
+                       nodeToParse=cosseratInSofaFrameNode.getLinkPath())
+>>>>>>> Stashed changes
         return cosseratInSofaFrameNode
 
 
