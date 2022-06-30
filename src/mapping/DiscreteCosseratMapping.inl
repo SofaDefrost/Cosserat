@@ -55,7 +55,7 @@ DiscreteCosseratMapping<TIn1, TIn2, TOut>::DiscreteCosseratMapping()
                                  "the maximum of the deformation.\n"))
     , d_min(initData(&d_min, (Real2)0.0, "min",
                                  "the minimum of the deformation.\n"))
-    , d_radius(initData(&d_radius, (Real2)0.005, "radius",
+    , d_radius(initData(&d_radius, (Real2)0.05, "radius",
                                  "the axis in which we want to show the deformation.\n"))
     , d_drawMapBeam(initData(&d_drawMapBeam, true,"nonColored", "if this parameter is false, you draw the beam with "
                                                                 "color according to the force apply to each beam"))

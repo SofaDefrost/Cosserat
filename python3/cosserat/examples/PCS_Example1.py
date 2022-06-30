@@ -92,9 +92,9 @@ def createScene(rootNode):
 
     needCollisionModel = 0  # use this if the collision model if the beam will interact with another object
     PCS_Cosserat = solverNode.addChild(
-        Cosserat(parent=solverNode, cosseratGeometry=nonLinearConfig, inertialParams=inertialParams,
-                 useCollisionModel=needCollisionModel, name="cosserat", radius=Rb,
-                 youngModulus=YM, poissonRatio=PR, rayleighStiffness=rayleighStiffness))
+        Cosserat(parent=solverNode, cosseratGeometry=nonLinearConfig, inertialParams=inertialParams, radius=Rb,
+                 useCollisionModel=needCollisionModel, name="cosserat", youngModulus=YM, poissonRatio=PR,
+                 rayleighStiffness=rayleighStiffness))
     # cosseratNode = nonLinearCosserat.legendreControlPointsNode
     # cosseratNode.addObject('MechanicalMatrixMapper', template='Vec3,Vec3',
     #                        object1=cosseratNode.getLinkPath(),
