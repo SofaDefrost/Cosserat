@@ -201,7 +201,7 @@ def createScene(rootNode):
     solverNode.addObject('GenericConstraintCorrection')
 
     cosserat = solverNode.addChild(
-        Cosserat(parent=solverNode, cosseratGeometry=cosserat_config, name="cosserat", radius=0.2))
+        Cosserat(parent=solverNode, cosseratGeometry=cosserat_config, name="cosserat", radius=0.15))
 
     # PCS_Cosserat = solverNode.addChild(
     #     Cosserat(parent=solverNode, cosseratGeometry=nonLinearConfig, inertialParams=inertialParams, radius=Rb,

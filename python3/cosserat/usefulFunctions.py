@@ -34,7 +34,9 @@ pluginNameList = 'SofaConstraint SofaDeformable SofaImplicitOdeSolver SofaMeshCo
                  ' CosseratPlugin SofaBoundaryCondition SofaGeneralAnimationLoop SofaRigid'  # BeamAdapter
 pluginList = ['SofaConstraint', 'SofaDeformable', 'SofaImplicitOdeSolver', 'SofaMeshCollision', 'SofaPreconditioner',
               'SofaGeneralTopology', 'SofaOpenglVisual', 'SofaGeneralRigid', 'SoftRobots', 'SofaSparseSolver',
-              'CosseratPlugin', 'SofaBoundaryCondition', 'SofaGeneralAnimationLoop', 'SofaRigid']
+              'CosseratPlugin', 'SofaBoundaryCondition', 'SofaGeneralAnimationLoop', 'SofaRigid',
+              "Sofa.Component.LinearSolver.Direct", "Sofa.Component.MechanicalLoad", "Sofa.Component.ODESolver.Backward"
+              ,"Sofa.Component.SolidMechanics.Spring", "Sofa.Component.Visual"]
 
 PRig = 0.38  # poison ratio for the rigid part of the beam
 PSoft = 0.43  # poison ratio for the soft part of the beam
