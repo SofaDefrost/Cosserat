@@ -103,7 +103,7 @@ def createScene(rootNode):
 
     beamFrame = PCS_Cosserat.cosseratFrame
 
-    constForce = beamFrame.addObject('ConstantForceField', name='constForce', showArrowSize=0.02,
+    constForce = beamFrame.addObject('ConstantForceField', name='constForce', showArrowSize=0.0,
                         indices=nonLinearConfig['nbFramesF'], force=F1)
 
     solverNode.addObject(ForceController(parent=solverNode, cosseratFrames=beamFrame.FramesMO, forceNode=constForce))

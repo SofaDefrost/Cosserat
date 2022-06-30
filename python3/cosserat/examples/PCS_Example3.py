@@ -11,7 +11,7 @@ __date__ = "Jan, 17 2022"
 
 import Sofa
 from cosserat.cosseratObject import Cosserat
-from cosserat.nonLinearCosserat import NonLinearCosserat as nonCosserat
+# from cosserat.nonLinearCosserat import NonLinearCosserat as nonCosserat
 from cosserat.usefulFunctions import buildEdges, pluginList, BuildCosseratGeometry
 from math import sqrt
 
@@ -20,7 +20,8 @@ from splib3.numerics import Quat
 
 LegendrePolyOrder = 5
 # initialStrain = [[0., 0., 0], [0., 0., 0], [0., 0., 0]]
-initialStrain = [[0., 0., 0], [0., 0., 0], [0., 0., 0], [0., 0., 0], [0., 0., 0]]
+initialStrain = [[0., 0., 0], [0., 0., 0],
+                 [0., 0., 0], [0., 0., 0], [0., 0., 0]]
 YM = 4.015e8
 rayleighStiffness = 0.2  # Nope
 forceCoeff = 0.05
@@ -45,8 +46,11 @@ class ForceController(Sofa.Core.Controller):
 
     def onAnimateEndEvent(self, event):
         if self.applyForce:
-            position = self.frames.position[self.size]  # get the last rigid of the cosserat frame
-            orientation = Quat(position[3], position[4], position[5], position[6])  # get the orientation
+            # get the last rigid of the cosserat frame
+            position = self.frames.position[self.size]
+            # get the orientation
+            orientation = Quat(
+                position[3], position[4], position[5], position[6])
             # Get the force direction in order to remain orthogonal to the last section of beam
             with self.forceNode.force.writeable() as force:
                 vec = orientation.rotate([0., self.forceCoeff, 0.])
@@ -80,17 +84,23 @@ def createScene(rootNode):
     rootNode.addObject('Camera', position="-35 0 280", lookAt="0 0 0")
 
     solverNode = rootNode.addChild('solverNode')
-    solverNode.addObject('EulerImplicitSolver', rayleighStiffness="0.2", rayleighMass='0.')
+    solverNode.addObject('EulerImplicitSolver',
+                         rayleighStiffness="0.2", rayleighMass='0.')
     # solverNode.addObject('SparseLDLSolver', name='solver', template="CompressedRowSparseMatrixd")
-    solverNode.addObject('EigenSimplicialLDLT', name='solver', template="CompressedRowSparseMatrixMat3x3d" )
+    solverNode.addObject('EigenSimplicialLDLT', name='solver',
+                         template="CompressedRowSparseMatrixMat3x3d")
 
     # solverNode.addObject('CGLinearSolver', tolerance=1.e-12, iterations=1000, threshold=1.e-18)
 
-    needCollisionModel = 0  # use this if the collision model if the beam will interact with another object
-    nonLinearCosserat = solverNode.addChild(
-        nonCosserat(parent=solverNode, cosseratGeometry=nonLinearConfig, useCollisionModel=needCollisionModel,
-                    name="cosserat", radius=Rb, youngModulus=YM, legendreControlPoints=initialStrain,
-                    order=LegendrePolyOrder))
+    # use this if the collision model if the beam will interact with another object
+    needCollisionModel = 0
+    # PCS_Cosserat = solverNode.addChild(
+    #     Cosserat(parent=solverNode, cosseratGeometry=nonLinearConfig, useCollisionModel=needCollisionModel,
+    #              inertialParams=inertialParams, name="cosserat", radius=Rb, youngModulus=YM))
+    PCS_Cosserat = solverNode.addChild(
+        Cosserat(parent=solverNode, cosseratGeometry=nonLinearConfig, useCollisionModel=needCollisionModel,
+                 inertialParams=inertialParams, name="cosserat", radius=Rb, youngModulus=YM))
+
     cosseratNode = nonLinearCosserat.legendreControlPointsNode
     cosseratNode.addObject('MechanicalMatrixMapper', template='Vec3,Vec3',
                            object1=cosseratNode.getLinkPath(),
@@ -101,12 +111,10 @@ def createScene(rootNode):
     beamFrame = nonLinearCosserat.cosseratFrame
 
     constForce = beamFrame.addObject('ConstantForceField', name='constForce', showArrowSize=0.02,
-                        indices=nonLinearConfig['nbFramesF'], force=F1)
+                                     indices=nonLinearConfig['nbFramesF'], force=F1)
 
     nonLinearCosserat = solverNode.addObject(
         ForceController(parent=solverNode, cosseratFrames=beamFrame.FramesMO, forceNode=constForce))
-
-
 
     # # solverNode2 = rootNode.addChild('solverNode2')
     # # solverNode2.addObject('EulerImplicitSolver', rayleighStiffness="0.2", rayleighMass='0.1')
