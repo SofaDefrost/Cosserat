@@ -369,6 +369,7 @@ void BeamPlasticLawForceField<DataTypes>::updateTangentStiffness(unsigned int se
         E = this->d_youngModulus.getValue();
         nu = this->d_poissonRatio.getValue();
         C = m_genHookesLaw;
+    }
     else
         C = m_genHookesLawList[sectionId];
 
