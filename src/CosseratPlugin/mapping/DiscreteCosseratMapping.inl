@@ -56,7 +56,7 @@ DiscreteCosseratMapping<TIn1, TIn2, TOut>::DiscreteCosseratMapping()
                                  "the maximum of the deformation.\n"))
     , d_min(initData(&d_min, (Real2)0.0, "min",
                                  "the minimum of the deformation.\n"))
-    , d_radius(initData(&d_radius, (Real2)0.005, "radius",
+    , d_radius(initData(&d_radius, (Real2)0.05, "radius",
                                  "the axis in which we want to show the deformation.\n"))
     , d_drawMapBeam(initData(&d_drawMapBeam, true,"nonColored", "if this parameter is false, you draw the beam with "
                                                                 "color according to the force apply to each beam"))
@@ -557,6 +557,26 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJT(
     //"""END ARTICULATION SYSTEM MAPPING"""
     dataMatOut1Const[0]->endEdit();
     dataMatOut2Const[0]->endEdit();
+}
+
+template <class TIn1, class TIn2, class TOut>
+void DiscreteCosseratMapping<TIn1, TIn2, TOut>::computeBBox(const core::ExecParams*, bool)
+{
+//  const VecCoord& x = getVertices(); //m_vertices.getValue();
+  const OutVecCoord& x = m_toModel->read(core::ConstVecCoordId::position())->getValue();
+
+  SReal minBBox[3] = {std::numeric_limits<Real1>::max(),std::numeric_limits<Real1>::max(),std::numeric_limits<Real1>::max()};
+  SReal maxBBox[3] = {-std::numeric_limits<Real1>::max(),-std::numeric_limits<Real1>::max(),-std::numeric_limits<Real1>::max()};
+  for (std::size_t i = 0; i < x.size(); i++)
+  {
+    const OutCoord& p = x[i];
+    for (int c=0; c<3; c++)
+    {
+      if (p[c] > maxBBox[c]) maxBBox[c] = p[c];
+      if (p[c] < minBBox[c]) minBBox[c] = p[c];
+    }
+  }
+  this->f_bbox.setValue(sofa::type::TBoundingBox<SReal>(minBBox,maxBBox));
 }
 
 
