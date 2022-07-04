@@ -176,7 +176,7 @@ public:
             const core::ConstraintParams*  cparams , const type::vector< In1DataMatrixDeriv*>& dataMatOut1Const  ,
             const type::vector< In2DataMatrixDeriv*>&  dataMatOut2Const ,
             const type::vector<const OutDataMatrixDeriv*>&  dataMatInConst) override;
-
+    void computeBBox(const core::ExecParams* params, bool onlyVisible) override;
 protected:
     helper::ColorMap m_colorMap;
 
