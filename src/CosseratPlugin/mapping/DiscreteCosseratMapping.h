@@ -23,7 +23,6 @@
 #include <CosseratPlugin/config.h>
 
 #include <CosseratPlugin/mapping/BaseCosserat.h>
-#include <CosseratPlugin/forcefield/BeamPlasticLawForceField.h>
 #include <CosseratPlugin/forcefield/BeamHookeLawForceField.h>
 
 #include <sofa/core/BaseMapping.h>
@@ -35,7 +34,6 @@
 
 namespace sofa::component::mapping
 {
-    using sofa::component::forcefield::BeamPlasticLawForceField;
     using sofa::component::forcefield::BeamHookeLawForceField;
     using sofa::defaulttype::SolidTypes ;
     using sofa::core::objectmodel::BaseContext ;
@@ -76,7 +74,7 @@ public:
     typedef Data<In1VecCoord>               In1DataVecCoord;
     typedef Data<In1VecDeriv>               In1DataVecDeriv;
     typedef Data<In1MatrixDeriv>            In1DataMatrixDeriv;
-    
+
     typedef typename In2::Coord::value_type Real2;
     typedef typename In2::Coord             Coord2         ;
     typedef typename In2::Deriv             Deriv2         ;
@@ -119,8 +117,6 @@ public:
     typedef MultiLink<DiscreteCosseratMapping<In1,In2,Out>, sofa::core::State< In2 >, BaseLink::FLAG_STOREPATH|BaseLink::FLAG_STRONGLINK> LinkFromModels2;
     typedef MultiLink<DiscreteCosseratMapping<In1,In2,Out>, sofa::core::State< Out >, BaseLink::FLAG_STOREPATH|BaseLink::FLAG_STRONGLINK> LinkToModels;
 
-    typedef SingleLink<DiscreteCosseratMapping<In1,In2,Out>, BeamPlasticLawForceField<In1>, BaseLink::FLAG_STOREPATH|BaseLink::FLAG_STRONGLINK> LinkToPlasticForceField;
-
 
 
 protected:
@@ -145,11 +141,8 @@ protected:
     using BaseCosserat<TIn1, TIn2, TOut>::m_index_input;
     using BaseCosserat<TIn1, TIn2, TOut>::m_indicesVectorsDraw;
 
-    // Link with Cosserat force field, for visualisation purposes
-    LinkToPlasticForceField l_fromPlasticForceField;
-
 protected:
-    /// Constructor    
+    /// Constructor
     DiscreteCosseratMapping() ;
     /// Destructor
     ~DiscreteCosseratMapping()  override {}

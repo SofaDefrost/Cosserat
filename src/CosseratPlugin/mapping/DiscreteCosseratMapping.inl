@@ -67,7 +67,6 @@ DiscreteCosseratMapping<TIn1, TIn2, TOut>::DiscreteCosseratMapping()
                                                                         "base of Cosserat models, 0 by default this can"
                                                                         "take another value if the rigid base is given "
                                                                         "by another body."))
-    , l_fromPlasticForceField(initLink("forcefield","Path to the Cosserat force field component in scene"))
 {}
 
 
@@ -81,8 +80,6 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::init()
         return;
     }
 
-    if(!l_fromPlasticForceField)
-        msg_info() << "No Cosserat plastic force field found, no visual representation of such forcefield will be displayed.";
     m_fromModel1 = this->getFromModels1()[0]; // Cosserat deformations (torsion and bending), in local frame
     m_fromModel2 = this->getFromModels2()[0]; // Cosserat base, in global frame
     m_toModel = this->getToModels()[0];  // Cosserat rigid frames, in global frame
@@ -557,7 +554,6 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::draw(const core::visual::VisualP
 
     // draw cable
     typedef RGBAColor RGBAColor;
-    typedef typename BeamPlasticLawForceField<In1>::MechanicalState MechanicalState;
 
     const OutDataVecCoord* xfromData = m_toModel->read(core::ConstVecCoordId::position());
     const OutVecCoord xData = xfromData->getValue();
@@ -575,34 +571,9 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::draw(const core::visual::VisualP
     const In1DataVecCoord* artiData = m_fromModel1->read(core::ConstVecCoordId::position());
     const In1VecCoord xPos = artiData->getValue();
 
-    // Drawing a beam representation to display plastic behaviour
-    if (l_fromPlasticForceField)
-    {
-        auto radius = l_fromPlasticForceField->getRadius();
-        auto sectionMechanicalStates = l_fromPlasticForceField->getSectionMechanicalStates();
-        auto nbSections = sectionMechanicalStates.size();
-
-        for (unsigned int sectionId=0; sectionId < nbSections; sectionId++)
-        {
-            RGBAColor drawColor = RGBAColor::gray();
-            if(sectionMechanicalStates[sectionId] == MechanicalState::ELASTIC)
-                drawColor = RGBAColor(191/255.0, 37/255.0, 42/255.0, 0.8); // Red
-            else if(sectionMechanicalStates[sectionId] == MechanicalState::PLASTIC)
-                drawColor = RGBAColor(40/255.0, 104/255.0, 137/255.0, 0.8); // Blue
-            else // MechanicalState::POSTPLASTIC
-                drawColor = RGBAColor(76/255.0, 154/255.0, 50/255.0, 0.8);; // Green
-
-            for (unsigned int i=0; i<sz-1; i++)
-                vparams->drawTool()->drawCylinder(positions[i], positions[i+1], radius, drawColor);
-        }
-    }
-    else
-    {
-        RGBAColor drawColor = d_color.getValue();
-        for (unsigned int i=0; i<sz-1; i++)
-            vparams->drawTool()->drawCylinder(positions[i], positions[i+1], d_radius.getValue(), drawColor);
-    }
-
+    RGBAColor drawColor = d_color.getValue();
+    for (unsigned int i=0; i<sz-1; i++)
+        vparams->drawTool()->drawCylinder(positions[i], positions[i+1], d_radius.getValue(), drawColor);
 
     //Define color map
     Real2 min = d_min.getValue();
