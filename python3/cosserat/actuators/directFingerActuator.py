@@ -4,6 +4,7 @@
 Based on the work done with SofaPython. See POEMapping.pyscn.
 """
 
+
 __authors__ = "younesssss"
 __contact__ = "adagolodjo@protonmail.com, yinoussa.adagolodjo@inria.fr"
 __version__ = "1.0.0"
@@ -14,9 +15,10 @@ import SofaRuntime
 import Sofa
 import os
 from splib3.numerics import Quat
+from cosserat.usefulFunctions import buildEdges, pluginList, BuildCosseratGeometry
 
 # from stlib3.scene import Node
-path = os.path.dirname(os.path.abspath(__file__))+'/../mesh/'
+path = f'{os.path.dirname(os.path.abspath(__file__))}/../mesh/'
 
 
 class Animation(Sofa.Core.Controller):
@@ -34,7 +36,6 @@ class Animation(Sofa.Core.Controller):
         return
 
     def _extracted_from_onKeypressedEvent_10(self, qOld, posA, angularRate):
-
         qNew = Quat.createFromEuler([0., angularRate, 0.], 'ryxz')
         qNew.normalize()
         qNew.rotateFromQuat(qOld)
@@ -86,9 +87,7 @@ def createScene(rootNode):
     from stlib3.scene import MainHeader
     # from stlib3.physics.collision import CollisionMesh
 
-    MainHeader(rootNode, plugins=["SoftRobots", "SofaSparseSolver", 'SofaDeformable', 'SofaEngine',
-                                  'SofaImplicitOdeSolver', 'SofaLoader', 'SofaSimpleFem', "SofaPreconditioner",
-                                  "SofaOpenglVisual", "CosseratPlugin", "SofaConstraint"],
+    MainHeader(rootNode, plugins=pluginList,
                repositoryPaths=[os.getcwd()])
     rootNode.addObject(
         'VisualStyle', displayFlags='showVisualModels showInteractionForceFields showWireframe')
@@ -112,8 +111,8 @@ def createScene(rootNode):
     finger.addObject('SparseLDLSolver', name='preconditioner')
 
     # Add a componant to load a VTK tetrahedral mesh and expose the resulting topology in the scene .
-    finger.addObject('MeshVTKLoader', name='loader', filename=path + 'finger.vtk', translation="-17.5 -12.5 7.5",
-                     rotation="0 180 0")
+    finger.addObject('MeshVTKLoader', name='loader', filename=path +
+                     'finger.vtk', translation="-17.5 -12.5 7.5", rotation="0 180 0")
     finger.addObject('TetrahedronSetTopologyContainer',
                      src='@loader', name='container')
     finger.addObject('TetrahedronSetTopologyModifier')
@@ -161,9 +160,8 @@ def createScene(rootNode):
     # Visualization                          #
     ##########################################
     fingerVisu = finger.addChild('visu')
-    fingerVisu.addObject(
-        'MeshSTLLoader', filename=path+"finger.stl", name="loader", translation="-17.5 -12.5 7.5",
-        rotation="0 180 0")
+    fingerVisu.addObject('MeshSTLLoader', filename=f'{path}finger.stl',
+                         name="loader", translation="-17.5 -12.5 7.5", rotation="0 180 0")
     fingerVisu.addObject('OglModel', src="@loader",
                          template='ExtVec3f', color="0.0 0.7 0.7")
     fingerVisu.addObject('BarycentricMapping')

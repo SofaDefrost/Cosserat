@@ -18,7 +18,7 @@ from cosserat.cosseratObject import Cosserat
 from cosserat.usefulFunctions import pluginList
 
 # from stlib3.scene import Node
-path = os.path.dirname(os.path.abspath(__file__)) + '/../mesh/'
+path = f'{os.path.dirname(os.path.abspath(__file__))}/../mesh/'
 
 
 class Animation(Sofa.Core.Controller):
@@ -80,12 +80,15 @@ def createScene(rootNode):
     rootNode.findData('gravity').value = [0., 0, 0.]
     rootNode.addObject('BackgroundSetting', color='0 0.168627 0.211765')
     rootNode.addObject('FreeMotionAnimationLoop')
-    rootNode.addObject('GenericConstraintSolver', tolerance=1e-5, maxIterations=5e2)
+    rootNode.addObject('GenericConstraintSolver',
+                       tolerance=1e-5, maxIterations=5e2)
     rootNode.addObject('Camera', position="-35 0 280", lookAt="0 0 0")
 
     solverNode = rootNode.addChild('solverNode')
-    solverNode.addObject('EulerImplicitSolver', rayleighStiffness="0.2", rayleighMass='0.1')
-    solverNode.addObject('SparseLDLSolver', name='solver', template="CompressedRowSparseMatrixd")
+    solverNode.addObject('EulerImplicitSolver',
+                         rayleighStiffness="0.2", rayleighMass='0.1')
+    solverNode.addObject('SparseLDLSolver', name='solver',
+                         template="CompressedRowSparseMatrixd")
     # solverNode.addObject('SparseLUSolver', name='solver')
     solverNode.addObject('GenericConstraintCorrection')
 
@@ -108,7 +111,7 @@ def createScene(rootNode):
 
     cosserat1 = solverNode.addChild(
         Cosserat(parent=solverNode, cosseratGeometry=cosserat_config1, name="cosseratBeam1", radius=0.2, showObject='1',
-                 attachingToLink='1',position=[[0., -2, 0., 0, 0, 0, 1]]))
+                 attachingToLink='1', position=[[0., -2, 0., 0, 0, 0, 1]]))
 
     cable_position = [[i*2., 2., 0.] for i in range(11)]
 
