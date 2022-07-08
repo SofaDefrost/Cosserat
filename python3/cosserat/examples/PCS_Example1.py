@@ -17,7 +17,8 @@ from math import sqrt
 
 # @todo ================ Unit: N, m, Kg, Pa  ================
 LegendrePolyOrder = 5  # P_{k_2}=P_{k_3}
-initialStrain = [[0., 0., 0], [0., 0., 0], [0., 0., 0], [0., 0., 0], [0., 0., 0]]
+initialStrain = [[0., 0., 0], [0., 0., 0],
+                 [0., 0., 0], [0., 0., 0], [0., 0., 0]]
 
 YM = 1.0e8
 PR = 0.
@@ -29,13 +30,14 @@ coeff = 0
 
 F1 = [0., 0., 0., 0., (coeff*1.)/sqrt(2), (coeff*1.)/sqrt(2)]  # N
 
-### Inertia parameter
+# Inertia parameter
 Rb = 0.02/2.  # beam radius in m
 length = 1.  # in m
 nbSection = 5  #
 deltaT = 0.02  # s
 
-inertialParams = {'GI': 1.5708, 'GA': 3.1416e4, 'EI': 0.7854, 'EA': 3.1416e4, 'L': length,  'Rb': Rb}
+inertialParams = {'GI': 1.5708, 'GA': 3.1416e4,
+                  'EI': 0.7854, 'EA': 3.1416e4, 'L': length,  'Rb': Rb}
 nonLinearConfig = {'init_pos': [0., 0., 0.], 'tot_length': length, 'nbSectionS': nbSection,
                    'nbFramesF': 30, 'buildCollisionModel': 0, 'beamMass': 0.}
 
@@ -53,7 +55,8 @@ class ForceController(Sofa.Core.Controller):
     def onAnimateEndEvent(self, event):
         if self.applyForce:
             with self.forceNode.force.writeable() as force:
-                vec = [0., 0., 0., 0., (self.forceCoeff * 1.) / sqrt(2), (self.forceCoeff * 1.) / sqrt(2)]
+                vec = [0., 0., 0., 0., (self.forceCoeff * 1.) /
+                       sqrt(2), (self.forceCoeff * 1.) / sqrt(2)]
                 for i, v in enumerate(vec):
                     force[i] = v
                 # print(f' The new force: {force}')
@@ -86,11 +89,13 @@ def createScene(rootNode):
     solverNode = rootNode.addChild('solverNode')
     solverNode.addObject('EulerImplicitSolver', rayleighStiffness=rayleighStiffness, rayleighMass='0.',
                          firstOrder=firstOrder)
-    solverNode.addObject('SparseLDLSolver', name='solver', template="CompressedRowSparseMatrixd")
+    solverNode.addObject('SparseLDLSolver', name='solver',
+                         template="CompressedRowSparseMatrixd")
     # solverNode.addObject('SparseLUSolver', name='solver', template="CompressedRowSparseMatrixd")
     # solverNode.addObject('CGLinearSolver', tolerance=1.e-12, iterations=1000, threshold=1.e-18)
 
-    needCollisionModel = 0  # use this if the collision model if the beam will interact with another object
+    # use this if the collision model if the beam will interact with another object
+    needCollisionModel = 0
     PCS_Cosserat = solverNode.addChild(
         Cosserat(parent=solverNode, cosseratGeometry=nonLinearConfig, inertialParams=inertialParams, radius=Rb,
                  useCollisionModel=needCollisionModel, name="cosserat", youngModulus=YM, poissonRatio=PR,
@@ -106,6 +111,7 @@ def createScene(rootNode):
     constForce = beamFrame.addObject('ConstantForceField', name='constForce', showArrowSize=1.e-8,
                                      indices=nonLinearConfig['nbFramesF'], force=F1)
 
-    solverNode.addObject(ForceController(parent=solverNode, cosseratFrames=beamFrame.FramesMO, forceNode=constForce))
+    solverNode.addObject(ForceController(
+        parent=solverNode, cosseratFrames=beamFrame.FramesMO, forceNode=constForce))
 
     return rootNode
