@@ -1,7 +1,11 @@
 # -*- coding: utf-8 -*-
-"""Basic scene using Cosserat in SofaPython3.
 
-Based on the work done with SofaPython. See POEMapping.pyscn.
+"""_summary_ Basic scene using Cosserat in SofaPython3.
+    The Finger is modeled usind FEM modèle while de cable is modeled using cosserat theory.
+    The link between these two meachanical models is constraint based using Lagrangian Multiplier
+    
+Returns:
+    _type_: _description_
 """
 
 
@@ -16,6 +20,7 @@ import Sofa
 import os
 from splib3.numerics import Quat
 from cosserat.usefulFunctions import buildEdges, pluginList, BuildCosseratGeometry
+from cosserat.cosseratObject import Cosserat
 
 # from stlib3.scene import Node
 path = f'{os.path.dirname(os.path.abspath(__file__))}/../mesh/'
@@ -90,7 +95,7 @@ def createScene(rootNode):
     MainHeader(rootNode, plugins=pluginList,
                repositoryPaths=[os.getcwd()])
     rootNode.addObject(
-        'VisualStyle', displayFlags='showVisualModels showInteractionForceFields showWireframe')
+        'VisualStyle', displayFlags='showVisualModels showInteractionForceFields showWireframe showMechanicalMappings')
 
     rootNode.addObject('FreeMotionAnimationLoop')
     rootNode.addObject('GenericConstraintSolver',
@@ -175,72 +180,15 @@ def createScene(rootNode):
     cableNode.addObject('SparseLUSolver', name='solver')
     cableNode.addObject('GenericConstraintCorrection')
 
-    # ###############
-    # RigidBase
-    ###############
-    rigidBaseNode = cableNode.addChild('rigidBase')
-    RigidBaseMO = rigidBaseNode.addObject('MechanicalObject', template='Rigid3d', name="RigidBaseMO",
-                                          position="0 0 0  0 0 0 1", showObject='1', showObjectScale='5.')
-    rigidBaseNode.addObject('RestShapeSpringsForceField', name='spring', stiffness="50000",
-                            angularStiffness="50000", external_points="0", mstate="@RigidBaseMO", points="0",
-                            template="Rigid3d")
+    beamGeometrie = {'init_pos': [0., 0., 0.], 'tot_length': 81, 'nbSectionS': 12,
+                     'nbFramesF': 30, 'buildCollisionModel': 0, 'beamMass': 0.}
+    cosserat = cableNode.addChild(Cosserat(parent=cableNode, cosseratGeometry=beamGeometrie, radius=0.5,
+                                           useCollisionModel=True, name="cosserat", youngModulus=5e6, poissonRatio=0.4))
 
-    ###############
-    # Rate of angular Deformation  (2 sections)
-    ###############
-    position = [[0., 0., 0.], [0., 0., 0.], [0., 0., 0.],
-                [0., 0., 0.], [0., 0., 0.], [0., 0., 0.]]
-    longeur = [15, 15, 15, 15, 6, 15]  # beams size
-    rateAngularDeformNode = cableNode.addChild('rateAngularDeform')
-    rateAngularDeformMO = rateAngularDeformNode.addObject('MechanicalObject', template='Vec3d',
-                                                          name='rateAngularDeformMO', position=position,
-                                                          showIndices="1")
-    BeamHookeLawForce = rateAngularDeformNode.addObject('BeamHookeLawForceField', crossSectionShape='circular',
-                                                        length=longeur, radius='0.50', youngModulus='5e6')
+    cableNode.addObject(Animation(cosserat.rigidBaseNode.RigidBaseMO,
+                                  cosserat.cosseratCoordinateNode.cosseratCoordinateMO))
+    mappedFrameNode = cosserat.cosseratFrame
 
-    ################################
-    # Animation (to move the dofs) #
-    ################################
-    animate = Animation(RigidBaseMO, rateAngularDeformMO)
-    rootNode.addObject(animate)
-
-    ##############
-    #   Frames   #
-    ##############
-    frames = [
-        "0.0 0 0  0 0 0 1   5 0 0  0 0 0 1  10.0 0 0  0 0 0 1    15.0 0 0  0 0 0 1   20.0 0 0  0 0 0 1  "
-        "30.0 0 0  0 0 0 1  35.0 0 0  0 0 0 1   40.0 0 0  0 0 0 1   45.0 0 0  0 0 0 1 55.0 0 0  0 0 0 1 "
-        "60.0 0 0  0 0 0 1  66.0 0 0  0 0 0 1   71.0 0 0  0 0 0 1   76.0 0 0  0 0 0 1  81.0 0 0  0 0 0 1"]
-    # the node of the frame needs to inherit from rigidBaseMO and rateAngularDeform
-    mappedFrameNode = rigidBaseNode.addChild('MappedFrames')
-    rateAngularDeformNode.addChild(mappedFrameNode)
-    framesMO = mappedFrameNode.addObject(
-        'MechanicalObject', template='Rigid3d', name="FramesMO", position=frames, showObject='1', showObjectScale='1')
-
-    # The mapping has two inputs: RigidBaseMO and rateAngularDeformMO
-    #                 one output: FramesMO
-    inputMO = rateAngularDeformMO.getLinkPath()
-    inputMO_rigid = RigidBaseMO.getLinkPath()
-    outputMO = framesMO.getLinkPath()
-
-    curv_abs_input = '0 15 30 45 60 66 81'
-    curv_abs_output = '0.0 5 10 15 20 30 35 40 45 55 60 66 71 76 81'
-    # mappedFrameNode.addObject('DiscreteCosseratMapping', curv_abs_input=curv_abs_input,
-    #                              curv_abs_output=curv_abs_output, input1=inputMO, input2=inputMO_rigid,
-    #                              output=outputMO, debug='0', max=2.e-3, deformationAxis=1)
-    mappedFrameNode.addObject('DiscreteCosseratMapping', curv_abs_input=curv_abs_input,
-                              curv_abs_output=curv_abs_output, input1=inputMO, input2=inputMO_rigid,
-                              output=outputMO, debug='0', max=6.e-2, deformationAxis=1, nonColored="0", radius=5)
-
-    # actuators = mappedFrameNode.addObject('actuators')
-    # actuator0 = actuators.addObject('SlidingActuator', name="SlidingActuator0", template='Rigid3d',
-    #                                    direction='0 0 0 1 0 0', indices=1, maxForce='100000', minForce='-30000')
-    cable_position = [[0.0, 0.0, 0.0], [5.0, 0.0, 0.0], [10.0, 0.0, 0.0], [15.0, 0.0, 0.0], [20.0, 0.0, 0.0],
-                      [30.0, 0.0, 0.0], [35.0, 0.0, 0.0], [
-                          40.0, 0.0, 0.0], [45.0, 0.0, 0.0],
-                      [55.0, 0.0, 0.0], [60.0, 0.0, 0.0], [66.0, 0.0, 0.0], [
-                          71.0, 0.0, 0.0], [76.0, 0.0, 0.0],
-                      [81.0, 0.0, 0.0]]
     #  This create a new node in the scene. This node is appended to the finger's node.
     slidingPoint = mappedFrameNode.addChild('slidingPoint')
 
@@ -248,7 +196,7 @@ def createScene(rootNode):
     # mechanical modelling. In the case of a cable it is a set of positions specifying
     # the points where the cable is passing by.
     slidingPointMO = slidingPoint.addObject('MechanicalObject', name="cablePos",
-                                            position=cable_position, showObject="1", showIndices="0")
+                                            position=cosserat.frames3D, showObject="1", showIndices="0")
     slidingPoint.addObject('IdentityMapping')
 
     mappedPointsNode = slidingPoint.addChild('MappedPoints')
