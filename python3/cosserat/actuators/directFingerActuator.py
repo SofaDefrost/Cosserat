@@ -3,7 +3,7 @@
 """_summary_ Basic scene using Cosserat in SofaPython3.
     The Finger is modeled usind FEM modèle while de cable is modeled using cosserat theory.
     The link between these two meachanical models is constraint based using Lagrangian Multiplier
-    
+
 Returns:
     _type_: _description_
 """
@@ -57,11 +57,6 @@ class Animation(Sofa.Core.Controller):
 
                 self._extracted_from_onKeypressedEvent_10(
                     self, qOld, posA, self.angularRate)
-                # qNew = Quat.createFromEuler([0., self.angularRate, 0.], 'ryxz')
-                # qNew.normalize()
-                # qNew.rotateFromQuat(qOld)
-                # for i in range(0, 4):
-                #     posA[0][i+3] = qNew[i]
 
         if ord(key) == 21:  # down
             with self.rigidBaseMO.rest_position.writeable() as posA:
@@ -71,13 +66,6 @@ class Animation(Sofa.Core.Controller):
 
                 self._extracted_from_onKeypressedEvent_10(
                     qOld, posA, -self.angularRate)
-
-                # qNew = Quat.createFromEuler(
-                #     [0., -self.angularRate,  0.], 'ryxz')
-                # qNew.normalize()
-                # qNew.rotateFromQuat(qOld)
-                # for i in range(0, 4):
-                #     posA[0][i+3] = qNew[i]
 
         if ord(key) == 18:  # left
             with self.rigidBaseMO.rest_position.writeable() as posA:
@@ -90,7 +78,6 @@ class Animation(Sofa.Core.Controller):
 def createScene(rootNode):
 
     from stlib3.scene import MainHeader
-    # from stlib3.physics.collision import CollisionMesh
 
     MainHeader(rootNode, plugins=pluginList,
                repositoryPaths=[os.getcwd()])
@@ -100,7 +87,6 @@ def createScene(rootNode):
     rootNode.addObject('FreeMotionAnimationLoop')
     rootNode.addObject('GenericConstraintSolver',
                        tolerance="1e-20", maxIterations="500", printLog="0")
-    # ContactHeader(rootNode, alarmDistance=2.5, contactDistance=2, frictionCoef=0.08)
 
     gravity = [0, 0, 0]
     rootNode.gravity.value = gravity
@@ -147,17 +133,6 @@ def createScene(rootNode):
     inputFEMCable = femPoints.addObject('MechanicalObject', name="pointsInFEM", position=FEMpos, showObject="1",
                                         showIndices="1")
     femPoints.addObject('BarycentricMapping')
-
-    ##########################################
-    #  Finger auto-Collision            #
-    ##########################################
-    # CollisionMesh(finger,
-    #               surfaceMeshFileName="mesh/fingerCollision_part1.stl",
-    #               name="CollisionMeshAuto1", translation="-17.5 -12.5 7.5", rotation="0 180 0", collisionGroup=[1])
-    #
-    # CollisionMesh(finger,
-    #               surfaceMeshFileName="mesh/fingerCollision_part2.stl",
-    #               name="CollisionMeshAuto2", translation="-17.5 -12.5 7.5", rotation="0 180 0", collisionGroup=[2])
 
     finger.addObject('LinearSolverConstraintCorrection')
 
