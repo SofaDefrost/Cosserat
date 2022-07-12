@@ -12,15 +12,16 @@ __date__ = "March 16 2021"
 
 import os
 import sys
+from cosserat.usefulFunctions import buildEdges, pluginList, BuildCosseratGeometry
 sys.path.append('../')
-path = os.path.dirname(os.path.abspath(__file__)) + '/../mesh/'
+path = f'{os.path.dirname(os.path.abspath(__file__))}/../mesh/'
 
 
 def createScene(rootNode):
     from stlib3.scene import MainHeader
-    MainHeader(rootNode, plugins=["SoftRobots", "SoftRobots.Inverse", "SofaSparseSolver", 'SofaDeformable',
-                                  "SofaPreconditioner", "SofaOpenglVisual", "CosseratPlugin",
-                                  "SofaGeneralRigid", "SofaImplicitOdeSolver"],
+    MainHeader(rootNode, plugins=pluginList +
+               ["SoftRobots.Inverse", "Sofa.Component.LinearSolver.Iterative", "Sofa.Component.Collision.Response.Contact",
+                "Sofa.Component.Collision.Geometry", "Sofa.Component.Collision.Detection.Intersection", "Sofa.Component.Collision.Detection.Algorithm"],
                repositoryPaths=[os.getcwd()])
     rootNode.addObject('VisualStyle',
                        displayFlags='showVisualModels hideBehaviorModels showCollisionModels '
@@ -80,7 +81,7 @@ def createScene(rootNode):
     for j in range(3):
         direction = [0, 0, 0, 0, 0, 0]
         direction[j] = 1
-        rigidBaseNode.addObject('SlidingActuator', name="SlidingActuator" + str(j), template='Rigid3d',
+        rigidBaseNode.addObject('SlidingActuator', name=f'SlidingActuator{str(j)}', template='Rigid3d',
                                 direction=direction, indices=0, maxForce='100000', minForce='-30000')
 
     #############################################
@@ -112,10 +113,10 @@ def createScene(rootNode):
         'BeamHookeLawForceField', crossSectionShape='circular', length=longeurS, radius='0.5', youngModulus='5e6')
 
     for i in range(1, 6):
-        rateAngularDeformNode.addObject('SlidingActuator', name="SlidingActuatory" + str(i), template='Vec3d',
+        rateAngularDeformNode.addObject('SlidingActuator', name=f"SlidingActuatory{str(i)}", template='Vec3d',
                                         direction='0 1 0 ', indices=i, maxForce='100000', minForce='-30000')
     for i in range(1, 6):
-        rateAngularDeformNode.addObject('SlidingActuator', name="SlidingActuatorz" + str(i), template='Vec3d',
+        rateAngularDeformNode.addObject('SlidingActuator', name=f"SlidingActuatorz{str(i)}", template='Vec3d',
                                         direction='0 0 1', indices=i, maxForce='100000', minForce='-30000')
 
     ##############

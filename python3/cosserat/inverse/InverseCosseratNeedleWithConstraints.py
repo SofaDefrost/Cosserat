@@ -4,7 +4,8 @@
 Based on the work done with SofaPython. See POEMapping.py.
 """
 
-from usefulFunctions import BuildCosseratGeometry, MoveTargetProcess
+# from usefulFunctions import MoveTargetProcess
+from cosserat.usefulFunctions import buildEdges, pluginList, BuildCosseratGeometry, MoveTargetProcess
 from createFemRegularGrid import createFemCube
 __authors__ = "younesssss"
 __contact__ = "adagolodjo@protonmail.com, yinoussa.adagolodjo@inria.fr"
@@ -33,10 +34,9 @@ def effectorTarget(parentNode, position=[80., 0., 0.35857]):
 
 def createScene(rootNode):
     from stlib3.scene import MainHeader
-    MainHeader(rootNode, plugins=["SoftRobots", "SoftRobots.Inverse", "SofaSparseSolver", 'SofaDeformable',
-                                  "SofaPreconditioner", "SofaOpenglVisual", "CosseratPlugin",
-                                  "SofaGeneralRigid", "SofaImplicitOdeSolver", 'SofaEngine', 'SofaMeshCollision',
-                                  'SofaSimpleFem', 'SofaTopologyMapping', 'SofaConstraint'],
+    MainHeader(rootNode, plugins=pluginList +
+               ["SoftRobots.Inverse", "Sofa.Component.LinearSolver.Iterative", "Sofa.Component.Collision.Response.Contact",
+                "Sofa.Component.Collision.Geometry", "Sofa.Component.Collision.Detection.Intersection", "Sofa.Component.Collision.Detection.Algorithm"],
                repositoryPaths=[os.getcwd()])
     rootNode.addObject('VisualStyle',
                        displayFlags='showVisualModels hideBehaviorModels showCollisionModels '
@@ -82,14 +82,17 @@ def createScene(rootNode):
     ##  Sliding actuator to guide the base of the needle, only the  ##
     # translation are tacking into account here.
     #################################################################
-    for j in range(0, 6):
+    for j in range(6):
         direction = [0, 0, 0, 0, 0, 0]
         direction[j] = 1
-        rigidBaseNode.addObject('SlidingActuator', name="SlidingActuator" + str(j), template='Rigid3d',
+        rigidBaseNode.addObject('SlidingActuator', name=f"SlidingActuator{str(j)}", template='Rigid3d',
                                 direction=direction, indices=0, maxForce='1e6', minForce='-30000')
 
+    cosserat_config = {'init_pos': [0., 0., 0.], 'tot_length': 80, 'nbSectionS': 8,
+                       'nbFramesF': 16, 'beamMass': 0.22}
+
     [positionS, curv_abs_inputS, longeurS, framesF, curv_abs_outputF, cable_positionF] = \
-        BuildCosseratGeometry(nbSection=8, nbFrames=16, totalLength=80)
+        BuildCosseratGeometry(cosserat_config)
 
     #############################################
     # Rate of angular Deformation  (2 sections)
@@ -173,7 +176,7 @@ def createScene(rootNode):
     mappedPoints = mappedPointsNode.addObject('MechanicalObject', template='Vec3d', position=femPos, name="FramesMO",
                                               showObject='1', showIndices='1', showObjectScale='1')
     mappedPointsNode.addObject(
-        'CosseratEquality', name="QPConstraint", eqDisp='0.0', lastPointIsFixed="false")
+        'CosseratEquality', name="QPConstraint", eqDisp='0.0')
 
     # Get the tree mstate links for the mapping
     inputCableMO = framePointsMO.getLinkPath()
