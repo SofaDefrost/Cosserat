@@ -150,6 +150,7 @@ protected:
 public:
     /**********************SOFA METHODS**************************/
     void init() override;
+    void reinit() override;
     void draw(const core::visual::VisualParams* vparams) override;
 
     /**********************MAPPING METHODS**************************/
