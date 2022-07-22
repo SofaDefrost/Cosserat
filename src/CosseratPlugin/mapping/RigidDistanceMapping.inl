@@ -69,8 +69,8 @@ void RigidDistanceMapping<TIn1, TIn2, TOut>::init()
         return;
     }
 
-    const type::vector<int> &m1Indices = d_index1.getValue();
-    const type::vector<int> &m2Indices = d_index2.getValue();
+    const type::vector<unsigned int> &m1Indices = d_index1.getValue();
+    const type::vector<unsigned int> &m2Indices = d_index2.getValue();
 
     m_minInd = std::min(m1Indices.size(), m2Indices.size());
     if (m_minInd == 0) {
@@ -199,7 +199,7 @@ void RigidDistanceMapping<TIn1, TIn2, TOut>::applyJT(
 
     for (typename OutMatrixDeriv::RowConstIterator rowIt = in.begin(); rowIt != rowItEnd; ++rowIt) {
         typename OutMatrixDeriv::ColConstIterator colIt = rowIt.begin();
-        typename OutMatrixDeriv::ColConstIterator colItEnd = rowIt.end();
+//        typename OutMatrixDeriv::ColConstIterator colItEnd = rowIt.end();
 
 
         typename In1MatrixDeriv::RowIterator o1 = out1.writeLine(rowIt.index()); // we store the constraint number
