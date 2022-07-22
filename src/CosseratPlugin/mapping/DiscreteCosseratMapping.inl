@@ -69,8 +69,6 @@ DiscreteCosseratMapping<TIn1, TIn2, TOut>::DiscreteCosseratMapping()
                                                                         "by another body."))
 {}
 
-
-
 template <class TIn1, class TIn2, class TOut>
 void DiscreteCosseratMapping<TIn1, TIn2, TOut>::init()
 {
@@ -79,29 +77,33 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::init()
         msg_error() << "Error while initializing ; input getFromModels1/getFromModels2/output not found" ;
         return;
     }
-
-    m_fromModel1 = this->getFromModels1()[0]; // Cosserat deformations (torsion and bending), in local frame
-    m_fromModel2 = this->getFromModels2()[0]; // Cosserat base, in global frame
-    m_toModel = this->getToModels()[0];  // Cosserat rigid frames, in global frame
-
-    // Fill the initial vector
-    const OutDataVecCoord* xFromData = m_toModel->read(core::ConstVecCoordId::position());
-    const OutVecCoord xFrom = xFromData->getValue();
-
-    m_vecTransform.clear();
-    for (unsigned int i = 0; i < xFrom.size(); i++) {
-        m_vecTransform.push_back(xFrom[i]);
-    }
-
-    if(d_debug.getValue())
-        msg_info("DiscreteCosseratMapping")<< " m_vecTransform : "<< m_vecTransform;
-
-    this->initialize();
+    reinit();
 
     m_colorMap.setColorScheme("Blue to Red");
     m_colorMap.reinit();
 }
 
+template <class TIn1, class TIn2, class TOut>
+void DiscreteCosseratMapping<TIn1, TIn2, TOut>::reinit()
+{
+  m_fromModel1 = this->getFromModels1()[0]; // Cosserat deformations (torsion and bending), in local frame
+  m_fromModel2 = this->getFromModels2()[0]; // Cosserat base, in global frame
+  m_toModel = this->getToModels()[0];  // Cosserat rigid frames, in global frame
+
+  // Fill the initial vectorvoid init() override;
+  const OutDataVecCoord* xFromData = m_toModel->read(core::ConstVecCoordId::position());
+  const OutVecCoord xFrom = xFromData->getValue();
+
+  m_vecTransform.clear();
+  for (unsigned int i = 0; i < xFrom.size(); i++) {
+    m_vecTransform.push_back(xFrom[i]);
+  }
+
+  if(d_debug.getValue())
+    msg_info("DiscreteCosseratMapping")<< " m_vecTransform : "<< m_vecTransform;
+
+  this->initialize();
+}
 
 template <class TIn1, class TIn2, class TOut>
 void DiscreteCosseratMapping<TIn1, TIn2, TOut>::apply(
@@ -109,7 +111,6 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::apply(
         const type::vector<const In1DataVecCoord*>& dataVecIn1Pos ,
         const type::vector<const In2DataVecCoord*>& dataVecIn2Pos)
 {
-
     if(dataVecOutPos.empty() || dataVecIn1Pos.empty() || dataVecIn2Pos.empty())
         return;
 
