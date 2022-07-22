@@ -272,7 +272,7 @@ void DiscreteDynamicCosseratMapping<TIn1, TIn2, TOut>::computeJ_Jdot_i(const Mat
 	bool reachNode = false;
 	for (unsigned int i = 1; i < sz; i++) {
 		M = Adjoint;
-		int u = m_indicesVectors[frameId];
+		unsigned int u = m_indicesVectors[frameId];
 		//std::cout << "frame : "<< frameId << " ==> section :" << i << " ==> u :"<< u << std::endl;
 		if(i < u ){
 			for (int j = u; j>0; j--) {
@@ -355,7 +355,7 @@ void DiscreteDynamicCosseratMapping<TIn1, TIn2, TOut>:: applyJT(
 	//Compute output forces
 	size_t sz = m_indicesVectors.size();
 
-	int index =  m_indicesVectors[sz-1];
+	unsigned int index =  m_indicesVectors[sz-1];
 	m_totalBeamForceVectors.clear();
 	m_totalBeamForceVectors.resize(sz);
 

@@ -97,14 +97,14 @@ public:
     typedef typename SolidTypes< Real>::SpatialVector SpatialVector   ;
 
 protected:
-    Data<type::vector<int> >         d_index1 ;
-    Data<type::vector<int> >         d_index2 ;
-    Data<Real>                       d_max ;
-    Data<Real>                       d_min ;
-    Data<Real>                       d_radius ;
-    Data<type::Vec4f>                d_color;
-    Data<type::vector<int> >         d_index;
-    Data<bool>                       d_debug ;
+    Data<type::vector<unsigned int> >   d_index1 ;
+    Data<type::vector<unsigned int> >   d_index2 ;
+    Data<Real>                          d_max ;
+    Data<Real>                          d_min ;
+    Data<Real>                          d_radius ;
+    Data<type::Vec4f>                   d_color;
+    Data<type::vector<unsigned int> >   d_index;
+    Data<bool>                          d_debug ;
 
     core::State<Out>* m_toModel;
 
