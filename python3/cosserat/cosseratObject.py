@@ -13,6 +13,7 @@ __date__ = "October, 26 2021"
 import Sofa
 from cosserat.usefulFunctions import buildEdges, pluginList, BuildCosseratGeometry
 from splib3.numerics import Quat
+
 cosserat_config = {'init_pos': [0., 0., 0.], 'tot_length': 6, 'nbSectionS': 6,
                    'nbFramesF': 12, 'buildCollisionModel': 1, 'beamMass': 0.22}
 
@@ -72,7 +73,7 @@ class Cosserat(Sofa.Prefab):
         self.beamMass = self.cosseratGeometry['beamMass']
         self.parent = kwargs.get('parent', None)
         self.useInertiaParams = False
-        self.radius = kwargs.get('radius',)
+        self.radius = kwargs.get('radius', )
 
         if self.parent.hasObject("EulerImplicitSolver") is False:
             print('The code does not have parent EulerImplicite')
@@ -99,6 +100,13 @@ class Cosserat(Sofa.Prefab):
         tab_edges = buildEdges(self.frames3D)
         return addEdgeCollision(self.cosseratFrame, self.frames3D, tab_edges)
 
+    def addSlidingPoints(self):
+        slidingPoint = self.addChild('slidingPoint')
+        slidingPoint.addObject('MechanicalObject', name="slidingPointMO", position=self.frames3D,
+                               showObject="1", showIndices="0")
+        slidingPoint.addObject('IdentityMapping')
+        return slidingPoint
+
     def addSolverNode(self):
         solverNode = self.addChild('solverNode')
         solverNode.addObject('EulerImplicitSolver', rayleighStiffness="0.2", rayleighMass='0.1')
@@ -118,7 +126,8 @@ class Cosserat(Sofa.Prefab):
             positions.append(_pos)
 
         rigidBaseNode.addObject('MechanicalObject', template='Rigid3d', name="RigidBaseMO", showObjectScale=0.2,
-                                translation=trans, position=positions, rotation=rot, showObject=int(self.showObject.value))
+                                translation=trans, position=positions, rotation=rot,
+                                showObject=int(self.showObject.value))
 
         # one can choose to set this to false and directly attach the beam base
         # to a control object in order to be able to drive it.
