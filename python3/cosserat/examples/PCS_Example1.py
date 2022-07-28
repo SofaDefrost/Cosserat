@@ -91,7 +91,6 @@ def createScene(rootNode):
                          firstOrder=firstOrder)
     # solverNode.addObject('SparseLDLSolver', name='solver',
     #                      template="CompressedRowSparseMatrixd")
-    # solverNode.addObject('SparseLUSolver', name='solver', template="CompressedRowSparseMatrixd")
     solverNode.addObject('CGLinearSolver', tolerance=1.e-12, iterations=1000, threshold=1.e-18)
 
     # use this if the collision model if the beam will interact with another object
@@ -100,13 +99,7 @@ def createScene(rootNode):
         Cosserat(parent=solverNode, cosseratGeometry=nonLinearConfig, inertialParams=inertialParams, radius=Rb,
                  useCollisionModel=needCollisionModel, name="cosserat", youngModulus=YM, poissonRatio=PR,
                  rayleighStiffness=rayleighStiffness))
-    # cosseratNode = nonLinearCosserat.legendreControlPointsNode
-    # cosseratNode.addObject('MechanicalMatrixMapper', template='Vec3,Vec3',
-    #                        object1=cosseratNode.getLinkPath(),
-    #                        object2=cosseratNode.getLinkPath(),
-    #                        name='cosseratCoordinateNodeMapper',
-    #                        nodeToParse=nonLinearCosserat.cosseratCoordinateNode.getLinkPath())
-
+    
     beamFrame = PCS_Cosserat.cosseratFrame
     constForce = beamFrame.addObject('ConstantForceField', name='constForce', showArrowSize=1.e-8,
                                      indices=nonLinearConfig['nbFramesF'], force=F1)
