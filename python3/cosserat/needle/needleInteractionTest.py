@@ -141,6 +141,7 @@ def createScene(rootNode):
     slidingPoint = needle.addSlidingPoints()
 
     # Create FEM Node
+    # TODO: Where we should add Sliding constraints, this have to be added or remove dynamically
     femPos = [[16.0, 0, 0], [18, 0, 0], [20, 0, 0]]
     cubeNode = createFemCubeWithParams(rootNode, params.FemParams)
     gelNode = cubeNode.getChild('gelNode')
