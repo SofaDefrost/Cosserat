@@ -61,11 +61,11 @@ CosseratNeedleSlidingConstraint<DataTypes>::CosseratNeedleSlidingConstraint(Mech
     , d_valueIndex(initData(&d_valueIndex, (unsigned int) 0, "valueIndex",
                             "Index of the value (in InputValue vector) that we want to impose \n"
                             "If unspecified the default value is {0}"))
-
     , d_valueType(initData(&d_valueType, OptionsGroup(2,"displacement","force"), "valueType",
                            "displacement = the contstraint will impose the displacement provided in data value[valueIndex] \n"
                            "force = the contstraint will impose the force provided in data value[valueIndex] \n"
                            "If unspecified, the default value is displacement"))
+    , d_useDirections(initData(&d_useDirections, type::Vec<3,bool>(0,1,1),"useDirections", "Directions to constrain.\n"))
 {
 }
 
@@ -77,7 +77,8 @@ CosseratNeedleSlidingConstraint<DataTypes>::~CosseratNeedleSlidingConstraint()
 template<class DataTypes>
 void CosseratNeedleSlidingConstraint<DataTypes>::init()
 {
-    Inherit1::init();
+  Inherit1::init();
+  d_componentState.setValue(ComponentState::Valid);
 
     internalInit();
 }
@@ -116,13 +117,18 @@ void CosseratNeedleSlidingConstraint<DataTypes>::buildConstraintMatrix(const Con
     VecCoord positions = x.getValue();
     m_constraintId= cIndex;
 
+    type::Vec<3,bool> use = d_useDirections.getValue();
+
     for (unsigned int i=0; i<positions.size(); i++)
     {
-        MatrixDerivRowIterator c_it = matrix.writeLine(cIndex);
-        c_it.addCol(i, Coord(0,1,0)); // instead of vector3(0,1,0) use the directtion of the projection
-        MatrixDerivRowIterator c_it_1 = matrix.writeLine(cIndex+1);
-        c_it_1.addCol(i, Coord(0,0,1)); // instead of vector3(0,1,0) use the directtion of the projection
-        cIndex +=2;
+        if (use[1]){
+          MatrixDerivRowIterator c_it = matrix.writeLine(cIndex++);
+          c_it.addCol(i, Coord(0,1,0));
+        }
+        if (use[2]) {
+          MatrixDerivRowIterator c_it = matrix.writeLine(cIndex++);
+          c_it.addCol(i, Coord(0, 0, 1));
+        }
     }
     cMatrix.endEdit();
     m_nbLines = cIndex - m_constraintId;
@@ -130,30 +136,29 @@ void CosseratNeedleSlidingConstraint<DataTypes>::buildConstraintMatrix(const Con
 
 template<class DataTypes>
 void CosseratNeedleSlidingConstraint<DataTypes>::getConstraintViolation(const ConstraintParams* cParams,
-                                                                        BaseVector *resV,
-                                                                        const BaseVector *Jdx)
+                            BaseVector *resV, const DataVecCoord &x, const DataVecDeriv &v)
+//    void CosseratNeedleSlidingConstraint<DataTypes>::getConstraintViolation(const ConstraintParams* cParams,
+//                                                                        BaseVector *resV,
+//                                                                        const BaseVector *Jdx)
 {
     if(d_componentState.getValue() != ComponentState::Valid)
         return ;
 
     SOFA_UNUSED(cParams);
-    ReadAccessor<Data<VecCoord>> positions = m_state->readPositions();
+    SOFA_UNUSED(x);
+    SOFA_UNUSED(v);
+    ReadAccessor<Data<VecCoord>> positions = this->mstate->readPositions();
+    type::Vec<3,bool> use = d_useDirections.getValue();
 
-    if(Jdx->size()==0){
-        for (unsigned int i = 0; i < positions.size(); i++){
-            Real dfree1 =  positions[i][1];
-            Real dfree2 =  positions[i][2];
-
-            resV->set(m_constraintId + 2*i   , dfree1);
-            resV->set(m_constraintId + 2*i +1, dfree2);
-        }
-    }else{
-        for (unsigned int i = 0; i < positions.size(); i++){
-            Real dfree1 = Jdx->element(2*i)   + positions[i][1];
-            Real dfree2 = Jdx->element(2*i+1) + positions[i][2];
-            resV->set(m_constraintId + 2*i   , dfree1);
-            resV->set(m_constraintId + 2*i +1, dfree2);
-        }
+    for (unsigned int i = 0; i < positions.size(); i++){
+      if (use[1]) {
+        Real dfree1 = positions[i][1];
+        resV->set(m_constraintId + 2 * i, dfree1);
+      }
+      if (use[2]) {
+        Real dfree2 = positions[i][2];
+        resV->set(m_constraintId + 2 * i + 1, dfree2);
+      }
     }
 }
 
@@ -162,20 +167,20 @@ void CosseratNeedleSlidingConstraint<DataTypes>::getConstraintResolution(const C
                                                                          std::vector<core::behavior::ConstraintResolution*>& resTab,
                                                                          unsigned int& offset)
 {
-    ReadAccessor<Data<VecCoord>> positions = m_state->readPositions();
-    double imposedValue= 1.0;
+    ReadAccessor<Data<VecCoord>> positions = this->mstate->readPositions();
+    type::Vec<3,bool> use = d_useDirections.getValue();
     for (size_t i = 0; i < positions.size(); i++){
-
-        resTab[offset++] = new BilateralConstraintResolution();
-        resTab[offset++] = new BilateralConstraintResolution();
+        if (use[1]) resTab[offset++] = new BilateralConstraintResolution();
+        if (use[2]) resTab[offset++] = new BilateralConstraintResolution();
     }
 }
 
 template<class DataTypes>
 void CosseratNeedleSlidingConstraint<DataTypes>::draw(const VisualParams* vparams)
 {
-    if(d_componentState.getValue() != ComponentState::Valid)
-        return ;
+  SOFA_UNUSED(vparams);
+  if(d_componentState.getValue() != ComponentState::Valid)
+    return ;
 }
 } // namespace sofa::component::constraintset
 

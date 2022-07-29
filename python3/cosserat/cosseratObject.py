@@ -26,10 +26,20 @@ def addEdgeCollision(parentNode, position3D, edges):
     collisInstrumentCombined.addObject('EdgeSetTopologyModifier', name="collisEdgeModifier")
     collisInstrumentCombined.addObject('MechanicalObject', name="CollisionDOFs")
     collisInstrumentCombined.addObject('LineCollisionModel', bothSide="1", group='2')
-    collisInstrumentCombined.addObject('PointCollisionModel', bothSide="1", group='2')
+    collisInstrumentCombined.addObject('PointCollisionModel', group='2')
     collisInstrumentCombined.addObject('IdentityMapping', name="mapping")
     return collisInstrumentCombined
 
+
+def addPointsCollision(parentNode, position3D, edges):
+    collisInstrumentCombined = parentNode.addChild('collisInstrumentCombined')
+    collisInstrumentCombined.addObject('EdgeSetTopologyContainer', name="collisEdgeSet", position=position3D,
+                                       edges=edges)
+    collisInstrumentCombined.addObject('EdgeSetTopologyModifier', name="collisEdgeModifier")
+    collisInstrumentCombined.addObject('MechanicalObject', name="CollisionDOFs")
+    collisInstrumentCombined.addObject('PointCollisionModel', group='2')
+    collisInstrumentCombined.addObject('IdentityMapping', name="mapping")
+    return collisInstrumentCombined
 
 class Cosserat(Sofa.Prefab):
     """ActuatedArm is a reusable sofa model of a S90 servo motor and the tripod actuation arm.
@@ -100,6 +110,9 @@ class Cosserat(Sofa.Prefab):
         tab_edges = buildEdges(self.frames3D)
         return addEdgeCollision(self.cosseratFrame, self.frames3D, tab_edges)
 
+    def addPointCollisionModel(self):
+        tab_edges = buildEdges(self.frames3D)
+        return addPointsCollision(self.cosseratFrame, self.frames3D, tab_edges)
     def addSlidingPoints(self):
         slidingPoint = self.cosseratFrame.addChild('slidingPoint')
         slidingPoint.addObject('MechanicalObject', name="slidingPointMO", position=self.frames3D,

@@ -36,6 +36,7 @@
 #include <SoftRobots/component/constraint/model/CableModel.h>
 #include <SoftRobots/component/behavior/SoftRobotsConstraint.h>
 #include "QPSlidingConstraint.h"
+#include <sofa/core/behavior/Constraint.h>
 
 namespace sofa::component::constraintset
 {
@@ -49,16 +50,17 @@ using sofa::linearalgebra::BaseVector ;
 using sofa::core::ConstraintParams ;
 using sofa::helper::ReadAccessor ;
 using sofa::core::VecCoordId ;
+using sofa::core::behavior::Constraint ;
 
 /**
  * This class contains common implementation of cable constraints
 */
 template< class DataTypes >
-class CosseratNeedleSlidingConstraint : public CableModel<DataTypes>
+class CosseratNeedleSlidingConstraint : public Constraint<DataTypes>
 {
 public:
 
-    SOFA_CLASS(SOFA_TEMPLATE(CosseratNeedleSlidingConstraint,DataTypes), SOFA_TEMPLATE(CableModel,DataTypes));
+    SOFA_CLASS(SOFA_TEMPLATE(CosseratNeedleSlidingConstraint,DataTypes), SOFA_TEMPLATE(Constraint,DataTypes));
     typedef typename DataTypes::VecCoord VecCoord;
     typedef typename DataTypes::VecDeriv VecDeriv;
     typedef typename DataTypes::Coord Coord;
@@ -90,10 +92,10 @@ public:
                                DataMatrixDeriv &cMatrix,
                                unsigned int &cIndex,
                                const DataVecCoord &x) override;
-
     void getConstraintViolation(const ConstraintParams* cParams,
-                                BaseVector *resV,
-                                const BaseVector *Jdx) override;
+                                BaseVector *resV, const DataVecCoord &x, const DataVecDeriv &v) override;
+//    void getConstraintViolation(const ConstraintParams* cParams,
+//                                BaseVector *resV, const DataVecCoord &x, const DataVecDeriv &v) override;
     void getConstraintResolution(const ConstraintParams*,
                                  std::vector<core::behavior::ConstraintResolution*>& resTab,
                                  unsigned int& offset) override;
@@ -108,9 +110,10 @@ public:
 
 protected:
     //Input data
-    Data<type::vector< Real > >       d_value;
-    Data<unsigned int>                  d_valueIndex;
-    Data<helper::OptionsGroup>          d_valueType;
+    Data<type::vector< Real > >   d_value;
+    Data<unsigned int>            d_valueIndex;
+    Data<helper::OptionsGroup>    d_valueType;
+    Data<type::Vec<3,bool>>       d_useDirections;
     // displacement = the constraint will impose the displacement provided in data d_inputValue[d_iputIndex]
     // force = the constraint will impose the force provided in data d_inputValue[d_iputIndex]
 
@@ -119,26 +122,14 @@ protected:
 
     ////////////////////////// Inherited attributes ////////////////////////////
     /// https://gcc.gnu.org/onlinedocs/gcc/Name-lookup.html
-    /// Bring m_state in the current lookup context.
-    /// otherwise any access to the base::attribute would require
-    /// using the "this->" approach.
-    using SoftRobotsConstraint<DataTypes>::m_state ;
-    ////////////////////////// Inherited attributes ////////////////////////////
-    /// https://gcc.gnu.org/onlinedocs/gcc/Name-lookup.html
     /// Bring inherited attributes and function in the current lookup context.
     /// otherwise any access to the base::attribute would require
     /// the "this->" approach.
-    using CableModel<DataTypes>::d_maxDispVariation ;
-    using CableModel<DataTypes>::d_maxPositiveDisplacement ;
-    using CableModel<DataTypes>::d_maxNegativeDisplacement ;
-    using CableModel<DataTypes>::d_maxForce ;
-    using CableModel<DataTypes>::d_minForce ;
-    using CableModel<DataTypes>::d_displacement ;
-    using CableModel<DataTypes>::d_componentState ;
+    using Constraint<DataTypes>::d_componentState ;
     ////////////////////////////////////////////////////////////////////////////
     /// \brief internalInit
-    using SoftRobotsConstraint<DataTypes>::m_nbLines ;
-    using SoftRobotsConstraint<DataTypes>::m_constraintId ;
+    unsigned int m_nbLines ;
+    unsigned int m_constraintId ;
 
     void internalInit();
 };
