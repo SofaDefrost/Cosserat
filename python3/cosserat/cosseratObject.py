@@ -101,7 +101,7 @@ class Cosserat(Sofa.Prefab):
         return addEdgeCollision(self.cosseratFrame, self.frames3D, tab_edges)
 
     def addSlidingPoints(self):
-        slidingPoint = self.addChild('slidingPoint')
+        slidingPoint = self.cosseratFrame.addChild('slidingPoint')
         slidingPoint.addObject('MechanicalObject', name="slidingPointMO", position=self.frames3D,
                                showObject="1", showIndices="0")
         slidingPoint.addObject('IdentityMapping')
@@ -137,21 +137,16 @@ class Cosserat(Sofa.Prefab):
                                     external_points=0, mstate="@RigidBaseMO", points=0, template="Rigid3d")
         return rigidBaseNode
 
-    def addCosseratCoordinate(self, positionS, longeurS):
+    def addCosseratCoordinate(self, bendingStates, listOfSectionsLength):
         cosseratCoordinateNode = self.addChild('cosseratCoordinate')
         cosseratCoordinateNode.addObject('MechanicalObject',
                                          template='Vec3d', name='cosseratCoordinateMO',
-                                         position=positionS,
+                                         position=bendingStates,
                                          showIndices=0)
-        # cosseratCoordinateNode.addObject('BeamHookeLawForceField', crossSectionShape=self.shape.value,
-        #                                  length=longeurS, youngModulus=self.youngModulus.value,
-        #                                  poissonRatio=self.poissonRatio.value,
-        #                                  radius=self.radius.value,
-        #                                  rayleighStiffness=self.rayleighStiffness.value,
-        #                                  lengthY=self.length_Y.value, lengthZ=self.length_Z.value)
+
         if self.useInertiaParams is False:
             cosseratCoordinateNode.addObject('BeamHookeLawForceField', crossSectionShape=self.shape.value,
-                                             length=longeurS, radius=self.radius.value,
+                                             length=listOfSectionsLength, radius=self.radius.value,
                                              youngModulus=self.youngModulus.value, poissonRatio=self.poissonRatio.value,
                                              rayleighStiffness=self.rayleighStiffness.value,
                                              lengthY=self.length_Y.value, lengthZ=self.length_Z.value)
@@ -162,7 +157,7 @@ class Cosserat(Sofa.Prefab):
             EI = self.inertialParams['EI']
             print(f'{GA}')
             cosseratCoordinateNode.addObject('BeamHookeLawForceField', crossSectionShape=self.shape.value,
-                                             length=longeurS, radius=self.radius.value, useInertiaParams=True,
+                                             length=listOfSectionsLength, radius=self.radius.value, useInertiaParams=True,
                                              GI=GI, GA=GA, EI=EI, EA=EA, rayleighStiffness=self.rayleighStiffness.value,
                                              lengthY=self.length_Y.value, lengthZ=self.length_Z.value)
         return cosseratCoordinateNode

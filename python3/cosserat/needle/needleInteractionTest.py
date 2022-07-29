@@ -3,7 +3,6 @@
 
 Based on the work done with SofaPython. See POEMapping.py
 """
-import string
 
 from splib3.numerics import Quat
 import sys
@@ -16,57 +15,18 @@ __version__ = "1.0.0"
 __copyright__ = "(c) 2021,Inria"
 __date__ = "March 8 2021"
 
-# Units are cm, kg, s
-import sys
-sys.path.append('../')
-import os
-path = os.path.dirname(os.path.abspath(__file__)) + '/../mesh/'
 import Sofa
 from cosserat.cosseratObject import Cosserat
-from createFemRegularGrid import createFemCubeWithParams
-from dataclasses import dataclass
+from cosserat.createFemRegularGrid import createFemCubeWithParams
+from cosserat.usefulFunctions import pluginList
+from params import NeedleParameters
 
 
-pluginNameList = 'SofaConstraint SofaDeformable SofaImplicitOdeSolver SofaMeshCollision SofaPreconditioner' \
-                 ' SofaGeneralTopology SofaOpenglVisual SofaGeneralRigid SoftRobots SofaSparseSolver' \
-                 ' CosseratPlugin SofaBoundaryCondition'
+params = NeedleParameters()
 
-
-@dataclass
-class NeedleGeometry:
-    radius: float = 0.1
-    nbSections: int = 16
-    nbFrames: int = 15
-    totalLength: float = 15.
-
-@dataclass
-class NeedlePhysics:
-    youngModulus: float = 1.20e9
-    poissonRatio: float = 0.4
-    mass: float = 0.3
-    rayleighStiffness: float = 0.1
-
-@dataclass
-class FemParams:
-    youngModulus: float = 500
-    poissonRatio: float = 0.48
-    mass: float = 0.3
-    rayleigh: float = 0.1
-    minVol: string = "16. -8. -5."
-    maxVol: string = "40. 8. 5."
-    mesh: string = "6 6 6"
-    box: string = "15 -10 -10 41 -6 10"
-
-@dataclass
-class Parameters:
-    needleGeo: NeedleGeometry = NeedleGeometry()
-    needlePhys: NeedlePhysics = NeedlePhysics()
-    FemGeometry: FemParams = FemParams()
-
-
-needleGeometryConfig = {'init_pos': [0., 0., 0.], 'tot_length': NeedleGeometry.totalLength,
-                         'nbSectionS': NeedleGeometry.nbSections, 'nbFramesF': NeedleGeometry.nbFrames,
-                         'buildCollisionModel': 1, 'beamMass': NeedlePhysics.mass}
+needleGeometryConfig = {'init_pos': [0., 0., 0.], 'tot_length': params.Geometry.totalLength,
+                        'nbSectionS': params.Geometry.nbSections, 'nbFramesF': params.Geometry.nbFrames,
+                        'buildCollisionModel': 1, 'beamMass': params.Physics.mass}
 
 
 class Animation(Sofa.Core.Controller):
@@ -135,140 +95,54 @@ class Animation(Sofa.Core.Controller):
 
 def createScene(rootNode):
     rootNode.addObject(
-        'RequiredPlugin', pluginName=pluginNameList, printLog='0')
+        'RequiredPlugin', pluginName=pluginList, printLog='0')
 
     rootNode.addObject('VisualStyle', displayFlags='showVisualModels showBehaviorModels hideCollisionModels '
                                                    'hideBoundingCollisionModels hireForceFields '
                                                    'hideInteractionForceFields hideWireframe showMechanicalMappings')
+    rootNode.addObject('DefaultPipeline')
+    rootNode.addObject("DefaultVisualManagerLoop")
+    rootNode.addObject('RuleBasedContactManager', responseParams='mu=0.8', response='FrictionContactConstraint')
+    rootNode.addObject('BruteForceBroadPhase')
+    rootNode.addObject('BVHNarrowPhase')
+    # rootNode.addObject('LocalMinDistance', alarmDistance=1.0, contactDistance=0.01)
+    rootNode.addObject('LocalMinDistance', name="Proximity", alarmDistance=2.,
+                       contactDistance=params.contact.contactDistance, coneFactor=params.contact.coneFactor,
+                       angleCone=params.contact.angleCone)
+
     rootNode.addObject('FreeMotionAnimationLoop')
-    rootNode.addObject('GenericConstraintSolver',
-                       tolerance="1e-20", maxIterations="500", printLog="0")
+    # rootNode.addObject('CollisionPipeline', verbose="0")
+    # rootNode.addObject('BruteForceDetection', name="N2")
+    # rootNode.addObject('DefaultContactManager',
+    #                    response="FrictionContactConstraint", responseParams=params.contact.dataMu)
+    # rootNode.addObject('LocalMinDistance', name="Proximity", alarmDistance=params.contact.alarmDistance,
+    #                    contactDistance=params.contact.contactDistance, coneFactor=params.contact.coneFactor,
+    #                    angleCone=params.contact.angleCone)
+
+    rootNode.addObject('GenericConstraintSolver', tolerance="1e-20", maxIterations="500", printLog="0")
 
     gravity = [0, 0, 0]
     rootNode.gravity.value = gravity
-    rootNode.addObject('BackgroundSetting', color='0 0.168627 0.211765')
+    rootNode.addObject('BackgroundSetting', color='1 1 1')
     rootNode.addObject('OglSceneFrame', style="Arrows", alignment="TopRight")
     # ###############
     # New adds to use the sliding Actuator
     ###############
     solverNode = rootNode.addChild('solverNode')
-    solverNode.addObject('EulerImplicitSolver', rayleighStiffness=NeedlePhysics.rayleighStiffness)
+    solverNode.addObject('EulerImplicitSolver', rayleighStiffness=params.Physics.rayleighStiffness)
     solverNode.addObject('SparseLDLSolver', name='solver', template="CompressedRowSparseMatrixd")
     solverNode.addObject('GenericConstraintCorrection')
 
     needle = solverNode.addChild(
-        Cosserat(parent=solverNode, cosseratGeometry=needleGeometryConfig, radius=NeedleGeometry.radius,
-                 name="needle", youngModulus=NeedlePhysics.youngModulus, poissonRatio=NeedlePhysics.poissonRatio,
-                 rayleighStiffness=NeedlePhysics.rayleighStiffness))
+        Cosserat(parent=solverNode, cosseratGeometry=needleGeometryConfig, radius=params.Geometry.radius,
+                 name="needle", youngModulus=params.Physics.youngModulus, poissonRatio=params.Physics.poissonRatio,
+                 rayleighStiffness=params.Physics.rayleighStiffness))
     collisionModel = needle.addCollisionModel()
     slidingPoint = needle.addSlidingPoints()
 
     # Create FEM Node
-    femPos = ["16.0 0 0 18 0 0 20 0 0 "]
-    cubeNode = createFemCubeWithParams(rootNode, FemParams)
-    gelNode = cubeNode.getChild('gelNode')
-    femPoints = gelNode.addChild('femPoints')
-    inputFEMCable = femPoints.addObject(
-        'MechanicalObject', name="pointsInFEM", position="", showIndices="1")
-    femPoints.addObject('BarycentricMapping')
-
-    mappedPointsNode = slidingPoint.addChild('MappedPoints')
-    femPoints.addChild(mappedPointsNode)
-    mappedPoints = mappedPointsNode.addObject(
-        'MechanicalObject', template='Vec3d', position=femPos, name="FramesMO")
-
-    inputCableMO = slidingPoint.slidingPointMO.getLinkPath()
-    inputFEMCableMO = inputFEMCable.getLinkPath()
-    outputPointMO = mappedPoints.getLinkPath()
-
-    mappedPointsNode.addObject(
-        'CosseratNeedleSlidingConstraint', name="QPConstraint")
-    mappedPointsNode.addObject('DifferenceMultiMapping', name="pointsMulti", input1=inputFEMCableMO, lastPointIsFixed=0,
-                               input2=inputCableMO, output=outputPointMO, direction="@../../FramesMO.position")
-
-    return rootNode
-    # ###############
-    # RigidBase
-    ###############
-    rigidBaseNode = cableNode.addChild('rigidBase')
-    RigidBaseMO = rigidBaseNode.addObject('MechanicalObject', template='Rigid3d', name="RigidBaseMO",
-                                          position="0 0 0  0 0 0 1", showObject='1', showObjectScale='5.')
-    rigidBaseNode.addObject('RestShapeSpringsForceField', name='spring', stiffness="50000",
-                            angularStiffness="50000", external_points="0", mstate="@RigidBaseMO", points="0",
-                            template="Rigid3d")
-
-
-    ###############
-    # Rate of angular Deformation  (2 sections)
-    ###############
-    totalLen = 80.
-    nbSectionS = 6
-    lengthS = totalLen / nbSectionS
-    positionS = []
-    longeurS = []
-    sumS = 0.
-    curv_abs_inputS = [0.0]
-    for i in range(nbSectionS):
-        positionS.append([0, 0, 0])
-        longeurS.append((((i + 1) * lengthS) - i * lengthS))
-        sumS += longeurS[i]
-        curv_abs_inputS.append(sumS)
-    longeurS[nbSectionS - 1] = longeurS[nbSectionS - 1] + 1.
-    curv_abs_inputS[nbSectionS] = 81.
-
-    longeur = '15 15 15 15 6 15'  # beams size
-    rateAngularDeformNode = cableNode.addChild('rateAngularDeform')
-    rateAngularDeformMO = rateAngularDeformNode.addObject(
-        'MechanicalObject', template='Vec3d', name='rateAngularDeformMO', position=positionS, showIndices="1")
-    rateAngularDeformNode.addObject(
-        'BeamHookeLawForceField', crossSectionShape='circular', length=longeur, radius='2.0', youngModulus='1.e12')
-    ################################
-    # Animation (to move the dofs) #
-    ################################
-    rootNode.addObject(Animation(RigidBaseMO, rateAngularDeformMO))
-
-    ##############
-    #   Frames   #
-    ##############
-    nbFramesF = 14
-    lengthF = totalLen / nbFramesF
-    framesF = []
-    curv_abs_outputF = []
-    cable_positionF = []
-    for i in range(nbFramesF):
-        sol = i * lengthF
-        framesF.append([sol, 0, 0, 0, 0, 0, 1])
-        cable_positionF.append([sol, 0, 0])
-        curv_abs_outputF.append(sol)
-    framesF.append([totalLen, 0, 0, 0, 0, 0, 1])
-    print("=============> framesF : ", framesF)
-    cable_positionF.append([totalLen, 0, 0])
-    curv_abs_outputF.append(totalLen)
-
-    # the node of the frame needs to inherit from rigidBaseMO and rateAngularDeform
-    mappedFrameNode = rigidBaseNode.addChild('MappedFrames')
-    rateAngularDeformNode.addChild(mappedFrameNode)
-    framesMO = mappedFrameNode.addObject(
-        'MechanicalObject', template='Rigid3d', name="FramesMO", position=framesF, showObject='1', showObjectScale='1')
-
-    # The mapping has two inputs: RigidBaseMO and rateAngularDeformMO
-    #                 one output: FramesMO
-    inputMO = rateAngularDeformMO.getLinkPath()
-    inputMO_rigid = RigidBaseMO.getLinkPath()
-    outputMO = framesMO.getLinkPath()
-
-    mappedFrameNode.addObject('DiscreteCosseratMapping', curv_abs_input=curv_abs_inputS,
-                              curv_abs_output=curv_abs_outputF, input1=inputMO, input2=inputMO_rigid,
-                              output=outputMO, debug='0', max=6.e-2, deformationAxis=1, nonColored="0", radius=5)
-
-    slidingPoint = mappedFrameNode.addChild('slidingPoint')
-    slidingPointMO = slidingPoint.addObject('MechanicalObject', name="cablePos", position=cable_positionF,
-                                            showObject="1", showIndices="0")
-    slidingPoint.addObject('IdentityMapping')
-
-    # Create FEM Node
-    femPos = [" 41.0 0 0 45 0 0 50 0 0 55 0 0 60 0 0 60 0 0  70 0 0 "]
-    cubeNode = createFemCube(rootNode)
+    femPos = [[16.0, 0, 0], [18, 0, 0], [20, 0, 0]]
+    cubeNode = createFemCubeWithParams(rootNode, params.FemParams)
     gelNode = cubeNode.getChild('gelNode')
     femPoints = gelNode.addChild('femPoints')
     inputFEMCable = femPoints.addObject(
@@ -280,13 +154,15 @@ def createScene(rootNode):
     mappedPoints = mappedPointsNode.addObject(
         'MechanicalObject', template='Vec3d', position=femPos, name="FramesMO")
 
-    inputCableMO = slidingPointMO.getLinkPath()
+    inputCableMO = slidingPoint.slidingPointMO.getLinkPath()
     inputFEMCableMO = inputFEMCable.getLinkPath()
     outputPointMO = mappedPoints.getLinkPath()
+
+    rootNode.addObject(Animation(needle.rigidBaseNode.RigidBaseMO, needle.cosseratCoordinateNode.cosseratCoordinateMO))
 
     mappedPointsNode.addObject(
         'CosseratNeedleSlidingConstraint', name="QPConstraint")
     mappedPointsNode.addObject('DifferenceMultiMapping', name="pointsMulti", input1=inputFEMCableMO, lastPointIsFixed=0,
                                input2=inputCableMO, output=outputPointMO, direction="@../../FramesMO.position")
-
     return rootNode
+
