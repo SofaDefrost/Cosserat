@@ -102,13 +102,13 @@ def createScene(rootNode):
                                                    'hideInteractionForceFields hideWireframe showMechanicalMappings')
     rootNode.addObject('DefaultPipeline')
     rootNode.addObject("DefaultVisualManagerLoop")
-    rootNode.addObject('RuleBasedContactManager', responseParams='mu=0.8', response='FrictionContactConstraint')
+    rootNode.addObject('RuleBasedContactManager', responseParams='mu=0.1', response='FrictionContactConstraint')
     rootNode.addObject('BruteForceBroadPhase')
     rootNode.addObject('BVHNarrowPhase')
     # rootNode.addObject('LocalMinDistance', alarmDistance=1.0, contactDistance=0.01)
     rootNode.addObject('LocalMinDistance', name="Proximity", alarmDistance=2.,
                        contactDistance=params.contact.contactDistance, coneFactor=params.contact.coneFactor,
-                       angleCone=params.contact.angleCone)
+                       angleCone=0.1)
 
     rootNode.addObject('FreeMotionAnimationLoop')
     # rootNode.addObject('CollisionPipeline', verbose="0")
@@ -137,12 +137,15 @@ def createScene(rootNode):
         Cosserat(parent=solverNode, cosseratGeometry=needleGeometryConfig, radius=params.Geometry.radius,
                  name="needle", youngModulus=params.Physics.youngModulus, poissonRatio=params.Physics.poissonRatio,
                  rayleighStiffness=params.Physics.rayleighStiffness))
-    collisionModel = needle.addCollisionModel()
+    collisionModel = needle.addPointCollisionModel()
     slidingPoint = needle.addSlidingPoints()
 
     # Create FEM Node
-    # TODO: Where we should add Sliding constraints, this have to be added or remove dynamically
-    femPos = [[16.0, 0, 0], [18, 0, 0], [20, 0, 0]]
+    # TODO: Where we handle Sliding constraints,
+    #  we need to be able added or remove dynamically
+    # TODO: @Paul is in charge of creating this in python
+    #
+    femPos = []
     cubeNode = createFemCubeWithParams(rootNode, params.FemParams)
     gelNode = cubeNode.getChild('gelNode')
     femPoints = gelNode.addChild('femPoints')
