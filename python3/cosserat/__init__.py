@@ -18,6 +18,7 @@ Contents of the library
     cosserat.actuators
     cosserat.inverse
     cosserat.testScene
+    cosserat.needle
     
 
 """
