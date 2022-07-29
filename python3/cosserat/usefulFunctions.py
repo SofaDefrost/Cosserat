@@ -32,10 +32,14 @@ add_collision_point = 1
 pluginNameList = 'SofaConstraint SofaDeformable SofaImplicitOdeSolver SofaMeshCollision SofaPreconditioner' \
                  ' SofaGeneralTopology SofaOpenglVisual SofaGeneralRigid SoftRobots SofaSparseSolver' \
                  ' CosseratPlugin SofaBoundaryCondition SofaGeneralAnimationLoop SofaRigid'  # BeamAdapter
+
 pluginList = ['SofaConstraint', 'SofaDeformable', 'SofaImplicitOdeSolver', 'SofaMeshCollision', 'SofaPreconditioner', 'Sofa.Component.IO.Mesh', 'Sofa.Component.Mass', 'Sofa.Component.Topology.Container.Dynamic', 'Sofa.GL.Component.Rendering3D',
               'SofaGeneralTopology', 'SofaOpenglVisual', 'SofaGeneralRigid', 'SoftRobots', 'SofaSparseSolver', 'Sofa.Component.Constraint.Lagrangian.Correction', 'Sofa.Component.SceneUtility', 'Sofa.Component.SolidMechanics.FEM.Elastic',
               'CosseratPlugin', 'SofaBoundaryCondition', 'Sofa.Component.AnimationLoop', 'SofaRigid', 'Sofa.Component.Constraint.Lagrangian.Solver', 'Sofa.Component.Engine.Select', 'Sofa.Component.Setting',
-              "Sofa.Component.LinearSolver.Direct", "Sofa.Component.MechanicalLoad", "Sofa.Component.ODESolver.Backward", "Sofa.Component.SolidMechanics.Spring", "Sofa.Component.Visual"]
+              "Sofa.Component.LinearSolver.Direct", "Sofa.Component.MechanicalLoad", "Sofa.Component.ODESolver.Backward", "Sofa.Component.SolidMechanics.Spring", "Sofa.Component.Visual", 'Sofa.Component.Collision.Detection.Algorithm',
+              "Sofa.Component.Collision.Detection.Intersection", "Sofa.Component.Collision.Geometry", "Sofa.Component.Collision.Response.Contact", "Sofa.Component.Mapping.MappedMatrix", "Sofa.Component.Topology.Container.Grid",
+              "Sofa.Component.Topology.Mapping", "Sofa.Component.LinearSolver.Iterative"]
+
 
 PRig = 0.38  # poison ratio for the rigid part of the beam
 PSoft = 0.43  # poison ratio for the soft part of the beam

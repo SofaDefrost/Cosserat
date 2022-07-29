@@ -4,9 +4,13 @@ Template for needle.
 
 Content:
 ********
-.. 	scenes related to the use of cosserat model needle  
-..	in a direct simulation 
+    .. 	scenes related to the use of cosserat model needle in a direct simulation
+    .. autosummary::
+    :toctree: _autosummary
 
-   
+    cosserat.needle.params
+
+
 """
-#from needle import cosseratNeedle
+
+__all__ = ["params"]
