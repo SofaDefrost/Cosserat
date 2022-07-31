@@ -23,4 +23,8 @@ Contents of the library
 
 """
 
+<<<<<<< Updated upstream
 __all__ = ["cosseratObject", "nonLinearCosserat", "actuators", "scenes", "needle", "inverse", "usefulFunctions", "createFemRegularGrid"]
+=======
+__all__ = ["cosseratObject", "actuators", "scenes", "needle", "inverse", "usefulFunctions"]
+>>>>>>> Stashed changes

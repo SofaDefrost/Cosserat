@@ -138,6 +138,7 @@ class Cosserat(Sofa.Prefab):
             _pos = [p for p in pos]
             positions.append(_pos)
 
+<<<<<<< Updated upstream
         rigidBaseNode.addObject('MechanicalObject', template='Rigid3d', name="RigidBaseMO", showObjectScale=0.2,
                                 translation=trans, position=positions, rotation=rot,
                                 showObject=int(self.showObject.value))
@@ -151,6 +152,20 @@ class Cosserat(Sofa.Prefab):
         return rigidBaseNode
 
     def addCosseratCoordinate(self, bendingStates, listOfSectionsLength):
+=======
+        rigidBaseNode.addObject('MechanicalObject', template='Rigid3d', name="RigidBaseMO",
+                                showObjectScale=0.2, translation=trans,
+                                position=positions, rotation=rot, showObject=0)
+        # one can choose to set this to false and directly attach the beam base
+        # to a control object in order to be able to drive it.
+        # if int(self.attachingToLink.value):
+        #     rigidBaseNode.addObject('RestShapeSpringsForceField', name='spring',
+        #                             stiffness=1e8, angularStiffness=1.e8, external_points=0,
+        #                             mstate="@RigidBaseMO", points=0, template="Rigid3d")
+        return rigidBaseNode
+
+    def addCosseratCoordinate(self, positionS, longeurS):
+>>>>>>> Stashed changes
         cosseratCoordinateNode = self.addChild('cosseratCoordinate')
         cosseratCoordinateNode.addObject('MechanicalObject',
                                          template='Vec3d', name='cosseratCoordinateMO',
@@ -181,20 +196,34 @@ class Cosserat(Sofa.Prefab):
         self.cosseratCoordinateNode.addChild(cosseratInSofaFrameNode)
         framesMO = cosseratInSofaFrameNode.addObject('MechanicalObject', template='Rigid3d',
                                                      name="FramesMO", position=framesF,
+<<<<<<< Updated upstream
                                                      showObject=int(self.showObject.value), showObjectScale=0.1)
         if self.beamMass != 0.:
             cosseratInSofaFrameNode.addObject('UniformMass', totalMass=self.beamMass, showAxisSizeFactor='0')
 
+=======
+                                                     showObject=0, showObjectScale=0.1)
+        cosseratInSofaFrameNode.addObject('UniformMass', totalMass=self.beamMass, showAxisSizeFactor='0')
+>>>>>>> Stashed changes
         cosseratInSofaFrameNode.addObject('DiscreteCosseratMapping', curv_abs_input=curv_abs_inputS,
                                           curv_abs_output=curv_abs_outputF, name='cosseratMapping',
                                           input1=self.cosseratCoordinateNode.cosseratCoordinateMO.getLinkPath(),
                                           input2=self.rigidBaseNode.RigidBaseMO.getLinkPath(),
+<<<<<<< Updated upstream
                                           output=framesMO.getLinkPath(), debug=0, radius=self.radius.value)
         if self.beamMass != 0.:
             self.solverNode.addObject('MechanicalMatrixMapper', template='Vec3,Rigid3',
                                       object1=self.cosseratCoordinateNode.cosseratCoordinateMO.getLinkPath(),
                                       object2=self.rigidBaseNode.RigidBaseMO.getLinkPath(),
                                       nodeToParse=cosseratInSofaFrameNode.getLinkPath())
+=======
+                                          output=framesMO.getLinkPath(), debug=0, radius=0)
+
+        self.addObject('MechanicalMatrixMapper', template='Vec3,Rigid3',
+                       object1=self.cosseratCoordinateNode.cosseratCoordinateMO.getLinkPath(),
+                       object2=self.rigidBaseNode.RigidBaseMO.getLinkPath(),
+                       nodeToParse=cosseratInSofaFrameNode.getLinkPath())
+>>>>>>> Stashed changes
         return cosseratInSofaFrameNode
 
 
