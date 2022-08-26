@@ -13,6 +13,7 @@ __date__ = "October, 26 2021"
 import Sofa
 from cosserat.usefulFunctions import buildEdges, pluginList, BuildCosseratGeometry
 from splib3.numerics import Quat
+
 cosserat_config = {'init_pos': [0., 0., 0.], 'tot_length': 6, 'nbSectionS': 6,
                    'nbFramesF': 12, 'buildCollisionModel': 1, 'beamMass': 0.22}
 
@@ -25,10 +26,20 @@ def addEdgeCollision(parentNode, position3D, edges):
     collisInstrumentCombined.addObject('EdgeSetTopologyModifier', name="collisEdgeModifier")
     collisInstrumentCombined.addObject('MechanicalObject', name="CollisionDOFs")
     collisInstrumentCombined.addObject('LineCollisionModel', bothSide="1", group='2')
-    collisInstrumentCombined.addObject('PointCollisionModel', bothSide="1", group='2')
+    collisInstrumentCombined.addObject('PointCollisionModel', group='2')
     collisInstrumentCombined.addObject('IdentityMapping', name="mapping")
     return collisInstrumentCombined
 
+
+def addPointsCollision(parentNode, position3D, edges):
+    collisInstrumentCombined = parentNode.addChild('collisInstrumentCombined')
+    collisInstrumentCombined.addObject('EdgeSetTopologyContainer', name="collisEdgeSet", position=position3D,
+                                       edges=edges)
+    collisInstrumentCombined.addObject('EdgeSetTopologyModifier', name="collisEdgeModifier")
+    collisInstrumentCombined.addObject('MechanicalObject', name="CollisionDOFs")
+    collisInstrumentCombined.addObject('PointCollisionModel', group='2')
+    collisInstrumentCombined.addObject('IdentityMapping', name="mapping")
+    return collisInstrumentCombined
 
 class Cosserat(Sofa.Prefab):
     """ActuatedArm is a reusable sofa model of a S90 servo motor and the tripod actuation arm.
@@ -72,7 +83,7 @@ class Cosserat(Sofa.Prefab):
         self.beamMass = self.cosseratGeometry['beamMass']
         self.parent = kwargs.get('parent', None)
         self.useInertiaParams = False
-        self.radius = kwargs.get('radius',)
+        self.radius = kwargs.get('radius', )
 
         if self.parent.hasObject("EulerImplicitSolver") is False:
             print('The code does not have parent EulerImplicite')
@@ -99,6 +110,16 @@ class Cosserat(Sofa.Prefab):
         tab_edges = buildEdges(self.frames3D)
         return addEdgeCollision(self.cosseratFrame, self.frames3D, tab_edges)
 
+    def addPointCollisionModel(self):
+        tab_edges = buildEdges(self.frames3D)
+        return addPointsCollision(self.cosseratFrame, self.frames3D, tab_edges)
+    def addSlidingPoints(self):
+        slidingPoint = self.cosseratFrame.addChild('slidingPoint')
+        slidingPoint.addObject('MechanicalObject', name="slidingPointMO", position=self.frames3D,
+                               showObject="1", showIndices="0")
+        slidingPoint.addObject('IdentityMapping')
+        return slidingPoint
+
     def addSolverNode(self):
         solverNode = self.addChild('solverNode')
         solverNode.addObject('EulerImplicitSolver', rayleighStiffness="0.2", rayleighMass='0.1')
@@ -118,7 +139,8 @@ class Cosserat(Sofa.Prefab):
             positions.append(_pos)
 
         rigidBaseNode.addObject('MechanicalObject', template='Rigid3d', name="RigidBaseMO", showObjectScale=0.2,
-                                translation=trans, position=positions, rotation=rot, showObject=int(self.showObject.value))
+                                translation=trans, position=positions, rotation=rot,
+                                showObject=int(self.showObject.value))
 
         # one can choose to set this to false and directly attach the beam base
         # to a control object in order to be able to drive it.
@@ -128,21 +150,16 @@ class Cosserat(Sofa.Prefab):
                                     external_points=0, mstate="@RigidBaseMO", points=0, template="Rigid3d")
         return rigidBaseNode
 
-    def addCosseratCoordinate(self, positionS, longeurS):
+    def addCosseratCoordinate(self, bendingStates, listOfSectionsLength):
         cosseratCoordinateNode = self.addChild('cosseratCoordinate')
         cosseratCoordinateNode.addObject('MechanicalObject',
                                          template='Vec3d', name='cosseratCoordinateMO',
-                                         position=positionS,
+                                         position=bendingStates,
                                          showIndices=0)
-        # cosseratCoordinateNode.addObject('BeamHookeLawForceField', crossSectionShape=self.shape.value,
-        #                                  length=longeurS, youngModulus=self.youngModulus.value,
-        #                                  poissonRatio=self.poissonRatio.value,
-        #                                  radius=self.radius.value,
-        #                                  rayleighStiffness=self.rayleighStiffness.value,
-        #                                  lengthY=self.length_Y.value, lengthZ=self.length_Z.value)
+
         if self.useInertiaParams is False:
             cosseratCoordinateNode.addObject('BeamHookeLawForceField', crossSectionShape=self.shape.value,
-                                             length=longeurS, radius=self.radius.value,
+                                             length=listOfSectionsLength, radius=self.radius.value,
                                              youngModulus=self.youngModulus.value, poissonRatio=self.poissonRatio.value,
                                              rayleighStiffness=self.rayleighStiffness.value,
                                              lengthY=self.length_Y.value, lengthZ=self.length_Z.value)
@@ -153,7 +170,7 @@ class Cosserat(Sofa.Prefab):
             EI = self.inertialParams['EI']
             print(f'{GA}')
             cosseratCoordinateNode.addObject('BeamHookeLawForceField', crossSectionShape=self.shape.value,
-                                             length=longeurS, radius=self.radius.value, useInertiaParams=True,
+                                             length=listOfSectionsLength, radius=self.radius.value, useInertiaParams=True,
                                              GI=GI, GA=GA, EI=EI, EA=EA, rayleighStiffness=self.rayleighStiffness.value,
                                              lengthY=self.length_Y.value, lengthZ=self.length_Z.value)
         return cosseratCoordinateNode
