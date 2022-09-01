@@ -37,7 +37,7 @@ def addPointsCollision(parentNode, position3D, edges):
                                        edges=edges)
     collisInstrumentCombined.addObject('EdgeSetTopologyModifier', name="collisEdgeModifier")
     collisInstrumentCombined.addObject('MechanicalObject', name="CollisionDOFs")
-    collisInstrumentCombined.addObject('PointCollisionModel', group='2')
+    collisInstrumentCombined.addObject('PointCollisionModel', name="pointColli", group='2')
     collisInstrumentCombined.addObject('IdentityMapping', name="mapping")
     return collisInstrumentCombined
 
@@ -179,9 +179,7 @@ class Cosserat(Sofa.Prefab):
 
         cosseratInSofaFrameNode = self.rigidBaseNode.addChild('cosseratInSofaFrameNode')
         self.cosseratCoordinateNode.addChild(cosseratInSofaFrameNode)
-        framesMO = cosseratInSofaFrameNode.addObject('MechanicalObject', template='Rigid3d',
-                                                     name="FramesMO", position=framesF,
-                                                     showObject=int(self.showObject.value), showObjectScale=0.1)
+        framesMO = cosseratInSofaFrameNode.addObject('MechanicalObject', template='Rigid3d', name="FramesMO", position=framesF, showObject=0, showObjectScale=0.1)
         if self.beamMass != 0.:
             cosseratInSofaFrameNode.addObject('UniformMass', totalMass=self.beamMass, showAxisSizeFactor='0')
 
