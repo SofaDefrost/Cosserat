@@ -181,20 +181,40 @@ class Cosserat(Sofa.Prefab):
         self.cosseratCoordinateNode.addChild(cosseratInSofaFrameNode)
         framesMO = cosseratInSofaFrameNode.addObject('MechanicalObject', template='Rigid3d',
                                                      name="FramesMO", position=framesF,
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
                                                      showObject=int(self.showObject.value), showObjectScale=0.1)
         if self.beamMass != 0.:
             cosseratInSofaFrameNode.addObject('UniformMass', totalMass=self.beamMass, showAxisSizeFactor='0')
 
+=======
+=======
+>>>>>>> Stashed changes
+                                                     showObject=0, showObjectScale=0.1)
+        cosseratInSofaFrameNode.addObject('UniformMass', totalMass=self.beamMass, showAxisSizeFactor='0')
+>>>>>>> Stashed changes
         cosseratInSofaFrameNode.addObject('DiscreteCosseratMapping', curv_abs_input=curv_abs_inputS,
                                           curv_abs_output=curv_abs_outputF, name='cosseratMapping',
                                           input1=self.cosseratCoordinateNode.cosseratCoordinateMO.getLinkPath(),
                                           input2=self.rigidBaseNode.RigidBaseMO.getLinkPath(),
+<<<<<<< Updated upstream
                                           output=framesMO.getLinkPath(), debug=0, radius=self.radius.value)
         if self.beamMass != 0.:
             self.solverNode.addObject('MechanicalMatrixMapper', template='Vec3,Rigid3',
                                       object1=self.cosseratCoordinateNode.cosseratCoordinateMO.getLinkPath(),
                                       object2=self.rigidBaseNode.RigidBaseMO.getLinkPath(),
                                       nodeToParse=cosseratInSofaFrameNode.getLinkPath())
+=======
+                                          output=framesMO.getLinkPath(), debug=0, radius=0)
+
+        self.addObject('MechanicalMatrixMapper', template='Vec3,Rigid3',
+                       object1=self.cosseratCoordinateNode.cosseratCoordinateMO.getLinkPath(),
+                       object2=self.rigidBaseNode.RigidBaseMO.getLinkPath(),
+                       nodeToParse=cosseratInSofaFrameNode.getLinkPath())
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
         return cosseratInSofaFrameNode
 
 
