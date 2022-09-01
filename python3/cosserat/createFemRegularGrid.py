@@ -46,6 +46,7 @@ def createFemCube(parentNode):
     surfaceNode.addObject('TriangleSetTopologyContainer', name="surfContainer", src="@../../GelSurface/Container")
     surfaceNode.addObject('MechanicalObject', name='msSurface')
     surfaceNode.addObject('TriangleCollisionModel', name='surface')
+    surfaceNode.addObject('LineCollisionModel', name='line')
     surfaceNode.addObject('BarycentricMapping')
 
     gelNode.addObject('LinearSolverConstraintCorrection')
@@ -76,10 +77,10 @@ def createFemCubeWithParams(parentNode, geometry):
     #                                                  'hideMappings hideForceFields showWireframe '
     #                                                  'showInteractionForceFields hideForceFields')
     gelNode.addObject("EulerImplicitSolver", rayleighMass=geometry.rayleigh, rayleighStiffness=geometry.rayleigh)
-    # gelNode.addObject('SparseLDLSolver', name='preconditioner')
-    gelNode.addObject('ShewchukPCGLinearSolver', name='linearSolver', iterations='500', tolerance='1.0e-14',
-                      preconditioners="precond")
-    gelNode.addObject('SparseLDLSolver', name='precond', template='CompressedRowSparseMatrix3d')
+    gelNode.addObject('SparseLDLSolver', name='precond')
+    # gelNode.addObject('ShewchukPCGLinearSolver', name='linearSolver', iterations='500', tolerance='1.0e-14',
+    #                   preconditioners="precond")
+    # gelNode.addObject('SparseLDLSolver', name='precond', template='CompressedRowSparseMatrix3d')
     gelNode.addObject('TetrahedronSetTopologyContainer', src="@../gelVolume/TetraContainer", name='container')
     # gelNode.addObject('TetrahedronSetTopologyModifier')
     gelNode.addObject('MechanicalObject', name='tetras', template='Vec3d')
@@ -93,14 +94,15 @@ def createFemCubeWithParams(parentNode, geometry):
     surfaceNode.addObject('TriangleSetTopologyContainer', name="surfContainer",
                           src="@../../GelSurface/triangleContainer")
     surfaceNode.addObject('MechanicalObject', name='msSurface')
-    surfaceNode.addObject('TriangleCollisionModel', name='surface', group="1")
+    surfaceNode.addObject('TriangleCollisionModel', name='surface')
+    surfaceNode.addObject('LineCollisionModel', name='line')
     surfaceNode.addObject('BarycentricMapping')
     visu = surfaceNode.addChild("visu")
 
     visu.addObject("OglModel", name="Visual", src="@../surfContainer",  color="0.0 0.1 0.9 0.40" )
     visu.addObject("BarycentricMapping", input="@..", output="@Visual")
 
-    gelNode.addObject('GenericConstraintCorrection', solverName='precond')
+    gelNode.addObject('GenericConstraintCorrection', linearSolver='@precond')
     # gelNode.addObject('LinearSolverConstraintCorrection')
 
     return FemNode
