@@ -34,7 +34,7 @@ class FemParams:
 class ContactParams:
     contactDistance: float = 0.01
     alarmDistance: float = 0.1
-    dataMu: string = "mu=0.01"
+    dataMu: string = "mu=0."
     angleCone: float = "0.01"
     coneFactor: float = "0"
 
