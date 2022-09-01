@@ -35,6 +35,7 @@ class Animation(Sofa.Core.Controller):
         Sofa.Core.Controller.__init__(self, *args, **kwargs)
         self.rigidBaseMO = args[0]
         self.rateAngularDeformMO = args[1]
+        self.contactListener = args[2]
 
         self.rate = 0.2
         self.angularRate = 0.02
@@ -45,7 +46,9 @@ class Animation(Sofa.Core.Controller):
         # ######## Rate angular #########
         if key == "I":  # +
             with self.rigidBaseMO.rest_position.writeable() as posA:
-                posA[5][1] += self.angularRate
+                # posA[5][1] += self.angularRate
+                print(f' ====> contactListener 0 : {self.contactListener.getContactPoints()[0][1][0]}')
+                print(f' ====> contactListener 1 : {self.contactListener.getContactPoints()[0][1][1]}')
 
         if key == "K":  # -
             with self.rigidBaseMO.rest_position.writeable() as posA:
@@ -53,6 +56,7 @@ class Animation(Sofa.Core.Controller):
 
         # ######## Reste rigid position #########
         if key == "+":  # up
+
             with self.rigidBaseMO.rest_position.writeable() as posA:
                 qOld = Quat()
                 for i in range(4):
@@ -81,6 +85,7 @@ class Animation(Sofa.Core.Controller):
                 posA[0][0] -= self.rate
 
         if ord(key) == 20:  # right
+            print(f' ====> contactListener : {self.contactListener.getContactPoints()}')
             with self.rigidBaseMO.rest_position.writeable() as posA:
                 posA[0][0] += self.rate
 
@@ -106,9 +111,10 @@ def createScene(rootNode):
     rootNode.addObject('BruteForceBroadPhase')
     rootNode.addObject('BVHNarrowPhase')
     # rootNode.addObject('LocalMinDistance', alarmDistance=1.0, contactDistance=0.01)
-    rootNode.addObject('LocalMinDistance', name="Proximity", alarmDistance=2.,
+    rootNode.addObject('LocalMinDistance', name="Proximity", alarmDistance=0.5,
                        contactDistance=params.contact.contactDistance, coneFactor=params.contact.coneFactor,
                        angleCone=0.1)
+
 
     rootNode.addObject('FreeMotionAnimationLoop')
     # rootNode.addObject('CollisionPipeline', verbose="0")
@@ -137,7 +143,7 @@ def createScene(rootNode):
         Cosserat(parent=solverNode, cosseratGeometry=needleGeometryConfig, radius=params.Geometry.radius,
                  name="needle", youngModulus=params.Physics.youngModulus, poissonRatio=params.Physics.poissonRatio,
                  rayleighStiffness=params.Physics.rayleighStiffness))
-    collisionModel = needle.addPointCollisionModel()
+    needleCollisionModel = needle.addPointCollisionModel()
     slidingPoint = needle.addSlidingPoints()
 
     # Create FEM Node
@@ -162,8 +168,9 @@ def createScene(rootNode):
     inputFEMCableMO = inputFEMCable.getLinkPath()
     outputPointMO = mappedPoints.getLinkPath()
 
-    rootNode.addObject(Animation(needle.rigidBaseNode.RigidBaseMO, needle.cosseratCoordinateNode.cosseratCoordinateMO))
-
+    conttactL = rootNode.addObject('ContactListener', name="contactListener", collisionModel1=cubeNode.gelNode.surfaceNode.surface.getLinkPath(),
+                                   collisionModel2=needleCollisionModel.pointColli.getLinkPath())
+    rootNode.addObject(Animation(needle.rigidBaseNode.RigidBaseMO, needle.cosseratCoordinateNode.cosseratCoordinateMO, conttactL))
     mappedPointsNode.addObject(
         'CosseratNeedleSlidingConstraint', name="QPConstraint")
     mappedPointsNode.addObject('DifferenceMultiMapping', name="pointsMulti", input1=inputFEMCableMO, lastPointIsFixed=0,
