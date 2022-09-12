@@ -60,6 +60,11 @@ DiscreteCosseratMapping<TIn1, TIn2, TOut>::DiscreteCosseratMapping()
                                  "the axis in which we want to show the deformation.\n"))
     , d_drawMapBeam(initData(&d_drawMapBeam, true,"nonColored", "if this parameter is false, you draw the beam with "
                                                                 "color according to the force apply to each beam"))
+    , d_drawBeamSegments(initData(&d_drawBeamSegments, false, "drawBeamSegments", "if true, a visual representation of "
+                                                              "the beam segments will be displayed, according to the "
+                                                              "cross-section shape and dimension. The color of each beam "
+                                                              "represents its mechanical state: red = elastic, "
+                                                              "blue = plastic, green = post-plastic"))
     , d_color(initData(&d_color, type::Vec4f (40/255.0, 104/255.0, 137/255.0, 0.8) ,"color", "The default beam color"))
     , d_index(initData(&d_index, "index", "if this parameter is false, you draw the beam with color "
                                                           "according to the force apply to each beam"))
@@ -67,7 +72,7 @@ DiscreteCosseratMapping<TIn1, TIn2, TOut>::DiscreteCosseratMapping()
                                                                         "base of Cosserat models, 0 by default this can"
                                                                         "take another value if the rigid base is given "
                                                                         "by another body."))
-    , l_fromPlasticForceField(initLink("forcefield","Path to the Cosserat force field component in scene"))
+    , l_fromBeamForceField(initLink("forcefield","Path to the Cosserat force field component in scene"))
 {
     this->addUpdateCallback("updateFrames", {&d_curv_abs_section, &d_curv_abs_frames, &d_debug}, [this](const core::DataTracker& t)
     {
@@ -90,8 +95,9 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::init()
         return;
     }
 
-    if(!l_fromPlasticForceField)
-        msg_info() << "No Cosserat plastic force field found, no visual representation of such forcefield will be displayed.";
+    if(!l_fromBeamForceField)
+        msg_info() << "No Cosserat force field found, no visual representation of such forcefield will be displayed.";
+
     m_fromModel1 = this->getFromModels1()[0]; // Cosserat deformations (torsion and bending), in local frame
     m_fromModel2 = this->getFromModels2()[0]; // Cosserat base, in global frame
     m_toModel = this->getToModels()[0];  // Cosserat rigid frames, in global frame
@@ -601,37 +607,119 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::draw(const core::visual::VisualP
         Orientation.push_back(xData[i].getOrientation());
     }
 
-    //Get access articulated
+    const auto beamCurvAbs = d_curv_abs_section.getValue();
+    const auto nbBeams = beamCurvAbs.size()-1; // beamCurvAbs also contains the curvilinear abscissa for the end of the last beam
+
+    //Get access articulated (Vec3 strain DoFs, defined usually in rateAngularDeform)
     const In1DataVecCoord* artiData = m_fromModel1->read(core::ConstVecCoordId::position());
     const In1VecCoord xPos = artiData->getValue();
 
-    // Drawing a beam representation to display plastic behaviour
-    if (l_fromPlasticForceField)
-    {
-        auto radius = l_fromPlasticForceField->getRadius();
-        auto sectionMechanicalStates = l_fromPlasticForceField->getSectionMechanicalStates();
-        auto nbSections = sectionMechanicalStates.size();
+    // Retrieve the Cosserat base coordinates (necessary to get the beam nodes positions, for display)
+    const auto baseIndex = d_baseIndex.getValue();
+    const In2VecCoord& xfrom2Data = m_fromModel2->read(core::ConstVecCoordId::position())->getValue();
+    Transform frame0 = Transform(In2::getCPos(xfrom2Data[baseIndex]),In2::getCRot(xfrom2Data[baseIndex]));
 
-        for (unsigned int sectionId=0; sectionId < nbSections; sectionId++)
+
+    // Drawing cylinders between the input (beam) frames
+
+    if (d_drawBeamSegments.getValue())
+    {
+        if(!l_fromBeamForceField)
         {
-            RGBAColor drawColor = RGBAColor::gray();
-            if(sectionMechanicalStates[sectionId] == MechanicalState::ELASTIC)
-                drawColor = RGBAColor(191/255.0, 37/255.0, 42/255.0, 0.8); // Red
-            else if(sectionMechanicalStates[sectionId] == MechanicalState::PLASTIC)
-                drawColor = RGBAColor(40/255.0, 104/255.0, 137/255.0, 0.8); // Blue
-            else // MechanicalState::POSTPLASTIC
-                drawColor = RGBAColor(76/255.0, 154/255.0, 50/255.0, 0.8); // Green
-
-            for (unsigned int i=0; i<sz-1; i++)
-                vparams->drawTool()->drawCylinder(positions[i], positions[i+1], radius, drawColor);
+            msg_info() << "No Cosserat force field found, no visual representation of such forcefield will be displayed.";
         }
-    }
-    else
-    {
-        RGBAColor drawColor = d_color.getValue();
-        for (unsigned int i=0; i<sz-1; i++)
-            vparams->drawTool()->drawCylinder(positions[i], positions[i+1], d_radius.getValue(), drawColor);
-    }
+        else
+        {
+            const auto beamLengths = l_fromBeamForceField->getBeamLengths();
+
+            //Initialisation, with the begin frame of the first beam
+            double localBeginNodeCurvAbs = 0.;
+            Vector3 beamStrainDoFs = xPos[0];
+            Transform beginFrameLocalTransform;
+            this->computeExponentialSE3(localBeginNodeCurvAbs,beamStrainDoFs,beginFrameLocalTransform);
+            Transform beginFrameGlobalTransform = frame0 * beginFrameLocalTransform;
+            Vector3 beginFramePos = beginFrameGlobalTransform.getOrigin();
+            type::Quat beginFrameQuat = beginFrameGlobalTransform.getOrientation();
+            vparams->drawTool()->drawFrame(beginFramePos, beginFrameQuat,
+                                           Vector3( 1,1,1 ), sofa::type::RGBAColor::gray());
+
+            // Variables for the beam end frame
+            double localEndNodeCurvAbs = 0.0;
+            Transform endFrameLocalTransform = Transform();
+            Transform endFrameGlobalTransform = Transform();
+            Vector3 endFramePos = Vector3();
+            type::Quat endFrameQuat = type::Quat(0., 0., 0., 1.);
+
+            for (unsigned int beamId=0; beamId < nbBeams; beamId++)
+            {
+                if (beamLengths[beamId] < 1.0e-6) //TO DO: use section dimensions as threshold
+                    continue;
+
+                // Retrieve the end frame of the current beam
+                beamStrainDoFs = xPos[beamId];
+                localEndNodeCurvAbs = beamLengths[beamId];
+
+                this->computeExponentialSE3(localEndNodeCurvAbs,beamStrainDoFs,endFrameLocalTransform);
+
+                // TO DO: is there a way to not loop, but take advantage of the precedent local/global Transform ?
+                // NB: at least, it is not possible to take advantage of the computation done for the frames,
+                // as they can be placed anywhere on the beams by the user (with d_curv_abs_output)
+                endFrameGlobalTransform = frame0;
+                for (unsigned int beamSubId=0; beamSubId < beamId+1; beamSubId++)
+                    endFrameGlobalTransform *= this->m_nodesExponentialSE3Vectors[beamSubId];
+                endFrameGlobalTransform *= endFrameLocalTransform;
+
+                endFramePos = endFrameGlobalTransform.getOrigin();
+                endFrameQuat = endFrameGlobalTransform.getOrientation();
+
+                // Draw the end frame
+                vparams->drawTool()->drawFrame(endFramePos, endFrameQuat,
+                                               Vector3( 1,1,1 ), sofa::type::RGBAColor::gray());
+
+                //Draw a beam, which colour indicates the mechanical state
+
+
+                const auto sectionMechanicalStates = l_fromBeamForceField->getSectionMechanicalStates();
+                RGBAColor drawColor = RGBAColor::gray();
+                if (l_fromBeamForceField->isPlastic())
+                {
+                    if(sectionMechanicalStates[beamId] == MechanicalState::ELASTIC)
+                        drawColor = RGBAColor(191/255.0, 37/255.0, 42/255.0, 0.8); // Red
+                    else if(sectionMechanicalStates[beamId] == MechanicalState::PLASTIC)
+                        drawColor = RGBAColor(40/255.0, 104/255.0, 137/255.0, 0.8); // Blue
+                    else // MechanicalState::POSTPLASTIC
+                        drawColor = RGBAColor(76/255.0, 154/255.0, 50/255.0, 0.8); // Green
+                 }
+                else
+                {
+                    drawColor = d_color.getValue();
+                }
+
+                auto crossSectionShape = l_fromBeamForceField->getCrossSectionShape();
+                if (crossSectionShape.getSelectedItem() == "rectangular")
+                {
+                    const auto lengthY = l_fromBeamForceField->getLengthY();
+                    const auto lengthZ = l_fromBeamForceField->getLengthZ();
+                    //TO DO: change for an actual parallelepiped
+                    vparams->drawTool()->drawCylinder(beginFramePos, endFramePos, std::min(lengthY, lengthZ), drawColor);
+                }
+                else // crossSectionShape.getSelectedItem() == "circular"
+                {
+                    const auto radius = l_fromBeamForceField->getRadius();
+                    vparams->drawTool()->drawCylinder(beginFramePos, endFramePos, radius, drawColor);
+                }
+
+                //Update begin frame for next step
+                beginFramePos = endFramePos;
+            }
+        } // if l_fromBeamForceField
+    } // if d_drawBeamSegments
+
+    // Drawing cylinders between the output frames
+    RGBAColor drawFrameColor = d_color.getValue();
+    for (unsigned int i=0; i<sz-1; i++)
+        vparams->drawTool()->drawCylinder(positions[i], positions[i+1],
+                                          d_radius.getValue(), drawFrameColor);
 
 
     //Define color map

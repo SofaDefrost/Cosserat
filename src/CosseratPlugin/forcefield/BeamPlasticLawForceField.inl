@@ -156,11 +156,7 @@ void BeamPlasticLawForceField<DataTypes>::reinit()
     m_prevStress.clear();
     m_prevStress.resize(nbSections, Vec3());
 
-    // Initialisaiton of the section mechanical states to ELASTIC
-    m_sectionMechanicalStates.clear();
-    m_sectionMechanicalStates.resize(nbSections, MechanicalState::ELASTIC);
-
-    // Initialisaiton of the tangent stiffness matrices with the elastic stiffness matrices
+    // Initialisation of the tangent stiffness matrices with the elastic stiffness matrices
     m_Kt_sectionList.clear();
     if (!this->d_variantSections.getValue())
     {
@@ -273,7 +269,7 @@ void BeamPlasticLawForceField<DataTypes>::computeStressIncrement(unsigned int se
     /// corresponds to an associative flow rule (for plasticity).
 
     //// First step = computation of the elastic predictor, as if deformation was entirely elastic
-    const MechanicalState mechanicalState = m_sectionMechanicalStates[sectionId];
+    const MechanicalState mechanicalState = this->m_sectionMechanicalStates[sectionId];
 
     Vec3 elasticIncrement = Vec3();
     if (!this->d_variantSections.getValue())
@@ -294,13 +290,13 @@ void BeamPlasticLawForceField<DataTypes>::computeStressIncrement(unsigned int se
 
         // If the segment was initially plastic, we update its mechanical state
         if (mechanicalState == MechanicalState::PLASTIC)
-            m_sectionMechanicalStates[sectionId] = MechanicalState::POSTPLASTIC;
+            this->m_sectionMechanicalStates[sectionId] = MechanicalState::POSTPLASTIC;
     }
     else
     {
         // If the segment was initially elastic, we update its mechanical state
         if (mechanicalState == MechanicalState::POSTPLASTIC || mechanicalState == MechanicalState::ELASTIC)
-            m_sectionMechanicalStates[sectionId] = MechanicalState::PLASTIC;
+            this->m_sectionMechanicalStates[sectionId] = MechanicalState::PLASTIC;
 
         // /!\ We here consider that we obtain a deviatoric stress tensor, as the diagonal components of a
         // complete stress tensor, representing the axial stresses, are ignored in the model.
@@ -382,7 +378,7 @@ void BeamPlasticLawForceField<DataTypes>::updateTangentStiffness(unsigned int se
     Vec3 gradient = vonMisesGradient(currentStressPoint);
 
     if (correctedNorm(gradient) < m_stressComparisonThreshold
-        || m_sectionMechanicalStates[sectionId] != MechanicalState::PLASTIC)
+        || this->m_sectionMechanicalStates[sectionId] != MechanicalState::PLASTIC)
         Cep = C; //TO DO: is that correct ?
     else
     {
@@ -458,7 +454,7 @@ void BeamPlasticLawForceField<DataTypes>::addForce(const MechanicalParams* mpara
         computeStressIncrement(i, strainIncrement, newStressPoint);
 
         // If the beam is in plastic state, we update the tangent stiffness matrix
-        const MechanicalState mechanicalState = m_sectionMechanicalStates[i];
+        const MechanicalState mechanicalState = this->m_sectionMechanicalStates[i];
         if (mechanicalState == MechanicalState::PLASTIC)
             updateTangentStiffness(i);
 
@@ -554,11 +550,10 @@ typename BeamPlasticLawForceField<DataTypes>::Real BeamPlasticLawForceField<Data
     return helper::rsqrt(2*tensorYZ*tensorYZ + 2*tensorXZ*tensorXZ + 2*tensorXY*tensorXY);
 }
 
-
-template< class DataTypes>
-const sofa::type::vector<typename BeamPlasticLawForceField<DataTypes>::MechanicalState>& BeamPlasticLawForceField<DataTypes>::getSectionMechanicalStates()
+template<typename DataTypes>
+bool BeamPlasticLawForceField<DataTypes>::isPlastic() const
 {
-    return m_sectionMechanicalStates;
+    return true;
 }
 
 } // sofa::component::forcefield

@@ -155,7 +155,7 @@ def createScene(rootNode):
     hardeningCoefficientList = [hardeningCoeff]*nbBeams
     rateAngularDeformNode.addObject('BeamPlasticLawForceField', name="beamForceField",
                                     crossSectionShape=beamCrossSectionShape,
-                                    radius=sectionRadius, varianteSections="true",
+                                    radius=sectionRadius, variantSections="true",
                                     length=beamLengths, poissonRatioList=beamPoissonRatioList,
                                     youngModulusList=beamYoungModulusList,
                                     initialYieldStresses=yieldStressList,

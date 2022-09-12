@@ -107,6 +107,7 @@ protected:
     Data<Real2>                             d_min;
     Data<Real1>                             d_radius ;
     Data<bool>                              d_drawMapBeam ;
+    Data<bool>                              d_drawBeamSegments;
     Data<type::Vec4f>                       d_color;
     Data<type::vector<int> >                d_index;
     Data<unsigned int>                      d_baseIndex;
@@ -119,7 +120,7 @@ public:
     typedef MultiLink<DiscreteCosseratMapping<In1,In2,Out>, sofa::core::State< In2 >, BaseLink::FLAG_STOREPATH|BaseLink::FLAG_STRONGLINK> LinkFromModels2;
     typedef MultiLink<DiscreteCosseratMapping<In1,In2,Out>, sofa::core::State< Out >, BaseLink::FLAG_STOREPATH|BaseLink::FLAG_STRONGLINK> LinkToModels;
 
-    typedef SingleLink<DiscreteCosseratMapping<In1,In2,Out>, BeamPlasticLawForceField<In1>, BaseLink::FLAG_STOREPATH|BaseLink::FLAG_STRONGLINK> LinkToPlasticForceField;
+    typedef SingleLink<DiscreteCosseratMapping<In1,In2,Out>, BeamHookeLawForceField<In1>, BaseLink::FLAG_STOREPATH|BaseLink::FLAG_STRONGLINK> LinkToBeamForceField;
 
 
 
@@ -146,7 +147,7 @@ protected:
     using BaseCosserat<TIn1, TIn2, TOut>::m_indicesVectorsDraw;
 
     // Link with Cosserat force field, for visualisation purposes
-    LinkToPlasticForceField l_fromPlasticForceField;
+    LinkToBeamForceField l_fromBeamForceField;
 
 protected:
     /// Constructor    

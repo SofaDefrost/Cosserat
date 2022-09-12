@@ -155,7 +155,7 @@ void BaseCosserat<TIn1, TIn2, TOut>::update_ExponentialSE3(const In1VecCoord & i
 
     // Check on the number of beams compared to the size of the associated MechanicalObject
     const unsigned int nbBeams = m_BeamLengthVectors.size();
-    if (nbBeams > sz)
+    if (nbBeams > inDeform.size())
     {
         msg_error("BaseCosserat") << "The number of beams defined in the Cosserat mapping should be inferior "
                                   << "(or equal) to the size of the associated MechanicalObject.\n";
@@ -432,4 +432,3 @@ void BaseCosserat<TIn1, TIn2, TOut>::draw(const core::visual::VisualParams* vpar
         if(!d_debug.getValue()) return;
 }
 }
-
