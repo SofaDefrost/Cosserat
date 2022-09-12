@@ -107,6 +107,7 @@ protected:
     Data<Real2>                             d_min;
     Data<Real1>                             d_radius ;
     Data<bool>                              d_drawMapBeam ;
+    Data<bool>                              d_drawBeamSegments;
     Data<type::Vec4f>                       d_color;
     Data<type::vector<int> >                d_index;
     Data<unsigned int>                      d_baseIndex;

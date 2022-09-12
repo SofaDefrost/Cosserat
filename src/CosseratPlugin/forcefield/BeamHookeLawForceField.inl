@@ -271,13 +271,31 @@ namespace sofa::component::forcefield
     }
 
     template<typename DataTypes>
+    auto BeamHookeLawForceField<DataTypes>::getCrossSectionShape() const -> helper::OptionsGroup
+    {
+        return d_crossSectionShape.getValue();
+    }
+
+    template<typename DataTypes>
     auto BeamHookeLawForceField<DataTypes>::getRadius() const -> Real
     {
         return d_radius.getValue();
     }
 
     template<typename DataTypes>
-    auto BeamHookeLawForceField<DataTypes>::getLengths() const -> type::vector<Real>
+    auto BeamHookeLawForceField<DataTypes>::getLengthY() const -> Real
+    {
+        return d_lengthY.getValue();
+    }
+
+    template<typename DataTypes>
+    auto BeamHookeLawForceField<DataTypes>::getLengthZ() const -> Real
+    {
+        return d_lengthZ.getValue();
+    }
+
+    template<typename DataTypes>
+    auto BeamHookeLawForceField<DataTypes>::getBeamLengths() const -> type::vector<Real>
     {
         return d_length.getValue();
     }

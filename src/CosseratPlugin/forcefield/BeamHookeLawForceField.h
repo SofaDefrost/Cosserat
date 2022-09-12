@@ -136,8 +136,11 @@ public :
 
     virtual bool isPlastic() const;
     auto getSectionMechanicalStates() -> vector<MechanicalState>&;
+    auto getCrossSectionShape() const -> helper::OptionsGroup;
     auto getRadius() const -> Real;
-    auto getLengths() const -> type::vector<Real>;
+    auto getLengthY() const -> Real;
+    auto getLengthZ() const -> Real;
+    auto getBeamLengths() const -> type::vector<Real>;
 
 protected:
     Data<helper::OptionsGroup>   d_crossSectionShape;
