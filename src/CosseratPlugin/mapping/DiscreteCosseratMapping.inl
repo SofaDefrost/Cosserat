@@ -67,7 +67,7 @@ DiscreteCosseratMapping<TIn1, TIn2, TOut>::DiscreteCosseratMapping()
                                                                         "base of Cosserat models, 0 by default this can"
                                                                         "take another value if the rigid base is given "
                                                                         "by another body."))
-    , l_fromPlasticForceField(initLink("forcefield","Path to the Cosserat force field component in scene"))
+    , l_fromBeamForceField(initLink("forcefield","Path to the Cosserat force field component in scene"))
 {
     this->addUpdateCallback("updateFrames", {&d_curv_abs_section, &d_curv_abs_frames, &d_debug}, [this](const core::DataTracker& t)
     {
@@ -90,8 +90,9 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::init()
         return;
     }
 
-    if(!l_fromPlasticForceField)
-        msg_info() << "No Cosserat plastic force field found, no visual representation of such forcefield will be displayed.";
+    if(!l_fromBeamForceField)
+        msg_info() << "No Cosserat force field found, no visual representation of such forcefield will be displayed.";
+
     m_fromModel1 = this->getFromModels1()[0]; // Cosserat deformations (torsion and bending), in local frame
     m_fromModel2 = this->getFromModels2()[0]; // Cosserat base, in global frame
     m_toModel = this->getToModels()[0];  // Cosserat rigid frames, in global frame

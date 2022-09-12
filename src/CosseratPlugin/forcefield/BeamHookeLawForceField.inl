@@ -166,6 +166,11 @@ namespace sofa::component::forcefield
                                                  "mechanical properties) and pre-calculated inertia parameters "
                                                  "(GI, GA, etc.), this is not yet supported.";
         }
+
+        // Initialisation of the section mechanical states to ELASTIC
+        size_t nbSections = d_length.getValue().size();
+        m_sectionMechanicalStates.clear();
+        m_sectionMechanicalStates.resize(nbSections, MechanicalState::ELASTIC);
     }
 
     template<typename DataTypes>
@@ -259,11 +264,28 @@ namespace sofa::component::forcefield
         }
     }
 
+    template<typename DataTypes>
+    bool BeamHookeLawForceField<DataTypes>::isPlastic() const
+    {
+        return false;
+    }
 
     template<typename DataTypes>
-    typename BeamHookeLawForceField<DataTypes>::Real BeamHookeLawForceField<DataTypes>::getRadius()
+    auto BeamHookeLawForceField<DataTypes>::getRadius() const -> Real
     {
         return d_radius.getValue();
+    }
+
+    template<typename DataTypes>
+    auto BeamHookeLawForceField<DataTypes>::getLengths() const -> type::vector<Real>
+    {
+        return d_length.getValue();
+    }
+
+    template<typename DataTypes>
+    auto BeamHookeLawForceField<DataTypes>::getSectionMechanicalStates() -> vector<MechanicalState>&
+    {
+        return m_sectionMechanicalStates;
     }
 
 } // forcefield

@@ -43,6 +43,7 @@ public:
     typedef typename DataTypes::VecCoord VecCoord;
     typedef typename DataTypes::VecDeriv VecDeriv;
     typedef typename DataTypes::Coord    Coord;
+    typedef typename BeamHookeLawForceField<DataTypes>::MechanicalState MechanicalState;
 
     typedef Data<VecCoord>    DataVecCoord;
     typedef Data<VecDeriv>    DataVecDeriv;
@@ -50,17 +51,6 @@ public:
     typedef Vec<3, Real>                Vec3;
     typedef Mat<3, 3, Real>             Mat33;
 
-    /** \enum class MechanicalState
-     *  \brief Types of mechanical state depending of the strain level. The
-     *  POSTPLASTIC state corresponds to points which underwent plastic strain, 
-     *  but on which constraints were released so that the plasticity process
-     *  stopped.
-     */
-    enum class MechanicalState {
-        ELASTIC = 0,
-        PLASTIC = 1,
-        POSTPLASTIC = 2,
-    };
 
 public:
 
@@ -85,7 +75,8 @@ public:
                       const MultiMatrixAccessor* matrix) override;
     ///////////////////////////////////////////////////////////////////////////
 
-    const vector<MechanicalState>& getSectionMechanicalStates();
+    // Inherited from BeamHookeLawForceField
+    bool isPlastic() const;
 
 protected:
 
@@ -109,8 +100,6 @@ protected:
     VecCoord m_lastStrain;
     /// List of the stress associated to each length sections, at the previous time step
     vector<Vec3> m_prevStress;
-    /// List of mechanical states associated to the length sections
-    vector<MechanicalState> m_sectionMechanicalStates;
     /// List of tangent stiffness matrices, taking into account the plastic deformation of the length sections
     vector<Mat33> m_Kt_sectionList;
 
