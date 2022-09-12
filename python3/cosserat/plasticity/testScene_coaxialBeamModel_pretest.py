@@ -63,15 +63,15 @@ def createScene(rootNode):
 
     # ----- Rigid base ----- #
 
-    beamNode = rootNode.addChild('beamNode')
-    beamNode.addObject('EulerImplicitSolver', rayleighStiffness="1.2", rayleighMass='1.1')
-    # beamNode.addObject('CGLinearSolver', name="solver",
+    instrument0Node = rootNode.addChild('Instrument0')
+    instrument0Node.addObject('EulerImplicitSolver', rayleighStiffness="1.2", rayleighMass='1.1')
+    # instrument0Node.addObject('CGLinearSolver', name="solver",
     #                    iterations='100', tolerance='1e-5', threshold='1e-5')
-    beamNode.addObject('SparseLUSolver',
+    instrument0Node.addObject('SparseLUSolver',
                                template='CompressedRowSparseMatrixd',
                                printLog="false")
 
-    rigidBaseNode= beamNode.addChild('rigidBase')
+    rigidBaseNode= instrument0Node.addChild('rigidBase')
     RigidBaseMO = rigidBaseNode.addObject('MechanicalObject', template='Rigid3d',
                                           name="RigidBaseMO", position=[0., 0., 0., 0, 0, 0, 1],
                                           showObject=True,
@@ -113,7 +113,7 @@ def createScene(rootNode):
     beamCurvAbscissa[nbBeams+nbStockBeams] = totalLength
 
     # Define angular rate which is the torsion(x) and bending (y, z) of each section
-    rateAngularDeformNode = beamNode.addChild('rateAngularDeform')
+    rateAngularDeformNode = instrument0Node.addChild('rateAngularDeform')
     rateAngularDeformMO = rateAngularDeformNode.addObject('MechanicalObject',
                                                           template='Vec3d',
                                                           name='rateAngularDeformMO',
@@ -197,12 +197,12 @@ def createScene(rootNode):
     mappedFrameNode.addObject('DiscreteCosseratMapping', curv_abs_input=beamCurvAbscissa,
                               curv_abs_output=framesCurvAbscissa, input1=inputMO, input2=inputMO_rigid,
                               output=outputMO, forcefield='@../../rateAngularDeform/beamForceField',
-                              nonColored=False, debug=0)
+                              drawBeamSegments=True, nonColored=False, debug=0)
 
     # mappedFrameNode.addObject('ConstantForceField', name='Moment',
     #                           indices=nbFrames-4,
     #                           forces=np.array([0, 0, 0, 0, 0, 8e4]))
-    
+
 
 
     # -------------------------------------------------------------------- #

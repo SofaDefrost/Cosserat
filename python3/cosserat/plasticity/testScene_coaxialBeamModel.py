@@ -206,7 +206,7 @@ def createScene(rootNode):
     mappedFrameNode.addObject('DiscreteCosseratMapping', curv_abs_input=beamCurvAbscissa,
                               curv_abs_output=framesCurvAbscissa, input1=inputMO, input2=inputMO_rigid,
                               output=outputMO, forcefield='@../../rateAngularDeform0/beamForceField',
-                              nonColored=False, debug=0, printLog=False)
+                              drawBeamSegments=True, nonColored=False, debug=0, printLog=False)
 
     # mappedFrameNode.addObject('ConstantForceField', name='Moment',
     #                           indices=nbFrames-4,
