@@ -17,6 +17,7 @@ import Sofa.constants.Key as Key
 import numpy as np
 import math
 import logging
+import warnings
 from pyquaternion import Quaternion as Quat
 
 # Python controller to simulate the navigation of coaxial instruments represented
@@ -67,7 +68,6 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
                  curvAbsTolerance,
                  instrumentLengths,
                  *args, **kwargs):
-        # These are needed (and the normal way to override from a python class)
         Sofa.Core.Controller.__init__(self, *args, **kwargs)
 
         ### Checking for the scene graph structure ###
@@ -75,10 +75,10 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
         self.rootNode = rootNode
 
         # Cosserat beam node
-        beamNode = rootNode.getChild('beamNode')
+        beamNode = rootNode.getChild('Instrument0')
         if beamNode is None:
-            raise NameError('[CombinedInstrumentsController]: Node \'beamNode\' not found. Your scene should '
-                            'contain a node named \'beamNode\' among the children of the root node in order '
+            raise NameError('[CombinedInstrumentsController]: Node \'Instrument0\' not found. Your scene should '
+                            'contain a node named \'Instrument0\' among the children of the root node in order '
                             'to use this controller')
         self.rigidBaseNode = beamNode.getChild('rigidBase')
         self.mappedFramesNode = self.rigidBaseNode.getChild('MappedFrames')
@@ -178,11 +178,18 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
         instrumentIdsForNodeVect = result['instrumentIdsForNodeVect']
         decimatedCurvAbs = result['decimatedCurvAbs']
 
+        print("New decimated curvilinear abscissas : {}".format(decimatedCurvAbs))
+        print("New vector for instrument Ids : {}".format(instrumentIdsForNodeVect))
+
 
         #----- Step 3 :  -----#
 
         # Apply changes on the Cosserat components
-        #TO DO next : Debug with 3instr_collis to understand the update of MO in the IRC
+        # TO DO: from the new curv abs, mimick step3 from the IRC Controller
+        #  - apply changes of CA on the controlled instrument (move the Cosserat base, correct beam length, update frames, and apply force on the base according to the motion)
+        #  - /!\ Adapt beam length so that the extremity of the beams match between the different isInstrumentStraightVect
+        #      => the beam length is no longer determined by the user, but by the configuration
+        #      => Alternative = if the beams (sections) are not coincident, is it possible to constrain them properly ?
 
 
 
@@ -229,7 +236,7 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
         maxCurvilinearAbscissa = 0. # Max curvilinear abscissa among the key points
 
         for instrumentId in range(0,self.nbInstruments):
-            # Add proximal end point
+            # Add first key point = proximal extremity point
             beginNodeCurvAbs = xBeginVect[instrumentId] + 0.0
             # TO DO: are the two check below relevent for the first key point ?
             if (beginNodeCurvAbs > 0):
@@ -242,7 +249,7 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
             # intermediary key points. For each corresponding interval,
             # also add the points based on the beam density on the interval.
 
-            # Add distal end point
+            # Add second key point = distal extremity point
             endNodeCurvAbs = xBeginVect[instrumentId] + self.instrumentLengths[instrumentId]
             if (endNodeCurvAbs > 0):
                 # If the distal end of the interval is visible (curv. abs. > 0),
@@ -313,17 +320,37 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
     def onKeypressedEvent(self, event):
 
         if event['key'] == Key.uparrow:  # Up arrow
-            self.moveForward(self.insertionDirection, self.insertionRate)
+            self.moveForward(self.incrementDistance)
 
         if event['key'] == Key.downarrow:  # Down arrow
-            self.moveBackward(self.insertionDirection, self.insertionRate)
+            self.moveBackward(self.incrementDistance)
 
+        if event['key'] == '0':
+            self.currentInstrumentId = 0
+            print("Currently controlled: instrument 0")
 
-    def moveForward(self, direction, intensity):
-        pass
+        if event['key'] == '1':
+            if self.nbInstruments <= 1:
+                warnings.warn("Instrument number 1 doesn't exist (only one instrument (0) is available).".format(self.nbInstruments))
+            else:
+                self.currentInstrumentId = 0
+                print("Currently controlled: instrument 1")
 
-    def moveBackward(self, direction, intensity):
-        pass
+        if event['key'] == '2':
+            if self.nbInstruments <= 2:
+                warnings.warn("Instrument number 1 doesn't exist (avalaible instruments are from 0 to {}).".format(self.nbInstruments))
+            else:
+                self.currentInstrumentId = 2
+                print("Currently controlled: instrument 2")
+
+    def moveForward(self, distanceIncrement):
+        self.tipCurvAbsVect[self.currentInstrumentId] += distanceIncrement
+        # print("New tip curvilinear abscissa for instrument {}: {}".format(self.currentInstrumentId, self.tipCurvAbsVect[self.currentInstrumentId]))
+        # TO DO: check that the tip isn't too far here ?
+
+    def moveBackward(self, distanceIncrement):
+        self.tipCurvAbsVect[self.currentInstrumentId] -= distanceIncrement
+        # TO DO: check that the tip isn't <0 here ?
 
     def rotateClockwise():
         pass
