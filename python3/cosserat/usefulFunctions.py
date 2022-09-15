@@ -29,15 +29,14 @@ rateLength = [1.2, 0.5, 0.7, 0.5, 0.7, 0.5, 0.7, 0.5, 0.7, 0.5, 0.7, 0.5, 0.7, 0
 draw_cylinder = 1
 add_collision_point = 1
 
-pluginNameList = 'SofaConstraint SofaDeformable SofaImplicitOdeSolver SofaMeshCollision SofaPreconditioner' \
-                 ' SofaGeneralTopology SofaOpenglVisual SofaGeneralRigid SoftRobots SofaSparseSolver' \
-                 ' CosseratPlugin SofaBoundaryCondition SofaGeneralAnimationLoop SofaRigid'  # BeamAdapter
-
-pluginList = ['SofaConstraint', 'SofaDeformable', 'SofaImplicitOdeSolver', 'SofaMeshCollision', 'SofaPreconditioner', 'Sofa.Component.IO.Mesh', 'Sofa.Component.Mass', 'Sofa.Component.Topology.Container.Dynamic', 'Sofa.GL.Component.Rendering3D',
-              'SofaGeneralTopology', 'SofaOpenglVisual', 'SofaGeneralRigid', 'SoftRobots', 'SofaSparseSolver', 'Sofa.Component.Constraint.Lagrangian.Correction', 'Sofa.Component.SceneUtility', 'Sofa.Component.SolidMechanics.FEM.Elastic',
-              'CosseratPlugin', 'SofaBoundaryCondition', 'Sofa.Component.AnimationLoop', 'SofaRigid', 'Sofa.Component.Constraint.Lagrangian.Solver', 'Sofa.Component.Engine.Select', 'Sofa.Component.Setting',
-              "Sofa.Component.LinearSolver.Direct", "Sofa.Component.MechanicalLoad", "Sofa.Component.ODESolver.Backward", "Sofa.Component.SolidMechanics.Spring", "Sofa.Component.Visual", 'Sofa.Component.Collision.Detection.Algorithm',
-              "Sofa.Component.Collision.Detection.Intersection", "Sofa.Component.Collision.Geometry", "Sofa.Component.Collision.Response.Contact", "Sofa.Component.Mapping.MappedMatrix", "Sofa.Component.Topology.Container.Grid",
+pluginList = ['SofaPreconditioner', 'Sofa.Component.IO.Mesh', 'Sofa.Component.Mass', 'Sofa.Component.Topology.Container.Dynamic', 'Sofa.GL.Component.Rendering3D',
+               'SoftRobots',
+               'Sofa.Component.Collision.Geometry', 'Sofa.Component.Collision.Detection.Intersection', 'Sofa.Component.Collision.Response.Mapper', 'Sofa.Component.Collision.Response.Contact','Sofa.Component.Constraint.Lagrangian.Correction', 'Sofa.Component.SceneUtility', 'Sofa.Component.SolidMechanics.FEM.Elastic',
+              'CosseratPlugin', 'Sofa.Component.AnimationLoop', 'Sofa.Component.Constraint.Lagrangian.Solver', 'Sofa.Component.Engine.Select', 'Sofa.Component.Setting',
+              "Sofa.Component.LinearSolver.Direct", "Sofa.Component.MechanicalLoad", "Sofa.Component.ODESolver.Backward", "Sofa.Component.SolidMechanics.Spring", "Sofa.Component.Visual", 'Sofa.Component.Collision.Detection.Algorithm', 'Sofa.Component.Mapping',
+              "Sofa.Component.Collision.Detection.Intersection", "Sofa.Component.Collision.Geometry", "Sofa.Component.Collision.Response.Contact", "Sofa.Component.Mapping.MappedMatrix", "Sofa.Component.Topology.Container.Grid","Sofa.Component.Mapping.NonLinear",
+              "Sofa.Component.Constraint.Lagrangian.Model",
+              "Sofa.Component.Collision.Response.Mapper",
               "Sofa.Component.Topology.Mapping", "Sofa.Component.LinearSolver.Iterative"]
 
 

@@ -149,17 +149,8 @@ def createScene(rootNode):
                        contactDistance=params.contact.contactDistance, coneFactor=params.contact.coneFactor,
                        angleCone=0.1)
 
-    rootNode.addObject('FreeMotionAnimationLoop')
-    # rootNode.addObject('CollisionPipeline', verbose="0")
-    # rootNode.addObject('BruteForceDetection', name="N2")
-    # rootNode.addObject('DefaultContactManager',
-    #                    response="FrictionContactConstraint", responseParams=params.contact.dataMu)
-    # rootNode.addObject('LocalMinDistance', name="Proximity", alarmDistance=params.contact.alarmDistance,
-    #                    contactDistance=params.contact.contactDistance, coneFactor=params.contact.coneFactor,
-    #                    angleCone=params.contact.angleCone)
-
-    generic = rootNode.addObject('GenericConstraintSolver', tolerance="1e-20", maxIterations="500",
-                                 computeConstraintForces=1, printLog="0")
+    rootNode.addObject('FreeMotionAnimationLoop')    
+    generic = rootNode.addObject('GenericConstraintSolver', tolerance="1e-20", maxIterations="500", computeConstraintForces=1, printLog="0")
 
     gravity = [0, 0, 0]
     rootNode.gravity.value = gravity
