@@ -160,10 +160,10 @@ public:
 public:
     /********************** The component Data **************************/
     //Input data
-    Data<vector<Rigid>>                d_direction;
+    Data<vector<Rigid>>                 d_direction;
     Data<vector<unsigned int>>          d_indices;
     Data<double>                        d_radius;
-    Data<sofa::type::Vec4f>      d_color;
+    Data<sofa::type::Vec4f>             d_color;
     Data<bool>                          d_drawArrows;
     Data<bool>                          d_lastPointIsFixed;
 

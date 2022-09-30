@@ -18,8 +18,9 @@ Contents of the library
     cosserat.actuators
     cosserat.inverse
     cosserat.testScene
+    cosserat.needle
     
 
 """
 
-__all__ = ["cosseratObject", "nonLinearCosserat", "actuators", "scenes", "needle", "inverse", "usefulFunctions"]
+__all__ = ["cosseratObject", "nonLinearCosserat", "actuators", "scenes", "needle", "inverse", "usefulFunctions", "createFemRegularGrid"]
