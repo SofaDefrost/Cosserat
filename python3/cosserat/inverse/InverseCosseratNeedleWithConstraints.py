@@ -4,6 +4,9 @@
 Based on the work done with SofaPython. See POEMapping.py.
 """
 
+# from usefulFunctions import MoveTargetProcess
+from cosserat.usefulFunctions import buildEdges, pluginList, BuildCosseratGeometry, MoveTargetProcess
+from createFemRegularGrid import createFemCube
 __authors__ = "younesssss"
 __contact__ = "adagolodjo@protonmail.com, yinoussa.adagolodjo@inria.fr"
 __version__ = "1.0.0"
@@ -14,16 +17,16 @@ import os
 import sys
 
 sys.path.append('../')
-from createFemRegularGrid import createFemCube
-from usefulFunctions import BuildCosseratGeometry, MoveTargetProcess
 
 
 def effectorTarget(parentNode, position=[80., 0., 0.35857]):
     target = parentNode.createChild("Target")
     target.addObject("EulerImplicitSolver", firstOrder=True)
-    target.addObject('VisualStyle', displayFlags='showVisualModels showInteractionForceFields showCollisionModels')
+    target.addObject(
+        'VisualStyle', displayFlags='showVisualModels showInteractionForceFields showCollisionModels')
     target.addObject("CGLinearSolver")
-    targetMO = target.addObject("MechanicalObject", name="dofs", position=position, showObject=0, showObjectScale=0, drawMode=0, showColor=[1., 1., 1., 1.])
+    targetMO = target.addObject("MechanicalObject", name="dofs", position=position,
+                                showObject=0, showObjectScale=0, drawMode=0, showColor=[1., 1., 1., 1.])
     target.addObject('SphereCollisionModel', radius='2')
     target.addObject("UncoupledConstraintCorrection")
     return [target, targetMO]
@@ -31,10 +34,9 @@ def effectorTarget(parentNode, position=[80., 0., 0.35857]):
 
 def createScene(rootNode):
     from stlib3.scene import MainHeader
-    MainHeader(rootNode, plugins=["SoftRobots", "SoftRobots.Inverse", "SofaSparseSolver", 'SofaDeformable',
-                                  "SofaPreconditioner", "SofaOpenglVisual", "CosseratPlugin", "BeamAdapter",
-                                  "SofaGeneralRigid", "SofaImplicitOdeSolver", 'SofaEngine', 'SofaMeshCollision',
-                                  'SofaSimpleFem', 'SofaTopologyMapping', 'SofaConstraint'],
+    MainHeader(rootNode, plugins=pluginList +
+               ["SoftRobots.Inverse", "Sofa.Component.LinearSolver.Iterative", "Sofa.Component.Collision.Response.Contact",
+                "Sofa.Component.Collision.Geometry", "Sofa.Component.Collision.Detection.Intersection", "Sofa.Component.Collision.Detection.Algorithm"],
                repositoryPaths=[os.getcwd()])
     rootNode.addObject('VisualStyle',
                        displayFlags='showVisualModels hideBehaviorModels showCollisionModels '
@@ -42,10 +44,12 @@ def createScene(rootNode):
                                     'showWireframe')
 
     rootNode.addObject('FreeMotionAnimationLoop')
-    rootNode.createObject('QPInverseProblemSolver', printLog='0', epsilon=0.0002)
+    rootNode.createObject('QPInverseProblemSolver',
+                          printLog='0', epsilon=0.0002)
     rootNode.addObject('CollisionPipeline', depth="6", verbose="0", draw="1")
     rootNode.addObject('BruteForceDetection', name="N2")
-    rootNode.addObject('DefaultContactManager', response="FrictionContact", responseParams="mu=0.65")
+    rootNode.addObject('DefaultContactManager',
+                       response="FrictionContact", responseParams="mu=0.65")
     rootNode.addObject('LocalMinDistance', name="Proximity", alarmDistance="0.6", contactDistance="0.44",
                        angleCone="0.01")
 
@@ -59,7 +63,8 @@ def createScene(rootNode):
     # New adds to use the sliding Actuator  #
     #########################################
     cableNode = rootNode.addChild('cableNode')
-    cableNode.addObject('EulerImplicitSolver', firstOrder="0", rayleighStiffness="1.0", rayleighMass='0.1')
+    cableNode.addObject('EulerImplicitSolver', firstOrder="0",
+                        rayleighStiffness="1.0", rayleighMass='0.1')
     cableNode.addObject('SparseLUSolver', name='solver')
     cableNode.addObject('GenericConstraintCorrection')
 
@@ -75,16 +80,19 @@ def createScene(rootNode):
 
     #################################################################
     ##  Sliding actuator to guide the base of the needle, only the  ##
-    ##  translation are tacking into account here.
+    # translation are tacking into account here.
     #################################################################
-    for j in range(0, 6):
+    for j in range(6):
         direction = [0, 0, 0, 0, 0, 0]
         direction[j] = 1
-        rigidBaseNode.addObject('SlidingActuator', name="SlidingActuator" + str(j), template='Rigid3d',
+        rigidBaseNode.addObject('SlidingActuator', name=f"SlidingActuator{str(j)}", template='Rigid3d',
                                 direction=direction, indices=0, maxForce='1e6', minForce='-30000')
 
+    cosserat_config = {'init_pos': [0., 0., 0.], 'tot_length': 80, 'nbSectionS': 8,
+                       'nbFramesF': 16, 'beamMass': 0.22}
+
     [positionS, curv_abs_inputS, longeurS, framesF, curv_abs_outputF, cable_positionF] = \
-        BuildCosseratGeometry(nbSection=8, nbFrames=16, totalLength=80)
+        BuildCosseratGeometry(cosserat_config)
 
     #############################################
     # Rate of angular Deformation  (2 sections)
@@ -147,7 +155,8 @@ def createScene(rootNode):
     femPos = [" 41.0 0 0  45 0 0 50 0 0 55 0 0 "]
     gelNode = cubeNode.getChild('gelNode')
     femPoints = gelNode.addChild('femPoints')
-    inputFEMCable = femPoints.addObject('MechanicalObject', name="pointsInFEM", position=femPos, showIndices="1")
+    inputFEMCable = femPoints.addObject(
+        'MechanicalObject', name="pointsInFEM", position=femPos, showIndices="1")
     femPoints.addObject('BarycentricMapping')
 
     ####################################################################################
@@ -158,16 +167,18 @@ def createScene(rootNode):
     effector = mappedFrameNode.addChild('fingertip')
     effMO = effector.addObject('MechanicalObject', position=[80., 0., 0.35857])
     posEffector = effector.addObject('PositionEffector', template='Vec3d', indices="0",
-                       effectorGoal=targetMO.getLinkPath()+'.position') # "@../../../../FemNode/gelNode/target/targetMO.position"
+                                     effectorGoal=targetMO.getLinkPath()+'.position')  # "@../../../../FemNode/gelNode/target/targetMO.position"
     targetNode.addObject(MoveTargetProcess(posEffector))
-    effector.addObject('SkinningMapping', nbRef='1', mapForces='false', mapMasses='false')
+    effector.addObject('SkinningMapping', nbRef='1',
+                       mapForces='false', mapMasses='false')
 
     mappedPointsNode = framePoints.addChild('MappedPoints')
     mappedPoints = mappedPointsNode.addObject('MechanicalObject', template='Vec3d', position=femPos, name="FramesMO",
                                               showObject='1', showIndices='1', showObjectScale='1')
-    mappedPointsNode.addObject('CosseratEquality', name="QPConstraint", eqDisp='0.0', lastPointIsFixed="false")
+    mappedPointsNode.addObject(
+        'CosseratEquality', name="QPConstraint", eqDisp='0.0')
 
-    ## Get the tree mstate links for the mapping
+    # Get the tree mstate links for the mapping
     inputCableMO = framePointsMO.getLinkPath()
     inputFEMCableMO = inputFEMCable.getLinkPath()
     outputPointMO = mappedPoints.getLinkPath()
@@ -180,4 +191,3 @@ def createScene(rootNode):
     # rootNode.addObject(CostController(name="CostController", goal_pos=goalPos, effMO=effMO, solver=qp_solver))
 
     # return rootNode
-

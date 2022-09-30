@@ -23,7 +23,6 @@
 #include <CosseratPlugin/config.h>
 
 #include <CosseratPlugin/mapping/BaseCosserat.h>
-#include <CosseratPlugin/forcefield/BeamPlasticLawForceField.h>
 #include <CosseratPlugin/forcefield/BeamHookeLawForceField.h>
 
 #include <sofa/core/BaseMapping.h>
@@ -35,7 +34,6 @@
 
 namespace sofa::component::mapping
 {
-    using sofa::component::forcefield::BeamPlasticLawForceField;
     using sofa::component::forcefield::BeamHookeLawForceField;
     using sofa::defaulttype::SolidTypes ;
     using sofa::core::objectmodel::BaseContext ;
@@ -76,7 +74,7 @@ public:
     typedef Data<In1VecCoord>               In1DataVecCoord;
     typedef Data<In1VecDeriv>               In1DataVecDeriv;
     typedef Data<In1MatrixDeriv>            In1DataMatrixDeriv;
-    
+
     typedef typename In2::Coord::value_type Real2;
     typedef typename In2::Coord             Coord2         ;
     typedef typename In2::Deriv             Deriv2         ;
@@ -150,7 +148,7 @@ protected:
     LinkToBeamForceField l_fromBeamForceField;
 
 protected:
-    /// Constructor    
+    /// Constructor
     DiscreteCosseratMapping() ;
     /// Destructor
     ~DiscreteCosseratMapping()  override {}
@@ -158,6 +156,7 @@ protected:
 public:
     /**********************SOFA METHODS**************************/
     void init() override;
+    void reinit() override;
     void draw(const core::visual::VisualParams* vparams) override;
 
     /**********************MAPPING METHODS**************************/

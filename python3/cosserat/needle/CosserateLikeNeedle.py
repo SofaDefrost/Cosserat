@@ -7,7 +7,7 @@ Based on the work done with SofaPython. See POEMapping.py
 from splib3.numerics import Quat
 import sys
 sys.path.append('../')
-from createFemRegularGrid import createFemCube
+from cosserat.createFemRegularGrid import createFemCube
 __authors__ = "younesssss"
 __contact__ = "adagolodjo@protonmail.com, yinoussa.adagolodjo@inria.fr"
 __version__ = "1.0.0"
