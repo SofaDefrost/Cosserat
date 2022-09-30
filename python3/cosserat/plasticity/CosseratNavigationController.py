@@ -24,28 +24,36 @@ from pyquaternion import Quaternion as Quat
 # by two chains of Cosserat beam elements.
 # Required structure of the scene :
 # * rootNode
-#   * controlPointNode
-#       controlPointMO (Rigid)
-#   * cosseratBeamNode
-#       MechanicalMatrixMapper
-#       * rigidBaseNode
+#
+#   * Instrument0
+#       * rigidBase
 #           RigidBaseMO (Rigid)
+#           spring (RestShapeSpringsForceField)
 #           * MappedFrames
 #               FramesMO (Rigid)
 #               DiscreteCosseratMapping
-#           * ControlMappedFrame
-#               ControlFrameMO (1 Rigid)
-#               DiscreteCosseratMapping
-#               RestShapeSpringsForceField (linked to controlPointMO)
 #       * rateAngularDeform
-#           rateAngularDeformMO (Cosserat strains)
+#           rateAngularDeformMO (Vec3)
+#           beamForceField (BeamHookeLawForceField, BeamPlasticLawForceField)
+#           FixedConstraint
+#           * MappedFrames (same node as in the rigidBase node)
 #
-# Arguments :
+#   * Instrument1
+#       [Same structure and names as in Instrument0]
+#
+#   * Instrument2
+#       [Same structure and names as in Instrument0]
+#
+# Init arguments :
 #  - nbInstruments: number of simulated coaxial instruments
-#  - instrumentBeamDensityVect : vector containing a density of beam elements
-#    specific to each instrument
+#  - instrumentBeamNumberVect : for each instrument, vector containing a number
+#    of beam elements spread uniformely on the instrument total length
+#  - instrumentFrameNumberVect : for each instrument, vector containing a number
+#    of rigid frames spread uniformely on the instrument total length
 #  - incrementDistance : distance of pushing/pulling the instrument at user
 #    interaction
+#  - incrementDirection : direction (vec3) along which the instruments are
+#    navigated
 #  - isInstrumentStraightVect : vector of boolean indicating for each instrument
 #    if it is entirely straight (true), or if the distal end is nonstraight (false)
 #  - curvAbsTolerance : distance threshold used to determine if two close nodes
@@ -60,10 +68,16 @@ from pyquaternion import Quaternion as Quat
 #
 class CombinedInstrumentsController(Sofa.Core.Controller):
 
+    # -------------------------------------------------------------------- #
+    # -----                      Initialisation                      ----- #
+    # -------------------------------------------------------------------- #
+
     def __init__(self, rootNode,
                  nbInstruments,
-                 instrumentBeamDensityVect,
+                 instrumentBeamNumberVect,
+                 instrumentFrameNumberVect,
                  incrementDistance,
+                 incrementDirection,
                  isInstrumentStraightVect,
                  curvAbsTolerance,
                  instrumentLengths,
@@ -74,21 +88,12 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
 
         self.rootNode = rootNode
 
-        # Cosserat beam node
-        beamNode = rootNode.getChild('Instrument0')
-        if beamNode is None:
-            raise NameError('[CombinedInstrumentsController]: Node \'Instrument0\' not found. Your scene should '
-                            'contain a node named \'Instrument0\' among the children of the root node in order '
-                            'to use this controller')
-        self.rigidBaseNode = beamNode.getChild('rigidBase')
-        self.mappedFramesNode = self.rigidBaseNode.getChild('MappedFrames')
-
-        self.cosseratMechanicalNode = beamNode.getChild('rateAngularDeform')
-
         ### Reading the insertion velocity parameters ###
 
         self.incrementDistance = incrementDistance
-        self.instrumentBeamDensityVect = instrumentBeamDensityVect
+        self.incrementDirection = incrementDirection
+        self.instrumentBeamNumberVect = instrumentBeamNumberVect
+        self.instrumentFrameNumberVect = instrumentFrameNumberVect
         self.curvAbsTolerance = curvAbsTolerance
 
         ### Controller settings ###
@@ -108,22 +113,61 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
         # Rotation angle for each instrument (modified by left/right arrows)
         self.rotationAngleVect = np.zeros(nbInstruments)
 
-        # Index of the currently navigated instrument
+        # Index of the currently navigated instrument, and associated rigidBase
         self.currentInstrumentId = 0
 
+        instrumentNodeName = "Instrument0"
+        instrumentNode = self.rootNode.getChild(str(instrumentNodeName))
+        if instrumentNode is None:
+            raise NameError("[CombinedInstrumentsController]: Node \'{}\' not found. Your scene should "
+                            "contain a node named \'{}\' among the children of the root node in order "
+                            "to use this controller".format(instrumentNodeName, instrumentNodeName))
+
+        rigidBaseNode = instrumentNode.getChild('rigidBase')
+        if rigidBaseNode is None:
+            raise NameError("[CombinedInstrumentsController]: Node \'rigidBase\' "
+                            "not found. Your scene should contain a node named "
+                            "\'rigidBase\' among the children of the \'{}\' "
+                            "node, where the base and rigid frames of the "
+                            "Cosserat model are defined".format(instrumentNodeName))
+
+        self.currentInstrumentRigidBaseNode = rigidBaseNode
+
         ### Additional settings ###
+
+        # Computing the incremental quaternions for rotation
+        # Taking the direction of insertion as rotation axis
+        # qw = math.cos(math.radians(self.incrementAngle)/2)
+        # plusQuat = self.insertionDirection * math.sin(math.radians(self.incrementAngle)/2)
+        # minusQuat = -plusQuat
+        # self.plusQuat = Quat(np.insert(plusQuat, 0, qw))
+        # self.minusQuat = Quat(np.insert(minusQuat, 0, qw))
+
+        # constructs a grid of indices to access only position DoFs of the rigid particle
+        self.posDoFsIdGrid = np.ix_([0], [0, 1, 2])
+        # constructs a grid of indices to access only orientation DoFs of the rigid particle
+        self.quatDoFsIdGrid = np.ix_([0], [3, 4, 5, 6])
 
         self.totalTime = 0.0
         self.dt = self.rootNode.findData('dt').value
         self.nbIterations = 0
 
 
+    # -------------------------------------------------------------------- #
+    # -----                     Animation events                     ----- #
+    # -------------------------------------------------------------------- #
+
     def onAnimateBeginEvent(self, event):  # called at each begin of animation step
 
         # Define the vector which contains the curvilinear abscissas of all
-        # represented nodes.
-        # TO DO: definition of the nodes
-        simulatedCurvAbs = []
+        # represented nodes of the beam elements (i.e. similar to curb_abs_input
+        # in the Cosserat mapping)
+        simulatedNodeCurvAbs = []
+
+        # Define the vector which contains the curvilinear abscissas of all
+        # represented rigid frames for the Cosserat components (i.e. similar to
+        # curv_abs_output in the Cosserat mapping)
+        simulatedFrameCurvAbs = []
 
         #----- Step 0 : base check on instrument's lengths -----#
 
@@ -156,47 +200,63 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
 
         # Adding the base point if at least one instrument is out
         if combinedInstrumentLength > 0.:
-            simulatedCurvAbs.append(0.)
+            simulatedNodeCurvAbs.append(0.)
+            simulatedFrameCurvAbs.append(0.)
 
 
         #----- Step 2 : computation of the points of interest -----#
 
         # Computation of the curvilinear abscissas for the points of interest,
-        # which are to be simulated. Additionaly, two structures are completed:
-        #    - instrumentIdsForNodeVect: vector containing for each node a pluginNameList
-        #      of the indices of all instruments passing through the nodes
-        #    - xBeginVect: vector containing for each instrument the curvilinear
-        #      abscissa of the proximal end of the instrument. As the curvilinear
-        #      abscissa is computed relatively to the point from which the
-        #      instruments are pushed, it is negative for the proximal end
+        # and Cosserat Rigid frames, which are to be simulated.
 
         instrumentIdsForNodeVect = []
+        instrumentIdsForFrameVect = []
 
-        result = self.computeNodeCurvAbs(simulatedCurvAbs, xBeginVect,
-                                         instrumentIdsForNodeVect)
+        result = self.computeNodeCurvAbs(xBeginVect, simulatedNodeCurvAbs,
+                                         simulatedFrameCurvAbs,
+                                         instrumentIdsForNodeVect,
+                                         instrumentIdsForFrameVect)
 
         instrumentIdsForNodeVect = result['instrumentIdsForNodeVect']
-        decimatedCurvAbs = result['decimatedCurvAbs']
-
-        print("New decimated curvilinear abscissas : {}".format(decimatedCurvAbs))
-        print("New vector for instrument Ids : {}".format(instrumentIdsForNodeVect))
+        instrumentIdsForFrameVect = result['instrumentIdsForFrameVect']
+        decimatedNodeCurvAbs = result['decimatedNodeCurvAbs']
+        decimatedFrameCurvAbs = result['decimatedFrameCurvAbs']
 
 
         #----- Step 3 :  -----#
 
-        # Apply changes on the Cosserat components
-        # TO DO: from the new curv abs, mimick step3 from the IRC Controller
-        #  - apply changes of CA on the controlled instrument (move the Cosserat base, correct beam length, update frames, and apply force on the base according to the motion)
-        #  - /!\ Adapt beam length so that the extremity of the beams match between the different isInstrumentStraightVect
-        #      => the beam length is no longer determined by the user, but by the configuration
-        #      => Alternative = if the beams (sections) are not coincident, is it possible to constrain them properly ?
-
+        # Once a discretisation - common to all instruments - is computed, we
+        # apply it to the Cosserat components. For more details, see comments
+        # on the method definition.
+        self.updateInstrumentComponents(decimatedNodeCurvAbs, decimatedFrameCurvAbs,
+                                        instrumentIdsForNodeVect, instrumentIdsForFrameVect)
 
 
         self.totalTime = self.totalTime + self.dt
         self.nbIterations = self.nbIterations + 1
 
 
+
+    def onAnimateEndEvent(self, event):  # called at each end of animation step
+        pass
+
+
+
+    # -------------------------------------------------------------------- #
+    # -----                    Auxiliary methods                     ----- #
+    # -------------------------------------------------------------------- #
+
+    # This method retrieves the global configuration of the instruments.
+    #
+    # Parameters:
+    #    - xBeginVect: [output] vector containing for each instrument the curvilinear
+    # abscissa of the instrument's begin point (proximal). This curvilinear abscissa
+    # is expressed relatively to the base point, from which the instruments are
+    # pushed/pulled
+    #
+    # Returns:
+    #    - combinedInstrumentLength: furthest instrument tip (distal), among all
+    # the insruments, which defines the length of insertion at a given time.
     def getInstrumentConfiguration(self, xBeginVect):
 
         combinedInstrumentLength = 0.
@@ -219,28 +279,48 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
         return combinedInstrumentLength
 
 
-    # Method concretely handling the dynamic navigation of the instruments, and
-    # the underlying necessary remeshing.
-    # TO DO: complete documentation
-    def computeNodeCurvAbs(self, simulatedCurvAbs, xBeginVect,
-                           instrumentIdsForNodeVect):
+    # During navigation, when instruments are in motion, this method computes
+    # the curvilinear abscissas for the points of interest, and Cosserat Rigid
+    # frames, which are to be simulated. The points of interest correspond
+    # to changes in the instrument shape/configuration. If the instrument is
+    # entirely straight, the only two key points are the proximal end (begin
+    # point) and the distal end (end point). The key points are stored by
+    # means of their curvilinear abscissa. As before, this curvilinear abscissa
+    # is expressed relatively to the combined configuration starting point.
+    # Points for which the curvilinear abscissa is <0 are ignored.
+    # Additionaly, the method completes two structures:
+    #    - xBeginVect: vector containing for each instrument the curvilinear
+    #      abscissa of the proximal end of the instrument. As the curvilinear
+    #      abscissa is computed relatively to the point from which the
+    #      instruments are pushed, it is negative for the proximal end
+    #    - instrumentIdsForNodeVect: vector containing for each node a list
+    #      of the indices of all instruments passing through the node
+    #
+    # Parameters:
+    #    - xBeginVect: [input] vector containing for each instrument the curvilinear
+    # abscissa of the instrument's begin point (proximal), expressed relatively
+    # to the base point from which the instruments are pushed/pulled
+    #    - simulatedNodeCurvAbs: [output] list of curvilinear abscissas corresponding
+    # to the new nodes (i.e. the beam element extremities, inputs of the Cosserat
+    # mapping)
+    #    - simulatedFrameCurvAbs: [output] list of curvilinear abscissas corresponding
+    # to the new Cosserat frames (i.e. outputs of the Cosserat mapping)
+    #    - instrumentIdsForNodeVect: [output] vector containing for each node
+    # the list of instruments which the node belongs to
+    #    - instrumentIdsForFrameVect: [output] vector containing for each Cosserat
+    # rigid frame the list of instruments which the frame belongs to
+    def computeNodeCurvAbs(self, xBeginVect, simulatedNodeCurvAbs, simulatedFrameCurvAbs, instrumentIdsForNodeVect, instrumentIdsForFrameVect):
 
-        # Computation of the key points for each instrument. These points correspond
-        # to changes in the instrument shape/configuration. If the instrument is
-        # entirely straight, the only two key points are the proximal end (begin
-        # point) and the distal end (end point). The key points are stored by
-        # means of their curvilinear abscissa. As before, this curvilinear abscissa
-        # is expressed relatively to the combined configuration starting point.
-        # Points for which the curvilinear abscissa is <0 are ignored.
         instrumentKeyPointsVect = [[]]
-        maxCurvilinearAbscissa = 0. # Max curvilinear abscissa among the key points
+        maxCurvilinearAbscissa = 0. # Max curvilinear abscissa among the key pointsthethethetthethehe
 
         for instrumentId in range(0,self.nbInstruments):
             # Add first key point = proximal extremity point
             beginNodeCurvAbs = xBeginVect[instrumentId] + 0.0
             # TO DO: are the two check below relevent for the first key point ?
             if (beginNodeCurvAbs > 0):
-                simulatedCurvAbs.append(beginNodeCurvAbs)
+                simulatedNodeCurvAbs.append(beginNodeCurvAbs)
+                simulatedFrameCurvAbs.append(beginNodeCurvAbs)
                 # Update the maxCurvilinearAbscissa if beginNodeCurvAbs is higher
                 if (beginNodeCurvAbs > maxCurvilinearAbscissa):
                     maxCurvilinearAbscissa = beginNodeCurvAbs
@@ -250,11 +330,12 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
             # also add the points based on the beam density on the interval.
 
             # Add second key point = distal extremity point
-            endNodeCurvAbs = xBeginVect[instrumentId] + self.instrumentLengths[instrumentId]
+            instrumentLength = self.instrumentLengths[instrumentId]
+            endNodeCurvAbs = xBeginVect[instrumentId] + instrumentLength
             if (endNodeCurvAbs > 0):
                 # If the distal end of the interval is visible (curv. abs. > 0),
                 # it means that a least a part of the interval is out, so the
-                # correpsonding curv. abs. has to be added in simulatedCurvAbs.
+                # correpsonding curv. abs. has to be added in simulatedNodeCurvAbs.
                 #
                 # If additionnaly, this curv. abs. is greater than the current
                 # maximum abscissa (maxCurvilinearAbscissa), it means that the
@@ -263,41 +344,65 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
                 # desired beam density.
 
                 # Add the end point of the interval
-                simulatedCurvAbs.append(endNodeCurvAbs)
+                simulatedNodeCurvAbs.append(endNodeCurvAbs)
+                simulatedFrameCurvAbs.append(endNodeCurvAbs)
 
                 if (endNodeCurvAbs > maxCurvilinearAbscissa):
 
                     # Compute the number of new nodes to add
-                    intervalLength = endNodeCurvAbs - beginNodeCurvAbs
+                    intervalLength = instrumentLength # NB: difference of CA between the two key points
                     visibleIntervalLength = endNodeCurvAbs - maxCurvilinearAbscissa
                     ratio = visibleIntervalLength / intervalLength
-                    nbNewNodes = int(self.instrumentBeamDensityVect[instrumentId] * ratio)
+                    nbBeamsOnInstrument = self.instrumentBeamNumberVect[instrumentId]
+                    nbNewNodes = int(nbBeamsOnInstrument * ratio)
 
                     # Add the new nodes
                     for newNodeId in range(0, nbNewNodes):
-                        newNodeCurvAbs = endNodeCurvAbs - ((newNodeId+1) / ratio)
-                        simulatedCurvAbs.append(newNodeCurvAbs)
+                        newNodeCurvAbs = endNodeCurvAbs - (newNodeId+1) * (intervalLength / nbBeamsOnInstrument)
+                        simulatedNodeCurvAbs.append(newNodeCurvAbs)
+
+                    # Compute the number of new frames to add
+                    nbFrameSegmentsOnInstrument = self.instrumentFrameNumberVect[instrumentId]-1
+                    nbNewFrames = int(nbFrameSegmentsOnInstrument * ratio)
+
+                    # Add the new frames
+                    for newFrameId in range(0, nbNewFrames):
+                        newFrameCurvAbs = endNodeCurvAbs - (newFrameId+1) * (intervalLength / nbFrameSegmentsOnInstrument)
+                        simulatedFrameCurvAbs.append(newFrameCurvAbs)
 
                     # Update the max curv. abs.
                     maxCurvilinearAbscissa = endNodeCurvAbs
         # endfor instrumentId in range(0,self.nbInstruments)
 
         # When all points of interest have been detected, we sort and filter
-        # ther curv. abs' list:
+        # ther curv. abs' list.
+
         # First: sort the curv. abs. values
-        sortedCurvAbs = np.sort(simulatedCurvAbs, kind='quicksort') # quicksort, heapsort, mergesort, timsort
+        # - Nodes
+        sortedNodeCurvAbs = np.sort(simulatedNodeCurvAbs, kind='quicksort') # quicksort, heapsort, mergesort, timsort
+        # - Frames
+        sortedFrameCurvAbs = np.sort(simulatedFrameCurvAbs, kind='quicksort')
 
         # Second: remove the duplicated values, according to self.curvAbsTolerance
+        # - Nodes
         indicesToRemove = []
-        for curvAbsId in range(1, len(sortedCurvAbs)):
-            diffWithPrevious = abs(sortedCurvAbs[curvAbsId] - sortedCurvAbs[curvAbsId -1])
+        for curvAbsId in range(1, len(sortedNodeCurvAbs)):
+            diffWithPrevious = abs(sortedNodeCurvAbs[curvAbsId] - sortedNodeCurvAbs[curvAbsId -1])
             if diffWithPrevious < self.curvAbsTolerance:
                 indicesToRemove.append(curvAbsId)
+        decimatedNodeCurvAbs = np.delete(sortedNodeCurvAbs, indicesToRemove)
 
-        decimatedCurvAbs = np.delete(sortedCurvAbs, indicesToRemove)
+        # - Frames
+        indicesToRemove = []
+        for curvAbsId in range(1, len(sortedFrameCurvAbs)):
+            diffWithPrevious = abs(sortedFrameCurvAbs[curvAbsId] - sortedFrameCurvAbs[curvAbsId -1])
+            if diffWithPrevious < self.curvAbsTolerance:
+                indicesToRemove.append(curvAbsId)
+        decimatedFrameCurvAbs = np.delete(sortedFrameCurvAbs, indicesToRemove)
 
-        # Finally, complete instrumentIdsForNodeVect
-        for newCurvAbs in decimatedCurvAbs:
+        # Finally, we complete instrumentIdsForNodeVect and instrumentIdsForFrameVect
+        # - Nodes
+        for newCurvAbs in decimatedNodeCurvAbs:
             instrumentList = []
             # For the node at newCurvAbs, we test each instrument
             for instrumentId in range(0, self.nbInstruments):
@@ -309,32 +414,172 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
             # Once all the instruments were tested, we update instrumentIdsForNodeVect
             instrumentIdsForNodeVect.append(instrumentList)
 
-        return {'instrumentIdsForNodeVect': instrumentIdsForNodeVect, 'decimatedCurvAbs': decimatedCurvAbs}
+        # - Frames
+        for newCurvAbs in decimatedFrameCurvAbs:
+            instrumentList = []
+            # For the frame at newCurvAbs, we test each instrument
+            for instrumentId in range(0, self.nbInstruments):
+                tipCurvAbs = self.tipCurvAbsVect[instrumentId] # In combined instrument
+                beginNodeCurvAbs = xBeginVect[instrumentId] # In combined instrument
+                if (beginNodeCurvAbs < newCurvAbs + self.curvAbsTolerance) and (tipCurvAbs > newCurvAbs - self.curvAbsTolerance):
+                    # Then this instrument passes throught newCurvAbs
+                    instrumentList.append(instrumentId)
+            # Once all the instruments were tested, we update instrumentIdsForFrameVect
+            instrumentIdsForFrameVect.append(instrumentList)
+
+        return {'instrumentIdsForNodeVect': instrumentIdsForNodeVect,
+                'decimatedNodeCurvAbs': decimatedNodeCurvAbs,
+                'decimatedFrameCurvAbs': decimatedFrameCurvAbs,
+                'instrumentIdsForFrameVect': instrumentIdsForFrameVect}
 
 
+    # This method is meant to apply a new discretisation into Cosserat beams and
+    # frames, to a set of instruments. For each instrument, this is done in two
+    # steps:
+    #  - Updating the beam information, both in the Cosserat mapping component
+    # (e.g.: DiscreteCosseratMapping) and the Cosserat forcefield component
+    # (e.g.: BeamHookeLawForceField). In the mapping, we change the
+    # *curv_abs_input* data field according to the new curvilinear abscissas
+    # computed in step 2 (decimatedNodeCurvAbs). We start with the 'last' beam
+    # (i.e. the one with the higher index) in order to account for undeployed
+    # beams at the proximal end of the instruments. In the force field, we
+    # change the *length* data field accordingly.
+    #  - Updating the frames information. Based on the new discretisation,
+    # new Cosserat frame curvilinear abscissas were also computed in step 2
+    # (decimatedFrameCurvAbs). We apply these in the *curv_abs_output* data
+    # field of the Cosserat mapping component. Nothing more is to be done
+    # regarding the frames, as the associted mechanical object is automatically
+    # update by the mapping.
+    #
+    # Parameters:
+    #    - decimatedNodeCurvAbs: [input] set of curvilinear abscissas associated
+    # to the Cosserat beam elements (i.e. inputs of the Cosserat mapping)
+    #    - decimatedFrameCurvAbs: [input] set of curvilinear abscissas associated
+    # to the Cosserat rigid frames (i.e. outputs of the Cosserat mapping)
+    #    - instrumentIdsForNodeVect: [input] vector containing for each node
+    # the list of instruments which the node belongs to
+    #    - instrumentIdsForFrameVect: [input] vector containing for each Cosserat
+    # rigid frame the list of instruments which the frame belongs to
+    def updateInstrumentComponents(self, decimatedNodeCurvAbs, decimatedFrameCurvAbs, instrumentIdsForNodeVect, instrumentIdsForFrameVect):
+
+        for instrumentId in range(0, self.nbInstruments):
+
+            # First, retrieving the nodes of the current instrument
+
+            instrumentNodeName = "Instrument" + str(instrumentId)
+            instrumentNode = self.rootNode.getChild(str(instrumentNodeName))
+            if instrumentNode is None:
+                raise NameError("[CombinedInstrumentsController]: Node \'{}\' not found. Your scene should "
+                                "contain a node named \'{}\' among the children of the root node in order "
+                                "to use this controller".format(instrumentNodeName, instrumentNodeName))
+
+            cosseratMechanicalNode = instrumentNode.getChild('rateAngularDeform')
+            if cosseratMechanicalNode is None:
+                raise NameError("[CombinedInstrumentsController]: Node \'rateAngularDeform\' "
+                                "not found. Your scene should contain a node named "
+                                "\'rateAngularDeform\' among the children of the \'{}\' "
+                                "node, gathering the mechanical Cosserat components "
+                                "(MechanicalObject, Cosserat forcefield)".format(instrumentNodeName))
+
+            rigidBaseNode = instrumentNode.getChild('rigidBase')
+            if rigidBaseNode is None:
+                raise NameError("[CombinedInstrumentsController]: Node \'rigidBase\' "
+                                "not found. Your scene should contain a node named "
+                                "\'rigidBase\' among the children of the \'{}\' "
+                                "node, where the base and rigid frames of the "
+                                "Cosserat model are defined".format(instrumentNodeName))
+
+            mappedFramesNode = rigidBaseNode.getChild('MappedFrames')
+            if mappedFramesNode is None:
+                raise NameError("[CombinedInstrumentsController]: Node \'MappedFrames\' "
+                                "not found. The \'rigidBase\' node should have a child "
+                                "node called \'MappedFrames\', in which the Cosserat "
+                                "rigid frames and the Cosserat mapping are defined.")
+
+            # Retrieving the components
+            # TO DO : existance check ? What is the appropriate binding method ?
+            beamForceFieldComponent = cosseratMechanicalNode.beamForceField
+            instrumentMapping = mappedFramesNode.DiscreteCosseratMapping
+            ouputFrameMO = mappedFramesNode.FramesMO
+
+            # Updating the beam information (cf comment of function description)
+
+            # TO DO : replace nbForceFieldBeams by nbMappingInputs-1 ?
+            nbForceFieldBeams = len(beamForceFieldComponent.length)
+
+            with beamForceFieldComponent.length.writeable() as forceFieldBeamLengths:
+                with instrumentMapping.curv_abs_input.writeable() as curv_abs_input:
+                    nbNewNodes = len(decimatedNodeCurvAbs)
+                    nbMappingInputs = len(curv_abs_input)
+
+                    for curvAbsIterator in range(0, nbNewNodes-1):
+                        # TO DO : is it necessary to check that nbNewNodes <= nbMappingInputs ?
+                        # Probably not, given that the total number of beams is taken into account when
+                        # computing the new abscissas
+                        # NB: this loop stops one node before the last one, to update
+                        # both the curvilinear abscissas in curv_abs_ouput (nbNewNodes)
+                        # and the new beam lengths in the force field (nbNewNodes-1).
+                        # The last curvilinear abscissa is changed afterwards
+
+                        currentKeyPointCurvAbsId = nbNewNodes-1-curvAbsIterator
+                        # Check if the new node belongs to the current instrument,
+                        # before applying changes
+                        if instrumentId in instrumentIdsForNodeVect[currentKeyPointCurvAbsId]:
+                            currentBeamCurvAbsId = nbMappingInputs-1-curvAbsIterator
+                            # Modifying curv_abs_input in the Cosserat mapping
+                            curv_abs_input[currentBeamCurvAbsId] = decimatedNodeCurvAbs[currentKeyPointCurvAbsId]
+
+                            # Modifying beam lengths in the Cosserat beam ForceField(s)
+                            currentBeamLength = decimatedNodeCurvAbs[currentKeyPointCurvAbsId] - decimatedNodeCurvAbs[currentKeyPointCurvAbsId-1]
+                            # TO DO : is it necessary to check that nbNewNodes <= nbForceFieldBeams ?
+                            forceFieldBeamLengths[nbForceFieldBeams-1-curvAbsIterator] = currentBeamLength
+
+                    # last curv_abs_input, associated with the last beam of the chain
+                    curv_abs_input[nbMappingInputs-nbNewNodes] = decimatedNodeCurvAbs[0]
+
+            # Updating the frame information (cf comment of function description)
+
+            nbNewFrames = len(decimatedFrameCurvAbs)
+            nbTotalFrames = len(instrumentMapping.curv_abs_output)
+
+            with ouputFrameMO.position.writeable() as ouputFramePosition:
+                with instrumentMapping.curv_abs_output.writeable() as curv_abs_output:
+
+                    for frameIterator in range(0, nbNewFrames):
+                        # TO DO : is it necessary to check that nbNewFrames <= nbTotalFrames ?
+                        # Probably not, given that the total number of frames is taken into account when
+                        # computing the new abscissas
+                        currentFrameCurvAbsId = nbNewFrames-1-frameIterator
+                        # Check if the new frame belongs to the current instrument,
+                        # before applying changes
+                        if instrumentId in instrumentIdsForFrameVect[currentFrameCurvAbsId]:
+                            curv_abs_output[nbTotalFrames-1-frameIterator] = decimatedFrameCurvAbs[currentFrameCurvAbsId]
 
 
-    def onAnimateEndEvent(self, event):  # called at each end of animation step
-        pass
+    # -------------------------------------------------------------------- #
+    # -----                   Interaction methods                    ----- #
+    # -------------------------------------------------------------------- #
 
     def onKeypressedEvent(self, event):
 
         if event['key'] == Key.uparrow:  # Up arrow
-            self.moveForward(self.incrementDistance)
+            self.moveForward(self.incrementDistance, self.incrementDirection)
 
         if event['key'] == Key.downarrow:  # Down arrow
-            self.moveBackward(self.incrementDistance)
+            self.moveBackward(self.incrementDistance, self.incrementDirection)
 
         if event['key'] == '0':
             self.currentInstrumentId = 0
             print("Currently controlled: instrument 0")
+            self.changeRefRigidBase(0)
 
         if event['key'] == '1':
             if self.nbInstruments <= 1:
                 warnings.warn("Instrument number 1 doesn't exist (only one instrument (0) is available).".format(self.nbInstruments))
             else:
-                self.currentInstrumentId = 0
+                self.currentInstrumentId = 1
                 print("Currently controlled: instrument 1")
+                self.changeRefRigidBase(1)
 
         if event['key'] == '2':
             if self.nbInstruments <= 2:
@@ -342,14 +587,21 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
             else:
                 self.currentInstrumentId = 2
                 print("Currently controlled: instrument 2")
+                self.changeRefRigidBase(2)
 
-    def moveForward(self, distanceIncrement):
+
+    def moveForward(self, distanceIncrement, direction):
         self.tipCurvAbsVect[self.currentInstrumentId] += distanceIncrement
-        # print("New tip curvilinear abscissa for instrument {}: {}".format(self.currentInstrumentId, self.tipCurvAbsVect[self.currentInstrumentId]))
+        # TO DO : check that the RigidBaseMO component exists
+        with self.currentInstrumentRigidBaseNode.RigidBaseMO.position.writeable() as rigidBasePos:
+            rigidBasePos[self.posDoFsIdGrid] -= direction * distanceIncrement
         # TO DO: check that the tip isn't too far here ?
 
-    def moveBackward(self, distanceIncrement):
+    def moveBackward(self, distanceIncrement, direction):
         self.tipCurvAbsVect[self.currentInstrumentId] -= distanceIncrement
+        # TO DO : check that the RigidBaseMO component exists
+        with self.currentInstrumentRigidBaseNode.RigidBaseMO.position.writeable() as rigidBasePos:
+            rigidBasePos[self.posDoFsIdGrid] += direction * distanceIncrement
         # TO DO: check that the tip isn't <0 here ?
 
     def rotateClockwise():
@@ -357,3 +609,19 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
 
     def rotateCounterclockwise():
         pass
+
+    def changeRefRigidBase(self, newInstrumentId):
+        instrumentNodeName = "Instrument" + str(newInstrumentId)
+        instrumentNode = self.rootNode.getChild(str(instrumentNodeName))
+        if instrumentNode is None:
+            raise NameError("[CombinedInstrumentsController]: Node \'{}\' not found. Your scene should "
+                            "contain a node named \'{}\' among the children of the root node in order "
+                            "to use this controller".format(instrumentNodeName, instrumentNodeName))
+        rigidBaseNode = instrumentNode.getChild('rigidBase')
+        if rigidBaseNode is None:
+            raise NameError("[CombinedInstrumentsController]: Node \'rigidBase\' "
+                            "not found. Your scene should contain a node named "
+                            "\'rigidBase\' among the children of the \'{}\' "
+                            "node, where the base and rigid frames of the "
+                            "Cosserat model are defined".format(instrumentNodeName))
+        self.currentInstrumentRigidBaseNode = rigidBaseNode

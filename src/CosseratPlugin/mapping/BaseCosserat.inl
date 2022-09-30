@@ -400,7 +400,7 @@ void BaseCosserat<TIn1, TIn2, TOut>::initialize()
         }
         else if(curv_abs_section[input_index] == curv_abs_frames[i]){
             m_indicesVectors.push_back(input_index);
-            input_index++;
+//            input_index++;
             m_indicesVectorsDraw.push_back(input_index);
         }
         else {
