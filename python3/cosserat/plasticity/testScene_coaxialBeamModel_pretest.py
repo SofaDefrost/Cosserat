@@ -199,9 +199,9 @@ def createScene(rootNode):
                               output=outputMO, forcefield='@../../rateAngularDeform/beamForceField',
                               drawBeamSegments=True, nonColored=False, debug=0)
 
-    # mappedFrameNode.addObject('ConstantForceField', name='Moment',
-    #                           indices=nbFrames-4,
-    #                           forces=np.array([0, 0, 0, 0, 0, 8e4]))
+    mappedFrameNode.addObject('ConstantForceField', name='Moment',
+                              indices=nbFrames-4,
+                              forces=np.array([0, 0, 0, 0, 0, 8e4]))
 
 
 
