@@ -43,7 +43,7 @@ public:
     typedef typename DataTypes::VecCoord VecCoord;
     typedef typename DataTypes::VecDeriv VecDeriv;
     typedef typename DataTypes::Coord    Coord;
-    typedef typename BeamHookeLawForceField<DataTypes>::MechanicalState MechanicalState;
+    typedef typename BeamHookeLawForceField<DataTypes>::DeformationRegime DeformationRegime;
 
     typedef Data<VecCoord>    DataVecCoord;
     typedef Data<VecDeriv>    DataVecDeriv;

@@ -102,6 +102,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::init()
     m_toModel = this->getToModels()[0];  // Cosserat rigid frames, in global frame
     m_colorMap.setColorScheme("Blue to Red");
     m_colorMap.reinit();
+}
 
 template <class TIn1, class TIn2, class TOut>
 void DiscreteCosseratMapping<TIn1, TIn2, TOut>::reinit()
@@ -681,15 +682,15 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::draw(const core::visual::VisualP
                 //Draw a beam, which colour indicates the mechanical state
 
 
-                const auto sectionMechanicalStates = l_fromBeamForceField->getSectionMechanicalStates();
+                const auto sectionDeformationRegimes = l_fromBeamForceField->getSectionDeformationRegimes();
                 RGBAColor drawColor = RGBAColor::gray();
                 if (l_fromBeamForceField->isPlastic())
                 {
-                    if(sectionMechanicalStates[beamId] == MechanicalState::ELASTIC)
+                    if(sectionDeformationRegimes[beamId] == BeamHookeLawForceField<TIn1>::DeformationRegime::ELASTIC)
                         drawColor = RGBAColor(191/255.0, 37/255.0, 42/255.0, 0.8); // Red
-                    else if(sectionMechanicalStates[beamId] == MechanicalState::PLASTIC)
+                    else if(sectionDeformationRegimes[beamId] == BeamHookeLawForceField<TIn1>::DeformationRegime::PLASTIC)
                         drawColor = RGBAColor(40/255.0, 104/255.0, 137/255.0, 0.8); // Blue
-                    else // MechanicalState::POSTPLASTIC
+                    else // DeformationRegime::POSTPLASTIC
                         drawColor = RGBAColor(76/255.0, 154/255.0, 50/255.0, 0.8); // Green
                  }
                 else
