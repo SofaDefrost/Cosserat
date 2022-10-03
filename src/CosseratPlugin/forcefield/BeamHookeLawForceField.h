@@ -84,22 +84,22 @@ public :
     typedef typename CompressedRowSparseMatrix<Mat33>::BlockConstAccessor _3_3_BlockConstAccessor;
     typedef typename CompressedRowSparseMatrix<Mat33>::BlockAccessor _3_3_BlockAccessor;
 
-    /** \enum class MechanicalState
+    /** \enum class DeformationRegime
      *  \brief Types of mechanical state depending of the strain level. The
      *  POSTPLASTIC state corresponds to points which underwent plastic strain,
      *  but on which constraints were released so that the plasticity process
      *  stopped.
      */
-    // TO DO: this class, together with the field m_sectionMechanicalStates declared below,
+    // TO DO: this class, together with the field m_sectionDeformationRegimes declared below,
     // is only useful because of the existence of a derived class from BeamHookeLawForceField,
     // implementing nonelastic behaviour (such as BeamPlasticLawForceField). When using a
     // BeamHookeLawForceField component only, all beam elements will only experience elastic
     // deformation. The two other enum types (PLASTIC and POSTPLASTIC) won't be used, and the
-    // m_sectionMechanicalStates field won't change. However, this allows a nonelastic forcefield
+    // m_sectionDeformationRegimes field won't change. However, this allows a nonelastic forcefield
     // to beneficiate from polymorphism when used in other object methods (typically BaseCosserat,
     // or DiscreteCosseratMapping).
     // Is this the best implementation scenario ?
-    enum class MechanicalState {
+    enum class DeformationRegime {
         ELASTIC = 0,
         PLASTIC = 1,
         POSTPLASTIC = 2,
@@ -135,7 +135,7 @@ public :
     ////////////////////////////////////////////////////////////////////////////
 
     virtual bool isPlastic() const;
-    auto getSectionMechanicalStates() -> vector<MechanicalState>&;
+    auto getSectionDeformationRegimes() -> vector<DeformationRegime>&;
     auto getCrossSectionShape() const -> helper::OptionsGroup;
     auto getRadius() const -> Real;
     auto getLengthY() const -> Real;
@@ -173,7 +173,7 @@ protected:
     Real m_crossSectionArea;
 
     /// List of mechanical states associated to the length sections
-    vector<MechanicalState> m_sectionMechanicalStates;
+    vector<DeformationRegime> m_sectionDeformationRegimes;
 
 private :
     

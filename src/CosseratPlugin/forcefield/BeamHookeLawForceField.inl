@@ -169,8 +169,8 @@ namespace sofa::component::forcefield
 
         // Initialisation of the section mechanical states to ELASTIC
         size_t nbSections = d_length.getValue().size();
-        m_sectionMechanicalStates.clear();
-        m_sectionMechanicalStates.resize(nbSections, MechanicalState::ELASTIC);
+        m_sectionDeformationRegimes.clear();
+        m_sectionDeformationRegimes.resize(nbSections, DeformationRegime::ELASTIC);
     }
 
     template<typename DataTypes>
@@ -301,9 +301,9 @@ namespace sofa::component::forcefield
     }
 
     template<typename DataTypes>
-    auto BeamHookeLawForceField<DataTypes>::getSectionMechanicalStates() -> vector<MechanicalState>&
+    auto BeamHookeLawForceField<DataTypes>::getSectionDeformationRegimes() -> vector<DeformationRegime>&
     {
-        return m_sectionMechanicalStates;
+        return m_sectionDeformationRegimes;
     }
 
 } // forcefield

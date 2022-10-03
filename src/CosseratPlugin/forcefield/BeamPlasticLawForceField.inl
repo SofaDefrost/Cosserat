@@ -269,7 +269,7 @@ void BeamPlasticLawForceField<DataTypes>::computeStressIncrement(unsigned int se
     /// corresponds to an associative flow rule (for plasticity).
 
     //// First step = computation of the elastic predictor, as if deformation was entirely elastic
-    const MechanicalState mechanicalState = this->m_sectionMechanicalStates[sectionId];
+    const DeformationRegime deformationRegime = this->m_sectionDeformationRegimes[sectionId];
 
     Vec3 elasticIncrement = Vec3();
     if (!this->d_variantSections.getValue())
@@ -289,14 +289,14 @@ void BeamPlasticLawForceField<DataTypes>::computeStressIncrement(unsigned int se
         newStressPoint = elasticPredictorStress;
 
         // If the segment was initially plastic, we update its mechanical state
-        if (mechanicalState == MechanicalState::PLASTIC)
-            this->m_sectionMechanicalStates[sectionId] = MechanicalState::POSTPLASTIC;
+        if (deformationRegime == DeformationRegime::PLASTIC)
+            this->m_sectionDeformationRegimes[sectionId] = DeformationRegime::POSTPLASTIC;
     }
     else
     {
         // If the segment was initially elastic, we update its mechanical state
-        if (mechanicalState == MechanicalState::POSTPLASTIC || mechanicalState == MechanicalState::ELASTIC)
-            this->m_sectionMechanicalStates[sectionId] = MechanicalState::PLASTIC;
+        if (deformationRegime == DeformationRegime::POSTPLASTIC || deformationRegime == DeformationRegime::ELASTIC)
+            this->m_sectionDeformationRegimes[sectionId] = DeformationRegime::PLASTIC;
 
         // /!\ We here consider that we obtain a deviatoric stress tensor, as the diagonal components of a
         // complete stress tensor, representing the axial stresses, are ignored in the model.
@@ -378,7 +378,7 @@ void BeamPlasticLawForceField<DataTypes>::updateTangentStiffness(unsigned int se
     Vec3 gradient = vonMisesGradient(currentStressPoint);
 
     if (correctedNorm(gradient) < m_stressComparisonThreshold
-        || this->m_sectionMechanicalStates[sectionId] != MechanicalState::PLASTIC)
+        || this->m_sectionDeformationRegimes[sectionId] != DeformationRegime::PLASTIC)
         Cep = C; //TO DO: is that correct ?
     else
     {
@@ -454,8 +454,8 @@ void BeamPlasticLawForceField<DataTypes>::addForce(const MechanicalParams* mpara
         computeStressIncrement(i, strainIncrement, newStressPoint);
 
         // If the beam is in plastic state, we update the tangent stiffness matrix
-        const MechanicalState mechanicalState = this->m_sectionMechanicalStates[i];
-        if (mechanicalState == MechanicalState::PLASTIC)
+        const DeformationRegime deformationRegime = this->m_sectionDeformationRegimes[i];
+        if (deformationRegime == DeformationRegime::PLASTIC)
             updateTangentStiffness(i);
 
         // Computation of internal forces from stress
