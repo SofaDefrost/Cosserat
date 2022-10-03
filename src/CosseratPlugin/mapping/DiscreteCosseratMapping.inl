@@ -102,6 +102,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::init()
     m_toModel = this->getToModels()[0];  // Cosserat rigid frames, in global frame
     m_colorMap.setColorScheme("Blue to Red");
     m_colorMap.reinit();
+}
 
 template <class TIn1, class TIn2, class TOut>
 void DiscreteCosseratMapping<TIn1, TIn2, TOut>::reinit()
