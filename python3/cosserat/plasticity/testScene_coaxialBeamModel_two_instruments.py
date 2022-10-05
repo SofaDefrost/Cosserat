@@ -47,8 +47,10 @@ def createScene(rootNode):
     rootNode.addObject('DefaultAnimationLoop')
 
     # -------------------------------------------------------------------- #
-    # -----                   First beam parameters                  ----- #
+    # -----                      Beam parameters                     ----- #
     # -------------------------------------------------------------------- #
+
+    # --- Instrument0 --- #
 
     # Define: the total length, number of beams, and number of frames
     totalLength0 = 15
@@ -58,12 +60,34 @@ def createScene(rootNode):
 
     # nbFramesMax = 14
     # distBetweenFrames = totalLength0 / nbFrames
-    nbFrames = 14
+    nbFrames0 = 14
+
+    # --- Instrument1 --- #
+
+    # Define: the total length, number of beams, and number of frames
+    totalLength1 = 20
+
+    nbBeams1 = 5
+    oneBeamLength = totalLength1 / nbBeams1
+
+    # distBetweenFrames = totalLength1 / nbFrames
+    nbFrames1 = 17
+
+    # --- Common --- #
+    nbMaxInstrumentBeams = max(nbBeams0, nbBeams1)
+
+    # -------------------------------------------------------------------- #
+    # -----                   First beam components                  ----- #
+    # -------------------------------------------------------------------- #
+
+    # Redefining the number of beams 'in stock' in order to handle all
+    # discretisation scenarios
+    nbBeams0PlusStock = nbBeams0 + nbMaxInstrumentBeams
 
     # ----- Rigid base ----- #
 
     instrument0Node = rootNode.addChild('Instrument0')
-    instrument0Node.addObject('EulerImplicitSolver', rayleighStiffness="1.2", rayleighMass='1.1')
+    instrument0Node.addObject('EulerImplicitSolver', rayleighStiffness="0.", rayleighMass='0.')
     # instrument0Node.addObject('CGLinearSolver', name="solver",
     #                    iterations='100', tolerance='1e-5', threshold='1e-5')
     instrument0Node.addObject('SparseLUSolver',
@@ -97,17 +121,17 @@ def createScene(rootNode):
     # curvilinear abcissas in the Cosserat mapping.
     # This is equivalent to saying that the beams are 0-length,
     # 0-strain beams, added at the beginning of the instrument.
-    for i in range(0, nbBeams0):
+    for i in range(0, nbBeams0PlusStock):
         beamStrainDoFs.append([0, 0, 0])
         beamLengths.append(0)
         beamCurvAbscissa.append(0)
 
-    # for i in range(nbBeams0):
+    # for i in range(nbBeams0PlusStock):
     #     beamStrainDoFs.append([0, 0, 0])
     #     beamLengths.append(oneBeamLength)
     #     sum += beamLengths[i+nbStockBeams]
     #     beamCurvAbscissa.append(sum)
-    # beamCurvAbscissa[nbBeams0+nbStockBeams] = totalLength0
+    # beamCurvAbscissa[nbBeams0PlusStock+nbStockBeams] = totalLength0
 
     # Define angular rate which is the torsion(x) and bending (y, z) of each section
     rateAngularDeformNode0 = instrument0Node.addChild('rateAngularDeform')
@@ -121,15 +145,15 @@ def createScene(rootNode):
     beamCrossSectionShape='circular'
     sectionRadius = 0.5
     poissonRatio = 0.45
-    beamPoissonRatioList = [poissonRatio]*(nbBeams0)
+    beamPoissonRatioList = [poissonRatio]*(nbBeams0PlusStock)
     youngModulus = 5.0e6
-    beamYoungModulusList = [youngModulus]*(nbBeams0)
+    beamYoungModulusList = [youngModulus]*(nbBeams0PlusStock)
     yieldStress = 5.0e4
-    yieldStressList = [yieldStress]*(nbBeams0)
+    yieldStressList = [yieldStress]*(nbBeams0PlusStock)
     plasticModulus = 2.0e5
-    plasticModulusList = [plasticModulus]*(nbBeams0)
+    plasticModulusList = [plasticModulus]*(nbBeams0PlusStock)
     hardeningCoeff = 0.5
-    hardeningCoefficientList = [hardeningCoeff]*(nbBeams0)
+    hardeningCoefficientList = [hardeningCoeff]*(nbBeams0PlusStock)
     ### Plastic FF version
     rateAngularDeformNode0.addObject('BeamPlasticLawForceField', name="beamForceField",
                                      crossSectionShape=beamCrossSectionShape,
@@ -148,8 +172,8 @@ def createScene(rootNode):
 
     beamBendingMoment = 1.0e5
     bendingForces = np.array([0, beamBendingMoment, beamBendingMoment])
-    # momentIndices = range(1, nbBeams0)
-    momentIndices = [nbBeams0-1]
+    # momentIndices = range(1, nbBeams0PlusStock)
+    momentIndices = [nbBeams0PlusStock-1]
     # rateAngularDeformNode.addObject('ConstantForceField', name='Moment',
     #                                 indices=momentIndices,
     #                                 forces=bendingForces)
@@ -157,8 +181,8 @@ def createScene(rootNode):
     # EXPERIMENTAL: navigation simulation
     # Adding constraints on the additional beams which are not meant to be
     # simulated at the beginning
-    # fixedIndices = list(range(nbBeams0, nbBeams0+nbStockBeams))
-    fixedIndices = list(range(0, nbBeams0))
+    # fixedIndices = list(range(nbBeams0PlusStock, nbBeams0PlusStock+nbStockBeams))
+    fixedIndices = list(range(0, nbBeams0PlusStock))
     rateAngularDeformNode0.addObject('FixedConstraint', name='FixedConstraint',
                                     indices=fixedIndices)
 
@@ -169,19 +193,10 @@ def createScene(rootNode):
     frames3DDoFs = []
     framesCurvAbscissa = []
 
-    # for i in range(nbFrames):
-    #     sol = i * distBetweenFrames
-    #     frames3DDoFs.append([sol, 0, 0])
-    #     frames6DDoFs.append([sol, 0, 0,  0, 0, 0, 1])
-    #     framesCurvAbscissa.append(sol)
-    #
-    # frames6DDoFs.append([totalLength0, 0, 0, 0, 0, 0, 1])
-    # framesCurvAbscissa.append(totalLength0)
-
     # EXPERIMENTAL: navigation simulation
     # At the beginning of the simulation, when no beam element is actually
     # simulated, all rigid frames are set at 0
-    for i in range(nbFrames):
+    for i in range(nbFrames0):
         frames3DDoFs.append([0, 0, 0])
         frames6DDoFs.append([0, 0, 0,  0, 0, 0, 1])
         framesCurvAbscissa.append(0)
@@ -208,29 +223,20 @@ def createScene(rootNode):
                               output=outputMO, forcefield='@../../rateAngularDeform/beamForceField',
                               drawBeamSegments=True, nonColored=False, debug=0, printLog=False)
 
-    # mappedFrameNode.addObject('ConstantForceField', name='Moment',
-    #                           indices=nbFrames-4,
-    #                           forces=np.array([0, 0, 0, 0, 0, 8e4]))
-
 
 
     # -------------------------------------------------------------------- #
-    # -----                  Second beam parameters                  ----- #
+    # -----                  Second beam components                  ----- #
     # -------------------------------------------------------------------- #
 
-    # Define: the total length, number of beams, and number of frames
-    totalLength1 = 20
-
-    nbBeams1 = 5
-    oneBeamLength = totalLength1 / nbBeams1
-
-    # distBetweenFrames = totalLength1 / nbFrames
-    nbFrames = 17
+    # Redefining the number of beams 'in stock' in order to handle all
+    # discretisation scenarios
+    nbBeams1PlusStock = nbBeams1 + nbMaxInstrumentBeams
 
     # ----- Rigid base ----- #
 
     instrument1Node = rootNode.addChild('Instrument1')
-    instrument1Node.addObject('EulerImplicitSolver', rayleighStiffness="1.2", rayleighMass='1.1')
+    instrument1Node.addObject('EulerImplicitSolver', rayleighStiffness="0.", rayleighMass='0.')
     # instrument1Node.addObject('CGLinearSolver', name="solver",
     #                    iterations='100', tolerance='1e-5', threshold='1e-5')
     instrument1Node.addObject('SparseLUSolver',
@@ -264,17 +270,17 @@ def createScene(rootNode):
     # curvilinear abcissas in the Cosserat mapping.
     # This is equivalent to saying that the beams are 0-length,
     # 0-strain beams, added at the beginning of the instrument.
-    for i in range(0, nbBeams1):
+    for i in range(0, nbBeams1PlusStock):
         beamStrainDoFs.append([0, 0, 0])
         beamLengths.append(0)
         beamCurvAbscissa.append(0)
 
-    # for i in range(nbBeams1):
+    # for i in range(nbBeams1PlusStock):
     #     beamStrainDoFs.append([0, 0, 0])
     #     beamLengths.append(oneBeamLength)
     #     sum += beamLengths[i+nbStockBeams]
     #     beamCurvAbscissa.append(sum)
-    # beamCurvAbscissa[nbBeams1+nbStockBeams] = totalLength1
+    # beamCurvAbscissa[nbBeams1PlusStock+nbStockBeams] = totalLength1
 
     # Define angular rate which is the torsion(x) and bending (y, z) of each section
     rateAngularDeformNode0 = instrument1Node.addChild('rateAngularDeform')
@@ -288,15 +294,15 @@ def createScene(rootNode):
     beamCrossSectionShape='circular'
     sectionRadius = 0.4
     poissonRatio = 0.45
-    beamPoissonRatioList = [poissonRatio]*(nbBeams1)
+    beamPoissonRatioList = [poissonRatio]*(nbBeams1PlusStock)
     youngModulus = 5.0e6
-    beamYoungModulusList = [youngModulus]*(nbBeams1)
+    beamYoungModulusList = [youngModulus]*(nbBeams1PlusStock)
     yieldStress = 5.0e4
-    yieldStressList = [yieldStress]*(nbBeams1)
+    yieldStressList = [yieldStress]*(nbBeams1PlusStock)
     plasticModulus = 2.0e5
-    plasticModulusList = [plasticModulus]*(nbBeams1)
+    plasticModulusList = [plasticModulus]*(nbBeams1PlusStock)
     hardeningCoeff = 0.5
-    hardeningCoefficientList = [hardeningCoeff]*(nbBeams1)
+    hardeningCoefficientList = [hardeningCoeff]*(nbBeams1PlusStock)
     ### Plastic FF version
     rateAngularDeformNode0.addObject('BeamPlasticLawForceField', name="beamForceField",
                                      crossSectionShape=beamCrossSectionShape,
@@ -315,8 +321,8 @@ def createScene(rootNode):
 
     beamBendingMoment = 1.0e5
     bendingForces = np.array([0, beamBendingMoment, beamBendingMoment])
-    # momentIndices = range(1, nbBeams1)
-    momentIndices = [nbBeams1-1]
+    # momentIndices = range(1, nbBeams1PlusStock)
+    momentIndices = [nbBeams1PlusStock-1]
     # rateAngularDeformNode.addObject('ConstantForceField', name='Moment',
     #                                 indices=momentIndices,
     #                                 forces=bendingForces)
@@ -324,8 +330,8 @@ def createScene(rootNode):
     # EXPERIMENTAL: navigation simulation
     # Adding constraints on the additional beams which are not meant to be
     # simulated at the beginning
-    # fixedIndices = list(range(nbBeams1, nbBeams1+nbStockBeams))
-    fixedIndices = list(range(0, nbBeams1))
+    # fixedIndices = list(range(nbBeams1PlusStock, nbBeams1PlusStock+nbStockBeams))
+    fixedIndices = list(range(0, nbBeams1PlusStock))
     rateAngularDeformNode0.addObject('FixedConstraint', name='FixedConstraint',
                                     indices=fixedIndices)
 
@@ -336,19 +342,10 @@ def createScene(rootNode):
     frames3DDoFs = []
     framesCurvAbscissa = []
 
-    # for i in range(nbFrames):
-    #     sol = i * distBetweenFrames
-    #     frames3DDoFs.append([sol, 0, 0])
-    #     frames6DDoFs.append([sol, 0, 0,  0, 0, 0, 1])
-    #     framesCurvAbscissa.append(sol)
-    #
-    # frames6DDoFs.append([totalLength1, 0, 0, 0, 0, 0, 1])
-    # framesCurvAbscissa.append(totalLength1)
-
     # EXPERIMENTAL: navigation simulation
     # At the beginning of the simulation, when no beam element is actually
     # simulated, all rigid frames are set at 0
-    for i in range(nbFrames):
+    for i in range(nbFrames1):
         frames3DDoFs.append([0, 0, 3])
         frames6DDoFs.append([0, 0, 3,  0, 0, 0, 1])
         framesCurvAbscissa.append(0)
@@ -386,7 +383,7 @@ def createScene(rootNode):
     #                                      bendingMoment=beamBendingMoment))
     nbInstruments=2
     instrumentBeamNumbers=[nbBeams0, nbBeams1]
-    instrumentFrameNumbers=[12]
+    instrumentFrameNumbers=[nbFrames0, nbFrames1]
     incrementDistance=0.1
     incrementDirection = np.array([1., 0., 0.])
     isInstrumentStraightVect=[True, True]

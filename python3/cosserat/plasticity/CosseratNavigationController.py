@@ -312,7 +312,7 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
     def computeNodeCurvAbs(self, xBeginVect, simulatedNodeCurvAbs, simulatedFrameCurvAbs, instrumentIdsForNodeVect, instrumentIdsForFrameVect):
 
         instrumentKeyPointsVect = [[]]
-        maxCurvilinearAbscissa = 0. # Max curvilinear abscissa among the key pointsthethethetthethehe
+        maxCurvilinearAbscissa = 0. # Max curvilinear abscissa among the key points
 
         for instrumentId in range(0,self.nbInstruments):
             # Add first key point = proximal extremity point
