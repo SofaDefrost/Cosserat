@@ -144,7 +144,7 @@ def createScene(rootNode):
 
     beamCrossSectionShape='circular'
     sectionRadius = 0.5
-    poissonRatio = 0.45
+    poissonRatio = 0.42
     beamPoissonRatioList = [poissonRatio]*(nbBeams0PlusStock)
     youngModulus = 5.0e6
     beamYoungModulusList = [youngModulus]*(nbBeams0PlusStock)
@@ -387,7 +387,7 @@ def createScene(rootNode):
     incrementDistance=0.1
     incrementDirection = np.array([1., 0., 0.])
     isInstrumentStraightVect=[True, True]
-    curvAbsTolerance= incrementDistance * 1.0e-6
+    curvAbsTolerance= 1.0e-4
     instrumentLengths=[totalLength0, totalLength1]
 
     rootNode.addObject(CombinedInstrumentsController(
