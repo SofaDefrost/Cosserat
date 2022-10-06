@@ -504,16 +504,21 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
 
             # Updating the beam information (cf comment of function description)
 
-            # TO DO : replace nbForceFieldBeams by nbMappingInputs-1 ?
+            # TO DO : replace nbForceFieldBeams by nbInputBeamNodes-1 ?
             nbForceFieldBeams = len(beamForceFieldComponent.length)
 
             with beamForceFieldComponent.length.writeable() as forceFieldBeamLengths:
                 with instrumentMapping.curv_abs_input.writeable() as curv_abs_input:
                     nbNewNodes = len(decimatedNodeCurvAbs)
-                    nbMappingInputs = len(curv_abs_input)
+                    nbInputBeamNodes = len(curv_abs_input)
+
+                    # We keep count of the nodes which are not part of the current
+                    # instrument, in order to make sure that the beams are added
+                    # starting from the end
+                    nbNodesNotOnInstrument = 0
 
                     for curvAbsIterator in range(0, nbNewNodes-1):
-                        # TO DO : is it necessary to check that nbNewNodes <= nbMappingInputs ?
+                        # TO DO : is it necessary to check that nbNewNodes <= nbInputBeamNodes ?
                         # Probably not, given that the total number of beams is taken into account when
                         # computing the new abscissas
                         # NB: this loop stops one node before the last one, to update
@@ -525,35 +530,61 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
                         # Check if the new node belongs to the current instrument,
                         # before applying changes
                         if instrumentId in instrumentIdsForNodeVect[currentKeyPointCurvAbsId]:
-                            currentBeamCurvAbsId = nbMappingInputs-1-curvAbsIterator
+                            currentBeamCurvAbsId = nbInputBeamNodes-1-curvAbsIterator+nbNodesNotOnInstrument
+                            currentInputBeamId = nbForceFieldBeams-1-curvAbsIterator+nbNodesNotOnInstrument
                             # Modifying curv_abs_input in the Cosserat mapping
                             curv_abs_input[currentBeamCurvAbsId] = decimatedNodeCurvAbs[currentKeyPointCurvAbsId]
 
                             # Modifying beam lengths in the Cosserat beam ForceField(s)
                             currentBeamLength = decimatedNodeCurvAbs[currentKeyPointCurvAbsId] - decimatedNodeCurvAbs[currentKeyPointCurvAbsId-1]
                             # TO DO : is it necessary to check that nbNewNodes <= nbForceFieldBeams ?
-                            forceFieldBeamLengths[nbForceFieldBeams-1-curvAbsIterator] = currentBeamLength
+                            forceFieldBeamLengths[currentInputBeamId] = currentBeamLength
+                        else:
+                            nbNodesNotOnInstrument += 1
 
-                    # last curv_abs_input, associated with the last beam of the chain
-                    curv_abs_input[nbMappingInputs-nbNewNodes] = decimatedNodeCurvAbs[0]
+                    # Last curv_abs_input, associated with the last beam of the chain
+                    curv_abs_input[nbInputBeamNodes-nbNewNodes] = decimatedNodeCurvAbs[0]
+
+                    # Forcing the forceFieldBeamLengths elements which are not
+                    # affected to actual beams to 0
+                    nbInstrumentNewBeams = nbNewNodes - 1 - nbNodesNotOnInstrument
+                    nbUnaffectedBeams = nbForceFieldBeams - nbInstrumentNewBeams
+                    forceFieldBeamLengths[0:nbUnaffectedBeams] = [0.] * nbUnaffectedBeams
+
+                    # Same for curv_abs_input
+                    # We have to count the first element of curv_abs_input, which is
+                    # always 0, as 'unaffected', even though it is technically
+                    # part of the newly computed curvilinear abscissas. For this
+                    # reason, nbUnaffectedInputCurvAbs is computed using nbInstrumentNewBeams,
+                    # instead of nbInstrumentNewNodes (= nbInstrumentNewBeams + 1)
+                    nbUnaffectedInputCurvAbs = nbInputBeamNodes - nbInstrumentNewBeams
+                    curv_abs_input[0:nbUnaffectedInputCurvAbs] = [0.] * nbUnaffectedInputCurvAbs
 
             # Updating the frame information (cf comment of function description)
 
             nbNewFrames = len(decimatedFrameCurvAbs)
             nbTotalFrames = len(instrumentMapping.curv_abs_output)
 
-            with ouputFrameMO.position.writeable() as ouputFramePosition:
-                with instrumentMapping.curv_abs_output.writeable() as curv_abs_output:
+            # We keep count of the frames which are not on the current instrument
+            # in order to make sure that the new frames are added starting from
+            # the end
+            nbFramesNotOnInstrument = 0
 
-                    for frameIterator in range(0, nbNewFrames):
-                        # TO DO : is it necessary to check that nbNewFrames <= nbTotalFrames ?
-                        # Probably not, given that the total number of frames is taken into account when
-                        # computing the new abscissas
-                        currentFrameCurvAbsId = nbNewFrames-1-frameIterator
-                        # Check if the new frame belongs to the current instrument,
-                        # before applying changes
-                        if instrumentId in instrumentIdsForFrameVect[currentFrameCurvAbsId]:
-                            curv_abs_output[nbTotalFrames-1-frameIterator] = decimatedFrameCurvAbs[currentFrameCurvAbsId]
+            with instrumentMapping.curv_abs_output.writeable() as curv_abs_output:
+
+                for frameIterator in range(0, nbNewFrames):
+                    # TO DO : is it necessary to check that nbNewFrames <= nbTotalFrames ?
+                    # Probably not, given that the total number of frames is taken into account when
+                    # computing the new abscissas
+                    currentFrameCurvAbsId = nbNewFrames-1-frameIterator
+                    currentOutputFrameId = nbTotalFrames-1-frameIterator + nbFramesNotOnInstrument
+                    # Check if the new frame belongs to the current instrument,
+                    # before applying changes
+                    if instrumentId in instrumentIdsForFrameVect[currentFrameCurvAbsId]:
+                        curv_abs_output[currentOutputFrameId] = decimatedFrameCurvAbs[currentFrameCurvAbsId]
+                    else:
+                        nbFramesNotOnInstrument += 1
+
 
 
     # -------------------------------------------------------------------- #
