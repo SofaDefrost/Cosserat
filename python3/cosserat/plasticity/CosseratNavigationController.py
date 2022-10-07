@@ -35,7 +35,7 @@ from pyquaternion import Quaternion as Quat
 #       * rateAngularDeform
 #           rateAngularDeformMO (Vec3)
 #           beamForceField (BeamHookeLawForceField, BeamPlasticLawForceField)
-#           FixedConstraint
+#           FixedConstraintOnStock (FixedConstraint)
 #           * MappedFrames (same node as in the rigidBase node)
 #
 #   * Instrument1
@@ -499,6 +499,7 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
             # Retrieving the components
             # TO DO : existance check ? What is the appropriate binding method ?
             beamForceFieldComponent = cosseratMechanicalNode.beamForceField
+            fixedConstraintOnStock = cosseratMechanicalNode.FixedConstraintOnStock
             instrumentMapping = mappedFramesNode.DiscreteCosseratMapping
             ouputFrameMO = mappedFramesNode.FramesMO
 
@@ -506,16 +507,17 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
 
             # TO DO : replace nbForceFieldBeams by nbInputBeamNodes-1 ?
             nbForceFieldBeams = len(beamForceFieldComponent.length)
+            nbNewNodes = len(decimatedNodeCurvAbs)
+
+            # We keep count of the nodes which are not part of the current
+            # instrument, in order to make sure that the beams are added
+            # starting from the end
+            nbNodesNotOnInstrument = 0
 
             with beamForceFieldComponent.length.writeable() as forceFieldBeamLengths:
                 with instrumentMapping.curv_abs_input.writeable() as curv_abs_input:
-                    nbNewNodes = len(decimatedNodeCurvAbs)
-                    nbInputBeamNodes = len(curv_abs_input)
 
-                    # We keep count of the nodes which are not part of the current
-                    # instrument, in order to make sure that the beams are added
-                    # starting from the end
-                    nbNodesNotOnInstrument = 0
+                    nbInputBeamNodes = len(curv_abs_input)
 
                     for curvAbsIterator in range(0, nbNewNodes-1):
                         # TO DO : is it necessary to check that nbNewNodes <= nbInputBeamNodes ?
@@ -559,6 +561,10 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
                     # instead of nbInstrumentNewNodes (= nbInstrumentNewBeams + 1)
                     nbUnaffectedInputCurvAbs = nbInputBeamNodes - nbInstrumentNewBeams
                     curv_abs_input[0:nbUnaffectedInputCurvAbs] = [0.] * nbUnaffectedInputCurvAbs
+
+                    # Updating the fixed constraint
+                    newFixedIndices = list(range(0, nbUnaffectedBeams))
+                    fixedConstraintOnStock.indices = newFixedIndices
 
             # Updating the frame information (cf comment of function description)
 

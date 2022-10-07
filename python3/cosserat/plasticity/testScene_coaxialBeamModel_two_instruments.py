@@ -183,7 +183,7 @@ def createScene(rootNode):
     # simulated at the beginning
     # fixedIndices = list(range(nbBeams0PlusStock, nbBeams0PlusStock+nbStockBeams))
     fixedIndices = list(range(0, nbBeams0PlusStock))
-    rateAngularDeformNode0.addObject('FixedConstraint', name='FixedConstraint',
+    rateAngularDeformNode0.addObject('FixedConstraint', name='FixedConstraintOnStock',
                                     indices=fixedIndices)
 
     # ----- Frames ----- #
@@ -332,8 +332,11 @@ def createScene(rootNode):
     # simulated at the beginning
     # fixedIndices = list(range(nbBeams1PlusStock, nbBeams1PlusStock+nbStockBeams))
     fixedIndices = list(range(0, nbBeams1PlusStock))
-    rateAngularDeformNode0.addObject('FixedConstraint', name='FixedConstraint',
+    rateAngularDeformNode0.addObject('FixedConstraint', name='FixedConstraintOnStock',
                                     indices=fixedIndices)
+
+    # rateAngularDeformNode0.addObject('FixedConstraint', name='FixedConstraint',
+    #                                 indices=fixedIndices)
 
     # ----- Frames ----- #
 
