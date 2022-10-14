@@ -120,6 +120,15 @@ class Cosserat(Sofa.Prefab):
         slidingPoint.addObject('IdentityMapping')
         return slidingPoint
 
+    def addSlidingPointsWithContainer(self):
+        slidingPoint = self.cosseratFrame.addChild('slidingPoint')
+        container = slidingPoint.addObject("PointSetTopologyContainer")
+        modifier = slidingPoint.addObject("PointSetTopologyModifier")
+        slidingPoint.addObject('MechanicalObject', name="slidingPointMO", position=self.frames3D,
+                               showObject="1", showIndices="0")
+        slidingPoint.addObject('IdentityMapping')
+        return slidingPoint
+
     def addSolverNode(self):
         solverNode = self.addChild('solverNode')
         solverNode.addObject('EulerImplicitSolver', rayleighStiffness="0.2", rayleighMass='0.1')
