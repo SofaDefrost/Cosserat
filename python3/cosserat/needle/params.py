@@ -3,6 +3,8 @@ from dataclasses import dataclass
 import string
 
 # Units are cm, kg, s
+
+
 @dataclass
 class Geometry:
     radius: float = 0.1
@@ -30,13 +32,15 @@ class FemParams:
     mesh: string = "6 6 6"
     box: string = "15 -10 -10 41 -6 10"
 
+
 @dataclass
 class ContactParams:
     contactDistance: float = 0.01
     alarmDistance: float = 0.1
-    dataMu: string = "mu=0."
+    dataMu: string = "mu=0.1"
     angleCone: float = "0.01"
     coneFactor: float = "0"
+
 
 @dataclass
 class NeedleParameters:
