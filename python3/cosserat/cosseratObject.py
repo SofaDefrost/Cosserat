@@ -34,17 +34,17 @@ def addEdgeCollision(parentNode, position3D, edges):
     return collisInstrumentCombined
 
 
-def addPointsCollision(parentNode, position3D, edges):
-    collisInstrumentCombined = parentNode.addChild('collisInstrumentCombined')
-    collisInstrumentCombined.addObject('EdgeSetTopologyContainer', name="collisEdgeSet", position=position3D,
+def addPointsCollision(parentNode, position3D, edges, nodeName):
+    collisInstrumentCombined = parentNode.addChild(nodeName)
+    collisInstrumentCombined.addObject('EdgeSetTopologyContainer', name="beamContainer", position=position3D,
                                        edges=edges)
     collisInstrumentCombined.addObject(
-        'EdgeSetTopologyModifier', name="collisEdgeModifier")
+        'EdgeSetTopologyModifier', name="beamModifier")
     collisInstrumentCombined.addObject(
-        'MechanicalObject', name="CollisionDOFs")
+        'MechanicalObject', name="collisionStats")
     collisInstrumentCombined.addObject(
-        'PointCollisionModel', name="pointColli", group='2')
-    collisInstrumentCombined.addObject('IdentityMapping', name="mapping")
+        'PointCollisionModel', name="beamColMod", group='2')
+    collisInstrumentCombined.addObject('IdentityMapping', name="beamMapping")
     return collisInstrumentCombined
 
 
@@ -128,9 +128,9 @@ class Cosserat(Sofa.Prefab):
         tab_edges = buildEdges(self.frames3D)
         return addEdgeCollision(self.cosseratFrame, self.frames3D, tab_edges)
 
-    def addPointCollisionModel(self):
+    def addPointCollisionModel(self, nodeName='CollisionPoints'):
         tab_edges = buildEdges(self.frames3D)
-        return addPointsCollision(self.cosseratFrame, self.frames3D, tab_edges)
+        return addPointsCollision(self.cosseratFrame, self.frames3D, tab_edges, nodeName)
 
     def addSlidingPoints(self):
         slidingPoint = self.cosseratFrame.addChild('slidingPoint')
