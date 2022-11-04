@@ -37,11 +37,7 @@ class Animation(Sofa.Core.Controller):
         self.contactListener = args[2]
         self.generic = args[3]
         self.entryPoint = []
-<<<<<<< HEAD
-        self.threshold = 14. # @todo unit
-=======
         self.threshold = 1.
->>>>>>> f176e36 (update plugin)
         self.needleCollisionModel = args[4]
         self.constraintPoints = args[5]
         self.inside = False
@@ -55,10 +51,7 @@ class Animation(Sofa.Core.Controller):
         if self.contactListener.getContactPoints() and not self.inside:
             vec = self.contactListener.getContactPoints()[0][1]
             tip = [vec[0], vec[1], vec[2]]
-<<<<<<< HEAD
-=======
 
->>>>>>> f176e36 (update plugin)
             if self.generic.constraintForces and self.generic.constraintForces[0] > self.threshold:
                 # @info 1. Save the entryPoint
                 self.entryPoint = tip
@@ -68,13 +61,6 @@ class Animation(Sofa.Core.Controller):
 
                 # @info 2. deactivate the contact constraint
                 self.needleCollisionModel.findData('activated').value = 0
-<<<<<<< HEAD
-                # @info 3. Add entryPoint point as the first sliding constraint
-                # todo: add the code according to #3
-                # with self.constraintPoints.position.writeable() as pos:
-                #     print(f' Pos is : {dir(self.constraintPoints.position)}')
-                #     pos = self.entryPoint
-=======
 
                 # @info 3. Add entryPoint point as the first constraint point in FEM
                 with self.constraintPoints.position.writeable() as pos:
@@ -84,7 +70,6 @@ class Animation(Sofa.Core.Controller):
                     print(f' ====> The entryPoint is : {self.entryPoint}')
                     print(f' ====> The constraintPoints is : {pos[0]}')
 
->>>>>>> f176e36 (update plugin)
                 self.inside = True
 
             elif self.tipForce[0] > self.threshold:
@@ -95,7 +80,7 @@ class Animation(Sofa.Core.Controller):
             # todo: This depends on the choice of the algorithm
             #  expl1: one can compare tip position related to the last constraint position inside the volume and
             #  when this > than the constraintDistance we add new constraint point
-            #  addNewConstraintPoint() # ==>
+            # addNewConstraintPoint()
 
             # 5. todo: If the user is pulling out the needle and the needle tip is behind is before the entryPoint,
             # todo: activated contact constraint.
@@ -110,11 +95,7 @@ class Animation(Sofa.Core.Controller):
                 posA[5][1] -= self.angularRate
 
         # ######## Reste rigid position #########
-<<<<<<< HEAD
-        if key == "+":  # up
-=======
         elif key == "+":  # up
->>>>>>> f176e36 (update plugin)
             with self.rigidBaseMO.rest_position.writeable() as posA:
                 qOld = Quat()
                 for i in range(4):
@@ -197,7 +178,7 @@ def createScene(rootNode):
                  name="needle", youngModulus=params.Physics.youngModulus, poissonRatio=params.Physics.poissonRatio,
                  rayleighStiffness=params.Physics.rayleighStiffness))
     needleCollisionModel = needle.addPointCollisionModel()
-    slidingPoint = needle.addSlidingPointsWithContainer()
+    slidingPoint = needle.addSlidingPoints()
 
     # Create FEM Node
     # TODO: Where we handle Sliding constraints,
@@ -208,9 +189,6 @@ def createScene(rootNode):
     cubeNode = createFemCubeWithParams(rootNode, params.FemParams)
     gelNode = cubeNode.getChild('gelNode')
     femPoints = gelNode.addChild('femPoints')
-    # container = gelNode.addObject("PointSetTopologyContainer")
-    # modifier = gelNode.addObject("PointSetTopologyModifier")
-    # state = root.addObject("MechanicalObject", template="Vec3d", showObject=True, showObjectScale=10)
     inputFEMCable = femPoints.addObject(
         'MechanicalObject', name="pointsInFEM", position=femPos, showIndices="1")
     femPoints.addObject('BarycentricMapping')
