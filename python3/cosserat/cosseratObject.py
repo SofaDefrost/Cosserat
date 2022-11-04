@@ -13,39 +13,13 @@ __date__ = "October, 26 2021"
 import Sofa
 from cosserat.usefulFunctions import buildEdges, pluginList, BuildCosseratGeometry
 from splib3.numerics import Quat
+from cosserat.utils import addEdgeCollision, addPointsCollision
 
 cosserat_config = {'init_pos': [0., 0., 0.], 'tot_length': 6, 'nbSectionS': 6,
                    'nbFramesF': 12, 'buildCollisionModel': 1, 'beamMass': 0.22}
 
 
 # @dataclass
-def addEdgeCollision(parentNode, position3D, edges):
-    collisInstrumentCombined = parentNode.addChild('collisInstrumentCombined')
-    collisInstrumentCombined.addObject('EdgeSetTopologyContainer', name="collisEdgeSet", position=position3D,
-                                       edges=edges)
-    collisInstrumentCombined.addObject(
-        'EdgeSetTopologyModifier', name="collisEdgeModifier")
-    collisInstrumentCombined.addObject(
-        'MechanicalObject', name="CollisionDOFs")
-    collisInstrumentCombined.addObject(
-        'LineCollisionModel', bothSide="1", group='2')
-    collisInstrumentCombined.addObject('PointCollisionModel', group='2')
-    collisInstrumentCombined.addObject('IdentityMapping', name="mapping")
-    return collisInstrumentCombined
-
-
-def addPointsCollision(parentNode, position3D, edges, nodeName):
-    collisInstrumentCombined = parentNode.addChild(nodeName)
-    collisInstrumentCombined.addObject('EdgeSetTopologyContainer', name="beamContainer", position=position3D,
-                                       edges=edges)
-    collisInstrumentCombined.addObject(
-        'EdgeSetTopologyModifier', name="beamModifier")
-    collisInstrumentCombined.addObject(
-        'MechanicalObject', name="collisionStats")
-    collisInstrumentCombined.addObject(
-        'PointCollisionModel', name="beamColMod", group='2')
-    collisInstrumentCombined.addObject('IdentityMapping', name="beamMapping")
-    return collisInstrumentCombined
 
 
 class Cosserat(Sofa.Prefab):
