@@ -39,6 +39,8 @@ set(HEADER_FILES
     ${SRC_ROOT_DIR}/mapping/DifferenceMultiMapping.inl
     ${SRC_ROOT_DIR}/mapping/RigidDistanceMapping.h
     ${SRC_ROOT_DIR}/mapping/RigidDistanceMapping.inl
+    ${SRC_ROOT_DIR}/engine/PointsManager.h
+    ${SRC_ROOT_DIR}/engine/PointsManager.inl
     ${SRC_ROOT_DIR}/forcefield/BeamHookeLawForceField.h
     ${SRC_ROOT_DIR}/forcefield/BeamHookeLawForceField.inl
     ${SRC_ROOT_DIR}/forcefield/CosseratInternalActuation.h
@@ -56,6 +58,7 @@ set(SOURCE_FILES
     ${SRC_ROOT_DIR}/mapping/ProjectionEngine.cpp
     ${SRC_ROOT_DIR}/mapping/DifferenceMultiMapping.cpp
     ${SRC_ROOT_DIR}/mapping/RigidDistanceMapping.cpp
+    ${SRC_ROOT_DIR}/engine/PointsManager.cpp
     ${SRC_ROOT_DIR}/forcefield/BeamHookeLawForceField.cpp
     ${SRC_ROOT_DIR}/forcefield/CosseratInternalActuation.cpp
     ${SRC_ROOT_DIR}/constraint/CosseratSlidingConstraint.cpp

@@ -48,3 +48,9 @@ class NeedleParameters:
     Physics: Physics = Physics()
     FemParams: FemParams = FemParams()
     contact: ContactParams = ContactParams()
+
+@dataclass
+class ConstraintsParams:
+    constraintDistance: float = 0.3  # distance between two constraint points
+    entryForce: float = 0.3  # The required force to penetrate the volume
+
