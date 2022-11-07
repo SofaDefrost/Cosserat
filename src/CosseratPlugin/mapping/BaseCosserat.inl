@@ -379,6 +379,16 @@ void BaseCosserat<TIn1, TIn2, TOut>::initialize()
     helper::ReadAccessor<Data<type::vector< double>>> curv_abs_section = d_curv_abs_section;
     helper::ReadAccessor<Data<type::vector<double>>> curv_abs_frames = d_curv_abs_frames;
 
+    // Initialisation of the threshold for float comparison
+    // Implementation of the Cosserat mapping heavily relies on the use of curvilinear
+    // abscissas, which are computed over the total length of the Cosserat beam
+    // elements. Comparison between these curvilinear abscissas is a classic problem
+    // of float to float comparison, which may lead to rounding errors in some cases.
+    // To standardise float comparison in the Cosserat mapping, we use a threshold
+    // based both on the total Cosserat beam length, and the epsilon value from std.
+    const double totalBeamLength = curv_abs_section[curv_abs_section.size()-1] - curv_abs_section[0];
+    m_comparisonThreshold = std::numeric_limits<double>::epsilon() * totalBeamLength;
+
     size_t sz = d_curv_abs_frames.getValue().size();
 
     if(d_debug.getValue())
@@ -392,19 +402,23 @@ void BaseCosserat<TIn1, TIn2, TOut>::initialize()
     m_indicesVectorsDraw.clear();
 
     size_t input_index = 1;
+    const size_t nbBeams = d_curv_abs_section.getValue().size();
 
     for (size_t i=0; i < sz; i++) {
-        if (curv_abs_section[input_index] > curv_abs_frames[i]) {
+        if (curv_abs_section[input_index] > curv_abs_frames[i] + m_comparisonThreshold) {
             m_indicesVectors.push_back(input_index);
             m_indicesVectorsDraw.push_back(input_index);
         }
-        else if(curv_abs_section[input_index] == curv_abs_frames[i]){
+        else if(std::abs(curv_abs_section[input_index] - curv_abs_frames[i]) < m_comparisonThreshold){
             m_indicesVectors.push_back(input_index);
             input_index++;
             m_indicesVectorsDraw.push_back(input_index);
         }
         else {
-            input_index++;
+            // Safe check, in case some of the curv_abs_frames values are higher
+            // than the last curv_abs_section
+            if (input_index < nbBeams-1)
+                input_index++;
             m_indicesVectors.push_back(input_index);
             m_indicesVectorsDraw.push_back(input_index);
         }
