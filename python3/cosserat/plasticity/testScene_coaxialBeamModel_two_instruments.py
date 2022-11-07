@@ -126,6 +126,8 @@ def createScene(rootNode):
         beamLengths.append(0)
         beamCurvAbscissa.append(0)
 
+    beamStrainDoFs[nbBeams0PlusStock-1] = [0., 0.1, 0.]
+
     # for i in range(nbBeams0PlusStock):
     #     beamStrainDoFs.append([0, 0, 0])
     #     beamLengths.append(oneBeamLength)
@@ -140,7 +142,7 @@ def createScene(rootNode):
                                                            name='rateAngularDeformMO',
                                                            position=beamStrainDoFs,
                                                            showIndices=0,
-                                                           rest_position=[0.0, 0.0, 0.0])
+                                                           rest_position=beamStrainDoFs)
 
     beamCrossSectionShape='circular'
     sectionRadius = 0.5
@@ -155,20 +157,20 @@ def createScene(rootNode):
     hardeningCoeff = 0.5
     hardeningCoefficientList = [hardeningCoeff]*(nbBeams0PlusStock)
     ### Plastic FF version
-    rateAngularDeformNode0.addObject('BeamPlasticLawForceField', name="beamForceField",
+    # rateAngularDeformNode0.addObject('BeamPlasticLawForceField', name="beamForceField",
+    #                                  crossSectionShape=beamCrossSectionShape,
+    #                                  radius=sectionRadius, variantSections="true",
+    #                                  length=beamLengths, poissonRatioList=beamPoissonRatioList,
+    #                                  youngModulusList=beamYoungModulusList,
+    #                                  initialYieldStresses=yieldStressList,
+    #                                  plasticModuli=plasticModulusList,
+    #                                  mixedHardeningCoefficients= hardeningCoefficientList)
+    ### Elastic FF version
+    rateAngularDeformNode0.addObject('BeamHookeLawForceField', name="beamForceField",
                                      crossSectionShape=beamCrossSectionShape,
                                      radius=sectionRadius, variantSections="true",
                                      length=beamLengths, poissonRatioList=beamPoissonRatioList,
-                                     youngModulusList=beamYoungModulusList,
-                                     initialYieldStresses=yieldStressList,
-                                     plasticModuli=plasticModulusList,
-                                     mixedHardeningCoefficients= hardeningCoefficientList)
-    ### Elastic FF version
-    # rateAngularDeformNode.addObject('BeamHookeLawForceField', name="beamForceField",
-    #                                 crossSectionShape=beamCrossSectionShape,
-    #                                 radius=sectionRadius, variantSections="true",
-    #                                 length=beamLengths, poissonRatioList=beamPoissonRatioList,
-    #                                 youngModulusList=beamYoungModulusList)
+                                     youngModulusList=beamYoungModulusList)
 
     beamBendingMoment = 1.0e5
     bendingForces = np.array([0, beamBendingMoment, beamBendingMoment])
@@ -283,13 +285,13 @@ def createScene(rootNode):
     # beamCurvAbscissa[nbBeams1PlusStock+nbStockBeams] = totalLength1
 
     # Define angular rate which is the torsion(x) and bending (y, z) of each section
-    rateAngularDeformNode0 = instrument1Node.addChild('rateAngularDeform')
-    rateAngularDeformMO = rateAngularDeformNode0.addObject('MechanicalObject',
+    rateAngularDeformNode1 = instrument1Node.addChild('rateAngularDeform')
+    rateAngularDeformMO = rateAngularDeformNode1.addObject('MechanicalObject',
                                                            template='Vec3d',
                                                            name='rateAngularDeformMO',
                                                            position=beamStrainDoFs,
                                                            showIndices=0,
-                                                           rest_position=[0.0, 0.0, 0.0])
+                                                           rest_position=beamStrainDoFs)
 
     beamCrossSectionShape='circular'
     sectionRadius = 0.4
@@ -304,20 +306,20 @@ def createScene(rootNode):
     hardeningCoeff = 0.5
     hardeningCoefficientList = [hardeningCoeff]*(nbBeams1PlusStock)
     ### Plastic FF version
-    rateAngularDeformNode0.addObject('BeamPlasticLawForceField', name="beamForceField",
+    # rateAngularDeformNode1.addObject('BeamPlasticLawForceField', name="beamForceField",
+    #                                  crossSectionShape=beamCrossSectionShape,
+    #                                  radius=sectionRadius, variantSections="true",
+    #                                  length=beamLengths, poissonRatioList=beamPoissonRatioList,
+    #                                  youngModulusList=beamYoungModulusList,
+    #                                  initialYieldStresses=yieldStressList,
+    #                                  plasticModuli=plasticModulusList,
+    #                                  mixedHardeningCoefficients= hardeningCoefficientList)
+    ### Elastic FF version
+    rateAngularDeformNode1.addObject('BeamHookeLawForceField', name="beamForceField",
                                      crossSectionShape=beamCrossSectionShape,
                                      radius=sectionRadius, variantSections="true",
                                      length=beamLengths, poissonRatioList=beamPoissonRatioList,
-                                     youngModulusList=beamYoungModulusList,
-                                     initialYieldStresses=yieldStressList,
-                                     plasticModuli=plasticModulusList,
-                                     mixedHardeningCoefficients= hardeningCoefficientList)
-    ### Elastic FF version
-    # rateAngularDeformNode.addObject('BeamHookeLawForceField', name="beamForceField",
-    #                                 crossSectionShape=beamCrossSectionShape,
-    #                                 radius=sectionRadius, variantSections="true",
-    #                                 length=beamLengths, poissonRatioList=beamPoissonRatioList,
-    #                                 youngModulusList=beamYoungModulusList)
+                                     youngModulusList=beamYoungModulusList)
 
     beamBendingMoment = 1.0e5
     bendingForces = np.array([0, beamBendingMoment, beamBendingMoment])
@@ -332,11 +334,21 @@ def createScene(rootNode):
     # simulated at the beginning
     # fixedIndices = list(range(nbBeams1PlusStock, nbBeams1PlusStock+nbStockBeams))
     fixedIndices = list(range(0, nbBeams1PlusStock))
-    rateAngularDeformNode0.addObject('FixedConstraint', name='FixedConstraintOnStock',
+    rateAngularDeformNode1.addObject('FixedConstraint', name='FixedConstraintOnStock',
                                     indices=fixedIndices)
 
-    # rateAngularDeformNode0.addObject('FixedConstraint', name='FixedConstraint',
-    #                                 indices=fixedIndices)
+    # At the beginning of the simulation, no instrument is deployed
+    constraintSpringStiffness = 5.0e8
+    constraintSpringDamping = 0.
+
+    constraintWith0Node = rateAngularDeformNode1.addChild('constraintWith0')
+    constraintWith0Node.addObject('StiffSpringForceField', name='constraintSprings',
+                                  object1 = "@../rateAngularDeformMO",
+                                  object2 = "@../../../Instrument0/rateAngularDeform/rateAngularDeformMO",
+                                  stiffness=constraintSpringStiffness,
+                                  damping=constraintSpringDamping,
+                                  indices1=[], indices2=[],
+                                  length=[], template="Vec3d")
 
     # ----- Frames ----- #
 
@@ -358,7 +370,7 @@ def createScene(rootNode):
 
     # The node of the frame needs to inherit from rigidBaseMO and rateAngularDeform
     mappedFrameNode = rigidBaseNode1.addChild('MappedFrames')
-    rateAngularDeformNode0.addChild(mappedFrameNode)
+    rateAngularDeformNode1.addChild(mappedFrameNode)
 
     framesMO = mappedFrameNode.addObject('MechanicalObject', template='Rigid3d',
                                          name="FramesMO", position=frames6DDoFs,

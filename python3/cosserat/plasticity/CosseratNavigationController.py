@@ -39,10 +39,21 @@ from pyquaternion import Quaternion as Quat
 #           * MappedFrames (same node as in the rigidBase node)
 #
 #   * Instrument1
-#       [Same structure and names as in Instrument0]
+#       [Same structure and names as in Instrument, except for constraintSprings]
+#       * rateAngularDeform
+#           * constraintWith0
+#               constraintSpringsWith0 (StiffSpringForceField)
+#                   NB: object1 = Instrument1, object2 = Instrument0
 #
 #   * Instrument2
-#       [Same structure and names as in Instrument0]
+#       [Same structure and names as in Instrument1]
+#       * rateAngularDeform
+#           * constraintWith0
+#               constraintSpringsWith0 (StiffSpringForceField)
+#                   NB: object1 = Instrument2, object2 = Instrument0
+#           * constraintWith1
+#               constraintSpringsWith1 (StiffSpringForceField)
+#                  NB: object1 = Instrument2, object2 = Instrument1
 #
 # Init arguments :
 #  - nbInstruments: number of simulated coaxial instruments
@@ -222,6 +233,8 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
         decimatedNodeCurvAbs = result['decimatedNodeCurvAbs']
         decimatedFrameCurvAbs = result['decimatedFrameCurvAbs']
 
+        # print("decimatedNodeCurvAbs : {}".format(decimatedNodeCurvAbs))
+        # print("instrumentIdsForNodeVect : {}".format(instrumentIdsForNodeVect))
 
         #----- Step 3 :  -----#
 
@@ -462,7 +475,57 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
     # rigid frame the list of instruments which the frame belongs to
     def updateInstrumentComponents(self, decimatedNodeCurvAbs, decimatedFrameCurvAbs, instrumentIdsForNodeVect, instrumentIdsForFrameVect):
 
-        for instrumentId in range(0, self.nbInstruments):
+        # 'Global' variables for this scope, filled while iterating over the instruments
+        nbInstruments = self.nbInstruments
+        nbNewNodes = len(decimatedNodeCurvAbs)
+
+        # Precomputation, to analyse the deplyment configuration of the different
+        # instruments. The purpose of this precomputation is to fill the
+        # instrumentLastBeamIds list, defined below, which contains for each
+        # instrument the index of the last beam of the instrument. If the instrument
+        # is not deployed yet, the corresponding beam index is 0.
+        # The idea to fill the list is the following : we go through the elements
+        # of instrumentIdsForNodeVect, and stops whenever the size of the list
+        # of instruments passing through the nodes decreases. By turning the lists
+        # into sets, we retrieve the indices of the instruments which are no longer
+        # in the list. For each of these instruments, we store the corresponding
+        # last beam index in instrumentLastBeamIds.
+        instrumentLastBeamIds = [0]*nbInstruments
+        accumulatedBeamNumber = 0
+
+        if len(instrumentIdsForNodeVect) >= 2: # Requires at least one beam
+            # Keeping track of the number of instruments whose distal end we haven't
+            # reached yet.
+            instrumentIterator = nbInstruments
+
+            while (instrumentIterator > 1 and accumulatedBeamNumber < nbNewNodes-1):
+                while (len(instrumentIdsForNodeVect[accumulatedBeamNumber+1]) >= instrumentIterator):
+                    accumulatedBeamNumber += 1
+
+                # Retrieving the index of the instruments which distal end we reached
+                previousInstrumentList = instrumentIdsForNodeVect[accumulatedBeamNumber]
+                lessInstrumentList = instrumentIdsForNodeVect[accumulatedBeamNumber+1]
+                instrumentDifferenceSet = set(previousInstrumentList) - set(lessInstrumentList)
+
+                for instrumentId in list(instrumentDifferenceSet):
+                    instrumentLastBeamIds[instrumentId] = accumulatedBeamNumber
+
+                # Accordingly decreasing the instrumentIterator
+                nbStoppedInstrument = len(instrumentDifferenceSet)
+                instrumentIterator -= nbStoppedInstrument
+
+            # If a single instrument remains, we complete the corresponding distal
+            # end information
+            if (instrumentIterator == 1):
+                mostForwardInstrumentId = instrumentIdsForNodeVect[nbNewNodes-1][0]
+                instrumentLastBeamIds[mostForwardInstrumentId] = nbNewNodes-1
+
+            # print("instrumentLastBeamIds : {}".format(instrumentLastBeamIds))
+
+
+        # Update
+
+        for instrumentId in range(0, nbInstruments):
 
             # First, retrieving the nodes of the current instrument
 
@@ -507,7 +570,6 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
 
             # TO DO : replace nbForceFieldBeams by nbInputBeamNodes-1 ?
             nbForceFieldBeams = len(beamForceFieldComponent.length)
-            nbNewNodes = len(decimatedNodeCurvAbs)
 
             # We keep count of the nodes which are not part of the current
             # instrument, in order to make sure that the beams are added
@@ -591,6 +653,83 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
                     else:
                         nbFramesNotOnInstrument += 1
 
+
+        # Updating the constraint springs
+
+        if (nbInstruments > 1):
+
+            # We ignore Instrument0, as the corresponding node never contains a
+            # constraint component (by design)
+            for instrumentId in range(1, nbInstruments):
+
+                # First, we retrieve the index of the current instrument last beam
+                instrumentLastBeamId = instrumentLastBeamIds[instrumentId]
+
+                if (instrumentLastBeamId > 0):
+
+                    # Then, we go through all other instruments which index is inferior
+                    # to the current one. Depending on these instruments' last beam
+                    # position, we update the constraint components inside the current
+                    # instrument node.
+                    for subInstrumentId in range(0, instrumentId):
+                        subInstrumentLastBeamId = instrumentLastBeamIds[subInstrumentId]
+
+                        if (subInstrumentLastBeamId > 0):
+
+                            # Both instruments have been deployed : we have to enforce
+                            # constraints on the coaxial segments
+
+                            # First, retrieving the corresponding nodes
+                            instrumentNodeName = "Instrument" + str(instrumentId)
+                            instrumentNode = self.rootNode.getChild(str(instrumentNodeName))
+                            if instrumentNode is None:
+                                raise NameError("[CombinedInstrumentsController]: Node \'{}\' not found. Your scene should "
+                                                "contain a node named \'{}\' among the children of the root node in order "
+                                                "to use this controller".format(instrumentNodeName, instrumentNodeName))
+
+                            cosseratMechanicalNode = instrumentNode.getChild('rateAngularDeform')
+                            if cosseratMechanicalNode is None:
+                                raise NameError("[CombinedInstrumentsController]: Node \'rateAngularDeform\' "
+                                                "not found. Your scene should contain a node named "
+                                                "\'rateAngularDeform\' among the children of the \'{}\' "
+                                                "node, gathering the mechanical Cosserat components "
+                                                "(MechanicalObject, Cosserat forcefield)".format(instrumentNodeName))
+
+                            currentConstraintNodeName = "constraintWith" + str(subInstrumentId)
+
+                            constraintNode = cosseratMechanicalNode.getChild(str(currentConstraintNodeName))
+                            if constraintNode is None:
+                                raise NameError("[CombinedInstrumentsController]: Node \'{}\' "
+                                                "not found. The \'rateAngularDeform\' node should have a child "
+                                                "node called \'{}\', containing the StiffSpringForceField "
+                                                "which implements its coupling with instrument {}".format(currentConstraintNodeName,
+                                                currentConstraintNodeName, subInstrumentId))
+
+                            # Applying constraints, depending on the configuration.
+                            # For each sub instrument, two cases are possible:
+                            #  - If the sub instrument ends before the current instrument, then
+                            # constraints have to be imposed over all the beams which are part
+                            # of the sub instrument.
+                            #  - If the sub instrument ends after the current instrument, then
+                            # constraints have to be imposed over all the beams of the current
+                            # instrument.
+                            # NB: we make the hypothesis that in the StiffSpringForceField,
+                            # object1 is in the current instrument node, while object 2 is
+                            # in the sub instrument Node.
+                            if subInstrumentLastBeamId < instrumentLastBeamId:
+                                # Case 1 : we apply the constraint on the beams
+                                # which are part of the sub instrument
+                                newConstrainedIndices = list(range(0, subInstrumentLastBeamId))
+                                constraintNode.constraintSprings.indices1 = newConstrainedIndices
+                                constraintNode.constraintSprings.indices2 = newConstrainedIndices
+                                constraintNode.constraintSprings.lengths = [1]*len(newConstrainedIndices)
+                            else:
+                                # Case 2: we apply the constraint on the beams
+                                # which are part of the current instrument
+                                newConstrainedIndices = list(range(0, instrumentLastBeamId))
+                                constraintNode.constraintSprings.indices1 = newConstrainedIndices
+                                constraintNode.constraintSprings.indices2 = newConstrainedIndices
+                                constraintNode.constraintSprings.lengths = [1]*len(newConstrainedIndices)
 
 
     # -------------------------------------------------------------------- #
