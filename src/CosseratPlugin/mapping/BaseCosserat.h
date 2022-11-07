@@ -110,6 +110,9 @@ protected:
     [[maybe_unused]] core::State<In2>* m_fromModel2;
     core::State<Out>* m_toModel;
 
+    // Threshold for curvilinear abscissas (float) comparison
+    double m_comparisonThreshold;
+
 public:
     /*===========COSSERAT VECTORS ======================*/
     unsigned int m_index_input;
