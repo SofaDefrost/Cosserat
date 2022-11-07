@@ -643,8 +643,6 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::draw(const core::visual::VisualP
             Transform beginFrameGlobalTransform = frame0 * beginFrameLocalTransform;
             Vector3 beginFramePos = beginFrameGlobalTransform.getOrigin();
             type::Quat beginFrameQuat = beginFrameGlobalTransform.getOrientation();
-            vparams->drawTool()->drawFrame(beginFramePos, beginFrameQuat,
-                                           Vector3( 1,1,1 ), sofa::type::RGBAColor::gray());
 
             // Variables for the beam end frame
             double localEndNodeCurvAbs = 0.0;
@@ -675,12 +673,8 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::draw(const core::visual::VisualP
                 endFramePos = endFrameGlobalTransform.getOrigin();
                 endFrameQuat = endFrameGlobalTransform.getOrientation();
 
-                // Draw the end frame
-                vparams->drawTool()->drawFrame(endFramePos, endFrameQuat,
-                                               Vector3( 1,1,1 ), sofa::type::RGBAColor::gray());
 
                 //Draw a beam, which colour indicates the mechanical state
-
 
                 const auto sectionDeformationRegimes = l_fromBeamForceField->getSectionDeformationRegimes();
                 RGBAColor drawColor = RGBAColor::gray();
@@ -717,12 +711,14 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::draw(const core::visual::VisualP
             }
         } // if l_fromBeamForceField
     } // if d_drawBeamSegments
-
-    // Drawing cylinders between the output frames
-    RGBAColor drawFrameColor = d_color.getValue();
-    for (unsigned int i=0; i<sz-1; i++)
-        vparams->drawTool()->drawCylinder(positions[i], positions[i+1],
-                                          d_radius.getValue(), drawFrameColor);
+    else
+    {
+        // Drawing cylinders between the output frames
+        RGBAColor drawFrameColor = d_color.getValue();
+        for (unsigned int i=0; i<sz-1; i++)
+            vparams->drawTool()->drawCylinder(positions[i], positions[i+1],
+                                              d_radius.getValue(), drawFrameColor);
+    }
 
 
     //Define color map
