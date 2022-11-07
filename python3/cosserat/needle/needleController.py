@@ -7,25 +7,33 @@ __date__ = "March 8 2021"
 import Sofa
 from splib3.numerics import Quat
 import numpy as np
+from params import ConstraintsParams
+from cosserat.utils import computeDistanceBetweenPoints
+import params
 
 
 class Animation(Sofa.Core.Controller):
     def __init__(self, *args, **kwargs):
         Sofa.Core.Controller.__init__(self, *args, **kwargs)
-        self.rigidBaseMO = args[0]
-        self.rateAngularDeformMO = args[1]
-        self.contactListener = args[2]
-        self.generic = args[3]
+        self.rigidBaseMO = args[0].rigidBaseNode.RigidBaseMO
+        self.rateAngularDeformMO = args[0].cosseratCoordinateNode.cosseratCoordinateMO
+
+        self.needleSlidingState = args[0].cosseratFrame.slidingPoint.slidingPointMO
+        self.needleCollisionModel = args[0].cosseratFrame.needleCollision
+
+        self.contactListener = args[1]
+        self.generic = args[2]
         self.entryPoint = []
         self.threshold = 3.
-        self.needleCollisionModel = args[4]
-        self.constraintPointsNode = args[5]
+
+        self.constraintPointsNode = args[3]
+
         self.constraintPts = self.constraintPointsNode.constraintPointsMo
         self.constraintPtsContainer = self.constraintPointsNode.constraintPtsContainer
         self.constraintPtsModifier = self.constraintPointsNode.constraintPtsModifier
         self.inside = False
         self.addNewPoint = False
-        self.rootNode = args[6]
+        self.rootNode = args[4]
 
         self.rate = 0.2
         self.angularRate = 0.02
@@ -49,28 +57,32 @@ class Animation(Sofa.Core.Controller):
                 # @info 2. deactivate the contact constraint
                 self.needleCollisionModel.findData('activated').value = 0
 
-                # test
-                with self.constraintPts.position.writeable() as pos:
-                    sz = len(pos)
-                    print(f'1: ====> The state size is : {sz}')
-
                 # @info 3. Add entryPoint point as the first constraint point in FEM
-                self.constraintPtsModifier.addPoints(1, True)
-                self.addNewPoint = True
+                # self.constraintPtsModifier.addPoints(1, True)
+                # self.addNewPoint = True
                 self.inside = True
+                print("=====> inside the volume, the first point is added to the state <=====")
+                print("@Todo: call the binding of addNewPointToState()")
 
             elif self.tipForce[0] > self.threshold:
                 print(
                     "Please activate computeConstraintForces data field inside the GenericConstraint component")
-            # 5. todo: If the user is pulling out the needle and the needle tip is behind is before the entryPoint,
-            # todo: activated contact constraint.
-            # 5.1 self.inside=False
-            # 5.2 self.needleCollisionModel.findData('activated').value = 1
-
-    # Compute the distance between two points
-    @staticmethod
-    def computeDistance(a, b):
-        return ((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 + (a[2] - b[2]) ** 2) ** 0.5
+            # 5. todo: If the user is pulling out the needle and the needle tip is behind the entryPoint,
+            # 5. todo: call the remove constraint function to remove those constraint points
+            # todo: this can be handle with :
+            # todo: 5.1 self.inside=False
+            # todo: 5.2 self.needleCollisionModel.findData('activated').value = 1
+        else:
+            if self.inside:
+                # @info 1. check if the needle is we reach the distance to create a new constraint point
+                if computeDistanceBetweenPoints(self.constraintPts, self.needleSlidingState) > \
+                        params.ConstraintsParams.constraintDistance:
+                    self.addNewPoint = True
+                    # Todo: call the binding of addNewPointToState()
+                    # print("=====> Todo: call the binding of addNewPointToState() <=====")
+                else:
+                    pass
+                    # print("=====> The distance between the tip and the last constraint is < constraint Distance <=====")
 
     def addConstraintPointToFem(self, point):
         with self.constraintPts.position.writeable() as pos:
@@ -79,7 +91,9 @@ class Animation(Sofa.Core.Controller):
                 print(f'2:  ====> The state size is : {sz}')
                 print(f' ====> The tip is : {point}')
                 print(f'1 ====> The state : {pos}')
-                # pos[sz-1] = point
+                # pos[sz - 1][0] = point[0]
+                # pos[sz - 1][1] = point[1]
+                # pos[sz - 1][2] = point[2]
 
                 print(f'2 ====> The state : {pos}')
                 self.addNewPoint = False
@@ -88,13 +102,13 @@ class Animation(Sofa.Core.Controller):
 
     def onKeypressedEvent(self, event):
         key = event['key']
-        if key == "A":  # -
-            self.constraintPtsModifier.addPoints(1, True)
-            self.addNewPoint = True
-        if key == "D":  # +
-            self.constraintPtsModifier.removePoints(np.array([0]), True)
-        if key == "B":  # +
-            self.rootNode.findData('animate').value = 1
+        # if key == "A":  # -
+        #     self.constraintPtsModifier.addPoints(1, True)
+        #     self.addNewPoint = True
+        # if key == "D":  # +
+        #     self.constraintPtsModifier.removePoints(np.array([0]), True)
+        # if key == "B":  # +
+        #     self.rootNode.findData('animate').value = 1
 
         if ord(key) == 18:  # left
             with self.rigidBaseMO.rest_position.writeable() as posA:

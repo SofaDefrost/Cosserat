@@ -5,8 +5,8 @@ set(HEADER_FILES
 
     mapping/BaseCosserat.h
     mapping/BaseCosserat.inl
-        mapping/DiscreteCosseratMapping.h
-        mapping/DiscreteCosseratMapping.inl
+    mapping/DiscreteCosseratMapping.h
+    mapping/DiscreteCosseratMapping.inl
     mapping/DiscretDynamicCosseratMapping.h
     mapping/DiscreteDynamicCosseratMapping.inl
     mapping/ProjectionEngine.h

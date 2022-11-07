@@ -109,7 +109,7 @@ class Cosserat(Sofa.Prefab):
     def addSlidingPoints(self):
         slidingPoint = self.cosseratFrame.addChild('slidingPoint')
         slidingPoint.addObject('MechanicalObject', name="slidingPointMO", position=self.frames3D,
-                               showObject="1", showIndices="0")
+                               showObject="0", showIndices="0")
         slidingPoint.addObject('IdentityMapping')
         return slidingPoint
 
