@@ -10,10 +10,12 @@ from cosserat.createFemRegularGrid import createFemCubeWithParams
 from cosserat.cosseratObject import Cosserat
 from cosserat.utils import addConstraintPoint
 import sys
+
 params = NeedleParameters()
 
 sys.path.append('../')
 from cosserat.needle.needleController import Animation
+
 nbFrames = params.Geometry.nbFrames
 needleGeometryConfig = {'init_pos': [0., 0., 0.], 'tot_length': params.Geometry.totalLength,
                         'nbSectionS': params.Geometry.nbSections, 'nbFramesF': nbFrames,
@@ -84,7 +86,7 @@ def createScene(rootNode):
     rootNode.addObject(Animation(needle,
                                  conttactL, generic, constraintPointNode, rootNode))
     # rootNode.addObject(Animation(needle.rigidBaseNode.RigidBaseMO, needle.cosseratCoordinateNode.cosseratCoordinateMO,
-    #                              conttactL, generic, needleCollisionModel, constraintPointNode, rootNode))
+    #                              contactL, generic, needleCollisionModel, constraintPointNode, rootNode))
 
     # These stats will represents the distance between the contraint point in the volume and
     # their projection on the needle
@@ -92,12 +94,11 @@ def createScene(rootNode):
     distanceStatsNode = slidingPoint.addChild('distanceStatsNode')
     constraintPointNode.addChild(distanceStatsNode)
     distanceStatsNode.addObject('MechanicalObject', name="distanceStats", template="Vec3d",
-                                                position=[])
+                                position=[])
 
     inputVolumeMo = constraintPointNode.constraintPointsMo.getLinkPath()
     inputNeedleMo = slidingPoint.slidingPointMO.getLinkPath()
     outputDistanceMo = distanceStatsNode.distanceStats.getLinkPath()
-    # distanceStatsNode.addObject('CosseratNeedleSlidingConstraint', name="computeDistanceComponent")
-    # distanceStatsNode.addObject('DifferenceMultiMapping', name="pointsMulti", input1=inputVolumeMo, lastPointIsFixed=0,
-    #                            input2=inputNeedleMo, output=outputDistanceMo, direction="@../../FramesMO.position")
-
+    distanceStatsNode.addObject('CosseratNeedleSlidingConstraint', name="computeDistanceComponent")
+    distanceStatsNode.addObject('DifferenceMultiMapping', name="pointsMulti", input1=inputVolumeMo, lastPointIsFixed=0,
+                                input2=inputNeedleMo, output=outputDistanceMo, direction="@../../FramesMO.position")

@@ -620,16 +620,22 @@ namespace sofa::component::mapping
         }
         else
         {
+            std::cout << " size : " << sz << std::endl;
+            std::cout << "size of m_constraints : " << m_constraints.size() << std::endl;
+
             for (size_t i = 0; i < sz; i++)
             {
                 Constraint &c = m_constraints[i];
+                // std::cout << " c : " << c << std::endl;
+
                 int ei1 = c.eid;
                 int ei2 = c.eid + 1;
 
-                // std::cout << " ei1 : " << ei1 << " ei2 : "<< ei2 << std::endl;
+                std::cout << " ei1 : " << ei1 << " ei2 : " << ei2 << std::endl;
                 Real v0 = c.dirAxe * (in1[i] - c.alpha * in2[ei1] - (1 - c.alpha) * in2[ei2]);
                 Real v1 = c.t1 * (in1[i] - c.alpha * in2[ei1] - (1 - c.alpha) * in2[ei2]);
                 Real v2 = c.t2 * (in1[i] - c.alpha * in2[ei1] - (1 - c.alpha) * in2[ei2]);
+                std::cout << " v0 : " << v0 << " v1 : " << v1 << " v2 : " << v2 << std::endl;
                 outVel[i] = OutDeriv(v0, v1, v2);
             }
         }
