@@ -14,7 +14,7 @@
 #include <sofa/helper/io/Mesh.h>
 #include <sofa/helper/decompose.h>
 #include <sofa/core/MechanicalParams.h>
-#include <SofaRigid/RigidMapping.h>
+#include <sofa/component/mapping/nonlinear/RigidMapping.h>
 
 namespace sofa::component::mapping {
 

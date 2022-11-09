@@ -39,7 +39,7 @@
 #include <sofa/linearalgebra/CompressedRowSparseMatrix.h>
 #include <sofa/core/behavior/ForceField.inl>
 #include <sofa/helper/OptionsGroup.h>
-#include <SofaBaseLinearSolver/DefaultMultiMatrixAccessor.h>
+#include <sofa/core/behavior/DefaultMultiMatrixAccessor.h>
 
 namespace sofa::component::forcefield
 {
