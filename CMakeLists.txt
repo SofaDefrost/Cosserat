@@ -3,18 +3,11 @@ project(CosseratPlugin VERSION 21.12.0)
 
 include(cmake/environment.cmake)
 
-find_package(SofaFramework REQUIRED)
-sofa_find_package(SofaUserInteraction REQUIRED)
-sofa_find_package(SofaBaseMechanics REQUIRED)
-sofa_find_package(SofaConstraint REQUIRED)
-sofa_find_package(SofaRigid REQUIRED)
-sofa_find_package(SofaMiscMapping REQUIRED)
-sofa_find_package(SofaEngine REQUIRED)
-sofa_find_package(SofaSparseSolver REQUIRED)
-sofa_find_package(SofaBaseLinearSolver REQUIRED)
-
-sofa_find_package(Sofa.GL QUIET)
-sofa_find_package(SofaBaseTopology REQUIRED)
+find_package(Sofa.Config REQUIRED)
+sofa_find_package(Sofa.Component.Constraint.Lagrangian.Model REQUIRED)
+sofa_find_package(Sofa.Component.StateContainer REQUIRED)
+sofa_find_package(Sofa.Component.Mapping.NonLinear REQUIRED)
+sofa_find_package(Sofa.GL REQUIRED)
 
 sofa_find_package(STLIB QUIET)
 if(STLIB_FOUND)
@@ -90,11 +83,12 @@ if(WIN32)
 endif()
 
 add_library(${PROJECT_NAME} SHARED ${HEADER_FILES} ${SOURCE_FILES} ${DOC_FILES} ${RESOURCE_FILES} )
-target_link_libraries(${PROJECT_NAME} Sofa.Helper SofaCore SofaConstraint SofaBaseMechanics SofaUserInteraction SofaRigid SofaMiscMapping SofaSparseSolver SofaEngine)
-
-if(Sofa.GL_FOUND)
-    target_link_libraries(${PROJECT_NAME} Sofa.GL)
-endif()
+target_link_libraries(${PROJECT_NAME}
+    Sofa.Component.Constraint.Lagrangian.Model
+    Sofa.Component.StateContainer
+    Sofa.Component.Mapping.NonLinear
+    Sofa.GL
+)
 
 if(SoftRobots_FOUND)
     target_link_libraries(${PROJECT_NAME} SoftRobots)
