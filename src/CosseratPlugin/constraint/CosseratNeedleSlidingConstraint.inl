@@ -32,7 +32,7 @@
 
 #include <sofa/core/visual/VisualParams.h>
 #include <sofa/type/Vec.h>
-#include <SofaConstraint/BilateralInteractionConstraint.h>
+#include <sofa/component/constraint/lagrangian/model/BilateralInteractionConstraint.h>
 #include "CosseratNeedleSlidingConstraint.h"
 
 namespace sofa::component::constraintset
