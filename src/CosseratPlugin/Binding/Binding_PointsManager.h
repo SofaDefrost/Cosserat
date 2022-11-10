@@ -24,6 +24,6 @@
 
 namespace sofapython3 {
 
-void moduleAddPointSetTopologyModifier(pybind11::module &m);
+void moduleAddPointsManager(pybind11::module &m);
 
 } // namespace sofapython3

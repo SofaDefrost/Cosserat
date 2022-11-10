@@ -1,19 +1,21 @@
 #pragma once
 
 #include <sofa/defaulttype/VecTypes.h>
-#include <SofaBaseTopology/PointSetTopologyModifier.h>
-#include <SofaBaseTopology/PointSetTopologyModifier.h>
 #include <sofa/core/objectmodel/KeypressedEvent.h>
 #include <sofa/defaulttype/SolidTypes.h>
 #include <sofa/core/behavior/BaseController.h>
 #include <sofa/core/behavior/MechanicalState.h>
 #include <sofa/core/topology/BaseTopology.h>
-#include <SofaBaseTopology/PointSetTopologyContainer.h>
-#include <SofaBaseTopology/EdgeSetTopologyContainer.h>
-#include <SofaBaseTopology/TriangleSetTopologyContainer.h>
+#include <sofa/component/topology/container/dynamic/PointSetTopologyContainer.h>
+#include <sofa/component/topology/container/dynamic/PointSetTopologyModifier.h>
+#include <sofa/component/topology/container/dynamic/EdgeSetTopologyContainer.h>
+#include <sofa/component/topology/container/dynamic/TriangleSetTopologyContainer.h>
 #include <sofa/helper/AdvancedTimer.h>
 #include <sofa/gl/template.h>
 #include <sofa/core/behavior/Constraint.h>
+
+typedef sofa::component::topology::container::dynamic::PointSetTopologyModifier PointSetTopologyModifier;
+
 
 using sofa::core::objectmodel::KeypressedEvent;
 namespace sofa::core::behavior
@@ -31,14 +33,14 @@ namespace sofa::core::behavior
 
     public:
         PointsManager();
-        typedef type::Vector3 Vector3;
+        typedef type::Vec3 Vec3;
 
-        Data<Vector3> d_beamTip;
+        Data<Vec3> d_beamTip;
         Data<double> d_radius;
         Data<type::Vec4f> d_color;
         Data<std::string> d_beamPath;
 
-        sofa::component::topology::PointSetTopologyModifier *m_modifier;
+        PointSetTopologyModifier *m_modifier;
         core::behavior::MechanicalState<DataTypes> *m_beam;
 
         void init();
@@ -46,7 +48,7 @@ namespace sofa::core::behavior
         void draw(const core::visual::VisualParams *vparams);
 
         void addNewPointToState();
-        void removeLastePointfromState();
+        void removeLastPointfromState();
 
         topology::TopologyContainer *getTopology()
         {
