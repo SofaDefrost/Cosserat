@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.12)
-project(CosseratPlugin VERSION 21.12.0)
+project(CosseratPlugin VERSION 22.06.0)
 
 include(cmake/environment.cmake)
 
