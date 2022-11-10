@@ -20,12 +20,11 @@
 #include <SofaPython3/PythonFactory.h>
 #include <SofaPython3/Sofa/Core/Binding_Base.h>
 #include <SofaPython3/Sofa/Core/Binding_BaseContext.h>
-#include <SofaPython3/Sofa/Core/Binding_PointSetTopologyModifier.h>
+#include "Binding_PointsManager.h"
 #include <pybind11/stl.h>
-#include <sofa/component/topology/container/dynamic/PointSetTopologyModifier.h>
+#include <CosseratPlugin/engine/PointsManager.h>
 
-typedef sofa::component::topology::container::dynamic::PointSetTopologyModifier PointSetTopologyModifier;
-typedef sofa::core::topology::BaseMeshTopology::PointID PointID;
+typedef sofa::core::behavior::PointsManager PointsManager;
 
 namespace py {
 using namespace pybind11;
@@ -36,28 +35,16 @@ using namespace sofa::core::topology;
 
 namespace sofapython3 {
 
-void moduleAddPointSetTopologyModifier(py::module& m) {
-  py::class_<PointSetTopologyModifier, Base, py_shared_ptr<PointSetTopologyModifier>> c(m, "PointSetTopologyModifier");
+void moduleAddPointsManager(py::module& m) {
+  py::class_<PointsManager, Base, py_shared_ptr<PointsManager>> c(m, "PointsManager");
 
   /// register the PointSetTopologyModifier binding in the downcasting subsystem
-  PythonFactory::registerType<PointSetTopologyModifier>([](sofa::core::objectmodel::Base* object) {
-    return py::cast(dynamic_cast<PointSetTopologyModifier*>(object));
+  PythonFactory::registerType<PointsManager>([](sofa::core::objectmodel::Base* object) {
+    return py::cast(dynamic_cast<PointsManager*>(object));
   });
 
-  c.def("addPoints",
-        [](PointSetTopologyModifier& self, const sofa::Size nPoints, const bool addDOF) {
-          self.addPoints(nPoints, addDOF);
-        });
-  c.def("removePoints",
-        [](PointSetTopologyModifier& self, const std::vector<unsigned int>& indices, const bool removeDOF) {
-          sofa::type::vector<PointID> index_vector;
-          index_vector.reserve(indices.size());
-          for (const auto i : indices) {
-            index_vector.emplace_back(i);
-          }
-
-          self.removePoints(index_vector, removeDOF);
-        });
+    c.def("addNewPointToState", &PointsManager::addNewPointToState);
+    c.def("removeLastPointfromState", &PointsManager::removeLastPointfromState);
 }
 
 }  // namespace sofapython3
