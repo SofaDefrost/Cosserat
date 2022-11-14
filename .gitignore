@@ -27,3 +27,5 @@ Untitled*.ipynb
 TAGS
 python/
 scenes/
+.DS_Store/
+.DS_Store
