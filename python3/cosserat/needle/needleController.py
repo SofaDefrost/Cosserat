@@ -61,7 +61,8 @@ class Animation(Sofa.Core.Controller):
                 # self.constraintPtsModifier.addPoints(1, True)
                 # self.addNewPoint = True
                 self.inside = True
-                print("=====> inside the volume, the first point is added to the state <=====")
+                print(
+                    "=====> inside the volume, the first point is added to the state <=====")
                 print("@Todo: call the binding of addNewPointToState()")
 
             elif self.tipForce[0] > self.threshold:
@@ -98,7 +99,8 @@ class Animation(Sofa.Core.Controller):
                 print(f'2 ====> The state : {pos}')
                 self.addNewPoint = False
             else:
-                print("The state is empty, add a point in modifier before adding a point in the state")
+                print(
+                    "The state is empty, add a point in modifier before adding a point in the state")
 
     def onKeypressedEvent(self, event):
         key = event['key']
@@ -111,9 +113,11 @@ class Animation(Sofa.Core.Controller):
         #     self.rootNode.findData('animate').value = 1
 
         if ord(key) == 18:  # left
+            print("======= > left")
             with self.rigidBaseMO.rest_position.writeable() as posA:
                 posA[0][0] -= self.rate
         elif ord(key) == 20:  # right
+            print("======= > right")
             # print(
             #     f' ====> contactListener : {self.contactListener.getContactPoints()}')
             with self.rigidBaseMO.rest_position.writeable() as posA:
