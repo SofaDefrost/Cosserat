@@ -93,7 +93,12 @@ if(WIN32)
 endif()
 
 add_library(${PROJECT_NAME} SHARED ${HEADER_FILES} ${SOURCE_FILES} ${DOC_FILES} ${RESOURCE_FILES} )
-target_link_libraries(${PROJECT_NAME} Sofa.Helper SofaCore SofaConstraint SofaBaseMechanics SofaUserInteraction SofaRigid SofaMiscMapping SofaSparseSolver SofaEngine)
+target_link_libraries(${PROJECT_NAME}
+    Sofa.Component.Constraint.Lagrangian.Model
+    Sofa.Component.StateContainer
+    Sofa.Component.Mapping.NonLinear
+    Sofa.GL
+)
 
 if(Sofa.GL_FOUND)
     target_link_libraries(${PROJECT_NAME} Sofa.GL)
@@ -139,5 +144,6 @@ cmake_dependent_option(COSSERATPLUGIN_BUILD_TESTS "Compile the tests" OFF "SOFA_
 if(COSSERATPLUGIN_BUILD_TESTS)
     add_subdirectory(tests)
 endif()
+add_subdirectory(${SRC_ROOT_DIR}/Bindings)
 
 include(cmake/packaging.cmake)

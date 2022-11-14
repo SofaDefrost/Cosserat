@@ -12,7 +12,7 @@
 #include <SofaBaseTopology/EdgeSetTopologyContainer.h>
 #include <SofaBaseTopology/TriangleSetTopologyContainer.h>
 #include <sofa/helper/AdvancedTimer.h>
-#include <sofa/gl/template.h>
+// #include <sofa/gl/template.h>
 #include <sofa/core/behavior/Constraint.h>
 
 using sofa::core::objectmodel::KeypressedEvent;
@@ -43,10 +43,10 @@ namespace sofa::core::behavior
 
         void init();
         void handleEvent(sofa::core::objectmodel::Event *event);
-        void draw(const core::visual::VisualParams *vparams);
+        // void draw(const core::visual::VisualParams *vparams);
 
-        void addNewPointToState();
-        void removeLastePointfromState();
+        virtual void addNewPointToState();
+        virtual void removeLastePointfromState();
 
         topology::TopologyContainer *getTopology()
         {
