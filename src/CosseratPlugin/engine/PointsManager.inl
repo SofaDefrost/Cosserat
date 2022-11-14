@@ -80,9 +80,6 @@ namespace sofa::core::behavior
         x.resize(nbPoints - 1);
         xfree.resize(nbPoints - 1);
 
-        // x[nbPoints] = pos;
-        // xfree[nbPoints] = pos;
-
         m_modifier->notifyEndingEvent();
     }
 
@@ -93,13 +90,13 @@ namespace sofa::core::behavior
             KeypressedEvent *ev = static_cast<KeypressedEvent *>(event);
             switch (ev->getKey())
             {
-            case 'A':
-            case 'a':
+            case 'S':
+            case 's':
                 printf("A point is created \n");
                 addNewPointToState();
                 break;
-            case 'D':
-            case 'd':
+            case 'L':
+            case 'l':
                 printf("Remove point from state \n");
                 removeLastePointfromState();
                 break;
@@ -107,19 +104,19 @@ namespace sofa::core::behavior
         }
     }
 
-    void PointsManager::draw(const core::visual::VisualParams *vparams)
-    {
+    // void PointsManager::draw(const core::visual::VisualParams *vparams)
+    // {
 
-        helper::ReadAccessor<Data<VecCoord>> x = *this->getMstate()->read(core::VecCoordId::position());
-        if (!x.size())
-            return; // if no points return
-        glDisable(GL_LIGHTING);
-        for (unsigned int j = 0; j < x.size(); j++)
-        {
-            glColor3f(1.0, 1.0, 0.0);
-            vparams->drawTool()->drawSphere(x[j], d_radius.getValue() * 0.001);
-        }
-        glEnable(GL_LIGHTING);
-    }
+    //     helper::ReadAccessor<Data<VecCoord>> x = *this->getMstate()->read(core::VecCoordId::position());
+    //     if (!x.size())
+    //         return; // if no points return
+    //     glDisable(GL_LIGHTING);
+    //     for (unsigned int j = 0; j < x.size(); j++)
+    //     {
+    //         glColor3f(1.0, 1.0, 0.0);
+    //         vparams->drawTool()->drawSphere(x[j], d_radius.getValue() * 0.001);
+    //     }
+    //     glEnable(GL_LIGHTING);
+    // }
 
 } // Sofa
