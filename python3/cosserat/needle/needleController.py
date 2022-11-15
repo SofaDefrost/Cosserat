@@ -27,7 +27,7 @@ class Animation(Sofa.Core.Controller):
         self.threshold = 3.
 
         self.constraintPointsNode = args[3]
-        self.pointsManager = args[3].pointsManager
+        self.pointManager = self.constraintPointsNode.pointsManager
 
         self.constraintPts = self.constraintPointsNode.constraintPointsMo
         self.constraintPtsContainer = self.constraintPointsNode.constraintPtsContainer
@@ -105,13 +105,11 @@ class Animation(Sofa.Core.Controller):
 
     def onKeypressedEvent(self, event):
         key = event['key']
-        if key == "P":  # -
-            print(f'self.pointManager ------> {dir(self.pointsManager)}')
-
-            self.pointsManager.addNewPointToState()
+        if key == "A":  # -
+            self.pointManager.addNewPoint
         if key == "D":  # +
-            self.pointManager.removeLastePointfromState()
-        if key == "L":  # +
+            self.constraintPtsModifier.removePoints(np.array([0]), True)
+        if key == "B":  # +
             self.rootNode.findData('animate').value = 1
 
         if ord(key) == 18:  # left
