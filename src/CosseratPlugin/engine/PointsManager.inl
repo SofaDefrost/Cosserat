@@ -4,7 +4,7 @@
 #include <sofa/type/Quat.h>
 #include <sofa/core/visual/VisualParams.h>
 #include <sofa/simulation/AnimateBeginEvent.h>
-#include <SofaBaseMechanics/MechanicalObject.h>
+#include <sofa/component/statecontainer/MechanicalObject.h>
 
 namespace sofa::core::behavior
 {
@@ -48,7 +48,7 @@ namespace sofa::core::behavior
         size_t beamSz = beam.size();
         m_modifier->addPoints(1, true);
 
-        Vector3 pos = beam[beamSz - 1];
+        Vec3 pos = beam[beamSz - 1];
         std::cout << "beam tip is =-----> " << pos << std::endl;
         std::cout << "nbPoints is equal :" << nbPoints << std::endl;
         std::cout << "x.size is equal :" << x.size() << std::endl;
@@ -63,7 +63,7 @@ namespace sofa::core::behavior
         std::cout << "End notifyEndingEvent " << std::endl;
     }
 
-    void PointsManager::removeLastePointfromState()
+    void PointsManager::removeLastPointfromState()
     {
         helper::WriteAccessor<Data<VecCoord>> x = *this->getMstate()->write(core::VecCoordId::position());
         helper::WriteAccessor<Data<VecCoord>> xfree = *this->getMstate()->write(core::VecCoordId::freePosition());
@@ -98,7 +98,7 @@ namespace sofa::core::behavior
             case 'L':
             case 'l':
                 printf("Remove point from state \n");
-                removeLastePointfromState();
+                removeLastPointfromState();
                 break;
             }
         }

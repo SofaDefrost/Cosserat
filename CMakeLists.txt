@@ -126,6 +126,7 @@ if(SofaPython3Tools OR SofaPython3_FOUND)
             SOURCE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/python3/cosserat
             TARGET_DIRECTORY cosserat
     )
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src/CosseratPlugin/Binding)
 endif()
 
 ## Install rules for the library and headers; CMake package configurations files
