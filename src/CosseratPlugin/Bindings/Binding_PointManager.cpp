@@ -20,13 +20,11 @@
 #include <SofaPython3/PythonFactory.h>
 #include <SofaPython3/Sofa/Core/Binding_Base.h>
 #include <SofaPython3/Sofa/Core/Binding_BaseContext.h>
-#include "Binding_PointManager.h"
-#include "../engine/PointsManager.h"
+#include "Binding_PointsManager.h"
 #include <pybind11/stl.h>
+#include <CosseratPlugin/engine/PointsManager.h>
 
-// typedef sofa::component::topology::container::dynamic::PointSetTopologyModifier PointSetTopologyModifier;
 typedef sofa::core::behavior::PointsManager PointsManager;
-typedef typedef sofa::core::topology::BaseMeshTopology::PointID PointID;
 
 namespace py
 {
@@ -47,16 +45,8 @@ namespace sofapython3
     PythonFactory::registerType<PointsManager>([](sofa::core::objectmodel::Base *object)
                                                { return py::cast(dynamic_cast<PointsManager *>(object)); });
 
-    c.def("addNewPointToState",
-          [](PointsManager &self)
-          {
-            self.addNewPointToState();
-          });
-    c.def("removeLastePointfromState",
-          [](PointsManager &self)
-          {
-            self.removeLastePointfromState();
-          });
+    c.def("addNewPointToState", &PointsManager::addNewPointToState);
+    c.def("removeLastPointfromState", &PointsManager::removeLastPointfromState);
   }
 
 } // namespace sofapython3
