@@ -127,6 +127,7 @@ if(SofaPython3Tools OR SofaPython3_FOUND)
             TARGET_DIRECTORY cosserat
     )
     add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src/CosseratPlugin/Binding)
+    # add_subdirectory(${SRC_ROOT_DIR}/Bindings)
 endif()
 
 ## Install rules for the library and headers; CMake package configurations files
@@ -145,6 +146,5 @@ cmake_dependent_option(COSSERATPLUGIN_BUILD_TESTS "Compile the tests" OFF "SOFA_
 if(COSSERATPLUGIN_BUILD_TESTS)
     add_subdirectory(tests)
 endif()
-add_subdirectory(${SRC_ROOT_DIR}/Bindings)
 
 include(cmake/packaging.cmake)
