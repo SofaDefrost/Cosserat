@@ -76,6 +76,21 @@ def createScene(rootNode):
     # --- Common --- #
     nbMaxInstrumentBeams = max(nbBeams0, nbBeams1)
 
+
+    # -------------------------------------------------------------------- #
+    # -----                        Solver node                       ----- #
+    # -------------------------------------------------------------------- #
+
+    solverNode = rootNode.addChild('solverNode')
+
+    solverNode.addObject('EulerImplicitSolver', rayleighStiffness="0.", rayleighMass='0.')
+    # solverNode.addObject('CGLinearSolver', name="solver",
+    #                    iterations='100', tolerance='1e-5', threshold='1e-5')
+    solverNode.addObject('SparseLUSolver',
+                         template='CompressedRowSparseMatrixd',
+                         printLog="false")
+
+
     # -------------------------------------------------------------------- #
     # -----                   First beam components                  ----- #
     # -------------------------------------------------------------------- #
@@ -86,13 +101,7 @@ def createScene(rootNode):
 
     # ----- Rigid base ----- #
 
-    instrument0Node = rootNode.addChild('Instrument0')
-    instrument0Node.addObject('EulerImplicitSolver', rayleighStiffness="0.", rayleighMass='0.')
-    # instrument0Node.addObject('CGLinearSolver', name="solver",
-    #                    iterations='100', tolerance='1e-5', threshold='1e-5')
-    instrument0Node.addObject('SparseLUSolver',
-                              template='CompressedRowSparseMatrixd',
-                              printLog="false")
+    instrument0Node = solverNode.addChild('Instrument0')
 
     rigidBaseNode0 = instrument0Node.addChild('rigidBase')
     RigidBaseMO = rigidBaseNode0.addObject('MechanicalObject', template='Rigid3d',
@@ -237,13 +246,7 @@ def createScene(rootNode):
 
     # ----- Rigid base ----- #
 
-    instrument1Node = rootNode.addChild('Instrument1')
-    instrument1Node.addObject('EulerImplicitSolver', rayleighStiffness="0.", rayleighMass='0.')
-    # instrument1Node.addObject('CGLinearSolver', name="solver",
-    #                    iterations='100', tolerance='1e-5', threshold='1e-5')
-    instrument1Node.addObject('SparseLUSolver',
-                              template='CompressedRowSparseMatrixd',
-                              printLog="false")
+    instrument1Node = solverNode.addChild('Instrument1')
 
     rigidBaseNode1 = instrument1Node.addChild('rigidBase')
     RigidBaseMO = rigidBaseNode1.addObject('MechanicalObject', template='Rigid3d',
@@ -408,6 +411,7 @@ def createScene(rootNode):
     rootNode.addObject(CombinedInstrumentsController(
                             name="NavigationController",
                             rootNode=rootNode,
+                            solverNode=solverNode,
                             nbInstruments=nbInstruments,
                             instrumentBeamNumberVect=instrumentBeamNumbers,
                             instrumentFrameNumberVect=instrumentFrameNumbers,

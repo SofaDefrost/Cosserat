@@ -83,7 +83,7 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
     # -----                      Initialisation                      ----- #
     # -------------------------------------------------------------------- #
 
-    def __init__(self, rootNode,
+    def __init__(self, rootNode, solverNode,
                  nbInstruments,
                  instrumentBeamNumberVect,
                  instrumentFrameNumberVect,
@@ -98,6 +98,7 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
         ### Checking for the scene graph structure ###
 
         self.rootNode = rootNode
+        self.solverNode = solverNode
 
         ### Reading the insertion velocity parameters ###
 
@@ -128,7 +129,7 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
         self.currentInstrumentId = 0
 
         instrumentNodeName = "Instrument0"
-        instrumentNode = self.rootNode.getChild(str(instrumentNodeName))
+        instrumentNode = self.solverNode.getChild(str(instrumentNodeName))
         if instrumentNode is None:
             raise NameError("[CombinedInstrumentsController]: Node \'{}\' not found. Your scene should "
                             "contain a node named \'{}\' among the children of the root node in order "
@@ -530,7 +531,7 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
             # First, retrieving the nodes of the current instrument
 
             instrumentNodeName = "Instrument" + str(instrumentId)
-            instrumentNode = self.rootNode.getChild(str(instrumentNodeName))
+            instrumentNode = self.solverNode.getChild(str(instrumentNodeName))
             if instrumentNode is None:
                 raise NameError("[CombinedInstrumentsController]: Node \'{}\' not found. Your scene should "
                                 "contain a node named \'{}\' among the children of the root node in order "
@@ -681,7 +682,7 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
 
                             # First, retrieving the corresponding nodes
                             instrumentNodeName = "Instrument" + str(instrumentId)
-                            instrumentNode = self.rootNode.getChild(str(instrumentNodeName))
+                            instrumentNode = self.solverNode.getChild(str(instrumentNodeName))
                             if instrumentNode is None:
                                 raise NameError("[CombinedInstrumentsController]: Node \'{}\' not found. Your scene should "
                                                 "contain a node named \'{}\' among the children of the root node in order "
@@ -788,7 +789,7 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
 
     def changeRefRigidBase(self, newInstrumentId):
         instrumentNodeName = "Instrument" + str(newInstrumentId)
-        instrumentNode = self.rootNode.getChild(str(instrumentNodeName))
+        instrumentNode = self.solverNode.getChild(str(instrumentNodeName))
         if instrumentNode is None:
             raise NameError("[CombinedInstrumentsController]: Node \'{}\' not found. Your scene should "
                             "contain a node named \'{}\' among the children of the root node in order "
