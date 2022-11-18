@@ -72,14 +72,18 @@ namespace sofa::core::behavior
 
         size_t beamSz = beam.size();
         sofa::type::vector<unsigned int> Indices;
-        Indices.push_back(nbPoints - 1);
-        m_modifier->removePoints(Indices, true);
-
-        std::cout << "the size is equal :" << beamSz << std::endl;
-
-        x.resize(nbPoints - 1);
-        xfree.resize(nbPoints - 1);
-
+        if (nbPoints > 0)
+        {
+            Indices.push_back(nbPoints - 1);
+            m_modifier->removePoints(Indices, true);
+            x.resize(nbPoints - 1);
+            std::cout << "the size is equal :" << nbPoints << std::endl;
+            xfree.resize(nbPoints - 1);
+        }
+        else
+        {
+            msg_error() << "Error cannot remove the last point because there is no point in the state";
+        }
         m_modifier->notifyEndingEvent();
     }
 
