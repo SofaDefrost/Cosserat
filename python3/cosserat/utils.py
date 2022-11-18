@@ -1,5 +1,4 @@
 import numpy as np
-import params
 
 def addEdgeCollision(parentNode, position3D, edges):
     collisInstrumentCombined = parentNode.addChild('collisInstrumentCombined')
