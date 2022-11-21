@@ -7,6 +7,7 @@ __date__ = "March 8 2021"
 import Sofa
 from splib3.numerics import Quat
 import numpy as np
+import Sofa.CosseratPlugin
 from params import ConstraintsParams
 from cosserat.utils import computeDistanceBetweenPoints
 import params
@@ -46,7 +47,7 @@ class Animation(Sofa.Core.Controller):
         if self.contactListener.getContactPoints() and not self.inside:
             vec = self.contactListener.getContactPoints()[0][1]
             tip = [vec[0], vec[1], vec[2]]
-            print(f'the contact force is : {self.generic.constraintForces[0]}')
+            # print(f'the contact force is : {self.generic.constraintForces[0]}')
 
             # @infi: check if the contact force is large enough to go through the tissue
             if self.generic.constraintForces and self.generic.constraintForces[0] > self.threshold:
@@ -59,7 +60,7 @@ class Animation(Sofa.Core.Controller):
                 self.needleCollisionModel.findData('activated').value = 0
 
                 # @info 3. Add entryPoint point as the first constraint point in FEM
-                # self.constraintPtsModifier.addPoints(1, True)
+                self.pointManager.addNewPointToState()
                 # self.addNewPoint = True
                 self.inside = True
                 print(
@@ -79,9 +80,9 @@ class Animation(Sofa.Core.Controller):
                 # @info 1. check if the needle is we reach the distance to create a new constraint point
                 if computeDistanceBetweenPoints(self.constraintPts, self.needleSlidingState) > \
                         params.ConstraintsParams.constraintDistance:
-                    self.addNewPoint = True
                     # Todo: call the binding of addNewPointToState()
-                    # print("=====> Todo: call the binding of addNewPointToState() <=====")
+                    print("Adding a new point to the state")
+                    self.pointManager.addNewPointToState()
                 else:
                     pass
                     # print("=====> The distance between the tip and the last constraint is < constraint Distance <=====")
@@ -105,10 +106,10 @@ class Animation(Sofa.Core.Controller):
 
     def onKeypressedEvent(self, event):
         key = event['key']
-        if key == "A":  # -
-            self.pointManager.addNewPoint
+        if key == "M":  # -
+            self.pointManager.addNewPointToState()
         if key == "D":  # +
-            self.constraintPtsModifier.removePoints(np.array([0]), True)
+            self.pointManager.removeLastPointfromState()
         if key == "B":  # +
             self.rootNode.findData('animate').value = 1
 

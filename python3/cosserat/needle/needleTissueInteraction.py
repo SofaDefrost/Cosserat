@@ -97,9 +97,9 @@ def createScene(rootNode):
     distanceStatsNode.addObject('MechanicalObject', name="distanceStats", template="Vec3d",
                                 position=[])
 
-    # inputVolumeMo = constraintPointNode.constraintPointsMo.getLinkPath()
-    # inputNeedleMo = slidingPoint.slidingPointMO.getLinkPath()
-    # outputDistanceMo = distanceStatsNode.distanceStats.getLinkPath()
-    # distanceStatsNode.addObject('CosseratNeedleSlidingConstraint', name="computeDistanceComponent")
-    # distanceStatsNode.addObject('DifferenceMultiMapping', name="pointsMulti", input1=inputVolumeMo, lastPointIsFixed=0,
-    #                             input2=inputNeedleMo, output=outputDistanceMo, direction="@../../FramesMO.position")
+    inputVolumeMo = constraintPointNode.constraintPointsMo.getLinkPath()
+    inputNeedleMo = slidingPoint.slidingPointMO.getLinkPath()
+    outputDistanceMo = distanceStatsNode.distanceStats.getLinkPath()
+    distanceStatsNode.addObject('CosseratNeedleSlidingConstraint', name="computeDistanceComponent")
+    distanceStatsNode.addObject('DifferenceMultiMapping', name="pointsMulti", input1=inputVolumeMo, lastPointIsFixed=0,
+                                input2=inputNeedleMo, output=outputDistanceMo, direction="@../../FramesMO.position")
