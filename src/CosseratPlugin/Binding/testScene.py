@@ -1,5 +1,6 @@
 import Sofa
 import Sofa.Core
+import Sofa.CosseratPlugin
 import numpy as np
 from cosserat.cosseratObject import Cosserat, cosserat_config
 
@@ -22,7 +23,7 @@ def createScene(root):
 
     container = constraintPointsNode.addObject("PointSetTopologyContainer", points=[])
     modifier = constraintPointsNode.addObject("PointSetTopologyModifier")
-    state = constraintPointsNode.addObject("MechanicalObject", template="Vec3d", showObject=True, showObjectScale=10)
+    state = constraintPointsNode.addObject("MechanicalObject", template="Vec3d", position="", showObject=True, showObjectScale=10)
     pointManager=constraintPointsNode.addObject('PointsManager', name="pointsManager", listening="1",
                                    beamPath="/needle/rigidBase/cosseratInSofaFrameNode/slidingPoint/slidingPointMO")
 
