@@ -82,24 +82,24 @@ def createScene(rootNode):
                                    collisionModel1=cubeNode.gelNode.surfaceNode.surface.getLinkPath(),
                                    collisionModel2=needleCollisionModel.collisionStats.getLinkPath())
 
-    # -----------------
-    # @info: Start controller node
-    rootNode.addObject(Animation(needle,
-                                 conttactL, generic, constraintPointNode, rootNode))
-    # rootNode.addObject(Animation(needle.rigidBaseNode.RigidBaseMO, needle.cosseratCoordinateNode.cosseratCoordinateMO,
-    #                              contactL, generic, needleCollisionModel, constraintPointNode, rootNode))
-
     # These stats will represents the distance between the contraint point in the volume and
     # their projection on the needle
     # It 's also important to say that the x direction is not taken into account
     distanceStatsNode = slidingPoint.addChild('distanceStatsNode')
     constraintPointNode.addChild(distanceStatsNode)
-    distanceStatsNode.addObject('MechanicalObject', name="distanceStats", template="Vec3d",
-                                position=[])
-
+    constraintPoinMo = distanceStatsNode.addObject('MechanicalObject', name="distanceStats", template="Vec3d",
+                                                   position=[], listening="1", showObject="1", showObjectScale="0.1")
     inputVolumeMo = constraintPointNode.constraintPointsMo.getLinkPath()
     inputNeedleMo = slidingPoint.slidingPointMO.getLinkPath()
     outputDistanceMo = distanceStatsNode.distanceStats.getLinkPath()
-    distanceStatsNode.addObject('CosseratNeedleSlidingConstraint', name="computeDistanceComponent")
-    distanceStatsNode.addObject('DifferenceMultiMapping', name="pointsMulti", input1=inputVolumeMo, lastPointIsFixed=0,
-                                input2=inputNeedleMo, output=outputDistanceMo, direction="@../../FramesMO.position")
+
+    # ---------------------------------------------------
+    # @info: Start controller node
+    rootNode.addObject(Animation(needle, conttactL, generic,
+                       constraintPointNode, rootNode, constraintPoinMo))
+    # rootNode.addObject(Animation(needle.rigidBaseNode.RigidBaseMO, needle.cosseratCoordinateNode.cosseratCoordinateMO,
+    #                              contactL, generic, needleCollisionModel, constraintPointNode, rootNode))
+
+    # distanceStatsNode.addObject('CosseratNeedleSlidingConstraint', name="computeDistanceComponent")
+    # distanceStatsNode.addObject('DifferenceMultiMapping', name="pointsMulti", input1=inputVolumeMo, lastPointIsFixed=0,
+    #                             input2=inputNeedleMo, output=outputDistanceMo, direction="@../../FramesMO.position")

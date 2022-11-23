@@ -122,10 +122,10 @@ endif()
 if(SofaPython3Tools OR SofaPython3_FOUND)
     message("-- Python3 packages will be installed.")
     set(SP3_PYTHON_PACKAGES_DIRECTORY "python3/site-packages")
-    SP3_add_python_package(
-            SOURCE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/python3/cosserat
-            TARGET_DIRECTORY cosserat
-    )
+    # SP3_add_python_package(
+    #         SOURCE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/python3/cosserat
+    #         TARGET_DIRECTORY cosserat
+    # )
     add_subdirectory(${SRC_ROOT_DIR}/Binding)
 endif()
 #add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src/CosseratPlugin/Binding)

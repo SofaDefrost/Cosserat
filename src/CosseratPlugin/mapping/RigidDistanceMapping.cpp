@@ -19,20 +19,15 @@
 *                                                                             *
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
-#define SOFA_COSSERATPLUGIN_CPP_RigidDistanceMapping
+#pragma once
 #include "RigidDistanceMapping.inl"
 #include <sofa/defaulttype/VecTypes.h>
 #include <sofa/defaulttype/RigidTypes.h>
 #include <sofa/core/ObjectFactory.h>
 
-namespace sofa
+namespace sofa::component::mapping
 {
 
-namespace component
-{
-
-namespace mapping
-{
 using namespace sofa::defaulttype;
 
 // Register in the Factory
@@ -41,10 +36,5 @@ int RigidDistanceMappingClass = core::RegisterObject("Set the positions and velo
 
 
 template class SOFA_COSSERATPLUGIN_API RigidDistanceMapping< sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types >;
-
-
-} // namespace mapping
-
-} // namespace component
 
 } // namespace sofa.
