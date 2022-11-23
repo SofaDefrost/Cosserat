@@ -12,7 +12,6 @@ class Geometry:
     nbFrames: int = 15
     totalLength: float = 15.
 
-
 @dataclass
 class Physics:
     youngModulus: float = 1.20e9

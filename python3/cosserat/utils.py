@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def addEdgeCollision(parentNode, position3D, edges):
     collisInstrumentCombined = parentNode.addChild('collisInstrumentCombined')
     collisInstrumentCombined.addObject('EdgeSetTopologyContainer', name="collisEdgeSet", position=position3D,
@@ -31,11 +32,12 @@ def addConstraintPoint(parentNode, beamPath):
     constraintPointsNode.addObject("PointSetTopologyContainer", name="constraintPtsContainer", listening="1")
     constraintPointsNode.addObject("PointSetTopologyModifier", name="constraintPtsModifier", listening="1")
     constraintPointsNode.addObject("MechanicalObject", template="Vec3d", showObject=True, showIndices=True,
-                                   name="constraintPointsMo", position=[], showObjectScale=0)
+                                   name="constraintPointsMo", position=[], showObjectScale=0, listening="1")
 
     # print(f' ====> The beamTip tip is : {dir(beamPath)}')
     constraintPointsNode.addObject('PointsManager', name="pointsManager", listening="1",
-                                   beamPath="/solverNode/needle/rigidBase/cosseratInSofaFrameNode/slidingPoint/slidingPointMO")
+                                   beamPath="/solverNode/needle/rigidBase/cosseratInSofaFrameNode/slidingPoint"
+                                            "/slidingPointMO")
 
     constraintPointsNode.addObject('BarycentricMapping', useRestPosition="false", listening="1")
     return constraintPointsNode
@@ -53,13 +55,9 @@ def getLastConstraintPoint(constraintPointsNode):
     return constraintPointsNode.getObject('constraintPointsMo').position[-1]
 
 
-def computeDistanceBetweenPoints(constraintPointsNode, slidingPoint):
-    with constraintPointsNode.position.writeable() as posA:
-        if len(posA) != 0:
-            print(f' ====> The pointA is : {posA}')
-            with slidingPoint.position.writeable() as posB:
-                print(f' ====> The pointB is : {posB}')
-                return np.linalg.norm(posA[-1] - posB[-1])
-        else:
-            # print("No constraint points yet")
-            return 0
+def computeDistanceBetweenPoints(constraintPointPos, slidingPointPos):
+    if len(constraintPointPos) != 0:
+        return np.linalg.norm(constraintPointPos[-1] - slidingPointPos[-1])
+    else:
+        # print("No constraint points yet")
+        return 0

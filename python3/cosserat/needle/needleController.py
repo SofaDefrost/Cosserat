@@ -40,32 +40,24 @@ class Animation(Sofa.Core.Controller):
         self.rate = 0.2
         self.angularRate = 0.02
         self.tipForce = [0., 0., 0]
-
         return
 
     def onAnimateEndEvent(self, event):
         if self.contactListener.getContactPoints() and not self.inside:
-            vec = self.contactListener.getContactPoints()[0][1]
-            tip = [vec[0], vec[1], vec[2]]
-            # print(f'the contact force is : {self.generic.constraintForces[0]}')
-
-            # @infi: check if the contact force is large enough to go through the tissue
+            # @Info: check if the contact force is large enough to go through the tissue
             if self.generic.constraintForces and self.generic.constraintForces[0] > self.threshold:
-                # @info 1. Save the entryPoint and contact force
-                self.entryPoint = tip
+                # 1. @Info: Save the entryPoint and contact force
+                vec = self.contactListener.getContactPoints()[0][1]
+                self.entryPoint = [vec[0], vec[1], vec[2]]
                 self.tipForce = [self.generic.constraintForces[0], self.generic.constraintForces[1],
                                  self.generic.constraintForces[2]]
 
-                # @info 2. deactivate the contact constraint
+                # 2. @Info: deactivate the contact constraint
                 self.needleCollisionModel.findData('activated').value = 0
 
-                # @info 3. Add entryPoint point as the first constraint point in FEM
+                # @Info 3. Add entryPoint point as the first constraint point in FEM
                 self.pointManager.addNewPointToState()
-                # self.addNewPoint = True
                 self.inside = True
-                print(
-                    "=====> inside the volume, the first point is added to the state <=====")
-                print("@Todo: call the binding of addNewPointToState()")
 
             elif self.tipForce[0] > self.threshold:
                 print(
@@ -77,32 +69,21 @@ class Animation(Sofa.Core.Controller):
             # todo: 5.2 self.needleCollisionModel.findData('activated').value = 1
         else:
             if self.inside:
-                # @info 1. check if the needle is we reach the distance to create a new constraint point
-                if computeDistanceBetweenPoints(self.constraintPts, self.needleSlidingState) > \
+                # @info 1. check if the needle reached the distance to create/remove a constraint point
+                slidingPos = self.needleSlidingState.position.array()
+                constraintPos = self.constraintPts.position.array()
+                # print('------------------------------------------------')
+                # print(f' ====> The needleSlidingState state size is equal : {len(slidingPos)} '
+                #       f'the last position is : {slidingPos[-1]}')
+                # print(f' ====> The constraintPts state size is equal : {len(self.constraintPts.position.array())} '
+                #       f'the last position is : {self.constraintPts.position.array()[-1]}')
+                # print('------------------------------------------------')
+                if computeDistanceBetweenPoints(slidingPos, constraintPos) > \
                         params.ConstraintsParams.constraintDistance:
-                    # Todo: call the binding of addNewPointToState()
-                    print("Adding a new point to the state")
                     self.pointManager.addNewPointToState()
                 else:
                     pass
                     # print("=====> The distance between the tip and the last constraint is < constraint Distance <=====")
-
-    def addConstraintPointToFem(self, point):
-        with self.constraintPts.position.writeable() as pos:
-            sz = len(pos)
-            if sz != 0:
-                print(f'2:  ====> The state size is : {sz}')
-                print(f' ====> The tip is : {point}')
-                print(f'1 ====> The state : {pos}')
-                # pos[sz - 1][0] = point[0]
-                # pos[sz - 1][1] = point[1]
-                # pos[sz - 1][2] = point[2]
-
-                print(f'2 ====> The state : {pos}')
-                self.addNewPoint = False
-            else:
-                print(
-                    "The state is empty, add a point in modifier before adding a point in the state")
 
     def onKeypressedEvent(self, event):
         key = event['key']
