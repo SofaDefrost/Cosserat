@@ -513,8 +513,13 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
             instrumentIterator = nbInstruments
 
             while (instrumentIterator > 1 and accumulatedBeamNumber < nbNewNodes-1):
-                while (len(instrumentIdsForNodeVect[accumulatedBeamNumber+1]) >= instrumentIterator):
+                while (accumulatedBeamNumber < nbNewNodes-1 and len(instrumentIdsForNodeVect[accumulatedBeamNumber+1]) >= instrumentIterator):
                     accumulatedBeamNumber += 1
+
+                if (accumulatedBeamNumber == nbNewNodes-1):
+                    # In this case, more than one instrument are ending on the last new node
+                    # NB: instrumentIterator can't be equal to 1 here
+                    break
 
                 # Retrieving the index of the instruments which distal end we reached
                 previousInstrumentList = instrumentIdsForNodeVect[accumulatedBeamNumber]
@@ -528,11 +533,16 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
                 nbStoppedInstrument = len(instrumentDifferenceSet)
                 instrumentIterator -= nbStoppedInstrument
 
-            # If a single instrument remains, we complete the corresponding distal
-            # end information
-            if (instrumentIterator == 1):
-                mostForwardInstrumentId = instrumentIdsForNodeVect[nbNewNodes-1][0]
-                instrumentLastBeamIds[mostForwardInstrumentId] = nbNewNodes-1
+            # When leaving the two loops above, two scenarios are possible :
+            #   - either only one instrument remains, meaning that we reached
+            # the node from which only this instrument remains
+            #   - or more than one instrument remain, meaning that these instruments
+            # are coaxial until the last node
+            # In both cases, we have to fill instrumentLastBeamIds for all instruments
+            # remaining on the last node
+            lastNodeInstrumentList = instrumentIdsForNodeVect[nbNewNodes-1]
+            for instrumentId in lastNodeInstrumentList:
+                instrumentLastBeamIds[instrumentId] = nbNewNodes-1
 
             # print("instrumentLastBeamIds : {}".format(instrumentLastBeamIds))
 
