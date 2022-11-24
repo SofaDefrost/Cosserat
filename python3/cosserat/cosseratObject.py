@@ -37,7 +37,7 @@ def addPointsCollision(parentNode, position3D, edges):
                                        edges=edges)
     collisInstrumentCombined.addObject('EdgeSetTopologyModifier', name="collisEdgeModifier")
     collisInstrumentCombined.addObject('MechanicalObject', name="CollisionDOFs")
-    collisInstrumentCombined.addObject('PointCollisionModel', group='2')
+    collisInstrumentCombined.addObject('PointCollisionModel', name="pointColli", group='2')
     collisInstrumentCombined.addObject('IdentityMapping', name="mapping")
     return collisInstrumentCombined
 
@@ -120,6 +120,15 @@ class Cosserat(Sofa.Prefab):
         slidingPoint.addObject('IdentityMapping')
         return slidingPoint
 
+    def addSlidingPointsWithContainer(self):
+        slidingPoint = self.cosseratFrame.addChild('slidingPoint')
+        container = slidingPoint.addObject("PointSetTopologyContainer")
+        modifier = slidingPoint.addObject("PointSetTopologyModifier")
+        slidingPoint.addObject('MechanicalObject', name="slidingPointMO", position=self.frames3D,
+                               showObject="1", showIndices="0")
+        slidingPoint.addObject('IdentityMapping')
+        return slidingPoint
+
     def addSolverNode(self):
         solverNode = self.addChild('solverNode')
         solverNode.addObject('EulerImplicitSolver', rayleighStiffness="0.2", rayleighMass='0.1')
@@ -179,42 +188,21 @@ class Cosserat(Sofa.Prefab):
 
         cosseratInSofaFrameNode = self.rigidBaseNode.addChild('cosseratInSofaFrameNode')
         self.cosseratCoordinateNode.addChild(cosseratInSofaFrameNode)
-        framesMO = cosseratInSofaFrameNode.addObject('MechanicalObject', template='Rigid3d',
-                                                     name="FramesMO", position=framesF,
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-                                                     showObject=int(self.showObject.value), showObjectScale=0.1)
+        framesMO = cosseratInSofaFrameNode.addObject('MechanicalObject', template='Rigid3d', name="FramesMO", position=framesF, showObject=0, showObjectScale=0.1)
         if self.beamMass != 0.:
             cosseratInSofaFrameNode.addObject('UniformMass', totalMass=self.beamMass, showAxisSizeFactor='0')
 
-=======
-=======
->>>>>>> Stashed changes
-                                                     showObject=0, showObjectScale=0.1)
-        cosseratInSofaFrameNode.addObject('UniformMass', totalMass=self.beamMass, showAxisSizeFactor='0')
->>>>>>> Stashed changes
         cosseratInSofaFrameNode.addObject('DiscreteCosseratMapping', curv_abs_input=curv_abs_inputS,
                                           curv_abs_output=curv_abs_outputF, name='cosseratMapping',
                                           input1=self.cosseratCoordinateNode.cosseratCoordinateMO.getLinkPath(),
                                           input2=self.rigidBaseNode.RigidBaseMO.getLinkPath(),
-<<<<<<< Updated upstream
                                           output=framesMO.getLinkPath(), debug=0, radius=self.radius.value)
         if self.beamMass != 0.:
             self.solverNode.addObject('MechanicalMatrixMapper', template='Vec3,Rigid3',
                                       object1=self.cosseratCoordinateNode.cosseratCoordinateMO.getLinkPath(),
                                       object2=self.rigidBaseNode.RigidBaseMO.getLinkPath(),
                                       nodeToParse=cosseratInSofaFrameNode.getLinkPath())
-=======
-                                          output=framesMO.getLinkPath(), debug=0, radius=0)
 
-        self.addObject('MechanicalMatrixMapper', template='Vec3,Rigid3',
-                       object1=self.cosseratCoordinateNode.cosseratCoordinateMO.getLinkPath(),
-                       object2=self.rigidBaseNode.RigidBaseMO.getLinkPath(),
-                       nodeToParse=cosseratInSofaFrameNode.getLinkPath())
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
         return cosseratInSofaFrameNode
 
 
