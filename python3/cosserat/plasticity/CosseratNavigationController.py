@@ -88,6 +88,7 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
                  instrumentBeamNumberVect,
                  instrumentFrameNumberVect,
                  incrementDistance,
+                 incrementAngle,
                  incrementDirection,
                  isInstrumentStraightVect,
                  curvAbsTolerance,
@@ -103,6 +104,7 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
         ### Reading the insertion velocity parameters ###
 
         self.incrementDistance = incrementDistance
+        self.incrementAngle = incrementAngle
         self.incrementDirection = incrementDirection
         self.instrumentBeamNumberVect = instrumentBeamNumberVect
         self.instrumentFrameNumberVect = instrumentFrameNumberVect
@@ -135,6 +137,15 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
                             "contain a node named \'{}\' among the children of the root node in order "
                             "to use this controller".format(instrumentNodeName, instrumentNodeName))
 
+        controlPointNodeName = "controlPointNode0"
+        controlPointNode = self.rootNode.getChild(str(controlPointNodeName))
+        if controlPointNode is None:
+            raise NameError("[CombinedInstrumentsController]: Node \'{}\' not found. Your scene should "
+                            "contain a node named \'{}\' among the children of the root node in order "
+                            "to use this controller".format(controlPointNodeName, controlPointNodeName))
+
+        self.currentInstrumentControlPointNode = controlPointNode
+
         rigidBaseNode = instrumentNode.getChild('rigidBase')
         if rigidBaseNode is None:
             raise NameError("[CombinedInstrumentsController]: Node \'rigidBase\' "
@@ -145,15 +156,17 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
 
         self.currentInstrumentRigidBaseNode = rigidBaseNode
 
+
+
         ### Additional settings ###
 
         # Computing the incremental quaternions for rotation
         # Taking the direction of insertion as rotation axis
-        # qw = math.cos(math.radians(self.incrementAngle)/2)
-        # plusQuat = self.insertionDirection * math.sin(math.radians(self.incrementAngle)/2)
-        # minusQuat = -plusQuat
-        # self.plusQuat = Quat(np.insert(plusQuat, 0, qw))
-        # self.minusQuat = Quat(np.insert(minusQuat, 0, qw))
+        qw = math.cos(math.radians(self.incrementAngle)/2)
+        plusQuat = self.incrementDirection * math.sin(math.radians(self.incrementAngle)/2)
+        minusQuat = -plusQuat
+        self.plusQuat = Quat(np.insert(plusQuat, 0, qw))
+        self.minusQuat = Quat(np.insert(minusQuat, 0, qw))
 
         # constructs a grid of indices to access only position DoFs of the rigid particle
         self.posDoFsIdGrid = np.ix_([0], [0, 1, 2])
@@ -743,10 +756,17 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
         if event['key'] == Key.downarrow:  # Down arrow
             self.moveBackward(self.incrementDistance, self.incrementDirection)
 
+        if event['key'] == Key.leftarrow:  # Left arrow
+            self.rotateCounterclockwise()
+
+        if event['key'] == Key.rightarrow:  # Right arrow
+            self.rotateClockwise()
+
         if event['key'] == '0':
             self.currentInstrumentId = 0
             print("Currently controlled: instrument 0")
             self.changeRefRigidBase(0)
+            self.changeControlPoint(0)
 
         if event['key'] == '1':
             if self.nbInstruments <= 1:
@@ -755,6 +775,7 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
                 self.currentInstrumentId = 1
                 print("Currently controlled: instrument 1")
                 self.changeRefRigidBase(1)
+                self.changeControlPoint(1)
 
         if event['key'] == '2':
             if self.nbInstruments <= 2:
@@ -763,6 +784,7 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
                 self.currentInstrumentId = 2
                 print("Currently controlled: instrument 2")
                 self.changeRefRigidBase(2)
+                self.changeControlPoint(2)
 
 
     def moveForward(self, distanceIncrement, direction):
@@ -779,11 +801,34 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
             rigidBasePos[self.posDoFsIdGrid] += direction * distanceIncrement
         # TO DO: check that the tip isn't <0 here ?
 
-    def rotateClockwise():
-        pass
+    def rotateClockwise(self):
+        # We apply a rotation of self.incrementAngle degrees around the insertion direction.
+        # We have to convert the quaternion part of the control point DoFs to a pyquaternion.Quaternion object,
+        # as the order of the quaternion coordinates in pyquaternion (w, x, y, z) is not the same as the Rigid3d
+        # objects in Sofa (x, y, z, w)
+        with self.currentInstrumentControlPointNode.controlPointMO.position.writeable() as controlPointPos:
+            controlPointSofaQuat = controlPointPos[self.quatDoFsIdGrid]  # np matrix of size 1x4
+            qx = controlPointSofaQuat[0][0]
+            qy = controlPointSofaQuat[0][1]
+            qz = controlPointSofaQuat[0][2]
+            qw = controlPointSofaQuat[0][3]
+            controlPointQuat = Quat(qw, qx, qy, qz)
+            newControlPointQuat = self.minusQuat * controlPointQuat
+            controlPointPos[self.quatDoFsIdGrid] = np.array([[newControlPointQuat[1], newControlPointQuat[2],
+                                                            newControlPointQuat[3], newControlPointQuat[0]]])
 
-    def rotateCounterclockwise():
-        pass
+    def rotateCounterclockwise(self):
+        # Same as above, but with a quaternion corresponding to the opposite angle rotation
+        with self.currentInstrumentControlPointNode.controlPointMO.position.writeable() as controlPointPos:
+            controlPointSofaQuat = controlPointPos[self.quatDoFsIdGrid]  # np matrix of size 1x4
+            qx = controlPointSofaQuat[0][0]
+            qy = controlPointSofaQuat[0][1]
+            qz = controlPointSofaQuat[0][2]
+            qw = controlPointSofaQuat[0][3]
+            controlPointQuat = Quat(qw, qx, qy, qz)
+            newControlPointQuat = self.plusQuat * controlPointQuat
+            controlPointPos[self.quatDoFsIdGrid] = np.array([[newControlPointQuat[1], newControlPointQuat[2],
+                                                              newControlPointQuat[3], newControlPointQuat[0]]])
 
     def changeRefRigidBase(self, newInstrumentId):
         instrumentNodeName = "Instrument" + str(newInstrumentId)
@@ -800,3 +845,14 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
                             "node, where the base and rigid frames of the "
                             "Cosserat model are defined".format(instrumentNodeName))
         self.currentInstrumentRigidBaseNode = rigidBaseNode
+
+
+    def changeControlPoint(self, newInstrumentId):
+        controlPointNodeName = "controlPointNode" + str(newInstrumentId)
+        controlPointNode = self.rootNode.getChild(str(controlPointNodeName))
+        if controlPointNode is None:
+            raise NameError("[CombinedInstrumentsController]: Node \'{}\' not found. Your scene should "
+                            "contain a node named \'{}\' among the children of the root node in order "
+                            "to use this controller".format(controlPointNodeName, controlPointNodeName))
+
+        self.currentInstrumentControlPointNode = controlPointNode
