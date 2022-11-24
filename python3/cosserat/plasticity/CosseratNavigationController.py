@@ -717,20 +717,18 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
                             # NB: we make the hypothesis that in the StiffSpringForceField,
                             # object1 is in the current instrument node, while object 2 is
                             # in the sub instrument Node.
+                            newConstraintIndices = []
                             if subInstrumentLastBeamId < instrumentLastBeamId:
                                 # Case 1 : we apply the constraint on the beams
                                 # which are part of the sub instrument
                                 newConstrainedIndices = list(range(0, subInstrumentLastBeamId))
-                                constraintNode.constraintSprings.indices1 = newConstrainedIndices
-                                constraintNode.constraintSprings.indices2 = newConstrainedIndices
-                                constraintNode.constraintSprings.lengths = [1]*len(newConstrainedIndices)
                             else:
                                 # Case 2: we apply the constraint on the beams
                                 # which are part of the current instrument
                                 newConstrainedIndices = list(range(0, instrumentLastBeamId))
-                                constraintNode.constraintSprings.indices1 = newConstrainedIndices
-                                constraintNode.constraintSprings.indices2 = newConstrainedIndices
-                                constraintNode.constraintSprings.lengths = [1]*len(newConstrainedIndices)
+
+                            constraintNode.instrumentDiffMapping.mappedIndices1 = newConstrainedIndices
+                            constraintNode.instrumentDiffMapping.mappedIndices2 = newConstrainedIndices
 
 
     # -------------------------------------------------------------------- #

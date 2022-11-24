@@ -15,6 +15,8 @@ set(HEADER_FILES
     mapping/DifferenceMultiMapping.inl
     mapping/RigidDistanceMapping.h
     mapping/RigidDistanceMapping.inl
+    mapping/LimitedDifferenceMapping.h
+    mapping/LimitedDifferenceMapping.inl
     mapping/LegendrePolynomialsMapping.h
     mapping/LegendrePolynomialsMapping.inl
 
@@ -43,6 +45,7 @@ set(SOURCE_FILES
     mapping/DiscreteDynamicCosseratMapping.cpp
     mapping/DifferenceMultiMapping.cpp
     mapping/RigidDistanceMapping.cpp
+    mapping/LimitedDifferenceMapping.cpp
     mapping/LegendrePolynomialsMapping.cpp
 
     forcefield/BeamHookeLawForceField.cpp
