@@ -97,9 +97,8 @@ def createScene(rootNode):
     # @info: Start controller node
     rootNode.addObject(Animation(needle, conttactL, generic,
                        constraintPointNode, rootNode, constraintPoinMo))
-    # rootNode.addObject(Animation(needle.rigidBaseNode.RigidBaseMO, needle.cosseratCoordinateNode.cosseratCoordinateMO,
-    #                              contactL, generic, needleCollisionModel, constraintPointNode, rootNode))
 
-    # distanceStatsNode.addObject('CosseratNeedleSlidingConstraint', name="computeDistanceComponent")
-    # distanceStatsNode.addObject('DifferenceMultiMapping', name="pointsMulti", input1=inputVolumeMo, lastPointIsFixed=0,
-    #                             input2=inputNeedleMo, output=outputDistanceMo, direction="@../../FramesMO.position")
+    distanceStatsNode.addObject(
+        'CosseratNeedleSlidingConstraint', name="computeDistanceComponent")
+    distanceStatsNode.addObject('DifferenceMultiMapping', name="pointsMulti", input1=inputVolumeMo, lastPointIsFixed=0,
+                                input2=inputNeedleMo, output=outputDistanceMo, direction="@../../FramesMO.position")
