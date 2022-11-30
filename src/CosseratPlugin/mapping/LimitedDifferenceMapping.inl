@@ -52,6 +52,19 @@ LimitedDifferenceMapping<TIn1, TIn2, TOut>::LimitedDifferenceMapping()
     , d_debug(initData(&d_debug, false, "debug", "show debug output.\n"))
 {
         d_debug.setValue(false);
+        this->addUpdateCallback("updateNbMappedIndices", {&d_mappedIndices1, &d_mappedIndices2}, [this](const core::DataTracker& t)
+        {
+            SOFA_UNUSED(t);
+            const auto &m1Indices = d_mappedIndices1.getValue();
+            const auto &m2Indices = d_mappedIndices2.getValue();
+            if (m1Indices.size() != m2Indices.size())
+            {
+                msg_error("") << "The same number of indices should be provided for both inputs. Please check the mappedIndices1 and mappedIndices2 parameters" ;
+                return sofa::core::objectmodel::ComponentState::Invalid;
+            }
+            m_nbMappedIndices = m1Indices.size();
+            return sofa::core::objectmodel::ComponentState::Valid;
+        }, {});
 }
 
 
@@ -89,7 +102,7 @@ void LimitedDifferenceMapping<TIn1, TIn2, TOut>::init()
 
     if (m1Indices.size() != m2Indices.size())
     {
-        msg_info("") << "The same number of indices should be provided for both inputs. Please check the mappedIndices1 and mappedIndices2 parameters" ;
+        msg_error("") << "The same number of indices should be provided for both inputs. Please check the mappedIndices1 and mappedIndices2 parameters" ;
         return;
     }
 
@@ -109,17 +122,22 @@ void LimitedDifferenceMapping<TIn1, TIn2, TOut>::apply(
     if(dataVecOutPos.empty() || dataVecIn1Pos.empty() || dataVecIn2Pos.empty())
         return;
 
+    // Checking the componentState, to trigger a callback if other data fields (specifically
+    // d_mappedIndices1 and d_mappedIndices1) were changed
+    if (this->d_componentState.getValue() != sofa::core::objectmodel::ComponentState::Valid)
+        return;
+
     ///Do Apply
     //We need only one input In model and input Root model (if present)
     const In1VecCoord& in1 = dataVecIn1Pos[0]->getValue();
     const In2VecCoord& in2 = dataVecIn2Pos[0]->getValue();
 
-    OutVecCoord& out = *dataVecOutPos[0]->beginEdit();
-    out.resize(m_nbMappedIndices);
-
     const auto &m1Indices = d_mappedIndices1.getValue();
     const auto &m2Indices = d_mappedIndices2.getValue();
     const auto &mappedEntries = d_mappedEntries.getValue();
+
+    OutVecCoord& out = *dataVecOutPos[0]->beginEdit();
+    out.resize(m_nbMappedIndices);
 
     for (unsigned int dofIndexIt=0; dofIndexIt < m_nbMappedIndices; dofIndexIt++)
     {
@@ -153,11 +171,15 @@ void LimitedDifferenceMapping<TIn1, TIn2, TOut>:: applyJ(
     if(dataVecOutVel.empty() || dataVecIn1Vel.empty() ||dataVecIn2Vel.empty() )
         return;
 
+    // Checking the componentState, to trigger a callback if other data fields (specifically
+    // d_mappedIndices1 and d_mappedIndices1) were changed
+    if (this->d_componentState.getValue() != sofa::core::objectmodel::ComponentState::Valid)
+        return;
+
     const In1VecDeriv& in1Vel = dataVecIn1Vel[0]->getValue();
     const In2VecDeriv& in2Vel = dataVecIn2Vel[0]->getValue();
-    OutVecDeriv& outVel = *dataVecOutVel[0]->beginEdit();
 
-    // TO DO: is this necessary ?
+    OutVecDeriv& outVel = *dataVecOutVel[0]->beginEdit();
     outVel.resize(m_nbMappedIndices);
 
     const auto &m1Indices = d_mappedIndices1.getValue();
@@ -190,6 +212,11 @@ void LimitedDifferenceMapping<TIn1, TIn2, TOut>:: applyJT(
         const type::vector<const OutDataVecDeriv*>& dataVecInForce)
 {
     if(dataVecOut1Force.empty() || dataVecInForce.empty() || dataVecOut2Force.empty())
+        return;
+
+    // Checking the componentState, to trigger a callback if other data fields (specifically
+    // d_mappedIndices1 and d_mappedIndices1) were changed
+    if (this->d_componentState.getValue() != sofa::core::objectmodel::ComponentState::Valid)
         return;
 
     const OutVecDeriv& inForce = dataVecInForce[0]->getValue();
@@ -236,6 +263,11 @@ void LimitedDifferenceMapping<TIn1, TIn2, TOut>::applyJT(
         const type::vector<const OutDataMatrixDeriv*>& dataMatInConst)
 {
     if(dataMatOut1Const.empty() || dataMatOut2Const.empty() || dataMatInConst.empty() )
+        return;
+
+    // Checking the componentState, to trigger a callback if other data fields (specifically
+    // d_mappedIndices1 and d_mappedIndices1) were changed
+    if (this->d_componentState.getValue() != sofa::core::objectmodel::ComponentState::Valid)
         return;
 
     In1MatrixDeriv& out1 = *dataMatOut1Const[0]->beginEdit(); // constraints on the reference frame 1
