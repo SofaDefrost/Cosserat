@@ -592,8 +592,9 @@ namespace sofa::component::mapping
 
         // const OutVecCoord& out = m_toModel->read(core::ConstVecCoordId::position())->getValue();
         size_t sz = m_constraints.size();
+        outVel.resize(sz);
         std::cout << " == > In 1 " << in1.size() << " == > the in2 " << in2.size() << std::endl;
-        std::cout << " constraint size is : " << sz << "  == > The outVel " << outVel.size() << std::endl outVel.resize(sz);
+        std::cout << " constraint size is : " << sz << "  == > The outVel " << outVel.size() << std::endl;
 
         if (d_lastPointIsFixed.getValue())
         {
@@ -686,9 +687,9 @@ namespace sofa::component::mapping
                 }
                 else
                 {
-                    Deriv2 f = (f[0] * c.dirAxe) + (f[1] * c.t1) + (f[2] * c.t2);
-                    out1[i] += f;
-                    out2[ei2] -= f;
+                    Deriv2 f1 = (f[0] * c.dirAxe) + (f[1] * c.t1) + (f[2] * c.t2);
+                    out1[i] += f1;
+                    out2[ei2] -= f1;
                 }
             }
         }
