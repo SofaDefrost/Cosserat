@@ -5,7 +5,8 @@ __copyright__ = "(c) 2021,Inria"
 __date__ = "March 8 2021"
 
 import Sofa
-from splib3.numerics import Quat
+
+
 import numpy as np
 import Sofa.CosseratPlugin
 from params import ConstraintsParams
