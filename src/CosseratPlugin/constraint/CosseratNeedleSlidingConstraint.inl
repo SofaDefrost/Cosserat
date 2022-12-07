@@ -161,13 +161,15 @@ namespace sofa::component::constraintset
 
     for (unsigned int i = 0; i < positions.size(); i++)
     {
-      if (use[1])
-      {
+      if (use[0]){
+        Real dfree0 = positions[i][0];
+        resV->set(m_constraintId + 2 * i, dfree0);
+      }
+      if (use[1]){
         Real dfree1 = positions[i][1];
         resV->set(m_constraintId + 2 * i, dfree1);
       }
-      if (use[2])
-      {
+      if (use[2]){
         Real dfree2 = positions[i][2];
         resV->set(m_constraintId + 2 * i + 1, dfree2);
       }
