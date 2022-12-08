@@ -32,10 +32,6 @@
 
 #include <sofa/defaulttype/VecTypes.h>
 #include <sofa/helper/OptionsGroup.h>
-
-// #include <SoftRobots/component/constraint/model/CableModel.h>
-// #include <SoftRobots/component/behavior/SoftRobotsConstraint.h>
-#include "QPSlidingConstraint.h"
 #include <sofa/core/behavior/Constraint.h>
 
 namespace sofa::component::constraintset
@@ -44,7 +40,7 @@ namespace sofa::component::constraintset
     using sofa::core::ConstraintParams;
     using sofa::core::VecCoordId;
     using sofa::core::behavior::Constraint;
-    using sofa::core::behavior::SoftRobotsConstraint;
+    //using sofa::core::behavior::SoftRobotsConstraint;
     using sofa::core::objectmodel::Data;
     using sofa::core::visual::VisualParams;
     using sofa::defaulttype::Vec3dTypes;
