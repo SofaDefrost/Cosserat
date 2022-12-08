@@ -49,6 +49,8 @@ set(HEADER_FILES
     ${SRC_ROOT_DIR}/constraint/CosseratSlidingConstraint.inl
     ${SRC_ROOT_DIR}/mapping/LegendrePolynomialsMapping.h
     ${SRC_ROOT_DIR}/mapping/LegendrePolynomialsMapping.inl
+    ${SRC_ROOT_DIR}/constraint/CosseratNeedleSlidingConstraint.h
+    ${SRC_ROOT_DIR}/constraint/CosseratNeedleSlidingConstraint.inl
     )
 set(SOURCE_FILES
     ${SRC_ROOT_DIR}/initCosseratPlugin.cpp
@@ -63,6 +65,7 @@ set(SOURCE_FILES
     ${SRC_ROOT_DIR}/forcefield/CosseratInternalActuation.cpp
     ${SRC_ROOT_DIR}/constraint/CosseratSlidingConstraint.cpp
     ${SRC_ROOT_DIR}/mapping/LegendrePolynomialsMapping.cpp
+    ${SRC_ROOT_DIR}/constraint/CosseratNeedleSlidingConstraint.cpp
     )
 
 sofa_find_package(SoftRobots QUIET)
@@ -73,15 +76,14 @@ if(SoftRobots_FOUND)
 #        ${SRC_ROOT_DIR}/constraint/CosseratUnilateralInteractionConstraint.h
 #        ${SRC_ROOT_DIR}/constraint/CosseratUnilateralInteractionConstraint.inl
 
-        ${SRC_ROOT_DIR}/constraint/CosseratNeedleSlidingConstraint.h
-        ${SRC_ROOT_DIR}/constraint/CosseratNeedleSlidingConstraint.inl
+        
         ${SRC_ROOT_DIR}/constraint/QPSlidingConstraint.h
         ${SRC_ROOT_DIR}/constraint/QPSlidingConstraint.inl
         )
     list(APPEND SOURCE_FILES
         ${SRC_ROOT_DIR}/constraint/CosseratActuatorConstraint.cpp
-        ${SRC_ROOT_DIR}/constraint/CosseratNeedleSlidingConstraint.cpp
-#         ${SRC_ROOT_DIR}/constraint/CosseratUnilateralInteractionConstraint.cpp
+        
+        #${SRC_ROOT_DIR}/constraint/CosseratUnilateralInteractionConstraint.cpp
         ${SRC_ROOT_DIR}/constraint/QPSlidingConstraint.cpp
         )
 endif()
