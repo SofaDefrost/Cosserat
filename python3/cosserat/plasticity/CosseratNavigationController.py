@@ -505,29 +505,29 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
         # in the list. For each of these instruments, we store the corresponding
         # last beam index in instrumentLastBeamIds.
         instrumentLastBeamIds = [0]*nbInstruments
-        accumulatedBeamNumber = 0
+        accumulatedNodeNumber = 0
 
         if len(instrumentIdsForNodeVect) >= 2: # Requires at least one beam
             # Keeping track of the number of instruments whose distal end we haven't
             # reached yet.
             instrumentIterator = nbInstruments
 
-            while (instrumentIterator > 1 and accumulatedBeamNumber < nbNewNodes-1):
-                while (accumulatedBeamNumber < nbNewNodes-1 and len(instrumentIdsForNodeVect[accumulatedBeamNumber+1]) >= instrumentIterator):
-                    accumulatedBeamNumber += 1
+            while (instrumentIterator > 1 and accumulatedNodeNumber < nbNewNodes-1):
+                while (accumulatedNodeNumber < nbNewNodes-1 and len(instrumentIdsForNodeVect[accumulatedNodeNumber+1]) >= instrumentIterator):
+                    accumulatedNodeNumber += 1
 
-                if (accumulatedBeamNumber == nbNewNodes-1):
+                if (accumulatedNodeNumber == nbNewNodes-1):
                     # In this case, more than one instrument are ending on the last new node
                     # NB: instrumentIterator can't be equal to 1 here
                     break
 
                 # Retrieving the index of the instruments which distal end we reached
-                previousInstrumentList = instrumentIdsForNodeVect[accumulatedBeamNumber]
-                lessInstrumentList = instrumentIdsForNodeVect[accumulatedBeamNumber+1]
+                previousInstrumentList = instrumentIdsForNodeVect[accumulatedNodeNumber]
+                lessInstrumentList = instrumentIdsForNodeVect[accumulatedNodeNumber+1]
                 instrumentDifferenceSet = set(previousInstrumentList) - set(lessInstrumentList)
 
                 for instrumentId in list(instrumentDifferenceSet):
-                    instrumentLastBeamIds[instrumentId] = accumulatedBeamNumber
+                    instrumentLastBeamIds[instrumentId] = accumulatedNodeNumber
 
                 # Accordingly decreasing the instrumentIterator
                 nbStoppedInstrument = len(instrumentDifferenceSet)
@@ -544,10 +544,8 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
             for instrumentId in lastNodeInstrumentList:
                 instrumentLastBeamIds[instrumentId] = nbNewNodes-1
 
-            # print("instrumentLastBeamIds : {}".format(instrumentLastBeamIds))
 
-
-        # Update
+        # Updating the beam and Cosserat mapping components
 
         for instrumentId in range(0, nbInstruments):
 
@@ -678,80 +676,417 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
                         nbFramesNotOnInstrument += 1
 
 
-        # Updating the constraint springs
+        # Updating constraints on the coaxial segments
 
-        if (nbInstruments > 1):
+        instrumentIndicesSortedByLength = sorted(range(len(instrumentLastBeamIds)), key=lambda k: instrumentLastBeamIds[k])
 
-            # We ignore Instrument0, as the corresponding node never contains a
-            # constraint component (by design)
-            for instrumentId in range(1, nbInstruments):
+        if (nbInstruments > 1 and instrumentLastBeamIds[instrumentIndicesSortedByLength[nbInstruments-2]] > 0):
+            # The above condition checks that at least two instruments are deployed.
+            # When only one instrument is deployed, all computation on coaxial segments
+            # can be skipped.
 
-                # First, we retrieve the index of the current instrument last beam
+            # Determining which instruments have not been deployed yet (i.e.: instruments for which
+            # instrumentLastBeamIds = 0). These instruments don't have any coaxial beams with
+            # other instruments
+            shortestDeployedInstrumentRank = 0
+            while (instrumentLastBeamIds[instrumentIndicesSortedByLength[shortestDeployedInstrumentRank]] <= 0 and shortestDeployedInstrumentRank < nbInstruments-1):
+                shortestDeployedInstrumentRank += 1
+
+            longestDeployedInstrumentRank = nbInstruments-1
+            longestDeployedInstrumentId = instrumentIndicesSortedByLength[nbInstruments-1]
+
+            # Loop over all deployed instruments, except the longest
+            for instrumentRank in range(shortestDeployedInstrumentRank, longestDeployedInstrumentRank):
+
+                instrumentId = instrumentIndicesSortedByLength[instrumentRank]
                 instrumentLastBeamId = instrumentLastBeamIds[instrumentId]
 
-                if (instrumentLastBeamId > 0):
+                #--- Retrieving the nodes asscoiated to the current instrument ---#
 
-                    # Then, we go through all other instruments which index is inferior
-                    # to the current one. Depending on these instruments' last beam
-                    # position, we update the constraint components inside the current
-                    # instrument node.
-                    for subInstrumentId in range(0, instrumentId):
-                        subInstrumentLastBeamId = instrumentLastBeamIds[subInstrumentId]
+                instrumentNodeName = "Instrument" + str(instrumentId)
+                instrumentNode = self.solverNode.getChild(str(instrumentNodeName))
+                if instrumentNode is None:
+                    raise NameError("[CombinedInstrumentsController]: Node \'{}\' not found. Your scene should "
+                                    "contain a node named \'{}\' among the children of the root node in order "
+                                    "to use this controller".format(instrumentNodeName, instrumentNodeName))
 
-                        if (subInstrumentLastBeamId > 0):
+                rigidBaseNode = instrumentNode.getChild('rigidBase')
+                if rigidBaseNode is None:
+                    raise NameError("[CombinedInstrumentsController]: Node \'rigidBase\' "
+                                    "not found. Your scene should contain a node named "
+                                    "\'rigidBase\' among the children of the \'{}\' "
+                                    "node, gathering the Cosserat component RigidBase "
+                                    "and frames.".format(instrumentNodeName))
 
-                            # Both instruments have been deployed : we have to enforce
-                            # constraints on the coaxial segments
+                coaxialFrameNode = rigidBaseNode.getChild('coaxialSegmentFrames')
+                if coaxialFrameNode is None:
+                    raise NameError("[CombinedInstrumentsController]: Node \'coaxialSegmentFrames\' "
+                                    "not found. Your scene should contain a node named "
+                                    "\'coaxialSegmentFrames\' among the children of the \'rigidBase\' "
+                                    "node, containing the frames used for coaxial constraints.")
 
-                            # First, retrieving the corresponding nodes
-                            instrumentNodeName = "Instrument" + str(instrumentId)
-                            instrumentNode = self.solverNode.getChild(str(instrumentNodeName))
-                            if instrumentNode is None:
-                                raise NameError("[CombinedInstrumentsController]: Node \'{}\' not found. Your scene should "
-                                                "contain a node named \'{}\' among the children of the root node in order "
-                                                "to use this controller".format(instrumentNodeName, instrumentNodeName))
+                #--- Updating the instrument's coaxial Cosserat mapping (curv_abs_output) ---#
 
-                            cosseratMechanicalNode = instrumentNode.getChild('rateAngularDeform')
-                            if cosseratMechanicalNode is None:
-                                raise NameError("[CombinedInstrumentsController]: Node \'rateAngularDeform\' "
-                                                "not found. Your scene should contain a node named "
-                                                "\'rateAngularDeform\' among the children of the \'{}\' "
-                                                "node, gathering the mechanical Cosserat components "
-                                                "(MechanicalObject, Cosserat forcefield)".format(instrumentNodeName))
+                coaxialBeamCurvAbs = decimatedNodeCurvAbs[0:instrumentLastBeamId+1]
+                nbTotalCoaxialFrames = len(coaxialFrameNode.CoaxialCosseratMapping.curv_abs_output)
+                deployedCoaxialFrameIds = list(range(nbTotalCoaxialFrames-len(coaxialBeamCurvAbs), nbTotalCoaxialFrames))
+                with coaxialFrameNode.CoaxialCosseratMapping.curv_abs_output.writeable() as curv_abs_output:
+                    curv_abs_output[nbTotalCoaxialFrames-len(coaxialBeamCurvAbs):nbTotalCoaxialFrames] = coaxialBeamCurvAbs
 
-                            currentConstraintNodeName = "constraintWith" + str(subInstrumentId)
+                #--- Second loop over the longer deployed instruments, to enforce constraints on ---#
+                #--- the coaxial beam segments ---#
 
-                            constraintNode = cosseratMechanicalNode.getChild(str(currentConstraintNodeName))
-                            if constraintNode is None:
-                                raise NameError("[CombinedInstrumentsController]: Node \'{}\' "
-                                                "not found. The \'rateAngularDeform\' node should have a child "
-                                                "node called \'{}\', containing the StiffSpringForceField "
-                                                "which implements its coupling with instrument {}".format(currentConstraintNodeName,
-                                                currentConstraintNodeName, subInstrumentId))
+                for longerInstrumentRank in range(instrumentRank+1, nbInstruments):
 
-                            # Applying constraints, depending on the configuration.
-                            # For each sub instrument, two cases are possible:
-                            #  - If the sub instrument ends before the current instrument, then
-                            # constraints have to be imposed over all the beams which are part
-                            # of the sub instrument.
-                            #  - If the sub instrument ends after the current instrument, then
-                            # constraints have to be imposed over all the beams of the current
-                            # instrument.
-                            # NB: we make the hypothesis that in the StiffSpringForceField,
-                            # object1 is in the current instrument node, while object 2 is
-                            # in the sub instrument Node.
-                            newConstraintIndices = []
-                            if subInstrumentLastBeamId < instrumentLastBeamId:
-                                # Case 1 : we apply the constraint on the beams
-                                # which are part of the sub instrument
-                                newConstrainedIndices = list(range(0, subInstrumentLastBeamId))
-                            else:
-                                # Case 2: we apply the constraint on the beams
-                                # which are part of the current instrument
-                                newConstrainedIndices = list(range(0, instrumentLastBeamId))
 
-                            constraintNode.instrumentDiffMapping.mappedIndices1 = newConstrainedIndices
-                            constraintNode.instrumentDiffMapping.mappedIndices2 = newConstrainedIndices
+                    longerInstrumentId = instrumentIndicesSortedByLength[longerInstrumentRank]
+                    longerInstrumentLastBeamId = instrumentLastBeamIds[longerInstrumentId]
+
+                    #--- Retrieving the nodes asscoiated to the second (longer) instrument ---#
+
+                    longerInstrumentNodeName = "Instrument" + str(longerInstrumentId)
+                    longerInstrumentNode = self.solverNode.getChild(str(longerInstrumentNodeName))
+                    if longerInstrumentNode is None:
+                        raise NameError("[CombinedInstrumentsController]: Node \'{}\' not found. Your scene should "
+                                        "contain a node named \'{}\' among the children of the root node in order "
+                                        "to use this controller".format(longerInstrumentNodeName, longerInstrumentNodeName))
+
+                    rigidBaseNode2 = longerInstrumentNode.getChild('rigidBase')
+                    if rigidBaseNode2 is None:
+                        raise NameError("[CombinedInstrumentsController]: Node \'rigidBase\' "
+                                        "not found. Your scene should contain a node named "
+                                        "\'rigidBase\' among the children of the \'{}\' "
+                                        "node, gathering the Cosserat component RigidBase "
+                                        "and frames.".format(longerInstrumentNodeName))
+
+                    coaxialFrameNode2 = rigidBaseNode2.getChild('coaxialSegmentFrames')
+                    if coaxialFrameNode2 is None:
+                        raise NameError("[CombinedInstrumentsController]: Node \'coaxialSegmentFrames\' "
+                                        "not found. Your scene should contain a node named "
+                                        "\'coaxialSegmentFrames\' among the children of the \'rigidBase\' "
+                                        "node, containing the frames used for coaxial constraints.")
+
+                    #--- Retrieving the node containing the coupling between the two instruments ---#
+                    # NB: this node is both a child of coaxialFrameNode and coaxialFrameNode2
+
+                    if (longerInstrumentId > instrumentId):
+                        constraintNodeName = "constraint" + str(longerInstrumentId) + "With" + str(instrumentId)
+                    else:
+                        constraintNodeName = "constraint" + str(instrumentId) + "With" + str(longerInstrumentId)
+
+                    constraintNode = coaxialFrameNode.getChild(str(constraintNodeName))
+                    if constraintNode is None:
+                        raise NameError("[CombinedInstrumentsController]: Node \'{}\' "
+                                        "not found. The \'coaxialSegmentFrames\' node should have a child "
+                                        "node called \'{}\', containing the components "
+                                        "which implement its coupling with instrument {}".format(constraintNodeName,
+                                        constraintNodeName, longerInstrumentId))
+
+                    # We don't have to update the longer instrument own components : this will be
+                    # done when the upper loop reaches it. Here, we just update the coaxial frame
+                    # indices in the constraint node corresponding to this pair of instruments.
+
+                    # As the initial instrument is shorter, all its coaxial frames are actually common
+                    # with the longer instrument. We can reuse the index range computed above
+                    shorterInstrumentCoaxialFrameIds = deployedCoaxialFrameIds
+
+                    # For the longer instrument, we have to take into account the additional *coaxial* beams
+                    # which are further than the first (shorter) instrument end. The notion of coaxial is
+                    # important, because noncoaxial beams won't make a difference in terms of coaxial frame
+                    # indices. We therefore have to distinguish two case : if the longer instrument is the
+                    # longest instrument, or if it is not.
+                    nbAdditionalCoaxialBeams = 0
+                    if (longerInstrumentRank == nbInstruments-1):
+                        # In this case, the coaxial frame indices are the same as the second longest
+                        # deployed instrument.
+                        secondLongestInstrumentId = instrumentIndicesSortedByLength[nbInstruments-2]
+                        secondLongestInstrumentLastBeamId = instrumentLastBeamIds[secondLongestInstrumentId]
+                        nbAdditionalCoaxialBeams = secondLongestInstrumentLastBeamId - instrumentLastBeamId
+                    else:
+                        # In this case, the coaxial frames of the longer instruments are coincidant
+                        nbAdditionalCoaxialBeams = longerInstrumentLastBeamId - instrumentLastBeamId
+
+                    nbTotalCoaxialFramesOfLongerInst = len(coaxialFrameNode.CoaxialCosseratMapping.curv_abs_output)
+                    lastCoaxialFrameIndexWithShorterInstrument = nbTotalCoaxialFramesOfLongerInst - 1 - nbAdditionalCoaxialBeams
+                    firstCoaxialFrameIndexWithShorterInstrument = lastCoaxialFrameIndexWithShorterInstrument - len(shorterInstrumentCoaxialFrameIds) + 1
+                    longerInstrumentCoaxialFrameIds = list(range(firstCoaxialFrameIndexWithShorterInstrument, lastCoaxialFrameIndexWithShorterInstrument+1))
+
+                    # Once the two sets of indices are computed, we update the RigidDistanecMapping
+                    # in the constraint Node accordingly
+                    # /!\ We make the assumption that input1 of the mapping is the instrument with
+                    # the higher index, so that input2 is the instrument with the lower index. For
+                    # instance, if we are considering the constraints between Instrument0 and Instrument1,
+                    # then input1 of the RigidDistanceMapping refers to Instrument1, and input2 refers to
+                    # Instrument0. This is a convention which have to be followed when describing the
+                    # scene structure. It is obviously not dependent on the instruments lengths a time t.
+                    # TO DO: Enforce this in a more robust way ?
+                    if (longerInstrumentId > instrumentId):
+                        constraintNode.coaxialFramesDistanceMapping.first_point = longerInstrumentCoaxialFrameIds
+                        constraintNode.coaxialFramesDistanceMapping.second_point = shorterInstrumentCoaxialFrameIds
+                    else:
+                        constraintNode.coaxialFramesDistanceMapping.first_point = shorterInstrumentCoaxialFrameIds
+                        constraintNode.coaxialFramesDistanceMapping.second_point = longerInstrumentCoaxialFrameIds
+
+
+                # Once all other instruments have been handled, we update the longest deployed
+                # instrument. For this instrument, we only have to update the coaxial frame
+                # curvilinear abscissas (in the coaxial Cosserat Mapping). Constraints with
+                # shorter instruments sharing coaxial beams have already been updated when
+                # handling those instruments.
+
+                instrumentNodeName = "Instrument" + str(longestDeployedInstrumentId)
+                instrumentNode = self.solverNode.getChild(str(instrumentNodeName))
+                if instrumentNode is None:
+                    raise NameError("[CombinedInstrumentsController]: Node \'{}\' not found. Your scene should "
+                                    "contain a node named \'{}\' among the children of the root node in order "
+                                    "to use this controller".format(instrumentNodeName, instrumentNodeName))
+
+                rigidBaseNode = instrumentNode.getChild('rigidBase')
+                if rigidBaseNode is None:
+                    raise NameError("[CombinedInstrumentsController]: Node \'rigidBase\' "
+                                    "not found. Your scene should contain a node named "
+                                    "\'rigidBase\' among the children of the \'{}\' "
+                                    "node, gathering the Cosserat component RigidBase "
+                                    "and frames.".format(instrumentNodeName))
+
+                coaxialFrameNode = rigidBaseNode.getChild('coaxialSegmentFrames')
+                if coaxialFrameNode is None:
+                    raise NameError("[CombinedInstrumentsController]: Node \'coaxialSegmentFrames\' "
+                                    "not found. Your scene should contain a node named "
+                                    "\'coaxialSegmentFrames\' among the children of the \'rigidBase\' "
+                                    "node, containing the frames used for coaxial constraints.")
+
+                #--- Updating the instrument's coaxial Cosserat mapping (curv_abs_output) ---#
+
+                # For the longest instrument, the coaxial beams are all the beams of the second
+                # longest instrument (as the descretisation is common to all instruments on coaxial
+                # segments).
+                secondLongestInstrumentId = instrumentIndicesSortedByLength[nbInstruments-2]
+                secondLongestInstrumentLastBeamId = instrumentLastBeamIds[secondLongestInstrumentId]
+                coaxialBeamCurvAbs = decimatedNodeCurvAbs[0:secondLongestInstrumentLastBeamId+1]
+                nbTotalCoaxialFrames = len(coaxialFrameNode.CoaxialCosseratMapping.curv_abs_output)
+                deployedCoaxialFrameIds = list(range(nbTotalCoaxialFrames-len(coaxialBeamCurvAbs), nbTotalCoaxialFrames))
+                with coaxialFrameNode.CoaxialCosseratMapping.curv_abs_output.writeable() as curv_abs_output:
+                    curv_abs_output[nbTotalCoaxialFrames-len(coaxialBeamCurvAbs):nbTotalCoaxialFrames] = coaxialBeamCurvAbs
+
+
+            # # Starting with the longest instrument
+            # currentInstrumentRank = nbInstruments-1
+            # currentInstrumentId = instrumentIndicesSortedByLength[currentInstrumentRank]
+            # currentInstrumentLastBeamId = instrumentLastBeamIds[currentInstrumentId]
+            #
+            # ### First loop over the deployed instruments ###
+            # # Update of the coaxial mappings and getting the coaxial frames indices
+            #
+            # while (currentInstrumentRank > shortestDeployedInstrumentRank):
+            #
+            #     nextInstrumentId = instrumentIndicesSortedByLength[currentInstrumentRank-1]
+            #     nextInstrumentLastBeamId = instrumentLastBeamIds[nextInstrumentId]
+            #
+            #     if (nextInstrumentLastBeamId > 0):
+            #         # All beam elements in the next instrument are common with the current instrument
+            #         # We modify the current instrument mapping accordingly
+            #
+            #         # First, retrieving the corresponding nodes
+            #         instrumentNodeName = "Instrument" + str(currentInstrumentId)
+            #         instrumentNode = self.solverNode.getChild(str(instrumentNodeName))
+            #         if instrumentNode is None:
+            #             raise NameError("[CombinedInstrumentsController]: Node \'{}\' not found. Your scene should "
+            #                             "contain a node named \'{}\' among the children of the root node in order "
+            #                             "to use this controller".format(instrumentNodeName, instrumentNodeName))
+            #
+            #         rigidBaseNode = instrumentNode.getChild('rigidBase')
+            #         if rigidBaseNode is None:
+            #             raise NameError("[CombinedInstrumentsController]: Node \'rigidBase\' "
+            #                             "not found. Your scene should contain a node named "
+            #                             "\'rigidBase\' among the children of the \'{}\' "
+            #                             "node, gathering the Cosserat component RigidBase "
+            #                             "and frames.".format(instrumentNodeName))
+            #
+            #         coaxialFrameNode = rigidBaseNode.getChild('coaxialSegmentFrames')
+            #         if coaxialFrameNode is None:
+            #             raise NameError("[CombinedInstrumentsController]: Node \'coaxialSegmentFrames\' "
+            #                             "not found. Your scene should contain a node named "
+            #                             "\'coaxialSegmentFrames\' among the children of the \'rigidBase\' "
+            #                             "node, containing the frames used for coaxial constraints.")
+            #
+            #         # Curvilinear abscissas of the coaxial beams between current and next instruments
+            #         coaxialBeamCurvAbs = decimatedNodeCurvAbs[0:nextInstrumentLastBeamId+1]
+            #         nbTotalCoaxialFrames = len(coaxialFrameNode.CoaxialCosseratMapping.curv_abs_output)
+            #         with coaxialFrameNode.CoaxialCosseratMapping.curv_abs_output.writeable() as curv_abs_output:
+            #             curv_abs_output[nbTotalCoaxialFrames-len(coaxialBeamCurvAbs):nbTotalCoaxialFrames] = coaxialBeamCurvAbs
+            #
+            #         # Updating the CoaxialMapping and the constraint components
+            #
+            #         for (subInstrumentId in range(shortestDeployedInstrumentRank, currentInstrumentRank)):
+            #
+            #             subInstrumentLastBeamId = instrumentLastBeamIds[subInstrumentId]
+            #             newConstraintIndices = []
+            #             if subInstrumentLastBeamId < instrumentLastBeamId:
+            #                 # Case 1 : we apply the constraint on the beams
+            #                 # which are part of the sub instrument
+            #                 newConstrainedIndices = list(range(0, subInstrumentLastBeamId))
+            #             else:
+            #                 # Case 2: we apply the constraint on the beams
+            #                 # which are part of the current instrument
+            #                 newConstrainedIndices = list(range(0, instrumentLastBeamId))
+            #
+            #
+            #
+            #     currentInstrumentId = nextInstrumentId
+            #     currentInstrumentLastBeamId = nextInstrumentLastBeamId
+            #     currentInstrumentRank -= 1
+            #
+            # # When exiting the while loop, we update the last (i.e. the shortest) instrument
+            # shortestInstrumentId = instrumentIndicesSortedByLength[shortestDeployedInstrumentRank]
+            # shortestInstrumentLastBeamId = instrumentLastBeamIds[shortestInstrumentId]
+            # if (shortestInstrumentLastBeamId > 0):
+            #
+            #     # Retrieving the corresponding nodes
+            #     instrumentNodeName = "Instrument" + str(shortestInstrumentId)
+            #     instrumentNode = self.solverNode.getChild(str(instrumentNodeName))
+            #     if instrumentNode is None:
+            #         raise NameError("[CombinedInstrumentsController]: Node \'{}\' not found. Your scene should "
+            #                         "contain a node named \'{}\' among the children of the root node in order "
+            #                         "to use this controller".format(instrumentNodeName, instrumentNodeName))
+            #
+            #     rigidBaseNode = instrumentNode.getChild('rigidBase')
+            #     if rigidBaseNode is None:
+            #         raise NameError("[CombinedInstrumentsController]: Node \'rigidBase\' "
+            #                         "not found. Your scene should contain a node named "
+            #                         "\'rigidBase\' among the children of the \'{}\' "
+            #                         "node, gathering the Cosserat component RigidBase "
+            #                         "and frames.".format(instrumentNodeName))
+            #
+            #     coaxialFrameNode = rigidBaseNode.getChild('coaxialSegmentFrames')
+            #     if coaxialFrameNode is None:
+            #         raise NameError("[CombinedInstrumentsController]: Node \'coaxialSegmentFrames\' "
+            #                         "not found. Your scene should contain a node named "
+            #                         "\'coaxialSegmentFrames\' among the children of the \'rigidBase\' "
+            #                         "node, containing the frames used for coaxial constraints.")
+            #
+            #     # Curvilinear abscissas of the coaxial beams between current and next instruments
+            #     coaxialBeamCurvAbs = decimatedNodeCurvAbs[0:shortestInstrumentLastBeamId+1]
+            #     # Updating the current instrument mapping
+            #     nbTotalCoaxialFrames = len(coaxialFrameNode.CoaxialCosseratMapping.curv_abs_output)
+            #     with coaxialFrameNode.CoaxialCosseratMapping.curv_abs_output.writeable() as curv_abs_output:
+            #         curv_abs_output[nbTotalCoaxialFrames-len(coaxialBeamCurvAbs):nbTotalCoaxialFrames] = coaxialBeamCurvAbs
+            #
+            #
+            # ### Second loop over the deployed instruments ###
+            #
+            # # We ignore Instrument0, as constraints with instrument 0 are handled
+            # # by all the other instruments (by design)
+            # for instrumentRank in range(shortestDeployedInstrumentRank, nbInstruments):
+            #
+            #     instrumentId = instrumentIndicesSortedByLength[instrumentRank]
+            #
+            #     # First, we retrieve the index of the current instrument last beam
+            #     instrumentLastBeamId = instrumentLastBeamIds[instrumentId]
+            #
+            #     # We then update constraints between the current instrument and all instruments
+            #     # with a smaller index with which it shares beam segments
+            #     for subInstrumentId in range(0, instrumentId):
+            #         subInstrumentLastBeamId = instrumentLastBeamIds[subInstrumentId]
+            #
+            #         if (subInstrumentLastBeamId > 0):
+            #             # The lower-index instrument has also been deployed : we have to enforce
+            #             # constraints on the coaxial segments
+            #
+            #             # Retrieving the constraint node
+            #             currentConstraintNodeName = "constraint" + str(instrumentId) + "With" + str(subInstrumentId)
+            #
+            #             constraintNode = coaxialFrameNode.getChild(str(currentConstraintNodeName))
+            #             if constraintNode is None:
+            #                 raise NameError("[CombinedInstrumentsController]: Node \'{}\' "
+            #                                 "not found. The \'coaxialSegmentFrames\' node should have a child "
+            #                                 "node called \'{}\', containing the components "
+            #                                 "which implement its coupling with instrument {}".format(currentConstraintNodeName,
+            #                                 currentConstraintNodeName, subInstrumentId))
+            #
+            #             # We have to pick only the frames which have the same curvilinear abscissas
+            #             commonFrameCurvAbs = set(instrumentCoaxialFrameCurvAbs1).intersection(instrumentCoaxialFrameCurvAbs2)
+            #
+            #
+            #
+            #
+            #
+
+
+
+
+        # if (nbInstruments > 1):
+        #
+        #     # We ignore Instrument0, as the corresponding node never contains a
+        #     # constraint component (by design)
+        #     for instrumentId in range(1, nbInstruments):
+        #
+        #         # First, we retrieve the index of the current instrument last beam
+        #         instrumentLastBeamId = instrumentLastBeamIds[instrumentId]
+        #
+        #         if (instrumentLastBeamId > 0):
+        #
+        #             # Then, we go through all other instruments which index is inferior
+        #             # to the current one. Depending on these instruments' last beam
+        #             # position, we update the constraint components inside the current
+        #             # instrument node.
+        #             for subInstrumentId in range(0, instrumentId):
+        #                 subInstrumentLastBeamId = instrumentLastBeamIds[subInstrumentId]
+        #
+        #                 if (subInstrumentLastBeamId > 0):
+        #
+        #                     # Both instruments have been deployed : we have to enforce
+        #                     # constraints on the coaxial segments
+        #
+        #                     # First, retrieving the corresponding nodes
+        #                     instrumentNodeName = "Instrument" + str(instrumentId)
+        #                     instrumentNode = self.solverNode.getChild(str(instrumentNodeName))
+        #                     if instrumentNode is None:
+        #                         raise NameError("[CombinedInstrumentsController]: Node \'{}\' not found. Your scene should "
+        #                                         "contain a node named \'{}\' among the children of the root node in order "
+        #                                         "to use this controller".format(instrumentNodeName, instrumentNodeName))
+        #
+        #                     cosseratMechanicalNode = instrumentNode.getChild('rateAngularDeform')
+        #                     if cosseratMechanicalNode is None:
+        #                         raise NameError("[CombinedInstrumentsController]: Node \'rateAngularDeform\' "
+        #                                         "not found. Your scene should contain a node named "
+        #                                         "\'rateAngularDeform\' among the children of the \'{}\' "
+        #                                         "node, gathering the mechanical Cosserat components "
+        #                                         "(MechanicalObject, Cosserat forcefield)".format(instrumentNodeName))
+        #
+        #                     currentConstraintNodeName = "constraintWith" + str(subInstrumentId)
+        #
+        #                     constraintNode = cosseratMechanicalNode.getChild(str(currentConstraintNodeName))
+        #                     if constraintNode is None:
+        #                         raise NameError("[CombinedInstrumentsController]: Node \'{}\' "
+        #                                         "not found. The \'rateAngularDeform\' node should have a child "
+        #                                         "node called \'{}\', containing the StiffSpringForceField "
+        #                                         "which implements its coupling with instrument {}".format(currentConstraintNodeName,
+        #                                         currentConstraintNodeName, subInstrumentId))
+        #
+        #                     # Applying constraints, depending on the configuration.
+        #                     # For each sub instrument, two cases are possible:
+        #                     #  - If the sub instrument ends before the current instrument, then
+        #                     # constraints have to be imposed over all the beams which are part
+        #                     # of the sub instrument.
+        #                     #  - If the sub instrument ends after the current instrument, then
+        #                     # constraints have to be imposed over all the beams of the current
+        #                     # instrument.
+        #                     # NB: we make the hypothesis that in the StiffSpringForceField,
+        #                     # object1 is in the current instrument node, while object 2 is
+        #                     # in the sub instrument Node.
+        #                     newConstraintIndices = []
+        #                     if subInstrumentLastBeamId < instrumentLastBeamId:
+        #                         # Case 1 : we apply the constraint on the beams
+        #                         # which are part of the sub instrument
+        #                         newConstrainedIndices = list(range(0, subInstrumentLastBeamId))
+        #                     else:
+        #                         # Case 2: we apply the constraint on the beams
+        #                         # which are part of the current instrument
+        #                         newConstrainedIndices = list(range(0, instrumentLastBeamId))
+        #
+        #                     constraintNode.instrumentDiffMapping.mappedIndices1 = newConstrainedIndices
+        #                     constraintNode.instrumentDiffMapping.mappedIndices2 = newConstrainedIndices
 
 
     # -------------------------------------------------------------------- #
