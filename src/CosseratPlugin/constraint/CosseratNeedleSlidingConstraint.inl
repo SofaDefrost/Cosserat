@@ -46,7 +46,7 @@ using sofa::core::visual::VisualParams;
 using sofa::linearalgebra::BaseVector;
 using sofa::helper::ReadAccessor;
 using sofa::type::Vec4f;
-using sofa::type::Vector3;
+using sofa::type::Vec3;
 using sofa::type::vector;
 using sofa::helper::OptionsGroup;
 using sofa::component::constraint::lagrangian::model::BilateralConstraintResolution;

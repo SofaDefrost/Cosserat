@@ -202,13 +202,13 @@ void DifferenceMultiMapping<TIn1, TIn2, TOut>::computeProximity(const In1VecCoor
 
                     //// First method compute normals using projections
                     //                    if(t1.norm()<1.0e-1 && dirAxe[2] < 0.99){
-                    //                        Vector3 temp = Vector3(dirAxe[0],dirAxe[1],dirAxe[2]+50.0);
+                    //                        type::Vec3 temp = type::Vec3(dirAxe[0],dirAxe[1],dirAxe[2]+50.0);
                     //                        t1 = cross(dirAxe,temp);
                     //                        t1.normalize();
                     //                        constraint.t1 = t1;
                     //                    }
                     //                    if(t1.norm()<1.0e-1){
-                    //                        Vector3 temp = Vector3(dirAxe[0],dirAxe[1]+50.0,dirAxe[2]);
+                    //                        type::Vec3 temp = type::Vec3(dirAxe[0],dirAxe[1]+50.0,dirAxe[2]);
                     //                        t1 = cross(dirAxe,temp);
                     //                        t1.normalize();
                     //                        constraint.t1 = t1;
@@ -219,7 +219,7 @@ void DifferenceMultiMapping<TIn1, TIn2, TOut>::computeProximity(const In1VecCoor
 
                     //// Second method compute normals using frames directions
                     Rigid dir = direction[constraint.eid];
-                    Vector3 vY = Vector3(0.,1.,0.);
+                    type::Vec3 vY = type::Vec3(0.,1.,0.);
                     type::Quat ori = dir.getOrientation() ;
                     vY = ori.rotate(vY); vY.normalize();
                     t1 = vY ;
@@ -241,8 +241,8 @@ void DifferenceMultiMapping<TIn1, TIn2, TOut>::computeProximity(const In1VecCoor
                             Rigid _dir = direction[szDst-1];
                             type::Quat _ori = _dir.getOrientation() ;
 
-                            Vector3 _vY = _ori.rotate(Vector3(0.,1.,0.)); _vY.normalize();
-                            Vector3 _vZ = _ori.rotate(Vector3(0.,0.,1.)); _vZ.normalize();
+                            type::Vec3 _vY = _ori.rotate(type::Vec3(0.,1.,0.)); _vY.normalize();
+                            type::Vec3 _vZ = _ori.rotate(type::Vec3(0.,0.,1.)); _vZ.normalize();
 
                             constraint.t1 = _vY ;
                             constraint.t2 = _vZ ;
@@ -285,13 +285,13 @@ void DifferenceMultiMapping<TIn1, TIn2, TOut>::computeProximity(const In1VecCoor
                     ///
                     //// First method compute normals using projections
                     //                    if(t1.norm()<1.0e-1 && dirAxe[2] < 0.99){
-                    //                        Vector3 temp = Vector3(dirAxe[0],dirAxe[1],dirAxe[2]+50.0);
+                    //                        type::Vec3 temp = type::Vec3(dirAxe[0],dirAxe[1],dirAxe[2]+50.0);
                     //                        t1 = cross(dirAxe,temp);
                     //                        t1.normalize();
                     //                        constraint.t1 = t1;
                     //                    }
                     //                    if(t1.norm()<1.0e-1){
-                    //                        Vector3 temp = Vector3(dirAxe[0],dirAxe[1]+50.0,dirAxe[2]);
+                    //                        type::Vec3 temp = type::Vec3(dirAxe[0],dirAxe[1]+50.0,dirAxe[2]);
                     //                        t1 = cross(dirAxe,temp);
                     //                        t1.normalize();
                     //                        constraint.t1 = t1;
@@ -299,7 +299,7 @@ void DifferenceMultiMapping<TIn1, TIn2, TOut>::computeProximity(const In1VecCoor
 
                     //// Second method compute normals using frames directions
                     Rigid dir = direction[constraint.eid];
-                    Vector3 vY = Vector3(0.,1.,0.);
+                    type::Vec3 vY = type::Vec3(0.,1.,0.);
                     type::Quat ori = dir.getOrientation() ;
                     vY = ori.rotate(vY); vY.normalize();
                     t1 = vY ;
@@ -319,9 +319,9 @@ void DifferenceMultiMapping<TIn1, TIn2, TOut>::computeProximity(const In1VecCoor
                         if (!d_direction.getValue().empty()){
                             Rigid _dir = direction[szDst-1];
                             type::Quat _ori = (direction[szDst-1]).getOrientation() ;
-                            Vector3 _vY = _ori.rotate(Vector3(0.,1.,0.));
+                            type::Vec3 _vY = _ori.rotate(type::Vec3(0.,1.,0.));
                             _vY.normalize();
-                            Vector3 _vZ = _ori.rotate(Vector3(0.,0.,1.));
+                            type::Vec3 _vZ = _ori.rotate(type::Vec3(0.,0.,1.));
                             _vZ.normalize();
 
                             constraint.t1 = _vY ;
@@ -420,7 +420,7 @@ void DifferenceMultiMapping<TIn1, TIn2, TOut>::computeNeedleProximity(const In1V
 
                     //// Second method compute normals using frames directions
                     Rigid dir = direction[constraint.eid];
-                    Vector3 vY = Vector3(0.,1.,0.);
+                    type::Vec3 vY = type::Vec3(0.,1.,0.);
                     type::Quat ori = dir.getOrientation() ;
                     vY = ori.rotate(vY); vY.normalize();
                     t1 = vY ;
@@ -461,7 +461,7 @@ void DifferenceMultiMapping<TIn1, TIn2, TOut>::computeNeedleProximity(const In1V
 
                     //// Second method compute normals using frames directions
                     Rigid dir = direction[constraint.eid];
-                    Vector3 vY = Vector3(0.,1.,0.);
+                    type::Vec3 vY = type::Vec3(0.,1.,0.);
                     type::Quat ori = dir.getOrientation() ;
                     vY = ori.rotate(vY); vY.normalize();
                     t1 = vY ;
@@ -753,7 +753,7 @@ void DifferenceMultiMapping<TIn1, TIn2, TOut>::draw(const core::visual::VisualPa
     vparams->drawTool()->saveLastState();
     vparams->drawTool()->disableLighting();
 
-    std::vector<type::Vector3> vertices;
+    std::vector<type::Vec3> vertices;
     RGBAColor color = RGBAColor::magenta();
 
     if(d_drawArrows.getValue() && d_lastPointIsFixed.getValue()){

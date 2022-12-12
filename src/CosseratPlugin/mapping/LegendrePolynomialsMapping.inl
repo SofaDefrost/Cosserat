@@ -74,7 +74,7 @@ namespace sofa::component::mapping {
 
         // std::cout<< "Apply :  in " << in[0] <<std::endl;
         for (unsigned int i = 0; i < sz-1; i++){
-            type::Vector3 Xi ;
+            type::Vec3 Xi ;
             for (unsigned int j = 0; j < in.size(); j++)
                 Xi += m_matOfCoeffs[i][j] * in[j];
 
@@ -98,7 +98,7 @@ namespace sofa::component::mapping {
         // std::cout<< "ApplyJ : "<< std::endl;
         for(sofa::Index i=0 ; i<sz-1 ; ++i)
         {
-            Vector3 vel ;
+            type::Vec3 vel ;
             for (unsigned int j = 0; j < velIn.size(); j++)
                 vel += m_matOfCoeffs[i][j] * velIn[j];
 

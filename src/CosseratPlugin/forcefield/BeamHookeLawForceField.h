@@ -112,7 +112,7 @@ public :
 
     ////////////////////////// Inherited from BaseObject /////////////////////////
     void init() override;
-    void reinit() ;
+    void reinit() override;
     ///////////////////////////////////////////////////////////////////////////
 
     ////////////////////////// Inherited from ForceField /////////////////////////
@@ -176,7 +176,7 @@ protected:
     vector<DeformationRegime> m_sectionDeformationRegimes;
 
 private :
-    
+
     ////////////////////////// Inherited attributes ////////////////////////////
     /// https://gcc.gnu.org/onlinedocs/gcc/Name-lookup.html
     /// Bring inherited attributes and function in the current lookup context.
