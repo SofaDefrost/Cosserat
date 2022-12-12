@@ -415,9 +415,17 @@ void BaseCosserat<TIn1, TIn2, TOut>::initialize()
             m_indicesVectorsDraw.push_back(input_index);
         }
         else {
-            // Safe check, in case some of the curv_abs_frames values are higher
-            // than the last curv_abs_section
-            if (input_index < nbBeams-1)
+            // In this case, curv_abs_frames[i] is srictly superior to the end
+            // curvilinear abscissa of the current beam. We increase the beam
+            // index until we find the beam on which is the frame, or until we
+            // reach the last beam. In this last case, the frame curvlinear abscissa
+            // is actually 'outside' of the beam component, so we arbitrarily
+            // assign the frame to the last beam.
+            // NB: most of the time, the while loop below contains only one
+            // iteration (to reach the next beam). Several iterations are
+            // necessary only if 0-length beams are created (for instance in
+            // an instrument navigation scenario)
+            while (curv_abs_frames[i] > curv_abs_section[input_index] + m_comparisonThreshold && input_index < nbBeams-1)
                 input_index++;
             m_indicesVectors.push_back(input_index);
             m_indicesVectorsDraw.push_back(input_index);
