@@ -79,7 +79,7 @@ void BaseCosserat<TIn1, TIn2, TOut>::reinit()
 
 
 template <class TIn1, class TIn2, class TOut>
-void BaseCosserat<TIn1, TIn2, TOut>::computeExponentialSE3(const double & x, const type::Vector3& k, Transform & Trans){
+void BaseCosserat<TIn1, TIn2, TOut>::computeExponentialSE3(const double & x, const type::Vec3& k, Transform & Trans){
     Matrix4 I4; I4.identity();
 
     double theta = k.norm();
@@ -115,7 +115,7 @@ void BaseCosserat<TIn1, TIn2, TOut>::computeExponentialSE3(const double & x, con
     //    msg_info("BaseCosserat: ")<< "Sub matrix M : "<< g_X;
     sofa::type::Quat<Real> R ;
     R.fromMatrix(M);
-    Vector3 T = Vector3(g_X(0,3),g_X(1,3),g_X(2,3));
+    type::Vec3 T = type::Vec3(g_X(0,3),g_X(1,3),g_X(2,3));
 
     Trans = Transform(T,R);
 }
@@ -137,7 +137,7 @@ void BaseCosserat<TIn1, TIn2, TOut>::update_ExponentialSE3(const In1VecCoord & i
     for (size_t i = 0; i < sz; i++) {
         Transform T ;
 
-        const Vector3 k = inDeform[m_indicesVectors[i]-1];
+        const type::Vec3 k = inDeform[m_indicesVectors[i]-1];
         const double x = m_framesLengthVectors[i];
         computeExponentialSE3(x,k,T);
         m_framesExponentialSE3Vectors.push_back(T);
@@ -151,7 +151,7 @@ void BaseCosserat<TIn1, TIn2, TOut>::update_ExponentialSE3(const In1VecCoord & i
 
     //Compute the exponential at the nodes
 
-    m_nodesExponentialSE3Vectors.push_back(Transform(Vector3(0.0,0.0,0.0),type::Quat(0.,0.,0.,1.)));
+    m_nodesExponentialSE3Vectors.push_back(Transform(type::Vec3(0.0,0.0,0.0),type::Quat(0.,0.,0.,1.)));
 
     // Check on the number of beams compared to the size of the associated MechanicalObject
     const unsigned int nbBeams = m_BeamLengthVectors.size();
@@ -160,8 +160,9 @@ void BaseCosserat<TIn1, TIn2, TOut>::update_ExponentialSE3(const In1VecCoord & i
         msg_error("BaseCosserat") << "The number of beams defined in the Cosserat mapping should be inferior "
                                   << "(or equal) to the size of the associated MechanicalObject.\n";
     }
-    for (unsigned int  j = 0; j < nbBeams; j++) {
-        Vector3 k = inDeform[j];
+    for (unsigned int  j = 0; j < nbBeams; j++)
+    {
+        type::Vec3 k = inDeform[j];
         double  x = m_BeamLengthVectors[j];
         Transform T; computeExponentialSE3(x,k,T) ;
         m_nodesExponentialSE3Vectors.push_back(T);
@@ -186,7 +187,7 @@ template <class TIn1, class TIn2, class TOut>
 void BaseCosserat<TIn1, TIn2, TOut>:: computeAdjoint(const Transform & frame, Mat6x6 &adjoint)
 {
     Matrix3 R = extract_rotMatrix(frame);
-    Vector3 u = frame.getOrigin();
+    type::Vec3 u = frame.getOrigin();
     Matrix3 tilde_u = getTildeMatrix(u);
     Matrix3 tilde_u_R = tilde_u * R;
     buildAdjoint(R, tilde_u_R, adjoint);
@@ -196,7 +197,7 @@ template <class TIn1, class TIn2, class TOut>
 void BaseCosserat<TIn1, TIn2, TOut>:: compute_coAdjoint(const Transform & frame, Mat6x6 &co_adjoint)
 {
     Matrix3 R = extract_rotMatrix(frame);
-    Vector3 u = frame.getOrigin();
+    type::Vec3 u = frame.getOrigin();
     Matrix3 tilde_u = getTildeMatrix(u);
     Matrix3 tilde_u_R = tilde_u * R;
     build_coaAdjoint(R, tilde_u_R, co_adjoint);
@@ -205,18 +206,18 @@ void BaseCosserat<TIn1, TIn2, TOut>:: compute_coAdjoint(const Transform & frame,
 template <class TIn1, class TIn2, class TOut>
 void BaseCosserat<TIn1, TIn2, TOut>::compute_adjointVec6(const Vec6& eta, Mat6x6 &adjoint)
 {
-    Matrix3 tildeMat = getTildeMatrix(Vector3(eta[0], eta[1], eta[2]));
+    Matrix3 tildeMat = getTildeMatrix(type::Vec3(eta[0], eta[1], eta[2]));
     adjoint.setsub(0, 0, tildeMat);
     adjoint.setsub(3, 3, tildeMat);
-    adjoint.setsub(3, 0, getTildeMatrix(Vector3(eta[3], eta[4], eta[5])));
+    adjoint.setsub(3, 0, getTildeMatrix(type::Vec3(eta[3], eta[4], eta[5])));
 }
 
 
 
 template <class TIn1, class TIn2, class TOut>
-void BaseCosserat<TIn1, TIn2, TOut>::compute_Tang_Exp(double & x, const type::Vector3& k, Mat6x6 & TgX){
+void BaseCosserat<TIn1, TIn2, TOut>::compute_Tang_Exp(double & x, const type::Vec3& k, Mat6x6 & TgX){
     double theta = k.norm();
-    Matrix3 tilde_p = getTildeMatrix(Vector3(1.0, 0.0, 0.0));
+    Matrix3 tilde_p = getTildeMatrix(type::Vec3(1.0, 0.0, 0.0));
     Matrix3 tilde_k = getTildeMatrix(k);
 
     Mat6x6 ad_Xi ;
@@ -277,7 +278,7 @@ Matrix4 BaseCosserat<TIn1, TIn2, TOut>::computeLogarithm(const double & x, const
 //    for (std::size_t i = 0; i < sz; i++) {
 //        Mat6x6 temp ;
 
-//        Vector3 k = inDeform[m_indicesVectors[i]-1];
+//        type::Vec3 k = inDeform[m_indicesVectors[i]-1];
 //        double  x = m_framesLengthVectors[i];
 //        compute_Tang_Exp(x,k,temp) ;
 //        m_framesTangExpVectors.push_back(temp);
@@ -301,7 +302,7 @@ void BaseCosserat<TIn1, TIn2, TOut>::update_TangExpSE3(const In1VecCoord & inDef
     for (unsigned int i = 0; i < sz; i++) {
         Mat6x6 temp ;
 
-        Vector3 k = inDeform[m_indicesVectors[i]-1];
+        type::Vec3 k = inDeform[m_indicesVectors[i]-1];
         double  x = m_framesLengthVectors[i];
         compute_Tang_Exp(x,k,temp) ;
         m_framesTangExpVectors.push_back(temp);
@@ -319,7 +320,7 @@ void BaseCosserat<TIn1, TIn2, TOut>::update_TangExpSE3(const In1VecCoord & inDef
     m_nodesTangExpVectors.push_back(tangExpO);
 
     for (size_t j = 1; j < curv_abs_section.size(); j++) {
-        Vector3 k = inDeform[j-1];
+        type::Vec3 k = inDeform[j-1];
         double  x = m_BeamLengthVectors[j - 1];
         Mat6x6 temp; temp.clear();
         compute_Tang_Exp(x,k,temp);
@@ -415,9 +416,17 @@ void BaseCosserat<TIn1, TIn2, TOut>::initialize()
             m_indicesVectorsDraw.push_back(input_index);
         }
         else {
-            // Safe check, in case some of the curv_abs_frames values are higher
-            // than the last curv_abs_section
-            if (input_index < nbBeams-1)
+            // In this case, curv_abs_frames[i] is srictly superior to the end
+            // curvilinear abscissa of the current beam. We increase the beam
+            // index until we find the beam on which is the frame, or until we
+            // reach the last beam. In this last case, the frame curvlinear abscissa
+            // is actually 'outside' of the beam component, so we arbitrarily
+            // assign the frame to the last beam.
+            // NB: most of the time, the while loop below contains only one
+            // iteration (to reach the next beam). Several iterations are
+            // necessary only if 0-length beams are created (for instance in
+            // an instrument navigation scenario)
+            while (curv_abs_frames[i] > curv_abs_section[input_index] + m_comparisonThreshold && input_index < nbBeams-1)
                 input_index++;
             m_indicesVectors.push_back(input_index);
             m_indicesVectorsDraw.push_back(input_index);
