@@ -136,7 +136,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::apply(
         }
         frame *= m_framesExponentialSE3Vectors[i];
 
-        Vector3 v = frame.getOrigin();
+        type::Vec3 v = frame.getOrigin();
         type::Quat q = frame.getOrientation();
         out[i] = OutCoord(v,q);
     }
@@ -184,7 +184,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::apply(
 //    for (std::size_t i = 0; i < sz; i++) {
 //        Mat6x6 temp ;
 
-//        Vector3 k = inDeform[m_indicesVectors[i]-1];
+//        type::Vec3 k = inDeform[m_indicesVectors[i]-1];
 //        double  x = m_framesLengthVectors[i];
 //        compute_Tang_Exp(x,k,temp) ;
 //        m_framesTangExpVectors.push_back(temp);
@@ -243,7 +243,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>:: applyJ(
         Mat6x6 Adjoint; Adjoint.clear();
         this->computeAdjoint(Trans, Adjoint);
 
-        type::Vec6 Xi_dot = Vec6(in1[i-1],Vector3(0.0,0.0,0.0)) ;
+        type::Vec6 Xi_dot = Vec6(in1[i-1],type::Vec3(0.0,0.0,0.0)) ;
         Vec6 temp = Adjoint * (m_nodesVelocityVectors[i-1] + m_nodesTangExpVectors[i] * Xi_dot );
         m_nodesVelocityVectors.push_back(temp);
         if(d_debug.getValue())
@@ -258,7 +258,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>:: applyJ(
         Mat6x6 Adjoint; Adjoint.clear();
         this->computeAdjoint(Trans, Adjoint);
 
-        type::Vec6 Xi_dot = Vec6(in1[m_indicesVectors[i]-1],Vector3(0.0,0.0,0.0)) ;
+        type::Vec6 Xi_dot = Vec6(in1[m_indicesVectors[i]-1],type::Vec3(0.0,0.0,0.0)) ;
         Vec6 temp = Adjoint * (m_nodesVelocityVectors[m_indicesVectors[i]-1] + m_framesTangExpVectors[i] * Xi_dot ); // eta
 
         auto T = Transform(out[i].getCenter(), out[i].getOrientation());
@@ -327,7 +327,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>:: applyJT(
         Vec6 node_F_Vec = coAdjoint * local_F_Vec[s];
         Mat6x6 temp = m_framesTangExpVectors[s];   // m_framesTangExpVectors[s] computed in applyJ (here we transpose)
         temp.transpose();
-        Vector3 f = matB_trans * temp * node_F_Vec;
+        type::Vec3 f = matB_trans * temp * node_F_Vec;
 
         if(index != m_indicesVectors[s]){
             index--;
@@ -337,7 +337,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>:: applyJT(
             Mat6x6 temp = m_nodesTangExpVectors[index];
             temp.transpose();
             //apply F_tot to the new beam
-            Vector3 temp_f = matB_trans * temp * F_tot;
+            type::Vec3 temp_f = matB_trans * temp * F_tot;
             out1[index-1] += temp_f;
         }
         if(d_debug.getValue())
@@ -433,7 +433,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJT(
 
             type::Vec6 local_F =  coAdjoint * P_trans * valueConst; // constraint direction in local frame of the beam.
 
-            Vector3 f = matB_trans * temp * local_F; // constraint direction in the strain space.
+            type::Vec3 f = matB_trans * temp * local_F; // constraint direction in the strain space.
 
             o1.addCol(indexBeam-1, f);
             std::tuple<int,Vec6> test = std::make_tuple(indexBeam, local_F);
@@ -508,7 +508,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJT(
                 // transfer to strain space (local coordinates)
                 Mat6x6 temp = m_nodesTangExpVectors[i-1];
                 temp.transpose();
-                Vector3 temp_f = matB_trans * temp * CumulativeF;
+                type::Vec3 temp_f = matB_trans * temp * CumulativeF;
 
                 if(i>1) o1.addCol(i-2, temp_f);
                 i--;
@@ -558,7 +558,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::draw(const core::visual::VisualP
 
     const OutDataVecCoord* xfromData = m_toModel->read(core::ConstVecCoordId::position());
     const OutVecCoord xData = xfromData->getValue();
-    type::vector<Vector3> positions;
+    type::vector<type::Vec3> positions;
     type::vector<sofa::type::Quat<Real2>> Orientation;
     positions.clear();
     Orientation.clear();

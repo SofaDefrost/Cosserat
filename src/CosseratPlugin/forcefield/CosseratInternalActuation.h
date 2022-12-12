@@ -39,7 +39,7 @@
 #include <sofa/linearalgebra/CompressedRowSparseMatrix.h>
 #include <sofa/core/behavior/ForceField.inl>
 #include <sofa/helper/OptionsGroup.h>
-#include <SofaBaseLinearSolver/DefaultMultiMatrixAccessor.h>
+#include <sofa/core/behavior/DefaultMultiMatrixAccessor.h>
 
 namespace sofa::component::forcefield
 {
@@ -77,7 +77,7 @@ public :
     typedef Mat<3, 3, Real>             Mat33;
 
     typedef CompressedRowSparseMatrix<Mat33> CSRMat33B66;
-    typedef type::Vector3 vector3;
+    typedef type::Vec3 vector3;
 
     typedef typename CompressedRowSparseMatrix<Mat33>::ColBlockConstIterator _3_3_ColBlockConstIterator;
     typedef typename CompressedRowSparseMatrix<Mat33>::RowBlockConstIterator _3_3_RowBlockConstIterator;

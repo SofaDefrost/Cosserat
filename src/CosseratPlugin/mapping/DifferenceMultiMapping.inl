@@ -203,13 +203,13 @@ namespace sofa::component::mapping
 
                         //// First method compute normals using projections
                         //                    if(t1.norm()<1.0e-1 && dirAxe[2] < 0.99){
-                        //                        Vector3 temp = Vector3(dirAxe[0],dirAxe[1],dirAxe[2]+50.0);
+                        //                        type::Vec3 temp = type::Vec3(dirAxe[0],dirAxe[1],dirAxe[2]+50.0);
                         //                        t1 = cross(dirAxe,temp);
                         //                        t1.normalize();
                         //                        constraint.t1 = t1;
                         //                    }
                         //                    if(t1.norm()<1.0e-1){
-                        //                        Vector3 temp = Vector3(dirAxe[0],dirAxe[1]+50.0,dirAxe[2]);
+                        //                        type::Vec3 temp = type::Vec3(dirAxe[0],dirAxe[1]+50.0,dirAxe[2]);
                         //                        t1 = cross(dirAxe,temp);
                         //                        t1.normalize();
                         //                        constraint.t1 = t1;
@@ -220,7 +220,7 @@ namespace sofa::component::mapping
 
                         //// Second method compute normals using frames directions
                         Rigid dir = direction[constraint.eid];
-                        Vector3 vY = Vector3(0., 1., 0.);
+                        type::Vec3 vY = type::Vec3(0., 1., 0.);
                         type::Quat ori = dir.getOrientation();
                         vY = ori.rotate(vY);
                         vY.normalize();
@@ -229,8 +229,7 @@ namespace sofa::component::mapping
 
                         constraint.t1 = t1;
                         // tangential 2
-                        Deriv1 t2 = cross(t1, dirAxe);
-                        t2.normalize();
+                        Deriv1 t2 = cross(t1, dirAxe); t2.normalize();
                         constraint.t2 = t2;
 
                         if (i == szFrom - 1)
@@ -245,10 +244,8 @@ namespace sofa::component::mapping
                                 Rigid _dir = direction[szDst - 1];
                                 type::Quat _ori = _dir.getOrientation();
 
-                                Vector3 _vY = _ori.rotate(Vector3(0., 1., 0.));
-                                _vY.normalize();
-                                Vector3 _vZ = _ori.rotate(Vector3(0., 0., 1.));
-                                _vZ.normalize();
+                                type::Vec3 _vY = _ori.rotate(type::Vec3(0., 1., 0.)); _vY.normalize();
+                                type::Vec3 _vZ = _ori.rotate(type::Vec3(0., 0., 1.)); _vZ.normalize();
 
                                 constraint.t1 = _vY;
                                 constraint.t2 = _vZ;
@@ -295,13 +292,13 @@ namespace sofa::component::mapping
                         ///
                         //// First method compute normals using projections
                         //                    if(t1.norm()<1.0e-1 && dirAxe[2] < 0.99){
-                        //                        Vector3 temp = Vector3(dirAxe[0],dirAxe[1],dirAxe[2]+50.0);
+                        //                        type::Vec3 temp = type::Vec3(dirAxe[0],dirAxe[1],dirAxe[2]+50.0);
                         //                        t1 = cross(dirAxe,temp);
                         //                        t1.normalize();
                         //                        constraint.t1 = t1;
                         //                    }
                         //                    if(t1.norm()<1.0e-1){
-                        //                        Vector3 temp = Vector3(dirAxe[0],dirAxe[1]+50.0,dirAxe[2]);
+                        //                        type::Vec3 temp = type::Vec3(dirAxe[0],dirAxe[1]+50.0,dirAxe[2]);
                         //                        t1 = cross(dirAxe,temp);
                         //                        t1.normalize();
                         //                        constraint.t1 = t1;
@@ -309,7 +306,7 @@ namespace sofa::component::mapping
 
                         //// Second method compute normals using frames directions
                         Rigid dir = direction[constraint.eid];
-                        Vector3 vY = Vector3(0., 1., 0.);
+                        type::Vec3 vY = type::Vec3(0., 1., 0.);
                         type::Quat ori = dir.getOrientation();
                         vY = ori.rotate(vY);
                         vY.normalize();
@@ -333,10 +330,8 @@ namespace sofa::component::mapping
                             {
                                 Rigid _dir = direction[szDst - 1];
                                 type::Quat _ori = (direction[szDst - 1]).getOrientation();
-                                Vector3 _vY = _ori.rotate(Vector3(0., 1., 0.));
-                                _vY.normalize();
-                                Vector3 _vZ = _ori.rotate(Vector3(0., 0., 1.));
-                                _vZ.normalize();
+                                type::Vec3 _vY = _ori.rotate(type::Vec3(0., 1., 0.)); _vY.normalize();
+                                type::Vec3 _vZ = _ori.rotate(type::Vec3(0., 0., 1.)); _vZ.normalize();
 
                                 constraint.t1 = _vY;
                                 constraint.t2 = _vZ;
@@ -442,10 +437,9 @@ namespace sofa::component::mapping
 
                         //// Second method compute normals using frames directions
                         Rigid dir = direction[constraint.eid];
-                        Vector3 vY = Vector3(0., 1., 0.);
+                        type::Vec3 vY = type::Vec3(0., 1., 0.);
                         type::Quat ori = dir.getOrientation();
-                        vY = ori.rotate(vY);
-                        vY.normalize();
+                        vY = ori.rotate(vY); vY.normalize();
                         t1 = vY;
                         //                    }
 
@@ -489,16 +483,14 @@ namespace sofa::component::mapping
 
                         //// Second method compute normals using frames directions
                         Rigid dir = direction[constraint.eid];
-                        Vector3 vY = Vector3(0., 1., 0.);
+                        type::Vec3 vY = type::Vec3(0., 1., 0.);
                         type::Quat ori = dir.getOrientation();
-                        vY = ori.rotate(vY);
-                        vY.normalize();
+                        vY = ori.rotate(vY); vY.normalize();
                         t1 = vY;
                         //                    }
                         constraint.t1 = t1;
                         // tangential 2
-                        Deriv1 t2 = cross(t1, dirAxe);
-                        t2.normalize();
+                        Deriv1 t2 = cross(t1, dirAxe); t2.normalize();
                         constraint.t2 = t2;
                     }
                 }
@@ -681,15 +673,12 @@ namespace sofa::component::mapping
                     Deriv1 f2_2 = ((1 - c.alpha) * f[0] * c.dirAxe) + ((1 - c.alpha) * f[1] * c.t1) + ((1 - c.alpha) * f[2] * c.t2);
 
                     // std::cout << " f1 : " << f1 << "   f&_1: " << f2_1 << " ; f2 : "<< f2 << std::endl;
-                    out1[i] += f1;
-                    out2[ei1] -= f2_1;
-                    out2[ei2] -= f2_2;
+                    out1[i] += f1; out2[ei1] -= f2_1; out2[ei2] -= f2_2;
                 }
                 else
                 {
                     Deriv2 f1 = (f[0] * c.dirAxe) + (f[1] * c.t1) + (f[2] * c.t2);
-                    out1[i] += f1;
-                    out2[ei2] -= f1;
+                    out1[i] += f1; out2[ei2] -= f1;
                 }
             }
         }
@@ -832,7 +821,7 @@ namespace sofa::component::mapping
         vparams->drawTool()->saveLastState();
         vparams->drawTool()->disableLighting();
 
-        std::vector<type::Vector3> vertices;
+        std::vector<type::type::Vec3> vertices;
         RGBAColor color = RGBAColor::magenta();
 
         if (d_drawArrows.getValue() && d_lastPointIsFixed.getValue())
