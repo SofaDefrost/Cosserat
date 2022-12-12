@@ -29,3 +29,4 @@ python/
 scenes/
 .DS_Store/
 .DS_Store
+src/CosseratPlugin/.vscode/c_cpp_properties.json
