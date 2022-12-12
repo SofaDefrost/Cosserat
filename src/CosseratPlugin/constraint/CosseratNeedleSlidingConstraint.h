@@ -40,7 +40,6 @@ namespace sofa::component::constraintset
     using sofa::core::ConstraintParams;
     using sofa::core::VecCoordId;
     using sofa::core::behavior::Constraint;
-    //using sofa::core::behavior::SoftRobotsConstraint;
     using sofa::core::objectmodel::Data;
     using sofa::core::visual::VisualParams;
     using sofa::defaulttype::Vec3dTypes;

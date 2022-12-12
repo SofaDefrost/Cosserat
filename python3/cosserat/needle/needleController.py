@@ -6,7 +6,6 @@ __date__ = "March 8 2021"
 
 import Sofa
 
-
 import numpy as np
 import Sofa.CosseratPlugin
 from params import ConstraintsParams
