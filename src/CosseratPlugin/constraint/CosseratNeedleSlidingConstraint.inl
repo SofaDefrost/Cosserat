@@ -32,7 +32,7 @@
 
 #include <sofa/core/visual/VisualParams.h>
 #include <sofa/type/Vec.h>
-#include <SofaConstraint/BilateralInteractionConstraint.h>
+#include <sofa/component/constraint/lagrangian/model/BilateralInteractionConstraint.h>
 #include "CosseratNeedleSlidingConstraint.h"
 
 namespace sofa::component::constraintset
@@ -41,25 +41,20 @@ namespace sofa::component::constraintset
   using sofa::core::objectmodel::ComponentState;
   using sofa::helper::WriteAccessor;
 
-  using sofa::component::constraint::lagrangian::model::BilateralConstraintResolution;
   using sofa::core::objectmodel::ComponentState;
   using sofa::core::visual::VisualParams;
-  using sofa::helper::OptionsGroup;
-  using sofa::helper::ReadAccessor;
   using sofa::linearalgebra::BaseVector;
+  using sofa::helper::ReadAccessor;
   using sofa::type::Vec4f;
+  using sofa::type::Vec3;
   using sofa::type::vector;
-  using sofa::type::Vector3;
+  using sofa::helper::OptionsGroup;
+  using sofa::component::constraint::lagrangian::model::BilateralConstraintResolution;
 
   template <class DataTypes>
   CosseratNeedleSlidingConstraint<DataTypes>::CosseratNeedleSlidingConstraint(MechanicalState *object)
-      : Inherit1(object)
-
-        ,
-        d_value(initData(&d_value, "value",
-                         "Displacement or force to impose.\n"))
-
-        ,
+      : Inherit1(object),
+        d_value(initData(&d_value, "value", "Displacement or force to impose.\n")),
         d_valueIndex(initData(&d_valueIndex, (unsigned int)0, "valueIndex",
                               "Index of the value (in InputValue vector) that we want to impose \n"
                               "If unspecified the default value is {0}")),
@@ -68,8 +63,7 @@ namespace sofa::component::constraintset
                              "force = the contstraint will impose the force provided in data value[valueIndex] \n"
                              "If unspecified, the default value is displacement")),
         d_useDirections(initData(&d_useDirections, type::Vec<3, bool>(0, 1, 1), "useDirections", "Directions to constrain.\n"))
-  {
-  }
+  {}
 
   template <class DataTypes>
   CosseratNeedleSlidingConstraint<DataTypes>::~CosseratNeedleSlidingConstraint()

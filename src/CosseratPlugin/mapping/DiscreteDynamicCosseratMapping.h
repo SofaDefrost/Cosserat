@@ -70,7 +70,7 @@ public:
     typedef Data<In1VecCoord> In1DataVecCoord;
     typedef Data<In1VecDeriv> In1DataVecDeriv;
     typedef Data<In1MatrixDeriv> In1DataMatrixDeriv;
-    
+
     typedef typename In2::Coord::value_type Real          ;
     typedef typename In2::Coord             Coord2         ;
     typedef typename In2::Deriv             Deriv2         ;
@@ -180,7 +180,7 @@ public:
 
     /**********************DISCRET DYNAMIC COSSERAT METHODS**************************/
 
-    [[maybe_unused]] void computeMassComponent(const double sectionMass){}
+    [[maybe_unused]] void computeMassComponent(const double sectionMass){ SOFA_UNUSED(sectionMass); }
     void computeJ_Jdot_i(const Mat6x6 &Adjoint, size_t frameId, type::vector<Mat6x3> &J_i,
                          const type::Vec6 &etaFrame, type::vector<Mat6x3> &J_dot_i);
 

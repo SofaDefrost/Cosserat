@@ -88,7 +88,7 @@ public:
     void init() override;
     void reinit() override;
 
-    void handleEvent(core::objectmodel::Event *ev);
+    void handleEvent(core::objectmodel::Event *ev) override;
 
     void computeProximity();
 

@@ -154,14 +154,14 @@ public:
 
 protected:
     /**********************COSSERAT METHODS**************************/
-    void computeExponentialSE3(const double &x, const type::Vector3& k, Transform & Trans);
+    void computeExponentialSE3(const double &x, const type::Vec3& k, Transform & Trans);
     void computeAdjoint(const Transform & frame, Mat6x6 &adjoint);
     void compute_coAdjoint(const Transform & frame, Mat6x6 &co_adjoint);
     void compute_adjointVec6(const Vec6 & frame, Mat6x6 &adjoint);
 
     void update_ExponentialSE3(const In1VecCoord & inDeform);
     void update_TangExpSE3(const In1VecCoord & inDeform, const type::vector<double> &curv_abs_section , const type::vector<double> &curv_abs_frames );
-    void compute_Tang_Exp(double & x, const Vector3& k, Mat6x6 & TgX);
+    void compute_Tang_Exp(double & x, const type::Vec3& k, Mat6x6 & TgX);
 
     [[maybe_unused]] type::Vec6 compute_eta(const Vec6 & baseEta, const In1VecDeriv & k_dot, double abs_input);
     type::Matrix4 computeLogarithm(const double & x, const Mat4x4 &gX);
@@ -216,7 +216,7 @@ public:
         return  P;
     }
 
-    Matrix3 getTildeMatrix(const Vector3 & u){
+    Matrix3 getTildeMatrix(const type::Vec3 & u){
         type::Matrix3 tild;
         tild[0][1] = -u[2];
         tild[0][2] = u[1];
@@ -255,7 +255,7 @@ public:
     Matrix4 convertTransformToMatrix4x4(const Transform & T){
         Matrix4 M; M.identity();
         Matrix3 R = extract_rotMatrix(T);
-        Vector3 trans = T.getOrigin();
+        type::Vec3 trans = T.getOrigin();
 
         for (unsigned int i = 0; i < 3; i++) {
             for (unsigned int j=0; j<3; j++){
