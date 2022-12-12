@@ -6,14 +6,14 @@ import string
 
 
 @dataclass
-class Geometry:
+class GeometryParams:
     radius: float = 0.1
     nbSections: int = 16
     nbFrames: int = 15
     totalLength: float = 15.
 
 @dataclass
-class Physics:
+class PhysicsParams:
     youngModulus: float = 1.20e9
     poissonRatio: float = 0.4
     mass: float = 0.3
@@ -43,10 +43,19 @@ class ContactParams:
 
 @dataclass
 class NeedleParameters:
-    Geometry: Geometry = Geometry()
-    Physics: Physics = Physics()
-    FemParams: FemParams = FemParams()
-    contact: ContactParams = ContactParams()
+    # Geometry: GeometryParams = GeometryParams()
+    # Physics: PhysicsParams = PhysicsParams()
+    # Fem: FemParams = FemParams()
+    # contact: ContactParams = ContactParams()
+    def display():
+        print(f'''
+              # Geometry
+              {string.ascii_uppercase[:4]}
+              {string.ascii_uppercase[4:6]}
+              {string.ascii_uppercase[6:8]}
+              {string.ascii_uppercase[8:10]}
+              '''
+              )
 
 @dataclass
 class ConstraintsParams:

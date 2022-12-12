@@ -5,21 +5,21 @@ Based on the work done with SofaPython. See POEMapping.py
 """
 
 from cosserat.needle.needleController import Animation
-from params import NeedleParameters
+from params import NeedleParameters, GeometryParams, PhysicsParams, FemParams, ContactParams
 from cosserat.usefulFunctions import pluginList
 from cosserat.createFemRegularGrid import createFemCubeWithParams
 from cosserat.cosseratObject import Cosserat
 from cosserat.utils import addConstraintPoint
 import sys
 
-params = NeedleParameters()
+# params = NeedleParameters()
 
 sys.path.append('../')
 
 nbFrames = params.Geometry.nbFrames
-needleGeometryConfig = {'init_pos': [0., 0., 0.], 'tot_length': params.Geometry.totalLength,
-                        'nbSectionS': params.Geometry.nbSections, 'nbFramesF': nbFrames,
-                        'buildCollisionModel': 1, 'beamMass': params.Physics.mass}
+needleGeometryConfig = {'init_pos': [0., 0., 0.], 'tot_length': GeometryParams.totalLength,
+                        'nbSectionS': GeometryParams.nbSections, 'nbFramesF': nbFrames,
+                        'buildCollisionModel': 1, 'beamMass': PhysicsParams.mass}
 
 
 def createScene(rootNode):
@@ -37,7 +37,7 @@ def createScene(rootNode):
     rootNode.addObject('BVHNarrowPhase')
     # rootNode.addObject('LocalMinDistance', alarmDistance=1.0, contactDistance=0.01)
     rootNode.addObject('LocalMinDistance', name="Proximity", alarmDistance=0.5,
-                       contactDistance=params.contact.contactDistance,
+                       contactDistance=contactParams.contactDistance,
                        coneFactor=params.contact.coneFactor, angleCone=0.1)
 
     rootNode.addObject('FreeMotionAnimationLoop')
@@ -59,9 +59,9 @@ def createScene(rootNode):
     solverNode.addObject('GenericConstraintCorrection')
 
     needle = solverNode.addChild(
-        Cosserat(parent=solverNode, cosseratGeometry=needleGeometryConfig, radius=params.Geometry.radius,
-                 name="needle", youngModulus=params.Physics.youngModulus, poissonRatio=params.Physics.poissonRatio,
-                 rayleighStiffness=params.Physics.rayleighStiffness))
+        Cosserat(parent=solverNode, cosseratGeometry=needleGeometryConfig, radius=GeometryParams.radius,
+                 name="needle", youngModulus=PhysicsParams.youngModulus, poissonRatio=PhysicsParams.poissonRatio,
+                 rayleighStiffness=PhysicsParams.rayleighStiffness))
     needleCollisionModel = needle.addPointCollisionModel("needleCollision")
 
     # These state is mapped on the needle and used to compute the distance between the needle and the
@@ -71,7 +71,7 @@ def createScene(rootNode):
     # -----------------
     # Start the volume definition
     # -----------------
-    cubeNode = createFemCubeWithParams(rootNode, params.FemParams)
+    cubeNode = createFemCubeWithParams(rootNode, FemParams)
     gelNode = cubeNode.getChild('gelNode')
     # FEM constraint points
     constraintPointNode = addConstraintPoint(
