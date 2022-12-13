@@ -581,11 +581,19 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
                                 "node called \'MappedFrames\', in which the Cosserat "
                                 "rigid frames and the Cosserat mapping are defined.")
 
+            coaxialFramesNode = rigidBaseNode.getChild('coaxialSegmentFrames')
+            if coaxialFramesNode is None:
+                raise NameError("[CombinedInstrumentsController]: Node \'coaxialSegmentFrames\' "
+                                "not found. The \'rigidBase\' node should have a child "
+                                "node called \'coaxialSegmentFrames\', in which the Cosserat "
+                                "mapping tracking coaxial segments shoudl is defined.")
+
             # Retrieving the components
             # TO DO : existance check ? What is the appropriate binding method ?
             beamForceFieldComponent = cosseratMechanicalNode.beamForceField
             fixedConstraintOnStock = cosseratMechanicalNode.FixedConstraintOnStock
             instrumentMapping = mappedFramesNode.DiscreteCosseratMapping
+            coaxialMapping = coaxialFramesNode.CoaxialCosseratMapping
             ouputFrameMO = mappedFramesNode.FramesMO
 
             # Updating the beam information (cf comment of function description)
@@ -649,6 +657,9 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
                     # Updating the fixed constraint
                     newFixedIndices = list(range(0, nbUnaffectedBeams))
                     fixedConstraintOnStock.indices = newFixedIndices
+
+                    # Updating the second (coaxial) Cosserat mapping input
+                    coaxialMapping.curv_abs_input = curv_abs_input
 
             # Updating the frame information (cf comment of function description)
 
