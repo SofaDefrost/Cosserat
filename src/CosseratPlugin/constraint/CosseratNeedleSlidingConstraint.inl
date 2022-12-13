@@ -168,11 +168,11 @@ namespace sofa::component::constraintset
         resV->set(m_constraintId + 2 * i + 1, dfree2);
       }
     }
-    std::cout << "resV = " << resV << std::endl;
-    std::cout << "m_constraintId = " << m_constraintId << std::endl;
-
-    std::cout << " dfree1 = " << positions[0] << std::endl;
-    std::cout << " dfree2 = " << positions[1] << std::endl;
+//    std::cout << "resV = " << resV << std::endl;
+//    std::cout << "m_constraintId = " << m_constraintId << std::endl;
+//
+//    std::cout << " dfree1 = " << positions[0] << std::endl;
+//    std::cout << " dfree2 = " << positions[1] << std::endl;
 
     printf("\n==================== End getConstraintViolation =================\n");
   }

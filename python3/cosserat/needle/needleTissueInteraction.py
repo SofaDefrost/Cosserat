@@ -16,7 +16,7 @@ import sys
 
 sys.path.append('../')
 
-nbFrames = params.Geometry.nbFrames
+nbFrames = GeometryParams.nbFrames
 needleGeometryConfig = {'init_pos': [0., 0., 0.], 'tot_length': GeometryParams.totalLength,
                         'nbSectionS': GeometryParams.nbSections, 'nbFramesF': nbFrames,
                         'buildCollisionModel': 1, 'beamMass': PhysicsParams.mass}
@@ -37,8 +37,8 @@ def createScene(rootNode):
     rootNode.addObject('BVHNarrowPhase')
     # rootNode.addObject('LocalMinDistance', alarmDistance=1.0, contactDistance=0.01)
     rootNode.addObject('LocalMinDistance', name="Proximity", alarmDistance=0.5,
-                       contactDistance=contactParams.contactDistance,
-                       coneFactor=params.contact.coneFactor, angleCone=0.1)
+                       contactDistance=ContactParams.contactDistance,
+                       coneFactor=ContactParams.coneFactor, angleCone=0.1)
 
     rootNode.addObject('FreeMotionAnimationLoop')
     generic = rootNode.addObject('GenericConstraintSolver', tolerance="1e-20",
@@ -53,7 +53,7 @@ def createScene(rootNode):
     ###############
     solverNode = rootNode.addChild('solverNode')
     solverNode.addObject('EulerImplicitSolver',
-                         rayleighStiffness=params.Physics.rayleighStiffness)
+                         rayleighStiffness=PhysicsParams.rayleighStiffness)
     solverNode.addObject('SparseLDLSolver', name='solver',
                          template="CompressedRowSparseMatrixd")
     solverNode.addObject('GenericConstraintCorrection')
