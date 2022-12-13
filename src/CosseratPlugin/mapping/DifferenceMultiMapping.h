@@ -97,10 +97,6 @@ public:
     typedef Data<OutVecDeriv> OutDataVecDeriv;
     typedef Data<OutMatrixDeriv> OutDataMatrixDeriv;
 
-//    typedef MultiLink<DifferenceMultiMapping<In1,In2,Out>, sofa::core::State< In1 >, BaseLink::FLAG_STOREPATH|BaseLink::FLAG_STRONGLINK> LinkFromModels1;
-//    typedef MultiLink<DifferenceMultiMapping<In1,In2,Out>, sofa::core::State< In2 >, BaseLink::FLAG_STOREPATH|BaseLink::FLAG_STRONGLINK> LinkFromModels2;
-//    typedef MultiLink<DifferenceMultiMapping<In1,In2,Out>, sofa::core::State< Out >, BaseLink::FLAG_STOREPATH|BaseLink::FLAG_STRONGLINK> LinkToModels;
-
     typedef typename SolidTypes<Real>::Transform      Transform ;
 
 protected:   
@@ -112,14 +108,14 @@ protected:
     /// Constructor
     DifferenceMultiMapping() ;
     /// Destructor
-    ~DifferenceMultiMapping()  override {}
+    ~DifferenceMultiMapping()  override = default;
 
 public:
     /**********************SOFA METHODS**************************/
     void init() override;
-    virtual void bwdInit() override;  // get the points
-    virtual void reset() override;
-    virtual void reinit() override;
+    void bwdInit() override;  // get the points
+    void reset() override;
+    void reinit() override;
     void draw(const core::visual::VisualParams* vparams) override;
 
     /**********************MAPPING METHODS**************************/
@@ -142,7 +138,7 @@ public:
     void applyDJT(const core::MechanicalParams* /*mparams*/, core::MultiVecDerivId /*inForce*/, core::ConstMultiVecDerivId /*outForce*/) override{}
 
     /// This method must be reimplemented by all mappings if they need to support constraints.
-    virtual void applyJT(
+    void applyJT(
             const core::ConstraintParams*  cparams , const type::vector< In1DataMatrixDeriv*>& dataMatOut1Const  ,
             const type::vector< In2DataMatrixDeriv*>&  dataMatOut2Const ,
             const type::vector<const OutDataMatrixDeriv*>&  dataMatInConst) override;
@@ -182,7 +178,6 @@ private:
     } Constraint;
 
     type::vector<Constraint> m_constraints;
-
 };
 
 } // sofa::component::mapping

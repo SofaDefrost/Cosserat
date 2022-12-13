@@ -141,7 +141,7 @@ namespace sofa::component::mapping
             Coord2 P = from[i];
             Constraint constraint;
 
-            // find the min distance between a from mstate point and it's projection on each edge of the cable (destination mstate)
+            // find the min distance between a from mstate point, and it's projection on each edge of the cable (destination mstate)
             Real min_dist = std::numeric_limits<Real>::max();
             for (size_t j = 0; j < szDst - 1; j++)
             {
@@ -375,7 +375,7 @@ namespace sofa::component::mapping
             Coord2 P = from[i];
             Constraint constraint;
 
-            // find the min distance between a from mstate point and it's projection on each edge of the cable (destination mstate)
+            // find the min distance between a from mstate point, and it's projection on each edge of the cable (destination mstate)
             Real min_dist = std::numeric_limits<Real>::max();
             for (size_t j = 0; j < szDst - 1; j++)
             {
@@ -634,7 +634,7 @@ namespace sofa::component::mapping
                 outVel[i] = OutDeriv(v0, v1, v2);
             }
         }
-        std::cout << "====================outVel :" << outVel << std::endl;
+//        std::cout << "====================outVel :" << outVel << std::endl;
         dataVecOutVel[0]->endEdit();
         printf("_____________________________________End ApplyJ_________\n");
     }
@@ -649,12 +649,17 @@ namespace sofa::component::mapping
 
         if (dataVecOut1Force.empty() || dataVecInForce.empty() || dataVecOut2Force.empty())
             return;
-
+        printf("before Get in vector \n");
         const OutVecDeriv &in = dataVecInForce[0]->getValue();
+        if (in.empty())
+            return;
 
+        printf("Get in vector \n");
         In1VecDeriv &out1 = *dataVecOut1Force[0]->beginEdit();
+        printf("Get out1 vector \n");
         In2VecDeriv &out2 = *dataVecOut2Force[0]->beginEdit();
-
+        printf("Get out1 vector \n");
+        std::cout << " ====> in size : " << in.size() << std::endl;
         // Compute output forces
         size_t sz = m_constraints.size();
         if (d_lastPointIsFixed.getValue())
@@ -665,7 +670,7 @@ namespace sofa::component::mapping
                 int ei1 = c.eid;
                 int ei2 = c.eid + 1;
                 OutDeriv f = in[i];
-                // std::cout << " ================+++++++++>>>>> The force : " << f << std::endl;
+                 std::cout << " ================+++++++++>>>>> The force : " << f << std::endl;
                 if (i < sz - 1)
                 {
                     Deriv2 f1 = (f[0] * c.dirAxe) + (f[1] * c.t1) + (f[2] * c.t2);
@@ -684,26 +689,29 @@ namespace sofa::component::mapping
         }
         else
         {
+            printf("Inside the else \n");
             for (size_t i = 0; i < sz; i++)
             {
                 Constraint &c = m_constraints[i];
+                printf("Get the constraint \n");
                 int ei1 = c.eid;
                 int ei2 = c.eid + 1;
                 OutDeriv f = in[i];
-                // std::cout << " ================+++++++++>>>>> The force : " << f << std::endl;
+                 std::cout << " ================+++++++++>>>>> The force : " << f << std::endl;
                 Deriv2 f1 = (f[0] * c.dirAxe) + (f[1] * c.t1) + (f[2] * c.t2);
                 Deriv1 f2_1 = (c.alpha * f[0] * c.dirAxe) + (c.alpha * f[1] * c.t1) + (c.alpha * f[2] * c.t2);
                 Deriv1 f2_2 = ((1 - c.alpha) * f[0] * c.dirAxe) + ((1 - c.alpha) * f[1] * c.t1) + ((1 - c.alpha) * f[2] * c.t2);
-
+                printf("Finished the computation \n");
                 out1[i] += f1;
                 out2[ei1] -= f2_1;
                 out2[ei2] -= f2_2;
+                std::cout << " f1 : " << f1 << "   f2_1: " << f2_1 << " ; f2 : "<< f2_2 << std::endl;
             }
         }
         dataVecOut1Force[0]->endEdit();
         dataVecOut2Force[0]->endEdit();
-        std::cout << "====================out1 :" << out1 << std::endl;
-        std::cout << "====================out2 :" << out2 << std::endl;
+//        std::cout << "====================out1 :" << out1 << std::endl;
+//        std::cout << "====================out2 :" << out2 << std::endl;
         printf("_____________________________________End ApplyJT_________\n");
     }
 
@@ -799,9 +807,9 @@ namespace sofa::component::mapping
                     o2.addCol(indexBeam + 1, -h2_2);
 
                     colIt++;
-                    std::cout << "====================h1 :" << h1 << std::endl;
-                    std::cout << "====================h2_1 :" << h2_1 << std::endl;
-                    std::cout << "====================h2_2 :" << h2_2 << std::endl;
+//                    std::cout << "====================h1 :" << h1 << std::endl;
+//                    std::cout << "====================h2_1 :" << h2_1 << std::endl;
+//                    std::cout << "====================h2_2 :" << h2_2 << std::endl;
                 }
             }
         }
@@ -821,7 +829,7 @@ namespace sofa::component::mapping
         vparams->drawTool()->saveLastState();
         vparams->drawTool()->disableLighting();
 
-        std::vector<type::type::Vec3> vertices;
+        std::vector<type::Vec3> vertices;
         RGBAColor color = RGBAColor::magenta();
 
         if (d_drawArrows.getValue() && d_lastPointIsFixed.getValue())

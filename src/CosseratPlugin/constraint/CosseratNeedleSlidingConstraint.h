@@ -46,6 +46,7 @@ namespace sofa::component::constraintset
     using sofa::defaulttype::Vec3fTypes;
     using sofa::helper::ReadAccessor;
     using sofa::linearalgebra::BaseVector;
+    using sofa::core::MultiVecDerivId ;
 
     /**
      * This class contains common implementation of cable constraints
@@ -113,14 +114,15 @@ namespace sofa::component::constraintset
             std::cout << "4 storeLambda j: " << j << std::endl;
         }
 
-        // void storeLambda(const ConstraintParams *cParams, MultiVecDerivId res, const sofa::linearalgebra::BaseVector *lambda)
-        // {
-        //     if (cParams)
-        //     {
-        //         storeLambda(cParams, *res[m_needle->getMstate()].write(), *cParams->readJ(m_needle->getMstate()), lambda);
-        //         storeLambda(cParams, *res[m_surface->getMstate()].write(), *cParams->readJ(m_surface->getMstate()), lambda);
-        //     }
-        // }
+         void storeLambda(const ConstraintParams *cParams, MultiVecDerivId res, const sofa::linearalgebra::BaseVector *lambda) override
+         {
+            printf(" ============================> storeLambda <===================================== \n");
+//             if (cParams)
+//             {
+//                 storeLambda(cParams, *res[m_needle->getMstate()].write(), *cParams->readJ(m_needle->getMstate()), lambda);
+//                 storeLambda(cParams, *res[m_surface->getMstate()].write(), *cParams->readJ(m_surface->getMstate()), lambda);
+//             }
+         }
 
     protected:
         // Input data

@@ -41,7 +41,9 @@ namespace sofa::core::behavior
     void PointsManager::addNewPointToState()
     {
         helper::WriteAccessor<Data<VecCoord>> x = *this->getMstate()->write(core::VecCoordId::position());
+        helper::WriteAccessor<Data<VecCoord>> xRest = *this->getMstate()->write(core::VecCoordId::restPosition());
         helper::WriteAccessor<Data<VecCoord>> xfree = *this->getMstate()->write(core::VecCoordId::freePosition());
+        helper::WriteAccessor<Data<VecCoord>> xforce = *this->getMstate()->write(core::VecDerivId::force());
         const helper::ReadAccessor<Data<VecCoord>> &beam = m_beam->readPositions();
         unsigned nbPoints = this->getTopology()->getNbPoints(); // do not take the last point because there is a bug
 
@@ -49,18 +51,23 @@ namespace sofa::core::behavior
         m_modifier->addPoints(1, true);
 
         Vec3 pos = beam[beamSz - 1];
-        std::cout << "beam tip is =-----> " << pos << std::endl;
-        std::cout << "nbPoints is equal :" << nbPoints << std::endl;
-        std::cout << "x.size is equal :" << x.size() << std::endl;
+//        std::cout << "beam tip is =-----> " << pos << std::endl;
+//        std::cout << "nbPoints is equal :" << nbPoints << std::endl;
+//        std::cout << "x.size is equal :" << x.size() << std::endl;
 
         x.resize(nbPoints + 1);
+        xRest.resize(nbPoints + 1);
         xfree.resize(nbPoints + 1);
+        xforce.resize(nbPoints + 1);
 
         x[nbPoints] = pos;
+        xRest[nbPoints] = pos;
         xfree[nbPoints] = pos;
-        std::cout << "End addNewPointToState " << std::endl;
+        xforce[nbPoints] = Vec3(0, 0, 0);
+
         m_modifier->notifyEndingEvent();
-        std::cout << "End notifyEndingEvent " << std::endl;
+//      std::cout << "End addNewPointToState " << std::endl;
+//      std::cout << "End notifyEndingEvent " << std::endl;
     }
 
     void PointsManager::removeLastPointfromState()

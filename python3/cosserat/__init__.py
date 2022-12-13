@@ -9,7 +9,7 @@ and the `Cosserat`_ plugin.
 The library can be used with scenes written in python3
 
 Contents of the library
-**********************
+********************** 
 
 .. autosummary::
     :toctree: _autosummary
