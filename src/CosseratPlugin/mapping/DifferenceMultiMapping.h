@@ -99,6 +99,16 @@ public:
 
     typedef typename SolidTypes<Real>::Transform      Transform ;
 
+public:
+    /********************** The component Data **************************/
+    //Input data
+    Data<vector<Rigid>>                 d_direction;
+    Data<vector<unsigned int>>          d_indices;
+    Data<double>                        d_radius;
+    Data<sofa::type::Vec4f>             d_color;
+    Data<bool>                          d_drawArrows;
+    Data<bool>                          d_lastPointIsFixed;
+
 protected:   
     core::State<In1>* m_fromModel1;
     core::State<In2>* m_fromModel2;
@@ -153,15 +163,6 @@ public:
     void addPointProcess(){
         msg_warning("DifferenceMultiMapping")<< "The point you are adding is :"; //<< pointPos ;
     }
-public:
-    /********************** The component Data **************************/
-    //Input data
-    Data<vector<Rigid>>                 d_direction;
-    Data<vector<unsigned int>>          d_indices;
-    Data<double>                        d_radius;
-    Data<sofa::type::Vec4f>             d_color;
-    Data<bool>                          d_drawArrows;
-    Data<bool>                          d_lastPointIsFixed;
 
 private:
 

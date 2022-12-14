@@ -72,12 +72,7 @@ class Animation(Sofa.Core.Controller):
                 # @info 1. check if the needle reached the distance to create/remove a constraint point
                 slidingPos = self.needleSlidingState.position.array()
                 constraintPos = self.constraintPts.position.array()
-                # print('------------------------------------------------')
-                # print(f' ====> The needleSlidingState state size is equal : {len(slidingPos)} '
-                #       f'the last position is : {slidingPos[-1]}')
-                # print(f' ====> The constraintPts state size is equal : {len(self.constraintPts.position.array())} '
-                #       f'the last position is : {self.constraintPts.position.array()[-1]}')
-                # print('------------------------------------------------')
+                
                 if computeDistanceBetweenPoints(slidingPos, constraintPos) > \
                         params.ConstraintsParams.constraintDistance:
                     self.pointManager.addNewPointToState()
@@ -87,21 +82,17 @@ class Animation(Sofa.Core.Controller):
 
     def onKeypressedEvent(self, event):
         key = event['key']
-        if key == "M":  # -
+        if key == "M": 
             self.pointManager.addNewPointToState()
-        if key == "D":  # +
+        if key == "D": 
             self.pointManager.removeLastPointfromState()
-        if key == "B":  # +
+        if key == "B":  
             self.rootNode.findData('animate').value = 1
 
         if ord(key) == 18:  # left
-            print("======= > left")
             with self.rigidBaseMO.rest_position.writeable() as posA:
                 posA[0][0] -= self.rate
         elif ord(key) == 20:  # right
-            print("======= > right")
-            # print(
-            #     f' ====> contactListener : {self.contactListener.getContactPoints()}')
             with self.rigidBaseMO.rest_position.writeable() as posA:
                 posA[0][0] += self.rate
 
@@ -112,7 +103,13 @@ class Animation(Sofa.Core.Controller):
         elif ord(key) == 19:  # up
             with self.rigidBaseMO.rest_position.writeable() as posA:
                 posA[0][1] += self.rate
-
+        
+        if key == "I":  # 
+            with self.rigidBaseMO.rest_position.writeable() as posA:
+                posA[0][2] -= self.rate
+        elif key == "K":  # 
+            with self.rigidBaseMO.rest_position.writeable() as posA:
+                posA[0][2] += self.rate
     # def onAnimateBeginEvent(self, event):
     #     if self.inside & self.addNewPoint:
     #         print("Inside the volume")

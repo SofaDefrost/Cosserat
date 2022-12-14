@@ -102,26 +102,20 @@ namespace sofa::component::constraintset
         //                     const BaseVector* lambda) override;
         /////////////////////////////////////////////////////////////////////////
 
-        void storeLambda(const ConstraintParams *cParams, Data<VecDeriv> &result, const Data<MatrixDeriv> &jacobian, const sofa::linearalgebra::BaseVector *lambda)
+        void storeLambda(const ConstraintParams */*cParams*/, Data<VecDeriv> &result, const Data<MatrixDeriv> &jacobian, const sofa::linearalgebra::BaseVector *lambda)
         {
-            std::cout << "1 storeLambda result : " << result << std::endl;
             auto res = sofa::helper::getWriteAccessor(result);
-            std::cout << "2 storeLambda res: " << res << std::endl;
             const MatrixDeriv &j = jacobian.getValue();
-            std::cout << "3 storeLambda j: " << j << std::endl;
-            std::cout << "4 storeLambda lambda: " << lambda << std::endl;
             j.multTransposeBaseVector(res, lambda); // lambda is a vector of scalar value so block size is one.
-            std::cout << "4 storeLambda j: " << j << std::endl;
         }
 
-         void storeLambda(const ConstraintParams *cParams, MultiVecDerivId res, const sofa::linearalgebra::BaseVector *lambda) override
+         void storeLambda(const ConstraintParams */*cParams*/, MultiVecDerivId res, const sofa::linearalgebra::BaseVector *lambda) override
          {
-            printf(" ============================> storeLambda <===================================== \n");
-//             if (cParams)
-//             {
-//                 storeLambda(cParams, *res[m_needle->getMstate()].write(), *cParams->readJ(m_needle->getMstate()), lambda);
-//                 storeLambda(cParams, *res[m_surface->getMstate()].write(), *cParams->readJ(m_surface->getMstate()), lambda);
-//             }
+            // if (cParams)
+            // {
+            //     storeLambda(cParams, *res[m_state1->getMstate()].write(), *cParams->readJ(m_state1->getMstate()), lambda);
+            //     storeLambda(cParams, *res[m_state2->getMstate()].write(), *cParams->readJ(m_state2->getMstate()), lambda);
+            // }
          }
 
     protected:
