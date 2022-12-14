@@ -87,8 +87,7 @@ namespace sofa::component::constraintset
 
   template <class DataTypes>
   void CosseratNeedleSlidingConstraint<DataTypes>::internalInit()
-  {
-    printf("\n==================== Begin build internalInit =================\n");
+  { 
     if (d_value.getValue().size() == 0)
     {
       WriteAccessor<Data<vector<Real>>> value = d_value;
@@ -101,7 +100,7 @@ namespace sofa::component::constraintset
       msg_warning() << "Bad size for data value (size=" << d_value.getValue().size() << "), or wrong value for data valueIndex (valueIndex=" << d_valueIndex.getValue() << "). Set default valueIndex=0.";
       d_valueIndex.setValue(0);
     }
-    printf("\n==================== End build internalInit =================\n");
+    
   }
 
   template <class DataTypes>
@@ -110,7 +109,6 @@ namespace sofa::component::constraintset
     if (d_componentState.getValue() != ComponentState::Valid)
       return;
 
-    printf("\n==================== begin build constraint =================\n");
     SOFA_UNUSED(cParams);
     MatrixDeriv &matrix = *cMatrix.beginEdit();
     VecCoord positions = x.getValue();
@@ -133,7 +131,7 @@ namespace sofa::component::constraintset
     }
     cMatrix.endEdit();
     m_nbLines = cIndex - m_constraintId;
-    printf("\n==================== End build constraint =================\n");
+    
   }
 
   template <class DataTypes>
@@ -145,13 +143,12 @@ namespace sofa::component::constraintset
   {
     if (d_componentState.getValue() != ComponentState::Valid)
       return;
-    printf("\n==================== Begin getConstraintViolation =================\n");
+    
     SOFA_UNUSED(cParams);
     SOFA_UNUSED(x);
     SOFA_UNUSED(v);
     ReadAccessor<Data<VecCoord>> positions = this->mstate->readPositions();
     type::Vec<3, bool> use = d_useDirections.getValue();
-    std::cout << "m_constraintId = " << m_constraintId << std::endl;
 
     for (unsigned int i = 0; i < positions.size(); i++)
     {
@@ -168,13 +165,6 @@ namespace sofa::component::constraintset
         resV->set(m_constraintId + 2 * i + 1, dfree2);
       }
     }
-//    std::cout << "resV = " << resV << std::endl;
-//    std::cout << "m_constraintId = " << m_constraintId << std::endl;
-//
-//    std::cout << " dfree1 = " << positions[0] << std::endl;
-//    std::cout << " dfree2 = " << positions[1] << std::endl;
-
-    printf("\n==================== End getConstraintViolation =================\n");
   }
 
   template <class DataTypes>
@@ -182,7 +172,6 @@ namespace sofa::component::constraintset
                                                                            std::vector<core::behavior::ConstraintResolution *> &resTab,
                                                                            unsigned int &offset)
   {
-    printf("\n==================== Begin getConstraintResolution =================\n");
     ReadAccessor<Data<VecCoord>> positions = this->mstate->readPositions();
     type::Vec<3, bool> use = d_useDirections.getValue();
     for (size_t i = 0; i < positions.size(); i++)
@@ -192,7 +181,6 @@ namespace sofa::component::constraintset
       if (use[2])
         resTab[offset++] = new BilateralConstraintResolution();
     }
-    printf("\n==================== End getConstraintResolution =================\n");
   }
 
   template <class DataTypes>

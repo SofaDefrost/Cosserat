@@ -67,7 +67,6 @@ namespace sofa::component::mapping
         if (!d_direction.isSet())
             msg_warning() << "No direction nor indices is given.";
 
-        printf("initiateTopologies\n");
     }
 
     // _________________________________________________________________________________________
@@ -241,9 +240,7 @@ namespace sofa::component::mapping
 
                             if (!direction.empty())
                             {
-                                Rigid _dir = direction[szDst - 1];
-                                type::Quat _ori = _dir.getOrientation();
-
+                                type::Quat _ori = direction[szDst - 1].getOrientation();
                                 type::Vec3 _vY = _ori.rotate(type::Vec3(0., 1., 0.)); _vY.normalize();
                                 type::Vec3 _vZ = _ori.rotate(type::Vec3(0., 0., 1.)); _vZ.normalize();
 
@@ -305,11 +302,9 @@ namespace sofa::component::mapping
                         //                    }
 
                         //// Second method compute normals using frames directions
-                        Rigid dir = direction[constraint.eid];
                         type::Vec3 vY = type::Vec3(0., 1., 0.);
-                        type::Quat ori = dir.getOrientation();
-                        vY = ori.rotate(vY);
-                        vY.normalize();
+                        type::Quat ori = (direction[szDst - 1]).getOrientation();
+                        vY = ori.rotate(vY); vY.normalize();
                         t1 = vY;
                         //                    }
                         constraint.t1 = t1;
@@ -328,7 +323,6 @@ namespace sofa::component::mapping
                             // We use the given direction of fill H
                             if (!d_direction.getValue().empty())
                             {
-                                Rigid _dir = direction[szDst - 1];
                                 type::Quat _ori = (direction[szDst - 1]).getOrientation();
                                 type::Vec3 _vY = _ori.rotate(type::Vec3(0., 1., 0.)); _vY.normalize();
                                 type::Vec3 _vZ = _ori.rotate(type::Vec3(0., 0., 1.)); _vZ.normalize();
@@ -343,14 +337,9 @@ namespace sofa::component::mapping
                         }
                     }
                 }
-            }
-            // printf("______________________________________________________________\n");
-            // std::cout << "i :" << i << " ; eid:" << constraint.eid << " alpha : " << constraint.alpha << " ;  dist :"<< constraint.dist << std::endl;
-            // std::cout<<" fact_v :"<< constraint.r2 << i << " ; n :"<< constraint.dirAxe << "; t1:" << constraint.t1 << "; t2 :"<<  constraint.t2 << std::endl;
-            // printf("______________________________________________________________\n");
+            }            
             m_constraints.push_back(constraint);
         }
-        printf("_____________________Compute proximity _______________\n");
     }
 
     template <class TIn1, class TIn2, class TOut>
@@ -495,13 +484,8 @@ namespace sofa::component::mapping
                     }
                 }
             }
-            /*printf("______________________________________________________________\n");
-            std::cout << "i :" << i << " ; eid:" << constraint.eid << " alpha : " << constraint.alpha << " ;  dist :"<< constraint.dist << std::endl;
-            std::cout<<" fact_v :"<< constraint.r2 << i << " ; n :"<< constraint.dirAxe << "; t1:" << constraint.t1 << "; t2 :"<<  constraint.t2 << std::endl;
-            printf("______________________________________________________________\n");*/
             m_constraints.push_back(constraint);
         }
-        printf("_____________________________________computeNeedleProximity_________\n");
     }
 
     template <class TIn1, class TIn2, class TOut>
@@ -519,7 +503,6 @@ namespace sofa::component::mapping
         const In2VecCoord &in2 = dataVecIn2Pos[0]->getValue();
 
         OutVecCoord &out = *dataVecOutPos[0]->beginEdit();
-        printf("_____________________________________Begin Apply_________\n");
 
         if (d_lastPointIsFixed.getValue())
         {
@@ -557,16 +540,12 @@ namespace sofa::component::mapping
             for (unsigned int i = 0; i < sz; i++)
             {
                 Constraint &c = m_constraints[i];
-
                 out[i][0] = 0.0;
                 out[i][1] = c.t1 * (in1[i] - c.proj); // c.dist;
                 out[i][2] = c.t2 * (in1[i] - c.proj); // 0.0
             }
         }
-        std::cout << "out :" << out << std::endl;
-
         dataVecOutPos[0]->endEdit();
-        printf("_____________________________________End Apply_________\n");
     }
 
     template <class TIn1, class TIn2, class TOut>
@@ -580,14 +559,11 @@ namespace sofa::component::mapping
         const In1VecDeriv &in1 = dataVecIn1Vel[0]->getValue();
         const In2VecDeriv &in2 = dataVecIn2Vel[0]->getValue();
         OutVecDeriv &outVel = *dataVecOutVel[0]->beginEdit();
-        printf("_____________________________________Begin ApplyJ_________\n");
 
         // const OutVecCoord& out = m_toModel->read(core::ConstVecCoordId::position())->getValue();
         size_t sz = m_constraints.size();
         outVel.resize(sz);
-        std::cout << " == > In 1 " << in1.size() << " == > the in2 " << in2.size() << std::endl;
-        std::cout << " constraint size is : " << sz << "  == > The outVel " << outVel.size() << std::endl;
-
+        
         if (d_lastPointIsFixed.getValue())
         {
             for (size_t i = 0; i < sz; i++)
@@ -597,7 +573,6 @@ namespace sofa::component::mapping
                 int ei2 = c.eid + 1;
                 if (i < sz - 1)
                 {
-                    // std::cout << " ei1 : " << ei1 << " ei2 : "<< ei2 << std::endl;
                     Real v0 = c.dirAxe * (in1[i] - c.alpha * in2[ei1] - (1 - c.alpha) * in2[ei2]);
                     Real v1 = c.t1 * (in1[i] - c.alpha * in2[ei1] - (1 - c.alpha) * in2[ei2]);
                     Real v2 = c.t2 * (in1[i] - c.alpha * in2[ei1] - (1 - c.alpha) * in2[ei2]);
@@ -605,7 +580,6 @@ namespace sofa::component::mapping
                 }
                 else
                 {
-                    // std::cout << " i : " << i << " ei2 : "<< ei2 << std::endl;
                     Real v0 = c.dirAxe * (in1[i] - in2[ei2]);
                     Real v1 = c.t1 * (in1[i] - in2[ei2]);
                     Real v2 = c.t2 * (in1[i] - in2[ei2]);
@@ -615,28 +589,20 @@ namespace sofa::component::mapping
         }
         else
         {
-            std::cout << " size : " << sz << std::endl;
-            std::cout << "size of m_constraints : " << m_constraints.size() << std::endl;
-
             for (size_t i = 0; i < sz; i++)
             {
                 Constraint &c = m_constraints[i];
-                // std::cout << " c : " << c << std::endl;
 
                 int ei1 = c.eid;
                 int ei2 = c.eid + 1;
-
-                std::cout << " ei1 : " << ei1 << " ei2 : " << ei2 << std::endl;
                 Real v0 = c.dirAxe * (in1[i] - c.alpha * in2[ei1] - (1 - c.alpha) * in2[ei2]);
                 Real v1 = c.t1 * (in1[i] - c.alpha * in2[ei1] - (1 - c.alpha) * in2[ei2]);
                 Real v2 = c.t2 * (in1[i] - c.alpha * in2[ei1] - (1 - c.alpha) * in2[ei2]);
-                std::cout << " v0 : " << v0 << " v1 : " << v1 << " v2 : " << v2 << std::endl;
+
                 outVel[i] = OutDeriv(v0, v1, v2);
             }
         }
-//        std::cout << "====================outVel :" << outVel << std::endl;
         dataVecOutVel[0]->endEdit();
-        printf("_____________________________________End ApplyJ_________\n");
     }
 
     template <class TIn1, class TIn2, class TOut>
@@ -645,21 +611,15 @@ namespace sofa::component::mapping
         const type::vector<In2DataVecDeriv *> &dataVecOut2Force,
         const type::vector<const OutDataVecDeriv *> &dataVecInForce)
     {
-        printf("_____________________________________Begin ApplyJT_________\n");
-
         if (dataVecOut1Force.empty() || dataVecInForce.empty() || dataVecOut2Force.empty())
             return;
-        printf("before Get in vector \n");
+        
         const OutVecDeriv &in = dataVecInForce[0]->getValue();
         if (in.empty())
             return;
 
-        printf("Get in vector \n");
         In1VecDeriv &out1 = *dataVecOut1Force[0]->beginEdit();
-        printf("Get out1 vector \n");
         In2VecDeriv &out2 = *dataVecOut2Force[0]->beginEdit();
-        printf("Get out1 vector \n");
-        std::cout << " ====> in size : " << in.size() << std::endl;
         // Compute output forces
         size_t sz = m_constraints.size();
         if (d_lastPointIsFixed.getValue())
@@ -670,14 +630,11 @@ namespace sofa::component::mapping
                 int ei1 = c.eid;
                 int ei2 = c.eid + 1;
                 OutDeriv f = in[i];
-                 std::cout << " ================+++++++++>>>>> The force : " << f << std::endl;
                 if (i < sz - 1)
                 {
                     Deriv2 f1 = (f[0] * c.dirAxe) + (f[1] * c.t1) + (f[2] * c.t2);
                     Deriv1 f2_1 = (c.alpha * f[0] * c.dirAxe) + (c.alpha * f[1] * c.t1) + (c.alpha * f[2] * c.t2);
                     Deriv1 f2_2 = ((1 - c.alpha) * f[0] * c.dirAxe) + ((1 - c.alpha) * f[1] * c.t1) + ((1 - c.alpha) * f[2] * c.t2);
-
-                    // std::cout << " f1 : " << f1 << "   f&_1: " << f2_1 << " ; f2 : "<< f2 << std::endl;
                     out1[i] += f1; out2[ei1] -= f2_1; out2[ei2] -= f2_2;
                 }
                 else
@@ -689,30 +646,22 @@ namespace sofa::component::mapping
         }
         else
         {
-            printf("Inside the else \n");
             for (size_t i = 0; i < sz; i++)
             {
                 Constraint &c = m_constraints[i];
-                printf("Get the constraint \n");
                 int ei1 = c.eid;
                 int ei2 = c.eid + 1;
                 OutDeriv f = in[i];
-                 std::cout << " ================+++++++++>>>>> The force : " << f << std::endl;
                 Deriv2 f1 = (f[0] * c.dirAxe) + (f[1] * c.t1) + (f[2] * c.t2);
                 Deriv1 f2_1 = (c.alpha * f[0] * c.dirAxe) + (c.alpha * f[1] * c.t1) + (c.alpha * f[2] * c.t2);
                 Deriv1 f2_2 = ((1 - c.alpha) * f[0] * c.dirAxe) + ((1 - c.alpha) * f[1] * c.t1) + ((1 - c.alpha) * f[2] * c.t2);
-                printf("Finished the computation \n");
                 out1[i] += f1;
                 out2[ei1] -= f2_1;
                 out2[ei2] -= f2_2;
-                std::cout << " f1 : " << f1 << "   f2_1: " << f2_1 << " ; f2 : "<< f2_2 << std::endl;
             }
         }
         dataVecOut1Force[0]->endEdit();
         dataVecOut2Force[0]->endEdit();
-//        std::cout << "====================out1 :" << out1 << std::endl;
-//        std::cout << "====================out2 :" << out2 << std::endl;
-        printf("_____________________________________End ApplyJT_________\n");
     }
 
     //___________________________________________________________________________
@@ -725,7 +674,6 @@ namespace sofa::component::mapping
         if (dataMatOut1Const.empty() || dataMatOut2Const.empty() || dataMatInConst.empty())
             return;
 
-        std::cout << "====================Begin ApplyJT constraint :" << std::endl;
         // We need only one input In model and input Root model (if present)
         In1MatrixDeriv &out1 = *dataMatOut1Const[0]->beginEdit(); // constraints on the FEM cable points
         In2MatrixDeriv &out2 = *dataMatOut2Const[0]->beginEdit(); // constraints on the frames cable points
@@ -807,15 +755,11 @@ namespace sofa::component::mapping
                     o2.addCol(indexBeam + 1, -h2_2);
 
                     colIt++;
-//                    std::cout << "====================h1 :" << h1 << std::endl;
-//                    std::cout << "====================h2_1 :" << h2_1 << std::endl;
-//                    std::cout << "====================h2_2 :" << h2_2 << std::endl;
                 }
             }
         }
         dataMatOut1Const[0]->endEdit();
         dataMatOut2Const[0]->endEdit();
-        printf("_____________________________________End ApplyJTConstraint_________\n");
     }
 
     template <class TIn1, class TIn2, class TOut>
