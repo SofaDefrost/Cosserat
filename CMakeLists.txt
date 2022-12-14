@@ -93,6 +93,7 @@ target_link_libraries(${PROJECT_NAME}
     Sofa.Component.StateContainer
     Sofa.Component.Mapping.NonLinear
     Sofa.GL
+    Sofa.Component.Topology.Container.Dynamic
 )
 
 if(Sofa.GL_FOUND)
