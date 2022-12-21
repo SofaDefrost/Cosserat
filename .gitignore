@@ -29,3 +29,5 @@ python/
 scenes/
 .DS_Store/
 .DS_Store
+.vscode/
+.vscode
