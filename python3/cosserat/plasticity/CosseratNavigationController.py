@@ -19,6 +19,7 @@ import math
 import logging
 import warnings
 from pyquaternion import Quaternion as Quat
+from instrument import Instrument
 
 # Python controller to simulate the navigation of coaxial instruments represented
 # by two chains of Cosserat beam elements.
@@ -65,8 +66,8 @@ from pyquaternion import Quaternion as Quat
 #    interaction
 #  - incrementDirection : direction (vec3) along which the instruments are
 #    navigated
-#  - isInstrumentStraightVect : vector of boolean indicating for each instrument
-#    if it is entirely straight (true), or if the distal end is nonstraight (false)
+#  - instrumentList : vector containing instances of Instrument objects (as defined
+#    in instrument.py), to characterise each instrument properties
 #  - curvAbsTolerance : distance threshold used to determine if two close nodes
 #    should be merged (and considered as one)
 #  - instrumentLengths : vector of double indicating the length of each instrument
@@ -90,7 +91,7 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
                  incrementDistance,
                  incrementAngle,
                  incrementDirection,
-                 isInstrumentStraightVect,
+                 instrumentList,
                  curvAbsTolerance,
                  instrumentLengths,
                  *args, **kwargs):
@@ -111,6 +112,8 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
         self.curvAbsTolerance = curvAbsTolerance
 
         ### Controller settings ###
+
+        self.instrumentList = instrumentList
 
         # Number of simulated instruments
         self.nbInstruments = nbInstruments
@@ -155,8 +158,6 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
                             "Cosserat model are defined".format(instrumentNodeName))
 
         self.currentInstrumentRigidBaseNode = rigidBaseNode
-
-
 
         ### Additional settings ###
 
@@ -249,6 +250,7 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
 
         # print("decimatedNodeCurvAbs : {}".format(decimatedNodeCurvAbs))
         # print("instrumentIdsForNodeVect : {}".format(instrumentIdsForNodeVect))
+
 
         #----- Step 3 :  -----#
 
@@ -495,7 +497,7 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
 
         # Precomputation, to analyse the deplyment configuration of the different
         # instruments. The purpose of this precomputation is to fill the
-        # instrumentLastBeamIds list, defined below, which contains for each
+        # instrumentLastNodeIds list, defined below, which contains for each
         # instrument the index of the last beam of the instrument. If the instrument
         # is not deployed yet, the corresponding beam index is 0.
         # The idea to fill the list is the following : we go through the elements
@@ -503,8 +505,8 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
         # of instruments passing through the nodes decreases. By turning the lists
         # into sets, we retrieve the indices of the instruments which are no longer
         # in the list. For each of these instruments, we store the corresponding
-        # last beam index in instrumentLastBeamIds.
-        instrumentLastBeamIds = [0]*nbInstruments
+        # last beam index in instrumentLastNodeIds.
+        instrumentLastNodeIds = [0]*nbInstruments
         accumulatedNodeNumber = 0
 
         if len(instrumentIdsForNodeVect) >= 2: # Requires at least one beam
@@ -527,7 +529,7 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
                 instrumentDifferenceSet = set(previousInstrumentList) - set(lessInstrumentList)
 
                 for instrumentId in list(instrumentDifferenceSet):
-                    instrumentLastBeamIds[instrumentId] = accumulatedNodeNumber
+                    instrumentLastNodeIds[instrumentId] = accumulatedNodeNumber
 
                 # Accordingly decreasing the instrumentIterator
                 nbStoppedInstrument = len(instrumentDifferenceSet)
@@ -538,12 +540,11 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
             # the node from which only this instrument remains
             #   - or more than one instrument remain, meaning that these instruments
             # are coaxial until the last node
-            # In both cases, we have to fill instrumentLastBeamIds for all instruments
+            # In both cases, we have to fill instrumentLastNodeIds for all instruments
             # remaining on the last node
             lastNodeInstrumentList = instrumentIdsForNodeVect[nbNewNodes-1]
             for instrumentId in lastNodeInstrumentList:
-                instrumentLastBeamIds[instrumentId] = nbNewNodes-1
-
+                instrumentLastNodeIds[instrumentId] = nbNewNodes-1
 
         # Updating the beam and Cosserat mapping components
 
@@ -689,18 +690,18 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
 
         # Updating constraints on the coaxial segments
 
-        instrumentIndicesSortedByLength = sorted(range(len(instrumentLastBeamIds)), key=lambda k: instrumentLastBeamIds[k])
+        instrumentIndicesSortedByLength = sorted(range(len(instrumentLastNodeIds)), key=lambda k: instrumentLastNodeIds[k])
 
-        if (nbInstruments > 1 and instrumentLastBeamIds[instrumentIndicesSortedByLength[nbInstruments-2]] > 0):
+        if (nbInstruments > 1 and instrumentLastNodeIds[instrumentIndicesSortedByLength[nbInstruments-2]] > 0):
             # The above condition checks that at least two instruments are deployed.
             # When only one instrument is deployed, all computation on coaxial segments
             # can be skipped.
 
             # Determining which instruments have not been deployed yet (i.e.: instruments for which
-            # instrumentLastBeamIds = 0). These instruments don't have any coaxial beams with
+            # instrumentLastNodeIds = 0). These instruments don't have any coaxial beams with
             # other instruments
             shortestDeployedInstrumentRank = 0
-            while (instrumentLastBeamIds[instrumentIndicesSortedByLength[shortestDeployedInstrumentRank]] <= 0 and shortestDeployedInstrumentRank < nbInstruments-1):
+            while (instrumentLastNodeIds[instrumentIndicesSortedByLength[shortestDeployedInstrumentRank]] <= 0 and shortestDeployedInstrumentRank < nbInstruments-1):
                 shortestDeployedInstrumentRank += 1
 
             longestDeployedInstrumentRank = nbInstruments-1
@@ -710,7 +711,7 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
             for instrumentRank in range(shortestDeployedInstrumentRank, longestDeployedInstrumentRank):
 
                 instrumentId = instrumentIndicesSortedByLength[instrumentRank]
-                instrumentLastBeamId = instrumentLastBeamIds[instrumentId]
+                instrumentLastBeamId = instrumentLastNodeIds[instrumentId]
 
                 #--- Retrieving the nodes asscoiated to the current instrument ---#
 
@@ -751,7 +752,7 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
 
 
                     longerInstrumentId = instrumentIndicesSortedByLength[longerInstrumentRank]
-                    longerInstrumentLastBeamId = instrumentLastBeamIds[longerInstrumentId]
+                    longerInstrumentLastBeamId = instrumentLastNodeIds[longerInstrumentId]
 
                     #--- Retrieving the nodes asscoiated to the second (longer) instrument ---#
 
@@ -811,7 +812,7 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
                         # In this case, the coaxial frame indices are the same as the second longest
                         # deployed instrument.
                         secondLongestInstrumentId = instrumentIndicesSortedByLength[nbInstruments-2]
-                        secondLongestInstrumentLastBeamId = instrumentLastBeamIds[secondLongestInstrumentId]
+                        secondLongestInstrumentLastBeamId = instrumentLastNodeIds[secondLongestInstrumentId]
                         nbAdditionalCoaxialBeams = secondLongestInstrumentLastBeamId - instrumentLastBeamId
                     else:
                         # In this case, the coaxial frames of the longer instruments are coincidant
@@ -873,7 +874,7 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
                 # longest instrument (as the descretisation is common to all instruments on coaxial
                 # segments).
                 secondLongestInstrumentId = instrumentIndicesSortedByLength[nbInstruments-2]
-                secondLongestInstrumentLastBeamId = instrumentLastBeamIds[secondLongestInstrumentId]
+                secondLongestInstrumentLastBeamId = instrumentLastNodeIds[secondLongestInstrumentId]
                 coaxialBeamCurvAbs = decimatedNodeCurvAbs[0:secondLongestInstrumentLastBeamId+1]
                 nbTotalCoaxialFrames = len(coaxialFrameNode.CoaxialCosseratMapping.curv_abs_output)
                 deployedCoaxialFrameIds = list(range(nbTotalCoaxialFrames-len(coaxialBeamCurvAbs), nbTotalCoaxialFrames))

@@ -9,6 +9,7 @@ import Sofa
 import os
 import numpy as np
 from CosseratNavigationController import CombinedInstrumentsController
+from instrument import Instrument # defining a class for instrument characteristics
 
 # constants
 GRAVITY = 0.0 # 9810
@@ -527,9 +528,22 @@ def createScene(rootNode):
     incrementDistance=0.1
     incrementAngle=5.0
     incrementDirection = np.array([1., 0., 0.])
-    isInstrumentStraightVect=[True, True]
     curvAbsTolerance= 1.0e-4
     instrumentLengths=[totalLength0, totalLength1]
+
+    instrument0 = Instrument(instrumentNode=instrument0Node,
+                             totalLength=totalLength0,
+                             nbBeams=nbBeams0,
+                             keyPoints=[],
+                             restStrain=[instrument0ConstantRestStrain],
+                             curvAbsTolerance=curvAbsTolerance)
+    instrument1 = Instrument(instrumentNode=instrument1Node,
+                             totalLength=totalLength1,
+                             nbBeams=nbBeams1,
+                             keyPoints=[],
+                             restStrain=[instrument1ConstantRestStrain],
+                             curvAbsTolerance=curvAbsTolerance)
+    instrumentList = [instrument0, instrument1]
 
     rootNode.addObject(CombinedInstrumentsController(
                             name="NavigationController",
@@ -541,7 +555,7 @@ def createScene(rootNode):
                             incrementDistance=incrementDistance,
                             incrementAngle=incrementAngle,
                             incrementDirection=incrementDirection,
-                            isInstrumentStraightVect=isInstrumentStraightVect,
+                            instrumentList=instrumentList,
                             curvAbsTolerance=curvAbsTolerance,
                             instrumentLengths=instrumentLengths))
 
