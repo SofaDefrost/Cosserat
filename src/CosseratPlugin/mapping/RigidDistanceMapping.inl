@@ -57,6 +57,23 @@ RigidDistanceMapping<TIn1, TIn2, TOut>::RigidDistanceMapping()
     , d_debug(initData(&d_debug, false, "debug", "show debug output.\n"))
 {
         d_debug.setValue(false);
+
+        this->addUpdateCallback("updateMappedIndices", {&d_index1, &d_index2}, [this](const core::DataTracker& t)
+        {
+            SOFA_UNUSED(t);
+            this->init();
+            // Resize the output MechanicalObject
+            // TO DO: This callback is developped specifically to answer changes made during a navigation
+            // scene of a Cosserat coaxial model. At the moment, the dynamic rediscretisation required by
+            // this scenario is done entirely on the curvilinear abscissas of the Cosserat mapping component.
+            // A better implementation would be to delegate the discretisation to a topology component, and
+            // handle 'topological' changes (on the Mechanical Object in output of this mapping) with the
+            // appropriate topology modifications API.
+            core::State<Out>* toModel = this->getToModels()[0];
+            toModel->resize(m_minInd);
+
+            return sofa::core::objectmodel::ComponentState::Valid;
+        }, {});
 }
 
 
@@ -88,6 +105,11 @@ void RigidDistanceMapping<TIn1, TIn2, TOut>::apply(
 {
 
     if(dataVecOutPos.empty() || dataVecIn1Pos.empty() || dataVecIn2Pos.empty())
+        return;
+
+    // Checking the componentState, to trigger a callback if other data fields (specifically
+    // d_index1 or d_index2) were changed
+    if (this->d_componentState.getValue() != sofa::core::objectmodel::ComponentState::Valid)
         return;
 
     ///Do Apply
@@ -129,10 +151,14 @@ void RigidDistanceMapping<TIn1, TIn2, TOut>:: applyJ(
     if(dataVecOutVel.empty() || dataVecIn1Vel.empty() ||dataVecIn2Vel.empty() )
         return;
 
+    // Checking the componentState, to trigger a callback if other data fields (specifically
+    // d_index1 or d_index2) were changed
+    if (this->d_componentState.getValue() != sofa::core::objectmodel::ComponentState::Valid)
+        return;
+
     const In1VecDeriv& in1Vel = dataVecIn1Vel[0]->getValue();
     const In2VecDeriv& in2Vel = dataVecIn2Vel[0]->getValue();
     OutVecDeriv& outVel = *dataVecOutVel[0]->beginEdit();
-
 
     const auto &m1Indices = d_index1.getValue();
     const auto &m2Indices = d_index2.getValue();
@@ -159,6 +185,11 @@ void RigidDistanceMapping<TIn1, TIn2, TOut>:: applyJT(
     if(dataVecOut1Force.empty() || dataVecInForce.empty() || dataVecOut2Force.empty())
         return;
 
+    // Checking the componentState, to trigger a callback if other data fields (specifically
+    // d_index1 or d_index2) were changed
+    if (this->d_componentState.getValue() != sofa::core::objectmodel::ComponentState::Valid)
+        return;
+
     const OutVecDeriv& inForce = dataVecInForce[0]->getValue();
 
     In1VecDeriv& out1Force = *dataVecOut1Force[0]->beginEdit();
@@ -167,6 +198,11 @@ void RigidDistanceMapping<TIn1, TIn2, TOut>:: applyJT(
     //@todo implementation of force modification
     const auto &m1Indices = d_index1.getValue();
     const auto &m2Indices = d_index2.getValue();
+
+    // Safety check
+    // TO DO: is it necessary to raise a warning or an error?
+    if (inForce.size() != m_minInd)
+        return;
 
     for (sofa::Index index = 0; index < m_minInd; index++) {
         getVCenter(     out1Force[m1Indices[index]]) -= getVCenter(     inForce[index]);
@@ -187,6 +223,11 @@ void RigidDistanceMapping<TIn1, TIn2, TOut>::applyJT(
         const type::vector<const OutDataMatrixDeriv*>& dataMatInConst)
 {
     if(dataMatOut1Const.empty() || dataMatOut2Const.empty() || dataMatInConst.empty() )
+        return;
+
+    // Checking the componentState, to trigger a callback if other data fields (specifically
+    // d_index1 or d_index2) were changed
+    if (this->d_componentState.getValue() != sofa::core::objectmodel::ComponentState::Valid)
         return;
 
     In1MatrixDeriv& out1 = *dataMatOut1Const[0]->beginEdit(); // constraints on the reference frame 1
