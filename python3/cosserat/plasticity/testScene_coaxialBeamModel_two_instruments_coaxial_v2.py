@@ -136,30 +136,30 @@ def createScene(rootNode):
     # ----- Rate of angular deformation ----- #
     # Define the length of each beam in a list, the positions of each beam
 
-    beamStrainDoFs = []
+    beamStrainDoFs0 = []
     beamLengths = []
     sum = 0.
     beamCurvAbscissa = []
     beamCurvAbscissa.append(0.0)
 
+    instrument0ConstantRestStrain = [0., 0., 0.]
+
     # EXPERIMENTAL: insertion navigation
     # Initially defining beams with 0 length, at 0
     # For each beam, we:
-    #     - Add a Vec3 in beamStrainDoFs, with each strain component set at 0.
+    #     - Add a Vec3 in beamStrainDoFs0, with each strain component set at 0.
     #     - Add 0 in the length data field for the Cosserat mapping
     #     - Add the last curvilinear abscissa (total length) in the beams
     # curvilinear abcissas in the Cosserat mapping.
     # This is equivalent to saying that the beams are 0-length,
     # 0-strain beams, added at the beginning of the instrument.
     for i in range(0, nbBeams0PlusStock):
-        beamStrainDoFs.append([0, 0, 0])
+        beamStrainDoFs0.append(instrument0ConstantRestStrain)
         beamLengths.append(0)
         beamCurvAbscissa.append(0)
 
-    beamStrainDoFs[nbBeams0PlusStock-1] = [0., 0.1, 0.]
-
     # for i in range(nbBeams0PlusStock):
-    #     beamStrainDoFs.append([0, 0, 0])
+    #     beamStrainDoFs0.append([0, 0, 0])
     #     beamLengths.append(oneBeamLength)
     #     sum += beamLengths[i+nbStockBeams]
     #     beamCurvAbscissa.append(sum)
@@ -170,15 +170,15 @@ def createScene(rootNode):
     rateAngularDeformMO0 = rateAngularDeformNode0.addObject('MechanicalObject',
                                                             template='Vec3d',
                                                             name='rateAngularDeformMO',
-                                                            position=beamStrainDoFs,
+                                                            position=beamStrainDoFs0,
                                                             showIndices=0,
-                                                            rest_position=beamStrainDoFs)
+                                                            rest_position=beamStrainDoFs0)
 
     beamCrossSectionShape='circular'
     sectionRadius = 0.5
     poissonRatio = 0.42
     beamPoissonRatioList = [poissonRatio]*(nbBeams0PlusStock)
-    youngModulus = 5.0e6
+    youngModulus = 5.0e2
     beamYoungModulusList = [youngModulus]*(nbBeams0PlusStock)
     yieldStress = 5.0e4
     yieldStressList = [yieldStress]*(nbBeams0PlusStock)
@@ -200,7 +200,7 @@ def createScene(rootNode):
                                      crossSectionShape=beamCrossSectionShape,
                                      radius=sectionRadius, variantSections="true",
                                      length=beamLengths, poissonRatioList=beamPoissonRatioList,
-                                     youngModulusList=beamYoungModulusList)
+                                     youngModulusList=beamYoungModulusList, innerRadius=0.4)
 
     beamBendingMoment = 1.0e5
     bendingForces = np.array([0, beamBendingMoment, beamBendingMoment])
@@ -310,28 +310,30 @@ def createScene(rootNode):
     # ----- Rate of angular deformation ----- #
     # Define the length of each beam in a list, the positions of each beam
 
-    beamStrainDoFs = []
+    beamStrainDoFs1 = []
     beamLengths = []
     sum = 0.
     beamCurvAbscissa = []
     beamCurvAbscissa.append(0.0)
 
+    instrument1ConstantRestStrain = [0., 0.1, 0.]
+
     # EXPERIMENTAL: insertion navigation
     # Initially defining beams with 0 length, at 0
     # For each beam, we:
-    #     - Add a Vec3 in beamStrainDoFs, with each strain component set at 0.
+    #     - Add a Vec3 in beamStrainDoFs1, with each strain component set at 0.
     #     - Add 0 in the length data field for the Cosserat mapping
     #     - Add the last curvilinear abscissa (total length) in the beams
     # curvilinear abcissas in the Cosserat mapping.
     # This is equivalent to saying that the beams are 0-length,
     # 0-strain beams, added at the beginning of the instrument.
     for i in range(0, nbBeams1PlusStock):
-        beamStrainDoFs.append([0, 0, 0])
+        beamStrainDoFs1.append(instrument1ConstantRestStrain)
         beamLengths.append(0)
         beamCurvAbscissa.append(0)
 
     # for i in range(nbBeams1PlusStock):
-    #     beamStrainDoFs.append([0, 0, 0])
+    #     beamStrainDoFs1.append([0, 0, 0])
     #     beamLengths.append(oneBeamLength)
     #     sum += beamLengths[i+nbStockBeams]
     #     beamCurvAbscissa.append(sum)
@@ -340,11 +342,11 @@ def createScene(rootNode):
     # Define angular rate which is the torsion(x) and bending (y, z) of each section
     rateAngularDeformNode1 = instrument1Node.addChild('rateAngularDeform')
     rateAngularDeformMO1 = rateAngularDeformNode1.addObject('MechanicalObject',
-                                                           template='Vec3d',
-                                                           name='rateAngularDeformMO',
-                                                           position=beamStrainDoFs,
-                                                           showIndices=0,
-                                                           rest_position=beamStrainDoFs)
+                                                            template='Vec3d',
+                                                            name='rateAngularDeformMO',
+                                                            position=beamStrainDoFs1,
+                                                            showIndices=0,
+                                                            rest_position=beamStrainDoFs1)
 
     beamCrossSectionShape='circular'
     sectionRadius = 0.3
@@ -471,6 +473,13 @@ def createScene(rootNode):
                                   input2=coaxialFramesMO0.getLinkPath(),
                                   output=rigidDiffMO.getLinkPath(),
                                   first_point=[], second_point=[])
+
+    constraintWith0Node.addObject('RestShapeSpringsForceField', name='constraintMappingSpring',
+                                  stiffness="5.0", template="Rigid3d",
+                                  angularStiffness=0.,
+                                  mstate="@rigidDiffMO",
+                                  external_points=[],
+                                  points=[])
 
 
     # constraintWith0Node = rateAngularDeformNode1.addChild('constraintWith0')
