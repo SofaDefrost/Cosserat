@@ -219,9 +219,9 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
 
         # if the totalLength is 0, we move the first instrument and update the
         # information on the instruments configuration
-        if combinedInstrumentLength < 0.0001:
+        if combinedInstrumentLength < self.curvAbsTolerance:
             xBeginVect = []
-            self.tipCurvAbsVect[0] = 0.0001;
+            self.tipCurvAbsVect[0] = self.incrementDistance
             combinedInstrumentLength = self.getInstrumentConfiguration(xBeginVect)
 
         # Adding the base point if at least one instrument is out
