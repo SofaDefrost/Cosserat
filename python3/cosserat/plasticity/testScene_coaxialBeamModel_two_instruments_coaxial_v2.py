@@ -28,8 +28,8 @@ pluginNameList = 'SofaPython3 CosseratPlugin' \
                  ' Sofa.Component.StateContainer' \
                  ' Sofa.Component.Visual ' \
                  ' Sofa.Component.Constraint.Projective ' \
-                 ' Sofa.Component.LinearSolver.Direct'
-                 # ' Sofa.Component.LinearSolver.Iterative'
+                 ' Sofa.Component.LinearSolver.Direct' \
+                 ' Sofa.Component.LinearSolver.Iterative'
 
 visualFlagList = 'showVisualModels showBehaviorModels showCollisionModels' \
                  ' hideBoundingCollisionModels hideForceFields' \
@@ -102,11 +102,11 @@ def createScene(rootNode):
     solverNode = rootNode.addChild('solverNode')
 
     solverNode.addObject('EulerImplicitSolver', rayleighStiffness="0.", rayleighMass='0.')
-    # solverNode.addObject('CGLinearSolver', name="solver",
-    #                    iterations='100', tolerance='1e-5', threshold='1e-5')
-    solverNode.addObject('SparseLUSolver',
-                         template='CompressedRowSparseMatrixd',
-                         printLog="false")
+    solverNode.addObject('CGLinearSolver', name="solver",
+                         iterations='2000', tolerance='1e-8', threshold='1e-12')
+    # solverNode.addObject('SparseLUSolver',
+    #                      template='CompressedRowSparseMatrixd',
+    #                      printLog="false")
 
     # -------------------------------------------------------------------- #
     # -----                   First beam components                  ----- #
