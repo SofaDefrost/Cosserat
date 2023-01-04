@@ -257,8 +257,20 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
         # Once a discretisation - common to all instruments - is computed, we
         # apply it to the Cosserat components. For more details, see comments
         # on the method definition.
-        self.updateInstrumentComponents(decimatedNodeCurvAbs, decimatedFrameCurvAbs,
-                                        instrumentIdsForNodeVect, instrumentIdsForFrameVect)
+        result = self.updateInstrumentComponents(decimatedNodeCurvAbs, decimatedFrameCurvAbs,
+                                                 instrumentIdsForNodeVect, instrumentIdsForFrameVect)
+
+        instrumentLastNodeIds = result['instrumentLastNodeIds']
+
+
+        #----- Step 4 :  -----#
+
+        # Interpolation of positions, velocities, and rest shapes.
+        # Once the scene components are updated accordingly to the new discretisation,
+        # we have to make sure that this discretisation is coherent with mechanical
+        # quantities at the previous timestep.
+
+        self.interpolateMechanicalQuantities(decimatedNodeCurvAbs, instrumentLastNodeIds)
 
 
         self.totalTime = self.totalTime + self.dt
@@ -880,6 +892,141 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
                 deployedCoaxialFrameIds = list(range(nbTotalCoaxialFrames-len(coaxialBeamCurvAbs), nbTotalCoaxialFrames))
                 with coaxialFrameNode.CoaxialCosseratMapping.curv_abs_output.writeable() as curv_abs_output:
                     curv_abs_output[nbTotalCoaxialFrames-len(coaxialBeamCurvAbs):nbTotalCoaxialFrames] = coaxialBeamCurvAbs
+
+        return {'instrumentLastNodeIds': instrumentLastNodeIds}
+
+
+
+    def interpolateMechanicalQuantities(self, decimatedNodeCurvAbs, instrumentLastNodeIds):
+
+        # 'Global' variables for this scope, filled while iterating over the instruments
+        nbInstruments = self.nbInstruments
+        nbNewNodes = len(decimatedNodeCurvAbs)
+
+        # print("instrumentLastNodeIds : {}".format(instrumentLastNodeIds))
+
+        for instrumentId in range(nbInstruments):
+
+            instrument = self.instrumentList[instrumentId]
+            instrumentTotalLength = instrument.getTotalLength()
+
+            # /!\ In the following code, we can use equivalently
+            instrumentLastNodeId = instrumentLastNodeIds[instrumentId]
+            nbDeployedBeams = instrumentLastNodeId
+            instrumentDeployedLength = decimatedNodeCurvAbs[instrumentLastNodeId]
+            instrumentUndeployedLength = instrumentTotalLength - instrumentDeployedLength
+
+            # Retrieving the instrument node components
+            instrumentNodeName = "Instrument" + str(instrumentId)
+            instrumentNode = self.solverNode.getChild(str(instrumentNodeName))
+            if instrumentNode is None:
+                raise NameError("[CombinedInstrumentsController]: Node \'{}\' not found. Your scene should "
+                                "contain a node named \'{}\' among the children of the root node in order "
+                                "to use this controller".format(instrumentNodeName, instrumentNodeName))
+
+            cosseratMechanicalNode = instrumentNode.getChild('rateAngularDeform')
+            if cosseratMechanicalNode is None:
+                raise NameError("[CombinedInstrumentsController]: Node \'rateAngularDeform\' "
+                                "not found. Your scene should contain a node named "
+                                "\'rateAngularDeform\' among the children of the \'{}\' "
+                                "node, gathering the mechanical Cosserat components "
+                                "(MechanicalObject, Cosserat forcefield)".format(instrumentNodeName))
+
+            mappedFramesNode = cosseratMechanicalNode.getChild('MappedFrames')
+            if mappedFramesNode is None:
+                raise NameError("[CombinedInstrumentsController]: Node \'MappedFrames\' "
+                                "not found. The \'rateAngularDeform\' node should have a child "
+                                "node called \'MappedFrames\', in which the Cosserat "
+                                "rigid frames and the Cosserat mapping are defined.")
+
+            instrumentNbBeams = instrument.getNbBeams()
+
+            # NB: we retrieve a copy of the instrument Cosserat MO fields, as we are
+            # about to update them.
+            # previousStepMORestShape = cosseratMechanicalNode.rateAngularDeformMO.rest_position.value.copy()
+            previousStepMOPosition = cosseratMechanicalNode.rateAngularDeformMO.position.value.copy()
+            previousStepMOVelocity = cosseratMechanicalNode.rateAngularDeformMO.velocity.value.copy()
+
+            prevInstrumentCurvAbs = instrument.getPrevDiscretisation()
+            # print("prevInstrumentCurvAbs : {}".format(prevInstrumentCurvAbs))
+            instrumentLengthDiff = decimatedNodeCurvAbs[instrumentLastNodeId] - prevInstrumentCurvAbs[len(prevInstrumentCurvAbs)-1]
+            # print("instrumentLengthDiff : {}".format(instrumentLengthDiff))
+
+            for newBeamId in range(nbDeployedBeams):
+
+                # print("Interpolating beam {} instrument {}".format(newBeamId, instrumentId))
+
+                # Getting the beam extremities curvilinear abscissas
+                beamBeginCurvAbs = decimatedNodeCurvAbs[newBeamId]
+                beamEndCurvAbs = decimatedNodeCurvAbs[newBeamId+1]
+                # print("beamBeginCurvAbs : {}".format(beamBeginCurvAbs))
+                # print("beamEndCurvAbs : {}".format(beamEndCurvAbs))
+
+                beamBeginCurvAbsAtRest = beamBeginCurvAbs + instrumentUndeployedLength
+                beamEndCurvAbsAtRest = beamEndCurvAbs + instrumentUndeployedLength
+
+                # print("first curv abs : {} ".format(beamBeginCurvAbsAtRest + self.curvAbsTolerance))
+                # print("second curv abs : {} ".format(beamEndCurvAbsAtRest - self.curvAbsTolerance))
+
+                # We use a safety margin to make sure that one of the curvilinear abscissas is not
+                # exactly on a key point (i.e. a curvilinear abscissa value for which the rest strain
+                # of the instrument changes). This safety margin has to be lower than both the
+                # navigation increment distance and half the difference between both curvilinear
+                # abscissas
+                curvAbsSafetyMargin = min(abs(beamBeginCurvAbsAtRest - beamEndCurvAbsAtRest)*1e-1, self.incrementDistance)
+
+                ### Interpolating the rest positions ###
+
+                restStrain = instrument.getRestStrain(beamBeginCurvAbsAtRest + curvAbsSafetyMargin,
+                                                      beamEndCurvAbsAtRest - curvAbsSafetyMargin)
+
+                # Updating the rest strain in the Cosserat MechanicalObject
+                beamIdInMechanicalObject = instrumentNbBeams - nbDeployedBeams + newBeamId
+                with cosseratMechanicalNode.rateAngularDeformMO.rest_position.writeable() as rest_position:
+                    rest_position[beamIdInMechanicalObject] = restStrain
+
+                ### Interpolating the position ###
+                beginCurvAbsBeamIdInPrevDiscretisation = instrument.getBeamIdInPrevDiscretisation(beamBeginCurvAbs+curvAbsSafetyMargin, instrumentLengthDiff)
+                endCurvAbsBeamIdInPrevDiscretisation = instrument.getBeamIdInPrevDiscretisation(beamEndCurvAbs-curvAbsSafetyMargin, instrumentLengthDiff)
+
+                previousBeamPos = np.array([0., 0., 0.])
+                previousBeamVel = np.array([0., 0., 0.])
+
+                if (beginCurvAbsBeamIdInPrevDiscretisation == endCurvAbsBeamIdInPrevDiscretisation):
+                    # In this case, the new beam was entirely on a unique beam in the last time step.
+                    # No interpolation is required: we can directly assign the previous beam's position
+                    # and velocity to the new beam
+                    previousBeamPos = previousStepMOPosition[beginCurvAbsBeamIdInPrevDiscretisation]
+                    previousBeamVel = previousStepMOVelocity[beginCurvAbsBeamIdInPrevDiscretisation]
+                else:
+                    # In this case, the new beam is crossing more than one beam in the last time step.
+                    # We have to interpolate the position and velocity of these beams to compute the
+                    # position and velocity of the new beam.
+                    # As the Cosserat DoFs (angularRate) are expressed in a 'strain' space, we use
+                    # a simple linear interpolation.
+                    # print("A new beam (beam {}, instrument {}) is crossing more than one beam in previous step".format(newBeamId, instrumentId))
+                    crossedBeamLengths = instrument.getInterpolationBeamLengths(beamBeginCurvAbs + curvAbsSafetyMargin,
+                                                                                beamEndCurvAbs - curvAbsSafetyMargin,
+                                                                                instrumentLengthDiff)
+                    totBeamLength = sum(crossedBeamLengths)
+                    intermediateBeamId = beginCurvAbsBeamIdInPrevDiscretisation
+                    for beamLength in crossedBeamLengths:
+                        interpolationCoeff = (beamLength / totBeamLength)
+                        previousBeamPos += interpolationCoeff * np.array(previousStepMOPosition[intermediateBeamId])
+                        previousBeamVel += interpolationCoeff * np.array(previousStepMOVelocity[intermediateBeamId])
+
+                with cosseratMechanicalNode.rateAngularDeformMO.position.writeable() as position:
+                    position[beamIdInMechanicalObject] = previousBeamPos
+                with cosseratMechanicalNode.rateAngularDeformMO.velocity.writeable() as velocity:
+                    velocity[beamIdInMechanicalObject] = previousBeamVel
+
+            ### Setting the instrument reference discretisation for next timestep ###
+            instrumentNewCurvAbs = decimatedNodeCurvAbs[0:instrumentLastNodeId+1]
+            instrument.setPrevDiscretisation(instrumentNewCurvAbs)
+
+
+
+
 
 
 
