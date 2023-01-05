@@ -814,6 +814,12 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
                     # with the longer instrument. We can reuse the index range computed above
                     shorterInstrumentCoaxialFrameIds = deployedCoaxialFrameIds
 
+                    # We remove the first index if the corresponding curvilinear abscissas is 0
+                    # NB: this will automatically remove the same first frame for the longer instrument,
+                    # because of the computation below
+                    if (decimatedNodeCurvAbs[0] < self.curvAbsTolerance):
+                        shorterInstrumentCoaxialFrameIds = shorterInstrumentCoaxialFrameIds[1:len(shorterInstrumentCoaxialFrameIds)]
+
                     # For the longer instrument, we have to take into account the additional *coaxial* beams
                     # which are further than the first (shorter) instrument end. The notion of coaxial is
                     # important, because noncoaxial beams won't make a difference in terms of coaxial frame
@@ -834,6 +840,7 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
                     lastCoaxialFrameIndexWithShorterInstrument = nbTotalCoaxialFramesOfLongerInst - 1 - nbAdditionalCoaxialBeams
                     firstCoaxialFrameIndexWithShorterInstrument = lastCoaxialFrameIndexWithShorterInstrument - len(shorterInstrumentCoaxialFrameIds) + 1
                     longerInstrumentCoaxialFrameIds = list(range(firstCoaxialFrameIndexWithShorterInstrument, lastCoaxialFrameIndexWithShorterInstrument+1))
+
 
                     # Once the two sets of indices are computed, we update the RigidDistanecMapping
                     # in the constraint Node accordingly
