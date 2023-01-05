@@ -65,7 +65,7 @@ CosseratNeedleSlidingConstraint<DataTypes>::CosseratNeedleSlidingConstraint(Mech
                            "displacement = the contstraint will impose the displacement provided in data value[valueIndex] \n"
                            "force = the contstraint will impose the force provided in data value[valueIndex] \n"
                            "If unspecified, the default value is displacement"))
-    , d_useDirections(initData(&d_useDirections, type::Vec<3,bool>(0,1,1),"useDirections", "Directions to constrain.\n"))
+    , d_useDirections(initData(&d_useDirections, type::Vec<6,bool>(0,0,0,0,0,0),"useDirections", "Directions to constrain.\n"))
 {
 }
 
@@ -117,7 +117,7 @@ void CosseratNeedleSlidingConstraint<DataTypes>::buildConstraintMatrix(const Con
     VecCoord positions = x.getValue();
     m_constraintId= cIndex;
 
-    type::Vec<3,bool> use = d_useDirections.getValue();
+    type::Vec<6,bool> use = d_useDirections.getValue();
 
     for (unsigned int i=0; i<positions.size(); i++)
     {
@@ -148,7 +148,7 @@ void CosseratNeedleSlidingConstraint<DataTypes>::getConstraintViolation(const Co
     SOFA_UNUSED(x);
     SOFA_UNUSED(v);
     ReadAccessor<Data<VecCoord>> positions = this->mstate->readPositions();
-    type::Vec<3,bool> use = d_useDirections.getValue();
+    type::Vec<6,bool> use = d_useDirections.getValue();
 
     for (unsigned int i = 0; i < positions.size(); i++){
       if (use[1]) {
@@ -168,7 +168,7 @@ void CosseratNeedleSlidingConstraint<DataTypes>::getConstraintResolution(const C
                                                                          unsigned int& offset)
 {
     ReadAccessor<Data<VecCoord>> positions = this->mstate->readPositions();
-    type::Vec<3,bool> use = d_useDirections.getValue();
+    type::Vec<6,bool> use = d_useDirections.getValue();
     for (size_t i = 0; i < positions.size(); i++){
         if (use[1]) resTab[offset++] = new BilateralConstraintResolution();
         if (use[2]) resTab[offset++] = new BilateralConstraintResolution();

@@ -30,7 +30,11 @@
 
 #pragma once
 
-#include<sofa/defaulttype/VecTypes.h>
+#include "../config.h.in"
+
+#include <sofa/defaulttype/VecTypes.h>
+#include <sofa/defaulttype/RigidTypes.h>
+
 #include <sofa/helper/OptionsGroup.h>
 
 #include <SoftRobots/component/constraint/model/CableModel.h>
@@ -52,6 +56,14 @@ using sofa::helper::ReadAccessor ;
 using sofa::core::VecCoordId ;
 using sofa::core::behavior::Constraint ;
 
+using sofa::defaulttype::Rigid3Types ;
+using sofa::defaulttype::Vec3Types ;
+
+
+template<class T>
+class CosseratNeedleSlidingConstraintSpecialization {};
+
+
 /**
  * This class contains common implementation of cable constraints
 */
@@ -59,8 +71,12 @@ template< class DataTypes >
 class CosseratNeedleSlidingConstraint : public Constraint<DataTypes>
 {
 public:
-
     SOFA_CLASS(SOFA_TEMPLATE(CosseratNeedleSlidingConstraint,DataTypes), SOFA_TEMPLATE(Constraint,DataTypes));
+
+    /// That any templates variation of CosseratNeedleSlidingConstraintSpecialization are friend.
+    template<typename>
+    friend class CosseratNeedleSlidingConstraintSpecialization ;
+
     typedef typename DataTypes::VecCoord VecCoord;
     typedef typename DataTypes::VecDeriv VecDeriv;
     typedef typename DataTypes::Coord Coord;
@@ -113,7 +129,10 @@ protected:
     Data<type::vector< Real > >   d_value;
     Data<unsigned int>            d_valueIndex;
     Data<helper::OptionsGroup>    d_valueType;
-    Data<type::Vec<3,bool>>       d_useDirections;
+    // This data fields indicates which DoFs are taken into account when applying
+    // the constraint. In case of nonRigid template instanciation (typically Vec3),
+    // only the first 3 boolean are used.
+    Data<type::Vec<6,bool>>       d_useDirections;
     // displacement = the constraint will impose the displacement provided in data d_inputValue[d_iputIndex]
     // force = the constraint will impose the force provided in data d_inputValue[d_iputIndex]
 
@@ -137,6 +156,10 @@ protected:
 // Declares template as extern to avoid the code generation of the template for
 // each compilation unit. see: http://www.stroustrup.com/C++11FAQ.html#extern-templates
 //extern template class CosseratNeedleSlidingConstraint<defaulttype::Vec3Types>;
+#if !defined(SOFA_COMPONENT_CONSTRAINTSET_COSSERATNEEDLESLIDINGCONSTRAINT_CPP)
+extern template class SOFA_COSSERATPLUGIN_API CosseratNeedleSlidingConstraint< Vec3Types >;
+extern template class SOFA_COSSERATPLUGIN_API CosseratNeedleSlidingConstraint< Rigid3Types >;
+#endif
 
 } // namespace sofa
 
