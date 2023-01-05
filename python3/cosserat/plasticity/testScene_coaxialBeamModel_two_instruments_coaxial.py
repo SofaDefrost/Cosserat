@@ -29,7 +29,8 @@ pluginNameList = 'SofaPython3 CosseratPlugin' \
                  ' Sofa.Component.Visual ' \
                  ' Sofa.Component.Constraint.Projective ' \
                  ' Sofa.Component.LinearSolver.Direct' \
-                 ' Sofa.Component.LinearSolver.Iterative'
+                 ' Sofa.Component.LinearSolver.Iterative' \
+                 ' Sofa.Component.Mapping.MappedMatrix'
 
 visualFlagList = 'showVisualModels showBehaviorModels showCollisionModels' \
                  ' hideBoundingCollisionModels hideForceFields' \
@@ -56,27 +57,31 @@ def createScene(rootNode):
     # Define: the total length, number of beams, and number of frames
     totalLength0 = 25
 
-    nbBeams0 = 5
+    # nbBeams0 = 5
+    nbBeams0 = 1
     oneBeamLength = totalLength0 / nbBeams0
 
     # nbFramesMax = 14
     # distBetweenFrames = totalLength0 / nbFrames
-    nbFrames0 = 30
+    # nbFrames0 = 30
+    nbFrames0 = 4
 
     # --- Instrument1 --- #
 
     # Define: the total length, number of beams, and number of frames
     totalLength1 = 30
 
-    nbBeams1 = 5
+    # nbBeams1 = 5
+    nbBeams1 = 1
     oneBeamLength = totalLength1 / nbBeams1
 
     # distBetweenFrames = totalLength1 / nbFrames
-    nbFrames1 = 35
+    # nbFrames1 = 35
+    nbFrames1 = 5
 
     # --- Common --- #
     nbMaxInstrumentBeams = max(nbBeams0, nbBeams1)
-
+    totalMass = 0.022
 
 
     # -------------------------------------#
@@ -101,12 +106,13 @@ def createScene(rootNode):
 
     solverNode = rootNode.addChild('solverNode')
 
-    solverNode.addObject('EulerImplicitSolver', rayleighStiffness="0.", rayleighMass='0.')
-    solverNode.addObject('CGLinearSolver', name="solver",
-                         iterations='2000', tolerance='1e-8', threshold='1e-12')
-    # solverNode.addObject('SparseLUSolver',
-    #                      template='CompressedRowSparseMatrixd',
-    #                      printLog="false")
+    solverNode.addObject('EulerImplicitSolver', rayleighStiffness="0.",
+                         rayleighMass='0.', printLog=True, firstOrder=False)
+    # solverNode.addObject('CGLinearSolver', name="solver",
+    #                      iterations='2000', tolerance='1e-8', threshold='1e-12')
+    solverNode.addObject('SparseLUSolver',
+                         template='CompressedRowSparseMatrixd',
+                         printLog=False)
 
     # -------------------------------------------------------------------- #
     # -----                   First beam components                  ----- #
@@ -270,6 +276,8 @@ def createScene(rootNode):
                                                    position=coaxialFrames0InitPos,
                                                    showObject=True, showObjectScale=1)
 
+    coaxialFrameNode0.addObject('UniformMass', totalMass=totalMass, showAxisSizeFactor='0.')
+
     coaxialFrameNode0.addObject('DiscreteCosseratMapping',
                                name='CoaxialCosseratMapping',
                                curv_abs_input=beamCurvAbscissa,
@@ -280,6 +288,11 @@ def createScene(rootNode):
                                forcefield='@../../rateAngularDeform/beamForceField',
                                drawBeamSegments=False, nonColored=False,
                                debug=0, printLog=False)
+
+    solverNode.addObject('MechanicalMatrixMapper', name='mechanicalMatrixMapper0',
+                         template='Vec3,Rigid3', object1=inputMO, object2=inputMO_rigid,
+                         nodeToParse=coaxialFrameNode0.getLinkPath(),
+                         fastMatrixProduct="false")
 
 
 
@@ -449,6 +462,8 @@ def createScene(rootNode):
                                                   position=coaxialFrames1InitPos,
                                                   showObject=True, showObjectScale=1)
 
+    coaxialFrameNode1.addObject('UniformMass', totalMass=totalMass, showAxisSizeFactor='0.')
+
     coaxialFrameNode1.addObject('DiscreteCosseratMapping',
                                name='CoaxialCosseratMapping',
                                curv_abs_input=beamCurvAbscissa,
@@ -459,6 +474,11 @@ def createScene(rootNode):
                                forcefield='@../../rateAngularDeform/beamForceField',
                                drawBeamSegments=False, nonColored=False,
                                debug=0, printLog=False)
+
+    solverNode.addObject('MechanicalMatrixMapper', name='mechanicalMatrixMapperInst1',
+                         template='Vec3,Rigid3', object1=inputMO, object2=inputMO_rigid,
+                         nodeToParse=coaxialFrameNode1.getLinkPath(),
+                         fastMatrixProduct="false")
 
     ## Difference mapping node
 
@@ -476,7 +496,7 @@ def createScene(rootNode):
                                   first_point=[], second_point=[])
 
     constraintWith0Node.addObject('RestShapeSpringsForceField', name='constraintMappingSpring',
-                                  stiffness="5.0", template="Rigid3d",
+                                  stiffness="5.0e1", template="Rigid3d",
                                   angularStiffness=0.,
                                   mstate="@rigidDiffMO",
                                   external_points=[],
