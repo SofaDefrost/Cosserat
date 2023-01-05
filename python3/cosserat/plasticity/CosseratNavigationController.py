@@ -896,7 +896,6 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
                 secondLongestInstrumentLastBeamId = instrumentLastNodeIds[secondLongestInstrumentId]
                 coaxialBeamCurvAbs = decimatedNodeCurvAbs[0:secondLongestInstrumentLastBeamId+1]
                 nbTotalCoaxialFrames = len(coaxialFrameNode.CoaxialCosseratMapping.curv_abs_output)
-                deployedCoaxialFrameIds = list(range(nbTotalCoaxialFrames-len(coaxialBeamCurvAbs), nbTotalCoaxialFrames))
                 with coaxialFrameNode.CoaxialCosseratMapping.curv_abs_output.writeable() as curv_abs_output:
                     curv_abs_output[nbTotalCoaxialFrames-len(coaxialBeamCurvAbs):nbTotalCoaxialFrames] = coaxialBeamCurvAbs
 
