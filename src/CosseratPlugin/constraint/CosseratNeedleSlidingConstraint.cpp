@@ -106,7 +106,7 @@ public:
         SOFA_UNUSED(cParams);
         SOFA_UNUSED(x);
         SOFA_UNUSED(v);
-        ReadAccessor<Data<typename CosseratNeedleSlidingConstraint<T>::VecCoord>> positions = self.mstate->readPositions();
+        const typename CosseratNeedleSlidingConstraint<T>::VecCoord &positions = x.getValue();
         type::Vec<6,bool> use = self.d_useDirections.getValue();
 
         for (unsigned int i = 0; i < positions.size(); i++){
