@@ -105,6 +105,8 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
         ### Reading the insertion velocity parameters ###
 
         self.incrementDistance = incrementDistance
+        # TO DO : pass the minimal distance for constraints as an input parameter ?
+        self.minimalDistanceForConstraint = incrementDistance * 10.0
         self.incrementAngle = incrementAngle
         self.incrementDirection = incrementDirection
         self.instrumentBeamNumberVect = instrumentBeamNumberVect
@@ -758,10 +760,9 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
                     curv_abs_output[nbTotalCoaxialFrames-len(coaxialBeamCurvAbs):nbTotalCoaxialFrames] = coaxialBeamCurvAbs
 
                 #--- Second loop over the longer deployed instruments, to enforce constraints on ---#
-                #--- the coaxial beam segments ---#
+                #--- the coaxial beam segments                                                   ---#
 
                 for longerInstrumentRank in range(instrumentRank+1, nbInstruments):
-
 
                     longerInstrumentId = instrumentIndicesSortedByLength[longerInstrumentRank]
                     longerInstrumentLastBeamId = instrumentLastNodeIds[longerInstrumentId]
@@ -814,10 +815,23 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
                     # with the longer instrument. We can reuse the index range computed above
                     shorterInstrumentCoaxialFrameIds = deployedCoaxialFrameIds
 
-                    # We remove the first index if the corresponding curvilinear abscissas is 0
+                    # We remove the first index (i.e. the first coaxial beam proximal end frame) if the
+                    # corresponding curvilinear abscissa is 0.
                     # NB: this will automatically remove the same first frame for the longer instrument,
                     # because of the computation below
                     if (decimatedNodeCurvAbs[0] < self.curvAbsTolerance):
+                        shorterInstrumentCoaxialFrameIds = shorterInstrumentCoaxialFrameIds[1:len(shorterInstrumentCoaxialFrameIds)]
+
+                    # Additionnaly, we remove the first coaxial beam distal end frame, if the
+                    # corresponding curvilinear abscissa is too close to the RigidBase. This concretly
+                    # means that a coaxial beam segment is only taken into account (i.e. under constraint)
+                    # only if its distal end is sufficiently distant from the RigidBase. The purpose of
+                    # this check is to avoid overconstraining of a small beam segment.
+                    # NB: in this whole section of code, we are under the condition that at least
+                    # two instruments are deployed. In this case, there is at least one coaxial beam,
+                    # so it is unnecessary to check that len(decimatedNodeCurvAbs) >= 2 before
+                    # accessing decimatedNodeCurvAbs[1]
+                    if (decimatedNodeCurvAbs[1] < self.minimalDistanceForConstraint):
                         shorterInstrumentCoaxialFrameIds = shorterInstrumentCoaxialFrameIds[1:len(shorterInstrumentCoaxialFrameIds)]
 
                     # For the longer instrument, we have to take into account the additional *coaxial* beams
