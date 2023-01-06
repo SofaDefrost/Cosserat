@@ -504,13 +504,6 @@ def createScene(rootNode):
                                   output=rigidDiffMO.getLinkPath(),
                                   first_point=[], second_point=[])
 
-    constraintWith0Node.addObject('RestShapeSpringsForceField', name='constraintMappingSpring',
-                                  stiffness="5.0", template="Rigid3d",
-                                  angularStiffness=0.,
-                                  mstate="@rigidDiffMO",
-                                  external_points=[],
-                                  points=[])
-
     constraintWith0Node.addObject('CosseratNeedleSlidingConstraint',
                                   name='constraintMappingConstraint',
                                   template="Rigid3d",
