@@ -147,7 +147,8 @@ namespace sofa::component::constraintset
     SOFA_UNUSED(cParams);
     SOFA_UNUSED(x);
     SOFA_UNUSED(v);
-    ReadAccessor<Data<VecCoord>> positions = this->mstate->readPositions();
+    //ReadAccessor<Data<VecCoord>> positions = this->mstate->readPositions();
+    const VecCoord positions = x.getValue();
     type::Vec<3, bool> use = d_useDirections.getValue();
 
     for (unsigned int i = 0; i < positions.size(); i++)
