@@ -30,7 +30,8 @@ pluginNameList = 'SofaPython3 CosseratPlugin' \
                  ' Sofa.Component.Constraint.Projective ' \
                  ' Sofa.Component.LinearSolver.Direct' \
                  ' Sofa.Component.LinearSolver.Iterative' \
-                 ' Sofa.Component.Mapping.MappedMatrix'
+                 ' Sofa.Component.Mapping.MappedMatrix' \
+                 ' Sofa.Component.Mass'
 
 visualFlagList = 'showVisualModels showBehaviorModels showCollisionModels' \
                  ' hideBoundingCollisionModels hideForceFields' \
@@ -57,27 +58,23 @@ def createScene(rootNode):
     # Define: the total length, number of beams, and number of frames
     totalLength0 = 25
 
-    # nbBeams0 = 5
-    nbBeams0 = 1
+    nbBeams0 = 5
     oneBeamLength = totalLength0 / nbBeams0
 
     # nbFramesMax = 14
     # distBetweenFrames = totalLength0 / nbFrames
-    # nbFrames0 = 30
-    nbFrames0 = 4
+    nbFrames0 = 30
 
     # --- Instrument1 --- #
 
     # Define: the total length, number of beams, and number of frames
     totalLength1 = 30
 
-    # nbBeams1 = 5
-    nbBeams1 = 1
+    nbBeams1 = 5
     oneBeamLength = totalLength1 / nbBeams1
 
     # distBetweenFrames = totalLength1 / nbFrames
-    # nbFrames1 = 35
-    nbFrames1 = 5
+    nbFrames1 = 35
 
     # --- Common --- #
     nbMaxInstrumentBeams = max(nbBeams0, nbBeams1)
