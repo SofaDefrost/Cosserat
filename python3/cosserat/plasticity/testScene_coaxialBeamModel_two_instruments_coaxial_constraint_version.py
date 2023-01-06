@@ -31,7 +31,8 @@ pluginNameList = 'SofaPython3 CosseratPlugin' \
                  ' Sofa.Component.LinearSolver.Direct' \
                  ' Sofa.Component.AnimationLoop' \
                  ' Sofa.Component.Constraint.Lagrangian.Correction' \
-                 ' Sofa.Component.Constraint.Lagrangian.Solver'
+                 ' Sofa.Component.Constraint.Lagrangian.Solver' \
+                 ' Sofa.Component.Mass'
 
 visualFlagList = 'showVisualModels showBehaviorModels showCollisionModels' \
                  ' hideBoundingCollisionModels hideForceFields' \
@@ -50,7 +51,8 @@ def createScene(rootNode):
     rootNode.addObject('FreeMotionAnimationLoop')
 
     # --- Constraint handling --- #
-    rootNode.addObject('GenericConstraintSolver', tolerance=1e-1, maxIterations=5e2, printLog=True)
+    rootNode.addObject('GenericConstraintSolver', tolerance=1e-8,
+                       maxIterations=2e3, printLog=False)
 
 
     # --- Collisions --- #
@@ -144,13 +146,13 @@ def createScene(rootNode):
     rigidBaseNode0 = instrument0Node.addChild('rigidBase')
     RigidBaseMO = rigidBaseNode0.addObject('MechanicalObject', template='Rigid3d',
                                            name="RigidBaseMO", position=[0., 0., 0., 0, 0, 0, 1],
-                                           showObject=True,
+                                           showObject=False,
                                            showObjectScale=2.)
     # rigidBaseNode0.addObject('RestShapeSpringsForceField', name='spring',
     #                          stiffness="5.e8", angularStiffness="5.e8",
     #                          external_points="0", mstate="@RigidBaseMO", points="0", template="Rigid3d")
     rigidBaseNode0.addObject('RestShapeSpringsForceField', name='controlSpring',
-                             stiffness="5.e8", angularStiffness="1.0e1",
+                             stiffness="5.e8", angularStiffness="1.0e5",
                              external_rest_shape="@../../../controlPointNode0/controlPointMO",
                              external_points="0", mstate="@RigidBaseMO", points="0", template="Rigid3d")
 
@@ -200,7 +202,7 @@ def createScene(rootNode):
     sectionRadius = 0.5
     poissonRatio = 0.42
     beamPoissonRatioList = [poissonRatio]*(nbBeams0PlusStock)
-    youngModulus = 5.0e1
+    youngModulus = 5.0e6
     beamYoungModulusList = [youngModulus]*(nbBeams0PlusStock)
     yieldStress = 5.0e4
     yieldStressList = [yieldStress]*(nbBeams0PlusStock)
@@ -291,7 +293,8 @@ def createScene(rootNode):
                                                    position=coaxialFrames0InitPos,
                                                    showObject=True, showObjectScale=1)
 
-    coaxialFrameNode0.addObject('UniformMass', totalMass=totalMass, showAxisSizeFactor='0.')
+    coaxialFrameNode0.addObject('UniformMass', totalMass=totalMass,
+                                name="UniformMass0", showAxisSizeFactor='0.')
 
     coaxialFrameNode0.addObject('DiscreteCosseratMapping',
                                name='CoaxialCosseratMapping',
@@ -321,13 +324,13 @@ def createScene(rootNode):
     rigidBaseNode1 = instrument1Node.addChild('rigidBase')
     RigidBaseMO = rigidBaseNode1.addObject('MechanicalObject', template='Rigid3d',
                                            name="RigidBaseMO", position=[0., 0., 0., 0, 0, 0, 1],
-                                           showObject=True,
+                                           showObject=False,
                                            showObjectScale=2.)
     # rigidBaseNode1.addObject('RestShapeSpringsForceField', name='spring',
     #                          stiffness="5.e8", angularStiffness="5.e8",
     #                          external_points="0", mstate="@RigidBaseMO", points="0", template="Rigid3d")
     rigidBaseNode1.addObject('RestShapeSpringsForceField', name='controlSpring',
-                             stiffness="5.e8", angularStiffness="1.0e1",
+                             stiffness="5.e8", angularStiffness="1.0e5",
                              external_rest_shape="@../../../controlPointNode1/controlPointMO",
                              external_points="0", mstate="@RigidBaseMO", points="0", template="Rigid3d")
 
@@ -376,7 +379,7 @@ def createScene(rootNode):
     sectionRadius = 0.3
     poissonRatio = 0.45
     beamPoissonRatioList = [poissonRatio]*(nbBeams1PlusStock)
-    youngModulus = 5.0e3
+    youngModulus = 5.0e10
     beamYoungModulusList = [youngModulus]*(nbBeams1PlusStock)
     yieldStress = 5.0e4
     yieldStressList = [yieldStress]*(nbBeams1PlusStock)
@@ -472,7 +475,8 @@ def createScene(rootNode):
                                                   position=coaxialFrames1InitPos,
                                                   showObject=True, showObjectScale=1)
 
-    coaxialFrameNode0.addObject('UniformMass', totalMass=totalMass, showAxisSizeFactor='0.')
+    coaxialFrameNode1.addObject('UniformMass', totalMass=totalMass,
+                                name="UniformMass1", showAxisSizeFactor='0.')
 
     coaxialFrameNode1.addObject('DiscreteCosseratMapping',
                                name='CoaxialCosseratMapping',
