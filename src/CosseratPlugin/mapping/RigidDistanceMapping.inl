@@ -123,10 +123,18 @@ void RigidDistanceMapping<TIn1, TIn2, TOut>::apply(
     auto &m1Indices = d_index1.getValue();
     auto &m2Indices = d_index2.getValue();
 
+    size_t baseIndex = 0; // index of the first point of the beam, add this to the data
+    //@TODO call the function to Compute frames or update theme here
+    //@TODO : m_objects1Frames and m_objects2Frames
+    Transform Frame1 = Transform(In1::getCPos(in1[baseIndex]),In1::getCRot(in1[baseIndex]));
+    Transform Frame2 = Transform(In2::getCPos(in2[baseIndex]),In2::getCRot(in2[baseIndex]));
+
     for (sofa::Index pid=0; pid<m_minInd; pid++) {
+
         int tm1 = m1Indices[pid];
         int tm2 = m2Indices[pid];
-        Vector3 outCenter = in2[tm2].getCenter()-in1[tm1].getCenter();
+
+        Vec3 outCenter = in2[tm2].getCenter()-in1[tm1].getCenter();
         type::Quat outOri = in2[tm2].getOrientation()* in1[tm1].getOrientation().inverse();
 
         outOri.normalize();

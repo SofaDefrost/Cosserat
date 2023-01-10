@@ -34,6 +34,8 @@ set(HEADER_FILES
     ${SRC_ROOT_DIR}/mapping/RigidDistanceMapping.inl
     ${SRC_ROOT_DIR}/mapping/LimitedDifferenceMapping.h
     ${SRC_ROOT_DIR}/mapping/LimitedDifferenceMapping.inl
+    ${SRC_ROOT_DIR}/engine/PointsManager.h
+    ${SRC_ROOT_DIR}/engine/PointsManager.inl
     ${SRC_ROOT_DIR}/forcefield/BeamHookeLawForceField.h
     ${SRC_ROOT_DIR}/forcefield/BeamHookeLawForceField.inl
     ${SRC_ROOT_DIR}/forcefield/BeamPlasticLawForceField.h
@@ -44,6 +46,8 @@ set(HEADER_FILES
     ${SRC_ROOT_DIR}/constraint/CosseratSlidingConstraint.inl
     ${SRC_ROOT_DIR}/mapping/LegendrePolynomialsMapping.h
     ${SRC_ROOT_DIR}/mapping/LegendrePolynomialsMapping.inl
+    ${SRC_ROOT_DIR}/constraint/CosseratNeedleSlidingConstraint.h
+    ${SRC_ROOT_DIR}/constraint/CosseratNeedleSlidingConstraint.inl
     )
 set(SOURCE_FILES
     ${SRC_ROOT_DIR}/initCosseratPlugin.cpp
@@ -54,11 +58,13 @@ set(SOURCE_FILES
     ${SRC_ROOT_DIR}/mapping/DifferenceMultiMapping.cpp
     ${SRC_ROOT_DIR}/mapping/RigidDistanceMapping.cpp
     ${SRC_ROOT_DIR}/mapping/LimitedDifferenceMapping.cpp
+    ${SRC_ROOT_DIR}/engine/PointsManager.cpp
     ${SRC_ROOT_DIR}/forcefield/BeamHookeLawForceField.cpp
     ${SRC_ROOT_DIR}/forcefield/BeamPlasticLawForceField.cpp
     ${SRC_ROOT_DIR}/forcefield/CosseratInternalActuation.cpp
     ${SRC_ROOT_DIR}/constraint/CosseratSlidingConstraint.cpp
     ${SRC_ROOT_DIR}/mapping/LegendrePolynomialsMapping.cpp
+    ${SRC_ROOT_DIR}/constraint/CosseratNeedleSlidingConstraint.cpp
     )
 
 sofa_find_package(SoftRobots QUIET)
@@ -69,15 +75,14 @@ if(SoftRobots_FOUND)
 #        ${SRC_ROOT_DIR}/constraint/CosseratUnilateralInteractionConstraint.h
 #        ${SRC_ROOT_DIR}/constraint/CosseratUnilateralInteractionConstraint.inl
 
-        ${SRC_ROOT_DIR}/constraint/CosseratNeedleSlidingConstraint.h
-        ${SRC_ROOT_DIR}/constraint/CosseratNeedleSlidingConstraint.inl
+        
         ${SRC_ROOT_DIR}/constraint/QPSlidingConstraint.h
         ${SRC_ROOT_DIR}/constraint/QPSlidingConstraint.inl
         )
     list(APPEND SOURCE_FILES
         ${SRC_ROOT_DIR}/constraint/CosseratActuatorConstraint.cpp
-        ${SRC_ROOT_DIR}/constraint/CosseratNeedleSlidingConstraint.cpp
-#         ${SRC_ROOT_DIR}/constraint/CosseratUnilateralInteractionConstraint.cpp
+        
+        #${SRC_ROOT_DIR}/constraint/CosseratUnilateralInteractionConstraint.cpp
         ${SRC_ROOT_DIR}/constraint/QPSlidingConstraint.cpp
         )
 endif()
@@ -95,6 +100,10 @@ target_link_libraries(${PROJECT_NAME}
     Sofa.Component.Mapping.NonLinear
     Sofa.GL
 )
+
+if(Sofa.GL_FOUND)
+    target_link_libraries(${PROJECT_NAME} Sofa.GL)
+endif()
 
 if(SoftRobots_FOUND)
     target_link_libraries(${PROJECT_NAME} SoftRobots)
@@ -114,11 +123,14 @@ endif()
 if(SofaPython3Tools OR SofaPython3_FOUND)
     message("-- Python3 packages will be installed.")
     set(SP3_PYTHON_PACKAGES_DIRECTORY "python3/site-packages")
-    SP3_add_python_package(
-            SOURCE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/python3/cosserat
-            TARGET_DIRECTORY cosserat
-    )
+    # SP3_add_python_package(
+    #         SOURCE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/python3/cosserat
+    #         TARGET_DIRECTORY cosserat
+    # )
+    add_subdirectory(${SRC_ROOT_DIR}/Binding)
 endif()
+
+#add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src/CosseratPlugin/Binding)
 
 ## Install rules for the library and headers; CMake package configurations files
 sofa_create_package_with_targets(

@@ -13,4 +13,4 @@ Content:
 
 """
 
-__all__ = ["params"]
+__all__ = ["params", "needleController"]

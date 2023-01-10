@@ -37,7 +37,7 @@ using sofa::defaulttype::SolidTypes ;
 using sofa::core::objectmodel::BaseContext ;
 using sofa::type::Matrix3;
 using sofa::type::Matrix4;
-using type::Vector3;
+using type::Vec3;
 using type::Vec6;
 using std::get;
 
@@ -144,6 +144,10 @@ public:
             const core::ConstraintParams*  cparams , const type::vector< In1DataMatrixDeriv*>& dataMatOut1Const  ,
             const type::vector< In2DataMatrixDeriv*>&  dataMatOut2Const ,
             const type::vector<const OutDataMatrixDeriv*>&  dataMatInConst) override;
+
+public:
+    type::vector<Transform> m_objects1Frames;
+    type::vector<Transform> m_objects2Frames;
 
 };
 
