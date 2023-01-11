@@ -8,6 +8,7 @@ sofa_find_package(Sofa.Component.Constraint.Lagrangian.Model REQUIRED)
 sofa_find_package(Sofa.Component.StateContainer REQUIRED)
 sofa_find_package(Sofa.Component.Mapping.NonLinear REQUIRED)
 sofa_find_package(Sofa.GL REQUIRED)
+sofa_find_package(Sofa.Component.Topology.Container.Dynamic REQUIRED)
 
 sofa_find_package(STLIB QUIET)
 if(STLIB_FOUND)
@@ -93,6 +94,7 @@ target_link_libraries(${PROJECT_NAME}
     Sofa.Component.StateContainer
     Sofa.Component.Mapping.NonLinear
     Sofa.GL
+    Sofa.Component.Topology.Container.Dynamic
 )
 
 if(Sofa.GL_FOUND)
