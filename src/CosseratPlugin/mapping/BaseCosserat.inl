@@ -454,4 +454,5 @@ void BaseCosserat<TIn1, TIn2, TOut>::draw(const core::visual::VisualParams* vpar
 
         if(!d_debug.getValue()) return;
 }
+
 }

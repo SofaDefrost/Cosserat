@@ -72,7 +72,7 @@ public:
     typedef Data<In1VecCoord> In1DataVecCoord;
     typedef Data<In1VecDeriv> In1DataVecDeriv;
     typedef Data<In1MatrixDeriv> In1DataMatrixDeriv;
-    
+
     typedef typename In2::Coord::value_type Real          ;
     typedef typename In2::Coord             Coord2         ;
     typedef typename In2::Deriv             Deriv2         ;
@@ -84,6 +84,7 @@ public:
     typedef Data<In2MatrixDeriv> In2DataMatrixDeriv;
     typedef type::Mat<4,4,Real> Mat4x4;
 
+    typedef type::Quat<Real> Rot;
     typedef typename Out::VecCoord OutVecCoord;
     typedef typename Out::Coord OutCoord;
     typedef typename Out::Deriv OutDeriv;
@@ -145,9 +146,30 @@ public:
             const type::vector< In2DataMatrixDeriv*>&  dataMatOut2Const ,
             const type::vector<const OutDataMatrixDeriv*>&  dataMatInConst) override;
 
+    int computeTransform(Transform &global_H0_local, Transform &global_H1_local, Transform &local0_H_local1,
+                         Quat<Real> &local_R_local0, const Coord1 &x1, const Coord2 &x2);
+
+    int computeTransform2(unsigned int edgeInList, Transform &global_H_local0, Transform &global_H_local1,
+                          const OutVecCoord &x);
+
+    void getDOFtoLocalTransform(unsigned int edgeInList, Transform &DOF0_H_local0, Transform &DOF1_H_local1)
+    {
+        // @Todo re-implement this function
+        /*if (d_dofsAndBeamsAligned.getValue())
+        {
+            DOF0_H_local0.clear();
+            DOF1_H_local1.clear();
+            return;
+        }*/
+
+        /*DOF0_H_local0 = d_DOF0TransformNode0.getValue()[edgeInList];
+        DOF1_H_local1 = d_DOF1TransformNode1.getValue()[edgeInList];*/
+    }
+
 public:
     type::vector<Transform> m_objects1Frames;
     type::vector<Transform> m_objects2Frames;
+    type::vector<Transform> m_vecGlobal_H1_Local;
 
 };
 

@@ -126,16 +126,21 @@ void RigidDistanceMapping<TIn1, TIn2, TOut>::apply(
     size_t baseIndex = 0; // index of the first point of the beam, add this to the data
     //@TODO call the function to Compute frames or update theme here
     //@TODO : m_objects1Frames and m_objects2Frames
-    Transform Frame1 = Transform(In1::getCPos(in1[baseIndex]),In1::getCRot(in1[baseIndex]));
-    Transform Frame2 = Transform(In2::getCPos(in2[baseIndex]),In2::getCRot(in2[baseIndex]));
+    Transform global_Obj1_local = Transform(In1::getCPos(in1[baseIndex]),In1::getCRot(in1[baseIndex]));
+    Transform global_Obj2_local = Transform(In2::getCPos(in2[baseIndex]),In2::getCRot(in2[baseIndex]));
 
     for (sofa::Index pid=0; pid<m_minInd; pid++) {
 
         int tm1 = m1Indices[pid];
         int tm2 = m2Indices[pid];
+        //compute the transformation between the two points
+        Transform Frame1 = Transform(In1::getCPos(in1[tm1]),In1::getCRot(in1[tm1]));
+        Transform Frame2 = Transform(In2::getCPos(in2[tm2]),In2::getCRot(in2[tm2]));
+        //Transform Object1_To_Object2 = Frame1.inverse()*Frame2;
+
 
         Vec3 outCenter = in2[tm2].getCenter()-in1[tm1].getCenter();
-        type::Quat outOri = in2[tm2].getOrientation()* in1[tm1].getOrientation().inverse();
+        type::Quat outOri = in2[tm2].getOrientation() * in1[tm1].getOrientation().inverse();
 
         outOri.normalize();
         out[pid] = OutCoord(outCenter,outOri); // This difference is in the word space
@@ -285,4 +290,79 @@ void RigidDistanceMapping<TIn1, TIn2, TOut>::applyJT(
     dataMatOut1Const[0]->endEdit();
     dataMatOut2Const[0]->endEdit();
 }
+
+
+template <class TIn1, class TIn2, class TOut>
+int RigidDistanceMapping<TIn1, TIn2, TOut>::computeTransform(Transform &global_H0_local,
+                                                     Transform &global_H1_local,
+                                                     Transform &local0_H_local1,
+                                                     Quat<Real> &local_R_local0,
+                                                     const Coord1 &x1, const Coord2 &x2)
+{
+        /// 1. Get the indices of element and nodes
+        // @todo: check if we need to do this every time !
+
+        /// 2. Computes the optional rigid transformation of DOF0_Transform_node0 and DOF1_Transform_node1
+        // @todo: This part depend on the previous step, so it should be done in the same loop
+        Transform OBJ0_H_local0 = Transform(type::Vec3(0,0,0), Rot::identity());
+        Transform OBJ1_H_local1 = Transform(type::Vec3(0,0,0), Rot::identity());
+        //getDOFtoLocalTransform(edgeInList, DOF0_H_local0,  DOF1_H_local1);
+
+        /// 3. Computes the transformation global To local for both nodes
+        Transform global_H_OBJ0(x1.getCenter(), x1.getOrientation());
+        Transform global_H_OBJ1(x2.getCenter(), x2.getOrientation());
+
+        /// - add a optional transformation
+        Transform global_H_local0 = global_H_OBJ0*OBJ0_H_local0;
+        Transform global_H_local1 = global_H_OBJ1*OBJ1_H_local1;
+
+
+        /// 4. Compute the local frame
+        /// SIMPLIFICATION: local = local0:
+        local_R_local0.clear();
+
+        global_H_OBJ0.set(type::Vec3(0,0,0), x1.getOrientation());
+        global_H_OBJ1.set(type::Vec3(0,0,0), x2.getOrientation());
+
+        /// - rotation due to the optional transformation
+        global_H_local0 = global_H_OBJ0*OBJ0_H_local0;
+        global_H_local1 = global_H_OBJ1*OBJ1_H_local1;
+
+        global_H0_local = global_H_local0;
+        sofa::type::Quat local0_R_local1 = local0_H_local1.getOrientation();
+        Transform local0_HR_local1(type::Vec3(0,0,0), local0_R_local1);
+
+        global_H1_local = global_H_local1 * local0_HR_local1.inversed();
+
+        return 1;
+    }
+
+
+template <class TIn1, class TIn2, class TOut>
+int RigidDistanceMapping<TIn1, TIn2, TOut>::computeTransform2(unsigned int edgeInList,
+                                                      Transform &global_H_local0,
+                                                      Transform &global_H_local1,
+                                                      const OutVecCoord &x)
+{
+        /// 1. Get the indices of element and nodes
+        unsigned int node0Idx, node1Idx;
+        /*if ( getNodeIndices( edgeInList,  node0Idx, node1Idx ) == -1)
+        {
+            dmsg_error() << "[computeTransform2] Error in getNodeIndices(). (Aborting)" ;
+            return -1;
+        }*/
+
+        /// 2. Computes the optional rigid transformation of DOF0_Transform_node0 and DOF1_Transform_node1
+        Transform DOF0_H_local0, DOF1_H_local1;
+        getDOFtoLocalTransform(edgeInList, DOF0_H_local0,  DOF1_H_local1);
+
+        /// 3. Computes the transformation global To local for both nodes
+        Transform global_H_DOF0(x[node0Idx].getCenter(),x[node0Idx].getOrientation());
+        Transform global_H_DOF1(x[node1Idx].getCenter(),x[node1Idx].getOrientation());
+        /// - add a optional transformation
+        global_H_local0 = global_H_DOF0*DOF0_H_local0;
+        global_H_local1 = global_H_DOF1*DOF1_H_local1;
+
+        return 1; /// no error
+    }
 } // namespace sofa::components::mapping
