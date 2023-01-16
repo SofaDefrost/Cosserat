@@ -169,7 +169,7 @@ public:
 public:
     type::vector<Transform> m_objects1Frames;
     type::vector<Transform> m_objects2Frames;
-    type::vector<Transform> m_vecGlobal_H1_Local;
+    type::vector<Transform> m_vecH;
 
 };
 

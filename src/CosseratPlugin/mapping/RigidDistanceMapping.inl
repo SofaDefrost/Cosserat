@@ -130,27 +130,29 @@ void RigidDistanceMapping<TIn1, TIn2, TOut>::apply(
     Transform global_Obj2_local = Transform(In2::getCPos(in2[baseIndex]),In2::getCRot(in2[baseIndex]));
 
     for (sofa::Index pid=0; pid<m_minInd; pid++) {
-
         int tm1 = m1Indices[pid];
         int tm2 = m2Indices[pid];
+        m_vecH.clear();
         //compute the transformation between the two points
-        Transform Frame1 = Transform(In1::getCPos(in1[tm1]),In1::getCRot(in1[tm1]));
-        Transform Frame2 = Transform(In2::getCPos(in2[tm2]),In2::getCRot(in2[tm2]));
-        //Transform Object1_To_Object2 = Frame1.inverse()*Frame2;
+        Transform global_H_local1 = Transform(In1::getCPos(in1[tm1]),In1::getCRot(in1[tm1]));
+        Transform global_H_local2 = Transform(In2::getCPos(in2[tm2]),In2::getCRot(in2[tm2]));
+        Transform Object1_H_Object2 = global_H_local1.inversed()*global_H_local2;
 
+        m_vecH.push_back(Object1_H_Object2);
 
-        Vec3 outCenter = in2[tm2].getCenter()-in1[tm1].getCenter();
-        type::Quat outOri = in2[tm2].getOrientation() * in1[tm1].getOrientation().inverse();
+        std::cout << "The transform is :" << Object1_H_Object2 << std::endl;
+        Vec3 outCenter = Object1_H_Object2.getOrigin();
+        std::cout << " The center is : " <<  outCenter << std::endl;
+        type::Quat outOri = Object1_H_Object2.getOrientation();
 
         outOri.normalize();
-        out[pid] = OutCoord(outCenter,outOri); // This difference is in the word space
+        out[pid] = OutCoord(outCenter,outOri);
         if (d_debug.getValue()){
             std::cout << " in1 :" << in1[tm1] << std::endl;
             std::cout << " in2 :" << in2[tm2] << std::endl;
             std::cout << " out :" << out[pid] << std::endl;
         }
     }
-
     dataVecOutPos[0]->endEdit();
 }
 
@@ -177,12 +179,22 @@ void RigidDistanceMapping<TIn1, TIn2, TOut>:: applyJ(
     const auto &m2Indices = d_index2.getValue();
 
     SpatialVector vDOF1, vDOF2;
+    std::cout << "the size of the Ind is : " << m_minInd << std::endl;
+    std::cout << "the size of the outVel is : " << outVel.size() << std::endl;
 
     for (sofa::Index index = 0; index < m_minInd; index++) {
         getVCenter(outVel[index]) = getVCenter(in2Vel[m2Indices[index]]) - getVCenter(in1Vel[m1Indices[index]]);
         getVOrientation(outVel[index]) =  getVOrientation(in2Vel[m2Indices[index]]) - getVOrientation(in1Vel[m1Indices[index]]) ;
     }
     dataVecOutVel[0]->endEdit();
+
+    // old version
+    /*for (sofa::Index index = 0; index < m_minInd; index++) {
+        getVCenter(outVel[index]) = getVCenter(in2Vel[m2Indices[index]]) - getVCenter(in1Vel[m1Indices[index]]);
+        getVOrientation(outVel[index]) =  getVOrientation(in2Vel[m2Indices[index]]) - getVOrientation(in1Vel[m1Indices[index]]) ;
+    }
+    dataVecOutVel[0]->endEdit();*/
+
     if (d_debug.getValue()){
         std::cout << " =====> outVel[m1Indices[index]] : " << outVel << std::endl;
     }
@@ -345,7 +357,7 @@ int RigidDistanceMapping<TIn1, TIn2, TOut>::computeTransform2(unsigned int edgeI
                                                       const OutVecCoord &x)
 {
         /// 1. Get the indices of element and nodes
-        unsigned int node0Idx, node1Idx;
+        unsigned int node0Idx=0, node1Idx=0;
         /*if ( getNodeIndices( edgeInList,  node0Idx, node1Idx ) == -1)
         {
             dmsg_error() << "[computeTransform2] Error in getNodeIndices(). (Aborting)" ;
