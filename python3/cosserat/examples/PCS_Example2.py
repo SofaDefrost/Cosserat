@@ -47,7 +47,7 @@ class ForceController(Sofa.Core.Controller):
         self.forceCoeff = forceCoeff
         # self.cosseratGeometry = kwargs['cosseratGeometry']
 
-    def onAnimateEndEvent(self, event):
+
         if self.applyForce:
             position = self.frames.position[self.size]  # get the last rigid of the cosserat frame
             orientation = Quat(position[3], position[4], position[5], position[6])  # get the orientation
