@@ -5,8 +5,8 @@ set(HEADER_FILES
 
     mapping/BaseCosserat.h
     mapping/BaseCosserat.inl
-        mapping/DiscreteCosseratMapping.h
-        mapping/DiscreteCosseratMapping.inl
+    mapping/DiscreteCosseratMapping.h
+    mapping/DiscreteCosseratMapping.inl
     mapping/DiscretDynamicCosseratMapping.h
     mapping/DiscreteDynamicCosseratMapping.inl
     mapping/ProjectionEngine.h
@@ -27,7 +27,7 @@ set(HEADER_FILES
     forcefield/CosseratInternalActuation.inl
     forcefield/MyUniformVelocityDampingForceField.h
     forcefield/MyUniformVelocityDampingForceField.inl
-    
+
     constraint/CosseratSlidingConstraint.h
     constraint/CosseratSlidingConstraint.inl
     constraint/QPSlidingConstraint.h
@@ -57,11 +57,12 @@ set(SOURCE_FILES
     constraint/CosseratNeedleSlidingConstraint.cpp
     )
 
+# add_subdirectory(Binding)
+
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})
 
-target_include_directories(${PROJECT_NAME} PUBLIC 
+target_include_directories(${PROJECT_NAME} PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../../>")
 
-target_link_libraries(${PROJECT_NAME} SofaTest SofaGTestMain SofaCore 
+target_link_libraries(${PROJECT_NAME} SofaTest SofaGTestMain SofaCore
     SofaConstraint SofaBaseMechanics SofaUserInteraction)
-

@@ -126,7 +126,7 @@ void RigidDistanceMapping<TIn1, TIn2, TOut>::apply(
     for (sofa::Index pid=0; pid<m_minInd; pid++) {
         int tm1 = m1Indices[pid];
         int tm2 = m2Indices[pid];
-        Vector3 outCenter = in2[tm2].getCenter()-in1[tm1].getCenter();
+        Vec3 outCenter = in2[tm2].getCenter()-in1[tm1].getCenter();
         type::Quat outOri = in2[tm2].getOrientation()* in1[tm1].getOrientation().inverse();
 
         outOri.normalize();
