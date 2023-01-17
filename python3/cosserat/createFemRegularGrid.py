@@ -102,7 +102,7 @@ def createFemCubeWithParams(parentNode, geometry):
     visu.addObject("OglModel", name="Visual", src="@../surfContainer",  color="0.0 0.1 0.9 0.40" )
     visu.addObject("BarycentricMapping", input="@..", output="@Visual")
 
-    gelNode.addObject('GenericConstraintCorrection', linearSolver='@precond')
-    # gelNode.addObject('LinearSolverConstraintCorrection')
+    # gelNode.addObject('GenericConstraintCorrection', linearSolver='@precond')
+    gelNode.addObject('LinearSolverConstraintCorrection')
 
     return FemNode

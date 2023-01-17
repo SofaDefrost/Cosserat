@@ -1,6 +1,6 @@
 /******************************************************************************
-*       SOFA, Simulation Open-Framework Architecture, development version     *
-*                (c) 2006-2019 INRIA, USTL, UJF, CNRS, MGH                    *
+*                 SOFA, Simulation Open-Framework Architecture                *
+*                    (c) 2021 INRIA, USTL, UJF, CNRS, MGH                     *
 *                                                                             *
 * This program is free software; you can redistribute it and/or modify it     *
 * under the terms of the GNU Lesser General Public License as published by    *
@@ -15,26 +15,36 @@
 * You should have received a copy of the GNU Lesser General Public License    *
 * along with this program. If not, see <http://www.gnu.org/licenses/>.        *
 *******************************************************************************
-* Authors: The SOFA Team and external contributors (see Authors.txt)          *
-*                                                                             *
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
-#pragma once
-#include "RigidDistanceMapping.inl"
-#include <sofa/defaulttype/VecTypes.h>
-#include <sofa/defaulttype/RigidTypes.h>
-#include <sofa/core/ObjectFactory.h>
+#include <SofaPython3/PythonFactory.h>
+#include <SofaPython3/Sofa/Core/Binding_Base.h>
+#include <SofaPython3/Sofa/Core/Binding_BaseContext.h>
+#include "Binding_PointsManager.h"
+#include <pybind11/stl.h>
+#include <CosseratPlugin/engine/PointsManager.h>
 
-namespace sofa::component::mapping
-{
+typedef sofa::core::behavior::PointsManager PointsManager;
 
-using namespace sofa::defaulttype;
+namespace py {
+using namespace pybind11;
+}
 
-// Register in the Factory
-int RigidDistanceMappingClass = core::RegisterObject("Set the positions and velocities of points attached to a rigid parent")
-        .add< RigidDistanceMapping< sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types > >() ;
+using namespace sofa::core::objectmodel;
+using namespace sofa::core::topology;
 
+namespace sofapython3 {
 
-template class SOFA_COSSERATPLUGIN_API RigidDistanceMapping< sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types >;
+void moduleAddPointsManager(py::module& m) {
+  py::class_<PointsManager, Base, py_shared_ptr<PointsManager>> c(m, "PointsManager");
 
-} // namespace sofa.
+  /// register the PointSetTopologyModifier binding in the downcasting subsystem
+  PythonFactory::registerType<PointsManager>([](sofa::core::objectmodel::Base* object) {
+    return py::cast(dynamic_cast<PointsManager*>(object));
+  });
+
+    c.def("addNewPointToState", &PointsManager::addNewPointToState);
+    c.def("removeLastPointfromState", &PointsManager::removeLastPointfromState);
+}
+
+}  // namespace sofapython3
