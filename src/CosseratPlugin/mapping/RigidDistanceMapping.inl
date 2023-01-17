@@ -124,21 +124,16 @@ void RigidDistanceMapping<TIn1, TIn2, TOut>::apply(
     auto &m2Indices = d_index2.getValue();
 
     size_t baseIndex = 0; // index of the first point of the beam, add this to the data
-    //@TODO call the function to Compute frames or update theme here
-    //@TODO : m_objects1Frames and m_objects2Frames
-    Transform global_Obj1_local = Transform(In1::getCPos(in1[baseIndex]),In1::getCRot(in1[baseIndex]));
-    Transform global_Obj2_local = Transform(In2::getCPos(in2[baseIndex]),In2::getCRot(in2[baseIndex]));
-
+    m_vecObject1_H_Object2.clear();
     for (sofa::Index pid=0; pid<m_minInd; pid++) {
         int tm1 = m1Indices[pid];
         int tm2 = m2Indices[pid];
-        m_vecH.clear();
+
         //compute the transformation between the two points
         Transform global_H_local1 = Transform(In1::getCPos(in1[tm1]),In1::getCRot(in1[tm1]));
         Transform global_H_local2 = Transform(In2::getCPos(in2[tm2]),In2::getCRot(in2[tm2]));
         Transform Object1_H_Object2 = global_H_local1.inversed()*global_H_local2;
-
-        m_vecH.push_back(Object1_H_Object2);
+        m_vecObject1_H_Object2.push_back(Object1_H_Object2);
 
         std::cout << "The transform is :" << Object1_H_Object2 << std::endl;
         Vec3 outCenter = Object1_H_Object2.getOrigin();
@@ -305,10 +300,10 @@ void RigidDistanceMapping<TIn1, TIn2, TOut>::applyJT(
 
 
 template <class TIn1, class TIn2, class TOut>
-int RigidDistanceMapping<TIn1, TIn2, TOut>::computeTransform(Transform &global_H0_local,
-                                                     Transform &global_H1_local,
-                                                     Transform &local0_H_local1,
-                                                     Quat<Real> &local_R_local0,
+int RigidDistanceMapping<TIn1, TIn2, TOut>::computeTransform(Transform &global_H_local1,
+                                                     Transform &global_H_local2,
+                                                     Transform &local1_H_local2,
+                                                     Quat<Real> &local1_R_local2,
                                                      const Coord1 &x1, const Coord2 &x2)
 {
         /// 1. Get the indices of element and nodes
@@ -325,26 +320,26 @@ int RigidDistanceMapping<TIn1, TIn2, TOut>::computeTransform(Transform &global_H
         Transform global_H_OBJ1(x2.getCenter(), x2.getOrientation());
 
         /// - add a optional transformation
-        Transform global_H_local0 = global_H_OBJ0*OBJ0_H_local0;
-        Transform global_H_local1 = global_H_OBJ1*OBJ1_H_local1;
+        global_H_local1 = global_H_OBJ0*OBJ0_H_local0;
+        global_H_local2 = global_H_OBJ1*OBJ1_H_local1;
 
 
         /// 4. Compute the local frame
         /// SIMPLIFICATION: local = local0:
-        local_R_local0.clear();
+        local1_R_local2.clear();
 
         global_H_OBJ0.set(type::Vec3(0,0,0), x1.getOrientation());
         global_H_OBJ1.set(type::Vec3(0,0,0), x2.getOrientation());
 
         /// - rotation due to the optional transformation
-        global_H_local0 = global_H_OBJ0*OBJ0_H_local0;
-        global_H_local1 = global_H_OBJ1*OBJ1_H_local1;
+        global_H_local1 = global_H_OBJ0*OBJ0_H_local0;
+        global_H_local2 = global_H_OBJ1*OBJ1_H_local1;
 
-        global_H0_local = global_H_local0;
-        sofa::type::Quat local0_R_local1 = local0_H_local1.getOrientation();
+//        global_H_local1 = global_H_local1;
+        sofa::type::Quat local0_R_local1 = local1_H_local2.getOrientation();
         Transform local0_HR_local1(type::Vec3(0,0,0), local0_R_local1);
 
-        global_H1_local = global_H_local1 * local0_HR_local1.inversed();
+        global_H_local2 = global_H_local1 * local0_HR_local1.inversed();
 
         return 1;
     }

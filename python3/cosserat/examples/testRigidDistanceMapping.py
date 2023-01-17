@@ -149,10 +149,10 @@ def createScene(rootNode):
     solverNode.addObject('MechanicalMatrixMapper', template='Rigid3d,Rigid3d', object1=rigidBaseNode1.getLinkPath(),
                          object2=rigidBaseNode2.getLinkPath(), name='mapper1',
                          nodeToParse=distanceNode.getLinkPath())
-    distanceNode.addObject('CosseratNeedleSlidingConstraint',
-                                  name='constraintMappingConstraint',
-                                  template="Rigid3d",
-                                  useDirections=np.array([0, 1, 1, 0, 0, 0]))
+    # distanceNode.addObject('CosseratNeedleSlidingConstraint',
+    #                               name='constraintMappingConstraint',
+    #                               template="Rigid3d",
+    #                               useDirections=np.array([0, 1, 1, 0, 0, 0]))
 
     solverNode.addObject(Animation(rigidBaseNode1))
     return rootNode
