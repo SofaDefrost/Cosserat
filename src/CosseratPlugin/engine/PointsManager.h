@@ -1,5 +1,6 @@
 #pragma once
 
+#include <CosseratPlugin/config.h>
 #include <sofa/defaulttype/VecTypes.h>
 #include <sofa/core/objectmodel/KeypressedEvent.h>
 #include <sofa/defaulttype/SolidTypes.h>
@@ -19,7 +20,7 @@ typedef sofa::component::topology::container::dynamic::PointSetTopologyModifier 
 using sofa::core::objectmodel::KeypressedEvent;
 namespace sofa::core::behavior
 {
-    class PointsManager : public sofa::core::objectmodel::BaseObject
+    class SOFA_COSSERATPLUGIN_API PointsManager : public sofa::core::objectmodel::BaseObject
     {
 
     public:

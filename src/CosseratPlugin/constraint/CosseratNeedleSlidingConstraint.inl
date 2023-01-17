@@ -38,43 +38,48 @@
 namespace sofa::component::constraintset
 {
 
-  using sofa::core::objectmodel::ComponentState;
-  using sofa::helper::WriteAccessor;
+using sofa::core::objectmodel::ComponentState;
+using sofa::helper::WriteAccessor;
 
-  using sofa::core::objectmodel::ComponentState;
-  using sofa::core::visual::VisualParams;
-  using sofa::linearalgebra::BaseVector;
-  using sofa::helper::ReadAccessor;
-  using sofa::type::Vec4f;
-  using sofa::type::Vec3;
-  using sofa::type::vector;
-  using sofa::helper::OptionsGroup;
-  using sofa::component::constraint::lagrangian::model::BilateralConstraintResolution;
+using sofa::core::objectmodel::ComponentState;
+using sofa::core::visual::VisualParams;
+using sofa::linearalgebra::BaseVector;
+using sofa::helper::ReadAccessor;
+using sofa::type::Vec4f;
+using sofa::type::Vec3;
+using sofa::type::vector;
+using sofa::helper::OptionsGroup;
+using sofa::component::constraint::lagrangian::model::BilateralConstraintResolution;
 
-  template <class DataTypes>
-  CosseratNeedleSlidingConstraint<DataTypes>::CosseratNeedleSlidingConstraint(MechanicalState *object)
-      : Inherit1(object),
-        d_value(initData(&d_value, "value", "Displacement or force to impose.\n")),
-        d_valueIndex(initData(&d_valueIndex, (unsigned int)0, "valueIndex",
-                              "Index of the value (in InputValue vector) that we want to impose \n"
-                              "If unspecified the default value is {0}")),
-        d_valueType(initData(&d_valueType, OptionsGroup(2, "displacement", "force"), "valueType",
-                             "displacement = the contstraint will impose the displacement provided in data value[valueIndex] \n"
-                             "force = the contstraint will impose the force provided in data value[valueIndex] \n"
-                             "If unspecified, the default value is displacement")),
-        d_useDirections(initData(&d_useDirections, type::Vec<6,bool>(0,0,0,0,0,0), "useDirections", "Directions to constrain.\n"))
-  {}
+template<class DataTypes>
+CosseratNeedleSlidingConstraint<DataTypes>::CosseratNeedleSlidingConstraint(MechanicalState* object)
+    : Inherit1(object)
 
-  template <class DataTypes>
-  CosseratNeedleSlidingConstraint<DataTypes>::~CosseratNeedleSlidingConstraint()
-  {
-  }
+    , d_value(initData(&d_value, "value",
+                       "Displacement or force to impose.\n"))
 
-  template <class DataTypes>
-  void CosseratNeedleSlidingConstraint<DataTypes>::init()
-  {
-    Inherit1::init();
-    d_componentState.setValue(ComponentState::Valid);
+    , d_valueIndex(initData(&d_valueIndex, (unsigned int) 0, "valueIndex",
+                            "Index of the value (in InputValue vector) that we want to impose \n"
+                            "If unspecified the default value is {0}"))
+    , d_valueType(initData(&d_valueType, OptionsGroup(2,"displacement","force"), "valueType",
+                           "displacement = the contstraint will impose the displacement provided in data value[valueIndex] \n"
+                           "force = the contstraint will impose the force provided in data value[valueIndex] \n"
+                           "If unspecified, the default value is displacement"))
+    , d_useDirections(initData(&d_useDirections, type::Vec<6,bool>(0,0,0,0,0,0),"useDirections", "Directions to constrain.\n"))
+{
+}
+
+template<class DataTypes>
+CosseratNeedleSlidingConstraint<DataTypes>::~CosseratNeedleSlidingConstraint()
+{
+}
+
+template<class DataTypes>
+void CosseratNeedleSlidingConstraint<DataTypes>::init()
+{
+  Inherit1::init();
+  d_componentState.setValue(ComponentState::Valid);
+
     internalInit();
   }
 
@@ -86,7 +91,7 @@ namespace sofa::component::constraintset
 
   template <class DataTypes>
   void CosseratNeedleSlidingConstraint<DataTypes>::internalInit()
-  { 
+  {
     if (d_value.getValue().size() == 0)
     {
       WriteAccessor<Data<vector<Real>>> value = d_value;
@@ -99,7 +104,7 @@ namespace sofa::component::constraintset
       msg_warning() << "Bad size for data value (size=" << d_value.getValue().size() << "), or wrong value for data valueIndex (valueIndex=" << d_valueIndex.getValue() << "). Set default valueIndex=0.";
       d_valueIndex.setValue(0);
     }
-    
+
   }
 
   template <class DataTypes>
@@ -129,7 +134,7 @@ namespace sofa::component::constraintset
     }
     cMatrix.endEdit();
     m_nbLines = cIndex - m_constraintId;
-    
+
   }
 
   template <class DataTypes>
@@ -141,7 +146,7 @@ namespace sofa::component::constraintset
   {
     if (d_componentState.getValue() != ComponentState::Valid)
       return;
-    
+
     SOFA_UNUSED(cParams);
     SOFA_UNUSED(x);
     SOFA_UNUSED(v);
@@ -173,9 +178,10 @@ namespace sofa::component::constraintset
     ReadAccessor<Data<VecCoord>> positions = this->mstate->readPositions();
     type::Vec<6,bool> use = d_useDirections.getValue();
     for (size_t i = 0; i < positions.size(); i++){
-        if (use[0]) resTab[offset++] = new BilateralConstraintResolution();
-        if (use[1]) resTab[offset++] = new BilateralConstraintResolution();
-        if (use[2]) resTab[offset++] = new BilateralConstraintResolution();
+        if (use[1])
+          resTab[offset++] = new BilateralConstraintResolution();
+        if (use[2])
+          resTab[offset++] = new BilateralConstraintResolution();
     }
   }
 

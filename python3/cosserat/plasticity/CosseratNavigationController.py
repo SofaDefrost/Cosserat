@@ -71,6 +71,9 @@ from instrument import Instrument
 #  - curvAbsTolerance : distance threshold used to determine if two close nodes
 #    should be merged (and considered as one)
 #  - instrumentLengths : vector of double indicating the length of each instrument
+#  - nbIntermediateConstraintFrames : number of intermediate coaxial frames added
+#    when coaxial beam segments are detected. A higher number means a finer
+#    application of constraints on the coaxial beam segments.
 #
 # /!\ In this controller, as it is the case in BeamAdapter, we assume that the
 # instruments are given in the ordre of decreasing diameter, meaning that the
@@ -94,6 +97,7 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
                  instrumentList,
                  curvAbsTolerance,
                  instrumentLengths,
+                 nbIntermediateConstraintFrames = 1,
                  *args, **kwargs):
         Sofa.Core.Controller.__init__(self, *args, **kwargs)
 
@@ -107,6 +111,8 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
         self.incrementDistance = incrementDistance
         # TO DO : pass the minimal distance for constraints as an input parameter ?
         self.minimalDistanceForConstraint = incrementDistance * 10.0
+        # TO DO: check that the number of coaxial frames provided is coherent with beam number and nbIntermediateConstraintFrames
+        self.nbIntermediateConstraintFrames = nbIntermediateConstraintFrames
         self.incrementAngle = incrementAngle
         self.incrementDirection = incrementDirection
         self.instrumentBeamNumberVect = instrumentBeamNumberVect
@@ -755,9 +761,37 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
 
                 coaxialBeamCurvAbs = decimatedNodeCurvAbs[0:instrumentLastBeamId+1]
                 nbTotalCoaxialFrames = len(coaxialFrameNode.CoaxialCosseratMapping.curv_abs_output)
-                deployedCoaxialFrameIds = list(range(nbTotalCoaxialFrames-len(coaxialBeamCurvAbs), nbTotalCoaxialFrames))
+
+                # Computing the coaxial frames' curvilinear abscissas
+                nbDeployedCoaxialFrames = 0
+                coaxialFrameCurvAbs = []
+                for beamCurvAbsId in range(len(coaxialBeamCurvAbs)-1):
+                    # First we add the proximal end of the beam segment
+                    proximalEndCurvAbs = coaxialBeamCurvAbs[beamCurvAbsId]
+                    coaxialFrameCurvAbs.append(proximalEndCurvAbs)
+                    nbDeployedCoaxialFrames += 1
+
+                    # Then we check wether the beam segment is long enough to add intermediate
+                    # coaxial frames. If it is, we compute the additional frames' curvilinear abscissas
+                    distalEndCurvAbs = coaxialBeamCurvAbs[beamCurvAbsId+1]
+                    intermediateSegmentLength = 0
+                    if (self.nbIntermediateConstraintFrames != 0):
+                        intermediateSegmentLength = (distalEndCurvAbs - proximalEndCurvAbs) / (self.nbIntermediateConstraintFrames+1)
+                    if (intermediateSegmentLength >= self.minimalDistanceForConstraint):
+                        for intermediateFrameId in range(self.nbIntermediateConstraintFrames):
+                            intermediateCurvAbs = proximalEndCurvAbs + (intermediateFrameId+1) * intermediateSegmentLength
+                            coaxialFrameCurvAbs.append(intermediateCurvAbs)
+                            nbDeployedCoaxialFrames += 1
+
+                # Finally we add the last beam segment distal end
+                coaxialFrameCurvAbs.append(coaxialBeamCurvAbs[len(coaxialBeamCurvAbs)-1])
+                nbDeployedCoaxialFrames += 1
+
+                deployedCoaxialFrameIds = list(range(nbTotalCoaxialFrames-nbDeployedCoaxialFrames, nbTotalCoaxialFrames))
+
                 with coaxialFrameNode.CoaxialCosseratMapping.curv_abs_output.writeable() as curv_abs_output:
-                    curv_abs_output[nbTotalCoaxialFrames-len(coaxialBeamCurvAbs):nbTotalCoaxialFrames] = coaxialBeamCurvAbs
+                    curv_abs_output[nbTotalCoaxialFrames-nbDeployedCoaxialFrames:nbTotalCoaxialFrames] = coaxialFrameCurvAbs
+                    curv_abs_output[0:nbTotalCoaxialFrames-nbDeployedCoaxialFrames] = [0.]*(nbTotalCoaxialFrames-nbDeployedCoaxialFrames)
 
                 #--- Second loop over the longer deployed instruments, to enforce constraints on ---#
                 #--- the coaxial beam segments                                                   ---#
@@ -829,10 +863,11 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
                     # this check is to avoid overconstraining of a small beam segment.
                     # NB: in this whole section of code, we are under the condition that at least
                     # two instruments are deployed. In this case, there is at least one coaxial beam,
-                    # so it is unnecessary to check that len(decimatedNodeCurvAbs) >= 2 before
-                    # accessing decimatedNodeCurvAbs[1]
+                    # so it is unnecessary to check len(decimatedNodeCurvAbs) before accessing
+                    # decimatedNodeCurvAbs[1] or shorterInstrumentCoaxialFrameIds[self.nbIntermediateConstraintFrames+1]
                     if (decimatedNodeCurvAbs[1] < self.minimalDistanceForConstraint):
-                        shorterInstrumentCoaxialFrameIds = shorterInstrumentCoaxialFrameIds[1:len(shorterInstrumentCoaxialFrameIds)]
+                        shorterInstrumentCoaxialFrameIds = shorterInstrumentCoaxialFrameIds[self.nbIntermediateConstraintFrames+1:len(shorterInstrumentCoaxialFrameIds)]
+                    # TO DO: apply the same threshold for intermediate coaxial frames
 
                     # For the longer instrument, we have to take into account the additional *coaxial* beams
                     # which are further than the first (shorter) instrument end. The notion of coaxial is
@@ -856,7 +891,7 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
                     longerInstrumentCoaxialFrameIds = list(range(firstCoaxialFrameIndexWithShorterInstrument, lastCoaxialFrameIndexWithShorterInstrument+1))
 
 
-                    # Once the two sets of indices are computed, we update the RigidDistanecMapping
+                    # Once the two sets of indices are computed, we update the RigidDistanceMapping
                     # in the constraint Node accordingly
                     # /!\ We make the assumption that input1 of the mapping is the instrument with
                     # the higher index, so that input2 is the instrument with the lower index. For
@@ -910,8 +945,37 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
                 secondLongestInstrumentLastBeamId = instrumentLastNodeIds[secondLongestInstrumentId]
                 coaxialBeamCurvAbs = decimatedNodeCurvAbs[0:secondLongestInstrumentLastBeamId+1]
                 nbTotalCoaxialFrames = len(coaxialFrameNode.CoaxialCosseratMapping.curv_abs_output)
+
+                # Computing the coaxial frames' curvilinear abscissas
+                coaxialFrameCurvAbs = []
+                nbDeployedCoaxialFrames = 0
+                for beamCurvAbsId in range(len(coaxialBeamCurvAbs)-1):
+                    # First we add the proximal end of the beam segment
+                    proximalEndCurvAbs = coaxialBeamCurvAbs[beamCurvAbsId]
+                    coaxialFrameCurvAbs.append(proximalEndCurvAbs)
+                    nbDeployedCoaxialFrames += 1
+
+                    # Then we check wether the beam segment is long enough to add intermediate
+                    # coaxial frames. If it is, we compute the additional frames' curvilinear abscissas
+                    distalEndCurvAbs = coaxialBeamCurvAbs[beamCurvAbsId+1]
+                    intermediateSegmentLength = 0
+                    if (self.nbIntermediateConstraintFrames != 0):
+                        intermediateSegmentLength = (distalEndCurvAbs - proximalEndCurvAbs) / (self.nbIntermediateConstraintFrames+1)
+                    if (intermediateSegmentLength >= self.minimalDistanceForConstraint):
+                        for intermediateFrameId in range(self.nbIntermediateConstraintFrames):
+                            intermediateCurvAbs = proximalEndCurvAbs + (intermediateFrameId+1) * intermediateSegmentLength
+                            coaxialFrameCurvAbs.append(intermediateCurvAbs)
+                            nbDeployedCoaxialFrames += 1
+
+                # Finally we add the last beam segment distal end
+                coaxialFrameCurvAbs.append(coaxialBeamCurvAbs[len(coaxialBeamCurvAbs)-1])
+                nbDeployedCoaxialFrames += 1
+
+                # Updating the Cosserat mapping component
+                deployedCoaxialFrameIds = list(range(nbTotalCoaxialFrames-nbDeployedCoaxialFrames, nbTotalCoaxialFrames))
                 with coaxialFrameNode.CoaxialCosseratMapping.curv_abs_output.writeable() as curv_abs_output:
-                    curv_abs_output[nbTotalCoaxialFrames-len(coaxialBeamCurvAbs):nbTotalCoaxialFrames] = coaxialBeamCurvAbs
+                    curv_abs_output[nbTotalCoaxialFrames-nbDeployedCoaxialFrames:nbTotalCoaxialFrames] = coaxialFrameCurvAbs
+                    curv_abs_output[0:nbTotalCoaxialFrames-nbDeployedCoaxialFrames] = [0.]*(nbTotalCoaxialFrames-nbDeployedCoaxialFrames)
 
         return {'instrumentLastNodeIds': instrumentLastNodeIds}
 
