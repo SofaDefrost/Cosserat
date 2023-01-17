@@ -29,6 +29,7 @@
 #include <sofa/defaulttype/RigidTypes.h>
 #include <sofa/core/objectmodel/BaseObject.h>
 #include <sofa/type/Vec.h>
+#include <sofa/type/Quat.h>
 
 #include <cmath>
 
@@ -42,6 +43,7 @@ using type::Vector3;
 using type::Vec6;
 using std::get;
 using sofa::core::objectmodel::BaseObject;
+using sofa::type::Quat;
 
 /*!
  * \class BaseCosserat
@@ -180,8 +182,6 @@ protected:
 
         return  theta;
     }
-
-
 public:
     /**********************OTHER METHODS**************************/
     void initialize();
@@ -270,6 +270,8 @@ public:
     }
 
 };
+
+
 
 
 #if !defined(SOFA_COSSERATPLUGIN_CPP_BaseCosserat)

@@ -119,7 +119,6 @@ void CosseratNeedleSlidingConstraint<DataTypes>::init()
     m_constraintId = cIndex;
 
     type::Vec<6,bool> use = d_useDirections.getValue();
-
     for (unsigned int i = 0; i < positions.size(); i++)
     {
       if (use[1])
