@@ -1,4 +1,3 @@
-
 /******************************************************************************
 *       SOFA, Simulation Open-Framework Architecture, version 1.0 RC 1        *
 *                (c) 2006-2011 MGH, INRIA, USTL, UJF, CNRS                    *
@@ -125,13 +124,14 @@ public:
     template<class T>
     static void getConstraintResolution(CosseratNeedleSlidingConstraint<T>& self,
                                         const ConstraintParams* cParams,
-                                        std::vector<ConstraintResolution*>& resTab,
+                                        std::vector<core::behavior::ConstraintResolution*>& resTab,
                                         unsigned int& offset)
     {
         SOFA_UNUSED(cParams);
         ReadAccessor<Data<typename CosseratNeedleSlidingConstraint<T>::VecCoord>> positions = self.mstate->readPositions();
         type::Vec<6,bool> use = self.d_useDirections.getValue();
         for (size_t i = 0; i < positions.size(); i++){
+            if (use[1]) resTab[offset++] = new BilateralConstraintResolution();
             if (use[1]) resTab[offset++] = new BilateralConstraintResolution();
             if (use[2]) resTab[offset++] = new BilateralConstraintResolution();
         }
@@ -162,7 +162,7 @@ void CosseratNeedleSlidingConstraint<Rigid3Types>::getConstraintViolation(const 
 
 template<> SOFA_COSSERATPLUGIN_API
 void CosseratNeedleSlidingConstraint<Rigid3Types>::getConstraintResolution(const ConstraintParams* cParams,
-                                                                           std::vector<ConstraintResolution*>& resTab,
+                                                                           std::vector<core::behavior::ConstraintResolution*>& resTab,
                                                                            unsigned int& offset)
 {
     CosseratNeedleSlidingConstraintSpecialization<RigidImpl>::getConstraintResolution(*this, cParams, resTab, offset);

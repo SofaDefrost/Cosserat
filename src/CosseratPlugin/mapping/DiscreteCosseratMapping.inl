@@ -266,6 +266,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>:: applyJ(
     Mat6x6 P = this->build_projector(TInverse);
     type::Vec6 baseLocalVelocity = P * baseVelocity;
     m_nodesVelocityVectors.push_back(baseLocalVelocity);
+
     if(d_debug.getValue())
         std::cout << "Base local Velocity :"<< baseLocalVelocity <<std::endl;
 

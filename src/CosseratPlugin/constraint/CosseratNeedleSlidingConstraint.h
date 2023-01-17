@@ -41,16 +41,16 @@
 namespace sofa::component::constraintset
 {
 
-using sofa::core::behavior::SoftRobotsConstraint ;
-using sofa::core::visual::VisualParams ;
-using sofa::core::objectmodel::Data ;
-using sofa::defaulttype::Vec3dTypes ;
-using sofa::defaulttype::Vec3fTypes ;
-using sofa::linearalgebra::BaseVector ;
-using sofa::core::ConstraintParams ;
-using sofa::helper::ReadAccessor ;
-using sofa::core::VecCoordId ;
-using sofa::core::behavior::Constraint ;
+using sofa::core::ConstraintParams;
+using sofa::core::VecCoordId;
+using sofa::core::behavior::Constraint;
+using sofa::core::objectmodel::Data;
+using sofa::core::visual::VisualParams;
+using sofa::defaulttype::Vec3dTypes;
+using sofa::defaulttype::Vec3fTypes;
+using sofa::helper::ReadAccessor;
+using sofa::linearalgebra::BaseVector;
+using sofa::core::MultiVecDerivId ;
 
 using sofa::defaulttype::Rigid3Types ;
 using sofa::defaulttype::Vec3Types ;
@@ -80,11 +80,10 @@ public:
     typedef typename DataTypes::MatrixDeriv MatrixDeriv;
     typedef typename Coord::value_type Real;
     typedef typename core::behavior::MechanicalState<DataTypes> MechanicalState;
-
     typedef typename DataTypes::MatrixDeriv::RowIterator MatrixDerivRowIterator;
-    typedef Data<VecCoord>		DataVecCoord;
-    typedef Data<VecDeriv>		DataVecDeriv;
-    typedef Data<MatrixDeriv>    DataMatrixDeriv;
+    typedef Data<VecCoord> DataVecCoord;
+    typedef Data<VecDeriv> DataVecDeriv;
+    typedef Data<MatrixDeriv> DataMatrixDeriv;
     typedef type::vector<unsigned int> SetIndexArray;
 
 
