@@ -29,12 +29,16 @@ rateLength = [1.2, 0.5, 0.7, 0.5, 0.7, 0.5, 0.7, 0.5, 0.7, 0.5, 0.7, 0.5, 0.7, 0
 draw_cylinder = 1
 add_collision_point = 1
 
-pluginNameList = 'SofaConstraint SofaDeformable SofaImplicitOdeSolver SofaMeshCollision SofaPreconditioner' \
-                 ' SofaGeneralTopology SofaOpenglVisual SofaGeneralRigid SoftRobots SofaSparseSolver' \
-                 ' CosseratPlugin SofaBoundaryCondition SofaGeneralAnimationLoop SofaRigid'  # BeamAdapter
-pluginList = ['SofaConstraint', 'SofaDeformable', 'SofaImplicitOdeSolver', 'SofaMeshCollision', 'SofaPreconditioner',
-              'SofaGeneralTopology', 'SofaOpenglVisual', 'SofaGeneralRigid', 'SoftRobots', 'SofaSparseSolver',
-              'CosseratPlugin', 'SofaBoundaryCondition', 'SofaGeneralAnimationLoop', 'SofaRigid', 'EigenLinearSolvers']
+pluginList = ['SofaPreconditioner', 'Sofa.Component.IO.Mesh', 'Sofa.Component.Mass', 'Sofa.Component.Topology.Container.Dynamic', 'Sofa.GL.Component.Rendering3D',
+               'SoftRobots',
+               'Sofa.Component.Collision.Geometry', 'Sofa.Component.Collision.Detection.Intersection', 'Sofa.Component.Collision.Response.Mapper', 'Sofa.Component.Collision.Response.Contact','Sofa.Component.Constraint.Lagrangian.Correction', 'Sofa.Component.SceneUtility', 'Sofa.Component.SolidMechanics.FEM.Elastic',
+              'CosseratPlugin', 'Sofa.Component.AnimationLoop', 'Sofa.Component.Constraint.Lagrangian.Solver', 'Sofa.Component.Engine.Select', 'Sofa.Component.Setting',
+              "Sofa.Component.LinearSolver.Direct", "Sofa.Component.MechanicalLoad", "Sofa.Component.ODESolver.Backward", "Sofa.Component.SolidMechanics.Spring", "Sofa.Component.Visual", 'Sofa.Component.Collision.Detection.Algorithm', 'Sofa.Component.Mapping',
+              "Sofa.Component.Collision.Detection.Intersection", "Sofa.Component.Collision.Geometry", "Sofa.Component.Collision.Response.Contact", "Sofa.Component.Mapping.MappedMatrix", "Sofa.Component.Topology.Container.Grid","Sofa.Component.Mapping.NonLinear",
+              "Sofa.Component.Constraint.Lagrangian.Model",
+              "Sofa.Component.Collision.Response.Mapper",
+              "Sofa.Component.Topology.Mapping", "Sofa.Component.LinearSolver.Iterative"]
+
 
 PRig = 0.38  # poison ratio for the rigid part of the beam
 PSoft = 0.43  # poison ratio for the soft part of the beam
@@ -90,7 +94,8 @@ class CosseratComponent(Sofa.Core.Controller):
         self.rigidBaseNode = args[0]
         self.rateAngularDeformNode = args[1]
         self.frameNode = args[0].getChild('MappedFrames')
-        self.cable3DPosNode = self.frameNode.getChild('CollisInstrumentCombined')
+        self.cable3DPosNode = self.frameNode.getChild(
+            'CollisInstrumentCombined')
         self.rigidBaseMO = self.rigidBaseNode.getChild('RigidBaseMO')
         self.dX = 0.0025
         self.angularRate = 15.
@@ -156,15 +161,18 @@ class CosseratComponent(Sofa.Core.Controller):
     def createCylinderNode(self, length=0.5, abscissa=0.0, index=0):
         translation = [abscissa, 0., 0.]
         color = 'grey' if length == 0.5 else 'blue'
-        CylinderFEMNode = self.frameNode.addChild('CylinderFEMNode' + str(index))
+        CylinderFEMNode = self.frameNode.addChild(
+            'CylinderFEMNode' + str(index))
         CylinderFEMNode.addObject('CylinderGridTopology', name="grid", nx="5", ny="5", nz="8", length=length,
                                   radius=0.25, axis="1 0 0")
         CylinderFEMNode.addObject('MeshTopology', src="@grid")
-        CylinderFEMNode.addObject('MechanicalObject', name="cylinder", template="Vec3d", translation=translation)
+        CylinderFEMNode.addObject(
+            'MechanicalObject', name="cylinder", template="Vec3d", translation=translation)
         CylinderFEMNode.addObject('SkinningMapping', nbRef='1')
         Visu = CylinderFEMNode.addChild('Visu')
         Visu.addObject('OglModel', name="Visual", color=color)
-        Visu.addObject('IdentityMapping', input="@../cylinder", output="@Visual")
+        Visu.addObject('IdentityMapping',
+                       input="@../cylinder", output="@Visual")
 
     def initGraph(self):
         # @info compute cosserat parameters
@@ -173,9 +181,12 @@ class CosseratComponent(Sofa.Core.Controller):
         self.frameNode.mapping.curv_abs_output.value = self.curvOut
         self.frameNode.mapping.curv_abs_input.value = self.curvInput
         self.rateAngularDeformNode.rateAngularDeformMO.position.value = self.rateAngular
-        self.rateAngularDeformNode.beamHookeLaw.findData('length').value = rateLength
-        self.rateAngularDeformNode.beamHookeLaw.findData('youngModululsList').value = youngModulusList
-        self.rateAngularDeformNode.beamHookeLaw.findData('poissonRatioList').value = poisonRatioList
+        self.rateAngularDeformNode.beamHookeLaw.findData(
+            'length').value = rateLength
+        self.rateAngularDeformNode.beamHookeLaw.findData(
+            'youngModululsList').value = youngModulusList
+        self.rateAngularDeformNode.beamHookeLaw.findData(
+            'poissonRatioList').value = poisonRatioList
 
         if draw_cylinder == 1:
             # Draw the cylinder over the beam
@@ -280,7 +291,8 @@ class buildElasticityRateAngulare(Sofa.Core.Controller):
                 # print("=+++++> idx: {} and rate is : {}".format(idx,pos[self.insertionIndex]))
                 if abs(pos[self.insertionIndex]) > self.elsaticityRate:
                     # print("=+++++> idx: {} and rate is : {}".format(idx,pos[self.insertionIndex]))
-                    restPos[idx][self.insertionIndex] = pos[self.insertionIndex] - self.elsaticityRate
+                    restPos[idx][self.insertionIndex] = pos[self.insertionIndex] - \
+                        self.elsaticityRate
                     # print("The positions: {} restPos: {}".format(pos[self.insertionIndex], restPos[idx][self.insertionIndex]))
 
     """ ============================================================
@@ -293,7 +305,8 @@ class buildElasticityRateAngulare(Sofa.Core.Controller):
         with self.mechanicalObjectMO.rest_position.writeable() as restPos:
             for idx, pos in enumerate(positions):
                 if abs(pos[self.insertionIndex]) > plasticityTab[idx]:
-                    restPos[idx][self.insertionIndex] = pos[self.insertionIndex] - plasticityTab[idx]
+                    restPos[idx][self.insertionIndex] = pos[self.insertionIndex] - \
+                        plasticityTab[idx]
 
 
 # #######################
@@ -346,7 +359,8 @@ class MoveTargetProcess(Sofa.Core.Controller):
         Sofa.Core.Controller.__init__(self, *args, **kwargs)
         self.targetMO = args[0]
         self.targetIndex = 0
-        self.targetList = [[85.0, 0, 0.35857], [85.0, 0.5, 0.35857], [86.0, 1.5, 0.35857], [87.0, 2.5, 0.35857]]
+        self.targetList = [[85.0, 0, 0.35857], [85.0, 0.5, 0.35857], [
+            86.0, 1.5, 0.35857], [87.0, 2.5, 0.35857]]
         pos = self.targetMO.findData('effectorGoal').value
         print("effectorGoal :", pos[0])
 
@@ -398,7 +412,8 @@ class AddPointProcess(Sofa.Core.Controller):
             with self.inputConstraintPointsMO.position.writeable() as posA:
                 print("0. List The position :", posA)
 
-            self.inputConstraintPointsMO.position.value = np.array([[40, 0, 0], [45, 0, 0]])
+            self.inputConstraintPointsMO.position.value = np.array(
+                [[40, 0, 0], [45, 0, 0]])
 
             with self.inputConstraintPointsMO.position.writeable() as posA:
                 print("1. List The position :", posA)
@@ -409,7 +424,8 @@ class AddPointProcess(Sofa.Core.Controller):
                 # posA.append(self.needleCollisionMO.position[self.tipIndex])
 
             indice = self.diffMapping.findData('indices')
-            print("====> indices :", self.diffMapping.addPointProcess([40.0, 0., 0.]))
+            print("====> indices :",
+                  self.diffMapping.addPointProcess([40.0, 0., 0.]))
 
         if key == "-":  # -
             with self.inputConstraintPointsMO.rest_position.writeable() as posA:
@@ -444,7 +460,8 @@ def Cube(
     # cubeNode.addObject('UncoupledConstraintCorrection')
 
     objectCollis = cubeNode.addChild('collision')
-    objectCollis.addObject('MeshObjLoader', name="loader", filename=surfaceMeshFileName, triangulate="true")
+    objectCollis.addObject('MeshObjLoader', name="loader",
+                           filename=surfaceMeshFileName, triangulate="true")
     objectCollis.addObject('MeshTopology', src="@loader")
     objectCollis.addObject('MechanicalObject')
     objectCollis.addObject('TriangleCollisionModel')
