@@ -210,8 +210,9 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
         # is set back to the instrument's length
 
         for instrumentId in range (0, self.nbInstruments):
-            if self.tipCurvAbsVect[instrumentId] > self.instrumentLengths[instrumentId]:
-                self.tipCurvAbsVect[instrumentId] = self.instrumentLengths[instrumentId]
+            instrumentLength = self.instrumentList[instrumentId].getTotalLength()
+            if self.tipCurvAbsVect[instrumentId] > instrumentLength:
+                self.tipCurvAbsVect[instrumentId] = instrumentLength
 
 
         #----- Step 1 : instrument's tip curvilinear abscissa and combined length -----#
@@ -318,8 +319,9 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
         # it is <0
         for instrumentId in range(0,self.nbInstruments):
 
+            instrumentLength = self.instrumentList[instrumentId].getTotalLength()
             xEnd = self.tipCurvAbsVect[instrumentId]
-            xBegin = xEnd - self.instrumentLengths[instrumentId]
+            xBegin = xEnd - instrumentLength
             xBeginVect.append(xBegin)
 
             if xEnd > combinedInstrumentLength:
@@ -364,6 +366,7 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
         maxCurvilinearAbscissa = 0. # Max curvilinear abscissa among the key points
 
         for instrumentId in range(0,self.nbInstruments):
+
             # Add first key point = proximal extremity point
             beginNodeCurvAbs = xBeginVect[instrumentId] + 0.0
             # TO DO: are the two check below relevent for the first key point ?
@@ -374,12 +377,11 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
                 if (beginNodeCurvAbs > maxCurvilinearAbscissa):
                     maxCurvilinearAbscissa = beginNodeCurvAbs
 
-            # TO DO: If the instrument is not entirely straight, add the
-            # intermediary key points. For each corresponding interval,
-            # also add the points based on the beam density on the interval.
 
-            # Add second key point = distal extremity point
-            instrumentLength = self.instrumentLengths[instrumentId]
+
+
+            # Add last key point = distal extremity point
+            instrumentLength = currentInstrument.getTotalLength()
             endNodeCurvAbs = xBeginVect[instrumentId] + instrumentLength
             if (endNodeCurvAbs > 0):
                 # If the distal end of the interval is visible (curv. abs. > 0),
@@ -421,6 +423,7 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
 
                     # Update the max curv. abs.
                     maxCurvilinearAbscissa = endNodeCurvAbs
+
         # endfor instrumentId in range(0,self.nbInstruments)
 
         # When all points of interest have been detected, we sort and filter
