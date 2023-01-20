@@ -354,7 +354,6 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
     # rigid frame the list of instruments which the frame belongs to
     def computeNodeCurvAbs(self, xBeginVect, simulatedNodeCurvAbs, simulatedFrameCurvAbs, instrumentIdsForNodeVect, instrumentIdsForFrameVect):
 
-        instrumentKeyPointsVect = [[]]
         maxCurvilinearAbscissa = 0. # Max curvilinear abscissa among the key points
 
         for instrumentId in range(0,self.nbInstruments):
