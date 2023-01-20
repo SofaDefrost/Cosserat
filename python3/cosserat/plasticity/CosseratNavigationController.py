@@ -70,7 +70,6 @@ from instrument import Instrument
 #    in instrument.py), to characterise each instrument properties
 #  - curvAbsTolerance : distance threshold used to determine if two close nodes
 #    should be merged (and considered as one)
-#  - instrumentLengths : vector of double indicating the length of each instrument
 #  - nbIntermediateConstraintFrames : number of intermediate coaxial frames added
 #    when coaxial beam segments are detected. A higher number means a finer
 #    application of constraints on the coaxial beam segments.
@@ -96,7 +95,6 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
                  incrementDirection,
                  instrumentList,
                  curvAbsTolerance,
-                 instrumentLengths,
                  nbIntermediateConstraintFrames = 1,
                  *args, **kwargs):
         Sofa.Core.Controller.__init__(self, *args, **kwargs)
@@ -125,12 +123,6 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
 
         # Number of simulated instruments
         self.nbInstruments = nbInstruments
-
-        # Total rest length of each instrument
-        self.instrumentLengths = instrumentLengths
-        if len(instrumentLengths) != nbInstruments:
-            raise ValueError('[CombinedInstrumentsController]: size of argument \'instrumentLengths\' '
-                             'should be equal to nbInstruments')
 
         # Curvilinear Abscissa of the tip of each instrument (modified by up/down arrows)
         self.tipCurvAbsVect = np.zeros(nbInstruments)

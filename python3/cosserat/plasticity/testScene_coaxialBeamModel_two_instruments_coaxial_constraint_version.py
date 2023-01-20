@@ -521,7 +521,6 @@ def createScene(rootNode):
     incrementAngle=5.0
     incrementDirection = np.array([1., 0., 0.])
     curvAbsTolerance= 1.0e-4
-    instrumentLengths=[totalLength0, totalLength1]
 
     instrument0 = Instrument(instrumentNode=instrument0Node,
                              totalLength=totalLength0,
@@ -548,7 +547,6 @@ def createScene(rootNode):
                             incrementAngle=incrementAngle,
                             incrementDirection=incrementDirection,
                             instrumentList=instrumentList,
-                            curvAbsTolerance=curvAbsTolerance,
-                            instrumentLengths=instrumentLengths))
+                            curvAbsTolerance=curvAbsTolerance))
 
     return rootNode
