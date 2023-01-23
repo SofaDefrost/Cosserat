@@ -197,8 +197,9 @@ void RigidDistanceMapping<TIn1, TIn2, TOut>:: applyJ(
       if (d_newVersionOfFrameComputation.getValue()){
 //        Transform Object1_H_Object2 = m_vecObject1_H_Object2[index];
         Transform global_H_Object2 = m_vecObject1_H_Object2[index];
+        std::cout << " getVCenter(in1Vel[m1Indices[index]]) : " << getVCenter(in1Vel[m1Indices[index]])  << std::endl;
         std::cout << " getVCenter(in2Vel[m2Indices[index]]) : " << getVCenter(in2Vel[m2Indices[index]])  << std::endl;
-        std::cout << " getVOrientation(in2Vel[m2Indices[index]]) : " << getVOrientation(in2Vel[m2Indices[index]])  << std::endl;
+
         //get velocity in  the global frame
         auto velDistance =  getVCenter(in2Vel[m2Indices[index]]) - getVCenter(in1Vel[m1Indices[index]]);
         std::cout << " velDistance : " << velDistance << std::endl;
