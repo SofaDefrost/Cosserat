@@ -515,7 +515,10 @@ def createScene(rootNode):
     # -------------------------------------------------------------------- #
 
     nbInstruments=2
-    instrumentBeamNumbers=[nbBeams0, nbBeams1]
+    instrument0KeyPoints = []
+    instrument1KeyPoints = []
+    nbBeamDistribution0 = [nbBeams0]
+    nbBeamDistribution1 = [nbBeams1]
     instrumentFrameNumbers=[nbFrames0, nbFrames1]
     incrementDistance=0.1
     incrementAngle=5.0
@@ -525,13 +528,15 @@ def createScene(rootNode):
     instrument0 = Instrument(instrumentNode=instrument0Node,
                              totalLength=totalLength0,
                              nbBeams=nbBeams0,
-                             keyPoints=[],
+                             keyPoints=instrument0KeyPoints,
+                             nbBeamDistribution=nbBeamDistribution0,
                              restStrain=[instrument0ConstantRestStrain],
                              curvAbsTolerance=curvAbsTolerance)
     instrument1 = Instrument(instrumentNode=instrument1Node,
                              totalLength=totalLength1,
                              nbBeams=nbBeams1,
-                             keyPoints=[],
+                             keyPoints=instrument1KeyPoints,
+                             nbBeamDistribution=nbBeamDistribution1,
                              restStrain=[instrument1ConstantRestStrain],
                              curvAbsTolerance=curvAbsTolerance)
     instrumentList = [instrument0, instrument1]
@@ -541,7 +546,6 @@ def createScene(rootNode):
                             rootNode=rootNode,
                             solverNode=solverNode,
                             nbInstruments=nbInstruments,
-                            instrumentBeamNumberVect=instrumentBeamNumbers,
                             instrumentFrameNumberVect=instrumentFrameNumbers,
                             incrementDistance=incrementDistance,
                             incrementAngle=incrementAngle,
