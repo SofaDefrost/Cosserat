@@ -11,12 +11,21 @@ import numpy as np
 
 class Instrument(object):
 
-    def __init__(self, instrumentNode, totalLength, nbBeams, keyPoints,
-                 restStrain, curvAbsTolerance, *args, **kwargs):
+    def __init__(self, instrumentNode, totalLength, keyPoints,
+                 nbBeamDistribution, restStrain, curvAbsTolerance,
+                 *args, **kwargs):
         self.instrumentNode = instrumentNode
         self.totalLength = totalLength
-        self.nbBeams = nbBeams
         self.keyPoints = keyPoints
+        # Check on nbBeamDistribution
+        if len(nbBeamDistribution) != len(keyPoints)+1:
+            raise ValueError("[Instrument (class)]: initialisation of object Instrument "
+                             "with noncoherent \'keyPoints\' and \'nbBeamDistribution\' parameters. "
+                             "The size of \'nbBeamDistribution\' should be one more than the size "
+                             "of \'keyPoints\' (as we assume two default keyPoints at the "
+                             "instrument extremities).")
+        self.nbBeamDistribution = nbBeamDistribution
+        self.nbBeams = sum(nbBeamDistribution)
         # Check on restStrain
         if len(restStrain) != len(keyPoints)+1:
             raise ValueError("[Instrument (class)]: initialisation of object Instrument "
@@ -31,11 +40,14 @@ class Instrument(object):
     def getTotalLength(self):
         return self.totalLength
 
+    def getKeyPoints(self):
+        return self.keyPoints
+
+    def getNbBeamDistribution(self):
+        return self.nbBeamDistribution
+
     def getNbBeams(self):
         return self.nbBeams
-
-    def getKeyPoints(self):
-        pass
 
     # This method returns the rest DoFs corresponding to a pair of curvilinear abscissas,
     # representing a beam.

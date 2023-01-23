@@ -58,8 +58,6 @@ from instrument import Instrument
 #
 # Init arguments :
 #  - nbInstruments: number of simulated coaxial instruments
-#  - instrumentBeamNumberVect : for each instrument, vector containing a number
-#    of beam elements spread uniformely on the instrument total length
 #  - instrumentFrameNumberVect : for each instrument, vector containing a number
 #    of rigid frames spread uniformely on the instrument total length
 #  - incrementDistance : distance of pushing/pulling the instrument at user
@@ -88,7 +86,6 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
 
     def __init__(self, rootNode, solverNode,
                  nbInstruments,
-                 instrumentBeamNumberVect,
                  instrumentFrameNumberVect,
                  incrementDistance,
                  incrementAngle,
@@ -113,7 +110,6 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
         self.nbIntermediateConstraintFrames = nbIntermediateConstraintFrames
         self.incrementAngle = incrementAngle
         self.incrementDirection = incrementDirection
-        self.instrumentBeamNumberVect = instrumentBeamNumberVect
         self.instrumentFrameNumberVect = instrumentFrameNumberVect
         self.curvAbsTolerance = curvAbsTolerance
 
@@ -358,62 +354,95 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
 
         for instrumentId in range(0,self.nbInstruments):
 
-            # Add first key point = proximal extremity point
-            beginNodeCurvAbs = xBeginVect[instrumentId] + 0.0
-            # TO DO: are the two check below relevent for the first key point ?
-            if (beginNodeCurvAbs > 0):
-                simulatedNodeCurvAbs.append(beginNodeCurvAbs)
-                simulatedFrameCurvAbs.append(beginNodeCurvAbs)
-                # Update the maxCurvilinearAbscissa if beginNodeCurvAbs is higher
-                if (beginNodeCurvAbs > maxCurvilinearAbscissa):
-                    maxCurvilinearAbscissa = beginNodeCurvAbs
+            currentInstrument = self.instrumentList[instrumentId]
 
+            # NB: in this method, we name as 'keyPoint' values which represent
+            # curvilinear abscissas expressed in the instrument local frame,
+            # ranging from 0 to the length of the instrument.
+            # The values we name as 'curvAbs', however, are curvilinear abscissas
+            # expressed relatively to the frame representing the insertion point
+            # (common to all instruments). In this context, curvilinear abscissas
+            # range between -instrumentLength and instrumentLength, negative values
+            # representing the instrument parts which have not been deployed yet.
 
+            proximalEndKeyPoint = 0.
+            distalEndKeyPoint = currentInstrument.getTotalLength()
 
+            instrumentKeyPoints = [proximalEndKeyPoint]
+            instrumentKeyPoints += currentInstrument.getKeyPoints()
+            instrumentKeyPoints.append(distalEndKeyPoint)
+            # print("instrumentKeyPoints : {}".format(instrumentKeyPoints))
 
-            # Add last key point = distal extremity point
+            nbBeamDistribution = currentInstrument.getNbBeamDistribution()
             instrumentLength = currentInstrument.getTotalLength()
-            endNodeCurvAbs = xBeginVect[instrumentId] + instrumentLength
-            if (endNodeCurvAbs > 0):
-                # If the distal end of the interval is visible (curv. abs. > 0),
-                # it means that a least a part of the interval is out, so the
-                # correpsonding curv. abs. has to be added in simulatedNodeCurvAbs.
-                #
-                # If additionnaly, this curv. abs. is greater than the current
-                # maximum abscissa (maxCurvilinearAbscissa), it means that the
-                # current interval is visible. In this case, we have to discretise
-                # the visible part into several beam elements, based on the
-                # desired beam density.
 
-                # Add the end point of the interval
-                simulatedNodeCurvAbs.append(endNodeCurvAbs)
-                simulatedFrameCurvAbs.append(endNodeCurvAbs)
+            nbFrameSegmentsOnInstrument = self.instrumentFrameNumberVect[instrumentId]-1
 
-                if (endNodeCurvAbs > maxCurvilinearAbscissa):
+            instrumentBeginCurvAbs = xBeginVect[instrumentId]
+
+            for keyPointId in range( len(instrumentKeyPoints)-1 ):
+
+                keyPoint = instrumentKeyPoints[keyPointId]
+                nextKeyPoint = instrumentKeyPoints[keyPointId+1]
+
+                keyPointCurvAbs = instrumentBeginCurvAbs + keyPoint
+                nextKeyPointCurvAbs = instrumentBeginCurvAbs + nextKeyPoint
+
+                # In any case, the key points are added to simulatedNodeCurvAbs
+                # as soon as they are deployed
+
+                if (keyPointCurvAbs > 0):
+                    simulatedNodeCurvAbs.append(keyPointCurvAbs)
+                    simulatedFrameCurvAbs.append(keyPointCurvAbs)
+
+                # Additionaly, if part of the instrument between the two key points
+                # is visible, we add a number of beam nodes according to the
+                # interval beam density and visible length
+
+                visibleIntervalLength = nextKeyPointCurvAbs - maxCurvilinearAbscissa
+
+                if (visibleIntervalLength > 0):
+
+                    # print("Part of segment {} on instrument {} is visible".format(keyPointId, instrumentId))
 
                     # Compute the number of new nodes to add
-                    intervalLength = instrumentLength # NB: difference of CA between the two key points
-                    visibleIntervalLength = endNodeCurvAbs - maxCurvilinearAbscissa
+                    intervalLength = nextKeyPoint - keyPoint
                     ratio = visibleIntervalLength / intervalLength
-                    nbBeamsOnInstrument = self.instrumentBeamNumberVect[instrumentId]
-                    nbNewNodes = int(nbBeamsOnInstrument * ratio)
+                    nbBeamsOnInterval = nbBeamDistribution[keyPointId]
+                    nbNewNodes = int(nbBeamsOnInterval * ratio)
 
                     # Add the new nodes
                     for newNodeId in range(0, nbNewNodes):
-                        newNodeCurvAbs = endNodeCurvAbs - (newNodeId+1) * (intervalLength / nbBeamsOnInstrument)
+                        newNodeCurvAbs = nextKeyPointCurvAbs - (newNodeId+1) * (intervalLength / nbBeamsOnInterval)
                         simulatedNodeCurvAbs.append(newNodeCurvAbs)
 
                     # Compute the number of new frames to add
-                    nbFrameSegmentsOnInstrument = self.instrumentFrameNumberVect[instrumentId]-1
-                    nbNewFrames = int(nbFrameSegmentsOnInstrument * ratio)
+                    # Contrarily to beam nodes, the output frames of the Cosserat mapping
+                    # are distributed uniformly over the instrument.
+                    # As we impose frames on the instrument keyPoints, we have to compute
+                    # the number of frame segments on each keyPoint interval. The
+                    # computation has to be done individually for each interval to avoid
+                    # rounding errors.
+                    nbFrameSegmentsOnInterval = int(nbFrameSegmentsOnInstrument * intervalLength / instrumentLength)
+                    nbNewFrames = int(nbFrameSegmentsOnInterval * ratio)
 
                     # Add the new frames
+                    # print("intervalLength : {}".format(intervalLength))
                     for newFrameId in range(0, nbNewFrames):
-                        newFrameCurvAbs = endNodeCurvAbs - (newFrameId+1) * (intervalLength / nbFrameSegmentsOnInstrument)
+                        newFrameCurvAbs = nextKeyPointCurvAbs - (newFrameId+1) * (intervalLength / nbFrameSegmentsOnInterval)
                         simulatedFrameCurvAbs.append(newFrameCurvAbs)
 
                     # Update the max curv. abs.
-                    maxCurvilinearAbscissa = endNodeCurvAbs
+                    maxCurvilinearAbscissa = nextKeyPointCurvAbs
+
+            # After the end of the for loop above, we just have to process the
+            # instrument last key point
+            lastKeyPoint = instrumentKeyPoints[len(instrumentKeyPoints)-1]
+            lastKeyPointCurvAbs = instrumentBeginCurvAbs + lastKeyPoint
+            if (lastKeyPointCurvAbs > 0):
+                simulatedNodeCurvAbs.append(lastKeyPointCurvAbs)
+                simulatedFrameCurvAbs.append(lastKeyPointCurvAbs)
+
 
         # endfor instrumentId in range(0,self.nbInstruments)
 
