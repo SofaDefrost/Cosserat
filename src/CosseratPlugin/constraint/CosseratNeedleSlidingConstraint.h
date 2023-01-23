@@ -118,6 +118,21 @@ public:
     //                     core::MultiVecDerivId res,
     //                     const BaseVector* lambda) override;
     /////////////////////////////////////////////////////////////////////////
+    void storeLambda(const ConstraintParams */*cParams*/, Data<VecDeriv> &result, const Data<MatrixDeriv> &jacobian, const sofa::linearalgebra::BaseVector *lambda)
+    {
+      auto res = sofa::helper::getWriteAccessor(result);
+      const MatrixDeriv &j = jacobian.getValue();
+      j.multTransposeBaseVector(res, lambda); // lambda is a vector of scalar value so block size is one.
+    }
+
+    void storeLambda(const ConstraintParams */*cParams*/, MultiVecDerivId res, const sofa::linearalgebra::BaseVector *lambda) override
+    {
+      // if (cParams)
+      // {
+      //     storeLambda(cParams, *res[m_state1->getMstate()].write(), *cParams->readJ(m_state1->getMstate()), lambda);
+      //     storeLambda(cParams, *res[m_state2->getMstate()].write(), *cParams->readJ(m_state2->getMstate()), lambda);
+      // }
+    }
 
 protected:
     //Input data
@@ -131,8 +146,7 @@ protected:
     // displacement = the constraint will impose the displacement provided in data d_inputValue[d_iputIndex]
     // force = the constraint will impose the force provided in data d_inputValue[d_iputIndex]
 
-
-protected:
+  public:
 
     ////////////////////////// Inherited attributes ////////////////////////////
     /// https://gcc.gnu.org/onlinedocs/gcc/Name-lookup.html

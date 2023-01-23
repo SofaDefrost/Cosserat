@@ -31,3 +31,5 @@ scenes/
 .DS_Store
 .vscode/
 .vscode
+python3/cosserat/examples/testRigidDistanceMapping_00000.mtl
+python3/cosserat/examples/testRigidDistanceMapping_00000.obj

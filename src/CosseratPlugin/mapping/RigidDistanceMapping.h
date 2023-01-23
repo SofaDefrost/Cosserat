@@ -106,6 +106,7 @@ protected:
     Data<type::Vec4f>                   d_color;
     Data<type::vector<unsigned int> >   d_index;
     Data<bool>                          d_debug ;
+    Data<bool>                          d_newVersionOfFrameComputation;
 
     core::State<Out>* m_toModel;
 
