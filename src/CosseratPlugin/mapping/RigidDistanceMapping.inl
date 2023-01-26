@@ -55,6 +55,7 @@ RigidDistanceMapping<TIn1, TIn2, TOut>::RigidDistanceMapping()
     , d_index(initData(&d_index, "index", "if this parameter is false, you draw the beam with color "
                                                           "according to the force apply to each beam"))
     , d_debug(initData(&d_debug, false, "debug", "show debug output.\n"))
+    ,d_newVersionOfFrameComputation(initData(&d_newVersionOfFrameComputation, false, "newVersionOfFrameComputation", "if true, the frame is computed with the new version of the code"))
 {
         d_debug.setValue(false);
 
@@ -124,35 +125,47 @@ void RigidDistanceMapping<TIn1, TIn2, TOut>::apply(
     auto &m2Indices = d_index2.getValue();
 
     size_t baseIndex = 0; // index of the first point of the beam, add this to the data
-    //@TODO call the function to Compute frames or update theme here
-    //@TODO : m_objects1Frames and m_objects2Frames
-    Transform global_Obj1_local = Transform(In1::getCPos(in1[baseIndex]),In1::getCRot(in1[baseIndex]));
-    Transform global_Obj2_local = Transform(In2::getCPos(in2[baseIndex]),In2::getCRot(in2[baseIndex]));
+    m_vecObject1_H_Object2.clear();
+    printf(" ====== Apply =============== \n");
 
     for (sofa::Index pid=0; pid<m_minInd; pid++) {
         int tm1 = m1Indices[pid];
         int tm2 = m2Indices[pid];
-        m_vecH.clear();
-        //compute the transformation between the two points
-        Transform global_H_local1 = Transform(In1::getCPos(in1[tm1]),In1::getCRot(in1[tm1]));
-        Transform global_H_local2 = Transform(In2::getCPos(in2[tm2]),In2::getCRot(in2[tm2]));
-        Transform Object1_H_Object2 = global_H_local1.inversed()*global_H_local2;
 
-        m_vecH.push_back(Object1_H_Object2);
+        Vec3 outCenter ;
+        Rot outOri;
 
-        std::cout << "The transform is :" << Object1_H_Object2 << std::endl;
-        Vec3 outCenter = Object1_H_Object2.getOrigin();
-        std::cout << " The center is : " <<  outCenter << std::endl;
-        type::Quat outOri = Object1_H_Object2.getOrientation();
+        if (d_newVersionOfFrameComputation.getValue()) {
+
+          Transform global_H_local1 = Transform(In1::getCPos(in1[tm1]),In1::getCRot(in1[tm1]));
+          Transform global_H_local2 = Transform(In2::getCPos(in2[tm2]),In2::getCRot(in2[tm2]));
+          Transform Object1_H_Object2 = global_H_local1.inversed()*global_H_local2;
+          m_vecObject1_H_Object2.push_back(global_H_local2);
+
+          std::cout << "The transform is :" << Object1_H_Object2 << std::endl;
+          // Distance in the global frame
+          auto distance = Object1_H_Object2.getOrigin();
+          // apply orientation to the distance to get the distance in the local frame
+          outCenter = global_H_local2.getOrientation().rotate(distance);
+          std::cout << " The center is : " <<  outCenter << std::endl;
+
+          outOri = Object1_H_Object2.getOrientation();
+        }else{
+          outCenter = (In2::getCPos(in2[tm2]) - In1::getCPos(in1[tm1]));
+          //outOri = (In1::getCRot(in1[tm1]).inverse()*In2::getCRot(in2[tm2]));
+          outOri = (In2::getCRot(in2[tm2])*In1::getCRot(in1[tm1]).inverse());
+        }
 
         outOri.normalize();
         out[pid] = OutCoord(outCenter,outOri);
+
         if (d_debug.getValue()){
             std::cout << " in1 :" << in1[tm1] << std::endl;
             std::cout << " in2 :" << in2[tm2] << std::endl;
             std::cout << " out :" << out[pid] << std::endl;
         }
     }
+    printf(" ====== End Apply =============== \n \n");
     dataVecOutPos[0]->endEdit();
 }
 
@@ -179,13 +192,28 @@ void RigidDistanceMapping<TIn1, TIn2, TOut>:: applyJ(
     const auto &m2Indices = d_index2.getValue();
 
     SpatialVector vDOF1, vDOF2;
-    std::cout << "the size of the Ind is : " << m_minInd << std::endl;
-    std::cout << "the size of the outVel is : " << outVel.size() << std::endl;
-
+    printf(" ====== ApplyJ =============== \n");
     for (sofa::Index index = 0; index < m_minInd; index++) {
+      if (d_newVersionOfFrameComputation.getValue()){
+//        Transform Object1_H_Object2 = m_vecObject1_H_Object2[index];
+        Transform global_H_Object2 = m_vecObject1_H_Object2[index];
+        std::cout << " getVCenter(in1Vel[m1Indices[index]]) : " << getVCenter(in1Vel[m1Indices[index]])  << std::endl;
+        std::cout << " getVCenter(in2Vel[m2Indices[index]]) : " << getVCenter(in2Vel[m2Indices[index]])  << std::endl;
+
+        //get velocity in  the global frame
+        auto velDistance =  getVCenter(in2Vel[m2Indices[index]]) - getVCenter(in1Vel[m1Indices[index]]);
+        std::cout << " velDistance : " << velDistance << std::endl;
+        // apply orientation to the velocity to get the velocity in the local frame
+        getVCenter(outVel[index]) = global_H_Object2.getOrientation().rotate( velDistance);
+        std::cout << " oriented velDistance : " << velDistance << std::endl;
+        //get angular velocity in the global frame
+        getVOrientation(outVel[index]) =  getVOrientation(in2Vel[m2Indices[index]]) - getVOrientation(in1Vel[m1Indices[index]]) ; ;
+      }else{
         getVCenter(outVel[index]) = getVCenter(in2Vel[m2Indices[index]]) - getVCenter(in1Vel[m1Indices[index]]);
         getVOrientation(outVel[index]) =  getVOrientation(in2Vel[m2Indices[index]]) - getVOrientation(in1Vel[m1Indices[index]]) ;
+      }
     }
+    printf(" ====== End ApplyJ  =============== \n\n");
     dataVecOutVel[0]->endEdit();
 
     // old version
@@ -228,14 +256,30 @@ void RigidDistanceMapping<TIn1, TIn2, TOut>:: applyJT(
     // TO DO: is it necessary to raise a warning or an error?
     if (inForce.size() != m_minInd)
         return;
+    printf(" ====== ApplyJT =============== \n");
 
-    for (sofa::Index index = 0; index < m_minInd; index++) {
-        getVCenter(     out1Force[m1Indices[index]]) -= getVCenter(     inForce[index]);
+    if (d_newVersionOfFrameComputation.getValue()){
+      for (sofa::Index index = 0; index < m_minInd; index++) {
+        // These forces are computed in the local frames
+        // Let us compute the forces in the global frame
+        Transform Object2_H_Global = m_vecObject1_H_Object2[index].inversed();
+        auto temp = getVCenter(     inForce[index]);
+        getVCenter(     out1Force[m1Indices[index]]) -= Object2_H_Global.getOrientation().rotate( temp );
         getVOrientation(out1Force[m1Indices[index]]) -= getVOrientation(inForce[index]);
 
-        getVCenter(     out2Force[m2Indices[index]]) += getVCenter(     inForce[index]);
+        getVCenter(     out2Force[m2Indices[index]]) += Object2_H_Global.getOrientation().rotate( temp );
         getVOrientation(out2Force[m2Indices[index]]) += getVOrientation(inForce[index]);
+      }
+    }else {
+      for (sofa::Index index = 0; index < m_minInd; index++) {
+        getVCenter(out1Force[m1Indices[index]]) -= getVCenter(inForce[index]);
+        getVOrientation(out1Force[m1Indices[index]]) -= getVOrientation(inForce[index]);
+        getVCenter(out2Force[m2Indices[index]]) += getVCenter(inForce[index]);
+        getVOrientation(out2Force[m2Indices[index]]) += getVOrientation(inForce[index]);
+      }
     }
+    printf(" ====== End ApplyJT =============== \n\n");
+
     dataVecOut1Force[0]->endEdit();
     dataVecOut2Force[0]->endEdit();
 }
@@ -305,10 +349,10 @@ void RigidDistanceMapping<TIn1, TIn2, TOut>::applyJT(
 
 
 template <class TIn1, class TIn2, class TOut>
-int RigidDistanceMapping<TIn1, TIn2, TOut>::computeTransform(Transform &global_H0_local,
-                                                     Transform &global_H1_local,
-                                                     Transform &local0_H_local1,
-                                                     Quat<Real> &local_R_local0,
+int RigidDistanceMapping<TIn1, TIn2, TOut>::computeTransform(Transform &global_H_local1,
+                                                     Transform &global_H_local2,
+                                                     Transform &local1_H_local2,
+                                                     Quat<Real> &local1_R_local2,
                                                      const Coord1 &x1, const Coord2 &x2)
 {
         /// 1. Get the indices of element and nodes
@@ -325,26 +369,26 @@ int RigidDistanceMapping<TIn1, TIn2, TOut>::computeTransform(Transform &global_H
         Transform global_H_OBJ1(x2.getCenter(), x2.getOrientation());
 
         /// - add a optional transformation
-        Transform global_H_local0 = global_H_OBJ0*OBJ0_H_local0;
-        Transform global_H_local1 = global_H_OBJ1*OBJ1_H_local1;
+        global_H_local1 = global_H_OBJ0*OBJ0_H_local0;
+        global_H_local2 = global_H_OBJ1*OBJ1_H_local1;
 
 
         /// 4. Compute the local frame
         /// SIMPLIFICATION: local = local0:
-        local_R_local0.clear();
+        local1_R_local2.clear();
 
         global_H_OBJ0.set(type::Vec3(0,0,0), x1.getOrientation());
         global_H_OBJ1.set(type::Vec3(0,0,0), x2.getOrientation());
 
         /// - rotation due to the optional transformation
-        global_H_local0 = global_H_OBJ0*OBJ0_H_local0;
-        global_H_local1 = global_H_OBJ1*OBJ1_H_local1;
+        global_H_local1 = global_H_OBJ0*OBJ0_H_local0;
+        global_H_local2 = global_H_OBJ1*OBJ1_H_local1;
 
-        global_H0_local = global_H_local0;
-        sofa::type::Quat local0_R_local1 = local0_H_local1.getOrientation();
+//        global_H_local1 = global_H_local1;
+        sofa::type::Quat local0_R_local1 = local1_H_local2.getOrientation();
         Transform local0_HR_local1(type::Vec3(0,0,0), local0_R_local1);
 
-        global_H1_local = global_H_local1 * local0_HR_local1.inversed();
+        global_H_local2 = global_H_local1 * local0_HR_local1.inversed();
 
         return 1;
     }

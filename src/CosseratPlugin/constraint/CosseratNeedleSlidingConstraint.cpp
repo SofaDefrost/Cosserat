@@ -131,7 +131,7 @@ public:
         ReadAccessor<Data<typename CosseratNeedleSlidingConstraint<T>::VecCoord>> positions = self.mstate->readPositions();
         type::Vec<6,bool> use = self.d_useDirections.getValue();
         for (size_t i = 0; i < positions.size(); i++){
-            if (use[1]) resTab[offset++] = new BilateralConstraintResolution();
+            if (use[0]) resTab[offset++] = new BilateralConstraintResolution();
             if (use[1]) resTab[offset++] = new BilateralConstraintResolution();
             if (use[2]) resTab[offset++] = new BilateralConstraintResolution();
         }

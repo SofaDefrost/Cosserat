@@ -106,6 +106,7 @@ protected:
     Data<type::Vec4f>                   d_color;
     Data<type::vector<unsigned int> >   d_index;
     Data<bool>                          d_debug ;
+    Data<bool>                          d_newVersionOfFrameComputation;
 
     core::State<Out>* m_toModel;
 
@@ -169,7 +170,7 @@ public:
 public:
     type::vector<Transform> m_objects1Frames;
     type::vector<Transform> m_objects2Frames;
-    type::vector<Transform> m_vecH;
+    type::vector<Transform> m_vecObject1_H_Object2;
 
 };
 

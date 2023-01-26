@@ -30,15 +30,14 @@ draw_cylinder = 1
 add_collision_point = 1
 
 pluginList = ['SofaPreconditioner', 'Sofa.Component.IO.Mesh', 'Sofa.Component.Mass', 'Sofa.Component.Topology.Container.Dynamic', 'Sofa.GL.Component.Rendering3D',
-               'SoftRobots',
+               'SoftRobots', 'Sofa.Component.Constraint.Lagrangian.Correction',
                'Sofa.Component.Collision.Geometry', 'Sofa.Component.Collision.Detection.Intersection', 'Sofa.Component.Collision.Response.Mapper', 'Sofa.Component.Collision.Response.Contact','Sofa.Component.Constraint.Lagrangian.Correction', 'Sofa.Component.SceneUtility', 'Sofa.Component.SolidMechanics.FEM.Elastic',
               'CosseratPlugin', 'Sofa.Component.AnimationLoop', 'Sofa.Component.Constraint.Lagrangian.Solver', 'Sofa.Component.Engine.Select', 'Sofa.Component.Setting',
               "Sofa.Component.LinearSolver.Direct", "Sofa.Component.MechanicalLoad", "Sofa.Component.ODESolver.Backward", "Sofa.Component.SolidMechanics.Spring", "Sofa.Component.Visual", 'Sofa.Component.Collision.Detection.Algorithm', 'Sofa.Component.Mapping',
               "Sofa.Component.Collision.Detection.Intersection", "Sofa.Component.Collision.Geometry", "Sofa.Component.Collision.Response.Contact", "Sofa.Component.Mapping.MappedMatrix", "Sofa.Component.Topology.Container.Grid","Sofa.Component.Mapping.NonLinear",
-              "Sofa.Component.Constraint.Lagrangian.Model",
-              "Sofa.Component.Collision.Response.Mapper",
+              "Sofa.Component.Constraint.Lagrangian.Model", 'Sofa.Component.Mapping.MappedMatrix',
+              "Sofa.Component.Collision.Response.Mapper", 'Sofa.Component.StateContainer',
               "Sofa.Component.Topology.Mapping", "Sofa.Component.LinearSolver.Iterative"]
-
 
 PRig = 0.38  # poison ratio for the rigid part of the beam
 PSoft = 0.43  # poison ratio for the soft part of the beam
