@@ -371,7 +371,6 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
             instrumentKeyPoints = [proximalEndKeyPoint]
             instrumentKeyPoints += currentInstrument.getKeyPoints()
             instrumentKeyPoints.append(distalEndKeyPoint)
-            # print("instrumentKeyPoints : {}".format(instrumentKeyPoints))
 
             nbBeamDistribution = currentInstrument.getNbBeamDistribution()
             instrumentLength = currentInstrument.getTotalLength()
@@ -403,8 +402,6 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
 
                 if (visibleIntervalLength > 0):
 
-                    # print("Part of segment {} on instrument {} is visible".format(keyPointId, instrumentId))
-
                     # Compute the number of new nodes to add
                     intervalLength = nextKeyPoint - keyPoint
                     ratio = visibleIntervalLength / intervalLength
@@ -427,7 +424,6 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
                     nbNewFrames = int(nbFrameSegmentsOnInterval * ratio)
 
                     # Add the new frames
-                    # print("intervalLength : {}".format(intervalLength))
                     for newFrameId in range(0, nbNewFrames):
                         newFrameCurvAbs = nextKeyPointCurvAbs - (newFrameId+1) * (intervalLength / nbFrameSegmentsOnInterval)
                         simulatedFrameCurvAbs.append(newFrameCurvAbs)
@@ -443,8 +439,8 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
                 simulatedNodeCurvAbs.append(lastKeyPointCurvAbs)
                 simulatedFrameCurvAbs.append(lastKeyPointCurvAbs)
 
-
         # endfor instrumentId in range(0,self.nbInstruments)
+
 
         # When all points of interest have been detected, we sort and filter
         # ther curv. abs' list.
@@ -1010,14 +1006,11 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
         nbInstruments = self.nbInstruments
         nbNewNodes = len(decimatedNodeCurvAbs)
 
-        # print("instrumentLastNodeIds : {}".format(instrumentLastNodeIds))
-
         for instrumentId in range(nbInstruments):
 
             instrument = self.instrumentList[instrumentId]
             instrumentTotalLength = instrument.getTotalLength()
 
-            # /!\ In the following code, we can use equivalently
             instrumentLastNodeId = instrumentLastNodeIds[instrumentId]
             nbDeployedBeams = instrumentLastNodeId
             instrumentDeployedLength = decimatedNodeCurvAbs[instrumentLastNodeId]
@@ -1046,41 +1039,39 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
                                 "node called \'MappedFrames\', in which the Cosserat "
                                 "rigid frames and the Cosserat mapping are defined.")
 
-            instrumentNbBeams = instrument.getNbBeams()
-
             # NB: we retrieve a copy of the instrument Cosserat MO fields, as we are
             # about to update them.
             # previousStepMORestShape = cosseratMechanicalNode.rateAngularDeformMO.rest_position.value.copy()
             previousStepMOPosition = cosseratMechanicalNode.rateAngularDeformMO.position.value.copy()
             previousStepMOVelocity = cosseratMechanicalNode.rateAngularDeformMO.velocity.value.copy()
+            nbBeamInAngularRateMO = len(previousStepMOPosition)
 
+            # Retrieving information on the previous discretisation
             prevInstrumentCurvAbs = instrument.getPrevDiscretisation()
-            # print("prevInstrumentCurvAbs : {}".format(prevInstrumentCurvAbs))
+            nbDeployedBeamsInPrevDiscretisation = len(prevInstrumentCurvAbs)-1
             instrumentLengthDiff = decimatedNodeCurvAbs[instrumentLastNodeId] - prevInstrumentCurvAbs[len(prevInstrumentCurvAbs)-1]
-            # print("instrumentLengthDiff : {}".format(instrumentLengthDiff))
 
             for newBeamId in range(nbDeployedBeams):
 
-                # print("Interpolating beam {} instrument {}".format(newBeamId, instrumentId))
-
-                # Getting the beam extremities curvilinear abscissas
+                # Getting the beam extremities's curvilinear abscissas (expressed
+                # in the global instrument configuration, in which 0 corresponds
+                # to the 'insertion' point)
                 beamBeginCurvAbs = decimatedNodeCurvAbs[newBeamId]
                 beamEndCurvAbs = decimatedNodeCurvAbs[newBeamId+1]
-                # print("beamBeginCurvAbs : {}".format(beamBeginCurvAbs))
-                # print("beamEndCurvAbs : {}".format(beamEndCurvAbs))
 
+                # Expressing the curvilinear abscissas in the instrument local
+                # configuration (in which 0 corresponds to the proximal end)
                 beamBeginCurvAbsAtRest = beamBeginCurvAbs + instrumentUndeployedLength
                 beamEndCurvAbsAtRest = beamEndCurvAbs + instrumentUndeployedLength
 
-                # print("first curv abs : {} ".format(beamBeginCurvAbsAtRest + self.curvAbsTolerance))
-                # print("second curv abs : {} ".format(beamEndCurvAbsAtRest - self.curvAbsTolerance))
-
                 # We use a safety margin to make sure that one of the curvilinear abscissas is not
                 # exactly on a key point (i.e. a curvilinear abscissa value for which the rest strain
-                # of the instrument changes). This safety margin has to be lower than both the
-                # navigation increment distance and half the difference between both curvilinear
-                # abscissas
-                curvAbsSafetyMargin = min(abs(beamBeginCurvAbsAtRest - beamEndCurvAbsAtRest)*1e-1, self.incrementDistance)
+                # of the instrument changes). This safety margin has to be significantly lower than both the
+                # navigation increment distance and the difference between both curvilinear abscissas.
+                # We arbitrarily divide the quantities by 10 for comparison.
+                # TO DO: use a more rigourous definition ?
+                curvAbsSafetyMargin = min(abs(beamBeginCurvAbsAtRest - beamEndCurvAbsAtRest)*1e-1, self.incrementDistance*1e-1)
+
 
                 ### Interpolating the rest positions ###
 
@@ -1088,50 +1079,58 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
                                                       beamEndCurvAbsAtRest - curvAbsSafetyMargin)
 
                 # Updating the rest strain in the Cosserat MechanicalObject
-                beamIdInMechanicalObject = instrumentNbBeams - nbDeployedBeams + newBeamId
+
+                beamIdInMechanicalObject = nbBeamInAngularRateMO - nbDeployedBeams + newBeamId
                 with cosseratMechanicalNode.rateAngularDeformMO.rest_position.writeable() as rest_position:
                     rest_position[beamIdInMechanicalObject] = restStrain
 
                 ### Interpolating the position ###
-                beginCurvAbsBeamIdInPrevDiscretisation = instrument.getBeamIdInPrevDiscretisation(beamBeginCurvAbs+curvAbsSafetyMargin, instrumentLengthDiff)
-                endCurvAbsBeamIdInPrevDiscretisation = instrument.getBeamIdInPrevDiscretisation(beamEndCurvAbs-curvAbsSafetyMargin, instrumentLengthDiff)
 
-                previousBeamPos = np.array([0., 0., 0.])
-                previousBeamVel = np.array([0., 0., 0.])
+                # NB: we compute the interpolation of position and velocity only if
+                # at least one beam of the current instrument was deployed in the
+                # last time step
+                if (nbDeployedBeamsInPrevDiscretisation > 0):
 
-                if (beginCurvAbsBeamIdInPrevDiscretisation == endCurvAbsBeamIdInPrevDiscretisation):
-                    # In this case, the new beam was entirely on a unique beam in the last time step.
-                    # No interpolation is required: we can directly assign the previous beam's position
-                    # and velocity to the new beam
-                    previousBeamPos = previousStepMOPosition[beginCurvAbsBeamIdInPrevDiscretisation]
-                    previousBeamVel = previousStepMOVelocity[beginCurvAbsBeamIdInPrevDiscretisation]
-                else:
-                    # In this case, the new beam is crossing more than one beam in the last time step.
-                    # We have to interpolate the position and velocity of these beams to compute the
-                    # position and velocity of the new beam.
-                    # As the Cosserat DoFs (angularRate) are expressed in a 'strain' space, we use
-                    # a simple linear interpolation.
-                    # print("A new beam (beam {}, instrument {}) is crossing more than one beam in previous step".format(newBeamId, instrumentId))
-                    crossedBeamLengths = instrument.getInterpolationBeamLengths(beamBeginCurvAbs + curvAbsSafetyMargin,
-                                                                                beamEndCurvAbs - curvAbsSafetyMargin,
-                                                                                instrumentLengthDiff)
-                    totBeamLength = sum(crossedBeamLengths)
-                    intermediateBeamId = beginCurvAbsBeamIdInPrevDiscretisation
-                    for beamLength in crossedBeamLengths:
-                        interpolationCoeff = (beamLength / totBeamLength)
-                        previousBeamPos += interpolationCoeff * np.array(previousStepMOPosition[intermediateBeamId])
-                        previousBeamVel += interpolationCoeff * np.array(previousStepMOVelocity[intermediateBeamId])
+                    beginCurvAbsBeamIdInPrevDiscretisation = instrument.getBeamIdInPrevDiscretisation(beamBeginCurvAbs+curvAbsSafetyMargin, instrumentLengthDiff)
+                    endCurvAbsBeamIdInPrevDiscretisation = instrument.getBeamIdInPrevDiscretisation(beamEndCurvAbs-curvAbsSafetyMargin, instrumentLengthDiff)
 
-                with cosseratMechanicalNode.rateAngularDeformMO.position.writeable() as position:
-                    position[beamIdInMechanicalObject] = previousBeamPos
-                with cosseratMechanicalNode.rateAngularDeformMO.velocity.writeable() as velocity:
-                    velocity[beamIdInMechanicalObject] = previousBeamVel
+                    previousBeamPos = np.array([0., 0., 0.])
+                    previousBeamVel = np.array([0., 0., 0.])
+
+                    if (beginCurvAbsBeamIdInPrevDiscretisation == endCurvAbsBeamIdInPrevDiscretisation):
+                        # In this case, the new beam was entirely on a unique beam in the last time step.
+                        # No interpolation is required: we can directly assign the previous beam's position
+                        # and velocity to the new beam
+                        beginBeamIdInPreviousMechanicalObject = nbBeamInAngularRateMO - nbDeployedBeamsInPrevDiscretisation + beginCurvAbsBeamIdInPrevDiscretisation
+                        previousBeamPos = previousStepMOPosition[beginBeamIdInPreviousMechanicalObject]
+                        previousBeamVel = previousStepMOVelocity[beginBeamIdInPreviousMechanicalObject]
+                    else:
+                        # In this case, the new beam is crossing more than one beam in the last time step.
+                        # We have to interpolate the position and velocity of these beams to compute the
+                        # position and velocity of the new beam.
+                        # As the Cosserat DoFs (angularRate) are expressed in a 'strain' space, we use
+                        # a simple linear interpolation.
+                        crossedBeamLengths = instrument.getInterpolationBeamLengths(beamBeginCurvAbs + curvAbsSafetyMargin,
+                                                                                    beamEndCurvAbs - curvAbsSafetyMargin,
+                                                                                    instrumentLengthDiff)
+
+                        totBeamLength = sum(crossedBeamLengths)
+                        beginBeamIdInPreviousMechanicalObject = nbBeamInAngularRateMO - nbDeployedBeamsInPrevDiscretisation + beginCurvAbsBeamIdInPrevDiscretisation
+                        intermediateBeamId = beginBeamIdInPreviousMechanicalObject
+                        for beamLength in crossedBeamLengths:
+                            interpolationCoeff = (beamLength / totBeamLength)
+                            previousBeamPos += interpolationCoeff * np.array(previousStepMOPosition[intermediateBeamId])
+                            previousBeamVel += interpolationCoeff * np.array(previousStepMOVelocity[intermediateBeamId])
+                            intermediateBeamId += 1
+
+                    with cosseratMechanicalNode.rateAngularDeformMO.position.writeable() as position:
+                        position[beamIdInMechanicalObject] = previousBeamPos
+                    with cosseratMechanicalNode.rateAngularDeformMO.velocity.writeable() as velocity:
+                        velocity[beamIdInMechanicalObject] = previousBeamVel
 
             ### Setting the instrument reference discretisation for next timestep ###
             instrumentNewCurvAbs = decimatedNodeCurvAbs[0:instrumentLastNodeId+1]
             instrument.setPrevDiscretisation(instrumentNewCurvAbs)
-
-
 
 
 

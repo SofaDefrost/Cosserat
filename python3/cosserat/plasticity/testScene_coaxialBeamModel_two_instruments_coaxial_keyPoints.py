@@ -169,7 +169,7 @@ def createScene(rootNode):
     beamCurvAbscissa.append(0.0)
 
     instrument0ConstantRestStrain0 = [0., 0., 0.]
-    instrument0ConstantRestStrain1 = [0., 0., 0.1]
+    instrument0ConstantRestStrain1 = [0., 0., 0.05]
 
     # EXPERIMENTAL: insertion navigation
     # Initially defining beams with 0 length, at 0
