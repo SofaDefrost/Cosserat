@@ -675,7 +675,7 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
                 raise NameError("[CombinedInstrumentsController]: Node \'coaxialSegmentFrames\' "
                                 "not found. The \'rigidBase\' node should have a child "
                                 "node called \'coaxialSegmentFrames\', in which the Cosserat "
-                                "mapping tracking coaxial segments shoudl is defined.")
+                                "mapping tracking coaxial segments should be defined.")
 
             # Retrieving the components
             # TO DO : existance check ? What is the appropriate binding method ?
@@ -935,7 +935,6 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
                     # decimatedNodeCurvAbs[1] or shorterInstrumentCoaxialFrameIds[self.nbIntermediateConstraintFrames+1]
                     if (decimatedNodeCurvAbs[1] < self.minimalDistanceForConstraint):
                         shorterInstrumentCoaxialFrameIds = shorterInstrumentCoaxialFrameIds[self.nbIntermediateConstraintFrames+1:len(shorterInstrumentCoaxialFrameIds)]
-                    # TO DO: apply the same threshold for intermediate coaxial frames
 
                     # For the longer instrument, we have to take into account the additional *coaxial* beams
                     # which are further than the first (shorter) instrument end. The notion of coaxial is
