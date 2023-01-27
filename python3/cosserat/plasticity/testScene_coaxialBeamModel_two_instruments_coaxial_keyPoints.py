@@ -284,8 +284,16 @@ def createScene(rootNode):
     coaxialFrameNode0 = rigidBaseNode0.addChild('coaxialSegmentFrames')
     rateAngularDeformNode0.addChild(coaxialFrameNode0)
 
-    # We need at most 2*nbBeams + 1 frames to track the coaxial beam segments
-    nbCoaxialFrames0 = nbBeams0PlusStock+1
+    # By default, the nbIntermediateConstraintFrames parameter of the
+    # CosseratNavigationController is 0, meaning that we don't add intermediate
+    # coaxial frames on each coaxial beam segments (between the beam extremities)
+    # to further constrain the segments. In such scenario, we need at most
+    # nbBeams0PlusStock+1 coaxial frames during the simulation.
+    # /!\ Here, we will pass the nbIntermediateConstraintFrames parameter with
+    # a value of 1, meaning that we need at most 2*nbBeams0PlusStock + 1 coaxial
+    # frames
+    nbIntermediateConstraintFrames = 1
+    nbCoaxialFrames0 = (nbIntermediateConstraintFrames+1)*nbBeams0PlusStock + 1
     coaxialFrames0InitPos = [[0., 0., 0., 0., 0., 0., 1.]]*nbCoaxialFrames0
     coaxialFrame0CurvAbscissa = [0.]*nbCoaxialFrames0
 
@@ -466,8 +474,9 @@ def createScene(rootNode):
     coaxialFrameNode1 = rigidBaseNode1.addChild('coaxialSegmentFrames')
     rateAngularDeformNode1.addChild(coaxialFrameNode1)
 
-    # We need at most 2*nbBeams + 1 frames to track the coaxial beam segments
-    nbCoaxialFrames1 = nbBeams1PlusStock+1
+    # Cf comment on nbCoaxialFrames0 definition for details on the number of coaxial
+    # frames
+    nbCoaxialFrames1 = (nbIntermediateConstraintFrames+1)*nbBeams1PlusStock + 1
     coaxialFrames1InitPos = [[0., 0., 0., 0., 0., 0., 1.]]*nbCoaxialFrames1
     coaxialFrame1CurvAbscissa = [0.]*nbCoaxialFrames1
 
@@ -550,6 +559,7 @@ def createScene(rootNode):
                             incrementAngle=incrementAngle,
                             incrementDirection=incrementDirection,
                             instrumentList=instrumentList,
-                            curvAbsTolerance=curvAbsTolerance))
+                            curvAbsTolerance=curvAbsTolerance,
+                            nbIntermediateConstraintFrames=nbIntermediateConstraintFrames))
 
     return rootNode

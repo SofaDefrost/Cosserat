@@ -92,7 +92,7 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
                  incrementDirection,
                  instrumentList,
                  curvAbsTolerance,
-                 nbIntermediateConstraintFrames = 1,
+                 nbIntermediateConstraintFrames = 0,
                  *args, **kwargs):
         Sofa.Core.Controller.__init__(self, *args, **kwargs)
 
@@ -173,6 +173,55 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
         self.totalTime = 0.0
         self.dt = self.rootNode.findData('dt').value
         self.nbIterations = 0
+
+        ### Verification of parameter coherence ###
+
+        # Number of coaxial frames
+
+        for instrumentId in range(self.nbInstruments):
+
+            # Retrieving the coaxial frame node
+            instrumentNodeName = "Instrument" + str(instrumentId)
+            instrumentNode = self.solverNode.getChild(str(instrumentNodeName))
+            if instrumentNode is None:
+                raise NameError("[CombinedInstrumentsController]: Node \'{}\' not found. Your scene should "
+                                "contain a node named \'{}\' among the children of the root node in order "
+                                "to use this controller".format(instrumentNodeName, instrumentNodeName))
+
+            cosseratMechanicalNode = instrumentNode.getChild('rateAngularDeform')
+            if cosseratMechanicalNode is None:
+                raise NameError("[CombinedInstrumentsController]: Node \'rateAngularDeform\' "
+                                "not found. Your scene should contain a node named "
+                                "\'rateAngularDeform\' among the children of the \'{}\' "
+                                "node, gathering the mechanical Cosserat components "
+                                "(MechanicalObject, Cosserat forcefield)".format(instrumentNodeName))
+
+            rigidBaseNode = instrumentNode.getChild('rigidBase')
+            if rigidBaseNode is None:
+                raise NameError("[CombinedInstrumentsController]: Node \'rigidBase\' "
+                                "not found. Your scene should contain a node named "
+                                "\'rigidBase\' among the children of the \'{}\' "
+                                "node, where the base and rigid frames of the "
+                                "Cosserat model are defined".format(instrumentNodeName))
+
+            coaxialFramesNode = rigidBaseNode.getChild('coaxialSegmentFrames')
+            if coaxialFramesNode is None:
+                raise NameError("[CombinedInstrumentsController]: Node \'coaxialSegmentFrames\' "
+                                "not found. The \'rigidBase\' node should have a child "
+                                "node called \'coaxialSegmentFrames\', in which the Cosserat "
+                                "mapping tracking coaxial segments should be defined.")
+
+            nbBeamsInMechanicalObject = len(cosseratMechanicalNode.rateAngularDeformMO.position)
+            nbCoaxialFrames = len(coaxialFramesNode.coaxialFramesMO.position)
+            if (nbCoaxialFrames != (nbIntermediateConstraintFrames+1) * nbBeamsInMechanicalObject + 1):
+                raise ValueError("[CombinedInstrumentsController]: The number of coaxial frames ({}) "
+                                 "is not coherent with the number of beams ({}) provided for instrument{}, "
+                                 "and this controller nbIntermediateConstraintFrames parameter. For a "
+                                 "given number of beams *nbBeams* and a given *nbIntermediateConstraintFrames* "
+                                 "parameter, the number of coaxial frames should be : "
+                                 "(nbIntermediateConstraintFrames+1)*nbBeams + 1."
+                                 "".format(nbCoaxialFrames, nbBeamsInMechanicalObject, instrumentId))
+
 
 
     # -------------------------------------------------------------------- #
