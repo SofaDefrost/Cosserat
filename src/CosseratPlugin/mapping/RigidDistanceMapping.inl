@@ -162,7 +162,8 @@ void RigidDistanceMapping<TIn1, TIn2, TOut>::apply(
           std::cout << "The parent1Pos[" << tm1 << "] = " << parent1Pos[tm1] << std::endl;
           std::cout << "The parent2Pos[" << tm2 << "] = " << parent2Pos[tm2] << std::endl;
 
-          outCenter = parent1_H_parent2.getOrigin();
+//          outCenter = parent1_H_parent2.getOrigin();
+          outCenter = global_H_parent2.getOrientation().rotate(In2::getCPos(parent2Pos[tm2]) - In1::getCPos(parent1Pos[tm1]));
           outOri = parent1_H_parent2.getOrientation(); outOri.normalize();
           childPos[pid] = OutCoord(outCenter,outOri);
 
@@ -235,12 +236,13 @@ void RigidDistanceMapping<TIn1, TIn2, TOut>:: applyJ(
 
 
         // V1_2 = 1_R_2 * V1_1 + omega x p1
-        auto parent1Velin2 = m_vParent1_H_Parent2[index].getOrientation().rotate(parent2Vel)  + cross(omega, getVCenter(parent1Velocities[m1Indices[index]]));
+//        auto parent1Velin2 = m_vGlobal_H_Parent2[index].getOrientation().rotate(parent2Vel - parent1Vel)  + cross(omega, getVCenter(parent1Velocities[m1Indices[index]]));
+        auto parent1Velin2 = m_vGlobal_H_Parent2[index].getOrientation().rotate(parent2Vel - parent1Vel)  + cross(omega, m_vParent1_H_Parent2[index].getOrigin());
         std::cout << "velocity = " << parent1Velin2  << std::endl;
 
         // Du to the fact that the velocity of parent2 in is frame is zero, we can write :
         getVCenter(childVelocities[index]) = parent1Velin2;
-        getVOrientation(childVelocities[index]) = m_vParent1_H_Parent2[index].getOrientation().rotate(getVOrientation(parent1Velocities[m1Indices[index]])) ;
+        getVOrientation(childVelocities[index]) = m_vGlobal_H_Parent2[index].getOrientation().rotate(omega) ;
 
       }else{
         getVCenter(childVelocities[index]) = getVCenter(parent2Velocities[m2Indices[index]]) - getVCenter(parent1Velocities[m1Indices[index]]);
