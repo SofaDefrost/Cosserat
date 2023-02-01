@@ -144,7 +144,7 @@ def createScene(rootNode):
     rigidBaseNode2 = solverNode.addChild('rigidBase2')
     rigidBaseNode2.addObject('MechanicalObject', name="rigidState", template='Rigid3d', position="2 0. 0 0 0 0 1",
                              showObject=True, showObjectScale=1.0)
-                             # position="2 4 1 0.7071 0 0.7071 0",
+    # position="2 4 1 0.7071 0 0.7071 0",
 
     rigidBaseNode2.addObject('RestShapeSpringsForceField', name='rigid3', stiffness=0.2e1, template="Rigid3d",
                              angularStiffness=0.2e1, external_points=0, mstate="@rigidState", points=0)
@@ -161,13 +161,13 @@ def createScene(rootNode):
     distanceMapping = True
     if distanceMapping:
         distanceNode.addObject('RigidDistanceMapping', input1=rigidBaseNode2.getLinkPath(),
-                           input2=rigidBaseNode1.getLinkPath(), newVersionOfFrameComputation='1',
-                           output=distanceMo.getLinkPath(), first_point=[0], second_point=[0], name='distanceMap1')
+                               input2=rigidBaseNode1.getLinkPath(), newVersionOfFrameComputation='1',
+                               output=distanceMo.getLinkPath(), first_point=[0], second_point=[0], name='distanceMap1')
         solverNode.addObject('MechanicalMatrixMapper', template='Rigid3d,Rigid3d', object1=rigidBaseNode1.getLinkPath(),
                              object2=rigidBaseNode2.getLinkPath(), name='mapper1',
                              nodeToParse=distanceNode.getLinkPath())
         distanceNode.addObject('CosseratNeedleSlidingConstraint', name='constraintMappingConstraint',
-                           template="Rigid3d", useDirections=np.array([0, 1, 1, 0, 0, 0]))
+                               template="Rigid3d", useDirections=np.array([0, 1, 1, 0, 0, 0]))
     else:
         distanceNode.addObject('RigidRigidMapping', name="interRigidMap", globalToLocalCoords='0', template="Rigid3d,Rigid3d")
 

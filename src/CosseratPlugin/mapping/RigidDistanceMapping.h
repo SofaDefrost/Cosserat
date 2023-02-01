@@ -54,131 +54,131 @@ template <class TIn1, class TIn2, class TOut>
 class RigidDistanceMapping : public core::Multi2Mapping<TIn1, TIn2, TOut>
 {
 public:
-    SOFA_CLASS(SOFA_TEMPLATE3(RigidDistanceMapping, TIn1,TIn2, TOut), SOFA_TEMPLATE3(core::Multi2Mapping, TIn1, TIn2, TOut) );
-    typedef core::Multi2Mapping<TIn1, TIn2, TOut> Inherit;
+  SOFA_CLASS(SOFA_TEMPLATE3(RigidDistanceMapping, TIn1,TIn2, TOut), SOFA_TEMPLATE3(core::Multi2Mapping, TIn1, TIn2, TOut) );
+  typedef core::Multi2Mapping<TIn1, TIn2, TOut> Inherit;
 
-    /// Input Model Type
-    typedef TIn1 In1;
-    typedef TIn2 In2;
+  /// Input Model Type
+  typedef TIn1 In1;
+  typedef TIn2 In2;
 
-    /// Output Model Type
-    typedef TOut Out;
+  /// Output Model Type
+  typedef TOut Out;
 
-    typedef typename In1::Coord             Coord1       ;
-    typedef typename In1::Deriv             Deriv1  ;
-    typedef typename In1::VecCoord In1VecCoord;
-    typedef typename In1::VecDeriv In1VecDeriv;
-    typedef typename In1::MatrixDeriv In1MatrixDeriv;
-    typedef Data<In1VecCoord> In1DataVecCoord;
-    typedef Data<In1VecDeriv> In1DataVecDeriv;
-    typedef Data<In1MatrixDeriv> In1DataMatrixDeriv;
+  typedef typename In1::Coord             Coord1       ;
+  typedef typename In1::Deriv             Deriv1  ;
+  typedef typename In1::VecCoord In1VecCoord;
+  typedef typename In1::VecDeriv In1VecDeriv;
+  typedef typename In1::MatrixDeriv In1MatrixDeriv;
+  typedef Data<In1VecCoord> In1DataVecCoord;
+  typedef Data<In1VecDeriv> In1DataVecDeriv;
+  typedef Data<In1MatrixDeriv> In1DataMatrixDeriv;
 
-    typedef typename In2::Coord::value_type Real          ;
-    typedef typename In2::Coord             Coord2         ;
-    typedef typename In2::Deriv             Deriv2         ;
-    typedef typename In2::VecCoord In2VecCoord;
-    typedef typename In2::VecDeriv In2VecDeriv;
-    typedef typename In2::MatrixDeriv In2MatrixDeriv;
-    typedef Data<In2VecCoord> In2DataVecCoord;
-    typedef Data<In2VecDeriv> In2DataVecDeriv;
-    typedef Data<In2MatrixDeriv> In2DataMatrixDeriv;
-    typedef type::Mat<4,4,Real> Mat4x4;
+  typedef typename In2::Coord::value_type Real          ;
+  typedef typename In2::Coord             Coord2         ;
+  typedef typename In2::Deriv             Deriv2         ;
+  typedef typename In2::VecCoord In2VecCoord;
+  typedef typename In2::VecDeriv In2VecDeriv;
+  typedef typename In2::MatrixDeriv In2MatrixDeriv;
+  typedef Data<In2VecCoord> In2DataVecCoord;
+  typedef Data<In2VecDeriv> In2DataVecDeriv;
+  typedef Data<In2MatrixDeriv> In2DataMatrixDeriv;
+  typedef type::Mat<4,4,Real> Mat4x4;
 
-    typedef Out OutDataTypes;
-    typedef type::Quat<Real> Rot;
-    typedef typename Out::VecCoord OutVecCoord;
-    typedef typename Out::Coord OutCoord;
-    typedef typename Out::Deriv OutDeriv;
-    typedef typename Out::VecDeriv OutVecDeriv;
-    typedef typename Out::MatrixDeriv OutMatrixDeriv;
-    typedef Data<OutVecCoord> OutDataVecCoord;
-    typedef Data<OutVecDeriv> OutDataVecDeriv;
-    typedef Data<OutMatrixDeriv> OutDataMatrixDeriv;
+  typedef Out OutDataTypes;
+  typedef type::Quat<Real> Rot;
+  typedef typename Out::VecCoord OutVecCoord;
+  typedef typename Out::Coord OutCoord;
+  typedef typename Out::Deriv OutDeriv;
+  typedef typename Out::VecDeriv OutVecDeriv;
+  typedef typename Out::MatrixDeriv OutMatrixDeriv;
+  typedef Data<OutVecCoord> OutDataVecCoord;
+  typedef Data<OutVecDeriv> OutDataVecDeriv;
+  typedef Data<OutMatrixDeriv> OutDataMatrixDeriv;
 
-    typedef typename SolidTypes<Real>::Transform      Transform ;
-    typedef typename SolidTypes< Real>::SpatialVector SpatialVector   ;
+  typedef typename SolidTypes<Real>::Transform      Transform ;
+  typedef typename SolidTypes< Real>::SpatialVector SpatialVector   ;
 
-    enum { N=OutDataTypes::spatial_dimensions };
-    typedef type::Mat<N,N,Real> Mat;
-    typedef type::Vec<N,Real> Vector ;
-    Mat rotation;
-
-protected:
-    Data<type::vector<unsigned int> >   d_index1 ;
-    Data<type::vector<unsigned int> >   d_index2 ;
-    Data<Real>                          d_max ;
-    Data<Real>                          d_min ;
-    Data<Real>                          d_radius ;
-    Data<type::Vec4f>                   d_color;
-    Data<type::vector<unsigned int> >   d_index;
-    Data<bool>                          d_debug ;
-    Data<bool>                          d_newVersionOfFrameComputation;
-
-    core::State<Out>* m_toModel;
+  enum { N=OutDataTypes::spatial_dimensions };
+  typedef type::Mat<N,N,Real> Mat;
+  typedef type::Vec<N,Real> Vector ;
+  Mat rotation;
 
 protected:
-    /// Constructor    
-    RigidDistanceMapping() ;
-    /// Destructor
-    ~RigidDistanceMapping()  override = default;
-    sofa::Index  m_minInd{};
+  Data<type::vector<unsigned int> >   d_index1 ;
+  Data<type::vector<unsigned int> >   d_index2 ;
+  Data<Real>                          d_max ;
+  Data<Real>                          d_min ;
+  Data<Real>                          d_radius ;
+  Data<type::Vec4f>                   d_color;
+  Data<type::vector<unsigned int> >   d_index;
+  Data<bool>                          d_debug ;
+  Data<bool>                          d_newVersionOfFrameComputation;
+
+  core::State<Out>* m_toModel;
+
+protected:
+  /// Constructor
+  RigidDistanceMapping() ;
+  /// Destructor
+  ~RigidDistanceMapping()  override = default;
+  sofa::Index  m_minInd{};
 public:
 
-    /**********************SOFA METHODS**************************/
-    void init() override;
-    void reinit() override;
-    void draw(const core::visual::VisualParams* /*vparams*/) override {}
+  /**********************SOFA METHODS**************************/
+  void init() override;
+  void reinit() override;
+  void draw(const core::visual::VisualParams* /*vparams*/) override {}
 
-    /**********************MAPPING METHODS**************************/
-    void apply(
-            const core::MechanicalParams* /* mparams */, const type::vector<OutDataVecCoord*>& dataVecOutPos,
-            const type::vector<const In1DataVecCoord*>& dataVecIn1Pos ,
-            const type::vector<const In2DataVecCoord*>& dataVecIn2Pos) override;
+  /**********************MAPPING METHODS**************************/
+  void apply(
+      const core::MechanicalParams* /* mparams */, const type::vector<OutDataVecCoord*>& dataVecOutPos,
+      const type::vector<const In1DataVecCoord*>& dataVecIn1Pos ,
+      const type::vector<const In2DataVecCoord*>& dataVecIn2Pos) override;
 
-    void applyJ(
-            const core::MechanicalParams* /* mparams */, const type::vector< OutDataVecDeriv*>& dataVecOutVel,
-            const type::vector<const In1DataVecDeriv*>& dataVecIn1Vel,
-            const type::vector<const In2DataVecDeriv*>& dataVecIn2Vel) override;
+  void applyJ(
+      const core::MechanicalParams* /* mparams */, const type::vector< OutDataVecDeriv*>& dataVecOutVel,
+      const type::vector<const In1DataVecDeriv*>& dataVecIn1Vel,
+      const type::vector<const In2DataVecDeriv*>& dataVecIn2Vel) override;
 
-    //ApplyJT Force
-    void applyJT(
-            const core::MechanicalParams* /* mparams */, const type::vector< In1DataVecDeriv*>& dataVecOut1Force,
-            const type::vector< In2DataVecDeriv*>& dataVecOut2RootForce,
-            const type::vector<const OutDataVecDeriv*>& dataVecInForce) override;
+  //ApplyJT Force
+  void applyJT(
+      const core::MechanicalParams* /* mparams */, const type::vector< In1DataVecDeriv*>& dataVecOut1Force,
+      const type::vector< In2DataVecDeriv*>& dataVecOut2RootForce,
+      const type::vector<const OutDataVecDeriv*>& dataVecInForce) override;
 
-    void applyDJT(const core::MechanicalParams* /*mparams*/, core::MultiVecDerivId /*inForce*/, core::ConstMultiVecDerivId /*outForce*/) override{}
+  void applyDJT(const core::MechanicalParams* /*mparams*/, core::MultiVecDerivId /*inForce*/, core::ConstMultiVecDerivId /*outForce*/) override{}
 
-    /// This method must be reimplemented by all mappings if they need to support constraints.
-    void applyJT(
-            const core::ConstraintParams*  cparams , const type::vector< In1DataMatrixDeriv*>& dataMatOut1Const  ,
-            const type::vector< In2DataMatrixDeriv*>&  dataMatOut2Const ,
-            const type::vector<const OutDataMatrixDeriv*>&  dataMatInConst) override;
+  /// This method must be reimplemented by all mappings if they need to support constraints.
+  void applyJT(
+      const core::ConstraintParams*  cparams , const type::vector< In1DataMatrixDeriv*>& dataMatOut1Const  ,
+      const type::vector< In2DataMatrixDeriv*>&  dataMatOut2Const ,
+      const type::vector<const OutDataMatrixDeriv*>&  dataMatInConst) override;
 
-    int computeTransform(Transform &global_H0_local, Transform &global_H1_local, Transform &local0_H_local1,
-                         Quat<Real> &local_R_local0, const Coord1 &x1, const Coord2 &x2);
+  int computeTransform(Transform &global_H0_local, Transform &global_H1_local, Transform &local0_H_local1,
+                       Quat<Real> &local_R_local0, const Coord1 &x1, const Coord2 &x2);
 
-    int computeTransform2(unsigned int edgeInList, Transform &global_H_local0, Transform &global_H_local1,
-                          const OutVecCoord &x);
+  int computeTransform2(unsigned int edgeInList, Transform &global_H_local0, Transform &global_H_local1,
+                        const OutVecCoord &x);
 
-    void getDOFtoLocalTransform(unsigned int edgeInList, Transform &DOF0_H_local0, Transform &DOF1_H_local1)
+  void getDOFtoLocalTransform(unsigned int edgeInList, Transform &DOF0_H_local0, Transform &DOF1_H_local1)
+  {
+    // @Todo re-implement this function
+    /*if (d_dofsAndBeamsAligned.getValue())
     {
-        // @Todo re-implement this function
-        /*if (d_dofsAndBeamsAligned.getValue())
-        {
-            DOF0_H_local0.clear();
-            DOF1_H_local1.clear();
-            return;
-        }*/
+        DOF0_H_local0.clear();
+        DOF1_H_local1.clear();
+        return;
+    }*/
 
-        /*DOF0_H_local0 = d_DOF0TransformNode0.getValue()[edgeInList];
-        DOF1_H_local1 = d_DOF1TransformNode1.getValue()[edgeInList];*/
-    }
+    /*DOF0_H_local0 = d_DOF0TransformNode0.getValue()[edgeInList];
+    DOF1_H_local1 = d_DOF1TransformNode1.getValue()[edgeInList];*/
+  }
 
 public:
-    type::vector<Transform> mVect_global_H_input2Frame;
-    type::vector<Transform> mVect_input1Frame_H_input2Frame;
-    std::vector<Mat>  m_vecRotation;
-    OutVecCoord pointsR0;
+  type::vector<Transform> mVect_global_H_input2Frame;
+  type::vector<Transform> mVect_input1Frame_H_input2Frame;
+  std::vector<Mat>  m_vecRotation;
+  OutVecCoord pointsR0;
 
 };
 
