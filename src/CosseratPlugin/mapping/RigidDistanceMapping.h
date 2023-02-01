@@ -84,6 +84,7 @@ public:
     typedef Data<In2MatrixDeriv> In2DataMatrixDeriv;
     typedef type::Mat<4,4,Real> Mat4x4;
 
+    typedef Out OutDataTypes;
     typedef type::Quat<Real> Rot;
     typedef typename Out::VecCoord OutVecCoord;
     typedef typename Out::Coord OutCoord;
@@ -96,6 +97,11 @@ public:
 
     typedef typename SolidTypes<Real>::Transform      Transform ;
     typedef typename SolidTypes< Real>::SpatialVector SpatialVector   ;
+
+    enum { N=OutDataTypes::spatial_dimensions };
+    typedef type::Mat<N,N,Real> Mat;
+    typedef type::Vec<N,Real> Vector ;
+    Mat rotation;
 
 protected:
     Data<type::vector<unsigned int> >   d_index1 ;
@@ -168,9 +174,11 @@ public:
     }
 
 public:
-    type::vector<Transform> m_objects1Frames;
-    type::vector<Transform> m_objects2Frames;
-    type::vector<Transform> m_vecObject1_H_Object2;
+    type::vector<Transform> m_vGlobal_H_Parent1;
+    type::vector<Transform> m_vGlobal_H_Parent2;
+    type::vector<Transform> m_vParent1_H_Parent2;
+    std::vector<Mat>  m_vecRotation;
+    OutVecCoord pointsR0;
 
 };
 

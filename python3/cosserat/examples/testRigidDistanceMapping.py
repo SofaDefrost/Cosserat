@@ -126,7 +126,7 @@ def createScene(rootNode):
     RigidBaseMO = rigidBaseNode1.addObject('MechanicalObject', template='Rigid3d',
                                            name="RigidBaseMO", position=[x, y, z] + orientation, showObject=1,
                                            showObjectScale=0.5, rest_position=[0., 0., 0., 0., 0., 0., 1.])
-    rigidBaseNode1.addObject('RestShapeSpringsForceField', name='spring1', stiffness="1e1", angularStiffness="1e1",
+    rigidBaseNode1.addObject('RestShapeSpringsForceField', name='spring1', stiffness=2e1, angularStiffness=1e1,
                              external_points="0", mstate="@RigidBaseMO", points="0", template="Rigid3d")
 
     # distanceNode.addObject('RestShapeSpringsForceField', name='spring2', stiffness="1e5", angularStiffness="1e5",
@@ -144,21 +144,25 @@ def createScene(rootNode):
     # interRigidChild.addChild(distanceNode)  # add double sub_node
     # rigidBase2Child.addObject('MechanicalObject', name="interRigidChildMo", template='Rigid3d',
     #                          position="1. 0.7 0 0 0 0 1", showObject=True, showObjectScale=0.2)
-    # rigidBase2Child.addObject('RigidRigidMapping', name="interRigidMap", globalToLocalCoords='0')
+
 
     distanceNode = rigidBaseNode1.addChild('distanceNode')
     distanceMo = distanceNode.addObject('MechanicalObject', template='Rigid3d', name="distanceMo",
-                                        position=[0., 0., 0., 0., 0., 0., 1.], showObject=1, showObjectScale=0.1,
-                                        )
-    distanceNode.addObject('RigidDistanceMapping', input1=rigidBaseNode1.getLinkPath(),
+                                        position=[1., 0., 0., 0., 0., 0., 1.], showObject=1, showObjectScale=0.1)
+    distanceMapping = True
+    if distanceMapping:
+        distanceNode.addObject('RigidDistanceMapping', input1=rigidBaseNode1.getLinkPath(),
                            input2=rigidBaseNode2.getLinkPath(), newVersionOfFrameComputation='1',
                            output=distanceMo.getLinkPath(), first_point=[0], second_point=[0], name='distanceMap1')
-
-    solverNode.addObject('MechanicalMatrixMapper', template='Rigid3d,Rigid3d', object1=rigidBaseNode1.getLinkPath(),
-                         object2=rigidBaseNode2.getLinkPath(), name='mapper1',
-                         nodeToParse=distanceNode.getLinkPath())
-    distanceNode.addObject('CosseratNeedleSlidingConstraint', name='constraintMappingConstraint',
+        solverNode.addObject('MechanicalMatrixMapper', template='Rigid3d,Rigid3d', object1=rigidBaseNode1.getLinkPath(),
+                             object2=rigidBaseNode2.getLinkPath(), name='mapper1',
+                             nodeToParse=distanceNode.getLinkPath())
+        distanceNode.addObject('CosseratNeedleSlidingConstraint', name='constraintMappingConstraint',
                            template="Rigid3d", useDirections=np.array([0, 1, 1, 0, 0, 0]))
+    else:
+        distanceNode.addObject('RigidRigidMapping', name="interRigidMap", globalToLocalCoords='0', template="Rigid3d,Rigid3d")
+
+
 
     solverNode.addObject(Animation(rigidBaseNode1))
     return rootNode
