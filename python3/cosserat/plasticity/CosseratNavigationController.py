@@ -105,7 +105,7 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
 
         self.incrementDistance = incrementDistance
         # TO DO : pass the minimal distance for constraints as an input parameter ?
-        self.minimalDistanceForConstraint = incrementDistance * 10.0
+        self.minimalDistanceForConstraint = incrementDistance * 5.0
         # TO DO: check that the number of coaxial frames provided is coherent with beam number and nbIntermediateConstraintFrames
         self.nbIntermediateConstraintFrames = nbIntermediateConstraintFrames
         self.incrementAngle = incrementAngle
@@ -952,7 +952,7 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
                         # In this case, the coaxial frames of the longer instruments are coincidant
                         nbAdditionalCoaxialBeams = longerInstrumentLastBeamId - instrumentLastBeamId
 
-                    nbTotalCoaxialFramesOfLongerInst = len(coaxialFrameNode.CoaxialCosseratMapping.curv_abs_output)
+                    nbTotalCoaxialFramesOfLongerInst = len(coaxialFrameNode2.CoaxialCosseratMapping.curv_abs_output)
                     lastCoaxialFrameIndexWithShorterInstrument = nbTotalCoaxialFramesOfLongerInst - 1 - nbAdditionalCoaxialBeams
                     firstCoaxialFrameIndexWithShorterInstrument = lastCoaxialFrameIndexWithShorterInstrument - len(shorterInstrumentCoaxialFrameIds) + 1
                     longerInstrumentCoaxialFrameIds = list(range(firstCoaxialFrameIndexWithShorterInstrument, lastCoaxialFrameIndexWithShorterInstrument+1))
