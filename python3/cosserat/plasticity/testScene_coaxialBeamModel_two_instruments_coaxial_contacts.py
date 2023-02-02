@@ -39,9 +39,9 @@ pluginNameList = 'SofaPython3 CosseratPlugin' \
                  ' Sofa.Component.Collision.Detection.Algorithm' \
                  ' Sofa.Component.Collision.Detection.Intersection' \
                  ' Sofa.Component.Collision.Response.Contact' \
+                 ' Sofa.Component.Engine.Transform' \
                  ' Sofa.Component.IO.Mesh' \
-                 ' Sofa.Component.Topology.Container.Constant' \
-                 ' Sofa.Component.Engine.Transform'
+                 ' Sofa.Component.Topology.Container.Constant'
 
 visualFlagList = 'showVisualModels showBehaviorModels showCollisionModels' \
                  ' hideBoundingCollisionModels hideForceFields' \
@@ -95,8 +95,6 @@ def createScene(rootNode):
     nbBeams0_1 = 10
     nbBeams0 = nbBeams0_0 + nbBeams0_1
 
-    # nbFramesMax = 14
-    # distBetweenFrames = totalLength0 / nbFrames
     nbFrames0 = 100
 
     # --- Instrument1 --- #
@@ -108,7 +106,6 @@ def createScene(rootNode):
     nbBeams1_1 = 15
     nbBeams1 = nbBeams1_0 + nbBeams1_1
 
-    # distBetweenFrames = totalLength1 / nbFrames
     nbFrames1 = 100
 
     # --- Common --- #
@@ -166,9 +163,6 @@ def createScene(rootNode):
                                            name="RigidBaseMO", position=[0., 0., 0., 0, 0, 0, 1],
                                            showObject=False,
                                            showObjectScale=2.)
-    # rigidBaseNode0.addObject('RestShapeSpringsForceField', name='spring',
-    #                          stiffness="5.e8", angularStiffness="5.e8",
-    #                          external_points="0", mstate="@RigidBaseMO", points="0", template="Rigid3d")
     rigidBaseNode0.addObject('RestShapeSpringsForceField', name='controlSpring',
                              stiffness="5.e8", angularStiffness="1.0e5",
                              external_rest_shape="@../../../controlPointNode0/controlPointMO",
@@ -216,7 +210,8 @@ def createScene(rootNode):
                                                             rest_position=beamStrainDoFs0)
 
     beamCrossSectionShape='circular'
-    sectionRadius = (6.5e-1/6.0) # 6.5Fr diameter = (6.5/3) mm diameter = (6.5/6) mm radius = (6.5/6)e-1 cm radius
+    sectionRadius = (6.5e-1/6.0) # 6.5Fr diameter = (6.5/3) mm diameter = (6.5/6) mm radius = (6.5/6)e-1 cm radius (NB: 0.1083cm)
+    leadInnerRadius = 3.5e-2 / 2.0 # radius of the stylet = 0.35 mm diameter, in cm
     poissonRatio = 0.3
     beamPoissonRatioList = [poissonRatio]*(nbBeams0PlusStock)
     youngModulus = 1.15e5 # in kg.cm-1.s-2 (1 Pa = 1 kg.m-1.s-2 = 0.01 kg.cm-1.s-2)
@@ -241,15 +236,8 @@ def createScene(rootNode):
                                      crossSectionShape=beamCrossSectionShape,
                                      radius=sectionRadius, variantSections="true",
                                      length=beamLengths, poissonRatioList=beamPoissonRatioList,
-                                     youngModulusList=beamYoungModulusList, innerRadius=0.4)
-
-    beamBendingMoment = 1.0e5
-    bendingForces = np.array([0, beamBendingMoment, beamBendingMoment])
-    # momentIndices = range(1, nbBeams0PlusStock)
-    momentIndices = [nbBeams0PlusStock-1]
-    # rateAngularDeformNode.addObject('ConstantForceField', name='Moment',
-    #                                 indices=momentIndices,
-    #                                 forces=bendingForces)
+                                     youngModulusList=beamYoungModulusList,
+                                     innerRadius=leadInnerRadius)
 
     # EXPERIMENTAL: navigation simulation
     # Adding constraints on the additional beams which are not meant to be
@@ -287,7 +275,7 @@ def createScene(rootNode):
 
     framesMO = mappedFrameNode.addObject('MechanicalObject', template='Rigid3d',
                                          name="FramesMO", position=frames6DDoFs,
-                                         showObject=False, showObjectScale=1)
+                                         showObject=True, showObjectScale=0.2)
 
     # The mapping has two inputs: RigidBaseMO and rateAngularDeformMO
     #                 one output: FramesMO
@@ -332,7 +320,7 @@ def createScene(rootNode):
     coaxialFramesMO0 = coaxialFrameNode0.addObject('MechanicalObject', template='Rigid3d',
                                                    name="coaxialFramesMO",
                                                    position=coaxialFrames0InitPos,
-                                                   showObject=True, showObjectScale=1)
+                                                   showObject=False, showObjectScale=1)
 
     coaxialFrameNode0.addObject('UniformMass', totalMass=totalMass,
                                 name="UniformMass0", showAxisSizeFactor='0.')
@@ -367,9 +355,6 @@ def createScene(rootNode):
                                            name="RigidBaseMO", position=[0., 0., 0., 0, 0, 0, 1],
                                            showObject=False,
                                            showObjectScale=2.)
-    # rigidBaseNode1.addObject('RestShapeSpringsForceField', name='spring',
-    #                          stiffness="5.e8", angularStiffness="5.e8",
-    #                          external_points="0", mstate="@RigidBaseMO", points="0", template="Rigid3d")
     rigidBaseNode1.addObject('RestShapeSpringsForceField', name='controlSpring',
                              stiffness="5.e8", angularStiffness="1.0e5",
                              external_rest_shape="@../../../controlPointNode1/controlPointMO",
@@ -384,7 +369,6 @@ def createScene(rootNode):
     beamCurvAbscissa = []
     beamCurvAbscissa.append(0.0)
 
-    # instrument1ConstantRestStrain = [0., 0.1, 0.]
     instrument1ConstantRestStrain0 = [0., 0., 0.]
     instrument1ConstantRestStrain1 = [0., 0.1, 0.]
 
@@ -417,7 +401,7 @@ def createScene(rootNode):
                                                             rest_position=beamStrainDoFs1)
 
     beamCrossSectionShape='circular'
-    sectionRadius = 3.5e-2 / 2.0 # 0.35 mm diameter, in cm
+    sectionRadius = leadInnerRadius
     poissonRatio = 0.3
     beamPoissonRatioList = [poissonRatio]*(nbBeams1PlusStock)
     youngModulus = 1.5e9 # 150 GPa = 1.5e11 Pa = 1.5e9 kg.cm-1.s-2 (1 Pa = 1 kg.m-1.s-2 = 0.01 kg.cm-1.s-2)
@@ -443,14 +427,6 @@ def createScene(rootNode):
                                      radius=sectionRadius, variantSections="true",
                                      length=beamLengths, poissonRatioList=beamPoissonRatioList,
                                      youngModulusList=beamYoungModulusList)
-
-    beamBendingMoment = 1.0e5
-    bendingForces = np.array([0, beamBendingMoment, beamBendingMoment])
-    # momentIndices = range(1, nbBeams1PlusStock)
-    momentIndices = [nbBeams1PlusStock-1]
-    # rateAngularDeformNode.addObject('ConstantForceField', name='Moment',
-    #                                 indices=momentIndices,
-    #                                 forces=bendingForces)
 
     # EXPERIMENTAL: navigation simulation
     # Adding constraints on the additional beams which are not meant to be
@@ -493,7 +469,7 @@ def createScene(rootNode):
 
     framesMO = mappedFrameNode.addObject('MechanicalObject', template='Rigid3d',
                                          name="FramesMO", position=frames6DDoFs,
-                                         showObject=False, showObjectScale=1)
+                                         showObject=True, showObjectScale=0.2)
 
     # The mapping has two inputs: RigidBaseMO and rateAngularDeformMO
     #                 one output: FramesMO
@@ -530,7 +506,7 @@ def createScene(rootNode):
     coaxialFramesMO1 = coaxialFrameNode1.addObject('MechanicalObject', template='Rigid3d',
                                                   name="coaxialFramesMO",
                                                   position=coaxialFrames1InitPos,
-                                                  showObject=True, showObjectScale=1)
+                                                  showObject=False, showObjectScale=1)
 
     coaxialFrameNode1.addObject('UniformMass', totalMass=totalMass,
                                 name="UniformMass1", showAxisSizeFactor='0.')
@@ -565,6 +541,7 @@ def createScene(rootNode):
                                   name='constraintMappingConstraint',
                                   template="Rigid3d",
                                   useDirections=np.array([0, 1, 1, 0, 0, 0]))
+
 
 
     # -------------------------------------#
@@ -633,8 +610,8 @@ def createScene(rootNode):
     # -------------------------------------------------------------------- #
 
     nbInstruments=2
-    instrument0KeyPoints = [15]
-    instrument1KeyPoints = [25]
+    instrument0KeyPoints = [42]
+    instrument1KeyPoints = [40]
     nbBeamDistribution0 = [nbBeams0_0, nbBeams0_1]
     nbBeamDistribution1 = [nbBeams1_0, nbBeams1_1]
     instrumentFrameNumbers=[nbFrames0, nbFrames1]
