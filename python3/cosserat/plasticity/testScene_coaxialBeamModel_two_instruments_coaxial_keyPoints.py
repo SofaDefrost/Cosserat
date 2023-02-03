@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on January 4 2023
+Created on January 20 2023
 
 @author: ckrewcun
 """
@@ -75,8 +75,9 @@ def createScene(rootNode):
     # Define: the total length, number of beams, and number of frames
     totalLength0 = 25
 
-    nbBeams0 = 5
-    oneBeamLength = totalLength0 / nbBeams0
+    nbBeams0_0 = 3
+    nbBeams0_1 = 2
+    nbBeams0 = nbBeams0_0 + nbBeams0_1
 
     # nbFramesMax = 14
     # distBetweenFrames = totalLength0 / nbFrames
@@ -87,8 +88,9 @@ def createScene(rootNode):
     # Define: the total length, number of beams, and number of frames
     totalLength1 = 30
 
-    nbBeams1 = 5
-    oneBeamLength = totalLength1 / nbBeams1
+    nbBeams1_0 = 4
+    nbBeams1_1 = 1
+    nbBeams1 = nbBeams1_0 + nbBeams1_1
 
     # distBetweenFrames = totalLength1 / nbFrames
     nbFrames1 = 35
@@ -166,7 +168,8 @@ def createScene(rootNode):
     beamCurvAbscissa = []
     beamCurvAbscissa.append(0.0)
 
-    instrument0ConstantRestStrain = [0., 0., 0.]
+    instrument0ConstantRestStrain0 = [0., 0., 0.]
+    instrument0ConstantRestStrain1 = [0., 0., 0.05]
 
     # EXPERIMENTAL: insertion navigation
     # Initially defining beams with 0 length, at 0
@@ -177,17 +180,15 @@ def createScene(rootNode):
     # curvilinear abcissas in the Cosserat mapping.
     # This is equivalent to saying that the beams are 0-length,
     # 0-strain beams, added at the beginning of the instrument.
-    for i in range(0, nbBeams0PlusStock):
-        beamStrainDoFs0.append(instrument0ConstantRestStrain)
+    for i in range(0, nbBeams0PlusStock-nbBeams0_1):
+        beamStrainDoFs0.append(instrument0ConstantRestStrain0)
         beamLengths.append(0)
         beamCurvAbscissa.append(0)
 
-    # for i in range(nbBeams0PlusStock):
-    #     beamStrainDoFs0.append([0, 0, 0])
-    #     beamLengths.append(oneBeamLength)
-    #     sum += beamLengths[i+nbStockBeams]
-    #     beamCurvAbscissa.append(sum)
-    # beamCurvAbscissa[nbBeams0PlusStock+nbStockBeams] = totalLength0
+    for i in range(nbBeams0PlusStock-nbBeams0_1, nbBeams0PlusStock):
+        beamStrainDoFs0.append(instrument0ConstantRestStrain1)
+        beamLengths.append(0)
+        beamCurvAbscissa.append(0)
 
     # Define angular rate which is the torsion(x) and bending (y, z) of each section
     rateAngularDeformNode0 = instrument0Node.addChild('rateAngularDeform')
@@ -283,8 +284,16 @@ def createScene(rootNode):
     coaxialFrameNode0 = rigidBaseNode0.addChild('coaxialSegmentFrames')
     rateAngularDeformNode0.addChild(coaxialFrameNode0)
 
-    # We need at most 2*nbBeams + 1 frames to track the coaxial beam segments
-    nbCoaxialFrames0 = nbBeams0PlusStock+1
+    # By default, the nbIntermediateConstraintFrames parameter of the
+    # CosseratNavigationController is 0, meaning that we don't add intermediate
+    # coaxial frames on each coaxial beam segments (between the beam extremities)
+    # to further constrain the segments. In such scenario, we need at most
+    # nbBeams0PlusStock+1 coaxial frames during the simulation.
+    # /!\ Here, we will pass the nbIntermediateConstraintFrames parameter with
+    # a value of 1, meaning that we need at most 2*nbBeams0PlusStock + 1 coaxial
+    # frames
+    nbIntermediateConstraintFrames = 1
+    nbCoaxialFrames0 = (nbIntermediateConstraintFrames+1)*nbBeams0PlusStock + 1
     coaxialFrames0InitPos = [[0., 0., 0., 0., 0., 0., 1.]]*nbCoaxialFrames0
     coaxialFrame0CurvAbscissa = [0.]*nbCoaxialFrames0
 
@@ -343,7 +352,9 @@ def createScene(rootNode):
     beamCurvAbscissa = []
     beamCurvAbscissa.append(0.0)
 
-    instrument1ConstantRestStrain = [0., 0.1, 0.]
+    # instrument1ConstantRestStrain = [0., 0.1, 0.]
+    instrument1ConstantRestStrain0 = [0., 0., 0.]
+    instrument1ConstantRestStrain1 = [0., 0.1, 0.]
 
     # EXPERIMENTAL: insertion navigation
     # Initially defining beams with 0 length, at 0
@@ -354,17 +365,15 @@ def createScene(rootNode):
     # curvilinear abcissas in the Cosserat mapping.
     # This is equivalent to saying that the beams are 0-length,
     # 0-strain beams, added at the beginning of the instrument.
-    for i in range(0, nbBeams1PlusStock):
-        beamStrainDoFs1.append(instrument1ConstantRestStrain)
+    for i in range(0, nbBeams1PlusStock-nbBeams1_1):
+        beamStrainDoFs1.append(instrument1ConstantRestStrain0)
         beamLengths.append(0)
         beamCurvAbscissa.append(0)
 
-    # for i in range(nbBeams1PlusStock):
-    #     beamStrainDoFs1.append([0, 0, 0])
-    #     beamLengths.append(oneBeamLength)
-    #     sum += beamLengths[i+nbStockBeams]
-    #     beamCurvAbscissa.append(sum)
-    # beamCurvAbscissa[nbBeams1PlusStock+nbStockBeams] = totalLength1
+    for i in range(nbBeams1PlusStock-nbBeams1_1, nbBeams1PlusStock):
+        beamStrainDoFs1.append(instrument1ConstantRestStrain1)
+        beamLengths.append(0)
+        beamCurvAbscissa.append(0)
 
     # Define angular rate which is the torsion(x) and bending (y, z) of each section
     rateAngularDeformNode1 = instrument1Node.addChild('rateAngularDeform')
@@ -465,8 +474,9 @@ def createScene(rootNode):
     coaxialFrameNode1 = rigidBaseNode1.addChild('coaxialSegmentFrames')
     rateAngularDeformNode1.addChild(coaxialFrameNode1)
 
-    # We need at most 2*nbBeams + 1 frames to track the coaxial beam segments
-    nbCoaxialFrames1 = nbBeams1PlusStock+1
+    # Cf comment on nbCoaxialFrames0 definition for details on the number of coaxial
+    # frames
+    nbCoaxialFrames1 = (nbIntermediateConstraintFrames+1)*nbBeams1PlusStock + 1
     coaxialFrames1InitPos = [[0., 0., 0., 0., 0., 0., 1.]]*nbCoaxialFrames1
     coaxialFrame1CurvAbscissa = [0.]*nbCoaxialFrames1
 
@@ -502,8 +512,7 @@ def createScene(rootNode):
                                   input1=coaxialFramesMO1.getLinkPath(),
                                   input2=coaxialFramesMO0.getLinkPath(),
                                   output=rigidDiffMO.getLinkPath(),
-                                  first_point=[], second_point=[],
-                                  newVersionOfFrameComputation=False)
+                                  first_point=[], second_point=[])
 
     constraintWith0Node.addObject('CosseratNeedleSlidingConstraint',
                                   name='constraintMappingConstraint',
@@ -516,10 +525,10 @@ def createScene(rootNode):
     # -------------------------------------------------------------------- #
 
     nbInstruments=2
-    instrument0KeyPoints = []
-    instrument1KeyPoints = []
-    nbBeamDistribution0 = [nbBeams0]
-    nbBeamDistribution1 = [nbBeams1]
+    instrument0KeyPoints = [15]
+    instrument1KeyPoints = [25]
+    nbBeamDistribution0 = [nbBeams0_0, nbBeams0_1]
+    nbBeamDistribution1 = [nbBeams1_0, nbBeams1_1]
     instrumentFrameNumbers=[nbFrames0, nbFrames1]
     incrementDistance=0.1
     incrementAngle=5.0
@@ -528,17 +537,15 @@ def createScene(rootNode):
 
     instrument0 = Instrument(instrumentNode=instrument0Node,
                              totalLength=totalLength0,
-                             nbBeams=nbBeams0,
                              keyPoints=instrument0KeyPoints,
                              nbBeamDistribution=nbBeamDistribution0,
-                             restStrain=[instrument0ConstantRestStrain],
+                             restStrain=[instrument0ConstantRestStrain0, instrument0ConstantRestStrain1],
                              curvAbsTolerance=curvAbsTolerance)
     instrument1 = Instrument(instrumentNode=instrument1Node,
                              totalLength=totalLength1,
-                             nbBeams=nbBeams1,
                              keyPoints=instrument1KeyPoints,
                              nbBeamDistribution=nbBeamDistribution1,
-                             restStrain=[instrument1ConstantRestStrain],
+                             restStrain=[instrument1ConstantRestStrain0, instrument1ConstantRestStrain1],
                              curvAbsTolerance=curvAbsTolerance)
     instrumentList = [instrument0, instrument1]
 
@@ -552,6 +559,7 @@ def createScene(rootNode):
                             incrementAngle=incrementAngle,
                             incrementDirection=incrementDirection,
                             instrumentList=instrumentList,
-                            curvAbsTolerance=curvAbsTolerance))
+                            curvAbsTolerance=curvAbsTolerance,
+                            nbIntermediateConstraintFrames=nbIntermediateConstraintFrames))
 
     return rootNode

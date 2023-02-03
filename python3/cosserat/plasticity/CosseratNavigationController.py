@@ -58,8 +58,6 @@ from instrument import Instrument
 #
 # Init arguments :
 #  - nbInstruments: number of simulated coaxial instruments
-#  - instrumentBeamNumberVect : for each instrument, vector containing a number
-#    of beam elements spread uniformely on the instrument total length
 #  - instrumentFrameNumberVect : for each instrument, vector containing a number
 #    of rigid frames spread uniformely on the instrument total length
 #  - incrementDistance : distance of pushing/pulling the instrument at user
@@ -70,7 +68,6 @@ from instrument import Instrument
 #    in instrument.py), to characterise each instrument properties
 #  - curvAbsTolerance : distance threshold used to determine if two close nodes
 #    should be merged (and considered as one)
-#  - instrumentLengths : vector of double indicating the length of each instrument
 #  - nbIntermediateConstraintFrames : number of intermediate coaxial frames added
 #    when coaxial beam segments are detected. A higher number means a finer
 #    application of constraints on the coaxial beam segments.
@@ -89,15 +86,13 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
 
     def __init__(self, rootNode, solverNode,
                  nbInstruments,
-                 instrumentBeamNumberVect,
                  instrumentFrameNumberVect,
                  incrementDistance,
                  incrementAngle,
                  incrementDirection,
                  instrumentList,
                  curvAbsTolerance,
-                 instrumentLengths,
-                 nbIntermediateConstraintFrames = 1,
+                 nbIntermediateConstraintFrames = 0,
                  *args, **kwargs):
         Sofa.Core.Controller.__init__(self, *args, **kwargs)
 
@@ -110,12 +105,11 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
 
         self.incrementDistance = incrementDistance
         # TO DO : pass the minimal distance for constraints as an input parameter ?
-        self.minimalDistanceForConstraint = incrementDistance * 10.0
+        self.minimalDistanceForConstraint = incrementDistance * 5.0
         # TO DO: check that the number of coaxial frames provided is coherent with beam number and nbIntermediateConstraintFrames
         self.nbIntermediateConstraintFrames = nbIntermediateConstraintFrames
         self.incrementAngle = incrementAngle
         self.incrementDirection = incrementDirection
-        self.instrumentBeamNumberVect = instrumentBeamNumberVect
         self.instrumentFrameNumberVect = instrumentFrameNumberVect
         self.curvAbsTolerance = curvAbsTolerance
 
@@ -125,12 +119,6 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
 
         # Number of simulated instruments
         self.nbInstruments = nbInstruments
-
-        # Total rest length of each instrument
-        self.instrumentLengths = instrumentLengths
-        if len(instrumentLengths) != nbInstruments:
-            raise ValueError('[CombinedInstrumentsController]: size of argument \'instrumentLengths\' '
-                             'should be equal to nbInstruments')
 
         # Curvilinear Abscissa of the tip of each instrument (modified by up/down arrows)
         self.tipCurvAbsVect = np.zeros(nbInstruments)
@@ -186,6 +174,55 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
         self.dt = self.rootNode.findData('dt').value
         self.nbIterations = 0
 
+        ### Verification of parameter coherence ###
+
+        # Number of coaxial frames
+
+        for instrumentId in range(self.nbInstruments):
+
+            # Retrieving the coaxial frame node
+            instrumentNodeName = "Instrument" + str(instrumentId)
+            instrumentNode = self.solverNode.getChild(str(instrumentNodeName))
+            if instrumentNode is None:
+                raise NameError("[CombinedInstrumentsController]: Node \'{}\' not found. Your scene should "
+                                "contain a node named \'{}\' among the children of the root node in order "
+                                "to use this controller".format(instrumentNodeName, instrumentNodeName))
+
+            cosseratMechanicalNode = instrumentNode.getChild('rateAngularDeform')
+            if cosseratMechanicalNode is None:
+                raise NameError("[CombinedInstrumentsController]: Node \'rateAngularDeform\' "
+                                "not found. Your scene should contain a node named "
+                                "\'rateAngularDeform\' among the children of the \'{}\' "
+                                "node, gathering the mechanical Cosserat components "
+                                "(MechanicalObject, Cosserat forcefield)".format(instrumentNodeName))
+
+            rigidBaseNode = instrumentNode.getChild('rigidBase')
+            if rigidBaseNode is None:
+                raise NameError("[CombinedInstrumentsController]: Node \'rigidBase\' "
+                                "not found. Your scene should contain a node named "
+                                "\'rigidBase\' among the children of the \'{}\' "
+                                "node, where the base and rigid frames of the "
+                                "Cosserat model are defined".format(instrumentNodeName))
+
+            coaxialFramesNode = rigidBaseNode.getChild('coaxialSegmentFrames')
+            if coaxialFramesNode is None:
+                raise NameError("[CombinedInstrumentsController]: Node \'coaxialSegmentFrames\' "
+                                "not found. The \'rigidBase\' node should have a child "
+                                "node called \'coaxialSegmentFrames\', in which the Cosserat "
+                                "mapping tracking coaxial segments should be defined.")
+
+            nbBeamsInMechanicalObject = len(cosseratMechanicalNode.rateAngularDeformMO.position)
+            nbCoaxialFrames = len(coaxialFramesNode.coaxialFramesMO.position)
+            if (nbCoaxialFrames != (nbIntermediateConstraintFrames+1) * nbBeamsInMechanicalObject + 1):
+                raise ValueError("[CombinedInstrumentsController]: The number of coaxial frames ({}) "
+                                 "is not coherent with the number of beams ({}) provided for instrument{}, "
+                                 "and this controller nbIntermediateConstraintFrames parameter. For a "
+                                 "given number of beams *nbBeams* and a given *nbIntermediateConstraintFrames* "
+                                 "parameter, the number of coaxial frames should be : "
+                                 "(nbIntermediateConstraintFrames+1)*nbBeams + 1."
+                                 "".format(nbCoaxialFrames, nbBeamsInMechanicalObject, instrumentId))
+
+
 
     # -------------------------------------------------------------------- #
     # -----                     Animation events                     ----- #
@@ -210,8 +247,9 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
         # is set back to the instrument's length
 
         for instrumentId in range (0, self.nbInstruments):
-            if self.tipCurvAbsVect[instrumentId] > self.instrumentLengths[instrumentId]:
-                self.tipCurvAbsVect[instrumentId] = self.instrumentLengths[instrumentId]
+            instrumentLength = self.instrumentList[instrumentId].getTotalLength()
+            if self.tipCurvAbsVect[instrumentId] > instrumentLength:
+                self.tipCurvAbsVect[instrumentId] = instrumentLength
 
 
         #----- Step 1 : instrument's tip curvilinear abscissa and combined length -----#
@@ -318,8 +356,9 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
         # it is <0
         for instrumentId in range(0,self.nbInstruments):
 
+            instrumentLength = self.instrumentList[instrumentId].getTotalLength()
             xEnd = self.tipCurvAbsVect[instrumentId]
-            xBegin = xEnd - self.instrumentLengths[instrumentId]
+            xBegin = xEnd - instrumentLength
             xBeginVect.append(xBegin)
 
             if xEnd > combinedInstrumentLength:
@@ -360,68 +399,97 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
     # rigid frame the list of instruments which the frame belongs to
     def computeNodeCurvAbs(self, xBeginVect, simulatedNodeCurvAbs, simulatedFrameCurvAbs, instrumentIdsForNodeVect, instrumentIdsForFrameVect):
 
-        instrumentKeyPointsVect = [[]]
         maxCurvilinearAbscissa = 0. # Max curvilinear abscissa among the key points
 
         for instrumentId in range(0,self.nbInstruments):
-            # Add first key point = proximal extremity point
-            beginNodeCurvAbs = xBeginVect[instrumentId] + 0.0
-            # TO DO: are the two check below relevent for the first key point ?
-            if (beginNodeCurvAbs > 0):
-                simulatedNodeCurvAbs.append(beginNodeCurvAbs)
-                simulatedFrameCurvAbs.append(beginNodeCurvAbs)
-                # Update the maxCurvilinearAbscissa if beginNodeCurvAbs is higher
-                if (beginNodeCurvAbs > maxCurvilinearAbscissa):
-                    maxCurvilinearAbscissa = beginNodeCurvAbs
 
-            # TO DO: If the instrument is not entirely straight, add the
-            # intermediary key points. For each corresponding interval,
-            # also add the points based on the beam density on the interval.
+            currentInstrument = self.instrumentList[instrumentId]
 
-            # Add second key point = distal extremity point
-            instrumentLength = self.instrumentLengths[instrumentId]
-            endNodeCurvAbs = xBeginVect[instrumentId] + instrumentLength
-            if (endNodeCurvAbs > 0):
-                # If the distal end of the interval is visible (curv. abs. > 0),
-                # it means that a least a part of the interval is out, so the
-                # correpsonding curv. abs. has to be added in simulatedNodeCurvAbs.
-                #
-                # If additionnaly, this curv. abs. is greater than the current
-                # maximum abscissa (maxCurvilinearAbscissa), it means that the
-                # current interval is visible. In this case, we have to discretise
-                # the visible part into several beam elements, based on the
-                # desired beam density.
+            # NB: in this method, we name as 'keyPoint' values which represent
+            # curvilinear abscissas expressed in the instrument local frame,
+            # ranging from 0 to the length of the instrument.
+            # The values we name as 'curvAbs', however, are curvilinear abscissas
+            # expressed relatively to the frame representing the insertion point
+            # (common to all instruments). In this context, curvilinear abscissas
+            # range between -instrumentLength and instrumentLength, negative values
+            # representing the instrument parts which have not been deployed yet.
 
-                # Add the end point of the interval
-                simulatedNodeCurvAbs.append(endNodeCurvAbs)
-                simulatedFrameCurvAbs.append(endNodeCurvAbs)
+            proximalEndKeyPoint = 0.
+            distalEndKeyPoint = currentInstrument.getTotalLength()
 
-                if (endNodeCurvAbs > maxCurvilinearAbscissa):
+            instrumentKeyPoints = [proximalEndKeyPoint]
+            instrumentKeyPoints += currentInstrument.getKeyPoints()
+            instrumentKeyPoints.append(distalEndKeyPoint)
+
+            nbBeamDistribution = currentInstrument.getNbBeamDistribution()
+            instrumentLength = currentInstrument.getTotalLength()
+
+            nbFrameSegmentsOnInstrument = self.instrumentFrameNumberVect[instrumentId]-1
+
+            instrumentBeginCurvAbs = xBeginVect[instrumentId]
+
+            for keyPointId in range( len(instrumentKeyPoints)-1 ):
+
+                keyPoint = instrumentKeyPoints[keyPointId]
+                nextKeyPoint = instrumentKeyPoints[keyPointId+1]
+
+                keyPointCurvAbs = instrumentBeginCurvAbs + keyPoint
+                nextKeyPointCurvAbs = instrumentBeginCurvAbs + nextKeyPoint
+
+                # In any case, the key points are added to simulatedNodeCurvAbs
+                # as soon as they are deployed
+
+                if (keyPointCurvAbs > 0):
+                    simulatedNodeCurvAbs.append(keyPointCurvAbs)
+                    simulatedFrameCurvAbs.append(keyPointCurvAbs)
+
+                # Additionaly, if part of the instrument between the two key points
+                # is visible, we add a number of beam nodes according to the
+                # interval beam density and visible length
+
+                visibleIntervalLength = nextKeyPointCurvAbs - maxCurvilinearAbscissa
+
+                if (visibleIntervalLength > 0):
 
                     # Compute the number of new nodes to add
-                    intervalLength = instrumentLength # NB: difference of CA between the two key points
-                    visibleIntervalLength = endNodeCurvAbs - maxCurvilinearAbscissa
+                    intervalLength = nextKeyPoint - keyPoint
                     ratio = visibleIntervalLength / intervalLength
-                    nbBeamsOnInstrument = self.instrumentBeamNumberVect[instrumentId]
-                    nbNewNodes = int(nbBeamsOnInstrument * ratio)
+                    nbBeamsOnInterval = nbBeamDistribution[keyPointId]
+                    nbNewNodes = int(nbBeamsOnInterval * ratio)
 
                     # Add the new nodes
                     for newNodeId in range(0, nbNewNodes):
-                        newNodeCurvAbs = endNodeCurvAbs - (newNodeId+1) * (intervalLength / nbBeamsOnInstrument)
+                        newNodeCurvAbs = nextKeyPointCurvAbs - (newNodeId+1) * (intervalLength / nbBeamsOnInterval)
                         simulatedNodeCurvAbs.append(newNodeCurvAbs)
 
                     # Compute the number of new frames to add
-                    nbFrameSegmentsOnInstrument = self.instrumentFrameNumberVect[instrumentId]-1
-                    nbNewFrames = int(nbFrameSegmentsOnInstrument * ratio)
+                    # Contrarily to beam nodes, the output frames of the Cosserat mapping
+                    # are distributed uniformly over the instrument.
+                    # As we impose frames on the instrument keyPoints, we have to compute
+                    # the number of frame segments on each keyPoint interval. The
+                    # computation has to be done individually for each interval to avoid
+                    # rounding errors.
+                    nbFrameSegmentsOnInterval = int(nbFrameSegmentsOnInstrument * intervalLength / instrumentLength)
+                    nbNewFrames = int(nbFrameSegmentsOnInterval * ratio)
 
                     # Add the new frames
                     for newFrameId in range(0, nbNewFrames):
-                        newFrameCurvAbs = endNodeCurvAbs - (newFrameId+1) * (intervalLength / nbFrameSegmentsOnInstrument)
+                        newFrameCurvAbs = nextKeyPointCurvAbs - (newFrameId+1) * (intervalLength / nbFrameSegmentsOnInterval)
                         simulatedFrameCurvAbs.append(newFrameCurvAbs)
 
                     # Update the max curv. abs.
-                    maxCurvilinearAbscissa = endNodeCurvAbs
+                    maxCurvilinearAbscissa = nextKeyPointCurvAbs
+
+            # After the end of the for loop above, we just have to process the
+            # instrument last key point
+            lastKeyPoint = instrumentKeyPoints[len(instrumentKeyPoints)-1]
+            lastKeyPointCurvAbs = instrumentBeginCurvAbs + lastKeyPoint
+            if (lastKeyPointCurvAbs > 0):
+                simulatedNodeCurvAbs.append(lastKeyPointCurvAbs)
+                simulatedFrameCurvAbs.append(lastKeyPointCurvAbs)
+
         # endfor instrumentId in range(0,self.nbInstruments)
+
 
         # When all points of interest have been detected, we sort and filter
         # ther curv. abs' list.
@@ -607,7 +675,7 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
                 raise NameError("[CombinedInstrumentsController]: Node \'coaxialSegmentFrames\' "
                                 "not found. The \'rigidBase\' node should have a child "
                                 "node called \'coaxialSegmentFrames\', in which the Cosserat "
-                                "mapping tracking coaxial segments shoudl is defined.")
+                                "mapping tracking coaxial segments should be defined.")
 
             # Retrieving the components
             # TO DO : existance check ? What is the appropriate binding method ?
@@ -867,7 +935,6 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
                     # decimatedNodeCurvAbs[1] or shorterInstrumentCoaxialFrameIds[self.nbIntermediateConstraintFrames+1]
                     if (decimatedNodeCurvAbs[1] < self.minimalDistanceForConstraint):
                         shorterInstrumentCoaxialFrameIds = shorterInstrumentCoaxialFrameIds[self.nbIntermediateConstraintFrames+1:len(shorterInstrumentCoaxialFrameIds)]
-                    # TO DO: apply the same threshold for intermediate coaxial frames
 
                     # For the longer instrument, we have to take into account the additional *coaxial* beams
                     # which are further than the first (shorter) instrument end. The notion of coaxial is
@@ -885,7 +952,7 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
                         # In this case, the coaxial frames of the longer instruments are coincidant
                         nbAdditionalCoaxialBeams = longerInstrumentLastBeamId - instrumentLastBeamId
 
-                    nbTotalCoaxialFramesOfLongerInst = len(coaxialFrameNode.CoaxialCosseratMapping.curv_abs_output)
+                    nbTotalCoaxialFramesOfLongerInst = len(coaxialFrameNode2.CoaxialCosseratMapping.curv_abs_output)
                     lastCoaxialFrameIndexWithShorterInstrument = nbTotalCoaxialFramesOfLongerInst - 1 - nbAdditionalCoaxialBeams
                     firstCoaxialFrameIndexWithShorterInstrument = lastCoaxialFrameIndexWithShorterInstrument - len(shorterInstrumentCoaxialFrameIds) + 1
                     longerInstrumentCoaxialFrameIds = list(range(firstCoaxialFrameIndexWithShorterInstrument, lastCoaxialFrameIndexWithShorterInstrument+1))
@@ -987,14 +1054,11 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
         nbInstruments = self.nbInstruments
         nbNewNodes = len(decimatedNodeCurvAbs)
 
-        # print("instrumentLastNodeIds : {}".format(instrumentLastNodeIds))
-
         for instrumentId in range(nbInstruments):
 
             instrument = self.instrumentList[instrumentId]
             instrumentTotalLength = instrument.getTotalLength()
 
-            # /!\ In the following code, we can use equivalently
             instrumentLastNodeId = instrumentLastNodeIds[instrumentId]
             nbDeployedBeams = instrumentLastNodeId
             instrumentDeployedLength = decimatedNodeCurvAbs[instrumentLastNodeId]
@@ -1023,41 +1087,39 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
                                 "node called \'MappedFrames\', in which the Cosserat "
                                 "rigid frames and the Cosserat mapping are defined.")
 
-            instrumentNbBeams = instrument.getNbBeams()
-
             # NB: we retrieve a copy of the instrument Cosserat MO fields, as we are
             # about to update them.
             # previousStepMORestShape = cosseratMechanicalNode.rateAngularDeformMO.rest_position.value.copy()
             previousStepMOPosition = cosseratMechanicalNode.rateAngularDeformMO.position.value.copy()
             previousStepMOVelocity = cosseratMechanicalNode.rateAngularDeformMO.velocity.value.copy()
+            nbBeamInAngularRateMO = len(previousStepMOPosition)
 
+            # Retrieving information on the previous discretisation
             prevInstrumentCurvAbs = instrument.getPrevDiscretisation()
-            # print("prevInstrumentCurvAbs : {}".format(prevInstrumentCurvAbs))
+            nbDeployedBeamsInPrevDiscretisation = len(prevInstrumentCurvAbs)-1
             instrumentLengthDiff = decimatedNodeCurvAbs[instrumentLastNodeId] - prevInstrumentCurvAbs[len(prevInstrumentCurvAbs)-1]
-            # print("instrumentLengthDiff : {}".format(instrumentLengthDiff))
 
             for newBeamId in range(nbDeployedBeams):
 
-                # print("Interpolating beam {} instrument {}".format(newBeamId, instrumentId))
-
-                # Getting the beam extremities curvilinear abscissas
+                # Getting the beam extremities's curvilinear abscissas (expressed
+                # in the global instrument configuration, in which 0 corresponds
+                # to the 'insertion' point)
                 beamBeginCurvAbs = decimatedNodeCurvAbs[newBeamId]
                 beamEndCurvAbs = decimatedNodeCurvAbs[newBeamId+1]
-                # print("beamBeginCurvAbs : {}".format(beamBeginCurvAbs))
-                # print("beamEndCurvAbs : {}".format(beamEndCurvAbs))
 
+                # Expressing the curvilinear abscissas in the instrument local
+                # configuration (in which 0 corresponds to the proximal end)
                 beamBeginCurvAbsAtRest = beamBeginCurvAbs + instrumentUndeployedLength
                 beamEndCurvAbsAtRest = beamEndCurvAbs + instrumentUndeployedLength
 
-                # print("first curv abs : {} ".format(beamBeginCurvAbsAtRest + self.curvAbsTolerance))
-                # print("second curv abs : {} ".format(beamEndCurvAbsAtRest - self.curvAbsTolerance))
-
                 # We use a safety margin to make sure that one of the curvilinear abscissas is not
                 # exactly on a key point (i.e. a curvilinear abscissa value for which the rest strain
-                # of the instrument changes). This safety margin has to be lower than both the
-                # navigation increment distance and half the difference between both curvilinear
-                # abscissas
-                curvAbsSafetyMargin = min(abs(beamBeginCurvAbsAtRest - beamEndCurvAbsAtRest)*1e-1, self.incrementDistance)
+                # of the instrument changes). This safety margin has to be significantly lower than both the
+                # navigation increment distance and the difference between both curvilinear abscissas.
+                # We arbitrarily divide the quantities by 10 for comparison.
+                # TO DO: use a more rigourous definition ?
+                curvAbsSafetyMargin = min(abs(beamBeginCurvAbsAtRest - beamEndCurvAbsAtRest)*1e-1, self.incrementDistance*1e-1)
+
 
                 ### Interpolating the rest positions ###
 
@@ -1065,50 +1127,58 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
                                                       beamEndCurvAbsAtRest - curvAbsSafetyMargin)
 
                 # Updating the rest strain in the Cosserat MechanicalObject
-                beamIdInMechanicalObject = instrumentNbBeams - nbDeployedBeams + newBeamId
+
+                beamIdInMechanicalObject = nbBeamInAngularRateMO - nbDeployedBeams + newBeamId
                 with cosseratMechanicalNode.rateAngularDeformMO.rest_position.writeable() as rest_position:
                     rest_position[beamIdInMechanicalObject] = restStrain
 
                 ### Interpolating the position ###
-                beginCurvAbsBeamIdInPrevDiscretisation = instrument.getBeamIdInPrevDiscretisation(beamBeginCurvAbs+curvAbsSafetyMargin, instrumentLengthDiff)
-                endCurvAbsBeamIdInPrevDiscretisation = instrument.getBeamIdInPrevDiscretisation(beamEndCurvAbs-curvAbsSafetyMargin, instrumentLengthDiff)
 
-                previousBeamPos = np.array([0., 0., 0.])
-                previousBeamVel = np.array([0., 0., 0.])
+                # NB: we compute the interpolation of position and velocity only if
+                # at least one beam of the current instrument was deployed in the
+                # last time step
+                if (nbDeployedBeamsInPrevDiscretisation > 0):
 
-                if (beginCurvAbsBeamIdInPrevDiscretisation == endCurvAbsBeamIdInPrevDiscretisation):
-                    # In this case, the new beam was entirely on a unique beam in the last time step.
-                    # No interpolation is required: we can directly assign the previous beam's position
-                    # and velocity to the new beam
-                    previousBeamPos = previousStepMOPosition[beginCurvAbsBeamIdInPrevDiscretisation]
-                    previousBeamVel = previousStepMOVelocity[beginCurvAbsBeamIdInPrevDiscretisation]
-                else:
-                    # In this case, the new beam is crossing more than one beam in the last time step.
-                    # We have to interpolate the position and velocity of these beams to compute the
-                    # position and velocity of the new beam.
-                    # As the Cosserat DoFs (angularRate) are expressed in a 'strain' space, we use
-                    # a simple linear interpolation.
-                    # print("A new beam (beam {}, instrument {}) is crossing more than one beam in previous step".format(newBeamId, instrumentId))
-                    crossedBeamLengths = instrument.getInterpolationBeamLengths(beamBeginCurvAbs + curvAbsSafetyMargin,
-                                                                                beamEndCurvAbs - curvAbsSafetyMargin,
-                                                                                instrumentLengthDiff)
-                    totBeamLength = sum(crossedBeamLengths)
-                    intermediateBeamId = beginCurvAbsBeamIdInPrevDiscretisation
-                    for beamLength in crossedBeamLengths:
-                        interpolationCoeff = (beamLength / totBeamLength)
-                        previousBeamPos += interpolationCoeff * np.array(previousStepMOPosition[intermediateBeamId])
-                        previousBeamVel += interpolationCoeff * np.array(previousStepMOVelocity[intermediateBeamId])
+                    beginCurvAbsBeamIdInPrevDiscretisation = instrument.getBeamIdInPrevDiscretisation(beamBeginCurvAbs+curvAbsSafetyMargin, instrumentLengthDiff)
+                    endCurvAbsBeamIdInPrevDiscretisation = instrument.getBeamIdInPrevDiscretisation(beamEndCurvAbs-curvAbsSafetyMargin, instrumentLengthDiff)
 
-                with cosseratMechanicalNode.rateAngularDeformMO.position.writeable() as position:
-                    position[beamIdInMechanicalObject] = previousBeamPos
-                with cosseratMechanicalNode.rateAngularDeformMO.velocity.writeable() as velocity:
-                    velocity[beamIdInMechanicalObject] = previousBeamVel
+                    previousBeamPos = np.array([0., 0., 0.])
+                    previousBeamVel = np.array([0., 0., 0.])
+
+                    if (beginCurvAbsBeamIdInPrevDiscretisation == endCurvAbsBeamIdInPrevDiscretisation):
+                        # In this case, the new beam was entirely on a unique beam in the last time step.
+                        # No interpolation is required: we can directly assign the previous beam's position
+                        # and velocity to the new beam
+                        beginBeamIdInPreviousMechanicalObject = nbBeamInAngularRateMO - nbDeployedBeamsInPrevDiscretisation + beginCurvAbsBeamIdInPrevDiscretisation
+                        previousBeamPos = previousStepMOPosition[beginBeamIdInPreviousMechanicalObject]
+                        previousBeamVel = previousStepMOVelocity[beginBeamIdInPreviousMechanicalObject]
+                    else:
+                        # In this case, the new beam is crossing more than one beam in the last time step.
+                        # We have to interpolate the position and velocity of these beams to compute the
+                        # position and velocity of the new beam.
+                        # As the Cosserat DoFs (angularRate) are expressed in a 'strain' space, we use
+                        # a simple linear interpolation.
+                        crossedBeamLengths = instrument.getInterpolationBeamLengths(beamBeginCurvAbs + curvAbsSafetyMargin,
+                                                                                    beamEndCurvAbs - curvAbsSafetyMargin,
+                                                                                    instrumentLengthDiff)
+
+                        totBeamLength = sum(crossedBeamLengths)
+                        beginBeamIdInPreviousMechanicalObject = nbBeamInAngularRateMO - nbDeployedBeamsInPrevDiscretisation + beginCurvAbsBeamIdInPrevDiscretisation
+                        intermediateBeamId = beginBeamIdInPreviousMechanicalObject
+                        for beamLength in crossedBeamLengths:
+                            interpolationCoeff = (beamLength / totBeamLength)
+                            previousBeamPos += interpolationCoeff * np.array(previousStepMOPosition[intermediateBeamId])
+                            previousBeamVel += interpolationCoeff * np.array(previousStepMOVelocity[intermediateBeamId])
+                            intermediateBeamId += 1
+
+                    with cosseratMechanicalNode.rateAngularDeformMO.position.writeable() as position:
+                        position[beamIdInMechanicalObject] = previousBeamPos
+                    with cosseratMechanicalNode.rateAngularDeformMO.velocity.writeable() as velocity:
+                        velocity[beamIdInMechanicalObject] = previousBeamVel
 
             ### Setting the instrument reference discretisation for next timestep ###
             instrumentNewCurvAbs = decimatedNodeCurvAbs[0:instrumentLastNodeId+1]
             instrument.setPrevDiscretisation(instrumentNewCurvAbs)
-
-
 
 
 
