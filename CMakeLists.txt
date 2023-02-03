@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.12)
-project(CosseratPlugin VERSION 21.12.0)
+project(Cosserat VERSION 21.12.0)
 
 include(cmake/environment.cmake)
 
@@ -77,7 +77,7 @@ if(SoftRobots_FOUND)
     list(APPEND SOURCE_FILES
         ${SRC_ROOT_DIR}/constraint/CosseratActuatorConstraint.cpp
         
-        #${SRC_ROOT_DIR}/constraint/CosseratUnilateralInteractionConstraint.cpp
+#        ${SRC_ROOT_DIR}/constraint/CosseratUnilateralInteractionConstraint.cpp
         ${SRC_ROOT_DIR}/constraint/QPSlidingConstraint.cpp
         )
 endif()
@@ -113,20 +113,17 @@ if(SofaPython3Tools)
     message("-- Found SofaPython3Tools.")
     include(${SofaPython3Tools})
 else()
-    # try again with the find_package mechanism
+    # Find the SofaPython3 package (optional)
     find_package(SofaPython3 QUIET)
 endif()
 if(SofaPython3Tools OR SofaPython3_FOUND)
-    message("-- Python3 packages will be installed.")
-    set(SP3_PYTHON_PACKAGES_DIRECTORY "python3/site-packages")
-    # SP3_add_python_package(
-    #         SOURCE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/python3/cosserat
-    #         TARGET_DIRECTORY cosserat
-    # )
+    message("-- Python3 cosserat site-packages will be installed.")
+    SP3_add_python_package(
+        SOURCE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/python3/softrobots
+        TARGET_DIRECTORY softrobots
+    )
     add_subdirectory(${SRC_ROOT_DIR}/Binding)
 endif()
-
-#add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src/CosseratPlugin/Binding)
 
 ## Install rules for the library and headers; CMake package configurations files
 sofa_create_package_with_targets(

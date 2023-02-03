@@ -54,8 +54,6 @@ set(SOURCE_FILES
     constraint/CosseratNeedleSlidingConstraint.cpp
     )
 
-# add_subdirectory(Binding)
-
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})
 
 target_include_directories(${PROJECT_NAME} PUBLIC
