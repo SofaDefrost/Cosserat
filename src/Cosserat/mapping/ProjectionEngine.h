@@ -22,7 +22,7 @@
 #ifndef COSSERATPLUGIN_ProjectionEngine_H
 #define COSSERATPLUGIN_ProjectionEngine_H
 
-#include <CosseratPlugin/config.h>
+#include <Cosserat/config.h>
 
 #include <sofa/core/behavior/PairInteractionConstraint.h>
 #include <sofa/core/behavior/MechanicalState.h>

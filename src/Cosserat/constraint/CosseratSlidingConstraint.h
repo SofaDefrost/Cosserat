@@ -20,7 +20,7 @@
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
 #pragma once
-#include <CosseratPlugin/config.h>
+#include <Cosserat/config.h>
 
 #include <sofa/core/behavior/PairInteractionConstraint.h>
 #include <sofa/core/behavior/MechanicalState.h>

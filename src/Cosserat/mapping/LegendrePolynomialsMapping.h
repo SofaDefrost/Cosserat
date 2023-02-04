@@ -2,7 +2,7 @@
 // Created by younes on 17/11/2021.
 //
 #pragma once
-#include <CosseratPlugin/config.h>
+#include <Cosserat/config.h>
 
 #include <sofa/core/BaseMapping.h>
 #include <sofa/core/config.h>

@@ -28,7 +28,7 @@
 *                                                                             *
 ******************************************************************************/
 #pragma once
-#include <CosseratPlugin/config.h>
+#include <Cosserat/config.h>
 
 #include <sofa/type/Vec.h>
 #include <sofa/type/Mat.h>
