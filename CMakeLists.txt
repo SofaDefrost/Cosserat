@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.12)
-project(Cosserat VERSION 21.12.0)
+project(Cosserat VERSION 23.06.99)
 
 include(cmake/environment.cmake)
 
