@@ -7,17 +7,15 @@ __copyright__ = "(c) 2021, Inria"
 __date__ = "September 2 2021"
 
 """
-    Create the scene with the 
+    Create the scene with the
     Units: mm, kg, s.
 
     In this version(2), the goal is to have a rigid between the two or more Cosserat beams.
     Means, instead of having a constraint between two Cosserat beams we have two
-    [RigidDistanceMapping]. 
+    [RigidDistanceMapping].
     {Cosserat1} <-> [RigidDistanceMapping] {RigidElement} [RigidDistanceMapping] <-> {Cosserat2}
 """
 
-from robocop.usefulFunction import pluginNameList
-from robocop.utils import createCosserat_2 as cosserat
 import Sofa
 from splib3.numerics import Vec3, Quat
 from math import pi
@@ -44,6 +42,17 @@ config_material = {'youngModulus': YOUNG_MODULUS, 'poissonRatio': POISSON_RATIO,
 
 is_constrained = True
 is_CG = 0
+
+pluginNameList = 'CosseratPlugin' \
+                 ' Sofa.Component.AnimationLoop' \
+                 ' Sofa.Component.Constraint.Lagrangian.Correction' \
+                 ' Sofa.Component.Constraint.Lagrangian.Solver' \
+                 ' Sofa.Component.LinearSolver.Direct' \
+                 ' Sofa.Component.Mapping.MappedMatrix' \
+                 ' Sofa.Component.ODESolver.Backward' \
+                 ' Sofa.Component.SolidMechanics.Spring' \
+                 ' Sofa.Component.StateContainer' \
+                 ' Sofa.Component.Visual'
 
 
 class Animation(Sofa.Core.Controller):
@@ -114,7 +123,7 @@ def createScene(rootNode):
     if is_CG:
         solverNode.addObject('CGLinearSolver', name='solver')
     else:
-        solverNode.addObject('SparseLDLSolver', name='solver')
+        solverNode.addObject('SparseLDLSolver', name='solver', template="CompressedRowSparseMatrixd")
 
     if is_constrained:
         solverNode.addObject('GenericConstraintCorrection')
@@ -134,7 +143,7 @@ def createScene(rootNode):
 
     rigidBaseNode2 = solverNode.addChild('rigidBase2')
     rigidBaseNode2.addObject('MechanicalObject', name="rigidState", template='Rigid3d', position="2 0. 0 0 0 0 1",
-                             showObject=True, showObjectScale=0.5)
+                             showObject=True, showObjectScale=1.0)
                              # position="2 4 1 0.7071 0 0.7071 0",
 
     rigidBaseNode2.addObject('RestShapeSpringsForceField', name='rigid3', stiffness=0.2e1, template="Rigid3d",
@@ -151,8 +160,8 @@ def createScene(rootNode):
                                         position=[1., 0., 0., 0., 0., 0., 1.], showObject=1, showObjectScale=0.1)
     distanceMapping = True
     if distanceMapping:
-        distanceNode.addObject('RigidDistanceMapping', input1=rigidBaseNode1.getLinkPath(),
-                           input2=rigidBaseNode2.getLinkPath(), newVersionOfFrameComputation='1',
+        distanceNode.addObject('RigidDistanceMapping', input1=rigidBaseNode2.getLinkPath(),
+                           input2=rigidBaseNode1.getLinkPath(), newVersionOfFrameComputation='1',
                            output=distanceMo.getLinkPath(), first_point=[0], second_point=[0], name='distanceMap1')
         solverNode.addObject('MechanicalMatrixMapper', template='Rigid3d,Rigid3d', object1=rigidBaseNode1.getLinkPath(),
                              object2=rigidBaseNode2.getLinkPath(), name='mapper1',
