@@ -72,6 +72,7 @@ RigidDistanceMapping<TIn1, TIn2, TOut>::RigidDistanceMapping()
             // appropriate topology modifications API.
             core::State<Out>* toModel = this->getToModels()[0];
             toModel->resize(m_minInd);
+            this->Inherit::init();
 
             return sofa::core::objectmodel::ComponentState::Valid;
         }, {});
