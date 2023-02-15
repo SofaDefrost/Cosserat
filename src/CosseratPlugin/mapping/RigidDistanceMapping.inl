@@ -72,6 +72,7 @@ RigidDistanceMapping<TIn1, TIn2, TOut>::RigidDistanceMapping()
             // appropriate topology modifications API.
             core::State<Out>* toModel = this->getToModels()[0];
             toModel->resize(m_minInd);
+            this->Inherit::init();
 
             return sofa::core::objectmodel::ComponentState::Valid;
         }, {});
@@ -115,75 +116,134 @@ void RigidDistanceMapping<TIn1, TIn2, TOut>::apply(
 
     ///Do Apply
     //We need only one input In model and input Root model (if present)
-    const In1VecCoord& parent1Pos = dataVecIn1Pos[0]->getValue();
-    const In2VecCoord& parent2Pos = dataVecIn2Pos[0]->getValue();
+    const In1VecCoord& input1MOPos = dataVecIn1Pos[0]->getValue();
+    const In2VecCoord& input2MOPos = dataVecIn2Pos[0]->getValue();
 
-    OutVecCoord& childPos = *dataVecOutPos[0]->beginEdit();
-    childPos.resize(m_minInd);
+    OutVecCoord& outputMOPos = *dataVecOutPos[0]->beginEdit();
+    outputMOPos.resize(m_minInd);
     pointsR0.resize(m_minInd);
 
     auto &m1Indices = d_index1.getValue();
     auto &m2Indices = d_index2.getValue();
 
     size_t baseIndex = 0; // index of the first point of the beam, add this to the data
-    m_vGlobal_H_Parent1.clear();
-    m_vGlobal_H_Parent2.clear();
-    m_vParent1_H_Parent2.clear();
+    mVect_global_H_input2Frame.clear();
+    mVect_input1Frame_H_input2Frame.clear();
 
     m_vecRotation.clear();
 
-    printf(" ====== Apply =============== \n");
-
-    for (sofa::Index pid=0; pid<m_minInd; pid++) {
+    for (sofa::Index pid=0; pid<m_minInd; pid++)
+    {
         int tm1 = m1Indices[pid];
         int tm2 = m2Indices[pid];
 
         Vec3 outCenter ;
         Rot outOri;
 
-        if (d_newVersionOfFrameComputation.getValue()) {
-          Transform global_H_parent1 = Transform(In1::getCPos(parent1Pos[tm1]),In1::getCRot(parent1Pos[tm1]));
-          Transform global_H_parent2 = Transform(In2::getCPos(parent2Pos[tm2]),In2::getCRot(parent2Pos[tm2]));
+        if (d_newVersionOfFrameComputation.getValue())
+        {
+            // The goal here is to compute the distance in local coordinates
+            // We did the abritary choice to compute the distance in the local coordinates of input2Frame
 
-          //#1. The goal here is to compute the distance in local coordinates
-          // We did the abritary choice to compute the distance in the local coordinates of the Parent2
+            /* The trasnform global_H_input2Frame converts coordinates from the input2 local frame to
+             * the global frame.
+             * Here, by using this Transform constructor, with the position and orientation of input2
+             * expressed in global coordinates, we imply that the Transform parent frame is the global
+             * frame, and that the child frame is input2. See explanation below.
+             *
+             * NB: we use the naming convention global_H_input2Frame with input2Frame being the child frame,
+             * and global the parent frame, as, in this configuration,
+             * global_H_input2Frame.getOrientation().rotate() allows to pass from input2Frame axis
+             * orientation to the global frame axis orientation. Additionnaly, the multiplication of two
+             * Transforms is more readable this way.
+             *
+             * Explanation: A Transform object is defined based on two fields (cf SolidTypes.h):
+             *   orientation_
+             *   origin_
+             * These two fields correspond to a transformation between a parent frame, and a child frame.
+             * /!\ The convention in SOFA is that:
+             *   > the orientation_ field stores the orientation of the *child* with respect to the *parent*
+             *   > the origin_      field stores the position of the *parent* with respect to the *child*
+             * This corresponds to the *Featherstone's convention*.
+             * /!\ However, when using the standard constructor signature (providing a position
+             * as first parameter, and a rotation as second parameter), the constructor expects
+             * arguments which respect the *standard convention*, that is:
+             *   > an orientation parameter describing the orientation of the *child* with respect to the *parent*
+             *   > a position parameter, also describing the position of the *child* with respect to the *parent*
+             * This constructor then sets the internal fields doing :
+             *   > orientation_ = orientationParameter
+             *   > origin_      = - orientation_.inverseRotate(positionParameter).
+             * The only thing left is to access correctly the Transform parameters:
+             *   > Transform::getOrientation() returns orientation_ as it is, which means
+             *     it describes the orientation of the *child* with respect to the *parent*
+             *   > Transform::getOrigin() returns -orientation_.rotate(origin_), which means
+             *     it describes the position of the *child* with respect to the *parent* (standard convention)
+             *   > Transform::getOriginOfParentInChild() returns origin_ as it is, which means
+             *     it describes the position of the *parent* with respect to the *child*
+             *
+             * Concrete example : here, if input2Frame is simply rotated by +90 degrees around the y axis,
+             * the corresponding Rigid, expressed in global frame coordinates, is (rounded):
+             * input2MOPos = [0, 0, 0, 0, 0.707107, 0, 0.707107]
+             * Considering a unit Vec3 along the X axis, expressed in input2Frame local coordinates :
+             * xAxisVectInInput2Frame = [1, 0, 0]
+             * Due to the rotation, the expression of this vector is [0, 0, -1] in global frame coordinates.
+             * We can obtain these global frame coordinates by doing:
+             *   global_H_input2Frame.getOrientation.rotate(xAxisVectInInput2Frame)
+             * which will return [0, 0, -1].
+             * If we now consider a unit Vec3 along the X axis, expressed in global frame coordinates:
+             * xAxisVectInGlobalFrame = [1, 0, 0]
+             * Calling:
+             *   global_H_input2Frame.getOrientation.inverseRotate(xAxisVectInGlobalFrame)
+             * will return the coordinates of the vector in the input2Frame local frame, that is [0, 0, 1]
+             *
+             * If instead of applying a rotation to input2Frame, we simply translate it so that,
+             * in global coordinates : input2MOPos = [1, 0, 0, 0, 0, 0, 1]
+             * Then calling :
+             *   global_H_input2Frame.getOrientation()
+             * will simply return the position of input2Frame (child frame) with respect to the global
+             * frame (parent frame), that is : [1, 0, 0, 0, 0, 0, 1]
+             */
+            Transform global_H_input2Frame = Transform(In2::getCPos(input2MOPos[tm2]), In2::getCRot(input2MOPos[tm2]));
+            // We compute a similar Transform for input1Frame
+            Transform global_H_input1Frame = Transform(In1::getCPos(input1MOPos[tm1]), In1::getCRot(input1MOPos[tm1]));
 
-          // So, let compute the transform from the local coordinates of Parent1 to the local coordinates of Parent2
-         Transform parent1_H_parent2 = global_H_parent1.inversed() * global_H_parent2;
+            /* Now, we compute a new Transform from the local coordinates of input1Frame to the local
+             * coordinates of input2Frame. This Transform can then be used directly to set the output
+             * MechanicalObject position and orientation (which are the difference in position and
+             * orientation between input1Frame and input2Frame, expressed in input2Frame)
+             *
+             * NB: in Transform, the * operator is defined so that the result of transform1 * transform2 is
+             * a Transform in which the parent frame is transform1's parent frame, and the child frame is
+             * transform2's child frame. To make sense, transform1's child frame and transform2's parent frame
+             * should be the same.
+             */
+            Transform input2Frame_H_input1Frame = global_H_input2Frame.inversed() * global_H_input1Frame;
 
-          // Since, parents are origins
-         // One can see that the distance between parent 1 and 2 is the translation of the transform parent1_H_parent2
+            // Updating the output
+            outCenter = input2Frame_H_input1Frame.getOrigin();
+            outOri = input2Frame_H_input1Frame.getOrientation();
+            outOri.normalize();
+            outputMOPos[pid] = OutCoord(outCenter,outOri);
 
-          // Let save the frame of the parent2 in the out vector
-          m_vParent1_H_Parent2.push_back(parent1_H_parent2);
-          m_vGlobal_H_Parent2.push_back(global_H_parent2);
-
-          std::cout << "The distance is :" << parent1_H_parent2 << std::endl;
-          std::cout << "The parent1Pos[" << tm1 << "] = " << parent1Pos[tm1] << std::endl;
-          std::cout << "The parent2Pos[" << tm2 << "] = " << parent2Pos[tm2] << std::endl;
-
-//          outCenter = parent1_H_parent2.getOrigin();
-          outCenter = global_H_parent2.getOrientation().rotate(In2::getCPos(parent2Pos[tm2]) - In1::getCPos(parent1Pos[tm1]));
-          outOri = parent1_H_parent2.getOrientation(); outOri.normalize();
-          childPos[pid] = OutCoord(outCenter,outOri);
-
-        }else{
-          outCenter = (In2::getCPos(parent2Pos[tm2]) - In1::getCPos(parent1Pos[tm1]));
-          outOri = (In1::getCRot(parent1Pos[tm1]).inverse()*In2::getCRot(parent2Pos[tm2]));
-          //outOri = (In2::getCRot(parent2Pos[tm2])*In1::getCRot(parent1Pos[tm1]).inverse());
-
-          outOri.normalize();
-          childPos[pid] = OutCoord(outCenter,outOri);
+            // Saving the computed Transforms to be used in the rest of the mapping methods
+            mVect_global_H_input2Frame.push_back(global_H_input2Frame);
+            mVect_input1Frame_H_input2Frame.push_back(input2Frame_H_input1Frame);
+        }
+        else
+        {
+            outCenter = (In2::getCPos(input2MOPos[tm2]) - In1::getCPos(input1MOPos[tm1]));
+            outOri = (In1::getCRot(input1MOPos[tm1]).inverse()*In2::getCRot(input2MOPos[tm2]));
+            outOri.normalize();
+            outputMOPos[pid] = OutCoord(outCenter,outOri);
         }
 
-
-        if (d_debug.getValue()){
-            std::cout << " in1 :" << parent1Pos[tm1] << std::endl;
-            std::cout << " in2 :" << parent2Pos[tm2] << std::endl;
-            std::cout << " out :" << childPos[pid] << std::endl;
+        if (d_debug.getValue())
+        {
+            std::cout << " in1 :" << input1MOPos[tm1] << std::endl;
+            std::cout << " in2 :" << input2MOPos[tm2] << std::endl;
+            std::cout << " out :" << outputMOPos[pid] << std::endl;
         }
     }
-    printf(" ====== End Apply =============== \n \n");
     dataVecOutPos[0]->endEdit();
 }
 
@@ -202,59 +262,50 @@ void RigidDistanceMapping<TIn1, TIn2, TOut>:: applyJ(
     if (this->d_componentState.getValue() != sofa::core::objectmodel::ComponentState::Valid)
         return;
 
-    Vector v,omega;
+    Vector omega;
 
-    const In1VecDeriv& parent1Velocities = dataVecIn1Vel[0]->getValue();
-    const In2VecDeriv& parent2Velocities = dataVecIn2Vel[0]->getValue();
-    OutVecDeriv& childVelocities = *dataVecOutVel[0]->beginEdit();
+    const In1VecDeriv& input1MOVelocities = dataVecIn1Vel[0]->getValue();
+    const In2VecDeriv& input2MOVelocities = dataVecIn2Vel[0]->getValue();
+    OutVecDeriv& outputVelocities = *dataVecOutVel[0]->beginEdit();
 
     const auto &m1Indices = d_index1.getValue();
     const auto &m2Indices = d_index2.getValue();
 
     SpatialVector vDOF1, vDOF2;
-    printf(" ====== ApplyJ =============== \n");
-    for (sofa::Index index = 0; index < m_minInd; index++) {
-      if (d_newVersionOfFrameComputation.getValue()){
-        // Let's compute the velocity of the parent1 in the local coordinates of the parent2
 
-        // First, let's get the velocity of the parent1 in the global coordinates
-        auto parent1Vel = getVCenter(parent1Velocities[m1Indices[index]]);
-        std::cout << "parent1Vel = " << parent1Vel << std::endl;
+    for (sofa::Index index = 0; index < m_minInd; index++)
+    {
+        if (d_newVersionOfFrameComputation.getValue())
+        {
+            // Let's compute the velocity of the input1Frame in the local coordinates of the input2Frame
 
-        // Then, let's get the velocity of the parent2 in the global coordinates
-        auto parent2Vel = getVCenter(parent2Velocities[m1Indices[index]]);
-        std::cout << "parent2Vel = " << parent2Vel << std::endl;
+            // Getting the velocities of input1Frame and input2Frame in global coordinates
+            auto input1MOVel = getVCenter(input1MOVelocities[m1Indices[index]]);
+            auto input2MOVel = getVCenter(input2MOVelocities[m2Indices[index]]);
 
-        // The angular velocity `omega`, of the parent1 with respect to the parent 2 in global frame is :
-        auto omega = getVOrientation(parent2Velocities[m2Indices[index]]) - getVOrientation(parent1Velocities[m1Indices[index]]) ;
-        //auto omega = m_vParent1_H_Parent2[index].getOrientation().rotate(getVOrientation(parent1Velocities[m1Indices[index]])) ;
+            // The angular velocity `omega`, of the input1Frame with respect to the input2Frame in global frame is :
+            auto omega = getVOrientation(input1MOVelocities[m1Indices[index]]) - getVOrientation(input2MOVelocities[m2Indices[index]]);
+            // auto omega = mVect_input1Frame_H_input2Frame[index].getOrientation().rotate(getVOrientation(input1MOVelocities[m1Indices[index]])) ;
 
-        std::cout << "omega = " << omega << std::endl;
-        std::cout<< "omega.norm() = " << omega.norm() << std::endl;
-        std::cout<< "omega 1 = " << getVOrientation(parent1Velocities[m1Indices[index]]) << std::endl;
-        std::cout<< "omega 2 = " << getVOrientation(parent2Velocities[m2Indices[index]]) << std::endl;
+            // V1_2 = 1_R_2 * V1_1 + omega x p1
+            // auto input1MOVelin2 = mVect_global_H_input2Frame[index].getOrientation().rotate(input2MOVel - input1MOVel)  + cross(omega, getVCenter(input1MOVelocities[m1Indices[index]]));
+            auto diffVelIn2 = mVect_global_H_input2Frame[index].getOrientation().inverseRotate(input1MOVel - input2MOVel); //  + cross(omega, mVect_input1Frame_H_input2Frame[index].getOrigin());
 
-
-        // V1_2 = 1_R_2 * V1_1 + omega x p1
-//        auto parent1Velin2 = m_vGlobal_H_Parent2[index].getOrientation().rotate(parent2Vel - parent1Vel)  + cross(omega, getVCenter(parent1Velocities[m1Indices[index]]));
-        auto parent1Velin2 = m_vGlobal_H_Parent2[index].getOrientation().rotate(parent2Vel - parent1Vel)  + cross(omega, m_vParent1_H_Parent2[index].getOrigin());
-        std::cout << "velocity = " << parent1Velin2  << std::endl;
-
-        // Du to the fact that the velocity of parent2 in is frame is zero, we can write :
-        getVCenter(childVelocities[index]) = parent1Velin2;
-        getVOrientation(childVelocities[index]) = m_vGlobal_H_Parent2[index].getOrientation().rotate(omega) ;
-
-      }else{
-        getVCenter(childVelocities[index]) = getVCenter(parent2Velocities[m2Indices[index]]) - getVCenter(parent1Velocities[m1Indices[index]]);
-        getVOrientation(childVelocities[index]) =  getVOrientation(parent2Velocities[m2Indices[index]]) - getVOrientation(parent1Velocities[m1Indices[index]]) ;
-      }
+            // Due to the fact that the velocity of input2Frame in its frame is zero, we can write :
+            getVCenter(outputVelocities[index]) = diffVelIn2;
+            getVOrientation(outputVelocities[index]) = mVect_global_H_input2Frame[index].getOrientation().inverseRotate(omega) ;
+        }
+        else
+        {
+            getVCenter(outputVelocities[index]) = getVCenter(input2MOVelocities[m2Indices[index]]) - getVCenter(input1MOVelocities[m1Indices[index]]);
+            getVOrientation(outputVelocities[index]) = getVOrientation(input2MOVelocities[m2Indices[index]]) - getVOrientation(input1MOVelocities[m1Indices[index]]) ;
+        }
     }
-    printf(" ====== End ApplyJ  =============== \n\n");
+
     dataVecOutVel[0]->endEdit();
 
-    if (d_debug.getValue()){
-        std::cout << " =====> outVel[m1Indices[index]] : " << childVelocities << std::endl;
-    }
+    if (d_debug.getValue())
+        std::cout << " =====> outVel[m1Indices[index]] : " << outputVelocities << std::endl;
 }
 
 
@@ -272,10 +323,10 @@ void RigidDistanceMapping<TIn1, TIn2, TOut>:: applyJT(
     if (this->d_componentState.getValue() != sofa::core::objectmodel::ComponentState::Valid)
         return;
 
-    const OutVecDeriv& childForces = dataVecInForce[0]->getValue();
+    const OutVecDeriv& outputForces = dataVecInForce[0]->getValue();
 
-    In1VecDeriv& parent1Forces = *dataVecOut1Force[0]->beginEdit();
-    In2VecDeriv& parent2Forces = *dataVecOut2Force[0]->beginEdit();
+    In1VecDeriv& input1MOForces = *dataVecOut1Force[0]->beginEdit();
+    In2VecDeriv& input2MOForces = *dataVecOut2Force[0]->beginEdit();
 
     //@todo implementation of force modification
     const auto &m1Indices = d_index1.getValue();
@@ -283,48 +334,33 @@ void RigidDistanceMapping<TIn1, TIn2, TOut>:: applyJT(
 
     // Safety check
     // TO DO: is it necessary to raise a warning or an error?
-    if (childForces.size() != m_minInd)
+    if (outputForces.size() != m_minInd)
         return;
-    printf(" ====== ApplyJT =============== \n");
 
-    if (d_newVersionOfFrameComputation.getValue()){
-      for (sofa::Index childIndex = 0; childIndex < m_minInd; childIndex++) {
-        // The childForces are computed in the local frames of the parent2
+    for (sofa::Index outputMOIndex = 0; outputMOIndex < m_minInd; outputMOIndex++)
+    {
+        if (d_newVersionOfFrameComputation.getValue())
+        {
+            // The outputForces are computed in the local frames of the input2Frame
 
-        // Let compute the force of the parent1 and parent2 in the global coordinates
-        Transform parent2_H_Global = m_vGlobal_H_Parent2[childIndex].inversed();
-        auto force = parent2_H_Global.getOrientation().rotate(getVCenter(childForces[childIndex]));
-        auto angForce = getVOrientation(childForces[childIndex]) + cross(force,m_vParent1_H_Parent2[childIndex].getOrigin());
+            // Computing the forces of the input1Frame and input2Frame in the global coordinates
+            Transform global_H_input2Frame = mVect_global_H_input2Frame[outputMOIndex];
+            auto force = global_H_input2Frame.getOrientation().rotate(getVCenter(outputForces[outputMOIndex]));
+            auto angForce = getVOrientation(outputForces[outputMOIndex]); // + cross(force,mVect_input1Frame_H_input2Frame[outputMOIndex].getOrigin());
 
-        getVCenter(     parent1Forces[m1Indices[childIndex]]) -= force;
-        getVOrientation(parent1Forces[m1Indices[childIndex]]) -=angForce;
-
-        getVCenter(     parent2Forces[m2Indices[childIndex]]) += force;
-        getVOrientation(parent2Forces[m2Indices[childIndex]]) +=angForce;
-        /*
-        Vector f = getVCenter(childForces[childIndex]);
-        Vector omega = getVOrientation(childForces[childIndex]) + cross(f,-Vector());
-
-        getVCenter(parent1Forces[m1Indices[childIndex]]) -= f;
-        getVOrientation(parent1Forces[m1Indices[childIndex]]) -= omega;
-        getVCenter(parent2Forces[m2Indices[childIndex]]) += f;
-        getVOrientation(parent2Forces[m2Indices[childIndex]]) += omega;
-
-         Vector f = getVCenter(childForces[childIndex]);
-         v += f;
-         omega += getVOrientation(childForces[childIndex]) + cross(f,-pointsR0[childIndex].getCenter());
-
-         */
-      }
-    }else {
-      for (sofa::Index childIndex = 0; childIndex < m_minInd; childIndex++) {
-        getVCenter(parent1Forces[m1Indices[childIndex]]) -= getVCenter(childForces[childIndex]);
-        getVOrientation(parent1Forces[m1Indices[childIndex]]) -= getVOrientation(childForces[childIndex]);
-        getVCenter(parent2Forces[m2Indices[childIndex]]) += getVCenter(childForces[childIndex]);
-        getVOrientation(parent2Forces[m2Indices[childIndex]]) += getVOrientation(childForces[childIndex]);
-      }
+            getVCenter(     input1MOForces[m1Indices[outputMOIndex]]) += force;
+            getVOrientation(input1MOForces[m1Indices[outputMOIndex]]) += angForce;
+            getVCenter(     input2MOForces[m2Indices[outputMOIndex]]) -= force;
+            getVOrientation(input2MOForces[m2Indices[outputMOIndex]]) -= angForce;
+        }
+        else
+        {
+            getVCenter(input1MOForces[m1Indices[outputMOIndex]]) -= getVCenter(outputForces[outputMOIndex]);
+            getVOrientation(input1MOForces[m1Indices[outputMOIndex]]) -= getVOrientation(outputForces[outputMOIndex]);
+            getVCenter(input2MOForces[m2Indices[outputMOIndex]]) += getVCenter(outputForces[outputMOIndex]);
+            getVOrientation(input2MOForces[m2Indices[outputMOIndex]]) += getVOrientation(outputForces[outputMOIndex]);
+        }
     }
-    printf(" ====== End ApplyJT =============== \n\n");
 
     dataVecOut1Force[0]->endEdit();
     dataVecOut2Force[0]->endEdit();
@@ -353,42 +389,56 @@ void RigidDistanceMapping<TIn1, TIn2, TOut>::applyJT(
     const auto &m2Indices = d_index2.getValue();
     typename OutMatrixDeriv::RowConstIterator rowItEnd = in.end();
 
-    for (typename OutMatrixDeriv::RowConstIterator rowIt = in.begin(); rowIt != rowItEnd; ++rowIt) {
+    for (typename OutMatrixDeriv::RowConstIterator rowIt = in.begin(); rowIt != rowItEnd; ++rowIt)
+    {
         typename OutMatrixDeriv::ColConstIterator colIt = rowIt.begin();
-//        typename OutMatrixDeriv::ColConstIterator colItEnd = rowIt.end();
-
-
         typename In1MatrixDeriv::RowIterator o1 = out1.writeLine(rowIt.index()); // we store the constraint number
         typename In2MatrixDeriv::RowIterator o2 = out2.writeLine(rowIt.index());
 
-        int childIndex = colIt.index();
+        int outputMOIndex = colIt.index();
 
-        //We compute the parents indices
-        auto parentIndex1 = m1Indices[childIndex];
-        auto parentIndex2 = m2Indices[childIndex];
+        //We compute the inputMO indices
+        auto input1MOIndex = m1Indices[outputMOIndex];
+        auto input2MOIndex = m2Indices[outputMOIndex];
+
+        Deriv1 direction1;
+        Deriv2 direction2;
 
         const OutDeriv valueConst_ = colIt.val();
 
-        // Compute the mapped Constraint on the beam nodes
-        Deriv1 direction1;
-        In1::setDPos(direction1,-getVCenter(valueConst_));
-        In1::setDRot(direction1,-getVOrientation(valueConst_));
-        Deriv2 direction2;
-        In2::setDPos(direction2,getVCenter(valueConst_));
-        In2::setDRot(direction2,getVOrientation(valueConst_));
+        if (d_newVersionOfFrameComputation.getValue())
+        {
+            Transform global_H_input2Frame = mVect_global_H_input2Frame[outputMOIndex];
+            auto force = global_H_input2Frame.getOrientation().rotate(getVCenter(valueConst_));
+            auto angForce = getVOrientation(valueConst_); //+ cross(force,mVect_input1Frame_H_input2Frame[outputMOIndex].getOrigin());
+            In1::setDPos(direction1, force);
+            In1::setDRot(direction1, angForce);
+            In2::setDPos(direction2, -force);
+            In2::setDRot(direction2, -angForce);
+        }
+        else
+        {
+            // Compute the mapped Constraint on the beam nodes
+            In1::setDPos(direction1,-getVCenter(valueConst_));
+            In1::setDRot(direction1,-getVOrientation(valueConst_));
+            In2::setDPos(direction2,getVCenter(valueConst_));
+            In2::setDRot(direction2,getVOrientation(valueConst_));
+        }
 
-        if (d_debug.getValue()){
+        if (d_debug.getValue())
+        {
             printf("1. ======================================================================================= \n");
-            std::cout << "Constraint " << rowIt.index() << " ==> childIndex: "<< childIndex << std::endl;
-            std::cout << "parentIndex1 " << parentIndex1 << " ==> parentIndex2 "<< parentIndex2 << std::endl;
+            std::cout << "Constraint " << rowIt.index() << " ==> outputMOIndex: "<< outputMOIndex << std::endl;
+            std::cout << "input1MOIndex " << input1MOIndex << " ==> input2MOIndex "<< input2MOIndex << std::endl;
             std::cout << "valueConst_: "<< valueConst_ << std::endl;
             std::cout << "direction1: " << direction1 << std::endl;
             std::cout << "direction2: " << direction2 << std::endl;
         }
 
-        o1.addCol(parentIndex1, direction1);
-        o2.addCol(parentIndex2, direction2);
+        o1.addCol(input1MOIndex, direction1);
+        o2.addCol(input2MOIndex, direction2);
     }
+
     dataMatOut1Const[0]->endEdit();
     dataMatOut2Const[0]->endEdit();
 }

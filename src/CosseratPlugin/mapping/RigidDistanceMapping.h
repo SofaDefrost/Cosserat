@@ -174,9 +174,8 @@ public:
     }
 
 public:
-    type::vector<Transform> m_vGlobal_H_Parent1;
-    type::vector<Transform> m_vGlobal_H_Parent2;
-    type::vector<Transform> m_vParent1_H_Parent2;
+    type::vector<Transform> mVect_global_H_input2Frame;
+    type::vector<Transform> mVect_input1Frame_H_input2Frame;
     std::vector<Mat>  m_vecRotation;
     OutVecCoord pointsR0;
 
