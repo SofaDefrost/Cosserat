@@ -535,7 +535,8 @@ def createScene(rootNode):
                                   input1=coaxialFramesMO1.getLinkPath(),
                                   input2=coaxialFramesMO0.getLinkPath(),
                                   output=rigidDiffMO.getLinkPath(),
-                                  first_point=[], second_point=[])
+                                  first_point=[], second_point=[],
+                                  newVersionOfFrameComputation=True)
 
     constraintWith0Node.addObject('CosseratNeedleSlidingConstraint',
                                   name='constraintMappingConstraint',

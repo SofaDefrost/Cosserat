@@ -176,7 +176,7 @@ def createScene(rootNode):
     beamCurvAbscissa.append(0.0)
 
     instrument0ConstantRestStrain0 = [0., 0., 0.]
-    instrument0ConstantRestStrain1 = [0., 0., 0.]
+    instrument0ConstantRestStrain1 = [0., 0., 0.2]
 
     # EXPERIMENTAL: insertion navigation
     # Initially defining beams with 0 length, at 0
@@ -368,7 +368,7 @@ def createScene(rootNode):
 
     # instrument1ConstantRestStrain = [0., 0.1, 0.]
     instrument1ConstantRestStrain0 = [0., 0., 0.]
-    instrument1ConstantRestStrain1 = [0., 0.2, 0.]
+    instrument1ConstantRestStrain1 = [0., 0.3, 0.]
 
     # EXPERIMENTAL: insertion navigation
     # Initially defining beams with 0 length, at 0
@@ -533,7 +533,8 @@ def createScene(rootNode):
                                   input1=coaxialFramesMO1.getLinkPath(),
                                   input2=coaxialFramesMO0.getLinkPath(),
                                   output=rigidDiffMO.getLinkPath(),
-                                  first_point=[], second_point=[])
+                                  first_point=[], second_point=[],
+                                  newVersionOfFrameComputation=True)
 
     constraintWith0Node.addObject('CosseratNeedleSlidingConstraint',
                                   name='constraintMappingConstraint',
