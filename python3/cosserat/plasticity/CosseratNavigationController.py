@@ -71,6 +71,10 @@ from instrument import Instrument
 #  - nbIntermediateConstraintFrames : number of intermediate coaxial frames added
 #    when coaxial beam segments are detected. A higher number means a finer
 #    application of constraints on the coaxial beam segments.
+#  - constrainWithSprings : boolean indicating if the constrain enforced between
+#    the coaxial beam segments shoudl be enforced by a spring ForceField instead
+#    of an actual constraint. NB: this requires the scene to have a
+#    RestShapeSpringsForceField component with a direction option (activeDirections)
 #
 # /!\ In this controller, as it is the case in BeamAdapter, we assume that the
 # instruments are given in the ordre of decreasing diameter, meaning that the
@@ -93,6 +97,7 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
                  instrumentList,
                  curvAbsTolerance,
                  nbIntermediateConstraintFrames = 0,
+                 constrainWithSprings = False,
                  *args, **kwargs):
         Sofa.Core.Controller.__init__(self, *args, **kwargs)
 
@@ -112,6 +117,8 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
         self.incrementDirection = incrementDirection
         self.instrumentFrameNumberVect = instrumentFrameNumberVect
         self.curvAbsTolerance = curvAbsTolerance
+
+        self.constrainWithSprings = constrainWithSprings
 
         ### Controller settings ###
 
@@ -221,6 +228,9 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
                                  "parameter, the number of coaxial frames should be : "
                                  "(nbIntermediateConstraintFrames+1)*nbBeams + 1."
                                  "".format(nbCoaxialFrames, nbBeamsInMechanicalObject, instrumentId))
+
+        # TO DO: check if a RestShapeSpringsForceField component is provided
+        # if the input parameter is True
 
 
 
@@ -985,6 +995,20 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
                     # Python code), and the size of the corresponding MechanicalObject (normally updated by the
                     # callback)
                     constraintNode.coaxialFramesDistanceMapping.reinit()
+
+                    # If the constraint is actually applied through springs (RestShapeSpringsForceField),
+                    # We update the corresponding indices in the component
+                    if self.constrainWithSprings:
+                        nbNewDiffDoFs = len(longerInstrumentCoaxialFrameIds)
+                        constraintNode.constraintMappingSpring.points = list(range(nbNewDiffDoFs))
+
+                        # Artificial callback triggering for the MechanicalMatrixMapper components
+                        self.solverNode.MMMapperRateAngular0RigidBase0.callbackForMSLinkChanges = not (self.solverNode.MMMapperRateAngular0RigidBase0.callbackForMSLinkChanges)
+                        self.solverNode.MMMapperRateAngular0RigidBase1.callbackForMSLinkChanges = not (self.solverNode.MMMapperRateAngular0RigidBase1.callbackForMSLinkChanges)
+                        self.solverNode.MMMapperRateAngular0RateAngular1.callbackForMSLinkChanges = not (self.solverNode.MMMapperRateAngular0RateAngular1.callbackForMSLinkChanges)
+                        self.solverNode.MMMapperRateAngular1RigidBase0.callbackForMSLinkChanges = not (self.solverNode.MMMapperRateAngular1RigidBase0.callbackForMSLinkChanges)
+                        self.solverNode.MMMapperRateAngular1RigidBase1.callbackForMSLinkChanges = not (self.solverNode.MMMapperRateAngular1RigidBase1.callbackForMSLinkChanges)
+                        self.solverNode.MMMapperRigidBase0RigidBase1.callbackForMSLinkChanges = not (self.solverNode.MMMapperRigidBase0RigidBase1.callbackForMSLinkChanges)
 
 
 
