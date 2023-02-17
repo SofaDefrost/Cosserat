@@ -98,6 +98,19 @@ void RigidDistanceMapping<TIn1, TIn2, TOut>::init()
     }
 }
 
+template <class TIn1, class TIn2, class TOut>
+void RigidDistanceMapping<TIn1, TIn2, TOut>::reinit()
+{
+    // TO DO: This method is implemented as a quickfix, to only trigger an artificial call
+    // to the component's callback from a Python code. This is only a quickfix as the correct
+    // way to do this would be to implement a Python binding for the callback method.
+
+    // Checking the componentState, to trigger a callback if other data fields (specifically
+    // d_index1 or d_index2) were changed
+    if (this->d_componentState.getValue() != sofa::core::objectmodel::ComponentState::Valid)
+        return;
+}
+
 
 template <class TIn1, class TIn2, class TOut>
 void RigidDistanceMapping<TIn1, TIn2, TOut>::apply(

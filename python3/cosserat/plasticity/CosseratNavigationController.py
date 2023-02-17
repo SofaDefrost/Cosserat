@@ -974,6 +974,19 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
                         constraintNode.coaxialFramesDistanceMapping.first_point = shorterInstrumentCoaxialFrameIds
                         constraintNode.coaxialFramesDistanceMapping.second_point = longerInstrumentCoaxialFrameIds
 
+                    # /!\ TO DO: this call to reinit() is a quick fix to make sure to trigger the update process
+                    # of the RigidDistanceMapping component. The reinit() method called here is an empty method
+                    # simply checking the componentState in order to trigger a callback. A proper way to
+                    # implement this would be to write a binding for the callback method itself.
+                    # If the callback is not specifically triggered at this point of the Python execution,
+                    # when using a FreeMotionAnimationLoop, (RestShapeSprings)ForceFields applied on the output
+                    # of the mapping are used (addForce) before the mapping callback was called. Therefore
+                    # leading to a mismatch between the indices in the ForceField (updated directly from the
+                    # Python code), and the size of the corresponding MechanicalObject (normally updated by the
+                    # callback)
+                    constraintNode.coaxialFramesDistanceMapping.reinit()
+
+
 
                 # Once all other instruments have been handled, we update the longest deployed
                 # instrument. For this instrument, we only have to update the coaxial frame
