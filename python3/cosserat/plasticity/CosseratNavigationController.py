@@ -75,10 +75,20 @@ from instrument import Instrument
 #    the coaxial beam segments shoudl be enforced by a spring ForceField instead
 #    of an actual constraint. NB: this requires the scene to have a
 #    RestShapeSpringsForceField component with a direction option (activeDirections)
+#  - outputFilename : complete path of a file in which the sequence of inputs
+#    made by the user during the simulation will be written. Each input is
+#    associated with a time stamp, in order for the simulation to be automatically
+#    played from this output file. By default, a file named "navigationScript.txt"
+#    will be generated in the working directory if the export option (Ctrl+e) is
+#    used
+#  - inputFilename : complete path of a file describing a navigation simulation
+#    with a list of user inputs and time stamps (indicating when the inputs have
+#    to be replayed). Such a file can be created during a manually controlled
+#    simulation using the 'outputFilename' parameter of this controller.
 #
 # /!\ In this controller, as it is the case in BeamAdapter, we assume that the
 # instruments are given in the ordre of decreasing diameter, meaning that the
-# outmost instrument should have index 0. This assumption mostly used when
+# outmost instrument should have index 0. This assumption is mostly used when
 # dynamically recomputing the instruments discretisation: in overlapping segments,
 # only the outmost instrument should be visible.
 #
@@ -98,6 +108,8 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
                  curvAbsTolerance,
                  nbIntermediateConstraintFrames = 0,
                  constrainWithSprings = False,
+                 outputFilename="",
+                 inputFilename="",
                  *args, **kwargs):
         Sofa.Core.Controller.__init__(self, *args, **kwargs)
 
@@ -161,6 +173,35 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
                             "Cosserat model are defined".format(instrumentNodeName))
 
         self.currentInstrumentRigidBaseNode = rigidBaseNode
+
+        ### Checking if there is an input script file to control the simulation ###
+
+        self.inputFilename = inputFilename
+        if inputFilename != "":
+            self.hasControlScript = True
+            parsingOutput = self.parseControlScript(inputFilename)
+            self.actionTimeList = parsingOutput['actionTimeList']
+            self.actionList = parsingOutput['actionList']
+
+            self.nbActions = len(self.actionTimeList)
+            self.nextActionId = 0
+        else:
+            self.hasControlScript = False
+
+        ### Checking if there is an output script file to record user inputs during simulation ###
+
+        self.exportNavigationScript = False
+        if outputFilename == "":
+            self.outputFilename = "navigationScript.txt"
+            warningStr = "[CosseratNavigationController]: No filename was provided to export "
+            warningStr += "the simulation controls in the form of a scripted file (with export "
+            warningStr += "option Ctrl+e). If the export option is used anyway, a control script file "
+            warningStr += "named \"navigationScript.txt\" will be generated in your working directory. "
+            warningStr += "If the file already exists, it will be replaced. In such a case, consider "
+            warningStr += "saving the existing file before using Ctrl+e"
+            logging.info(warningStr)
+        else:
+            self.outputFilename = outputFilename
 
         ### Additional settings ###
 
@@ -239,6 +280,50 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
     # -------------------------------------------------------------------- #
 
     def onAnimateBeginEvent(self, event):  # called at each begin of animation step
+
+        # Before running the dynamic navigation methods, we check if the simulation
+        # is scripted. If so, we execute the corresponding user inputs
+
+        timeAtStepEnd = self.totalTime + self.rootNode.findData('dt').value
+
+        if self.hasControlScript:
+            # The user actions are read from a script file
+
+            nextActionTime = self.actionTimeList[self.nextActionId]
+            if timeAtStepEnd >= nextActionTime:
+                # Executing the next action, otherwise nothing to do
+                nextAction = self.actionList[self.nextActionId]
+                if nextAction == 'upArrow':
+                    self.moveForward(self.incrementDistance, self.incrementDirection)
+                elif nextAction == 'downArrow':
+                    self.moveBackward(self.incrementDistance, self.incrementDirection)
+                elif nextAction == 'rightArrow':
+                    self.rotateClockwise()
+                elif nextAction == 'leftArrow':
+                    self.rotateCounterclockwise()
+                elif nextAction == 'switchInstrument0':
+                    self.switchInstrument(0)
+                elif nextAction == 'switchInstrument1':
+                    self.switchInstrument(1)
+                elif nextAction == 'switchInstrument2':
+                    self.switchInstrument(2)
+                else:
+                    pass # We made sure that this doesn't happen during parsing
+
+                # Checking if this was the last action
+                if self.nextActionId == self.nbActions-1:
+                    endMessage = "[CombinedInstrumentsController]: all actions of "
+                    endMessage += "script file \'{}\' ".format(self.inputFilename)
+                    endMessage += "were executed. Pausing the animation"
+                    print(endMessage)
+                    self.rootNode.findData('animate').value = 0
+                    self.hasControlScript = False # In case the simulation is animated again
+                else:
+                    # Moving to next action
+                    self.nextActionId += 1
+
+
+        ### Dynamic navigation ###
 
         # Define the vector which contains the curvilinear abscissas of all
         # represented nodes of the beam elements (i.e. similar to curb_abs_input
@@ -329,7 +414,7 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
         self.interpolateMechanicalQuantities(decimatedNodeCurvAbs, instrumentLastNodeIds)
 
 
-        self.totalTime = self.totalTime + self.dt
+        self.totalTime = timeAtStepEnd
         self.nbIterations = self.nbIterations + 1
 
 
@@ -1227,42 +1312,51 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
 
     def onKeypressedEvent(self, event):
 
+        # Record of the user inputs in a new script file
+        if event['key'] == 'E':
+            if self.exportNavigationScript:
+                print("Stops writing actions in {}".format(self.outputFilename))
+                self.file.close()
+            else:
+                print("Starts writing actions in script file {}".format(self.outputFilename))
+                self.file=open(self.outputFilename, "w")
+            self.exportNavigationScript = not self.exportNavigationScript
+
+
         if event['key'] == Key.uparrow:  # Up arrow
             self.moveForward(self.incrementDistance, self.incrementDirection)
+            if (self.exportNavigationScript):
+                self.file.writelines("{:.2f} upArrow\n".format(self.totalTime))
 
         if event['key'] == Key.downarrow:  # Down arrow
             self.moveBackward(self.incrementDistance, self.incrementDirection)
+            if (self.exportNavigationScript):
+                self.file.writelines("{:.2f} downArrow\n".format(self.totalTime))
 
         if event['key'] == Key.leftarrow:  # Left arrow
             self.rotateCounterclockwise()
+            if (self.exportNavigationScript):
+                self.file.writelines("{:.2f} leftArrow\n".format(self.totalTime))
 
         if event['key'] == Key.rightarrow:  # Right arrow
             self.rotateClockwise()
+            if (self.exportNavigationScript):
+                self.file.writelines("{:.2f} rightArrow\n".format(self.totalTime))
 
         if event['key'] == '0':
-            self.currentInstrumentId = 0
-            print("Currently controlled: instrument 0")
-            self.changeRefRigidBase(0)
-            self.changeControlPoint(0)
+            self.switchInstrument(0)
+            if (self.exportNavigationScript):
+                self.file.writelines("{:.2f} switchInstrument0\n".format(self.totalTime))
 
         if event['key'] == '1':
-            if self.nbInstruments <= 1:
-                warnings.warn("Instrument number 1 doesn't exist (only one instrument (0) is available).".format(self.nbInstruments))
-            else:
-                self.currentInstrumentId = 1
-                print("Currently controlled: instrument 1")
-                self.changeRefRigidBase(1)
-                self.changeControlPoint(1)
+            self.switchInstrument(1)
+            if (self.exportNavigationScript):
+                self.file.writelines("{:.2f} switchInstrument1\n".format(self.totalTime))
 
         if event['key'] == '2':
-            if self.nbInstruments <= 2:
-                warnings.warn("Instrument number 1 doesn't exist (avalaible instruments are from 0 to {}).".format(self.nbInstruments))
-            else:
-                self.currentInstrumentId = 2
-                print("Currently controlled: instrument 2")
-                self.changeRefRigidBase(2)
-                self.changeControlPoint(2)
-
+            self.switchInstrument(2)
+            if (self.exportNavigationScript):
+                self.file.writelines("{:.2f} switchInstrument2\n".format(self.totalTime))
 
     def moveForward(self, distanceIncrement, direction):
         self.tipCurvAbsVect[self.currentInstrumentId] += distanceIncrement
@@ -1307,6 +1401,19 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
             controlPointPos[self.quatDoFsIdGrid] = np.array([[newControlPointQuat[1], newControlPointQuat[2],
                                                               newControlPointQuat[3], newControlPointQuat[0]]])
 
+    def switchInstrument(self, newInstrumentId):
+        if self.nbInstruments <= newInstrumentId:
+            warnings.warn("Instrument number {} doesn't exist. The list of available "
+                          "instruments is : {}. Current instrument remains "
+                          "{}".format(newInstrumentId, list(range(self.nbInstruments)),
+                          self.currentInstrumentId))
+        else:
+            self.currentInstrumentId = newInstrumentId
+            print("Currently controlled: instrument {}".format(newInstrumentId))
+            self.changeRefRigidBase(newInstrumentId)
+            self.changeControlPoint(newInstrumentId)
+
+
     def changeRefRigidBase(self, newInstrumentId):
         instrumentNodeName = "Instrument" + str(newInstrumentId)
         instrumentNode = self.solverNode.getChild(str(instrumentNodeName))
@@ -1333,3 +1440,54 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
                             "to use this controller".format(controlPointNodeName, controlPointNodeName))
 
         self.currentInstrumentControlPointNode = controlPointNode
+
+
+    def parseControlScript(self, inputFilename):
+        actionTimeList = []
+        actionList = []
+
+        # Getting file content
+        file = open(inputFilename, mode = 'r')
+        lines = file.readlines()
+        file.close()
+
+        # Parsing
+        lineId = 1
+        for line in lines:
+            currentLine = line.split(' ')
+
+            # Checking line structure
+            if len(currentLine) != 2:
+                errorMessage = "[CombinedInstrumentsController]: Error in parsing file \'{}: ".format(inputFilename)
+                errorMessage += "line {} should contain only two arguments : with the following pattern ".format(lineId)
+                errorMessage += "\'time(s) controlAction\'"
+                raise ValueError(errorMessage)
+
+            # Reading first argument (timeStamp)
+            try:
+                timeStamp = float(currentLine[0])
+            except ValueError:
+                errorMessage = "[CombinedInstrumentsController]: Error in parsing file \'{}: ".format(inputFilename)
+                errorMessage += "First argument {} of line {} cannot be converted to float".format(currentLine[0], lineId)
+                raise ValueError(errorMessage)
+            actionTimeList.append(timeStamp)
+
+            # Reading second argument (action)
+            actionStr = currentLine[1].split('\n')[0] # Removing '\n' at the end of currentLine[1]
+            if (
+                    actionStr == "upArrow" or actionStr == "downArrow" or
+                    actionStr == "rightArrow" or actionStr == "leftArrow" or
+                    actionStr == "switchInstrument0" or
+                    actionStr == "switchInstrument1" or
+                    actionStr == "switchInstrument2"
+               ):
+                actionList.append(actionStr)
+            else:
+                errorMessage = "[CombinedInstrumentsController]: Error in parsing file \'{}: ".format(inputFilename)
+                errorMessage += "control action {} in line {} is not recognised".format(actionStr, lineId)
+                raise ValueError(errorMessage)
+
+            # Increment line number
+            lineId += 1
+
+        return {'actionTimeList': actionTimeList, 'actionList': actionList}
