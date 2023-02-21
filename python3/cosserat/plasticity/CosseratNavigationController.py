@@ -1008,28 +1008,61 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
                     # done when the upper loop reaches it. Here, we just update the coaxial frame
                     # indices in the constraint node corresponding to this pair of instruments.
 
+                    # Before updating the coaxial mapping, we perform a check on the
+                    # coaxial frames to see if some frames are too close to each other.
+                    # If so, we remove them fron the frames on which constraints are
+                    # applied, as a too important proximity can cause the beam
+                    # mechanical model to be overconstrained (and lead to instabilities)
+                    # NB: this check can be carried out on either one of the instruments,
+                    # as they share the same coaxial frame positions. We just have to make
+                    # sure afterwards that the coaxial frame indices of the other instrument
+                    # are coherent.
+
+                    coaxialFrameIdsToRemove = []
+                    currentCoaxialFrameId = 0
+                    currentCoaxialFrameCurvAbs = coaxialFrameCurvAbs[0]
+                    refCoaxialFrameCurvAbs = 0.
+                    distanceWithRefFrame = currentCoaxialFrameCurvAbs
+
+                    while (currentCoaxialFrameId < len(coaxialFrameCurvAbs)):
+
+                        while (distanceWithRefFrame < self.minimalDistanceForConstraint and currentCoaxialFrameId < len(coaxialFrameCurvAbs)):
+                            coaxialFrameIdsToRemove.append(currentCoaxialFrameId)
+                            currentCoaxialFrameId += 1
+                            if (currentCoaxialFrameId != len(coaxialFrameCurvAbs)):
+                                # The next coaxial frame is not the last one, so we can
+                                # update the distance with the reference frame for next
+                                # iteration of the first loop. Otherwise we reached the
+                                # last frame, there is nothing left to do
+                                currentCoaxialFrameCurvAbs = coaxialFrameCurvAbs[currentCoaxialFrameId]
+                                distanceWithRefFrame = currentCoaxialFrameCurvAbs - refCoaxialFrameCurvAbs
+
+                        if (currentCoaxialFrameId != len(coaxialFrameCurvAbs)):
+                            # If only the first out condition
+                            # distanceWithRefFrame >= self.minimalDistanceForConstraint
+                            # is fulfilled, it means we encountered the first frame
+                            # distant enough from the previous reference frame to be
+                            # applied constraints on. We need to update the reference frame
+                            refCoaxialFrameCurvAbs = coaxialFrameCurvAbs[currentCoaxialFrameId]
+                            currentCoaxialFrameId += 1
+                            if (currentCoaxialFrameId != len(coaxialFrameCurvAbs)):
+                                # The next coaxial frame is not the last one, so we can
+                                # update the distance with the reference frame for next
+                                # iteration of the first loop. Otherwise we reached the
+                                # last frame, there is nothing left to do
+                                currentCoaxialFrameCurvAbs = coaxialFrameCurvAbs[currentCoaxialFrameId]
+                                distanceWithRefFrame = currentCoaxialFrameCurvAbs - refCoaxialFrameCurvAbs
+
+                    # At this point, coaxialFrameIdsToRemove contains the indices of the coaxial
+                    # frames in coaxialFrameCurvAbs which we won't apply constraints on. These
+                    # indices refer to curvilinear abscissas. We now have to compute the
+                    # indices of the frames corresponding to these curvilinear abscissas in the
+                    # coaxial frames MechanicalObject, for both instruments (the size of the
+                    # MechanicalObject of each instrument is - a priori - not the same).
+
                     # As the initial instrument is shorter, all its coaxial frames are actually common
                     # with the longer instrument. We can reuse the index range computed above
                     shorterInstrumentCoaxialFrameIds = deployedCoaxialFrameIds
-
-                    # We remove the first index (i.e. the first coaxial beam proximal end frame) if the
-                    # corresponding curvilinear abscissa is 0.
-                    # NB: this will automatically remove the same first frame for the longer instrument,
-                    # because of the computation below
-                    if (decimatedNodeCurvAbs[0] < self.curvAbsTolerance):
-                        shorterInstrumentCoaxialFrameIds = shorterInstrumentCoaxialFrameIds[1:len(shorterInstrumentCoaxialFrameIds)]
-
-                    # Additionnaly, we remove the first coaxial beam distal end frame, if the
-                    # corresponding curvilinear abscissa is too close to the RigidBase. This concretly
-                    # means that a coaxial beam segment is only taken into account (i.e. under constraint)
-                    # only if its distal end is sufficiently distant from the RigidBase. The purpose of
-                    # this check is to avoid overconstraining of a small beam segment.
-                    # NB: in this whole section of code, we are under the condition that at least
-                    # two instruments are deployed. In this case, there is at least one coaxial beam,
-                    # so it is unnecessary to check len(decimatedNodeCurvAbs) before accessing
-                    # decimatedNodeCurvAbs[1] or shorterInstrumentCoaxialFrameIds[self.nbIntermediateConstraintFrames+1]
-                    if (decimatedNodeCurvAbs[1] < self.minimalDistanceForConstraint):
-                        shorterInstrumentCoaxialFrameIds = shorterInstrumentCoaxialFrameIds[self.nbIntermediateConstraintFrames+1:len(shorterInstrumentCoaxialFrameIds)]
 
                     # For the longer instrument, we have to take into account the additional *coaxial* beams
                     # which are further than the first (shorter) instrument end. The notion of coaxial is
@@ -1052,6 +1085,26 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
                     firstCoaxialFrameIndexWithShorterInstrument = lastCoaxialFrameIndexWithShorterInstrument - len(shorterInstrumentCoaxialFrameIds) + 1
                     longerInstrumentCoaxialFrameIds = list(range(firstCoaxialFrameIndexWithShorterInstrument, lastCoaxialFrameIndexWithShorterInstrument+1))
 
+                    # Now that the coaxial frame indices *in the MechanicalObject* have been
+                    # computed for both instruments, we can remove the indices corresponding
+                    # to coaxial frames which are too close from one another (and could cause)
+                    # the mechanical model to be overconstrained.
+                    # In order to do so, we can take advantage of the fact that the indices
+                    # of the frames to remove were computed on the coaxialFrameCurvAbs list,
+                    # which has the same size as shorterInstrumentCoaxialFrameIds and
+                    # longerInstrumentCoaxialFrameIds. This is because the indices of the
+                    # elements in shorter- and longerInstrumentCoaxialFrameIds
+                    # correspond to the same frames as the indices of the elements in
+                    # coaxialFrameCurvAbs.
+                    # Therefore, we can directly remove the elements corresponding to the
+                    # indices stored in coaxialFrameIdsToRemove, both from shorter- and
+                    # longerInstrumentCoaxialFrameIds.
+                    # NB: we go over the indices to remove on the reverse order, in order
+                    # to keep coherence in the indices while removing elements
+
+                    for coaxialFrameId in reversed(coaxialFrameIdsToRemove):
+                        del shorterInstrumentCoaxialFrameIds[coaxialFrameId]
+                        del longerInstrumentCoaxialFrameIds[coaxialFrameId]
 
                     # Once the two sets of indices are computed, we update the RigidDistanceMapping
                     # in the constraint Node accordingly
