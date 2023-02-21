@@ -115,12 +115,16 @@ def createScene(rootNode):
 
     solverNode = rootNode.addChild('solverNode')
 
-    solverNode.addObject('EulerImplicitSolver', rayleighStiffness="0.", rayleighMass='0.')
-    # solverNode.addObject('CGLinearSolver', name="solver",
-    #                      iterations='2000', tolerance='1e-8', threshold='1e-12')
-    solverNode.addObject('SparseLUSolver',
-                         template='CompressedRowSparseMatrixd',
-                         printLog="false")
+    stiffnessDamping = 0.
+    massDaping = 0.
+    solverNode.addObject('EulerImplicitSolver',
+                         rayleighStiffness=stiffnessDamping,
+                         rayleighMass=massDaping)
+    solverNode.addObject('CGLinearSolver', name="solver", printLog=False,
+                         iterations='2000', tolerance='1e-10', threshold='1e-10')
+    # solverNode.addObject('SparseLUSolver',
+    #                      template='CompressedRowSparseMatrixd',
+    #                      printLog="false")
     # solverNode.addObject('GenericConstraintCorrection', printLog=False,
     #                      linearSolver="@SparseLUSolver",
     #                      ODESolver="@EulerImplicitSolver")
@@ -560,6 +564,11 @@ def createScene(rootNode):
     incrementDirection = np.array([1., 0., 0.])
     curvAbsTolerance= 1.0e-4
 
+    outputFilename = ""
+    inputFilename = "two_instruments_coaxial_close_frames.txt"
+    # outputFilename = "two_instruments_coaxial_forcefield_version_script.txt"
+    # inputFilename = ""
+
     instrument0 = Instrument(instrumentNode=instrument0Node,
                              totalLength=totalLength0,
                              nbBeams=nbBeams0,
@@ -588,6 +597,8 @@ def createScene(rootNode):
                             instrumentList=instrumentList,
                             curvAbsTolerance=curvAbsTolerance,
                             nbIntermediateConstraintFrames=nbIntermediateConstraintFrames,
-                            constrainWithSprings=True))
+                            constrainWithSprings=True,
+                            outputFilename=outputFilename,
+                            inputFilename=inputFilename))
 
     return rootNode

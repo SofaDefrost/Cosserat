@@ -535,6 +535,11 @@ def createScene(rootNode):
     incrementDirection = np.array([1., 0., 0.])
     curvAbsTolerance= 1.0e-4
 
+    outputFilename = ""
+    inputFilename = "two_instruments_coaxial_close_frames.txt"
+    # outputFilename = "two_instruments_coaxial_forcefield_version_script.txt"
+    # inputFilename = ""
+
     instrument0 = Instrument(instrumentNode=instrument0Node,
                              totalLength=totalLength0,
                              nbBeams=nbBeams0,
@@ -563,6 +568,8 @@ def createScene(rootNode):
                             instrumentList=instrumentList,
                             curvAbsTolerance=curvAbsTolerance,
                             nbIntermediateConstraintFrames=nbIntermediateConstraintFrames,
-                            constrainWithSprings=False))
+                            constrainWithSprings=False,
+                            outputFilename=outputFilename,
+                            inputFilename=inputFilename))
 
     return rootNode
