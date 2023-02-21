@@ -537,7 +537,7 @@ def createScene(rootNode):
 
     outputFilename = ""
     inputFilename = "two_instruments_coaxial_close_frames.txt"
-    # outputFilename = "two_instruments_coaxial_forcefield_version_script.txt"
+    # outputFilename = "two_instruments_coaxial_constraint_version_script.txt"
     # inputFilename = ""
 
     instrument0 = Instrument(instrumentNode=instrument0Node,
