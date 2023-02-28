@@ -270,6 +270,7 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
                                  "(nbIntermediateConstraintFrames+1)*nbBeams + 1."
                                  "".format(nbCoaxialFrames, nbBeamsInMechanicalObject, instrumentId))
 
+
         # TO DO: check if a RestShapeSpringsForceField component is provided
         # if the input parameter is True
 
@@ -412,6 +413,9 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
         # quantities at the previous timestep.
 
         self.interpolateMechanicalQuantities(decimatedNodeCurvAbs, instrumentLastNodeIds)
+
+
+
 
 
         self.totalTime = timeAtStepEnd
@@ -678,7 +682,7 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
         nbInstruments = self.nbInstruments
         nbNewNodes = len(decimatedNodeCurvAbs)
 
-        # Precomputation, to analyse the deplyment configuration of the different
+        # Precomputation, to analyse the deployment configuration of the different
         # instruments. The purpose of this precomputation is to fill the
         # instrumentLastNodeIds list, defined below, which contains for each
         # instrument the index of the last beam of the instrument. If the instrument
@@ -773,12 +777,11 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
                                 "mapping tracking coaxial segments should be defined.")
 
             # Retrieving the components
-            # TO DO : existance check ? What is the appropriate binding method ?
+            # TO DO : existance check ? What is the appropriate binding method > hasObject ?
             beamForceFieldComponent = cosseratMechanicalNode.beamForceField
             fixedConstraintOnStock = cosseratMechanicalNode.FixedConstraintOnStock
             instrumentMapping = mappedFramesNode.DiscreteCosseratMapping
             coaxialMapping = coaxialFramesNode.CoaxialCosseratMapping
-            ouputFrameMO = mappedFramesNode.FramesMO
 
             # Updating the beam information (cf comment of function description)
 
@@ -844,6 +847,7 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
 
                     # Updating the second (coaxial) Cosserat mapping input
                     coaxialMapping.curv_abs_input = curv_abs_input
+
 
             # Updating the frame information (cf comment of function description)
 
@@ -964,7 +968,7 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
                     longerInstrumentId = instrumentIndicesSortedByLength[longerInstrumentRank]
                     longerInstrumentLastBeamId = instrumentLastNodeIds[longerInstrumentId]
 
-                    #--- Retrieving the nodes asscoiated to the second (longer) instrument ---#
+                    #--- Retrieving the nodes associated to the second (longer) instrument ---#
 
                     longerInstrumentNodeName = "Instrument" + str(longerInstrumentId)
                     longerInstrumentNode = self.solverNode.getChild(str(longerInstrumentNodeName))
@@ -1003,6 +1007,7 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
                                         "node called \'{}\', containing the components "
                                         "which implement its coupling with instrument {}".format(constraintNodeName,
                                         constraintNodeName, longerInstrumentId))
+
 
                     # We don't have to update the longer instrument own components : this will be
                     # done when the upper loop reaches it. Here, we just update the coaxial frame
@@ -1112,7 +1117,7 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
                     # the higher index, so that input2 is the instrument with the lower index. For
                     # instance, if we are considering the constraints between Instrument0 and Instrument1,
                     # then input1 of the RigidDistanceMapping refers to Instrument1, and input2 refers to
-                    # Instrument0. This is a convention which have to be followed when describing the
+                    # Instrument0. This is a convention which has to be followed when describing the
                     # scene structure. It is obviously not dependent on the instruments lengths a time t.
                     # TO DO: Enforce this in a more robust way ?
                     if (longerInstrumentId > instrumentId):
@@ -1218,6 +1223,8 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
                 with coaxialFrameNode.CoaxialCosseratMapping.curv_abs_output.writeable() as curv_abs_output:
                     curv_abs_output[nbTotalCoaxialFrames-nbDeployedCoaxialFrames:nbTotalCoaxialFrames] = coaxialFrameCurvAbs
                     curv_abs_output[0:nbTotalCoaxialFrames-nbDeployedCoaxialFrames] = [0.]*(nbTotalCoaxialFrames-nbDeployedCoaxialFrames)
+
+
 
         return {'instrumentLastNodeIds': instrumentLastNodeIds}
 
