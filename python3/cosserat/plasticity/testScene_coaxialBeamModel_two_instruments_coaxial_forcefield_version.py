@@ -17,6 +17,9 @@ TOT_MASS = 0.1
 DENSITY = 0.02
 DT = 1e-2
 
+# Parameter to select the type of Animation Loop
+useFreeMotionAnimationLoop = True
+
 # -------------------------------------#
 # -----        SOFA scene        ----- #
 # -------------------------------------#
@@ -50,13 +53,12 @@ def createScene(rootNode):
     rootNode.findData('dt').value = DT
     rootNode.findData('gravity').value = [0., 0., -GRAVITY]
 
-    # rootNode.addObject('FreeMotionAnimationLoop')
-    rootNode.addObject('DefaultAnimationLoop')
-
-    # # --- Constraint handling --- #
-    # rootNode.addObject('GenericConstraintSolver', tolerance=1e-8,
-    #                    maxIterations=2e3, printLog=False)
-
+    if (useFreeMotionAnimationLoop):
+        rootNode.addObject('FreeMotionAnimationLoop', updateSceneAfterAnimateBeginEvent=True)
+        rootNode.addObject('GenericConstraintSolver', tolerance=1e-8,
+                           maxIterations=2e3, printLog=False)
+    else:
+        rootNode.addObject('DefaultAnimationLoop')
 
 
     # -------------------------------------------------------------------- #
@@ -120,14 +122,20 @@ def createScene(rootNode):
     solverNode.addObject('EulerImplicitSolver',
                          rayleighStiffness=stiffnessDamping,
                          rayleighMass=massDaping)
-    solverNode.addObject('CGLinearSolver', name="solver", printLog=False,
-                         iterations='2000', tolerance='1e-10', threshold='1e-10')
-    # solverNode.addObject('SparseLUSolver',
-    #                      template='CompressedRowSparseMatrixd',
-    #                      printLog="false")
-    # solverNode.addObject('GenericConstraintCorrection', printLog=False,
-    #                      linearSolver="@SparseLUSolver",
-    #                      ODESolver="@EulerImplicitSolver")
+
+    if (useFreeMotionAnimationLoop):
+        solverNode.addObject('GenericConstraintCorrection', printLog=False,
+                             linearSolver="@SparseLUSolver",
+                             ODESolver="@EulerImplicitSolver")
+        solverNode.addObject('SparseLUSolver',
+                             template='CompressedRowSparseMatrixd',
+                             printLog="false")
+    else:
+        solverNode.addObject('CGLinearSolver', name="solver", printLog=False,
+                             iterations='2000', tolerance='1e-10', threshold='1e-10')
+        # solverNode.addObject('SparseLUSolver',
+        #                      template='CompressedRowSparseMatrixd',
+        #                      printLog="false")
 
     # -------------------------------------------------------------------- #
     # -----                   First beam components                  ----- #
