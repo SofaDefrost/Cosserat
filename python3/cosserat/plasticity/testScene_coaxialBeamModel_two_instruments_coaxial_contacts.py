@@ -57,7 +57,7 @@ def createScene(rootNode):
     rootNode.findData('dt').value = DT
     rootNode.findData('gravity').value = [0., 0., -GRAVITY]
 
-    rootNode.addObject('FreeMotionAnimationLoop')
+    rootNode.addObject('FreeMotionAnimationLoop', updateSceneAfterAnimateBeginEvent=True)
 
     # --- Constraint handling --- #
     rootNode.addObject('GenericConstraintSolver', tolerance=1e-8,
@@ -136,7 +136,11 @@ def createScene(rootNode):
 
     solverNode = rootNode.addChild('solverNode')
 
-    solverNode.addObject('EulerImplicitSolver', rayleighStiffness="0.", rayleighMass='0.')
+    stiffnessDamping = 0.
+    massDaping = 0.
+    solverNode.addObject('EulerImplicitSolver',
+                         rayleighStiffness=stiffnessDamping,
+                         rayleighMass=massDaping)
     # solverNode.addObject('CGLinearSolver', name="solver",
     #                      iterations='2000', tolerance='1e-8', threshold='1e-12')
     solverNode.addObject('SparseLUSolver',
@@ -621,6 +625,11 @@ def createScene(rootNode):
     incrementDirection = np.array([1., 0., 0.])
     curvAbsTolerance= 1.0e-4
 
+    # outputFilename = ""
+    # inputFilename = "two_instruments_coaxial_close_frames.txt"
+    outputFilename = "two_instruments_coaxial_contacts_constraint_version_script.txt"
+    inputFilename = ""
+
     instrument0 = Instrument(instrumentNode=instrument0Node,
                              totalLength=totalLength0,
                              keyPoints=instrument0KeyPoints,
@@ -646,6 +655,9 @@ def createScene(rootNode):
                             incrementDirection=incrementDirection,
                             instrumentList=instrumentList,
                             curvAbsTolerance=curvAbsTolerance,
-                            nbIntermediateConstraintFrames=nbIntermediateConstraintFrames))
+                            nbIntermediateConstraintFrames=nbIntermediateConstraintFrames,
+                            constrainWithSprings=False,
+                            outputFilename=outputFilename,
+                            inputFilename=inputFilename))
 
     return rootNode

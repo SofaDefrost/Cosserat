@@ -319,7 +319,7 @@ def createScene(rootNode):
                                            showObject=False,
                                            showObjectScale=2.)
     rigidBaseNode1.addObject('RestShapeSpringsForceField', name='controlSpring',
-                             stiffness="5.e8", angularStiffness="1.0e5",
+                             stiffness="5.0e8", angularStiffness="1.0e5",
                              external_rest_shape="@../../../controlPointNode1/controlPointMO",
                              external_points="0", mstate="@RigidBaseMO", points="0", template="Rigid3d")
 
@@ -478,15 +478,15 @@ def createScene(rootNode):
                                                  showObject=False, showObjectScale=1)
 
     constraintWith0Node.addObject('RigidDistanceMapping', name='coaxialFramesDistanceMapping',
-                                  input1=coaxialFramesMO1.getLinkPath(),
-                                  input2=coaxialFramesMO0.getLinkPath(),
+                                  input1=coaxialFramesMO0.getLinkPath(),
+                                  input2=coaxialFramesMO1.getLinkPath(),
                                   output=rigidDiffMO.getLinkPath(),
                                   first_point=[], second_point=[],
                                   newVersionOfFrameComputation=True)
 
     constraintWith0Node.addObject('RestShapeSpringsForceField', name='constraintMappingSpring',
                                   template="Rigid3d", mstate="@rigidDiffMO",
-                                  stiffness="1.0e5", angularStiffness="1.0e5",
+                                  stiffness="1.0e10", angularStiffness="1.0e8",
                                   # external_rest_shape="@",
                                   # external_points="",
                                   points="",
@@ -559,15 +559,15 @@ def createScene(rootNode):
     nbBeamDistribution0 = [nbBeams0]
     nbBeamDistribution1 = [nbBeams1]
     instrumentFrameNumbers=[nbFrames0, nbFrames1]
-    incrementDistance=0.1
+    incrementDistance=1.0
     incrementAngle=5.0
     incrementDirection = np.array([1., 0., 0.])
     curvAbsTolerance= 1.0e-4
 
-    outputFilename = ""
-    inputFilename = "two_instruments_coaxial_close_frames.txt"
-    # outputFilename = "two_instruments_coaxial_forcefield_version_script.txt"
-    # inputFilename = ""
+    # outputFilename = ""
+    # inputFilename = "two_instruments_coaxial_close_frames.txt"
+    outputFilename = "two_instruments_coaxial_forcefield_version_script.txt"
+    inputFilename = ""
 
     instrument0 = Instrument(instrumentNode=instrument0Node,
                              totalLength=totalLength0,

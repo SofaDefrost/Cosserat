@@ -58,7 +58,7 @@ def createScene(rootNode):
     rootNode.findData('dt').value = DT
     rootNode.findData('gravity').value = [0., 0., -GRAVITY]
 
-    rootNode.addObject('FreeMotionAnimationLoop')
+    rootNode.addObject('FreeMotionAnimationLoop', updateSceneAfterAnimateBeginEvent=True)
 
     # --- Constraint handling --- #
     rootNode.addObject('GenericConstraintSolver', tolerance=1e-8,
@@ -686,6 +686,12 @@ def createScene(rootNode):
     incrementDirection = np.array([1., 0., 0.])
     curvAbsTolerance= 1.0e-4
 
+    # outputFilename = ""
+    # inputFilename = "two_instruments_coaxial_close_frames.txt"
+    outputFilename = "two_instruments_coaxial_contacts_forcefield_version_script.txt"
+    inputFilename = ""
+
+
     instrument0 = Instrument(instrumentNode=instrument0Node,
                              totalLength=totalLength0,
                              keyPoints=instrument0KeyPoints,
@@ -712,6 +718,8 @@ def createScene(rootNode):
                             instrumentList=instrumentList,
                             curvAbsTolerance=curvAbsTolerance,
                             nbIntermediateConstraintFrames=nbIntermediateConstraintFrames,
-                            constrainWithSprings=True))
+                            constrainWithSprings=True,
+                            outputFilename=outputFilename,
+                            inputFilename=inputFilename))
 
     return rootNode
