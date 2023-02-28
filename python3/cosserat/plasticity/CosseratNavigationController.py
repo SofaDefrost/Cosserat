@@ -68,6 +68,11 @@ from instrument import Instrument
 #    in instrument.py), to characterise each instrument properties
 #  - curvAbsTolerance : distance threshold used to determine if two close nodes
 #    should be merged (and considered as one)
+#  - minimalDistanceForConstraint: minimal distance to apply constraints on close
+#    pairs of coaxial frames (a 'pair' meaning two frames with the same curvilinear
+#    abscissa, on two different instruments). If the distance between two pairs
+#    of coaxial frames is lower than this threshold, we will apply constraints
+#    on only one of the two pairs.
 #  - nbIntermediateConstraintFrames : number of intermediate coaxial frames added
 #    when coaxial beam segments are detected. A higher number means a finer
 #    application of constraints on the coaxial beam segments.
@@ -106,6 +111,7 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
                  incrementDirection,
                  instrumentList,
                  curvAbsTolerance,
+                 minimalDistanceForConstraint,
                  nbIntermediateConstraintFrames = 0,
                  constrainWithSprings = False,
                  outputFilename="",
@@ -121,8 +127,7 @@ class CombinedInstrumentsController(Sofa.Core.Controller):
         ### Reading the insertion velocity parameters ###
 
         self.incrementDistance = incrementDistance
-        # TO DO : pass the minimal distance for constraints as an input parameter ?
-        self.minimalDistanceForConstraint = incrementDistance * 5.0
+        self.minimalDistanceForConstraint = minimalDistanceForConstraint
         # TO DO: check that the number of coaxial frames provided is coherent with beam number and nbIntermediateConstraintFrames
         self.nbIntermediateConstraintFrames = nbIntermediateConstraintFrames
         self.incrementAngle = incrementAngle

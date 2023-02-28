@@ -48,22 +48,12 @@ def createScene(rootNode):
     rootNode.findData('dt').value = DT
     rootNode.findData('gravity').value = [0., 0., -GRAVITY]
 
-    rootNode.addObject('FreeMotionAnimationLoop')
+    rootNode.addObject('FreeMotionAnimationLoop',
+                       updateSceneAfterAnimateBeginEvent=True)
 
     # --- Constraint handling --- #
     rootNode.addObject('GenericConstraintSolver', tolerance=1e-8,
                        maxIterations=2e3, printLog=False)
-
-
-    # --- Collisions --- #
-    # rootNode.addObject('DefaultPipeline', verbose="0")
-    # rootNode.addObject('BruteForceBroadPhase', name="BroadPhase")
-    # rootNode.addObject('BVHNarrowPhase', name="NarrowPhase")
-    # rootNode.addObject('DefaultContactManager', response="FrictionContactConstraint",
-    #                    responseParams=frictionCoefficientParam)
-    # rootNode.addObject('LocalMinDistance', name="Proximity",
-    #                    alarmDistance=100.*sectionRadius,
-    #                    contactDistance=10.*sectionRadius, angleCone=0.1)
 
 
     # -------------------------------------------------------------------- #
@@ -150,9 +140,6 @@ def createScene(rootNode):
                                            name="RigidBaseMO", position=[0., 0., 0., 0, 0, 0, 1],
                                            showObject=False,
                                            showObjectScale=2.)
-    # rigidBaseNode0.addObject('RestShapeSpringsForceField', name='spring',
-    #                          stiffness="5.e8", angularStiffness="5.e8",
-    #                          external_points="0", mstate="@RigidBaseMO", points="0", template="Rigid3d")
     rigidBaseNode0.addObject('RestShapeSpringsForceField', name='controlSpring',
                              stiffness="5.e8", angularStiffness="1.0e5",
                              external_rest_shape="@../../../controlPointNode0/controlPointMO",
@@ -226,14 +213,6 @@ def createScene(rootNode):
                                      radius=sectionRadius, variantSections="true",
                                      length=beamLengths, poissonRatioList=beamPoissonRatioList,
                                      youngModulusList=beamYoungModulusList, innerRadius=0.4)
-
-    beamBendingMoment = 1.0e5
-    bendingForces = np.array([0, beamBendingMoment, beamBendingMoment])
-    # momentIndices = range(1, nbBeams0PlusStock)
-    momentIndices = [nbBeams0PlusStock-1]
-    # rateAngularDeformNode.addObject('ConstantForceField', name='Moment',
-    #                                 indices=momentIndices,
-    #                                 forces=bendingForces)
 
     # EXPERIMENTAL: navigation simulation
     # Adding constraints on the additional beams which are not meant to be
@@ -335,9 +314,6 @@ def createScene(rootNode):
                                            name="RigidBaseMO", position=[0., 0., 0., 0, 0, 0, 1],
                                            showObject=False,
                                            showObjectScale=2.)
-    # rigidBaseNode1.addObject('RestShapeSpringsForceField', name='spring',
-    #                          stiffness="5.e8", angularStiffness="5.e8",
-    #                          external_points="0", mstate="@RigidBaseMO", points="0", template="Rigid3d")
     rigidBaseNode1.addObject('RestShapeSpringsForceField', name='controlSpring',
                              stiffness="5.e8", angularStiffness="1.0e5",
                              external_rest_shape="@../../../controlPointNode1/controlPointMO",
@@ -411,14 +387,6 @@ def createScene(rootNode):
                                      radius=sectionRadius, variantSections="true",
                                      length=beamLengths, poissonRatioList=beamPoissonRatioList,
                                      youngModulusList=beamYoungModulusList)
-
-    beamBendingMoment = 1.0e5
-    bendingForces = np.array([0, beamBendingMoment, beamBendingMoment])
-    # momentIndices = range(1, nbBeams1PlusStock)
-    momentIndices = [nbBeams1PlusStock-1]
-    # rateAngularDeformNode.addObject('ConstantForceField', name='Moment',
-    #                                 indices=momentIndices,
-    #                                 forces=bendingForces)
 
     # EXPERIMENTAL: navigation simulation
     # Adding constraints on the additional beams which are not meant to be
@@ -534,6 +502,12 @@ def createScene(rootNode):
     incrementAngle=5.0
     incrementDirection = np.array([1., 0., 0.])
     curvAbsTolerance= 1.0e-4
+    minimalDistanceForConstraint = 0.5 # in cm
+
+    # outputFilename = ""
+    # inputFilename = ""
+    outputFilename = "two_instruments_coaxial_keyPoints_script.txt"
+    inputFilename = ""
 
     instrument0 = Instrument(instrumentNode=instrument0Node,
                              totalLength=totalLength0,
@@ -560,6 +534,10 @@ def createScene(rootNode):
                             incrementDirection=incrementDirection,
                             instrumentList=instrumentList,
                             curvAbsTolerance=curvAbsTolerance,
-                            nbIntermediateConstraintFrames=nbIntermediateConstraintFrames))
+                            minimalDistanceForConstraint=minimalDistanceForConstraint,
+                            nbIntermediateConstraintFrames=nbIntermediateConstraintFrames,
+                            constrainWithSprings=False,
+                            outputFilename=outputFilename,
+                            inputFilename=inputFilename))
 
     return rootNode

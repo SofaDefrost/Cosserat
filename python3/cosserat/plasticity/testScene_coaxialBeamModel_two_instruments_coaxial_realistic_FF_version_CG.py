@@ -599,6 +599,7 @@ def createScene(rootNode):
     incrementAngle=5.0
     incrementDirection = np.array([1., 0., 0.])
     curvAbsTolerance= 1.0e-4
+    minimalDistanceForConstraint = 0.5 # in cm
 
     instrument0 = Instrument(instrumentNode=instrument0Node,
                              totalLength=totalLength0,
@@ -625,6 +626,7 @@ def createScene(rootNode):
                             incrementDirection=incrementDirection,
                             instrumentList=instrumentList,
                             curvAbsTolerance=curvAbsTolerance,
+                            minimalDistanceForConstraint=minimalDistanceForConstraint,
                             nbIntermediateConstraintFrames=nbIntermediateConstraintFrames,
                             constrainWithSprings=True))
 

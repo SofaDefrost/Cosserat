@@ -38,7 +38,8 @@ pluginNameList = 'SofaPython3 CosseratPlugin' \
                  ' Sofa.Component.Topology.Container.Dynamic' \
                  ' Sofa.Component.Collision.Detection.Algorithm' \
                  ' Sofa.Component.Collision.Detection.Intersection' \
-                 ' Sofa.Component.Collision.Response.Contact'
+                 ' Sofa.Component.Collision.Response.Contact' \
+                 ' Sofa.Component.Mapping.MappedMatrix'
 
 visualFlagList = 'showVisualModels showBehaviorModels showCollisionModels' \
                  ' hideBoundingCollisionModels hideForceFields' \
@@ -69,7 +70,7 @@ def createScene(rootNode):
     contactDistance = 1.0*largestSectionRadius
 
 
-    rootNode.addObject('DefaultPipeline', verbose="0")
+    rootNode.addObject('CollisionPipeline', verbose="0")
     rootNode.addObject('BruteForceBroadPhase', name="BroadPhase")
     rootNode.addObject('BVHNarrowPhase', name="NarrowPhase")
     rootNode.addObject('DefaultContactManager', response="FrictionContactConstraint",
@@ -622,6 +623,7 @@ def createScene(rootNode):
     incrementAngle=5.0
     incrementDirection = np.array([1., 0., 0.])
     curvAbsTolerance= 1.0e-4
+    minimalDistanceForConstraint = 0.5 # in cm
 
     instrument0 = Instrument(instrumentNode=instrument0Node,
                              totalLength=totalLength0,
@@ -648,6 +650,7 @@ def createScene(rootNode):
                             incrementDirection=incrementDirection,
                             instrumentList=instrumentList,
                             curvAbsTolerance=curvAbsTolerance,
+                            minimalDistanceForConstraint=minimalDistanceForConstraint,
                             nbIntermediateConstraintFrames=nbIntermediateConstraintFrames,
                             constrainWithSprings=True))
 

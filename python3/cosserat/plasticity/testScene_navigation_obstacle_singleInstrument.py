@@ -57,7 +57,8 @@ def createScene(rootNode):
     rootNode.findData('dt').value = DT
     rootNode.findData('gravity').value = [0., 0., -GRAVITY]
 
-    rootNode.addObject('FreeMotionAnimationLoop')
+    rootNode.addObject('FreeMotionAnimationLoop',
+                       updateSceneAfterAnimateBeginEvent=True)
 
     # --- Constraint handling --- #
     rootNode.addObject('GenericConstraintSolver', tolerance=1e-8,
@@ -72,7 +73,7 @@ def createScene(rootNode):
     contactDistance = 1.0*largestSectionRadius
 
 
-    rootNode.addObject('DefaultPipeline', verbose="0")
+    rootNode.addObject('CollisionPipeline', verbose="0")
     rootNode.addObject('BruteForceBroadPhase', name="BroadPhase")
     rootNode.addObject('BVHNarrowPhase', name="NarrowPhase")
     rootNode.addObject('DefaultContactManager', response="FrictionContactConstraint",
@@ -355,6 +356,7 @@ def createScene(rootNode):
     incrementAngle=5.0
     incrementDirection = np.array([1., 0., 0.])
     curvAbsTolerance= 1.0e-4
+    minimalDistanceForConstraint = 0.5 # in cm
 
     instrument0 = Instrument(instrumentNode=instrument0Node,
                              totalLength=totalLength0,
@@ -375,6 +377,7 @@ def createScene(rootNode):
                             incrementDirection=incrementDirection,
                             instrumentList=instrumentList,
                             curvAbsTolerance=curvAbsTolerance,
+                            minimalDistanceForConstraint=minimalDistanceForConstraint,
                             nbIntermediateConstraintFrames=nbIntermediateConstraintFrames))
 
     return rootNode
