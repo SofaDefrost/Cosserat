@@ -2,27 +2,24 @@
 // Created by younes on 07/06/2021.
 //
 
-#include "../../src/config.h"
+#include <CosseratPlugin/config.h>
 
-DISABLE_ALL_WARNINGS_BEGIN
 #include <gtest/gtest.h>
 #include <sofa/testing/BaseTest.h>
-#include <SofaTest/Sofa_test.h>
 #include <sofa/defaulttype/config.h>
 #include <sofa/simulation/Simulation.h>
 #include <sofa/simulation/Node.h>
-#include <SofaBaseMechanics/MechanicalObject.h>
-#include <SofaSimulationGraph/DAGSimulation.h>
+#include <sofa/component/statecontainer/MechanicalObject.h>
+#include <sofa/simulation/graph/DAGSimulation.h>
 
-#include <SofaSimulationGraph/SimpleApi.h>
-#include <SofaSimulationCommon/SceneLoaderXML.h>
+#include <sofa/simulation/graph/SimpleApi.h>
+#include <sofa/simulation/common/SceneLoaderXML.h>
 #include <sofa/helper/logging/Message.h>
 #include <sofa/core/behavior/ForceField.inl>
 #include <sofa/helper/system/PluginManager.h>
-DISABLE_ALL_WARNINGS_END
 
-#include "../../src/forcefield/BeamHookeLawForceField.h"
-#include "../../src/forcefield/BeamHookeLawForceField.inl"
+#include <CosseratPlugin/forcefield/BeamHookeLawForceField.inl>
+#include <sofa/testing/NumericTest.h>
 
 using sofa::testing::BaseTest ;
 using testing::Test;
@@ -32,7 +29,7 @@ using namespace sofa::simpleapi;
 namespace sofa {
 
 template <typename _DataTypes>
-struct BeamHookeLawForceFieldTest : public NumericTest<> {
+struct BeamHookeLawForceFieldTest : public testing::NumericTest<> {
     typedef _DataTypes DataTypes;
     typedef typename DataTypes::VecCoord VecCoord;
     typedef typename DataTypes::VecDeriv VecDeriv;
@@ -47,9 +44,7 @@ struct BeamHookeLawForceFieldTest : public NumericTest<> {
     void SetUp() override {
         // initialization or some code to run before each test
         fprintf(stderr, "Starting up ! \n");
-        sofa::simpleapi::importPlugin("SofaComponentAll");
-        sofa::simpleapi::importPlugin("SofaMiscCollision");
-        sofa::simpleapi::importPlugin("SofaOpenglVisual");
+        sofa::simpleapi::importPlugin("Sofa.Component");
         sofa::simpleapi::importPlugin("CosseratPlugin");
 
         //create the context for
@@ -159,8 +154,7 @@ void BeamHookeLawForceFieldTest<defaulttype::Vec3Types>::basicAttributesTest(){
              "   </Node>                                                                    \n" ;
 
     Node::SPtr root = SceneLoaderXML::loadFromMemory ("testscene",
-                                                      scene.str().c_str(),
-                                                      scene.str().size()) ;
+                                                      scene.str().c_str()) ;
 
     EXPECT_NE(root.get(), nullptr) ;
     root->init(sofa::core::execparams::defaultInstance()) ;

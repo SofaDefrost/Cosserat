@@ -5,7 +5,7 @@ set(This Cosserat.Tests)
 project(${This} C CXX)
 
 #find_package(CosseratPlugin REQUIRED)
-find_package(SofaTest REQUIRED)
+find_package(Sofa.Testing REQUIRED)
 
 enable_testing()
 
@@ -24,8 +24,7 @@ set(SOURCE_FILES
 add_executable(${This} ${SOURCE_FILES} ${HEADER_FILES})
 
 target_link_libraries(${PROJECT_NAME} 
-        SofaTest 
-        gtest
+        Sofa.Testing
         CosseratPlugin
 )
 
