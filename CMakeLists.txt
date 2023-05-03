@@ -140,7 +140,7 @@ sofa_create_package_with_targets(
 
 # Tests
 # If SOFA_BUILD_TESTS exists and is OFF, then these tests will be auto-disabled
-cmake_dependent_option(COSSERATPLUGIN_BUILD_TESTS "Compile the tests" OFF "SOFA_BUILD_TESTS OR NOT DEFINED SOFA_BUILD_TESTS" OFF)
+cmake_dependent_option(COSSERATPLUGIN_BUILD_TESTS "Compile the tests" ON "SOFA_BUILD_TESTS OR NOT DEFINED SOFA_BUILD_TESTS" OFF)
 if(COSSERATPLUGIN_BUILD_TESTS)
     add_subdirectory(tests)
 endif()
