@@ -49,9 +49,7 @@ struct CosseratUnilateralInteractionConstraintTest : public NumericTest<>
         fprintf(stderr, "Starting up ! \n");
         x = new int(42);
 
-        sofa::simpleapi::importPlugin("SofaComponentAll");
-        sofa::simpleapi::importPlugin("SofaMiscCollision");
-        sofa::simpleapi::importPlugin("SofaOpenglVisual");
+        sofa::simpleapi::importPlugin("Sofa.Component");
         sofa::simpleapi::importPlugin("CosseratPlugin");
 
         //create the context for
