@@ -22,7 +22,7 @@ SP3_add_python_module(
     DESTINATION  Sofa
     SOURCES      ${SOURCE_FILES}
     HEADERS      ${HEADER_FILES}
-    DEPENDS      SofaPython3::Plugin SofaPython3::Bindings Sofa.GL CosseratPlugin
+    DEPENDS      SofaPython3::Plugin SofaPython3::Bindings.Sofa Sofa.GL CosseratPlugin
 
 )
 message("-- SofaPython3 bindings for CosseratPlugin will be created.")
