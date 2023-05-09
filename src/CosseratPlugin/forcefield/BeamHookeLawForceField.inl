@@ -59,7 +59,7 @@ namespace sofa::component::forcefield
     template<typename DataTypes>
     BeamHookeLawForceField<DataTypes>::BeamHookeLawForceField()
             : Inherit1(),
-              d_crossSectionShape( initData(&d_crossSectionShape, OptionsGroup(2,"circular","rectangular"),
+              d_crossSectionShape( initData(&d_crossSectionShape, {"circular","rectangular"},
                                             "crossSectionShape",
                                             "shape of the cross-section. Can be: circular (tube with external radius being radius and internal radius being innerRadius ) or rectangular (lengthY and lengthZ) . Default is circular" )),
               d_youngModulus( initData( &d_youngModulus, 1.0e9, "youngModulus", "Young Modulus describes the stiffness of the material")),
