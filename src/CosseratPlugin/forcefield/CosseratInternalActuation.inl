@@ -59,7 +59,7 @@ using sofa::helper::WriteAccessor ;
 template<typename DataTypes>
 CosseratInternalActuation<DataTypes>::CosseratInternalActuation()
     : Inherit1(),
-      d_crossSectionShape( initData(&d_crossSectionShape, OptionsGroup(2,"circular","rectangular"),
+      d_crossSectionShape( initData(&d_crossSectionShape, {"circular","rectangular"},
                                     "crossSectionShape",
                                     "shape of the cross-section. Can be: circular (tube with external radius being radius and internal radius being innerRadius ) or rectangular (lengthY and lengthZ) . Default is circular" )),
       d_youngModululs( initData( &d_youngModululs, 1.0e6, "youngModulus", "Young Modulus describes the stiffness of the material")),

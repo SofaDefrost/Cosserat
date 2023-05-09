@@ -27,7 +27,7 @@ def createScene(rootNode):
         'RequiredPlugin', pluginName=pluginList, printLog='0')
 
     rootNode.addObject('VisualStyle', displayFlags='showVisualModels showBehaviorModels hideCollisionModels '
-                                                   'hideBoundingCollisionModels hireForceFields '
+                                                   'hideBoundingCollisionModels hideForceFields '
                                                    'hideInteractionForceFields hideWireframe showMechanicalMappings')
     rootNode.addObject('DefaultPipeline')
     rootNode.addObject("DefaultVisualManagerLoop")
