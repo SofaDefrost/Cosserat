@@ -97,10 +97,6 @@ target_link_libraries(${PROJECT_NAME}
     Sofa.Component.Topology.Container.Dynamic
 )
 
-if(Sofa.GL_FOUND)
-    target_link_libraries(${PROJECT_NAME} Sofa.GL)
-endif()
-
 if(SoftRobots_FOUND)
     target_link_libraries(${PROJECT_NAME} SoftRobots)
     message("-- Found dependency: 'SoftRobots' plugin.")
