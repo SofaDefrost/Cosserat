@@ -98,13 +98,13 @@ jobs:
       - name: Create artifact
         uses: actions/upload-artifact@v2.2.4
         with:
-          name: CosseratPlugin_${{ steps.sofa.outputs.run_branch }}_for-SOFA-${{ steps.sofa.outputs.sofa_version }}_${{ runner.os }}
+          name: Cosserat_${{ steps.sofa.outputs.run_branch }}_for-SOFA-${{ steps.sofa.outputs.sofa_version }}_${{ runner.os }}
           path: ${{ env.WORKSPACE_INSTALL_PATH }}
 
       - name: Install artifact
         uses: actions/download-artifact@v2
         with:
-          name: CosseratPlugin_${{ steps.sofa.outputs.run_branch }}_for-SOFA-${{ steps.sofa.outputs.sofa_version }}_${{ runner.os }}
+          name: Cosserat_${{ steps.sofa.outputs.run_branch }}_for-SOFA-${{ steps.sofa.outputs.sofa_version }}_${{ runner.os }}
           path: ${{ env.WORKSPACE_ARTIFACT_PATH }}
 
       # - name: Set env vars for tests
@@ -170,5 +170,5 @@ jobs:
             tag_name: release-${{ github.ref_name }}
             fail_on_unmatched_files: true 
             files: |
-              artifacts/CosseratPlugin_*_Linux.zip
-              artifacts/CosseratPlugin_*_Windows.zip
+              artifacts/Cosserat_*_Linux.zip
+              artifacts/Cosserat_*_Windows.zip

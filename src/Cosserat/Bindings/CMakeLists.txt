@@ -18,11 +18,11 @@ sofa_find_package(Sofa.GL QUIET)
 SP3_add_python_module(
     TARGET       ${PROJECT_NAME}
     PACKAGE      Binding
-    MODULE       CosseratPlugin
+    MODULE       Cosserat
     DESTINATION  Sofa
     SOURCES      ${SOURCE_FILES}
     HEADERS      ${HEADER_FILES}
-    DEPENDS      SofaPython3::Plugin SofaPython3::Bindings.Sofa Sofa.GL CosseratPlugin
+    DEPENDS      SofaPython3::Plugin SofaPython3::Bindings.Sofa Sofa.GL Cosserat
 
 )
-message("-- SofaPython3 binding for CosseratPlugin will be created.")
+message("-- SofaPython3 binding for Cosserat plugin will be created.")

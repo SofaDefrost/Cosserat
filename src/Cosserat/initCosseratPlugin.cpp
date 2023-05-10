@@ -76,7 +76,7 @@ const char* getModuleName()
 
 const char* getModuleVersion()
 {
-    return sofa_tostring(COSSERATPLUGIN_VERSION);
+    return sofa_tostring(COSSERAT_VERSION);
 }
 
 const char* getModuleDescription()
