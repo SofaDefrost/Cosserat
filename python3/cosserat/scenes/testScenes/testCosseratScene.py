@@ -33,7 +33,7 @@ def createScene(rootNode):
     rootNode.addObject('RequiredPlugin', name='SofaImplicitOdeSolver')
     rootNode.addObject('RequiredPlugin', name='SofaMeshCollision')
     rootNode.addObject('RequiredPlugin', name='SofaRigid')
-    rootNode.addObject('RequiredPlugin', name='CosseratPlugin')
+    rootNode.addObject('RequiredPlugin', name='Cosserat')
     rootNode.addObject('RequiredPlugin', name='SofaDeformable')
     rootNode.addObject('RequiredPlugin', name='SofaGeneralLinearSolver')
     rootNode.addObject('RequiredPlugin', name='SofaGeneralRigid')

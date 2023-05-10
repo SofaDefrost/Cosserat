@@ -25,7 +25,7 @@ path = os.path.dirname(os.path.abspath(__file__))+'/../mesh/'
 
 pluginNameList = 'SofaConstraint SofaDeformable SofaImplicitOdeSolver SofaMeshCollision SofaPreconditioner' \
                  ' SofaGeneralTopology SofaOpenglVisual SofaGeneralRigid SoftRobots SofaSparseSolver' \
-                 ' CosseratPlugin SofaBoundaryCondition'
+                 ' Cosserat SofaBoundaryCondition'
 
 
 class Animation(Sofa.Core.Controller):

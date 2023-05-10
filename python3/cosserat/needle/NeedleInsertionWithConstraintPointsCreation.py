@@ -87,7 +87,7 @@ class Animation(Sofa.Core.Controller):
 def createScene(rootNode):
 
     MainHeader(rootNode, plugins=["SoftRobots", "SofaSparseSolver", "SofaPreconditioner",
-                                  "SofaOpenglVisual", "CosseratPlugin", "BeamAdapter", "SofaDeformable",
+                                  "SofaOpenglVisual", "Cosserat", "BeamAdapter", "SofaDeformable",
                                   "SofaImplicitOdeSolver", 'SofaEngine', 'SofaMeshCollision', 'SofaSimpleFem',
                                   'SofaConstraint', 'SofaTopologyMapping'],
                repositoryPaths=[os.getcwd()])

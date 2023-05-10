@@ -25,7 +25,7 @@ def createScene(rootNode):
 
     """
 
-    rootNode.addObject('RequiredPlugin', pluginName='SoftRobots SofaPython3 SofaSparseSolver CosseratPlugin SofaConstraint SofaDeformable SofaImplicitOdeSolver', printLog='0')
+    rootNode.addObject('RequiredPlugin', pluginName='SoftRobots SofaPython3 SofaSparseSolver Cosserat SofaConstraint SofaDeformable SofaImplicitOdeSolver', printLog='0')
     rootNode.addObject('VisualStyle', displayFlags='hideVisualModels showBehaviorModels showCollisionModels hideBoundingCollisionModels showForceFields hideInteractionForceFields hideWireframe')
 
 
