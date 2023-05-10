@@ -137,12 +137,12 @@ jobs:
       #     echo '----------------------'
       #     python -c "import sys; print('sys.version = ' + str(sys.version)); print('sys.path = ' + str(sys.path))"
 
-      # - name: Run tests CosseratPlugin_test
+      # - name: Run tests Cosserat_test
       #   if: always()
       #   shell: bash
       #   run: |
       #     cd $WORKSPACE_BUILD_PATH
-      #     ./bin/CosseratPlugin_test${{ steps.sofa.outputs.exe }}
+      #     ./bin/Cosserat_test${{ steps.sofa.outputs.exe }}
 
   deploy:
       name: Deploy artifacts

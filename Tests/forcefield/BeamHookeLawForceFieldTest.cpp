@@ -45,7 +45,7 @@ struct BeamHookeLawForceFieldTest : public testing::NumericTest<> {
         // initialization or some code to run before each test
         fprintf(stderr, "Starting up ! \n");
         sofa::simpleapi::importPlugin("Sofa.Component");
-        sofa::simpleapi::importPlugin("CosseratPlugin");
+        sofa::simpleapi::importPlugin("Cosserat");
 
         //create the context for
         if(simulation==nullptr)

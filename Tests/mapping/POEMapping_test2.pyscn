@@ -175,7 +175,7 @@ def dummyInterpolateTransform(a_H_b, a_H_c, alpha):
 
 def createScene(rootNode):
     
-                rootNode.createObject('RequiredPlugin', pluginName='SoftRobots SofaPython SofaSparseSolver CosseratPlugin', printLog='0')
+                rootNode.createObject('RequiredPlugin', pluginName='SoftRobots SofaPython SofaSparseSolver Cosserat', printLog='0')
                 rootNode.createObject('VisualStyle', displayFlags='hideVisualModels showBehaviorModels showCollisionModels hideBoundingCollisionModels hideForceFields showInteractionForceFields hideWireframe')
                 
                 rootNode.createObject('RequiredPlugin', name='BeamAdapter')

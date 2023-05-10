@@ -50,7 +50,7 @@ struct CosseratUnilateralInteractionConstraintTest : public NumericTest<>
         x = new int(42);
 
         sofa::simpleapi::importPlugin("Sofa.Component");
-        sofa::simpleapi::importPlugin("CosseratPlugin");
+        sofa::simpleapi::importPlugin("Cosserat");
 
         //create the context for
         if(simulation==nullptr)
