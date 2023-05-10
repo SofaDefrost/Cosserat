@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.1)
 
-set(This Cosserat.Tests)
+set(This Cosserat_test)
 
 project(${This} C CXX)
 
