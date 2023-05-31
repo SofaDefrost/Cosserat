@@ -67,9 +67,6 @@ if(SoftRobots_FOUND)
     list(APPEND HEADER_FILES
         ${SRC_ROOT_DIR}/constraint/CosseratActuatorConstraint.h
         ${SRC_ROOT_DIR}/constraint/CosseratActuatorConstraint.inl
-#        ${SRC_ROOT_DIR}/constraint/CosseratUnilateralInteractionConstraint.h
-#        ${SRC_ROOT_DIR}/constraint/CosseratUnilateralInteractionConstraint.inl
-
         
         ${SRC_ROOT_DIR}/constraint/QPSlidingConstraint.h
         ${SRC_ROOT_DIR}/constraint/QPSlidingConstraint.inl
@@ -77,7 +74,6 @@ if(SoftRobots_FOUND)
     list(APPEND SOURCE_FILES
         ${SRC_ROOT_DIR}/constraint/CosseratActuatorConstraint.cpp
         
-        #${SRC_ROOT_DIR}/constraint/CosseratUnilateralInteractionConstraint.cpp
         ${SRC_ROOT_DIR}/constraint/QPSlidingConstraint.cpp
         )
 endif()
