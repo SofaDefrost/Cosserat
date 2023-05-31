@@ -15,12 +15,7 @@ Contents of the library
     :toctree: _autosummary
 
     cosserat.cosseratObject
-    cosserat.actuators
-    cosserat.inverse
-    cosserat.testScene
-    cosserat.needle
-    
 
 """
 
-__all__ = ["utils","cosseratObject", "nonLinearCosserat", "actuators", "scenes", "needle", "inverse", "usefulFunctions", "createFemRegularGrid"]
+__all__ = ["utils","cosseratObject", "nonLinearCosserat"]
