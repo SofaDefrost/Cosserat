@@ -41,7 +41,7 @@ with a constant cross-section.
 | DCM Beam actuation using a cable ```d =``` | DCM Beam actuation using a cable ```d =```| Beam actuation using a cable ```d =```|
 
 
-| <img src="./doc/images/example1.gif" width="300" title="PCS_Example1.py ">     | <img src="./doc/images/example2.gif" widt="300" title="PCS_Example2.py">    | <img src="./doc/images/example2.gif" width="300" title="PCS_Example3.PCS">  |
+| <img src="/doc/images/example1.gif" width="300" title="PCS_Example1.py ">     | <img src="./doc/images/example2.gif" widt="300" title="PCS_Example2.py">    | <img src="./doc/images/example2.gif" width="300" title="PCS_Example3.PCS">  |
 | ------------- |:-------------:| -----:|
 | DCM Beam actuation using a cable ```d =``` | DCM Beam actuation using a cable ```d =```| Beam actuation using a cable ```d =```|
 
