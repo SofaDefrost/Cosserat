@@ -103,11 +103,11 @@ def createScene(rootNode):
                     order=LegendrePolyOrder, inertialParams=inertialParams,
                     activatedMMM=True))
     cosseratNode = nonLinearCosserat.legendreControlPointsNode
-    cosseratNode.addObject('MechanicalMatrixMapper', template='Vec3,Vec3',
-                           object1=cosseratNode.getLinkPath(),
-                           object2=cosseratNode.getLinkPath(),
-                           name='cosseratCoordinateNodeMapper',
-                           nodeToParse=nonLinearCosserat.cosseratCoordinateNode.getLinkPath())
+    # cosseratNode.addObject('MechanicalMatrixMapper', template='Vec3,Vec3',
+    #                        object1=cosseratNode.getLinkPath(),
+    #                        object2=cosseratNode.getLinkPath(),
+    #                        name='cosseratCoordinateNodeMapper',
+    #                        nodeToParse=nonLinearCosserat.cosseratCoordinateNode.getLinkPath())
 
     beamFrame = nonLinearCosserat.cosseratFrame
 

@@ -39,3 +39,10 @@ with a constant cross-section.
 | DCM Beam actuation using a cable ```d = ``` | DCM Beam actuation using a cable ```d = ```| Beam actuation using a cable ```d = ```|
 
 Format: ![Alt Text]
+
+<table>
+  <tr>
+    <td><img src="./doc/images/example1.gif" alt="Example 1 scene"></td>
+    <td><img src="./doc/images/example2.gif" alt="Example 2 scene"></td>
+  </tr>
+</table>

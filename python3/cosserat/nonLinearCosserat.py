@@ -187,10 +187,11 @@ class NonLinearCosserat(Sofa.Prefab):
                                           input2=self.rigidBaseNode.RigidBaseMO.getLinkPath(),
                                           output=framesMO.getLinkPath(), debug=0, radius=self.radius)
         if self.beamMass != 0. or self.activatedMMM == True:
-            self.solverNode.addObject('MechanicalMatrixMapper', template='Vec3,Rigid3',
-                                      object1=self.cosseratCoordinateNode.cosseratCoordinateMO.getLinkPath(),
-                                      object2=self.rigidBaseNode.RigidBaseMO.getLinkPath(),
-                                      nodeToParse=cosseratInSofaFrameNode.getLinkPath())
+            pass
+            #self.solverNode.addObject('MechanicalMatrixMapper', template='Vec3,Rigid3',
+            #                          object1=self.cosseratCoordinateNode.cosseratCoordinateMO.getLinkPath(),
+            #                          object2=self.rigidBaseNode.RigidBaseMO.getLinkPath(),
+            #                          nodeToParse=cosseratInSofaFrameNode.getLinkPath())
         return cosseratInSofaFrameNode
 
 

@@ -33,7 +33,7 @@ nbSection = 5  # P_{k_2}=P_{k_3}
 nonLinearConfig = {'init_pos': [0., 0., 0.], 'tot_length': length, 'nbSectionS': nbSection,
                    'nbFramesF': 15, 'buildCollisionModel': 0, 'beamMass': 0.}
 
-
+inertialParams = {'GI': 1800, 'GA': 1e4, 'EI': 1000, 'EA': 5.137e7, 'L': length,  'Rb': Rb}
 class ForceController(Sofa.Core.Controller):
     def __init__(self, *args, **kwargs):
         Sofa.Core.Controller.__init__(self, *args, **kwargs)

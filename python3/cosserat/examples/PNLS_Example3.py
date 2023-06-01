@@ -132,11 +132,11 @@ def createScene(rootNode):
                         external_rest_shape=controlMo.getLinkPath(), points=nbFrames, template="Rigid3d")
 
     cosseratNode = nonLinearCosserat.legendreControlPointsNode
-    cosseratNode.addObject('MechanicalMatrixMapper', template='Vec3,Vec3',
-                           object1=cosseratNode.getLinkPath(),
-                           object2=cosseratNode.getLinkPath(),
-                           name='cosseratCoordinateNodeMapper',
-                           nodeToParse=nonLinearCosserat.cosseratCoordinateNode.getLinkPath())
+    # cosseratNode.addObject('MechanicalMatrixMapper', template='Vec3,Vec3',
+    #                        object1=cosseratNode.getLinkPath(),
+    #                        object2=cosseratNode.getLinkPath(),
+    #                        name='cosseratCoordinateNodeMapper',
+    #                        nodeToParse=nonLinearCosserat.cosseratCoordinateNode.getLinkPath())
 
     constForce = beamFrame.addObject('ConstantForceField', name='constForce', showArrowSize=1.e-9,
                         indices=nonLinearConfig['nbFramesF'], force=F1)
