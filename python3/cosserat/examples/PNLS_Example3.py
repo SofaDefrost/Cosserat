@@ -98,7 +98,6 @@ def createScene(rootNode):
                                                    'hideBoundingCollisionModels hideForceFields '
                                                    'hideInteractionForceFields hideWireframe showMechanicalMappings')
     rootNode.findData('dt').value = 0.02
-    # rootNode.findData('gravity').value = [0., -9.81, 0.]
     rootNode.findData('gravity').value = [0., 0., 0.]
     rootNode.addObject('BackgroundSetting', color='1 1 1')
     # rootNode.addObject('FreeMotionAnimationLoop')
@@ -132,12 +131,7 @@ def createScene(rootNode):
                         external_rest_shape=controlMo.getLinkPath(), points=nbFrames, template="Rigid3d")
 
     cosseratNode = nonLinearCosserat.legendreControlPointsNode
-    cosseratNode.addObject('MechanicalMatrixMapper', template='Vec3,Vec3',
-                           object1=cosseratNode.getLinkPath(),
-                           object2=cosseratNode.getLinkPath(),
-                           name='cosseratCoordinateNodeMapper',
-                           nodeToParse=nonLinearCosserat.cosseratCoordinateNode.getLinkPath())
-
+   
     constForce = beamFrame.addObject('ConstantForceField', name='constForce', showArrowSize=1.e-9,
                         indices=nonLinearConfig['nbFramesF'], force=F1)
 
