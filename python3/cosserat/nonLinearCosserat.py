@@ -79,7 +79,6 @@ class NonLinearCosserat(Sofa.Prefab):
         self.polynomOrder = kwargs['order']
         self.useInertiaParams = False
         self.totalLength = self.cosseratGeometry['tot_length']
-        self.activatedMMM = kwargs['activatedMMM']
         if self.parent.hasObject("EulerImplicitSolver") is False:
             self.solverNode = self.addSolverNode()
         else:
@@ -186,12 +185,6 @@ class NonLinearCosserat(Sofa.Prefab):
                                           input1=self.cosseratCoordinateNode.cosseratCoordinateMO.getLinkPath(),
                                           input2=self.rigidBaseNode.RigidBaseMO.getLinkPath(),
                                           output=framesMO.getLinkPath(), debug=0, radius=self.radius)
-        if self.beamMass != 0. or self.activatedMMM == True:
-            pass
-            #self.solverNode.addObject('MechanicalMatrixMapper', template='Vec3,Rigid3',
-            #                          object1=self.cosseratCoordinateNode.cosseratCoordinateMO.getLinkPath(),
-            #                          object2=self.rigidBaseNode.RigidBaseMO.getLinkPath(),
-            #                          nodeToParse=cosseratInSofaFrameNode.getLinkPath())
         return cosseratInSofaFrameNode
 
 
