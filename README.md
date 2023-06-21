@@ -17,7 +17,9 @@ with a constant cross-section.
    1. __Discrete cosserat approach for soft robot dynamics: A new piece-wise constant strain model with torsion and shears__ [Link to the paper](https://ieeexplore.ieee.org/document/7759808)
    2. __Coupling numerical deformable models in global and reduced coordinates for the simulation of the direct and the inverse kinematics of Soft Robots__ [Link to the paper](https://hal.archives-ouvertes.fr/hal-03192168/document)
 
-   <a href="https://www.youtube.com/embed/qwzKAgw31pU" target="_blank"><img src="https://www.youtube.com/embed/qwzKAgw31pU/0.jpg" alt="" width="240" height="180" border="10" /></a>
+<div align="center">
+  <a href="https://www.youtube.com/watch?v=qwzKAgw31pU"><img src="https://img.youtube.com/vi/qwzKAgw31pU/0.jpg" alt="link to youtube"></a>
+</div>
 
 2. Pieces-wise Non-constant Strain:
 3. DCM with Plastic model
@@ -28,11 +30,10 @@ with a constant cross-section.
 |---------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------|
 | <img src="/doc/images/multiSectionWithColorMap1.png" width="300" title="DCM as an implant"> | <img src="/doc/images/multiSectionWithColorMap2.png" width="300" title="DCM as an implant"> | <img src="/doc/images/multiSectionWithColorMap3.png" width="300" title="DCM as an implant"> |
 
-### DCM for cable modeling to control deformable robots
-
-|Direct simulation of a soft gripper | The study the model convergence |
-|--- | --- |
-|<img src="/scenes/mesh/cosseratgripper_2.png" width="400" title="DCM for cable modeling"> | <img src="/doc/images/tenCossseratSections.png" width="400" title="DCM for cable modeling ">|
+### DCM for cable modeling to control deformable robots:
+| Direct simulation of a soft gripper                                                      | The study the model convergence |
+|------------------------------------------------------------------------------------------| --- |
+| <img src="/doc/images/cosseratgripper_2.png" width="400" title="DCM for cable modeling"> | <img src="/doc/images/tenCossseratSections.png" width="400" title="DCM for cable modeling ">|
 
 ### Some use cases
 
