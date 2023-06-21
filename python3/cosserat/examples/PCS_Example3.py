@@ -101,13 +101,6 @@ def createScene(rootNode):
         Cosserat(parent=solverNode, cosseratGeometry=nonLinearConfig, useCollisionModel=needCollisionModel,
                  inertialParams=inertialParams, name="cosserat", radius=Rb, youngModulus=YM))
 
-    cosseratNode = nonLinearCosserat.legendreControlPointsNode
-    cosseratNode.addObject('MechanicalMatrixMapper', template='Vec3,Vec3',
-                           object1=cosseratNode.getLinkPath(),
-                           object2=cosseratNode.getLinkPath(),
-                           name='cosseratCoordinateNodeMapper',
-                           nodeToParse=nonLinearCosserat.cosseratCoordinateNode.getLinkPath())
-
     beamFrame = nonLinearCosserat.cosseratFrame
 
     constForce = beamFrame.addObject('ConstantForceField', name='constForce', showArrowSize=0.02,

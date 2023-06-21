@@ -216,12 +216,6 @@ def createScene(rootNode):
     nonLinearCosserat = solverNode.addChild(
         NonLinearCosserat(parent=solverNode, cosseratGeometry=nonLinearConfig, useCollisionModel=needCollisionModel,
                           name="cosserat", radius=0.1, legendreControlPoints=initialStrain, order=3))
-    cosseratNode = nonLinearCosserat.legendreControlPointsNode
-    cosseratNode.addObject('MechanicalMatrixMapper', template='Vec3,Vec3',
-                           object1=cosseratNode.getLinkPath(),
-                           object2=cosseratNode.getLinkPath(),
-                           name='cosseratCoordinateNodeMapper',
-                           nodeToParse=nonLinearCosserat.cosseratCoordinateNode.getLinkPath())
 
     beamFrame = nonLinearCosserat.cosseratFrame
     beamFrame.addObject('ConstantForceField', name='constForce', showArrowSize=1.e-8, indices=12,
