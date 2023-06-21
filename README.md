@@ -15,8 +15,9 @@ with a constant cross-section.
    1. __Discrete cosserat approach for soft robot dynamics: A new piece-wise constant strain model with torsion and shears__ [Link to the paper](https://ieeexplore.ieee.org/document/7759808)
    2. __Coupling numerical deformable models in global and reduced coordinates for the simulation of the direct and the inverse kinematics of Soft Robots__ [Link to the paper](https://hal.archives-ouvertes.fr/hal-03192168/document)
 
-   <a href="https://www.youtube.com/embed/qwzKAgw31pU" target="_blank"><img src="https://www.youtube.com/embed/qwzKAgw31pU/0.jpg" alt="" width="240" height="180" border="10" /></a>
-
+<div align="center">
+  <a href="https://www.youtube.com/watch?v=qwzKAgw31pU"><img src="https://img.youtube.com/vi/qwzKAgw31pU/0.jpg" alt="link to youtube"></a>
+</div>
 
 2. Pieces-wise Non-constant Strain:
 3. DCM with Plastic model
