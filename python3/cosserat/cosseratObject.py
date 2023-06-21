@@ -193,12 +193,6 @@ class Cosserat(Sofa.Prefab):
                                           input1=self.cosseratCoordinateNode.cosseratCoordinateMO.getLinkPath(),
                                           input2=self.rigidBaseNode.RigidBaseMO.getLinkPath(),
                                           output=framesMO.getLinkPath(), debug=0, radius=self.radius.value)
-        if self.beamMass != 0.:
-            self.solverNode.addObject('MechanicalMatrixMapper', template='Vec3,Rigid3',
-                                      object1=self.cosseratCoordinateNode.cosseratCoordinateMO.getLinkPath(),
-                                      object2=self.rigidBaseNode.RigidBaseMO.getLinkPath(),
-                                      nodeToParse=cosseratInSofaFrameNode.getLinkPath())
-
         return cosseratInSofaFrameNode
 
 

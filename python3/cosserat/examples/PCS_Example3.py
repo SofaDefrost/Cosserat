@@ -33,7 +33,7 @@ nbSection = 5  # P_{k_2}=P_{k_3}
 nonLinearConfig = {'init_pos': [0., 0., 0.], 'tot_length': length, 'nbSectionS': nbSection,
                    'nbFramesF': 15, 'buildCollisionModel': 0, 'beamMass': 0.}
 
-
+inertialParams = {'GI': 1800, 'GA': 1e4, 'EI': 1000, 'EA': 5.137e7, 'L': length,  'Rb': Rb}
 class ForceController(Sofa.Core.Controller):
     def __init__(self, *args, **kwargs):
         Sofa.Core.Controller.__init__(self, *args, **kwargs)
@@ -100,13 +100,6 @@ def createScene(rootNode):
     PCS_Cosserat = solverNode.addChild(
         Cosserat(parent=solverNode, cosseratGeometry=nonLinearConfig, useCollisionModel=needCollisionModel,
                  inertialParams=inertialParams, name="cosserat", radius=Rb, youngModulus=YM))
-
-    cosseratNode = nonLinearCosserat.legendreControlPointsNode
-    cosseratNode.addObject('MechanicalMatrixMapper', template='Vec3,Vec3',
-                           object1=cosseratNode.getLinkPath(),
-                           object2=cosseratNode.getLinkPath(),
-                           name='cosseratCoordinateNodeMapper',
-                           nodeToParse=nonLinearCosserat.cosseratCoordinateNode.getLinkPath())
 
     beamFrame = nonLinearCosserat.cosseratFrame
 
