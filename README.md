@@ -29,9 +29,9 @@ with a constant cross-section.
 | <img src="/doc/images/multiSectionWithColorMap1.png" width="300" title="DCM as an implant"> | <img src="/doc/images/multiSectionWithColorMap2.png" width="300" title="DCM as an implant"> | <img src="/doc/images/multiSectionWithColorMap3.png" width="300" title="DCM as an implant"> |
 
 ### DCM for cable modeling to control deformable robots:
-|Direct simulation of a soft gripper | The study the model convergence |
-|--- | --- |
-|<img src="/scenes/mesh/cosseratgripper_2.png" width="400" title="DCM for cable modeling"> | <img src="/doc/images/tenCossseratSections.png" width="400" title="DCM for cable modeling ">|
+| Direct simulation of a soft gripper                                                      | The study the model convergence |
+|------------------------------------------------------------------------------------------| --- |
+| <img src="/doc/images/cosseratgripper_2.png" width="400" title="DCM for cable modeling"> | <img src="/doc/images/tenCossseratSections.png" width="400" title="DCM for cable modeling ">|
 
 
 ### Some use cases 
