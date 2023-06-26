@@ -100,6 +100,9 @@ public:
     typedef typename SolidTypes<Real2>::Transform      Transform ;
 
 protected:
+    core::State<In1>*                       m_fromModel1;
+    core::State<In2>*                       m_fromModel2;
+    core::State<Out>*                       m_toModel;
     Data<int>                               d_deformationAxis;
     Data<Real2>                             d_max;
     Data<Real2>                             d_min;
@@ -108,9 +111,6 @@ protected:
     Data<type::Vec4f>                       d_color;
     Data<type::vector<int> >                d_index;
     Data<unsigned int>                      d_baseIndex;
-    core::State<In1>*                       m_fromModel1;
-    core::State<In2>*                       m_fromModel2;
-    core::State<Out>*                       m_toModel;
 
 public:
     typedef MultiLink<DiscreteCosseratMapping<In1,In2,Out>, sofa::core::State< In1 >, BaseLink::FLAG_STOREPATH|BaseLink::FLAG_STRONGLINK> LinkFromModels1;
