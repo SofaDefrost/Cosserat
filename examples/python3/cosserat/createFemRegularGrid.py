@@ -24,21 +24,14 @@ def createFemCube(parentNode):
 
     GelSurface = FemNode.addChild("GelSurface")
     GelSurface.addObject("TriangleSetTopologyContainer", name="Container", position="@../GelVolume/HexaTop.position")
-    # GelSurface.addObject("TriangleSetTopologyModifier", input="@../GelVolume/Container", output="@Container",
-    #                      flipNormals="false")
 
     gelNode = FemNode.addChild("gelNode")
-    # gelNode.addObject('VisualStyle', displayFlags='showVisualModels hideBehaviorModels showCollisionModels '
-    #                                                  'hideMappings hideForceFields showWireframe '
-    #                                                  'showInteractionForceFields hideForceFields')
     gelNode.addObject("EulerImplicitSolver", rayleighMass="0.1", rayleighStiffness="0.1")
-    gelNode.addObject('SparseLDLSolver', name='preconditioner')
+    gelNode.addObject('SparseLDLSolver', name='preconditioner', template="CompressedRowSparseMatrixMat3x3d")
     gelNode.addObject('TetrahedronSetTopologyContainer', src="@../gelVolume/Container", name='container')
-    # gelNode.addObject('TetrahedronSetTopologyModifier')
     gelNode.addObject('MechanicalObject', name='tetras', template='Vec3d')
     gelNode.addObject('TetrahedronFEMForceField', template='Vec3d', name='FEM', method='large',
                       poissonRatio='0.45', youngModulus='100')
-    # gelNode.addObject('UniformMass', totalMass='5')
     gelNode.addObject('BoxROI', name='ROI1', box='40 -17 -10 100 -14 10', drawBoxes='true')
     gelNode.addObject('RestShapeSpringsForceField', points='@ROI1.indices', stiffness='1e12')
 
@@ -56,8 +49,7 @@ def createFemCube(parentNode):
 
 def createFemCubeWithParams(parentNode, geometry):
     FemNode = parentNode.addChild("FemNode")
-    # FemNode.addObject('VisualStyle', displayFlags='showBehaviorModels hideCollisionModels
-    # hideBoundingCollisionModels ' 'showForceFields hideInteractionForceFields showWireframe')
+
     gelVolume = FemNode.addChild("gelVolume")
     gelVolume.addObject("RegularGridTopology", name="HexaTop", n=geometry.mesh, min=geometry.minVol,
                         max=geometry.maxVol)
@@ -73,20 +65,12 @@ def createFemCubeWithParams(parentNode, geometry):
                          output="@triangleContainer", flipNormals="false")
 
     gelNode = FemNode.addChild("gelNode")
-    # gelNode.addObject('VisualStyle', displayFlags='showVisualModels hideBehaviorModels showCollisionModels '
-    #                                                  'hideMappings hideForceFields showWireframe '
-    #                                                  'showInteractionForceFields hideForceFields')
     gelNode.addObject("EulerImplicitSolver", rayleighMass=geometry.rayleigh, rayleighStiffness=geometry.rayleigh)
-    gelNode.addObject('SparseLDLSolver', name='precond')
-    # gelNode.addObject('ShewchukPCGLinearSolver', name='linearSolver', iterations='500', tolerance='1.0e-14',
-    #                   preconditioners="precond")
-    # gelNode.addObject('SparseLDLSolver', name='precond', template='CompressedRowSparseMatrix3d')
+    gelNode.addObject('SparseLDLSolver', name='precond', template="CompressedRowSparseMatrixMat3x3d")
     gelNode.addObject('TetrahedronSetTopologyContainer', src="@../gelVolume/TetraContainer", name='container')
-    # gelNode.addObject('TetrahedronSetTopologyModifier')
     gelNode.addObject('MechanicalObject', name='tetras', template='Vec3d')
     gelNode.addObject('TetrahedronFEMForceField', template='Vec3d', name='FEM', method='large',
                       poissonRatio=geometry.poissonRatio, youngModulus=geometry.youngModulus)
-    # gelNode.addObject('UniformMass', totalMass='5')
     gelNode.addObject('BoxROI', name='ROI1', box=geometry.box, drawBoxes='true')
     gelNode.addObject('RestShapeSpringsForceField', points='@ROI1.indices', stiffness='1e12')
 
@@ -102,7 +86,6 @@ def createFemCubeWithParams(parentNode, geometry):
     visu.addObject("OglModel", name="Visual", src="@../surfContainer",  color="0.0 0.1 0.9 0.40" )
     visu.addObject("BarycentricMapping", input="@..", output="@Visual")
 
-    # gelNode.addObject('GenericConstraintCorrection', linearSolver='@precond')
     gelNode.addObject('LinearSolverConstraintCorrection')
 
     return FemNode
