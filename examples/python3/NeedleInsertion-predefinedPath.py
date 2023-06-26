@@ -8,6 +8,8 @@ from splib3.numerics import Quat
 import sys
 sys.path.append('../')
 from cosserat.createFemRegularGrid import createFemCube
+from cosserat.usefulFunctions import pluginList
+
 __authors__ = "younesssss"
 __contact__ = "adagolodjo@protonmail.com, yinoussa.adagolodjo@inria.fr"
 __version__ = "1.0.0"
@@ -22,10 +24,6 @@ sys.path.append('../')
 # from stlib3.physics.collision import CollisionMesh
 
 path = os.path.dirname(os.path.abspath(__file__))+'/../mesh/'
-
-pluginNameList = 'SofaConstraint SofaDeformable SofaImplicitOdeSolver SofaMeshCollision SofaPreconditioner' \
-                 ' SofaGeneralTopology SofaOpenglVisual SofaGeneralRigid SoftRobots SofaSparseSolver' \
-                 ' CosseratPlugin SofaBoundaryCondition'
 
 
 class Animation(Sofa.Core.Controller):
@@ -93,8 +91,7 @@ class Animation(Sofa.Core.Controller):
 
 
 def createScene(rootNode):
-    rootNode.addObject(
-        'RequiredPlugin', pluginName=pluginNameList, printLog='0')
+    rootNode.addObject('RequiredPlugin', name='plugins', pluginName=[pluginList])
 
     rootNode.addObject('VisualStyle', displayFlags='showBehaviorModels hideCollisionModels hideBoundingCollisionModels '
                                                    'showForceFields hideInteractionForceFields showWireframe')
