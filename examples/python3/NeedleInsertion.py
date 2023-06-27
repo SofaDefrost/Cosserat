@@ -5,7 +5,7 @@ Based on the work done with SofaPython. See POEMapping.py
 """
 
 from cosserat.needle.needleController import Animation
-from params import NeedleParameters, GeometryParams, PhysicsParams, FemParams, ContactParams
+from cosserat.needle.params import NeedleParameters, GeometryParams, PhysicsParams, FemParams, ContactParams
 from cosserat.usefulFunctions import pluginList
 from cosserat.createFemRegularGrid import createFemCubeWithParams
 from cosserat.cosseratObject import Cosserat
@@ -23,13 +23,13 @@ needleGeometryConfig = {'init_pos': [0., 0., 0.], 'tot_length': GeometryParams.t
 
 
 def createScene(rootNode):
-    rootNode.addObject(
-        'RequiredPlugin', pluginName=pluginList, printLog='0')
+
+    rootNode.addObject('RequiredPlugin', name='plugins', pluginName=[pluginList])
 
     rootNode.addObject('VisualStyle', displayFlags='showVisualModels showBehaviorModels hideCollisionModels '
                                                    'hideBoundingCollisionModels hideForceFields '
                                                    'hideInteractionForceFields hideWireframe showMechanicalMappings')
-    rootNode.addObject('DefaultPipeline')
+    rootNode.addObject('CollisionPipeline')
     rootNode.addObject("DefaultVisualManagerLoop")
     rootNode.addObject('RuleBasedContactManager',
                        responseParams='mu=0.1', response='FrictionContactConstraint')
@@ -54,8 +54,7 @@ def createScene(rootNode):
     solverNode = rootNode.addChild('solverNode')
     solverNode.addObject('EulerImplicitSolver',
                          rayleighStiffness=PhysicsParams.rayleighStiffness)
-    solverNode.addObject('SparseLDLSolver', name='solver',
-                         template="CompressedRowSparseMatrixd")
+    solverNode.addObject('SparseLDLSolver', name='solver', template="CompressedRowSparseMatrixd")
     solverNode.addObject('GenericConstraintCorrection')
 
     needle = solverNode.addChild(

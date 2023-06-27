@@ -124,6 +124,7 @@ endif()
 
 #add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src/CosseratPlugin/Binding)
 
+
 ## Install rules for the library and headers; CMake package configurations files
 sofa_create_package_with_targets(
     PACKAGE_NAME ${PROJECT_NAME}
@@ -131,8 +132,10 @@ sofa_create_package_with_targets(
     TARGETS ${PROJECT_NAME} AUTO_SET_TARGET_PROPERTIES
     INCLUDE_SOURCE_DIR "src"
     INCLUDE_INSTALL_DIR ${PROJECT_NAME}
+    EXAMPLE_INSTALL_DIR "examples"
     RELOCATABLE "plugins"
     )
+
 
 # Tests
 # If SOFA_BUILD_TESTS exists and is OFF, then these tests will be auto-disabled
@@ -140,5 +143,8 @@ cmake_dependent_option(COSSERATPLUGIN_BUILD_TESTS "Compile the tests" ON "SOFA_B
 if(COSSERATPLUGIN_BUILD_TESTS)
     add_subdirectory(Tests)
 endif()
+
+# Config files and install rules for pythons scripts
+sofa_install_pythonscripts(PLUGIN_NAME ${PROJECT_NAME} PYTHONSCRIPTS_SOURCE_DIR "examples/python3/")
 
 include(cmake/packaging.cmake)
