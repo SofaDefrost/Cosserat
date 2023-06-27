@@ -8,9 +8,8 @@ import Sofa
 
 import numpy as np
 import Sofa.CosseratPlugin
-from params import ConstraintsParams
-from cosserat.utils import computeDistanceBetweenPoints
-import params
+from cosserat.needle.params import ConstraintsParams
+from cosserat.utils import computePositiveAlongXDistanceBetweenPoints, computeNegativeAlongXDistanceBetweenPoints
 
 
 class Animation(Sofa.Core.Controller):
@@ -60,25 +59,34 @@ class Animation(Sofa.Core.Controller):
                 self.inside = True
 
             elif self.tipForce[0] > self.threshold:
-                print(
-                    "Please activate computeConstraintForces data field inside the GenericConstraint component")
-            # 5. todo: If the user is pulling out the needle and the needle tip is behind the entryPoint,
-            # 5. todo: call the remove constraint function to remove those constraint points
-            # todo: this can be handle with :
-            # todo: 5.1 self.inside=False
-            # todo: 5.2 self.needleCollisionModel.findData('activated').value = 1
+                print("Please activate computeConstraintForces data field inside the GenericConstraint component")
+
         else:
             if self.inside:
                 # @info 1. check if the needle reached the distance to create/remove a constraint point
                 slidingPos = self.needleSlidingState.position.array()
                 constraintPos = self.constraintPts.position.array()
                 
-                if computeDistanceBetweenPoints(slidingPos, constraintPos) > \
-                        params.ConstraintsParams.constraintDistance:
+                # Add constraint point when going forwards
+                if computePositiveAlongXDistanceBetweenPoints(slidingPos, constraintPos) > ConstraintsParams.constraintDistance:
                     self.pointManager.addNewPointToState()
+
+                # Going backwards ...
+                elif computeNegativeAlongXDistanceBetweenPoints(slidingPos, constraintPos) > 0:
+
+                    # If last constraint, remove the entry point and get out from the gel
+                    if len(constraintPos) == 1 :
+                        self.inside=False
+                        self.needleCollisionModel.findData('activated').value = True
+                        self.generic.computeConstraintForces.value = True
+                        self.tipForce = [0., 0., 0]
+                        self.pointManager.removeLastPointfromState()
+
+                    # Remove previous constraint point when going backwards
+                    elif computeNegativeAlongXDistanceBetweenPoints(slidingPos, constraintPos) > ConstraintsParams.constraintDistance:
+                        self.pointManager.removeLastPointfromState()
                 else:
                     pass
-                    # print("=====> The distance between the tip and the last constraint is < constraint Distance <=====")
 
     def onKeypressedEvent(self, event):
         key = event['key']

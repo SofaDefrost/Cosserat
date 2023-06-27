@@ -26,7 +26,7 @@ initialStrain = [[0., 0., 0], [0., 0., 0], [0., 0., 0], [0., 0., 0], [0., 0., 0]
 
 YM = 4.015e8
 rayleighStiffness = 0.2  # Nope
-forceCoeff = 0.
+forceCoeff = 1.
 F1 = [0., 0, 0., 0., 0., 0.]  # Nope
 Rb = 0.0176/2.  # @todo ==> beam radius in m
 length = 20.  # @todo ==> beam length in m
@@ -91,27 +91,18 @@ class ForceController(Sofa.Core.Controller):
 
 
 def createScene(rootNode):
-    rootNode.addObject('RequiredPlugin', name='plugins', pluginName=[pluginList,
-                                                                     ['SofaEngine', 'SofaLoader', 'SofaSimpleFem',
-                                                                      'SofaExporter']])
+    rootNode.addObject('RequiredPlugin', name='plugins', pluginName=[pluginList])
     rootNode.addObject('VisualStyle', displayFlags='showVisualModels showBehaviorModels hideCollisionModels '
                                                    'hideBoundingCollisionModels hideForceFields '
                                                    'hideInteractionForceFields hideWireframe showMechanicalMappings')
-    rootNode.findData('dt').value = 0.02
-    rootNode.findData('gravity').value = [0., 0., 0.]
+    rootNode.dt.value = 0.02
+    rootNode.gravity.value = [0., 0., 0.]
     rootNode.addObject('BackgroundSetting', color='1 1 1')
-    # rootNode.addObject('FreeMotionAnimationLoop')
-    # rootNode.addObject('GenericConstraintSolver', tolerance=1e-5, maxIterations=5e2)
-    # rootNode.addObject('Camera', position="-35 0 280", lookAt="0 0 0")
 
     solverNode = rootNode.addChild('solverNode')
-    # solverNode.addObject('EulerImplicitSolver', rayleighStiffness="0.", rayleighMass='0.')
     solverNode.addObject('EulerImplicitSolver', rayleighStiffness=0, rayleighMass='0.',
                          firstOrder=firstOrder)
     solverNode.addObject('SparseLDLSolver', name='solver', template="CompressedRowSparseMatrixd")
-    # solverNode.addObject('EigenSimplicialLDLT', name='solver', template="CompressedRowSparseMatrixMat3x3d" )
-
-    # solverNode.addObject('CGLinearSolver', tolerance=1.e-12, iterations=1000, threshold=1.e-18)
 
     needCollisionModel = 0  # use this if the collision model if the beam will interact with another object
     nonLinearCosserat = solverNode.addChild(
