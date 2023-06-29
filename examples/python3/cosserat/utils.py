@@ -61,3 +61,24 @@ def computeDistanceBetweenPoints(constraintPointPos, slidingPointPos):
     else:
         # print("No constraint points yet")
         return 0
+
+def computePositiveAlongXDistanceBetweenPoints(constraintPointPos, slidingPointPos):
+    if len(constraintPointPos) != 0:
+        if constraintPointPos[-1][0] > slidingPointPos[-1][0]:
+            return np.linalg.norm(constraintPointPos[-1] - slidingPointPos[-1])
+        else:
+            return 0
+    else:
+        # print("No constraint points yet")
+        return 0
+
+
+def computeNegativeAlongXDistanceBetweenPoints(constraintPointPos, slidingPointPos):
+    if len(constraintPointPos) != 0:
+        if constraintPointPos[-1][0] < slidingPointPos[-1][0]:
+            return np.linalg.norm(constraintPointPos[-1] - slidingPointPos[-1])
+        else:
+            return 0
+    else:
+        # print("No constraint points yet")
+        return 0

@@ -556,6 +556,8 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::draw(const core::visual::VisualP
     // draw cable
     typedef RGBAColor RGBAColor;
 
+    const auto stateLifeCycle = vparams->drawTool()->makeStateLifeCycle();
+
     const OutDataVecCoord* xfromData = m_toModel->read(core::ConstVecCoordId::position());
     const OutVecCoord xData = xfromData->getValue();
     type::vector<type::Vec3> positions;

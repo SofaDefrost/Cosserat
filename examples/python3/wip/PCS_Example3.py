@@ -69,34 +69,24 @@ class ForceController(Sofa.Core.Controller):
 
 
 def createScene(rootNode):
-    rootNode.addObject('RequiredPlugin', name='plugins', pluginName=[pluginList,
-                                                                     ['SofaEngine', 'SofaLoader', 'SofaSimpleFem',
-                                                                      'SofaExporter']])
+    rootNode.addObject('RequiredPlugin', name='plugins', pluginName=[pluginList])
     rootNode.addObject('VisualStyle', displayFlags='showVisualModels showBehaviorModels hideCollisionModels '
                                                    'hideBoundingCollisionModels hideForceFields '
                                                    'hideInteractionForceFields hideWireframe')
-    rootNode.findData('dt').value = 0.02
-    # rootNode.findData('gravity').value = [0., -9.81, 0.]
-    rootNode.findData('gravity').value = [0., 0., 0.]
+    rootNode.dt.value = 0.02
+    rootNode.gravity.value = [0., 0., 0.]
     rootNode.addObject('BackgroundSetting', color='0 0.168627 0.211765')
-    # rootNode.addObject('FreeMotionAnimationLoop')
-    # rootNode.addObject('GenericConstraintSolver', tolerance=1e-5, maxIterations=5e2)
     rootNode.addObject('Camera', position="-35 0 280", lookAt="0 0 0")
+    rootNode.addObject('DefaultAnimationLoop')
 
     solverNode = rootNode.addChild('solverNode')
     solverNode.addObject('EulerImplicitSolver',
                          rayleighStiffness="0.2", rayleighMass='0.')
-    # solverNode.addObject('SparseLDLSolver', name='solver', template="CompressedRowSparseMatrixd")
     solverNode.addObject('EigenSimplicialLDLT', name='solver',
                          template="CompressedRowSparseMatrixMat3x3d")
 
-    # solverNode.addObject('CGLinearSolver', tolerance=1.e-12, iterations=1000, threshold=1.e-18)
-
     # use this if the collision model if the beam will interact with another object
     needCollisionModel = 0
-    # PCS_Cosserat = solverNode.addChild(
-    #     Cosserat(parent=solverNode, cosseratGeometry=nonLinearConfig, useCollisionModel=needCollisionModel,
-    #              inertialParams=inertialParams, name="cosserat", radius=Rb, youngModulus=YM))
     PCS_Cosserat = solverNode.addChild(
         Cosserat(parent=solverNode, cosseratGeometry=nonLinearConfig, useCollisionModel=needCollisionModel,
                  inertialParams=inertialParams, name="cosserat", radius=Rb, youngModulus=YM))
@@ -109,15 +99,6 @@ def createScene(rootNode):
     nonLinearCosserat = solverNode.addObject(
         ForceController(parent=solverNode, cosseratFrames=beamFrame.FramesMO, forceNode=constForce))
 
-    # # solverNode2 = rootNode.addChild('solverNode2')
-    # # solverNode2.addObject('EulerImplicitSolver', rayleighStiffness="0.2", rayleighMass='0.1')
-    # # solverNode2.addObject('SparseLDLSolver', name='solver', template="CompressedRowSparseMatrixd")
-    # # solverNode2.addObject('GenericConstraintCorrection')
-    # # cosserat2 = solverNode2.addChild(Cosserat(parent=solverNode2, cosseratGeometry=linearConfig,
-    # #                                           useCollisionModel=needCollisionModel, name="cosserat2", radius=0.1))
-    #
-    # beamFrame2 = cosserat2.cosseratFrame
-    # beamFrame2.addObject('ConstantForceField', name='constForce', showArrowSize=0, indices=12,
-    #                      force=[0., 0., 0., 0., 450., 0.])
+    # ----------------
 
     return rootNode
