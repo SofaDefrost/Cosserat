@@ -269,9 +269,9 @@ public:
 };
 
 
-#if !defined(SOFA_COSSERATPLUGIN_CPP_BaseCosserat)
-extern template class SOFA_COSSERATPLUGIN_API BaseCosserat< sofa::defaulttype::Vec3Types, sofa::defaulttype::Vec3Types, sofa::defaulttype::Vec3Types >;
-extern template class SOFA_COSSERATPLUGIN_API BaseCosserat< sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types >;
+#if !defined(SOFA_COSSERAT_CPP_BaseCosserat)
+extern template class SOFA_COSSERAT_API BaseCosserat< sofa::defaulttype::Vec3Types, sofa::defaulttype::Vec3Types, sofa::defaulttype::Vec3Types >;
+extern template class SOFA_COSSERAT_API BaseCosserat< sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types >;
 #endif
 
 } // namespace sofa

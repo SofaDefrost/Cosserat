@@ -19,7 +19,7 @@
 *                                                                             *
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
-#define SOFA_COSSERATPLUGIN_CPP_DiscreteDynamicCosseratMapping
+#define SOFA_COSSERAT_CPP_DiscreteDynamicCosseratMapping
 #include "DiscreteDynamicCosseratMapping.inl"
 
 #include <sofa/defaulttype/VecTypes.h>
@@ -36,6 +36,6 @@ int DiscretDynamicCosseratMappingClass = core::RegisterObject("Set the positions
         .add< DiscreteDynamicCosseratMapping< sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types > >() ;
 
 
-template class SOFA_COSSERATPLUGIN_API DiscreteDynamicCosseratMapping< sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types >;
+template class SOFA_COSSERAT_API DiscreteDynamicCosseratMapping< sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types >;
 
 } // namespace sofa::component::mapping

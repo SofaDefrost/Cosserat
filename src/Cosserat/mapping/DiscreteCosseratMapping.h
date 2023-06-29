@@ -183,8 +183,8 @@ protected:
 
 };
 
-#if !defined(SOFA_COSSERATPLUGIN_CPP_DiscreteCosseratMapping)
-extern template class SOFA_COSSERATPLUGIN_API DiscreteCosseratMapping< sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types >;
+#if !defined(SOFA_COSSERAT_CPP_DiscreteCosseratMapping)
+extern template class SOFA_COSSERAT_API DiscreteCosseratMapping< sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types >;
 #endif
 
 } // namespace sofa::component::mapping

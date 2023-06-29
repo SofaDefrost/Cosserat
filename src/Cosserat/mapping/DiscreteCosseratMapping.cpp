@@ -19,7 +19,7 @@
 *                                                                             *
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
-#define SOFA_COSSERATPLUGIN_CPP_DiscreteCosseratMapping
+#define SOFA_COSSERAT_CPP_DiscreteCosseratMapping
 #include "DiscreteCosseratMapping.inl"
 
 #include <sofa/defaulttype/VecTypes.h>
@@ -34,6 +34,6 @@ using namespace sofa::defaulttype;
 int DiscreteCosseratMappingClass = core::RegisterObject("Set the positions and velocities of points attached to a rigid parent")
         .add< DiscreteCosseratMapping< sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types > >(true) ;
 
-template class SOFA_COSSERATPLUGIN_API DiscreteCosseratMapping< sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types >;
+template class SOFA_COSSERAT_API DiscreteCosseratMapping< sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types >;
 
 } // namespace sofa::component::mapping

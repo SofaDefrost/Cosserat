@@ -186,8 +186,8 @@ public:
 
 };
 
-#if !defined(SOFA_COSSERATPLUGIN_CPP_DiscreteDynamicCosseratMapping)
-extern template class SOFA_COSSERATPLUGIN_API DiscreteDynamicCosseratMapping< sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types >;
+#if !defined(SOFA_COSSERAT_CPP_DiscreteDynamicCosseratMapping)
+extern template class SOFA_COSSERAT_API DiscreteDynamicCosseratMapping< sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types >;
 #endif
 
 } // namespace sofa::componenet::mapping

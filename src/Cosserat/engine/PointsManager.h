@@ -20,7 +20,7 @@ typedef sofa::component::topology::container::dynamic::PointSetTopologyModifier 
 using sofa::core::objectmodel::KeypressedEvent;
 namespace sofa::core::behavior
 {
-    class SOFA_COSSERATPLUGIN_API PointsManager : public sofa::core::objectmodel::BaseObject
+    class SOFA_COSSERAT_API PointsManager : public sofa::core::objectmodel::BaseObject
     {
 
     public:

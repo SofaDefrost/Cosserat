@@ -27,18 +27,18 @@
 * Contact information: https://project.inria.fr/softrobot/contact/            *
 *                                                                             *
 ******************************************************************************/
-#ifndef SOFA_COSSERATPLUGIN_INIT_H
-#define SOFA_COSSERATPLUGIN_INIT_H
+#ifndef SOFA_COSSERAT_INIT_H
+#define SOFA_COSSERAT_INIT_H
 
 #include <sofa/helper/config.h>
 
-#define COSSERATPLUGIN_VERSION @PROJECT_VERSION@
+#define COSSERAT_VERSION @PROJECT_VERSION@
 
-#ifdef SOFA_BUILD_COSSERATPLUGIN
+#ifdef SOFA_BUILD_COSSERAT
 #define SOFA_TARGET @PROJECT_NAME@
-#define SOFA_COSSERATPLUGIN_API SOFA_EXPORT_DYNAMIC_LIBRARY
+#define SOFA_COSSERAT_API SOFA_EXPORT_DYNAMIC_LIBRARY
 #else
-#  define SOFA_COSSERATPLUGIN_API SOFA_IMPORT_DYNAMIC_LIBRARY
+#  define SOFA_COSSERAT_API SOFA_IMPORT_DYNAMIC_LIBRARY
 #endif
 
 //#cmakedefine COSSERAT_PYTHON
@@ -47,4 +47,4 @@
   This is the plugin for the Discret Cosserat Plugin
   */
 
-#endif /* SOFA_COSSERATPLUGIN_INIT_H */
+#endif /* SOFA_COSSERAT_INIT_H */

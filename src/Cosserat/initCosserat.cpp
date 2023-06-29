@@ -37,12 +37,12 @@ namespace sofa::component
 {
 
 extern "C" {
-SOFA_COSSERATPLUGIN_API void initExternalModule();
-SOFA_COSSERATPLUGIN_API const char* getModuleLicense();
-SOFA_COSSERATPLUGIN_API const char* getModuleName();
-SOFA_COSSERATPLUGIN_API const char* getModuleVersion();
-SOFA_COSSERATPLUGIN_API const char* getModuleDescription();
-SOFA_COSSERATPLUGIN_API const char* getModuleComponentList();
+SOFA_COSSERAT_API void initExternalModule();
+SOFA_COSSERAT_API const char* getModuleLicense();
+SOFA_COSSERAT_API const char* getModuleName();
+SOFA_COSSERAT_API const char* getModuleVersion();
+SOFA_COSSERAT_API const char* getModuleDescription();
+SOFA_COSSERAT_API const char* getModuleComponentList();
 }
 
 //Here are just several convenient functions to help user to know what contains the plugin
@@ -76,7 +76,7 @@ const char* getModuleName()
 
 const char* getModuleVersion()
 {
-    return sofa_tostring(COSSERATPLUGIN_VERSION);
+    return sofa_tostring(COSSERAT_VERSION);
 }
 
 const char* getModuleDescription()

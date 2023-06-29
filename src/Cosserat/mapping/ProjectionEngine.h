@@ -19,8 +19,8 @@
 *                                                                             *
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
-#ifndef COSSERATPLUGIN_ProjectionEngine_H
-#define COSSERATPLUGIN_ProjectionEngine_H
+#ifndef COSSERAT_ProjectionEngine_H
+#define COSSERAT_ProjectionEngine_H
 
 #include <CosseratPlugin/config.h>
 
@@ -124,7 +124,7 @@ private:
 
 };
 
-//#if !defined(SOFA_COSSERATPLUGIN_CPP_ProjectionEngine)
+//#if !defined(SOFA_COSSERAT_CPP_ProjectionEngine)
 //extern template class SOFA_CONSTRAINT_API ProjectionEngine< sofa::defaulttype::Vec3Types >;
 
 //#endif
@@ -135,4 +135,4 @@ private:
 
 } // namespace sofa
 
-#endif // COSSERATPLUGIN_ProjectionEngine_H
+#endif // COSSERAT_ProjectionEngine_H

@@ -19,7 +19,7 @@
 *                                                                             *
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
-#define SOFA_COSSERATPLUGIN_CPP_CosseratSlidingConstraint
+#define SOFA_COSSERAT_CPP_CosseratSlidingConstraint
 #include "CosseratSlidingConstraint.inl"
 
 #include <sofa/defaulttype/VecTypes.h>
