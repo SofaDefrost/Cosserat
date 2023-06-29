@@ -122,7 +122,6 @@ if(SofaPython3Tools OR SofaPython3_FOUND)
     add_subdirectory(${SRC_ROOT_DIR}/Binding)
 endif()
 
-#add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src/Cosserat/Binding)
 
 
 ## Install rules for the library and headers; CMake package configurations files
