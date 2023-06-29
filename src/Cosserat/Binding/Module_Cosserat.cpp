@@ -27,7 +27,7 @@ namespace py { using namespace pybind11; }
 namespace sofapython3
 {
 
-PYBIND11_MODULE(CosseratPlugin, m)
+PYBIND11_MODULE(Cosserat, m)
 {
     moduleAddPointsManager(m);
 }

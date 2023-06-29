@@ -24,7 +24,7 @@
 *                                                                             *
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
-#include <CosseratPlugin/config.h>
+#include <Cosserat/config.h>
 
 #include <sofa/core/ObjectFactory.h>
 #include <sofa/helper/system/PluginManager.h>
@@ -61,7 +61,7 @@ void initExternalModule()
     }
     
 #ifdef SOFTROBOTS_PYTHON
-    PythonEnvironment::addPythonModulePathsForPluginsByName("CosseratPlugin");
+    PythonEnvironment::addPythonModulePathsForPluginsByName("Cosserat");
 #endif
 }
 const char* getModuleLicense()

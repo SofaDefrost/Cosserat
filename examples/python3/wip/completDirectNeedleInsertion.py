@@ -22,7 +22,7 @@ from usefulFunctions import BuildCosseratGeometry, AddPointProcess
 
 pluginNameList = 'SofaConstraint SofaDeformable SofaImplicitOdeSolver SofaMeshCollision SofaPreconditioner' \
                  ' SofaGeneralTopology SofaOpenglVisual SofaGeneralRigid SoftRobots SofaSparseSolver' \
-                 ' CosseratPlugin SofaBoundaryCondition'
+                 ' Cosserat SofaBoundaryCondition'
 
 
 class Animation(Sofa.Core.Controller):

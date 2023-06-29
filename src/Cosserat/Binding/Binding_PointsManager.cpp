@@ -22,7 +22,7 @@
 #include <SofaPython3/Sofa/Core/Binding_BaseContext.h>
 #include "Binding_PointsManager.h"
 #include <pybind11/stl.h>
-#include <CosseratPlugin/engine/PointsManager.h>
+#include <Cosserat/engine/PointsManager.h>
 
 typedef sofa::core::behavior::PointsManager PointsManager;
 

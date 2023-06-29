@@ -1,7 +1,7 @@
 project(CosseratBindings)
 
 set(SOURCE_FILES
-    ${CMAKE_CURRENT_SOURCE_DIR}/Module_CosseratPlugin.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Module_Cosserat.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Binding_PointsManager.cpp
 )
 
@@ -18,11 +18,11 @@ sofa_find_package(Sofa.GL QUIET)
 SP3_add_python_module(
     TARGET       ${PROJECT_NAME}
     PACKAGE      Bindings
-    MODULE       CosseratPlugin
+    MODULE       Cosserat
     DESTINATION  Sofa
     SOURCES      ${SOURCE_FILES}
     HEADERS      ${HEADER_FILES}
-    DEPENDS      SofaPython3::Plugin SofaPython3::Bindings.Sofa Sofa.GL CosseratPlugin
+    DEPENDS      SofaPython3::Plugin SofaPython3::Bindings.Sofa Sofa.GL Cosserat
 
 )
-message("-- SofaPython3 bindings for CosseratPlugin will be created.")
+message("-- SofaPython3 bindings for Cosserat will be created.")
