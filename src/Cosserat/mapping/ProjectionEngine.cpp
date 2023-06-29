@@ -19,7 +19,7 @@
 *                                                                             *
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
-#define SOFA_COSSERATPLUGIN_CPP_ProjectionEngine
+#define SOFA_COSSERAT_CPP_ProjectionEngine
 #include "ProjectionEngine.inl"
 
 #include <sofa/defaulttype/VecTypes.h>

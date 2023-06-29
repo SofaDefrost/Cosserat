@@ -19,7 +19,7 @@
 *                                                                             *
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
-#define SOFA_COSSERATPLUGIN_CPP_DifferenceMultiMapping
+#define SOFA_COSSERAT_CPP_DifferenceMultiMapping
 #include "DifferenceMultiMapping.inl"
 
 #include <sofa/defaulttype/VecTypes.h>

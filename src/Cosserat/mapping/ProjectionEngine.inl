@@ -19,8 +19,8 @@
 *                                                                             *
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
-#ifndef COSSERATPLUGIN_ProjectionEngine_INL
-#define COSSERATPLUGIN_ProjectionEngine_INL
+#ifndef COSSERAT_ProjectionEngine_INL
+#define COSSERAT_ProjectionEngine_INL
 
 #include "ProjectionEngine.h"
 

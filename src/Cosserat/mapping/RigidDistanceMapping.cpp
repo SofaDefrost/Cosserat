@@ -35,6 +35,6 @@ int RigidDistanceMappingClass = core::RegisterObject("Set the positions and velo
         .add< RigidDistanceMapping< sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types > >() ;
 
 
-template class SOFA_COSSERATPLUGIN_API RigidDistanceMapping< sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types >;
+template class SOFA_COSSERAT_API RigidDistanceMapping< sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types >;
 
 } // namespace sofa.

@@ -27,7 +27,7 @@
 * Contact information: https://project.inria.fr/softrobot/contact/            *
 *                                                                             *
 ******************************************************************************/
-#define SOFA_COSSERATPLUGIN_CPP_CosseratInternalActuation
+#define SOFA_COSSERAT_CPP_CosseratInternalActuation
 #include "CosseratInternalActuation.inl"
 
 #include <sofa/core/ObjectFactory.h>

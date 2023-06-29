@@ -19,7 +19,7 @@
 *                                                                             *
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
-#define SOFA_COSSERATPLUGIN_CPP_BaseCosserat
+#define SOFA_COSSERAT_CPP_BaseCosserat
 #include "BaseCosserat.inl"
 
 #include <sofa/defaulttype/VecTypes.h>
@@ -39,7 +39,7 @@ int BaseCosseratClass = core::RegisterObject("Set the positions and velocities o
 ;
 
 
-template class SOFA_COSSERATPLUGIN_API BaseCosserat< sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types >;
-template class SOFA_COSSERATPLUGIN_API BaseCosserat< sofa::defaulttype::Vec3Types, sofa::defaulttype::Vec3Types, sofa::defaulttype::Vec3Types >;
+template class SOFA_COSSERAT_API BaseCosserat< sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types >;
+template class SOFA_COSSERAT_API BaseCosserat< sofa::defaulttype::Vec3Types, sofa::defaulttype::Vec3Types, sofa::defaulttype::Vec3Types >;
 
 } // namespace sofa.
