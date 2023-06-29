@@ -30,7 +30,7 @@
 #ifndef SOFA_COSSERAT_INIT_H
 #define SOFA_COSSERAT_INIT_H
 
-#include <sofa/helper/config.h>
+#include <sofa/config.h>
 
 #define COSSERAT_VERSION @PROJECT_VERSION@
 
@@ -41,10 +41,15 @@
 #  define SOFA_COSSERAT_API SOFA_IMPORT_DYNAMIC_LIBRARY
 #endif
 
-//#cmakedefine COSSERAT_PYTHON
 
 /** \mainpage
   This is the plugin for the Discret Cosserat Plugin
-  */
+*/
+
+namespace cosserat
+{
+    constexpr const char* MODULE_NAME = "@PROJECT_NAME@";
+    constexpr const char* MODULE_VERSION = "@PROJECT_VERSION@";
+}
 
 #endif /* SOFA_COSSERAT_INIT_H */
