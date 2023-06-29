@@ -20,10 +20,10 @@
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
 #pragma once
-#include <CosseratPlugin/config.h>
+#include <Cosserat/config.h>
 
-#include <CosseratPlugin/mapping/BaseCosserat.h>
-#include <CosseratPlugin/forcefield/BeamHookeLawForceField.h>
+#include <Cosserat/mapping/BaseCosserat.h>
+#include <Cosserat/forcefield/BeamHookeLawForceField.h>
 
 #include <sofa/core/BaseMapping.h>
 #include <sofa/core/config.h>

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <CosseratPlugin/config.h>
+#include <Cosserat/config.h>
 #include <sofa/defaulttype/VecTypes.h>
 #include <sofa/core/objectmodel/KeypressedEvent.h>
 #include <sofa/defaulttype/SolidTypes.h>

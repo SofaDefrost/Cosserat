@@ -1,6 +1,6 @@
 import Sofa
 import Sofa.Core
-import Sofa.CosseratPlugin
+import Sofa.Cosserat
 import numpy as np
 from cosserat.cosseratObject import Cosserat, cosserat_config
 

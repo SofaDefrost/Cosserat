@@ -20,9 +20,9 @@
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
 #pragma once
-#include <CosseratPlugin/config.h>
+#include <Cosserat/config.h>
 
-#include <CosseratPlugin/mapping/BaseCosserat.h>
+#include <Cosserat/mapping/BaseCosserat.h>
 
 #include <sofa/core/BaseMapping.h>
 #include <sofa/core/Multi2Mapping.h>

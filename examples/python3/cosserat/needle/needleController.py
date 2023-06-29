@@ -7,7 +7,7 @@ __date__ = "March 8 2021"
 import Sofa
 
 import numpy as np
-import Sofa.CosseratPlugin
+import Sofa.Cosserat
 from cosserat.needle.params import ConstraintsParams
 from cosserat.utils import computePositiveAlongXDistanceBetweenPoints, computeNegativeAlongXDistanceBetweenPoints
 
