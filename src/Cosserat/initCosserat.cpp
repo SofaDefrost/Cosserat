@@ -71,12 +71,12 @@ const char* getModuleLicense()
 
 const char* getModuleName()
 {
-    return sofa_tostring(SOFA_TARGET);
+    return MODULE_NAME;
 }
 
 const char* getModuleVersion()
 {
-    return sofa_tostring(COSSERAT_VERSION);
+    return MODULE_VERSION;
 }
 
 const char* getModuleDescription()
