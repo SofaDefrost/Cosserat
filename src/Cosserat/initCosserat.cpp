@@ -71,12 +71,12 @@ const char* getModuleLicense()
 
 const char* getModuleName()
 {
-    return MODULE_NAME;
+    return cosserat::MODULE_NAME;
 }
 
 const char* getModuleVersion()
 {
-    return MODULE_VERSION;
+    return cosserat::MODULE_VERSION;
 }
 
 const char* getModuleDescription()
