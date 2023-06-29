@@ -84,7 +84,7 @@ namespace sofa::core::behavior
             Indices.push_back(nbPoints - 1);
             m_modifier->removePoints(Indices, true);
             x.resize(nbPoints - 1);
-            std::cout << "the size is equal :" << nbPoints << std::endl;
+            msg_info() << "the size is equal :" << nbPoints;
             xfree.resize(nbPoints - 1);
         }
         else
