@@ -2,7 +2,7 @@
 // Created by younes on 07/06/2021.
 //
 
-#include <CosseratPlugin/config.h>
+#include <Cosserat/config.h>
 
 #include <gtest/gtest.h>
 #include <sofa/testing/BaseTest.h>
@@ -18,7 +18,7 @@
 #include <sofa/core/behavior/ForceField.inl>
 #include <sofa/helper/system/PluginManager.h>
 
-#include <CosseratPlugin/forcefield/BeamHookeLawForceField.inl>
+#include <Cosserat/forcefield/BeamHookeLawForceField.inl>
 #include <sofa/testing/NumericTest.h>
 
 using sofa::testing::BaseTest ;
@@ -45,7 +45,7 @@ struct BeamHookeLawForceFieldTest : public testing::NumericTest<> {
         // initialization or some code to run before each test
         fprintf(stderr, "Starting up ! \n");
         sofa::simpleapi::importPlugin("Sofa.Component");
-        sofa::simpleapi::importPlugin("CosseratPlugin");
+        sofa::simpleapi::importPlugin("Cosserat");
 
         //create the context for
         if(simulation==nullptr)

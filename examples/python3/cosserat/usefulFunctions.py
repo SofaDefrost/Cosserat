@@ -29,7 +29,7 @@ rateLength = [1.2, 0.5, 0.7, 0.5, 0.7, 0.5, 0.7, 0.5, 0.7, 0.5, 0.7, 0.5, 0.7, 0
 draw_cylinder = 1
 add_collision_point = 1
 
-pluginList = ['CosseratPlugin',
+pluginList = ['Cosserat',
               'Sofa.Component.AnimationLoop',
               'Sofa.Component.LinearSolver.Iterative', 'Sofa.Component.LinearSolver.Direct', 'Sofa.Component.StateContainer',
               'Sofa.Component.SolidMechanics.FEM.Elastic', 'Sofa.Component.SolidMechanics.Spring', 'Sofa.Component.MechanicalLoad', 'Sofa.Component.Mass',
