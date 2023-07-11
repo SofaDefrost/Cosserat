@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.12)
-project(CosseratPlugin VERSION 21.12.0)
+project(Cosserat VERSION 21.12.0)
 
 include(cmake/environment.cmake)
 
@@ -47,7 +47,7 @@ set(HEADER_FILES
     ${SRC_ROOT_DIR}/constraint/CosseratNeedleSlidingConstraint.inl
     )
 set(SOURCE_FILES
-    ${SRC_ROOT_DIR}/initCosseratPlugin.cpp
+    ${SRC_ROOT_DIR}/initCosserat.cpp
     ${SRC_ROOT_DIR}/mapping/BaseCosserat.cpp
     ${SRC_ROOT_DIR}/mapping/DiscreteCosseratMapping.cpp
     ${SRC_ROOT_DIR}/mapping/DiscreteDynamicCosseratMapping.cpp
@@ -122,7 +122,6 @@ if(SofaPython3Tools OR SofaPython3_FOUND)
     add_subdirectory(${SRC_ROOT_DIR}/Binding)
 endif()
 
-#add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src/CosseratPlugin/Binding)
 
 
 ## Install rules for the library and headers; CMake package configurations files
@@ -139,8 +138,8 @@ sofa_create_package_with_targets(
 
 # Tests
 # If SOFA_BUILD_TESTS exists and is OFF, then these tests will be auto-disabled
-cmake_dependent_option(COSSERATPLUGIN_BUILD_TESTS "Compile the tests" ON "SOFA_BUILD_TESTS OR NOT DEFINED SOFA_BUILD_TESTS" OFF)
-if(COSSERATPLUGIN_BUILD_TESTS)
+cmake_dependent_option(COSSERAT_BUILD_TESTS "Compile the tests" ON "SOFA_BUILD_TESTS OR NOT DEFINED SOFA_BUILD_TESTS" OFF)
+if(COSSERAT_BUILD_TESTS)
     add_subdirectory(Tests)
 endif()
 

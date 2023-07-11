@@ -13,7 +13,7 @@ target_link_libraries(${This} PUBLIC
         SofaTest 
         gtest 
         gtest_main 
-        CosseratPlugin
+        Cosserat
         Example
 )
 
