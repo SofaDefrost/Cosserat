@@ -3,33 +3,22 @@
     Cosserat class in SofaPython3.
 """
 
-__authors__ = "younesssss"
+__authors__ = "adagolodjo"
 __contact__ = "adagolodjo@protonmail.com"
 __version__ = "1.0.0"
 __copyright__ = "(c) 2021,Inria"
 __date__ = "October, 26 2021"
 
-# from dataclasses import dataclass
 import Sofa
 from cosserat.usefulFunctions import buildEdges, pluginList, BuildCosseratGeometry
-from splib3.numerics import Quat
 from cosserat.utils import addEdgeCollision, addPointsCollision
 
 cosserat_config = {'init_pos': [0., 0., 0.], 'tot_length': 6, 'nbSectionS': 6,
                    'nbFramesF': 12, 'buildCollisionModel': 1, 'beamMass': 0.22}
 
 
-# @dataclass
-
-
 class Cosserat(Sofa.Prefab):
-    """ActuatedArm is a reusable sofa model of a S90 servo motor and the tripod actuation arm.
-           Parameters:
-               -parent:        node where the ServoArm will be attached
-                - translation the position in space of the structure
-                - eulerRotation the orientation of the structure
-                - attachingTo (MechanicalObject)    a rest shape force field will constraint the object
-                                                 to follow arm position
+    """Cosserat beam prefab class. It is a prefab class that allow to create a cosserat beam in Sofa.
            Structure:
            Node : {
                 name : 'Cosserat'
@@ -76,7 +65,7 @@ class Cosserat(Sofa.Prefab):
         self.radius = kwargs.get('radius', )
 
         if self.parent.hasObject("EulerImplicitSolver") is False:
-            print('The code does not have parent EulerImplicite')
+            print('The code does not have parent EulerImplicit')
             self.solverNode = self.addSolverNode()
         else:
             self.solverNode = self.parent
@@ -86,11 +75,11 @@ class Cosserat(Sofa.Prefab):
             self.inertialParams = kwargs['inertialParams']
 
         self.rigidBaseNode = self.addRigidBaseNode()
-        [positionS, curv_abs_inputS, longeurS, framesF, curv_abs_outputF, self.frames3D] = \
+        [positionS, curv_abs_inputS, sectionsLength, framesF, curv_abs_outputF, self.frames3D] = \
             BuildCosseratGeometry(self.cosseratGeometry)
 
         self.cosseratCoordinateNode = self.addCosseratCoordinate(
-            positionS, longeurS)
+            positionS, sectionsLength)
         self.cosseratFrame = self.addCosseratFrame(
             framesF, curv_abs_inputS, curv_abs_outputF)
         # print(f'=== > {curv_abs_inputS}')
@@ -115,15 +104,16 @@ class Cosserat(Sofa.Prefab):
 
     def addSlidingPointsWithContainer(self):
         slidingPoint = self.cosseratFrame.addChild('slidingPoint')
-        container = slidingPoint.addObject("PointSetTopologyContainer")
-        modifier = slidingPoint.addObject("PointSetTopologyModifier")
+        slidingPoint.addObject("PointSetTopologyContainer")
+        slidingPoint.addObject("PointSetTopologyModifier")
         slidingPoint.addObject('MechanicalObject', name="slidingPointMO", position=self.frames3D,
                                showObject="1", showIndices="0")
         slidingPoint.addObject('IdentityMapping')
         return slidingPoint
 
     def addSolverNode(self):
-        solverNode = self.addChild('solverNode')
+        solverNode = self.parent
+        # solverNode = self.addChild('solverNode')
         solverNode.addObject('EulerImplicitSolver',
                              rayleighStiffness="0.2", rayleighMass='0.1')
         solverNode.addObject('SparseLDLSolver', name='solver',
@@ -166,16 +156,22 @@ class Cosserat(Sofa.Prefab):
                                              rayleighStiffness=self.rayleighStiffness.value,
                                              lengthY=self.length_Y.value, lengthZ=self.length_Z.value)
         else:
-            GA = self.inertialParams['GA']
-            GI = self.inertialParams['GI']
-            EA = self.inertialParams['EA']
-            EI = self.inertialParams['EI']
-            print(f'{GA}')
-            cosseratCoordinateNode.addObject('BeamHookeLawForceField', crossSectionShape=self.shape.value,
-                                             length=listOfSectionsLength, radius=self.radius.value, useInertiaParams=True,
-                                             GI=GI, GA=GA, EI=EI, EA=EA, rayleighStiffness=self.rayleighStiffness.value,
-                                             lengthY=self.length_Y.value, lengthZ=self.length_Z.value)
+            self._extracted_from_addCosseratCoordinate_15(
+                cosseratCoordinateNode, listOfSectionsLength
+            )
         return cosseratCoordinateNode
+
+    # TODO Rename this here and in `addCosseratCoordinate`
+    def _extracted_from_addCosseratCoordinate_15(self, cosseratCoordinateNode, listOfSectionsLength):
+        GA = self.inertialParams['GA']
+        GI = self.inertialParams['GI']
+        EA = self.inertialParams['EA']
+        EI = self.inertialParams['EI']
+        print(f'{GA}')
+        cosseratCoordinateNode.addObject('BeamHookeLawForceField', crossSectionShape=self.shape.value,
+                                         length=listOfSectionsLength, radius=self.radius.value, useInertiaParams=True,
+                                         GI=GI, GA=GA, EI=EI, EA=EA, rayleighStiffness=self.rayleighStiffness.value,
+                                         lengthY=self.length_Y.value, lengthZ=self.length_Z.value)
 
     def addCosseratFrame(self, framesF, curv_abs_inputS, curv_abs_outputF):
 
@@ -183,7 +179,7 @@ class Cosserat(Sofa.Prefab):
             'cosseratInSofaFrameNode')
         self.cosseratCoordinateNode.addChild(cosseratInSofaFrameNode)
         framesMO = cosseratInSofaFrameNode.addObject(
-            'MechanicalObject', template='Rigid3d', name="FramesMO", position=framesF, showObject=0, showObjectScale=0.1)
+            'MechanicalObject', template='Rigid3d', name="FramesMO", position=framesF, showObject=1, showObjectScale=0.1)
         if self.beamMass != 0.:
             cosseratInSofaFrameNode.addObject(
                 'UniformMass', totalMass=self.beamMass, showAxisSizeFactor='0')
@@ -222,10 +218,10 @@ def createScene(rootNode):
         Cosserat(parent=solverNode, cosseratGeometry=cosserat_config, name="cosserat", radius=0.15))
 
     # use this to add the collision if the beam will interact with another object
-    collisionModel = cosserat.addCollisionModel()
+    cosserat.addCollisionModel()
 
     # Attach a force at the beam tip,
-    # we can attach this force to non mechanical node thanks to the MechanicalMatrixMapper component
+    # we can attach this force to a non-mechanical node to control the beam in order to be able to drive it.
     beamFrame = cosserat.cosseratFrame
     beamFrame.addObject('ConstantForceField', name='constForce', showArrowSize=1.e-2, indices=12,
                         force=[0., -100., 0., 0., 0., 0.])
