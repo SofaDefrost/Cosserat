@@ -179,7 +179,7 @@ class Cosserat(Sofa.Prefab):
             'cosseratInSofaFrameNode')
         self.cosseratCoordinateNode.addChild(cosseratInSofaFrameNode)
         framesMO = cosseratInSofaFrameNode.addObject(
-            'MechanicalObject', template='Rigid3d', name="FramesMO", position=framesF, showObject=1, showObjectScale=0.1)
+            'MechanicalObject', template='Rigid3d', name="FramesMO", position=framesF, showObject=1, showObjectScale=0.001)
         if self.beamMass != 0.:
             cosseratInSofaFrameNode.addObject(
                 'UniformMass', totalMass=self.beamMass, showAxisSizeFactor='0')

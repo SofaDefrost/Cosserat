@@ -20,7 +20,6 @@ def addHeader(rootnode, multithreading=False, inverse=False, isConstrained=False
     """
     settings = rootnode.addChild('Settings')
     settings.addObject('RequiredPlugin', pluginName=[
-                        "ArticulatedSystemPlugin",
                         "Cosserat",   # Needed to use component RigidDistanceMapping
                         "Sofa.Component.AnimationLoop",  # Needed to use components FreeMotionAnimationLoop
                         "Sofa.Component.Collision.Detection.Algorithm",
@@ -34,7 +33,7 @@ def addHeader(rootnode, multithreading=False, inverse=False, isConstrained=False
                         "Sofa.Component.Setting",  # Needed to use components BackgroundSetting
                         "Sofa.Component.SolidMechanics.Spring",  # Needed to use components RestShapeSpringsForceField
                         "Sofa.Component.Topology.Container.Constant",  # Needed to use components MeshTopology
-                        "Sofa.Component.Topology.Container.Dynamic",
+                        "Sofa.Component.Topology.Container.Dynamic", "Sofa.Component.Playback",
                         # Needed to use components EdgeSetTopologyContainer, EdgeSetTopologyModifier,
                         # QuadSetTopologyContainer, QuadSetTopologyModifier
                         "Sofa.Component.Topology.Container.Grid",  # Needed to use components RegularGridTopology
@@ -46,8 +45,10 @@ def addHeader(rootnode, multithreading=False, inverse=False, isConstrained=False
     settings.addObject('BackgroundSetting', color=[1, 1, 1, 1])
     # settings.addObject('AttachBodyButtonSetting', stiffness=1e6)
 
+    rootnode.addObject('VisualStyle', displayFlags='showVisualModels showBehaviorModels showCollisionModels '
+                                                   'hideBoundingCollisionModels hideForceFields '
+                                                   'hideInteractionForceFields hideWireframe showMechanicalMappings')
     if isConstrained:
-        rootnode.addObject('VisualStyle')
         rootnode.addObject('CollisionPipeline')
         rootnode.addObject("DefaultVisualManagerLoop")
         rootnode.addObject('RuleBasedContactManager', responseParams='mu=0.8', response='FrictionContactConstraint')
