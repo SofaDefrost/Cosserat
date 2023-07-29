@@ -11,7 +11,7 @@ __copyright__ = "(c) 2021,Inria"
 __date__ = "July, 20 2023"
 
 from useful.header import addHeader
-from useful.params import CableGeometryParameters
+from useful.params import BeamGeometryParameters
 from cosserat.cosseratObject import Cosserat
 
 import os
@@ -19,11 +19,12 @@ from splib3.numerics.quat import Quat
 
 path = f'{os.path.dirname(os.path.abspath(__file__))}/mesh/'
 
-# @info Comme tu l'aura compris notre prototype est composé d'une colonne centrale (fils de fer tressés avec une gaine)
-# et de 13 disques en iglidur.
-#
-# "-La colonne mesure 65.5 cm pour un diamètre de 6.2mm"
-#
+"""  @info
+Comme tu l'aura compris notre prototype est composé d'une colonne centrale (fils de fer tressés avec une gaine)
+ et de 13 disques en iglidur.
+ 
+ -La colonne mesure 65.5 cm pour un diamètre de 6.2mm
+
 # -Les disques ont un diamètres de 5.2cm, une épaisseur de 2mm et une masse de 6.35g
 #
 # -Les disques sur la colonne sont espacés d'environ 4.7cm
@@ -42,7 +43,7 @@ path = f'{os.path.dirname(os.path.abspath(__file__))}/mesh/'
 # Les câbles ne sont déployés que sur leur propre section. Par exemple, les câbles qui fonctionnent sur la section 3
 # passent par les trous extérieurs sur cette section et par les trous intérieurs sur les sections 1 et 2.
 # [@info] ================ Unit: N, cm, g, Pa  ================
-
+"""
 
 YM = 1.0e8
 PR = 0.38
@@ -56,7 +57,7 @@ length = 65.5  # in cm
 Rb = 6.2e-1 / 2.  # beam radius in cm
 
 # @todo use CableGeometryParameters & CableParameters in Cosserat class for both geometry and physics parameters
-geoParams = CableGeometryParameters(init_pos=[0., 0., 0.], tot_length=length,
+geoParams = BeamGeometryParameters(init_pos=[0., 0., 0.], tot_length=length,
                                     nbSectionS=5, nbFramesF=30, buildCollisionModel=0, beamMass=1.)
 # inertialParams = CableParameters(youngModulus=YM, poissonRatio=PR, radius=Rb, density=7.850e3,
 # maxDisplacement=0.3, nbSections=20)
