@@ -18,4 +18,4 @@ Contents of the library
 
 """
 
-__all__ = ["utils","cosseratObject", "nonLinearCosserat", "createFemRegularGrid"]
+__all__ = ["utils","cosseratObject", "nonLinearCosserat", "createFemRegularGrid", "actuators"]

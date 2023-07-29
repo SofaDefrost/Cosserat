@@ -10,14 +10,34 @@ __copyright__ = "(c) 2021,Inria"
 __date__ = "October, 26 2021"
 
 import Sofa
-from cosserat.usefulFunctions import buildEdges, pluginList, BuildCosseratGeometry
+from cosserat.usefulFunctions import buildEdges, BuildCosseratGeometry
 from cosserat.utils import addEdgeCollision, addPointsCollision
+from useful.header import addHeader, addVisual, addSolverNode
 
 cosserat_config = {'init_pos': [0., 0., 0.], 'tot_length': 6, 'nbSectionS': 6,
                    'nbFramesF': 12, 'buildCollisionModel': 1, 'beamMass': 0.22}
 
-class Cosserat(Sofa.Prefab):
-    """Cosserat beam prefab class. It is a prefab class that allow to create a cosserat beam in Sofa.
+
+class CosseratClasse(Sofa.Prefab):
+
+    """
+        import Sofa.Core
+
+        class Foo(Sofa.Core.Prefab):
+            prefabParameters = [{ 'name': 'n', 'type': 'int', 'help': 'number of repetition, 'default': 1},
+                                {'name': 'message', 'type': 'string', 'help': 'message to display', 'default': ''}]
+
+            myAttribute = 0
+
+            def __init__(self, *a, *k):
+                Sofa.Prefab.__init__(self, *a, **k)
+
+            def init(self):
+                myAttribute += 1
+                for i in range(0, self.n.value):
+                    print(self.message.value)
+
+    Cosserat beam prefab class. It is a prefab class that allow to create a cosserat beam in Sofa.
            Structure:
            Node : {
                 name : 'Cosserat'
@@ -27,22 +47,20 @@ class Cosserat(Sofa.Prefab):
                     MechanicalObject     //  The child of the two precedent nodes, Rigid positions
                     Cosserat Mapping  //  it allow the transfer from the local to the global frame
             }
+
     """
     prefabParameters = [
-        {'name': 'name', 'type': 'string',
-            'help': 'Node name', 'default': 'Cosserat'},
+        {'name': 'name', 'type': 'string', 'help': 'Node name', 'default': 'Cosserat'},
         {'name': 'position', 'type': 'Rigid3d::VecCoord', 'help': 'Cosserat base position',
          'default': [[0., 0., 0., 0, 0, 0, 1.]]},
-        {'name': 'translation', 'type': 'Vec3d',
-            'help': 'Cosserat base Rotation', 'default': [0., 0., 0.]},
+        {'name': 'translation', 'type': 'Vec3d', 'help': 'Cosserat base Rotation', 'default': [0., 0., 0.]},
         {'name': 'rotation', 'type': 'Vec3d',
             'help': 'Cosserat base Rotation', 'default': [0., 0., 0.]},
         {'name': 'youngModulus', 'type': 'double',
             'help': 'Beam Young modulus', 'default': 1.e6},
         {'name': 'poissonRatio', 'type': 'double',
             'help': 'Beam poisson ratio', 'default': 0.4},
-        {'name': 'shape', 'type': 'string',
-            'help': 'beam section', 'default': "circular"},
+        {'name': 'shape', 'type': 'string', 'help': 'beam section', 'default': "circular"},
         {'name': 'radius', 'type': 'double',
             'help': 'the radius in case of circular section', 'default': 0.02},
         {'name': 'length_Y', 'type': 'double',
@@ -57,15 +75,18 @@ class Cosserat(Sofa.Prefab):
 
     def __init__(self, *args, **kwargs):
         Sofa.Prefab.__init__(self, *args, **kwargs)
+        # self.bPhysicsParams = kwargs.get('beamPhysicsParams')
+        # self.bGeometryParams = kwargs.get('beamGeometryParams')
+
         self.cosseratGeometry = kwargs['cosseratGeometry']
         self.beamMass = self.cosseratGeometry['beamMass']
         self.parent = kwargs.get('parent')
         self.useInertiaParams = False
-        self.radius = kwargs.get('radius', )
+        self.radius = kwargs.get('radius')
 
         if self.parent.hasObject("EulerImplicitSolver") is False:
             print('The code does not have parent EulerImplicit')
-            self.solverNode = self.addSolverNode()
+            self.solverNode = addSolverNode(self.parent)
         else:
             self.solverNode = self.parent
 
@@ -77,11 +98,8 @@ class Cosserat(Sofa.Prefab):
         [positionS, curv_abs_inputS, sectionsLength, framesF, curv_abs_outputF, self.frames3D] = \
             BuildCosseratGeometry(self.cosseratGeometry)
 
-        self.cosseratCoordinateNode = self.addCosseratCoordinate(
-            positionS, sectionsLength)
-        self.cosseratFrame = self.addCosseratFrame(
-            framesF, curv_abs_inputS, curv_abs_outputF)
-        # print(f'=== > {curv_abs_inputS}')
+        self.cosseratCoordinateNode = self.addCosseratCoordinate(positionS, sectionsLength)
+        self.cosseratFrame = self.addCosseratFrame(framesF, curv_abs_inputS, curv_abs_outputF)
 
     def init(self):
         pass
@@ -109,16 +127,6 @@ class Cosserat(Sofa.Prefab):
                                showObject="1", showIndices="0")
         slidingPoint.addObject('IdentityMapping')
         return slidingPoint
-
-    def addSolverNode(self):
-        solverNode = self.parent
-        # solverNode = self.addChild('solverNode')
-        solverNode.addObject('EulerImplicitSolver',
-                             rayleighStiffness="0.2", rayleighMass='0.1')
-        solverNode.addObject('SparseLDLSolver', name='solver',
-                             template="CompressedRowSparseMatrixd")
-        solverNode.addObject('GenericConstraintCorrection')
-        return solverNode
 
     def addRigidBaseNode(self):
         rigidBaseNode = self.addChild('rigidBase')
@@ -192,18 +200,14 @@ class Cosserat(Sofa.Prefab):
 
 
 def createScene(rootNode):
-    rootNode.addObject('RequiredPlugin', name='plugins', pluginName=[pluginList,
-                                                                     ['SofaEngine', 'SofaLoader', 'SofaSimpleFem',
-                                                                      'SofaExporter']])
-    rootNode.addObject('VisualStyle', displayFlags='showVisualModels showBehaviorModels hideCollisionModels '
-                                                   'hideBoundingCollisionModels hideForceFields '
-                                                   'hideInteractionForceFields hideWireframe showMechanicalMappings')
+    addHeader(rootNode)
+    addVisual(rootNode)
+
     rootNode.findData('dt').value = 0.01
     rootNode.findData('gravity').value = [0., -9.81, 0.]
     rootNode.addObject('BackgroundSetting', color='0 0.168627 0.211765')
     rootNode.addObject('FreeMotionAnimationLoop')
-    rootNode.addObject('GenericConstraintSolver',
-                       tolerance=1e-5, maxIterations=5e2)
+    rootNode.addObject('GenericConstraintSolver', tolerance=1e-5, maxIterations=5e2)
     rootNode.addObject('Camera', position="-35 0 280", lookAt="0 0 0")
 
     solverNode = rootNode.addChild('solverNode')
@@ -214,7 +218,7 @@ def createScene(rootNode):
     solverNode.addObject('GenericConstraintCorrection')
 
     cosserat = solverNode.addChild(
-        Cosserat(parent=solverNode, cosseratGeometry=cosserat_config, name="cosserat", radius=0.15))
+        CosseratClasse(parent=solverNode, cosseratGeometry=cosserat_config, name="cosserat", radius=0.15))
 
     # use this to add the collision if the beam will interact with another object
     cosserat.addCollisionModel()
