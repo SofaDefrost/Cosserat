@@ -12,8 +12,7 @@ def addEdgeCollision(parentNode, position3D, edges):
     collisInstrumentCombined.addObject('IdentityMapping', name="mapping")
     return collisInstrumentCombined
 
-
-# @info: This function is used to build the beam collision node
+"""@info: This function is used to build the beam collision node"""
 def addPointsCollision(parentNode, position3D, edges, nodeName):
     collisInstrumentCombined = parentNode.addChild(nodeName)
     collisInstrumentCombined.addObject('EdgeSetTopologyContainer', name="beamContainer", position=position3D,
@@ -26,7 +25,7 @@ def addPointsCollision(parentNode, position3D, edges, nodeName):
     return collisInstrumentCombined
 
 
-#  @info: This function is used to build the constraint node
+ # """ @info: This function is used to build the constraint node"""
 def addConstraintPoint(parentNode, beamPath):
     constraintPointsNode = parentNode.addChild('constraintPoints')
     constraintPointsNode.addObject("PointSetTopologyContainer", name="constraintPtsContainer", listening="1")

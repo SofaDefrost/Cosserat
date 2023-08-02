@@ -9,9 +9,10 @@ __version__ = "1.0.0"
 __copyright__ = "(c) 2021,Inria"
 __date__ = "July, 20 2023"
 
-from useful.header import addHeader, addSolvers
+from useful.header import addHeader
 from cosserat.cosseratObject import Cosserat
 from dataclasses import dataclass
+from useful.params import Parameters, BeamGeometryParameters
 
 
 # [@info] ================ Unit: N, m, Kg, Pa  ================
@@ -42,6 +43,9 @@ class CableGeometryParameters:
     beamMass: float = 1.
 
 
+
+
+
 YM = 1.0e8
 PR = 0.38
 rayleighStiffness = 1.e-3  # Nope
@@ -64,6 +68,9 @@ inertialParams = {'GI': 1.5708, 'GA': 3.1416e4,
                   'EI': 0.7854, 'EA': 3.1416e4, 'L': length,  'Rb': Rb}
 
 isCollisionModel = 0
+
+Params = Parameters(beamGeoParams=BeamGeometryParameters(init_pos=[0, 0, 0], beamLength=length,
+                                    nbSection=5, nbFrames=30, buildCollisionModel=0))
 
 def createScene(rootNode):
     addHeader(rootNode)

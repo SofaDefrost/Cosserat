@@ -11,8 +11,10 @@ __copyright__ = "(c) 2021,Inria"
 __date__ = "July, 20 2023"
 
 from useful.header import addHeader
-from useful.params import BeamPhysicsParameters, BeamGeometryParameters
+from useful.params import BeamPhysicsParameters, BeamGeometryParameters, SimulationParameters
 from cosserat.cosseratObject import Cosserat
+from useful.params import Parameters
+from cosserat.CosseratBase import CosseratBase
 
 import os
 from splib3.numerics.quat import Quat
@@ -45,28 +47,17 @@ Comme tu l'aura compris notre prototype est composé d'une colonne centrale (fil
 # [@info] ================ Unit: N, cm, g, Pa  ================
 """
 
-YM = 1.0e8
-PR = 0.38
-rayleighStiffness = 1.e-3  # Nope
-firstOrder = 1
-EI = 1.e2
-# coeff = 1.
 
-# beam parameters
-length = 65.5  # in cm
-Rb = 6.2e-1 / 2.  # beam radius in cm
 
 # @todo use CableGeometryParameters & CableParameters in Cosserat class for both geometry and physics parameters
-geoParams = BeamGeometryParameters(init_pos=[0., 0., 0.], beamLength=length,
-                                    nbSectionS=5, nbFramesF=30, buildCollisionModel=0, beamMass=1.)
-# inertialParams = CableParameters(youngModulus=YM, poissonRatio=PR, radius=Rb, density=7.850e3,
-# maxDisplacement=0.3, nbSections=20)
-nonLinearConfig = {'init_pos': [0., 0., 0.], 'tot_length': length, 'nbSectionS': 5,
-                   'nbFramesF': 30, 'buildCollisionModel': 0, 'beamMass': 1.}
-inertialParams = {'GI': 1.5708, 'GA': 3.1416e4,
-                  'EI': 0.7854, 'EA': 3.1416e4, 'L': length, 'Rb': Rb}
+geoParams = BeamGeometryParameters(init_pos=[0., 0., 0.], beamLength=65.5,
+                                    nbSection=5, nbFrames=30, buildCollisionModel=0)
+physicsParams = BeamPhysicsParameters(beamMass=1., youngModulus= 1.0e8, poissonRatio=0.38, beamRadius=6.2e-1/2.,
+                                      beamLength=65.5)
+simuParams = SimulationParameters(rayleighStiffness=1.e-3)
 
 isCollisionModel = 0
+
 
 
 def createIntermediateNode(parent, rigidCentral=None, baseName="rigidState"):
@@ -105,7 +96,7 @@ def loadDisk(parentNode):
     diskMapping.addObject('RigidMapping', name="diskMap")
 
 
-def createRigidDisk(rootNode):
+def createRigidDisk(rootNode, length=65.5): # @todo add a parameter for the number of disk
     diskSolverNode = rootNode.addChild('diskSolverNode')
     diskSolverNode.addObject('EulerImplicitSolver', firstOrder=0, rayleighStiffness=0.01, rayleighMass=0.)
     diskSolverNode.addObject('SparseLDLSolver', name='solver')
@@ -116,19 +107,23 @@ def createRigidDisk(rootNode):
 
     # """ The intermediateRigid construction """
     # intermediateRigid = createIntermediateNode(diskSolverNode)
+    return diskSolverNode
 
+
+Params = Parameters(beamGeoParams=geoParams, beamPhysicsParams=physicsParams, simuParams=simuParams)
 
 def createScene(rootNode):
     addHeader(rootNode)
     rootNode.gravity = [0., -9.81, 0.]
     stemNode = rootNode.addChild('stemNode')
-    stemNode.addChild(
-        Cosserat(parent=stemNode, cosseratGeometry=nonLinearConfig, inertialParams=inertialParams, radius=Rb,
-                 useCollisionModel=isCollisionModel, name="cosserat", youngModulus=YM, poissonRatio=PR,
-                 rayleighStiffness=rayleighStiffness))
+
+    stemNode.addChild(CosseratBase(parent=stemNode, params=Params))
+        # Cosserat(parent=stemNode, cosseratGeometry=nonLinearConfig, inertialParams=inertialParams, radius=Rb,
+        #          useCollisionModel=isCollisionModel, name="cosserat", youngModulus=YM, poissonRatio=PR,
+        #          rayleighStiffness=rayleighStiffness))
 
     # create the rigid disk node
-    createRigidDisk(rootNode)
+    # createRigidDisk(rootNode)
 
 
 
