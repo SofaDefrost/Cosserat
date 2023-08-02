@@ -1,18 +1,15 @@
 # -*- coding: utf-8 -*-
 """
-    Cosserat class in SofaPython3.
+    Scene robot ISIR.
 """
-
-
 __authors__ = "Yinoussa"
 __contact__ = "adagolodjo@protonmail.com"
 __version__ = "1.0.0"
 __copyright__ = "(c) 2021,Inria"
 __date__ = "July, 20 2023"
 
-from useful.header import addHeader
+from useful.header import addHeader, addSolverNode
 from useful.params import BeamPhysicsParameters, BeamGeometryParameters, SimulationParameters
-from cosserat.cosseratObject import Cosserat
 from useful.params import Parameters
 from cosserat.CosseratBase import CosseratBase
 
@@ -47,23 +44,19 @@ Comme tu l'aura compris notre prototype est composé d'une colonne centrale (fil
 # [@info] ================ Unit: N, cm, g, Pa  ================
 """
 
-
-
-# @todo use CableGeometryParameters & CableParameters in Cosserat class for both geometry and physics parameters
-geoParams = BeamGeometryParameters(init_pos=[0., 0., 0.], beamLength=65.5,
-                                    nbSection=5, nbFrames=30, buildCollisionModel=0)
-physicsParams = BeamPhysicsParameters(beamMass=1., youngModulus= 1.0e8, poissonRatio=0.38, beamRadius=6.2e-1/2.,
+# @todo
+geoParams = BeamGeometryParameters(init_pos=[0., 0., 0.], beamLength=65.5, showFramesObject=1,
+                                    nbSection=5, nbFrames=26, buildCollisionModel=0)
+physicsParams = BeamPhysicsParameters(beamMass=5., youngModulus= 1.0e8, poissonRatio=0.38, beamRadius=6.2e-1/2.,
                                       beamLength=65.5)
 simuParams = SimulationParameters(rayleighStiffness=1.e-3)
-
-isCollisionModel = 0
-
+Params = Parameters(beamGeoParams=geoParams, beamPhysicsParams=physicsParams, simuParams=simuParams)
 
 
-def createIntermediateNode(parent, rigidCentral=None, baseName="rigidState"):
+def createIntermediateNode(parent, rigidCentral=None, baseName="rigidState",rigidIndex=2):
     """ The intermediateRigid construction """
     if rigidCentral is None:
-        rigidCentral = [3, 0., 0, 0, 0, 0, 1]
+        rigidCentral = [0, 0., 0, 0, 0, 0, 1]
     q0 = Quat()
     q1 = Quat()
     q2 = Quat()
@@ -74,14 +67,14 @@ def createIntermediateNode(parent, rigidCentral=None, baseName="rigidState"):
     intermediateRigid = parent.addChild('intermediateRigid')
     intermediateRigid.addObject('MechanicalObject', name=baseName, template='Rigid3d',
                                                       position=rigidCentral, showObject=True, showObjectScale=0.4)
-    intermediateRigid.addObject('RestShapeSpringsForceField', name='rigid', stiffness=1.e1, template="Rigid3d",
-                                angularStiffness=1.e1, external_points=0, points=0)
+    # @TODO add the mass of the disk
+    intermediateRigid.addObject('RigidMapping', name="interRigidMap", index=rigidIndex)
+
     """Create intermediate kids"""
     interRigidChild = intermediateRigid.addChild('interRigidChild')
     interRigidChild.addObject('MechanicalObject', name="interRigidChildMo", template='Rigid3d',
                               position=interChildPos, showObject=True, showObjectScale=0.4)
     interRigidChild.addObject('RigidMapping', name="interRigidMap")
-
 
     """ Add disk to the scene, actually this disk is only use for the visualisation """
     loadDisk(intermediateRigid)
@@ -96,34 +89,27 @@ def loadDisk(parentNode):
     diskMapping.addObject('RigidMapping', name="diskMap")
 
 
-def createRigidDisk(rootNode, length=65.5): # @todo add a parameter for the number of disk
-    diskSolverNode = rootNode.addChild('diskSolverNode')
-    diskSolverNode.addObject('EulerImplicitSolver', firstOrder=0, rayleighStiffness=0.01, rayleighMass=0.)
-    diskSolverNode.addObject('SparseLDLSolver', name='solver')
-
+def createRigidDisk(parentNode): # @todo add a parameter for the number of disk
+    """ Create the rigid disk nodes """
     for i in range(1, 14):
         """ Create the rigid disk nodes """
-        createIntermediateNode(diskSolverNode, rigidCentral=[i*(length/13.), 0., 0, 0, 0, 0, 1], baseName=f"rigidState{i}")
+        createIntermediateNode(parentNode, rigidCentral=[0, 0., 0, 0, 0, 0, 1],
+                               baseName=f"rigidState{i}", rigidIndex=i*2)
 
-    # """ The intermediateRigid construction """
-    # intermediateRigid = createIntermediateNode(diskSolverNode)
-    return diskSolverNode
-
-
-Params = Parameters(beamGeoParams=geoParams, beamPhysicsParams=physicsParams, simuParams=simuParams)
 
 def createScene(rootNode):
     addHeader(rootNode)
     rootNode.gravity = [0., -9.81, 0.]
-    stemNode = rootNode.addChild('stemNode')
 
-    stemNode.addChild(CosseratBase(parent=stemNode, params=Params))
-        # Cosserat(parent=stemNode, cosseratGeometry=nonLinearConfig, inertialParams=inertialParams, radius=Rb,
-        #          useCollisionModel=isCollisionModel, name="cosserat", youngModulus=YM, poissonRatio=PR,
-        #          rayleighStiffness=rayleighStiffness))
+    stemNode = addSolverNode(rootNode, name="stemNode")
+    cosserat = stemNode.addChild(CosseratBase(parent=stemNode, params=Params))
 
     # create the rigid disk node
-    # createRigidDisk(rootNode)
+    createRigidDisk(cosserat.cosseratFrame)
+    return
+
+
+
 
 
 

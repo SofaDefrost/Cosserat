@@ -11,7 +11,7 @@ __date__ = "October, 26 2021"
 
 import Sofa
 from cosserat.usefulFunctions import buildEdges, pluginList, BuildCosseratGeometry
-from cosserat.utils import addEdgeCollision, addPointsCollision
+from useful.utils import addEdgeCollision, addPointsCollision
 
 cosserat_config = {'init_pos': [0., 0., 0.], 'tot_length': 6, 'nbSectionS': 6,
                    'nbFramesF': 12, 'buildCollisionModel': 1, 'beamMass': 0.22}
