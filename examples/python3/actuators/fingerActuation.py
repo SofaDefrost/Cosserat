@@ -17,7 +17,7 @@ __date__ = "july 2023"
 
 import Sofa
 import os
-from cosserat.CosseratPrefab import CosseratClasse
+from cosserat.cosseratObject import Cosserat
 from useful.header import addHeader, addVisual, addSolverNode, Finger
 from controler import FingerController
 
@@ -53,7 +53,7 @@ def createScene(rootNode):
 
     cableNode = addSolverNode(rootNode, name="cableSolver", isConstrained=True)
     cosseratCable = cableNode.addChild(
-        CosseratClasse(parent=cableNode, cosseratGeometry=beamGeometrie, name="cosserat", radius=0.5,
+        Cosserat(parent=cableNode, cosseratGeometry=beamGeometrie, name="cosserat", radius=0.5,
                        youngModulus=5e6, poissonRatio=0.4))
 
     mappedFrameNode = cosseratCable.cosseratFrame

@@ -315,6 +315,54 @@ class buildElasticityRateAngulare(Sofa.Core.Controller):
 # #######################
 # Function and class
 # #######################
+
+
+class CosseratGeometry:
+    def __init__(self, positionS, curv_abs_inputS, sectionLength, framesF, curv_abs_outputF, cable_positionF):
+        self.positionS = positionS
+        self.curv_abs_inputS = curv_abs_inputS
+        self.sectionLength = sectionLength
+        self.framesF = framesF
+        self.curv_abs_outputF = curv_abs_outputF
+        self.cable_positionF = cable_positionF
+
+def generate_cosserat_geometry(beamGeoParams):
+    x, y, z = beamGeoParams.init_pos
+    total_length = beamGeoParams.beamLength
+    nb_sections = beamGeoParams.nbSection
+    nb_frames = beamGeoParams.nbFrames
+
+    length_s = total_length / nb_sections
+
+    position_s = []
+    sectionLengthList = []
+    temp = x
+    curv_abs_input_s = [x]
+
+    for i in range(nb_sections):
+        position_s.append([0, 0, 0])
+        sectionLengthList.append((((i + 1) * length_s) - i * length_s))
+        temp += sectionLengthList[i]
+        curv_abs_input_s.append(temp)
+    curv_abs_input_s[nb_sections] = total_length + x
+
+    length_f = total_length / nb_frames
+    frames_f = []
+    curv_abs_output_f = []
+    cable_position_f = []
+
+    for i in range(nb_frames):
+        sol = i * length_f
+        frames_f.append([sol + x, y, z, 0, 0, 0, 1])
+        cable_position_f.append([sol + x, y, z])
+        curv_abs_output_f.append(sol + x)
+
+    frames_f.append([total_length + x, y, z, 0, 0, 0, 1])
+    cable_position_f.append([total_length + x, y, z])
+    curv_abs_output_f.append(total_length + x)
+
+    return CosseratGeometry(position_s, curv_abs_input_s, sectionLengthList, frames_f, curv_abs_output_f, cable_position_f)
+
 def BuildCosseratGeometry(config):
     # Define: the number of section, the total length and the length of each beam.
 

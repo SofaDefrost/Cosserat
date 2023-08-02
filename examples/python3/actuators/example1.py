@@ -11,7 +11,7 @@ __copyright__ = "(c) 2021,Inria"
 __date__ = "July, 20 2023"
 
 from useful.header import addHeader
-from useful.params import BeamGeometryParameters
+from useful.params import BeamPhysicsParameters, BeamGeometryParameters
 from cosserat.cosseratObject import Cosserat
 
 import os
@@ -57,7 +57,7 @@ length = 65.5  # in cm
 Rb = 6.2e-1 / 2.  # beam radius in cm
 
 # @todo use CableGeometryParameters & CableParameters in Cosserat class for both geometry and physics parameters
-geoParams = BeamGeometryParameters(init_pos=[0., 0., 0.], tot_length=length,
+geoParams = BeamGeometryParameters(init_pos=[0., 0., 0.], beamLength=length,
                                     nbSectionS=5, nbFramesF=30, buildCollisionModel=0, beamMass=1.)
 # inertialParams = CableParameters(youngModulus=YM, poissonRatio=PR, radius=Rb, density=7.850e3,
 # maxDisplacement=0.3, nbSections=20)
