@@ -12,6 +12,8 @@ class BeamGeometryParameters:
     nbFrames: int = 30  # number of frames along the beam
     buildCollisionModel: int = 0
     init_pos: List[float] = field(default_factory=lambda: [0., 0., 0.])  # The beam rigid base position as a list [x, y, z]
+
+    """Parameters for the visualisation of the beam"""
     showFramesObject: int = 1
     showRigidBaseObject: int = 1
 

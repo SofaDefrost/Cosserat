@@ -144,15 +144,19 @@ class CosseratBase(Sofa.Prefab):
 
     # TODO Rename this here and in `addCosseratCoordinate`
     def _extracted_from_addCosseratCoordinate_15(self, cosseratCoordinateNode, listOfSectionsLength):
-        GA = self.inertialParams['GA']
-        GI = self.inertialParams['GI']
-        EA = self.inertialParams['EA']
-        EI = self.inertialParams['EI']
-        print(f'{GA}')
-        cosseratCoordinateNode.addObject('BeamHookeLawForceField', crossSectionShape=self.shape.value,
-                                         length=listOfSectionsLength, radius=self.radius, useInertiaParams=True,
-                                         GI=GI, GA=GA, EI=EI, EA=EA, rayleighStiffness=self.rayleighStiffness.value,
-                                         lengthY=self.length_Y.value, lengthZ=self.length_Z.value)
+        GA = self.params.beamPhysicsParams.GA
+        GI = self.params.beamPhysicsParams.GI
+        EA = self.params.beamPhysicsParams.EA
+        EI = self.params.beamPhysicsParams.EI
+        cosseratCoordinateNode.addObject('BeamHookeLawForceField',
+                                         crossSectionShape=self.params.beamPhysicsParams.beamShape,
+                                         length=listOfSectionsLength,
+                                         radius=self.params.beamPhysicsParams.beamRadius,
+                                         useInertiaParams=True,
+                                         GI=GI, GA=GA, EI=EI, EA=EA,
+                                         rayleighStiffness=self.rayleighStiffness.value,
+                                         lengthY=self.params.beamPhysicsParams.length_Y,
+                                         lengthZ=self.params.beamPhysicsParams.length_Z)
 
     def _addCosseratFrame(self, framesF, curv_abs_inputS, curv_abs_outputF):
 
@@ -160,7 +164,9 @@ class CosseratBase(Sofa.Prefab):
             'cosseratInSofaFrameNode')
         self.cosseratCoordinateNode.addChild(cosseratInSofaFrameNode)
         framesMO = cosseratInSofaFrameNode.addObject(
-            'MechanicalObject', template='Rigid3d', name="FramesMO", position=framesF, showObject=1, showObjectScale=0.001)
+            'MechanicalObject', template='Rigid3d', name="FramesMO", position=framesF,
+            showIndices=self.params.beamGeoParams.showFramesObject,
+            showObject=self.params.beamGeoParams.showFramesObject, showObjectScale=0.1)
         if self.beamMass != 0.:
             cosseratInSofaFrameNode.addObject(
                 'UniformMass', totalMass=self.beamMass, showAxisSizeFactor='0')
