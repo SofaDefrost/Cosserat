@@ -1,20 +1,18 @@
 # @todo use this dataclass to create the cosserat object
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 @dataclass
 class BeamPhysicsParameters:
     """one can only use one of the following two parameters"""
     """First set of parameters"""
     youngModulus: float = 1.205e11
     poissonRatio: float = 0.499
-
     """Second set of parameters"""
     useInertia: bool = False
     GI: float = 1.5708
     GA: float = 3.1416e4
     EI: float = 0.7854
     EA: float = 3.1416e4
-
     """Common parameters, this parameters are used in both cases"""
     beamMass: float = 1.
     beamLength: float = 1.  # beam length in m
@@ -23,7 +21,8 @@ class BeamPhysicsParameters:
 @dataclass
 class BeamGeometryParameters:
     """cosserat beam Geometry parameters"""
-    init_pos: list[float]  # = [0., 0., 0.], The beam rigid base position
+    # init_pos: str = "0. 0. 0." #  list[float]  # = [0., 0., 0.], The beam rigid base position
+    init_pos: list[float] = field(default_factory=list)
     beamLength: float = 1. # beam length in m
     nbSection: int = 5 # number of sections, here sections are not cross-sections but sections along the beam length
     nbFrames: int = 30
@@ -46,3 +45,15 @@ class ContactParameters:
     tolerance: float = 1.e-8
     maxIterations: int = 100
     epsilon: float = 1.e-6
+
+
+# @dataclass
+# class Parameters:
+#     """Parameters for the cosserat beam"""
+#     beamPhysicsParams: BeamPhysicsParameters = BeamPhysicsParameters()
+#     simuParams: SimulationParameters = SimulationParameters()
+#     contactParams: ContactParameters = ContactParameters()
+#     beamGeoParams: BeamGeometryParameters = BeamGeometryParameters()
+
+
+
