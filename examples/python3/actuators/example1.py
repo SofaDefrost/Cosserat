@@ -12,9 +12,7 @@ from useful.header import addHeader, addSolverNode
 from useful.params import BeamPhysicsParameters, BeamGeometryParameters, SimulationParameters
 from useful.params import Parameters
 from cosserat.CosseratBase import CosseratBase
-
 import os
-from splib3.numerics.quat import Quat
 
 path = f'{os.path.dirname(os.path.abspath(__file__))}/mesh/'
 
@@ -57,9 +55,10 @@ def createIntermediateNode(parent, rigidCentral=None, baseName="rigidState",rigi
     """ The intermediateRigid construction """
     if rigidCentral is None:
         rigidCentral = [0, 0., 0, 0, 0, 0, 1]
-    q0 = Quat()
-    q1 = Quat()
-    q2 = Quat()
+    q0 = [0, 0, 0, 1]
+    q1 = [0, 0, 0, 1]
+    q2 = [0, 0, 0, 1]
+
 
     interChildPos = [[0, 1.7, 1., q0[0], q0[1], q0[2], q0[3]],
                      [0, -1.7, 1., q1[0], q1[1], q1[2], q1[3]],

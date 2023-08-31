@@ -15,6 +15,7 @@ __date__ = "july 2023"
 
 from stlib3.physics.deformable import ElasticMaterialObject
 from stlib3.physics.constraints import FixedBox
+import numpy as np
 import os
 
 
@@ -61,6 +62,7 @@ def addHeader(parentNode, multithreading=False, inverse=False, isConstrained=Fal
                         "Sofa.Component.Mapping.Linear", "Sofa.Component.MechanicalLoad",
                         "Sofa.Component.StateContainer", 'Sofa.Component.ODESolver.Backward'
     ])
+
     settings.addObject('BackgroundSetting', color=[1, 1, 1, 1])
     # settings.addObject('AttachBodyButtonSetting', stiffness=1e6)
 
