@@ -16,6 +16,10 @@ from cable import PullingCable
 from splib3.loaders import loadPointListFromFile
 
 import os
+import numpy
+
+from numpy import ndarray
+
 from splib3.numerics.quat import Quat
 
 path = f'{os.path.dirname(os.path.abspath(__file__))}/mesh/'
