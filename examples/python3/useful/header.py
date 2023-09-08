@@ -15,7 +15,6 @@ __date__ = "july 2023"
 
 from stlib3.physics.deformable import ElasticMaterialObject
 from stlib3.physics.constraints import FixedBox
-import numpy as np
 import os
 
 

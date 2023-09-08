@@ -16,10 +16,6 @@ from cable import PullingCable
 from splib3.loaders import loadPointListFromFile
 
 import os
-import numpy
-
-from numpy import ndarray
-
 from splib3.numerics.quat import Quat
 
 path = f'{os.path.dirname(os.path.abspath(__file__))}/mesh/'
@@ -52,14 +48,14 @@ Comme tu l'aura compris notre prototype est composé d'une colonne centrale (fil
 
 # @todo
 geoParams = BeamGeometryParameters(init_pos=[0., 0., 0.], beamLength=65.5, showFramesObject=1,
-                                    nbSection=5, nbFrames=26, buildCollisionModel=0)
-physicsParams = BeamPhysicsParameters(beamMass=5., youngModulus= 1.0e8, poissonRatio=0.38, beamRadius=6.2e-1/2.,
+                                   nbSection=5, nbFrames=26, buildCollisionModel=0)
+physicsParams = BeamPhysicsParameters(beamMass=5., youngModulus=1.0e8, poissonRatio=0.38, beamRadius=6.2e-1 / 2.,
                                       beamLength=65.5)
 simuParams = SimulationParameters(rayleighStiffness=1.e-3)
 Params = Parameters(beamGeoParams=geoParams, beamPhysicsParams=physicsParams, simuParams=simuParams)
 
 
-def createIntermediateNode(parent, rigidCentral=None, baseName="rigidState",rigidIndex=2):
+def createIntermediateNode(parent, rigidCentral=None, baseName="rigidState", rigidIndex=2):
     """ The intermediateRigid construction """
     if rigidCentral is None:
         rigidCentral = [0, 0., 0, 0, 0, 0, 1]
@@ -72,7 +68,7 @@ def createIntermediateNode(parent, rigidCentral=None, baseName="rigidState",rigi
                      [0., 0., -2., q2[0], q2[1], q2[2], q2[3]]]
     intermediateRigid = parent.addChild('intermediateRigid')
     intermediateRigid.addObject('MechanicalObject', name=baseName, template='Rigid3d',
-                                                      position=rigidCentral, showObject=True, showObjectScale=0.4)
+                                position=rigidCentral, showObject=True, showObjectScale=0.4)
     # @TODO add the mass of the disk
     intermediateRigid.addObject('RigidMapping', name="interRigidMap", index=rigidIndex)
 
@@ -87,6 +83,7 @@ def createIntermediateNode(parent, rigidCentral=None, baseName="rigidState",rigi
 
     return intermediateRigid
 
+
 def loadDisk(parentNode):
     #### MAPPING of the disks (here some torus) ####    ###########
     diskMapping = parentNode.addChild("diskMapping")
@@ -95,39 +92,95 @@ def loadDisk(parentNode):
     diskMapping.addObject('RigidMapping', name="diskMap")
 
 
-def createRigidDisk(parentNode): # @todo add a parameter for the number of disk
+def create_cable_points():
+    """
+    This function creates cable points based on the given parameters.
+
+    Returns:
+        cable_base_state (list): A list of base states for the cable.
+        cable_3d_state (list): A list of 3D positions for the cable.
+    """
+    num_segments = 14
+    norm_length = geoParams.beamLength / num_segments
+
+    cable_base_state = []
+    cable_3d_state = []
+
+    for z in [1.7, -1.7, -2]:
+        base_state = []
+        pos_3d = []
+
+        for i in range(num_segments + 1):
+            x = i * norm_length
+            if z == -2:
+                base_state.append([x, 0., z, 0., 0., 0., 1.])
+                # pos_3d.append([x, 0., z])
+                pos_3d.append([x, 0., 0])
+            else:
+                base_state.append([x, z, 1., 0., 0., 0., 1.])
+                # pos_3d.append([x, z, 1.])
+                pos_3d.append([x, 0, 0])
+
+        cable_base_state.append(base_state)
+        cable_3d_state.append(pos_3d)
+
+    return cable_base_state, cable_3d_state
+
+
+def createRigidDisk(parentNode):  # @todo add a parameter for the number of disk
     """ Create the rigid disk nodes """
     for i in range(1, 14):
         """ Create the rigid disk nodes """
         createIntermediateNode(parentNode, rigidCentral=[0, 0., 0, 0, 0, 0, 1],
-                               baseName=f"rigidState{i}", rigidIndex=i*2)
+                               baseName=f"rigidState{i}", rigidIndex=i * 2)
 
-rotation=[0.0, 0.0, 0.0]
-translation=[0.0, 0.0, 0.0]
-pullPointLocation=[0.0, 0.0, 0.0]
-youngModulus=18000
-valueType='position'
+
+rotation = [0.0, 0.0, 0.0]
+translation = [0.0, 0.0, 0.0]
+pullPointLocation = [0.0, 0.0, 0.0]
+youngModulus = 18000
+valueType = 'position'
+
+
 def createScene(rootNode):
     addHeader(rootNode)
     rootNode.gravity = [0., -9.81, 0.]
 
     stemNode = addSolverNode(rootNode, name="stemNode")
     cosserat = stemNode.addChild(CosseratBase(parent=stemNode, params=Params))
-
     # create the rigid disk node
     createRigidDisk(cosserat.cosseratFrame)
 
-    PullingCable(stemNode,
-                 "PullingCable",
+    cableBaseState, cable3DState = create_cable_points()
+
+    cable1Node = stemNode.addChild("cable1Node")
+    cable1Node.addObject('MechanicalObject', name="cable1Pos", template='Rigid3d', position=cableBaseState[0],
+                         showObject=True, showObjectScale=2)
+    PullingCable(cable1Node, "PullingCable",
                  pullPointLocation=pullPointLocation,
                  rotation=rotation,
                  translation=translation,
-                 cableGeometry=loadPointListFromFile(os.path.join(path, "../cable.json")),
+                 cableGeometry=cable3DState[0],
                  valueType=valueType)
+
+    cable2Node = stemNode.addChild("cable2Node")
+    cable2Node.addObject('MechanicalObject', name="cable2Pos", template='Rigid3d', position=cableBaseState[1],
+                         showObject=True, showObjectScale=2)
+    PullingCable(cable2Node, "PullingCable",
+                 pullPointLocation=pullPointLocation,
+                 rotation=rotation,
+                 translation=translation,
+                 cableGeometry=cable3DState[1],
+                 valueType=valueType)
+
+    cable3Node = stemNode.addChild("cable3Node")
+    cable3Node.addObject('MechanicalObject', name="cable3Pos", template='Rigid3d', position=cableBaseState[2],
+                         showObject=True, showObjectScale=2)
+    PullingCable(cable3Node, "PullingCable",
+                 pullPointLocation=pullPointLocation,
+                 rotation=rotation,
+                 translation=translation,
+                 cableGeometry=cable3DState[2],
+                 valueType=valueType)
+
     return
-
-
-
-
-
-
