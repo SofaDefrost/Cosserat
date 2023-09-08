@@ -45,7 +45,7 @@ def PullingCable(attachedTo=None,
     # This add a MechanicalObject, a component holding the degree of freedom of our
     # mechanical modelling. In the case of a cable it is a set of positions specifying
     # the points where the cable is passing by.
-    cable.addObject('MechanicalObject', position=cableGeometry,
+    cable.addObject('MechanicalObject', position=cableGeometry, showIndices="1",
                     rotation=rotation, translation=translation, scale=uniformScale)
 
     # Add a CableConstraint object with a name.
@@ -70,7 +70,8 @@ def PullingCable(attachedTo=None,
     # This add a BarycentricMapping. A BarycentricMapping is a key element as it will add a bi-directional link
     # between the cable's DoFs and the parents's ones so that movements of the cable's DoFs will be mapped
     # to the finger and vice-versa;
-    cable.addObject('BarycentricMapping', name="Mapping", mapForces=False, mapMasses=False)
+    # cable.addObject('BarycentricMapping', name="Mapping", mapForces=False, mapMasses=False)
+    cable.addObject('RigidMapping', name="Mapping")
 
     return cable
 
