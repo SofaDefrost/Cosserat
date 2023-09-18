@@ -17,7 +17,7 @@ sofa_find_package(Sofa.GL QUIET)
 
 SP3_add_python_module(
     TARGET       ${PROJECT_NAME}
-    PACKAGE      Bindings
+    PACKAGE      Cosserat
     MODULE       Cosserat
     DESTINATION  /
     SOURCES      ${SOURCE_FILES}
