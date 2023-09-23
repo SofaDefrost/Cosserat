@@ -17,7 +17,6 @@ from useful.geometry import CosseratGeometry, generate_edge_list
 
 
 class CosseratBase(Sofa.Prefab):
-
     """
     CosseratBase model prefab class. It is a prefab class that allow to create a cosserat beam/rod in Sofa.
            Structure:
@@ -40,7 +39,7 @@ class CosseratBase(Sofa.Prefab):
         {'name': 'attachingToLink', 'type': 'string', 'help': 'a rest shape force field will constraint the object '
                                                               'to follow arm position', 'default': '1'},
         {'name': 'showObject', 'type': 'string', 'help': ' Draw object arrow ', 'default': '0'}
-        ]
+    ]
 
     def __init__(self, *args, **kwargs):
         Sofa.Prefab.__init__(self, *args, **kwargs)
@@ -48,10 +47,10 @@ class CosseratBase(Sofa.Prefab):
         beamPhysicsParams = self.params.beamPhysicsParams
         beamGeometryParams = self.params.beamGeoParams
 
-        self.beamMass = beamPhysicsParams.beamMass # self.cosseratGeometry['beamMass']
+        self.beamMass = beamPhysicsParams.beamMass  # self.cosseratGeometry['beamMass']
         self.parent = kwargs.get('parent')
-        self.useInertiaParams = beamPhysicsParams.useInertia # False
-        self.radius = beamPhysicsParams.beamRadius # kwargs.get('radius')
+        self.useInertiaParams = beamPhysicsParams.useInertia  # False
+        self.radius = beamPhysicsParams.beamRadius  # kwargs.get('radius')
 
         if self.parent.hasObject("EulerImplicitSolver") is False:
             print('The code does not have parent EulerImplicit')
@@ -69,9 +68,9 @@ class CosseratBase(Sofa.Prefab):
         self.frames3D = cosserat_geometry.cable_positionF
 
         self.cosseratCoordinateNode = self._addCosseratCoordinate(cosserat_geometry.bendingState,
-                                                                 cosserat_geometry.sectionsLengthList)
+                                                                  cosserat_geometry.sectionsLengthList)
         self.cosseratFrame = self._addCosseratFrame(cosserat_geometry.framesF, cosserat_geometry.curv_abs_inputS,
-                                                   cosserat_geometry.curv_abs_outputF)
+                                                    cosserat_geometry.curv_abs_outputF)
 
     def init(self):
         pass
@@ -166,7 +165,7 @@ class CosseratBase(Sofa.Prefab):
         framesMO = cosseratInSofaFrameNode.addObject(
             'MechanicalObject', template='Rigid3d', name="FramesMO", position=framesF,
             showIndices=self.params.beamGeoParams.showFramesObject,
-            showObject=self.params.beamGeoParams.showFramesObject, showObjectScale=0.1)
+            showObject=self.params.beamGeoParams.showFramesObject, showObjectScale=1.8)
         if self.beamMass != 0.:
             cosseratInSofaFrameNode.addObject(
                 'UniformMass', totalMass=self.beamMass, showAxisSizeFactor='0')

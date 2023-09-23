@@ -6,12 +6,14 @@ def PullingCable(attachedTo=None,
                  uniformScale=1.0,
                  pullPointLocation=None,
                  initialValue=0.0,
-                 valueType="displacement"):
+                 valueType="displacement",
+                 input=None):
     """Adds a cable constraint.
 
     The constraint apply to a parent mesh.
 
     Args:
+        input:
         name (str): Name of the added cable.
 
         cableGeometry: (list vec3): Location of the degree of freedom of the cable.
@@ -70,8 +72,10 @@ def PullingCable(attachedTo=None,
     # This add a BarycentricMapping. A BarycentricMapping is a key element as it will add a bi-directional link
     # between the cable's DoFs and the parents's ones so that movements of the cable's DoFs will be mapped
     # to the finger and vice-versa;
-    # cable.addObject('BarycentricMapping', name="Mapping", mapForces=False, mapMasses=False)
-    cable.addObject('RigidMapping', name="Mapping")
+    # cable.addObject('BarycentricMapping', name="Mapping", mapForces=False, mapMasses=False,
+    #                 input=input)
+    # cable.addObject('RigidMapping', name="Mapping")
+    cable.addObject('IdentityMapping', name="Mapping")
 
     return cable
 
