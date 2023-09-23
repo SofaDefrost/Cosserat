@@ -6,7 +6,6 @@ Returns:
     _type_: _description_
 """
 
-
 __authors__ = "Younes"
 __contact__ = "adagolodjo@protonmail.com, yinoussa.adagolodjo@inria.fr"
 __version__ = "1.0.0"
@@ -40,35 +39,35 @@ def addHeader(parentNode, multithreading=False, inverse=False, isConstrained=Fal
     """
     settings = parentNode.addChild('Settings')
     settings.addObject('RequiredPlugin', pluginName=[
-                        "Cosserat", "Sofa.Component.AnimationLoop",  # Needed to use components FreeMotionAnimationLoop
-                        "Sofa.Component.Collision.Detection.Algorithm",
-                        "Sofa.Component.Collision.Detection.Intersection",  # Needed to use components LocalMinDistance
-                        "Sofa.Component.Collision.Response.Contact",  # Needed to use components RuleBasedContactManager
-                        "Sofa.Component.Constraint.Lagrangian.Correction",  # Needed to use components GenericConstraintCorrection
-                        "Sofa.Component.Constraint.Lagrangian.Solver",  # Needed to use components GenericConstraintSolver
-                        "Sofa.Component.Constraint.Projective",  # Needed to use components FixedConstraint
-                        "Sofa.Component.IO.Mesh",  # Needed to use components MeshOBJLoader, MeshSTLLoader
-                        "Sofa.Component.Mass", 'Sofa.Component.LinearSolver.Direct',
-                        "Sofa.Component.Setting",  # Needed to use components BackgroundSetting
-                        "Sofa.Component.SolidMechanics.Spring",  # Needed to use components RestShapeSpringsForceField
-                        "Sofa.Component.Topology.Container.Constant",  # Needed to use components MeshTopology
-                        "Sofa.Component.Topology.Container.Dynamic", "Sofa.Component.Playback",
-                        "Sofa.Component.Playback", "Sofa.Component.Visual",  # Needed to use components VisualStyle
-                        "Sofa.Component.Topology.Container.Grid",  # Needed to use components RegularGridTopology
-                        "Sofa.Component.Topology.Mapping",  # Needed to use components Edge2QuadTopologicalMapping
-                        "Sofa.GL.Component.Rendering3D",  # Needed to use components OglGrid, OglModel
-                        "Sofa.GUI.Component", "Sofa.Component.Collision.Geometry", "Sofa.Component.LinearSolver.Direct",
-                        "Sofa.Component.Mapping.Linear", "Sofa.Component.MechanicalLoad",
-                        "Sofa.Component.StateContainer", 'Sofa.Component.ODESolver.Backward'
+        "Cosserat", "Sofa.Component.AnimationLoop",  # Needed to use components FreeMotionAnimationLoop
+        "Sofa.Component.Collision.Detection.Algorithm",
+        "Sofa.Component.Collision.Detection.Intersection",  # Needed to use components LocalMinDistance
+        "Sofa.Component.Collision.Response.Contact",  # Needed to use components RuleBasedContactManager
+        "Sofa.Component.Constraint.Lagrangian.Correction",  # Needed to use components GenericConstraintCorrection
+        "Sofa.Component.Constraint.Lagrangian.Solver",  # Needed to use components GenericConstraintSolver
+        "Sofa.Component.Constraint.Projective",  # Needed to use components FixedConstraint
+        "Sofa.Component.IO.Mesh",  # Needed to use components MeshOBJLoader, MeshSTLLoader
+        "Sofa.Component.Mass", 'Sofa.Component.LinearSolver.Direct',
+        "Sofa.Component.Setting",  # Needed to use components BackgroundSetting
+        "Sofa.Component.SolidMechanics.Spring",  # Needed to use components RestShapeSpringsForceField
+        "Sofa.Component.Topology.Container.Constant",  # Needed to use components MeshTopology
+        "Sofa.Component.Topology.Container.Dynamic", "Sofa.Component.Playback",
+        "Sofa.Component.Playback", "Sofa.Component.Visual",  # Needed to use components VisualStyle
+        "Sofa.Component.Topology.Container.Grid",  # Needed to use components RegularGridTopology
+        "Sofa.Component.Topology.Mapping",  # Needed to use components Edge2QuadTopologicalMapping
+        "Sofa.GL.Component.Rendering3D",  # Needed to use components OglGrid, OglModel
+        "Sofa.GUI.Component", "Sofa.Component.Collision.Geometry", "Sofa.Component.LinearSolver.Direct",
+        "Sofa.Component.Mapping.Linear", "Sofa.Component.MechanicalLoad",
+        "Sofa.Component.StateContainer", 'Sofa.Component.ODESolver.Backward'
     ])
 
     settings.addObject('BackgroundSetting', color=[1, 1, 1, 1])
     # settings.addObject('AttachBodyButtonSetting', stiffness=1e6)
 
     parentNode.addObject('VisualStyle', displayFlags='showVisualModels showBehaviorModels showCollisionModels '
-                                                   'hideBoundingCollisionModels hideForceFields '
-                                                   'hideInteractionForceFields hideWireframe showMechanicalMappings')
-    if isConstrained :
+                                                     'hideBoundingCollisionModels hideForceFields '
+                                                     'hideInteractionForceFields hideWireframe showMechanicalMappings')
+    if isConstrained:
         parentNode.addObject('FreeMotionAnimationLoop', parallelCollisionDetectionAndFreeMotion=multithreading,
                              parallelODESolving=multithreading)
         if inverse:
@@ -107,8 +106,10 @@ def addVisual(node):
                                                'hideInteractionForceFields hideWireframe showMechanicalMappings')
     return node
 
-def addSolverNode(node, name='solverNode', template='CompressedRowSparseMatrixd', rayleighMass=0., rayleighStiffness=0., firstOrder=False,
-               iterative=False, isConstrained=False):
+
+def addSolverNode(node, name='solverNode', template='CompressedRowSparseMatrixd', rayleighMass=0., rayleighStiffness=0.,
+                  firstOrder=False,
+                  iterative=False, isConstrained=False):
     """
     Adds solvers (EulerImplicitSolver, LDLSolver, GenericConstraintCorrection) to the given node.
 
@@ -138,7 +139,8 @@ def addSolverNode(node, name='solverNode', template='CompressedRowSparseMatrixd'
 
     return solverNode
 
-def addFEMObject(parentNode, path) :
+
+def addFEMObject(parentNode, path):
     fingerSolver = addSolverNode(parentNode)
 
     # Load a VTK tetrahedral mesh and expose the resulting topology in the scene .
@@ -170,8 +172,9 @@ def addFEMObject(parentNode, path) :
     FEMpos = [" 0.0 0 0 15 0 0 30 0 0 45 0 0 60 0 0 66 0 0 81 0.0 0.0"]
     femPoints = fingerSolver.addChild('femPoints')
     femPoints.addObject('MechanicalObject', name="pointsInFEM", position=FEMpos, showObject="1",
-                                        showIndices="1")
+                        showIndices="1")
     femPoints.addObject('BarycentricMapping')
+
 
 def addMappedPoints(parentNode, name="pointsInFEM", position=None, showObject="1",
                     showIndices="1", femPos=" 0.0 0 0 15 0 0 30 0 0 45 0 0 60 0 0 66 0 0 81 0.0 0.0"):
@@ -190,8 +193,8 @@ def addMappedPoints(parentNode, name="pointsInFEM", position=None, showObject="1
     femPoints.addObject('BarycentricMapping')
     return femPoints
 
-def Finger(parentNode=None, name="Finger", rotation=None, translation=None, fixingBox=None,path=None, femPos=None):
 
+def Finger(parentNode=None, name="Finger", rotation=None, translation=None, fixingBox=None, path=None, femPos=None):
     if fixingBox is None:
         fixingBox = [-18, -15, -8, 2, -3, 8]
     if rotation is None:
@@ -201,18 +204,17 @@ def Finger(parentNode=None, name="Finger", rotation=None, translation=None, fixi
     if path is None:
         path = f'{os.path.dirname(os.path.abspath(__file__))}/'
 
-
     # TODO : add physical properties as the finger input
     finger = parentNode.addChild(name)
     e_object = ElasticMaterialObject(finger,
-                                    volumeMeshFileName=f'{path}finger.vtk',
-                                    poissonRatio=0.48,
-                                    youngModulus=500,
-                                    totalMass=0.075,
-                                    surfaceColor=[0.0, 0.7, 0.7, 0.5],
-                                    surfaceMeshFileName=f'{path}finger.stl',
-                                    rotation=rotation,
-                                    translation=translation)
+                                     volumeMeshFileName=f'{path}finger.vtk',
+                                     poissonRatio=0.48,
+                                     youngModulus=500,
+                                     totalMass=0.075,
+                                     surfaceColor=[0.0, 0.7, 0.7, 0.5],
+                                     surfaceMeshFileName=f'{path}finger.stl',
+                                     rotation=rotation,
+                                     translation=translation)
     FixedBox(e_object,
              doVisualization=True,
              atPositions=fixingBox)
@@ -222,13 +224,11 @@ def Finger(parentNode=None, name="Finger", rotation=None, translation=None, fixi
     else:
         femPoints = addMappedPoints(e_object, femPos=femPos)
 
-
     finger.addChild(e_object)
     return finger, femPoints
+
 
 # Test
 def createScene(rootNode):
     addHeader(rootNode)
     addSolverNode(rootNode)
-
-
