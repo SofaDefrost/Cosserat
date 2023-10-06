@@ -1,8 +1,7 @@
 # Cosserat
 
->> [!Cosserat-Plugin]+
->> An open-source plugin, designed to be compatible with the Sofa framework, facilitates the simulation of 1D objects. Specifically, it caters to the modeling of both rigid and flexible 1D entities, like rods, wires or needles, using the Cosserat beam theory. In this context, we have outlined a range of potential applications for this plugin. If you wish to explore its functionality, you have the flexibility to construct scenes using Python or XML, or you can take it a step further by developing new C++ components.
->> We also welcome contributions from the community to enhance and expand the capabilities of this plugin.
+> An open-source plugin, designed to be compatible with the Sofa framework, facilitates the simulation of 1D objects. Specifically, it caters to the modeling of both rigid and flexible 1D entities, like rods, wires or needles, using the Cosserat beam theory. In this context, we have outlined a range of potential applications for this plugin. If you wish to explore its functionality, you have the flexibility to construct scenes using Python or XML, or you can take it a step further by developing new C++ components.
+> We also welcome contributions from the community to enhance and expand the capabilities of this plugin.
 
 ### Description related to Soft-body modeling
 
