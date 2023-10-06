@@ -19,29 +19,15 @@ from splib3.loaders import loadPointListFromFile
 import os
 
 """  @info
-Comme tu l'aura compris notre prototype est composé d'une colonne centrale (fils de fer tressés avec une gaine)
- et de 13 disques en iglidur.
- 
- -La colonne mesure 65.5 cm pour un diamètre de 6.2mm
-
-# -Les disques ont un diamètres de 5.2cm, une épaisseur de 2mm et une masse de 6.35g
-#
-# -Les disques sur la colonne sont espacés d'environ 4.7cm
-#
-# -Concernant les trous des disques, il y en a 3 sortes :
-#
-# les trous intérieurs sont au nombre de 3, ont un diamètre de 2mm et sont placés à environ 6mm du centre
-# les trous intermédiaires sont au nombre de 3, ont un diamètre de 2.5mm et sont placés à environ 2cm du centre
-# les trous extérieurs sont au nombre de 12, ont un diamètre de 1mm et sont placés à environ 2.3cm du centre
-# -Enfin concernant le routage des câbles :
-#
-# Le manipulateur est constitué de 3 sections, chaque section est composé de 3 fils (disposés à 120° les uns des autres)
-# Les câbles sont routés de manière parallèle
-# La première section (celle du haut) ainsi que la deuxième (intermédiaire) sont constituées de 4 disques et la
-# troisième (celle du bas) de 5 disques
-# Les câbles ne sont déployés que sur leur propre section. Par exemple, les câbles qui fonctionnent sur la section 3
-# passent par les trous extérieurs sur cette section et par les trous intérieurs sur les sections 1 et 2.
-# [@info] ================ Unit: N, cm, g, Pa  ================
+    To construct this robot, our initial step involves building its central stem. 
+    In this regard, we've opted for employing the Cosserat model for constructing this rod. Our approach entails 
+    dividing this rod into 14 identical segments, each of which terminates with a rigid element. 
+    Subsequently, we will affix a disc to each of these rigid elements.
+    Initially, the beam is affected by gravity, oriented along the -y axis. 
+    Later on, we will adjust the direction of gravity to match the real-world scenario where the robot is oriented 
+    downward, aligning with the gravitational force.
+    To simplify scene construction, we've also activated constraints from the beginning using the 'isConstrained' 
+    keyword set to 'true'.
 """
 
 # @todo
@@ -61,37 +47,10 @@ valueType = 'position'
 
 def createScene(rootNode):
     addHeader(rootNode, isConstrained=True)
-    rootNode.gravity = [9.81, 0., 0.]
+    rootNode.gravity = [0, -9.81, 0.]
 
     stemNode = addSolverNode(rootNode, name="stemNode", isConstrained=True)
 
-    cosserat = stemNode.addChild(CosseratBase(parent=stemNode, params=Params))
-    createRigidDisk(cosserat.cosseratFrame)
-
-    # create the rigid disk node
-    cableBaseState, cable3DState = create_cable_points(geoParams=geoParams, num_segments=14)
-
-    cable1Node = cosserat.cosseratFrame.addChild("cable1Node")
-    cable1Node.addObject('MechanicalObject', name="cable1Pos", template='Rigid3d', position=cableBaseState,
-                         showObjectScale=0.8, showObject=True)
-    cable1Node.addObject('RigidMapping', name="cable1Map", rigidIndexPerPoint=[i for i in range(15)],
-                         globalToLocalCoords=1
-                         )
-    cable1_mechaNode = cable1Node.addChild("cable_mecha1Node")
-    cable_Mo = cable1_mechaNode.addObject('MechanicalObject', name="cable1_mechaPos", template='Vec3d',
-                                          position=cable3DState,
-                                          showIndices=True)
-    # cable1_mechaNode.addObject('RigidMapping', name="cable1Map", globalToLocalCoords=1)
-    cable1_mechaNode.addObject('SkinningMapping', nbRef='1')
-
-    cable = PullingCable(cable1_mechaNode, "PullingCable",
-                         pullPointLocation=pullPointLocation,
-                         rotation=rotation,
-                         translation=translation,
-                         cableGeometry=cable3DState[0],
-                         valueType=valueType,
-                         input=cable_Mo.getLinkPath()
-                         )
-    cable1_mechaNode.addObject(FingerController(cable))
+    stemNode.addChild(CosseratBase(parent=stemNode, params=Params))
 
     return rootNode

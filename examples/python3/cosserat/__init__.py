@@ -11,11 +11,11 @@ The library can be used with scenes written in python3
 Contents of the library
 ********************** 
 
-.. autosummary::
-    :toctree: _autosummary
+. auto_summary::
+    :toc_tree: _auto_summary
 
     cosserat.cosseratObject
 
 """
 
-__all__ = ["utils","cosseratObject", "nonLinearCosserat", "createFemRegularGrid", "actuators"]
+__all__ = ["CosseratBase", "usefulFunctions", "cosseratObject", "nonLinearCosserat", "createFemRegularGrid"]
