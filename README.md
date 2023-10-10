@@ -1,9 +1,16 @@
 # Cosserat
+<div class="highlight-content">
+<strong>Overview</strong> 
 
-> An open-source plugin, designed to be compatible with the Sofa framework, facilitates the simulation of 1D objects. Specifically, it caters to the modeling of both rigid and flexible 1D entities, like rods, wires or needles, using the Cosserat beam theory. In this context, we have outlined a range of potential applications for this plugin. If you wish to explore its functionality, you have the flexibility to construct scenes using Python or XML, or you can take it a step further by developing new C++ components.
-> We also welcome contributions from the community to enhance and expand the capabilities of this plugin.
+An open-source plugin, designed to be compatible with the Sofa framework, facilitates the simulation of 1D objects. 
+Specifically, it caters to the modeling of both rigid and flexible 1D entities, like rods, wires or needles, using the Cosserat beam theory. 
+In this context, we have outlined a range of potential applications for this plugin. If you wish to explore its functionality, you have the flexibility to 
+construct scenes using Python or XML, or you can take it a step further by developing new C++ components. 
+We also welcome contributions from the community to enhance and expand the capabilities of this plugin.
 
-### Description related to Soft-body modeling
+</div>
+
+## Description related to Soft-body modeling
 
 The Cosserat model has found applications in the realm of continuum robotics, particularly for simulating the deformation of robot bodies with geometries and mechanical properties akin to rods. This model aligns closely with the dynamic deformation patterns exhibited by soft manipulators, as it can effectively replicate nonlinear deformations encompassing bending, torsion, extension, and shearing.
 
@@ -11,16 +18,20 @@ One distinctive feature of Cosserat's theory, within the domain of continuous me
 
 When modeling linear structures, this framework enables the creation of a structure closely resembling articulated solids, consisting of a series of rigid bodies whose relative positions are defined by their strain states. Consequently, this model serves as a versatile tool for modeling and controlling a variety of systems, including concentric tube robots, continuum robots driven by cables, or pneumatic soft robots with constant cross-sections.
 
-### Theory
+## Theory
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et.
 
-### Numerics
+## Numerics
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. 
 
-### Some use cases
+## Some use cases
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. 
 
+### Modeling and control
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. 
 
-## Modeling and control
-
-### Direct control
+#### Direct control
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. 
 
 #### Modeling cochlear implant using Discret Cosserat Model (DCM)
 
@@ -28,12 +39,12 @@ When modeling linear structures, this framework enables the creation of a struct
 |---------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------|
 | <img src="/doc/images/multiSectionWithColorMap1.png" width="300" title="DCM as an implant"> | <img src="/doc/images/multiSectionWithColorMap2.png" width="300" title="DCM as an implant"> | <img src="/doc/images/multiSectionWithColorMap3.png" width="300" title="DCM as an implant"> |
 
-### DCM for cable modeling to control deformable robots:
+## DCM for cable modeling to control deformable robots:
 | Direct simulation of a soft gripper                                                      | The study of the model convergence                                                             |
 |------------------------------------------------------------------------------------------| --------------------------------------------------------------------------------------------|
 | <img src="/doc/images/cosseratgripper_2.png" width="400" title="DCM for cable modeling"> | <img src="/doc/images/tenCossseratSections.png" width="400" title="DCM for cable modeling ">|
 
-### Some use cases
+<strong> Actuation </strong>
 
 | <img src="/doc/images/actuationConstraint_2.png" width="300" title="DCM Beam actuation using a given cable">     | <img src="doc/images/circleActuationConstraint.png" width="300" title="DCM Beam actuation using a given cable"> | <img src="/doc/images/actuationConstraint_1.png" width="300" title="DCM Beam actuation using a cable">  |
 | ------------- |:-------------:| -----:|
@@ -44,7 +55,7 @@ When modeling linear structures, this framework enables the creation of a struct
 | ------------- |:-------------:| -------------:|
 | DCM Beam actuation using a cable ```d =``` | DCM Beam actuation using a cable ```d =```| Beam actuation using a cable ```d =```|
 
-
+<strong> Tripode using bending lab sensors </strong>
 Format: ![Alt Text]
 
 
