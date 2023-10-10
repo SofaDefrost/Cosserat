@@ -79,6 +79,7 @@ def generate_edge_list(cable3DPos: List[List[float]]) -> List[int]:
     number_of_points = len(cable3DPos)
     return [i for i in range(number_of_points - 1) for _ in range(2)]
 
+
 class CosseratGeometry:
     def __init__(self, beamGeoParams):
         # Data validation checks for beamGeoParams
