@@ -50,7 +50,7 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor i
 
 | Direct simulation of a soft gripper                                                       | The study of the model convergence                                                            |
 |-------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|
-| ![400](docs/images/cosseratgripper_2.png) | ![400](docs/images/tenCossseratSections.png) |
+| ![400](docs/images/cosseratgripper_2.png) | ![400](../../../../Templater/images/tenCossseratSections.png.md) |
 
 
 ---
