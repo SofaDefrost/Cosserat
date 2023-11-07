@@ -3,9 +3,8 @@
 <strong>Overview</strong> 
 
 An open-source plugin, designed to be compatible with the Sofa framework, facilitates the simulation of 1D objects. 
-Specifically, it caters to the modeling of both rigid and flexible 1D entities, like rods, wires or needles, using the Cosserat beam theory. 
-In this context, we have outlined a range of potential applications for this plugin. If you wish to explore its functionality, you have the flexibility to 
-construct scenes using Python or XML, or you can take it a step further by developing new C++ components. 
+Specifically, it caters to the modeling of both rigid and flexible 1D entities, like rods, wires or needles, using the Cosserat beam theory.
+In this context, we have outlined a range of potential applications for this plugin. If you wish to explore its functionality, you have the flexibility to construct scenes using Python or XML, or you can take it a step further by developing new C++ components.
 We also welcome contributions from the community to enhance and expand the capabilities of this plugin.
 
 </div>
@@ -15,26 +14,25 @@ We also welcome contributions from the community to enhance and expand the capab
 The Cosserat model has found applications in the realm of continuum robotics, particularly for simulating the deformation of robot bodies with geometries and mechanical properties akin to rods. 
 This model aligns closely with the dynamic deformation patterns exhibited by soft manipulators, as it can effectively replicate nonlinear deformations encompassing bending, torsion, extension, and shearing.
 
-One distinctive feature of Cosserat's theory, within the domain of continuous media mechanics, lies in its conceptualization: 
-it views each material point of an object as a rigid body with six degrees of freedom (three translations and three rotations). 
+One distinctive feature of Cosserat's theory, within the domain of continuous media mechanics, lies in its conceptualization:
+it views each material point of an object as a rigid body with six degrees of freedom (three translations and three rotations).
 In contrast, many other models in continuum media mechanics tend to treat material points as particles with only three translation degrees of freedom.
 
 When modeling linear structures, this framework enables the creation of a structure closely resembling articulated solids, consisting of a series of rigid bodies whose relative positions are defined by their strain states. 
 Consequently, this model serves as a versatile tool for modeling and controlling a variety of systems, including concentric tube robots, continuum robots driven by cables, or pneumatic soft robots with constant cross-sections.
 
-## Theory
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et.
+Go into theorotical part of the plugin [Theory](docs/text/Theory.md)
 
-## Numerics
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. 
-
+Follow the tutorial : [cosserat_tutorial](docs/text/cosserat_tutorial.md)
 ## Some use cases
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. 
+
 
 ### Modeling and control
+
 Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. 
 
 #### Direct control
+
 Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. 
 
 #### Modeling cochlear implant using Discret Cosserat Model (DCM)

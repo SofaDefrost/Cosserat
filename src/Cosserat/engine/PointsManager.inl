@@ -74,10 +74,9 @@ namespace sofa::core::behavior
     {
         helper::WriteAccessor<Data<VecCoord>> x = *this->getMstate()->write(core::VecCoordId::position());
         helper::WriteAccessor<Data<VecCoord>> xfree = *this->getMstate()->write(core::VecCoordId::freePosition());
-        const helper::ReadAccessor<Data<VecCoord>> &beam = m_beam->readPositions();
+
         unsigned nbPoints = this->getTopology()->getNbPoints(); // do not take the last point because there is a bug
 
-        size_t beamSz = beam.size();
         sofa::type::vector<unsigned int> Indices;
         if (nbPoints > 0)
         {

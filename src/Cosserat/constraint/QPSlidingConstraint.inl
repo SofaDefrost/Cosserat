@@ -206,7 +206,7 @@ void QPSlidingConstraint<DataTypes>::getConstraintResolution(const ConstraintPar
 {
     ReadAccessor<Data<VecCoord>> positions = m_state->readPositions();
     //    std::cout << "The position size is : " << positions.size()<< std::endl;
-    double imposedValue= 1.0;
+    // double imposedValue = 1.0;
     for (size_t i = 0; i < positions.size(); i++){
 
         resTab[offset++] = new BilateralConstraintResolution();
@@ -220,7 +220,7 @@ void QPSlidingConstraint<DataTypes>::getConstraintResolution(const ConstraintPar
 
 
 template<class DataTypes>
-void QPSlidingConstraint<DataTypes>::draw(const VisualParams* vparams)
+void QPSlidingConstraint<DataTypes>::draw(const VisualParams* /*vparams*/)
 {
     if(d_componentState.getValue() != ComponentState::Valid)
         return ;

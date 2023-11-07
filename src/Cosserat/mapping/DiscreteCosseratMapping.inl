@@ -50,14 +50,10 @@ DiscreteCosseratMapping<TIn1, TIn2, TOut>::DiscreteCosseratMapping()
     : m_fromModel1(NULL)
     , m_fromModel2(NULL)
     , m_toModel(NULL)
-    , d_deformationAxis(initData(&d_deformationAxis, (int)1, "deformationAxis",
-                                 "the axis in which we want to show the deformation.\n"))
-    , d_max(initData(&d_max, (Real2)1.0e-2, "max",
-                                 "the maximum of the deformation.\n"))
-    , d_min(initData(&d_min, (Real2)0.0, "min",
-                                 "the minimum of the deformation.\n"))
-    , d_radius(initData(&d_radius, (Real2)0.05, "radius",
-                                 "the axis in which we want to show the deformation.\n"))
+    , d_deformationAxis(initData(&d_deformationAxis, (int)1, "deformationAxis", "the axis in which we want to show the deformation.\n"))
+    , d_max(initData(&d_max, (Real2)1.0e-2, "max", "the maximum of the deformation.\n"))
+    , d_min(initData(&d_min, (Real2)0.0, "min", "the minimum of the deformation.\n"))
+    , d_radius(initData(&d_radius, (Real2)0.05, "radius", "the axis in which we want to show the deformation.\n"))
     , d_drawMapBeam(initData(&d_drawMapBeam, true,"nonColored", "if this parameter is false, you draw the beam with "
                                                                 "color according to the force apply to each beam"))
     , d_color(initData(&d_color, type::Vec4f (40/255.0, 104/255.0, 137/255.0, 0.8) ,"color", "The default beam color"))
@@ -362,7 +358,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>:: applyJT(
     dataVecOut2Force[0]->endEdit();
 }
 
-//___________________________________________________________________________
+
 template <class TIn1, class TIn2, class TOut>
 void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJT(
         const core::ConstraintParams*/*cparams*/ , const type::vector< In1DataMatrixDeriv*>&  dataMatOut1Const,
