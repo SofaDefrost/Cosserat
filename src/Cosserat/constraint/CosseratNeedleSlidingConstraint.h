@@ -109,7 +109,7 @@ namespace sofa::component::constraintset
             j.multTransposeBaseVector(res, lambda); // lambda is a vector of scalar value so block size is one.
         }
 
-         void storeLambda(const ConstraintParams */*cParams*/, MultiVecDerivId res, const sofa::linearalgebra::BaseVector *lambda) override
+         void storeLambda(const ConstraintParams */*cParams*/, MultiVecDerivId /*res*/, const sofa::linearalgebra::BaseVector */*lambda*/) override
          {
             // if (cParams)
             // {

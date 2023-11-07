@@ -58,7 +58,9 @@ def addHeader(parentNode, multithreading=False, inverse=False, isConstrained=Fal
         "Sofa.GL.Component.Rendering3D",  # Needed to use components OglGrid, OglModel
         "Sofa.GUI.Component", "Sofa.Component.Collision.Geometry", "Sofa.Component.LinearSolver.Direct",
         "Sofa.Component.Mapping.Linear", "Sofa.Component.MechanicalLoad",
-        "Sofa.Component.StateContainer", 'Sofa.Component.ODESolver.Backward'
+        'Sofa.Component.Engine.Select', 'Sofa.Component.SolidMechanics.FEM.Elastic',
+        "Sofa.Component.StateContainer", 'Sofa.Component.ODESolver.Backward',
+        'Sofa.Component.SolidMechanics.FEM.HyperElastic'
     ])
 
     settings.addObject('BackgroundSetting', color=[1, 1, 1, 1])
@@ -129,7 +131,6 @@ def addSolverNode(node, name='solverNode', template='CompressedRowSparseMatrixd'
     solverNode = node.addChild(name)
     solverNode.addObject('EulerImplicitSolver', firstOrder=firstOrder, rayleighStiffness=rayleighStiffness,
                          rayleighMass=rayleighMass)
-    solverNode.addObject('GenericConstraintSolver', tolerance=1e-5, maxIterations=5e2)
     if iterative:
         solverNode.addObject('CGLinearSolver', name='Solver', template=template)
     else:

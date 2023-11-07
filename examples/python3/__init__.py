@@ -13,4 +13,4 @@ Content:
 
 """
 
-__all__ = ["cosserat","useful", "actuators"]
+__all__ = ["cosserat", "useful", "actuators"]

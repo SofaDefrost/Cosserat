@@ -1,33 +1,14 @@
 
-### Mathematical Description of Cosserat Rods 
-
-
-### Reference Frames
-
-### Conservation of Momentum
-
-### Linear Elasticity 
-
-
-## Numerics 
-
-### Spatial Discretization 
-
-### Time Discretization  
-
-### Reduce to Global State 
-
-### Global to Reduce State
-
-### Boundary conditions and interaction forces
-
-
-
-
-
 A step-by-step tutorial for understanding how to model a 1D object  using the Cosserat plugin within the SOFA framework. 
 
-# Modeling 1D Objects with Cosserat Theory in SOFA**
+## Modeling 1D Objects with Cosserat Theory in SOFA**
+
+[Theory](Theory.md)
+
+[Numerics](docs/text/Numerics.md)
+
+
+
 
  **Introduction:**
 In this tutorial, we will learn how to create a 1D object model using Cosserat Theory within the SOFA framework. This model is useful for simulating various physical systems, such as beams or rods. We'll cover the essential components and parameters needed to set up the model.

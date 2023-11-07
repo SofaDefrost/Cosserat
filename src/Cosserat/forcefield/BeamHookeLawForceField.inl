@@ -93,45 +93,60 @@ namespace sofa::component::forcefield
         reinit();
     }
 
+    /*Cross-Section Properties Initialization: The reinit function begins by recalculating the properties 
+    related to the cross-section of the beams. It calculates the area moment of inertia (Iy and Iz), 
+    the polar moment of inertia (J), and the cross-sectional area (A). 
+    These calculations depend on the chosen cross-section shape, either circular or rectangular. T
+    he formulas used for these calculations are based on standard equations for these properties.*/
     template<typename DataTypes>
     void BeamHookeLawForceField<DataTypes>::reinit()
     {
-        Real Iy, Iz, J;
-        Real A;
-        if ( d_crossSectionShape.getValue().getSelectedItem() == "rectangular" )
+        // Precompute and store values
+        Real Iy, Iz, J, A;
+        if ( d_crossSectionShape.getValue().getSelectedItem() == "rectangular")  //rectangular cross-section
         {
             Real Ly = d_lengthY.getValue();
             Real Lz = d_lengthZ.getValue();
 
-            Iy=Ly*Lz*Lz*Lz/12.0;
-            Iz=Lz*Ly*Ly*Ly/12.0;
-            J=Iy + Iz;
-            A = Ly*Lz;
+            const Real LyLzLzLz = Ly * Lz * Lz * Lz;
+            const Real LzLyLyLy = Lz * Ly * Ly * Ly;
+
+            Iy = LyLzLzLz / 12.0;
+            Iz = LzLyLyLy / 12.0;
+            J = Iy + Iz;
+            A = Ly * Lz;
 
         }
-        else //circular section
+        else //circular cross-section
         {
             msg_info() << "Cross section shape." << d_crossSectionShape.getValue().getSelectedItem() ;
 
             Real r = d_radius.getValue();
             Real rInner = d_innerRadius.getValue();
-            Iz = M_PI*(r*r*r*r - rInner*rInner*rInner*rInner)/4.0;
-            Iy = Iz ;
-            J = Iz + Iy;
-            A = M_PI*(r*r - rInner*rInner);
+            const Real r4 = r * r * r * r;
+            const Real rInner4 = rInner * rInner * rInner * rInner;
+
+            Iy = M_PI * (r4 - rInner4) / 4.0;
+            Iz = Iy;
+            J = Iy + Iz;
+            A = M_PI * (r * r - rInner4);
 
         }
         m_crossSectionArea = A;
 
-        if(!d_variantSections.getValue()){
-            if(!d_useInertiaParams.getValue()){
-                Real E= d_youngModulus.getValue();
-                Real G= E/(2.0*(1.0+d_poissonRatio.getValue()));
+        if(!d_variantSections.getValue())
+        {
+            if(!d_useInertiaParams.getValue())
+            {
+                Real E = d_youngModulus.getValue();
+                Real G = E/(2.0*(1.0+d_poissonRatio.getValue()));
 
                 m_K_section[0][0] = G*J;
                 m_K_section[1][1] = E*Iy;
                 m_K_section[2][2] = E*Iz;
-            } else{
+            } 
+            else
+            {
                 msg_info("BeamHookeLawForceField")<< "Pre-calculated inertia parameters are used for the computation "
                                                      "of the stiffness matrix.";
                 m_K_section[0][0] = d_GI.getValue();
@@ -140,22 +155,31 @@ namespace sofa::component::forcefield
             }
 
         }else {
+            /*If the d_variantSections flag is set to true, it implies that multi-section beams are used for 
+            the simulation. In this case, the code calculates and initializes a list of stiffness matrices 
+            (m_K_sectionList) for each section. The properties of each section, such as Young's modulus and 
+            Poisson's ratio, are specified in the d_youngModulusList and d_poissonRatioList data.*/
             msg_info("BeamHookeLawForceField")<< "Multi section beam are used for the simulation!";
             m_K_sectionList.clear();
-            size_t szYM = d_youngModulusList.getValue().size();
-            size_t szPR = d_poissonRatioList.getValue().size();
-            size_t szL  = d_length.getValue().size();
+            
+            const size_t szL  = d_length.getValue().size();
 
-            if((szL != szPR)||(szL != szYM)){
+            if((szL != d_poissonRatioList.getValue().size())||(szL != d_youngModulusList.getValue().size())){
                 msg_error("BeamHookeLawForceField")<< "Please the size of the data length, youngModulusList and "
                                                       "poissonRatioList should be the same !";
                 return;
             }
 
-            for(size_t k=0; k<szL; k++){
+
+            /*Stiffness Matrix Initialization: Next, the code initializes the stiffness matrix m_K_section 
+            based on the properties of the cross-section and the material's Young's modulus (E) and 
+            Poisson's ratio. The stiffness matrix is essential for computing forces and simulating beam 
+            behavior.*/
+            for(size_t k=0; k<szL; k++)
+            {
                 Mat33 _m_K_section;
-                Real E= d_youngModulusList.getValue()[k];
-                Real G= E/(2.0*(1.0+d_poissonRatioList.getValue()[k]));
+                Real E = d_youngModulusList.getValue()[k];
+                Real G = E/(2.0*(1.0+d_poissonRatioList.getValue()[k]));
 
                 _m_K_section[0][0] = G*J;
                 _m_K_section[1][1] = E*Iy;
@@ -205,7 +229,7 @@ namespace sofa::component::forcefield
 
     }
 
-    template<typename DataTypes>
+        template<typename DataTypes>
     void BeamHookeLawForceField<DataTypes>::addDForce(const MechanicalParams* mparams,
                                                       DataVecDeriv&  d_df ,
                                                       const DataVecDeriv&  d_dx)
