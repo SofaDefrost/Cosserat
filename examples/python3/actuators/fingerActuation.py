@@ -8,7 +8,6 @@ Returns:
     _type_: _description_
 """
 
-
 __authors__ = "Younes"
 __contact__ = "adagolodjo@protonmail.com, yinoussa.adagolodjo@inria.fr"
 __version__ = "1.0.0"
@@ -23,9 +22,6 @@ from controler import FingerController
 
 path = f'{os.path.dirname(os.path.abspath(__file__))}/mesh/'
 
-
-
-
 femPos = [" 0.0 0 0 15 0 0 30 0 0 45 0 0 60 0 0 66 0 0 81 0.0 0.0"]
 
 
@@ -33,11 +29,11 @@ def createScene(rootNode):
     rootNode.addObject('BackgroundSetting', color='0 0.168627 0.211765')
     addVisual(rootNode)
 
-    addHeader(rootNode,isConstrained=False)
+    addHeader(rootNode, isConstrained=False)
     rootNode.addObject('FreeMotionAnimationLoop', parallelCollisionDetectionAndFreeMotion=False,
-                         parallelODESolving=False)
+                       parallelODESolving=False)
     rootNode.addObject('GenericConstraintSolver', name='ConstraintSolver', tolerance=1e-20, maxIterations=1000,
-                         multithreading=False)
+                       multithreading=False)
     rootNode.findData('gravity').value = [0., 0., 0.]
 
     femFingerNode = rootNode.addChild('femFingerNode')
@@ -54,7 +50,7 @@ def createScene(rootNode):
     cableNode = addSolverNode(rootNode, name="cableSolver", isConstrained=True)
     cosseratCable = cableNode.addChild(
         Cosserat(parent=cableNode, cosseratGeometry=beamGeometrie, name="cosserat", radius=0.5,
-                       youngModulus=5e6, poissonRatio=0.4))
+                 youngModulus=5e6, poissonRatio=0.4))
 
     mappedFrameNode = cosseratCable.cosseratFrame
     #  This creates a new node in the scene. This node is appended to the finger's node.
@@ -64,20 +60,20 @@ def createScene(rootNode):
     # mechanical modelling. In the case of a cable it is a set of positions specifying
     # the points where the cable is passing by.
     cable3DPosNodeMO = cable3DPosNode.addObject('MechanicalObject', name="cablePos", position=cosseratCable.frames3D,
-                                            showObject="1", showIndices="0")
+                                                showObject="1", showIndices="0")
     cable3DPosNode.addObject('IdentityMapping')
 
     """ These positions are in fact the distance between fem points and the cable points"""
     distancePointsNode = cable3DPosNode.addChild('distancePoints')
     femPointsNode.addChild(distancePointsNode)
     mappedPoints = distancePointsNode.addObject('MechanicalObject', template='Vec3d', position=femPos,
-                                              name="distancePointsMO", showObject='1', showObjectScale='1')
+                                                name="distancePointsMO", showObject='1', showObjectScale='1')
     # cableBaseMo = cosseratCable.rigidBaseNode.getObject('MechanicalObject')
     # cosseratCoordinateMo = cosseratCable.cosseratCoordinateNode.getObject('MechanicalObject')
 
     """The controller of the cable is added to the scene"""
     cableNode.addObject(FingerController(cosseratCable.rigidBaseNode.RigidBaseMO,
-                                  cosseratCable.cosseratCoordinateNode.cosseratCoordinateMO))
+                                         cosseratCable.cosseratCoordinateNode.cosseratCoordinateMO))
 
     inputCableMO = cable3DPosNodeMO.getLinkPath()
     inputFEMCableMO = femPointsNode.getLinkPath()
@@ -85,13 +81,9 @@ def createScene(rootNode):
     """ This constraint is used to compute the distance between the cable and the fem points"""
     distancePointsNode.addObject('QPSlidingConstraint', name="QPConstraint")
     distancePointsNode.addObject('DifferenceMultiMapping', name="pointsMulti", input1=inputFEMCableMO, indices="5",
-                               input2=inputCableMO, output=outputPointMO, direction="@../../FramesMO.position")
-
-
+                                 input2=inputCableMO, output=outputPointMO, direction="@../../FramesMO.position")
 
     return
-
-
 
     # ###############
     # New adds to use the sliding Actuator
@@ -102,13 +94,11 @@ def createScene(rootNode):
     cableNode.addObject('SparseLUSolver', name='solver')
     cableNode.addObject('GenericConstraintCorrection')
 
-
     cosserat = cableNode.addChild(Cosserat(parent=cableNode, cosseratGeometry=beamGeometrie, radius=0.5,
                                            useCollisionModel=True, name="cosserat", youngModulus=5e6, poissonRatio=0.4))
 
     cableNode.addObject(Animation(cosserat.rigidBaseNode.RigidBaseMO,
                                   cosserat.cosseratCoordinateNode.cosseratCoordinateMO))
-
 
     mappedPointsNode = slidingPoint.addChild('MappedPoints')
     femPoints.addChild(mappedPointsNode)

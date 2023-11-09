@@ -6,17 +6,13 @@ cssclasses:
 tags:
   - tuto/cosserat
 ---
-
-
-**Introduction to SOFA**
+##### **Introduction to SOFA**
 - Have SOFA installed on your machine 
 - Install Cosserat plugin 
 	- In Tree 
 	- Out Tree
-
 ---
-
-**Step 1: Installing SOFA**
+##### **Step 1: Installing SOFA**
 
 Before you begin with the specific Cosserat plugin, you need to install SOFA. Follow these steps:
 
@@ -24,9 +20,7 @@ Before you begin with the specific Cosserat plugin, you need to install SOFA. Fo
 2. Choose the appropriate version for your operating system (Windows, Linux, or macOS).
 3. Follow the installation instructions for your OS. Typically, this involves extracting the downloaded archive and setting environment variables.
 ---
-
-**Step 2: Setting Up the Cosserat Plugin**
-
+##### **Step 2: Setting Up the Cosserat Plugin**
 Now, we'll dive into the essential part – configuring the Cosserat plugin within SOFA.
 1. **Create plugins folder:** 
 	- Create folder externalPlugins
@@ -38,10 +32,10 @@ Now, we'll dive into the essential part – configuring the Cosserat plugin with
 ---
 2. **Obtaining the Plugin:** 
 - GitHub : https://github.com/SofaDefrost/Cosserat
-	- Download the plugin :
-		- git clone git@github.com:SofaDefrost/Cosserat.git (if you are using ssh-key)
-		- git clone https://github.com/SofaDefrost/Cosserat.git
-		- or Download the **Zip**  
+- Download the plugin :
+	- git clone git@github.com:SofaDefrost/Cosserat.git (if you are using ssh-key)
+	- git clone https://github.com/SofaDefrost/Cosserat.git
+	- or Download the **Zip**  
 ---
 
 **3. Add *CMakeList.txt* file inside the *externalPlugin* folder**
@@ -72,25 +66,22 @@ Now, we'll dive into the essential part – configuring the Cosserat plugin with
 
 5. **First Cosserat Scene: *tuto_1.py***
    - As said previously, this component is based on the PCS (Piece-wise Constant Strain) formulation.
-   ![400](Pasted%20image%2020231102173536.png)
+   ![](Pasted%20image%2020231102173536.png)
 ---
-
-- [ ] 3 sections with 7 frames
-- [ ] **Goals** :
-	- how to create a basic scene with the cosserat plugin
-		- It is important to note the difference between : 
-			- **section** and **frames**
-			-  **section** and **cross-section**
-	- The notion of force-field : here **BeamHookeLawForceField**
-	- The notion of mapping: here **DiscreteCosseratMapping**
-	- Functions: **apply, applyJ**, **applyJT** for forces and **ApplyJ^T** for constraints
+##### **Goals** :
+- how to create a basic scene with the cosserat plugin
+	- It is important to note the difference between : 
+		- **section** and **frames**
+		-  **section** and **cross-section**
+- The notion of force-field : here **BeamHookeLawForceField**
+- The notion of mapping: here **DiscreteCosseratMapping**
+- Functions: **apply, applyJ**, **applyJT** for forces and **ApplyJ^T** for constraints
 --- 
-Start with the base 
-![500](images/exemple_rigid_translation.png)
+###### Start with the base 
+![600](images/exemple_rigid_translation.png)
 
 ---
-
-- The beam is always constructed along the x-axis
+###### The beam is always constructed along the x-axis
 ```python
    def _add_rigid_base(p_node):  
     rigid_base_node = p_node.addChild('rigid_base')  
@@ -111,28 +102,26 @@ def _add_cosserat_state(p_node, bending_states, list_sections_length, _radius=2.
 ```
 
 ---
-- Parameters :
+###### Parameters :
 ```python
 list_sections_length = [10, 10, 10] 
 cos_nul_state = [0.0, 0.0, 0.0]  # torsion, y_bending, z_bending  
 bending_states = [cos_nul_state, cos_nul_state, cos_nul_state]  
 ```
 ---
-- **BeamHookeLawForceField**
-	- **Force Computation**: The `addForce` method calculates and adds the forces acting on the beams. It uses Hooke's law to compute the forces based on the deformation of the beams and their properties. The computed forces are then stored in the `f` variable.
+###### **BeamHookeLawForceField**
+- **Force Computation**: The `addForce` method calculates and adds the forces acting on the beams. It uses Hooke's law to compute the forces based on the deformation of the beams and their properties. The computed forces are then stored in the `f` variable.
 ---
 - **Derivative of Force Computation**: The `addDForce` method computes the derivative of the forces with respect to the deformation. This is used for stiffness matrix calculations in the context of finite element simulations.
 
 ---
-
 - **Stiffness Matrix Computation**: The `addKToMatrix` method is responsible for adding the stiffness matrix to the global matrix. This is used in FEM to represent the stiffness of the entire system.
 ---
-- Add Mapped coordinates (frames) to the scene 
-	- **Mapping** between **Reduced coordinates** (Cosserat's state) and Global cordinates (Sofa state). 
-		- Frames are multi-mapped (under Cosserat state and rigid base)
+###### Add Mapped coordinates (frames) to the scene 
+- **Mapping** between **Reduced coordinates** (Cosserat's state) and Global cordinates (Sofa state). 
+	- Frames are multi-mapped (under Cosserat state and rigid base)
 ![400](../images/CosseratMapping.png)
 ---
-
 ```python
 def _add_cosserat_frame(p_node, _bending_node, framesF, _section_curv_abs, _frame_curv_abs, _radius, _beam_mass=0.0):  
     cosserat_in_Sofa_frame_node = p_node.addChild('cosserat_in_Sofa_frame_node')  
@@ -144,16 +133,17 @@ def _add_cosserat_frame(p_node, _bending_node, framesF, _section_curv_abs, _fram
     return cosserat_in_Sofa_frame_node
 ```
 ---
-- The notion of mapping: here **DiscreteCosseratMapping**
-	- **apply** : It calculates how the positions of elements in the input models (deformations  and base) are transformed to the output model (rigid frames). The function applies the mapping to these input positions and updates the output frames accordingly.
-	- **applyJ** : compute the Jacobian matrix for the mapping operation. How small changes in input velocity (in this case, deformations) affect small changes in output velocity (in this case, the rigid frames).
+###### The notion of mapping: **DiscreteCosseratMapping**
+- **apply** : It calculates how the positions of elements in the input models (deformations  and base) are transformed to the output model (rigid frames). The function applies the mapping to these input positions and updates the output frames accordingly.
+- **applyJ** : compute the Jacobian matrix for the mapping operation. How small changes in input velocity (in this case, deformations) affect small changes in output velocity (in this case, the rigid frames).
 ---
 
 - **applyJT force** : It updates forces in reduced coordinate based on forces in global coordinate.
 - **applyJT Constraint** : It updates constraints in reduced coordinate based on constraints in global coordinate.
 
+###### The complete scene ![tuto_1.py](../testScene/tuto_1.py)
 ----
-- [ ] Example 2: **tuto_2.py**
+- [ ] Example 2: **![tuto_2.py](../testScene/tuto_2.py)**
      - [ ] script for automating sections and frames
      - [ ] **Goal**: show the role of the number of sections on the overall deformation
          - [ ] Example: 
@@ -186,47 +176,29 @@ def createScene(root_node):
 
 ```
 ---
-- [ ] Scene ![tuto_4](../testScene/tuto_4.py)
+##### Some known examples  ![tuto_4](../testScene/tuto_4.py)
 	- [ ] Force type 1
 	- [ ] Force type 2
 	- [ ] Force type 3
 
 ---
+##### FEM & DCM coupling for finger actuation ![tuto_5.py](../testScene/tuto_5.py)
+- [ ] The cable is modeled using the DCM
+- [ ] The finger is modeled using FEM
+- [ ] Constraints are based on the Lagrange multiplier
+	- [ ] **QPSlidingConstraint**
+	- [ ] **DifferenceMultiMapping**
 
-- [ ] Une scène avec contrainte 
-- [ ] Celle de l’actuation du doigt **[tuto7.py](http://tuto7.py)**
 ---
+##### An example of the use of pre-curved cables, use cases (see scenes from Flavie) [tuto9.py](http://tuto9.py)
 
-- [ ] Celles des trois doigts qui soulèvent le cube ****[tuto8.py](http://tuto8.py)***
+---
+##### Scene of three fingers lifting a cube ****[tuto8.py](http://tuto8.py)***
 
 ----
 
-- [ ] **Une scène pre-bent, s'inspire de la scène Flavie **[tuto9.py](http://tuto9.py)**
-
-
----
-
-**Step 3: Configuring Scene Files**
-
-Now that you have SOFA and the Cosserat plugin ready, you need to configure your simulation scene files. These XML-based files define the simulation environment, including the soft robot model, forces, constraints, and interaction with the environment.
+**Adding Constraints:** Depending on your simulation, you might need to introduce constraints that describe the interaction between the robot and its environment. This is also an essential part of configuring the scene.
 
 ---
-
-1. **Creating a Scene File:** You can start by creating a new XML scene file. This file will serve as the blueprint for your simulation. You can use a text editor to create and modify it.
----
-
-2. **Defining Soft Robot Models:** Within the scene file, you must define your soft robot model. You can specify its geometry, material properties, and the use of Cosserat models to represent deformable structures.
----
-3. **Integrating Cosserat Components:** To utilize Cosserat models in your simulation, you need to incorporate the appropriate components from the Cosserat plugin. These components include the Cosserat beam elements, which are crucial for modeling cables and rods.
----
-4. **Adding Constraints:** Depending on your simulation, you might need to introduce constraints that describe the interaction between the robot and its environment. This is also an essential part of configuring the scene.
----
-5. **Configuring Simulation Parameters:** The scene file allows you to set various simulation parameters, such as time steps, numerical solvers, and visualization options.
-
----
-
-**Step 4: Running Simulations**
-
-After configuring your scene file, you can run simulations to see how the soft robot behaves. SOFA provides real-time visualization, making it easier to analyze and refine your models. You can interact with the simulated robot and monitor its performance as the simulation progresses.
 
 ---

@@ -11,39 +11,56 @@ cssclasses:
   
 _Welcome to this tutorial on SOFA-Cosserat Plugin._  
   
-_Outline of what participants can expect to learn during this tutorial ?_  
-
 [Formation plugin : Cosserat - CodiMD](https://notes.inria.fr/gcfuFPDYSeeAlG4gzfDJwA#)
 
----
-# Tutorial Roadmap
+Yinoussa Adagolodjo
 
-- What to Expect ?
-	- Provide an overview of the tutorial's structure.
-	- Sections and topics we'll cover during the tutorial.
-- Ask questions and be actively engage throughout this tutorial
-	- The first time I am doing this, so I really need your feedback
-	
 ---
-  
-## [Introduction](Introduction.md)
+#### SOFA
 
-- 🗄️Briefly introduce the field of soft robotics  
+- SOFA : Simulation Open Framework Architecture
+	- Dedicated to research
+- Use for prototyping and development of physics-based simulation
+	- FEM / Rigid (articulated) Bodies / Contacts / Other models...
+	- Projections = MAPPING !
+---
+#### SOFA
+- Free & Open Source: [https://www.sofa-framework.org/](https://www.sofa-framework.org/)
+	- Download, use, modify, cite and contribute to SOFA!
+- International community and two major events per year 
+- SOFA Week from $13-17^{th}$  of November 
+	- Onsite with online access
+	- Free – all you need is to register
+---
+#### Tutorial Roadmap
+
+- What to expect ?
+	- An overview of the theory of Discrete Cosserat Model
+	- Numerics & Hands-on examples
+	    - Reduce coordinates
+	    - Reduce coordinate (Cosserat) to Global coordinate (SOFA) State 
+	    - Boundary conditions and interaction forces
+- Ask your questions and actively participate throughout this tutorial.
+	- The first time I am doing this, so I need your feedback
+---
+#### [Introduction](Introduction.md)
+
+- Briefly introduce the field of soft robotics  
 - The motivation for combining FEM and DCM models.  
+
+  
+---  
+#### [Setting up the Environment](Setting%20up%20the%20Environment.md)  
+- An overview of Discrete Cosserat Model (DCM) 
+- The software tools and libraries used (SOFA, **Cosserat** plugin).  
+- Instructions for setting up the simulation environment.  
+- [cosserat_python_scene](cosserat_python_scene.md)
 
 ---
 ## [Background Concepts](Background%20Concepts.md)
 - An overview of Discrete Cosserat Model (DCM) and their relevance in soft robotics.  
 - Finite Element Methods (FEM) and their use in simulating deformable structures ?  
 - The concept of compliance matrices and their role in soft robot modeling ?  
-  
----  
-  
-## [Setting up the Environment](Setting%20up%20the%20Environment.md)  
-- The software tools and libraries used (SOFA, **Cosserat** plugin).  
-- Instructions for setting up the simulation environment.  
-- [cosserat_python_scene](cosserat_python_scene.md)
-
 ---
 ## [Direct Simulation](Direct%20Simulation.md) 
    - How to   
