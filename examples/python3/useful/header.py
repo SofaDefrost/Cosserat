@@ -178,7 +178,7 @@ def addFEMObject(parentNode, path):
 
 
 def addMappedPoints(parentNode, name="pointsInFEM", position=None, showObject="1",
-                    showIndices="1", femPos=" 0.0 0 0 15 0 0 30 0 0 45 0 0 60 0 0 66 0 0 81 0.0 0.0"):
+                    showIndices="1", femPos="0.0 0 0 15 0 0 30 0 0 45 0 0 60 0 0 66 0 0 81 0.0 0.0"):
     if position is None:
         position = femPos
 
