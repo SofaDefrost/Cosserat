@@ -58,11 +58,9 @@ def createScene(root_node):
     bending_node = _add_cosserat_state(root_node, bending_states, list_sections_length)
 
     section_curv_abs = [0, 10, 20, 30]
-    frames_curv_abs = [0., 5, 10, 15, 20, 25, 30]
-    cosserat_G_frames = [[0., 0, 0,  0, 0, 0, 1], [5., 0, 0, 0, 0, 0, 1], [10., 0, 0,  0, 0, 0, 1],
-                         [15, 0, 0, 0, 0, 0, 1], [20., 0, 0,  0, 0, 0, 1], [25., 0, 0,  0, 0, 0, 1],
-                         [30., 0, 0,  0, 0, 0, 1]]
-
+    frames_curv_abs = [0, 10, 20, 30]
+    cosserat_G_frames = [[0., 0, 0, 0, 0, 0, 1], [10., 0, 0, 0, 0, 0, 1], [20., 0, 0, 0, 0, 0, 1],
+                         [30., 0, 0, 0, 0, 0, 1]]
     _add_cosserat_frame(base_node, bending_node, cosserat_G_frames, section_curv_abs, frames_curv_abs,
                         beam_radius)
 

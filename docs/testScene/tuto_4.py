@@ -49,6 +49,7 @@ class ForceController(Sofa.Core.Controller):
 
         # choose the type of force 
         if self.force_type == 1:
+            print('inside force type 1')
             self.compute_force()
         elif self.force_type == 2:
             self.compute_orthogonal_force()
@@ -57,7 +58,8 @@ class ForceController(Sofa.Core.Controller):
 
     def compute_force(self):
         with self.forceNode.forces.writeable() as force:
-            vec = [0., 0., 0., 0., self.forceCoeff / sqrt(2), self.forceCoeff / sqrt(2)]
+            vec = [0., 0., 0.,
+            0., self.forceCoeff/sqrt(2), self.forceCoeff/sqrt(2)]
             for i, v in enumerate(vec):
                 force[0][i] = v
 
@@ -67,7 +69,7 @@ class ForceController(Sofa.Core.Controller):
         # Calculate the direction of the force in order to remain orthogonal to the x axis of the last frame of the beam.
         with self.forceNode.forces.writeable() as force:
             vec = orientation.rotate([0., self.forceCoeff * 5.e-2, 0.])
-            vec.normalize()
+            # vec.normalize()
             # print(f' The new vec is : {vec}')
             for count in range(3):
                 force[0][count] = vec[count]
@@ -102,8 +104,7 @@ def createScene(root_node):
     cosserat_frames = cosserat_beam.cosseratFrame
 
     # this constance force is used only in the case we are doing force_type 1 or 2
-    const_force_node = cosserat_frames.addObject('ConstantForceField', name='constForce', showArrowSize=1.e-8,
-                                                 indices=geoParams.nbFrames, forces=force_null)
+    const_force_node = cosserat_frames.addObject('ConstantForceField', name='constForce', showArrowSize=1.e-8, indices=geoParams.nbFrames, forces=force_null)
 
     # The effector is used only when force_type is 3
     # create a rigid body to control the end effector of the beam
@@ -112,11 +113,10 @@ def createScene(root_node):
                                                 showObjectScale=0.3, position=[geoParams.beamLength, 0, 0, 0, 0, 0, 1],
                                                 showObject=True)
 
-    cosserat_frames.addObject('RestShapeSpringsForceField', name='spring', stiffness=1e8, angularStiffness=1e8,
+    cosserat_frames.addObject('RestShapeSpringsForceField', name='spring', stiffness=1.e8, angularStiffness=1.e8,
                               external_points=0, external_rest_shape=controller_state.getLinkPath(),
                               points=geoParams.nbFrames, template="Rigid3d")
 
-    solver_node.addObject(ForceController(forceNode=const_force_node, frame_node=cosserat_frames, force_type=3,
-                                          tip_controller=controller_state))
+    solver_node.addObject(ForceController(forceNode=const_force_node, frame_node=cosserat_frames, force_type=3, tip_controller=controller_state))
 
     return root_node

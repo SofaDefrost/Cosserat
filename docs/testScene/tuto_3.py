@@ -14,10 +14,8 @@ from useful.params import BeamPhysicsParameters, BeamGeometryParameters, Simulat
 from useful.params import Parameters
 from cosserat.CosseratBase import CosseratBase
 
-geoParams = BeamGeometryParameters(init_pos=[0., 0., 0.], beamLength=30., showFramesObject=1,
-                                   nbSection=6, nbFrames=12, buildCollisionModel=0)
-physicsParams = BeamPhysicsParameters(beamMass=1., youngModulus=1.0e4, poissonRatio=0.38, beamRadius=1.,
-                                      beamLength=30)
+geoParams = BeamGeometryParameters(init_pos=[0., 0., 0.], beamLength=30., showFramesObject=1, nbSection=6, nbFrames=12, buildCollisionModel=0)
+physicsParams = BeamPhysicsParameters(beamMass=1., youngModulus=1.0e4, poissonRatio=0.38, beamRadius=1., beamLength=30)
 simuParams = SimulationParameters()
 Params = Parameters(beamGeoParams=geoParams, beamPhysicsParams=physicsParams, simuParams=simuParams)
 
