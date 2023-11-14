@@ -111,7 +111,6 @@ Les frames ne sont pas obligatoirement à équidistances les unes par rapport au
     $$ R :[x , y, z, 0, 0, 0, 1] $$
     
 - Spring
-    
     - Rigidité
     - Rigidité angulaire
 

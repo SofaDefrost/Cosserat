@@ -66,7 +66,7 @@ Now, we'll dive into the essential part – configuring the Cosserat plugin with
 
 5. **First Cosserat Scene: *tuto_1.py***
    - As said previously, this component is based on the PCS (Piece-wise Constant Strain) formulation.
-   ![](Pasted%20image%2020231102173536.png)
+   ![](../images/Pasted%20image%2020231102173536.png)
 ---
 ##### **Goals** :
 - how to create a basic scene with the cosserat plugin
@@ -143,19 +143,19 @@ def _add_cosserat_frame(p_node, _bending_node, framesF, _section_curv_abs, _fram
 
 ###### The complete scene ![tuto_1.py](../testScene/tuto_1.py)
 ----
-- [ ] Example 2: **![tuto_2.py](../testScene/tuto_2.py)**
-     - [ ] script for automating sections and frames
-     - [ ] **Goal**: show the role of the number of sections on the overall deformation
-         - [ ] Example: 
-             - [ ] 6 sections; 32 frames: $b_y=0.2$  on the last bending_state
-             - [ ] 12 sections 32 frames:  $b_y=0.2$ on the last bending_state
-             - [ ] 6 sections 6 frames: all variables $b_y=0.2$
-                 - [ ] Change to frames = 12/24/32
-                     - [ ] Shows that we have a smoother curvature than previously while emphasizing the fact that there is rather a geometry impact, but not a physical one.
+- [x] Example 2: **![tuto_2.py](../testScene/tuto_2.py)**
+     - script for automating sections and frames
+     - **Goal**: show the role of the number of sections on the overall deformation
+         - Example: 
+             - 6 sections; 32 frames: $b_y=0.2$  on the last bending_state
+             - 12 sections 32 frames:  $b_y=0.2$ on the last bending_state
+             - 6 sections 6 frames: all variables $b_y=0.2$
+                 - Change to frames = 12/24/32
+                     - Shows that we have a smoother curvature than previously while emphasizing the fact that there is rather a geometry impact, but not a physical one.
 ----
 
-- [ ] Scene **![tuto_3](../testScene/tuto_3.py)**
-    - [ ] Use the $CosseratBase$ Python class and $prefabs$
+- Scene **![tuto_3](../testScene/tuto_3.py)**
+    - Use the $CosseratBase$ Python class and $prefabs$
 ```python
 def createScene(root_node):
     addHeader(root_node)
@@ -167,7 +167,7 @@ def createScene(root_node):
     return root_node
 ```
 ---
-- [ ] Uses also python $dataclass$ 
+- Uses also python $dataclass$ 
 ```python 
 - geoParams = BeamGeometryParameters(init_pos=[0., 0., 0.], beamLength=30., showFramesObject=1,nbSection=6, nbFrames=12, buildCollisionModel=0)
 - physicsParams = BeamPhysicsParameters(beamMass=1., youngModulus=1.0e4, poissonRatio=0.38, beamRadius=1., beamLength=30)
@@ -177,17 +177,17 @@ def createScene(root_node):
 ```
 ---
 ##### Some known examples  ![tuto_4](../testScene/tuto_4.py)
-	- [ ] Force type 1
-	- [ ] Force type 2
-	- [ ] Force type 3
+	- Force type 1
+	- Force type 2
+	- Force type 3
 
 ---
 ##### FEM & DCM coupling for finger actuation ![tuto_5.py](../testScene/tuto_5.py)
-- [ ] The cable is modeled using the DCM
-- [ ] The finger is modeled using FEM
-- [ ] Constraints are based on the Lagrange multiplier
-	- [ ] **QPSlidingConstraint**
-	- [ ] **DifferenceMultiMapping**
+- The cable is modeled using the DCM
+- The finger is modeled using FEM
+- Constraints are based on the Lagrange multiplier
+	- **QPSlidingConstraint**
+	- **DifferenceMultiMapping**
 
 ---
 ##### An example of the use of pre-curved cables, use cases (see scenes from Flavie) [tuto9.py](http://tuto9.py)

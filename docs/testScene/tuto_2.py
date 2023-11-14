@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import Sofa
-from useful.params import Parameters
-
 stiffness_param = 1.e10
 beam_radius = 1.
 
@@ -58,7 +55,7 @@ def createScene(root_node):
 
     # build beam geometry
     nb_sections = 6
-    beam_length = 30.
+    beam_length = 30
     length_s = beam_length/float(nb_sections)
     bending_states = []
     list_sections_length = []
@@ -66,18 +63,18 @@ def createScene(root_node):
     section_curv_abs = [0.]  # section/segment curve abscissa
 
     for i in range(nb_sections):
-        bending_states.append([0, 0.2, 0.])  # torsion, y_bending, z_bending
+        bending_states.append([0, 0.0, 0.])  # torsion, y_bending, z_bending
         list_sections_length.append((((i + 1) * length_s) - i * length_s))
         temp += list_sections_length[i]
         section_curv_abs.append(temp)
-    bending_states[nb_sections-1] = [0, 0.2, 0]
+    bending_states[nb_sections-1] = [0, 0.0, 0.3]
     section_curv_abs[nb_sections] = beam_length
 
     # call add cosserat state and force field
     bending_node = _add_cosserat_state(root_node, bending_states, list_sections_length)
 
     # comment : ???
-    nb_frames = 6
+    nb_frames = 32
     length_f = beam_length/float(nb_frames)
     cosserat_G_frames = []
     frames_curv_abs = []

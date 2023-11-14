@@ -9,11 +9,11 @@ cssclasses:
 ---
 
 Solide Works
-![](Pasted%20image%2020231025171449.png)
+![](../images/Pasted%20image%2020231025171449.png)
 
 ---
 
-![[Learning/Learning&Development/Formation/cosserat/docs/text/Untitled Diagram.svg]]
+![[../images/Untitled Diagram.svg]]
 
 ---
 

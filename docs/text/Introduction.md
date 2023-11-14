@@ -84,13 +84,13 @@ Yinoussa Adagolodjo
 ---
 ##### Why combine different models ?
 - Existing design and modeling tools demand enhancement, particularly in the mechanical aspect.
-![](Pasted%20image%2020231108201224.png)
+![](../images/Pasted%20image%2020231108201224.png)
 - Offer a wide range of design possibilities:
 	- Selection of actuators, force transmission within the structure, utilization of materials with varying stiffness profiles, and more.
 ---
 ##### Cosserat Theory
 Choose strain as generalized coordinates, defined in global (or local) frame!
-![400](Pasted%20image%2020231108233708.png)
+![400](../images/Pasted%20image%2020231108233708.png)
 [Lazarus et al. 2013]
 - The configuration of the Cosserat rod is defined by its centerline r(s).
 - The orientation of each mass point of the rod is represented by an orthonormal basis ($d_1(s), d_2(s), d_3(s)$)
@@ -117,27 +117,27 @@ Choose strain as generalized coordinates, defined in global (or local) frame!
 - Strain $\begin{align}\xi(s,t) &= \begin{bmatrix}\mathcal{k} \\ \mathcal{p} \end{bmatrix}\end{align} \in R^6$
 - Kinematics : $g'=g\hat{\xi}(X)$ ; $\dot{g} = g\hat{\eta}$
 - Differntial Kinematics : $\eta'=\dot{\xi}(X)-ad_{\xi(X)}\eta(X)$
-![](Pasted%20image%2020231109002926.png)
+![](../images/Pasted%20image%2020231109002926.png)
 ---
-![0](Pasted%20image%2020231108234643.png)
+![0](../images/Pasted%20image%2020231108234643.png)
 
 ---
 ##### DCM (Dynamics)
-![800](Pasted%20image%2020231109003349.png)
+![800](../images/Pasted%20image%2020231109003349.png)
 
 ---
 ##### DCM Dynamic
-![](Pasted%20image%2020231109003734.png)
+![](../images/Pasted%20image%2020231109003734.png)
 
 ---
 ##### Approximation via PCS, VS and PLS
-![300](Pasted%20image%2020231109003934.png)
+![300](../images/Pasted%20image%2020231109003934.png)
 - **PCS**: A local approximation scheme employing a local constant strain assumption.
 - **VS**: A global approximation method based on the chosen basis functions.
 - **PLS**: A local approximation scheme with a linear strain function assumption. 
 ---
 ##### PCS Cosserat
-![](Pasted%20image%2020231109004616.png)
+![](../images/Pasted%20image%2020231109004616.png)
 
 ---
 ##### Discrete Cosserat Modeling: DCM
