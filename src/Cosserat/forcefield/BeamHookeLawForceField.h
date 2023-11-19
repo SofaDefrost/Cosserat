@@ -137,6 +137,7 @@ protected:
     Data<Real>  d_GA;
     Data<Real>  d_EA;
     Data<Real>  d_EI;
+    Data<bool>  d_buildTorsion;
 
     bool compute_df;
     Mat33 m_K_section;

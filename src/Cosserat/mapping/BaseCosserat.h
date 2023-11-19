@@ -152,6 +152,19 @@ public:
     void reinit() override;
     void draw(const core::visual::VisualParams* vparams) override;
 
+    double computeTheta(const double &x, const Mat4x4 &gX){
+        double Tr_gx = 0.0;
+        for (int i = 0; i<4; i++) {
+            Tr_gx += gX[i][i];
+        }
+
+        double theta;
+        if( x <= std::numeric_limits<double>::epsilon()) theta = 0.0;
+        else theta = (1.0/x) * std::acos((Tr_gx/2.0) -1);
+
+        return  theta;
+    }
+
 protected:
     /**********************COSSERAT METHODS**************************/
     void computeExponentialSE3(const double &x, const type::Vec3& k, Transform & Trans);
@@ -165,18 +178,7 @@ protected:
 
     [[maybe_unused]] type::Vec6 compute_eta(const Vec6 & baseEta, const In1VecDeriv & k_dot, double abs_input);
     type::Matrix4 computeLogarithm(const double & x, const Mat4x4 &gX);
-    double computeTheta(const double &x, const Mat4x4 &gX){
-        double Tr_gx = 0.0;
-        for (int i = 0; i<4; i++) {
-            Tr_gx += gX[i][i];
-        }
 
-        double theta;
-        if( x <= std::numeric_limits<double>::epsilon()) theta = 0.0;
-        else theta = (1.0/x) * std::acos((Tr_gx/2.0) -1);
-
-        return  theta;
-    }
 
 
 public:

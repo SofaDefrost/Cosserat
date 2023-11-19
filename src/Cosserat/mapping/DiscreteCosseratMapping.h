@@ -66,9 +66,9 @@ public:
     /// Output Model Type
     typedef TOut Out;
     typedef typename In2::Coord::value_type Real1;
-    typedef typename In1::Coord             Coord1;
+    typedef typename In1::Coord            Coord1;
     typedef typename In1::Deriv             Deriv1;
-    typedef typename In1::VecCoord          In1VecCoord;
+    typedef typename In1::VecCoord       In1VecCoord;
     typedef typename In1::VecDeriv          In1VecDeriv;
     typedef typename In1::MatrixDeriv       In1MatrixDeriv;
     typedef Data<In1VecCoord>               In1DataVecCoord;
@@ -140,6 +140,7 @@ protected:
     using BaseCosserat<TIn1, TIn2, TOut>::m_nodeAdjointVectors;
     using BaseCosserat<TIn1, TIn2, TOut>::m_index_input;
     using BaseCosserat<TIn1, TIn2, TOut>::m_indicesVectorsDraw;
+    using BaseCosserat<TIn1, TIn2, TOut>::computeTheta;
 
 protected:
     /// Constructor
@@ -178,6 +179,7 @@ public:
             const type::vector< In2DataMatrixDeriv*>&  dataMatOut2Const ,
             const type::vector<const OutDataMatrixDeriv*>&  dataMatInConst) override;
     void computeBBox(const core::ExecParams* params, bool onlyVisible) override;
+    void  computeLogarithm(const double & x, const Matrix4 &gX, Matrix4 &log_gX);
 protected:
     helper::ColorMap m_colorMap;
 
