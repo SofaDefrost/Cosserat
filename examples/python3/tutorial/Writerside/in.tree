@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE instance-profile
+        SYSTEM "https://resources.jetbrains.com/writerside/1.0/product-profile.dtd">
+
+<instance-profile id="in"
+                  name="instanceName" start-page="tutorial.md">
+
+    <toc-element topic="cosserat_tutorial.md"/>
+    <toc-element topic="Theory.md"/>
+    <toc-element topic="Numerics.md"/>
+    <toc-element topic="tutorial.md"/>
+    <toc-element topic="Introduction.md"/>
+    <toc-element topic="Soft_robot_intro.md"/>
+    <toc-element topic="Direct Simulation.md"/>
+    <toc-element topic="Background Concepts.md"/>
+    <toc-element topic="Advanced Topics and Future Work.md"/>
+    <toc-element topic="Setting up the Environment.md"/>
+    <toc-element topic="Inverse Simulation.md"/>
+    <toc-element topic="Model Convergence and Sensitivity Analysis.md"/>
+    <toc-element topic="Complement.md"/>
+</instance-profile>

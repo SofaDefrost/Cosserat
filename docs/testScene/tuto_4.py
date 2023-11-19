@@ -113,7 +113,7 @@ def createScene(root_node):
                                                 showObjectScale=0.3, position=[geoParams.beamLength, 0, 0, 0, 0, 0, 1],
                                                 showObject=True)
 
-    cosserat_frames.addObject('RestShapeSpringsForceField', name='spring', stiffness=1.e8, angularStiffness=1.e8,
+    cosserat_frames.addObject('RestShapeSpringsForceField', name='spring', stiffness=0., angularStiffness=1.e8,
                               external_points=0, external_rest_shape=controller_state.getLinkPath(),
                               points=geoParams.nbFrames, template="Rigid3d")
 

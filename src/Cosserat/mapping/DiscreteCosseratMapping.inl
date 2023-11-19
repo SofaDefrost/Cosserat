@@ -82,7 +82,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::init()
 template <class TIn1, class TIn2, class TOut>
 void DiscreteCosseratMapping<TIn1, TIn2, TOut>::reinit()
 {
-  m_fromModel1 = this->getFromModels1()[0]; // Cosserat deformations (torsion and bending), in local frame
+  m_fromModel1 = this->getFromModels1()[0]; // Cosserat deformations (torsion or elongation and bending), in local frame
   m_fromModel2 = this->getFromModels2()[0]; // Cosserat base, in global frame
   m_toModel = this->getToModels()[0];  // Cosserat rigid frames, in global frame
 
@@ -90,7 +90,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::reinit()
   const OutDataVecCoord* xFromData = m_toModel->read(core::ConstVecCoordId::position());
   const OutVecCoord xFrom = xFromData->getValue();
 
-  m_vecTransform.clear();
+  m_vecTransform.clear(); // initialise with the rigids frames
   for (unsigned int i = 0; i < xFrom.size(); i++) {
     m_vecTransform.push_back(xFrom[i]);
   }
@@ -142,34 +142,32 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::apply(
 }
 
 
-//template <class TIn1, class TIn2, class TOut>
-//Matrix4 DiscreteCosseratMapping<TIn1, TIn2, TOut>::computeLogarithm(const double & x, const defaulttype::Matrix4 &gX){
+template <class TIn1, class TIn2, class TOut>
+void DiscreteCosseratMapping<TIn1, TIn2, TOut>::computeLogarithm(const double & x, const Matrix4 &gX, Matrix4 &log_gX){
 
-//    // Compute theta before everything
-//    const double theta = computeTheta(x, gX);
-//    Matrix4 I4; I4.clear(); I4.identity();
-//    Matrix4 log_gX; log_gX.clear();
+    // Compute theta before everything
+    double theta = computeTheta(x, gX);
+    Matrix4 I4; I4.clear(); I4.identity();
+    log_gX.clear();
 
 
-//    double csc_theta = 1.0/(sin(x * theta/2.0));
-//    double sec_theta = 1.0/(cos(x * theta/2.0));
-//    double cst = (1.0/8) * (csc_theta*csc_theta*csc_theta) * sec_theta;
-//    double x_theta = x*theta;
-//    double cos_2Xtheta = cos(2.0 * x_theta);
-//    double cos_Xtheta = cos(x_theta);
-//    double sin_2Xtheta = sin(2.0 *x_theta);
-//    double sin_Xtheta = sin(x_theta);
+    double csc_theta = 1.0/(sin(x * theta/2.0));
+    double sec_theta = 1.0/(cos(x * theta/2.0));
+    double cst = (1.0/8) * (csc_theta*csc_theta*csc_theta) * sec_theta;
+    double x_theta = x*theta;
+    double cos_2Xtheta = cos(2.0 * x_theta);
+    double cos_Xtheta = cos(x_theta);
+    double sin_2Xtheta = sin(2.0 *x_theta);
+    double sin_Xtheta = sin(x_theta);
 
-//    if(theta <= std::numeric_limits<double>::epsilon()) log_gX = I4;
-//    else {
-//        log_gX  = cst * ((x_theta*cos_2Xtheta - sin_Xtheta)*I4 -
-//                         (x_theta*cos_Xtheta + 2.0*x_theta*cos_2Xtheta - sin_Xtheta -sin_2Xtheta)*gX +
-//                         (2.0*x_theta*cos_Xtheta + x_theta*cos_2Xtheta-sin_Xtheta - sin_2Xtheta) *(gX*gX)-
-//                         (x_theta*cos_Xtheta - sin_Xtheta)*(gX*gX*gX));
-//    }
-
-//    return log_gX;
-//}
+    if(theta <= std::numeric_limits<double>::epsilon()) log_gX = I4;
+    else {
+        log_gX  = cst * ((x_theta*cos_2Xtheta - sin_Xtheta)*I4 -
+                         (x_theta*cos_Xtheta + 2.0*x_theta*cos_2Xtheta - sin_Xtheta -sin_2Xtheta)*gX +
+                         (2.0*x_theta*cos_Xtheta + x_theta*cos_2Xtheta-sin_Xtheta - sin_2Xtheta) *(gX*gX)-
+                         (x_theta*cos_Xtheta - sin_Xtheta)*(gX*gX*gX));
+    }
+}
 
 //template<class In1VecCoord, class Mat6x6>
 //void computeViolation(In1VecCoord& inDeform, const helper::vector<double> m_framesLengthVectors, const

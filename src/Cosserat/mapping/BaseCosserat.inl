@@ -133,12 +133,12 @@ void BaseCosserat<TIn1, TIn2, TOut>::update_ExponentialSE3(const In1VecCoord & i
     m_nodesLogarithmeSE3Vectors.clear();
     const unsigned int sz = curv_abs_frames.size();
 
-    //Compute exponential at frame points
+    //Compute exponential at each frame point
     for (size_t i = 0; i < sz; i++) {
         Transform T ;
 
-        const type::Vec3 k = inDeform[m_indicesVectors[i]-1];
-        const double x = m_framesLengthVectors[i];
+        const type::Vec3 k = inDeform[m_indicesVectors[i]-1]; //Cosserat reduce coordinates
+        const double x = m_framesLengthVectors[i];  // The distance between the frame and the closest beam node toward the base
         computeExponentialSE3(x,k,T);
         m_framesExponentialSE3Vectors.push_back(T);
 
@@ -149,8 +149,7 @@ void BaseCosserat<TIn1, TIn2, TOut>::update_ExponentialSE3(const In1VecCoord & i
         }
     }
 
-    //Compute the exponential at the nodes
-
+    //Compute the exponential on the nodes
     m_nodesExponentialSE3Vectors.push_back(Transform(type::Vec3(0.0,0.0,0.0),type::Quat(0.,0.,0.,1.)));
 
     for (unsigned int  j = 0; j < inDeform.size(); j++) {
@@ -386,28 +385,32 @@ void BaseCosserat<TIn1, TIn2, TOut>::initialize()
 
     size_t input_index = 1;
 
+
     for (size_t i=0; i < sz; i++) {
         if (curv_abs_section[input_index] > curv_abs_frames[i]) {
-            m_indicesVectors.push_back(input_index);
-            m_indicesVectorsDraw.push_back(input_index); // maybe I shouldn't do this here !!!      
+            m_indicesVectors.emplace_back(input_index);
+            m_indicesVectorsDraw.emplace_back(input_index); // maybe I shouldn't do this here !!!
         }
         else if(curv_abs_section[input_index] == curv_abs_frames[i]){
-            m_indicesVectors.push_back(input_index);
+            m_indicesVectors.emplace_back(input_index);
             input_index++;
-            m_indicesVectorsDraw.push_back(input_index);
+            m_indicesVectorsDraw.emplace_back(input_index);
+
+
         }
         else {
             input_index++;
-            m_indicesVectors.push_back(input_index);
-            m_indicesVectorsDraw.push_back(input_index);
+            m_indicesVectors.emplace_back(input_index);
+            m_indicesVectorsDraw.emplace_back(input_index);
         }
         //Fill the vector m_framesLengthVectors with the distance
         //between frame(output) and the closest beam node toward the base
-        m_framesLengthVectors.push_back(curv_abs_frames[i] - curv_abs_section[m_indicesVectors[i] - 1]);
+        //m_framesLengthVectors.push_back(curv_abs_frames[i] - curv_abs_section[m_indicesVectors[i] - 1]);
+        m_framesLengthVectors.emplace_back(curv_abs_frames[i] - curv_abs_section[m_indicesVectors.back() - 1]);
     }
 
     for (size_t j = 0; j < curv_abs_section.size() - 1; j++) {
-        m_BeamLengthVectors.push_back(curv_abs_section[j + 1] - curv_abs_section[j]);
+        m_BeamLengthVectors.emplace_back(curv_abs_section[j + 1] - curv_abs_section[j]);
     }
 
     if(d_debug.getValue()){
