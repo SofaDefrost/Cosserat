@@ -34,19 +34,17 @@
 #include <sofa/core/behavior/MechanicalState.h>
 #include <sofa/core/behavior/ForceField.inl>
 #include <sofa/helper/OptionsGroup.h> // ??
+#include <iostream>
+#include <algorithm>
+#include <ctime>
 
 using sofa::core::behavior::MechanicalState ;
 using sofa::core::objectmodel::BaseContext ;
 using sofa::helper::ReadAccessor ;
 using sofa::helper::WriteAccessor ;
 using sofa::core::VecCoordId;
-
-#include <iostream>
 using std::cout ;
 using std::endl ;
-
-#include <algorithm>
-#include <ctime>
 
 namespace sofa::component::forcefield
 {
@@ -76,7 +74,8 @@ namespace sofa::component::forcefield
               d_GI(initData(&d_GI, "GI", "The inertia parameter, GI")),
               d_GA(initData(&d_GA, "GA", "The inertia parameter, GA")),
               d_EA(initData(&d_EA, "EA", "The inertia parameter, EA")),
-              d_EI(initData(&d_EI, "EI", "The inertia parameter, EI")),
+              d_EIy(initData(&d_EIy, "EIy", "The inertia parameter, EIy")),
+               d_EIz(initData(&d_EIz, "EIz", "The inertia parameter, EIz")),
               d_buildTorsion(initData(&d_buildTorsion, true,"build_torsion", "build torsion or the elongation of the beam ?"))
 
     {
@@ -95,13 +94,15 @@ namespace sofa::component::forcefield
         reinit();
     }
 
+
+
     /*Cross-Section Properties Initialization: The reinit function begins by recalculating the properties
     related to the cross-section of the beams. It calculates the area moment of inertia (Iy and Iz),
     the polar moment of inertia (J), and the cross-sectional area (A).
     These calculations depend on the chosen cross-section shape, either circular or rectangular.
     The formulas used for these calculations are based on standard equations for these properties.*/
     template<typename DataTypes>
-    void BeamHookeLawForceField<DataTypes>::reinit()
+    void BeamHookeLawForceField<DataTypes>::BeamHookeLawForceField::reinit()
     {
         // Precompute and store values
         Real Iy, Iz, J, A;
@@ -181,38 +182,29 @@ namespace sofa::component::forcefield
             {
                 msg_info("BeamHookeLawForceField")<< "Pre-calculated inertia parameters are used for the computation of the stiffness matrix.";
                 m_K_section[0][0] = d_GI.getValue();
-                m_K_section[1][1] = d_EI.getValue();
-                m_K_section[2][2] = d_EI.getValue();
+                m_K_section[1][1] = d_EIy.getValue();
+                m_K_section[2][2] = d_EIz.getValue();
             }
             else
             {
                //Pour du vec 6, on a  _m_K =diag([G*J E*Iy E*Iz E*A G*As G*As]); % stifness matrix
-               if (d_buildTorsion.getValue()){
-                    Real E = d_youngModulus.getValue();
-                    Real G = E/(2.0*(1.0+d_poissonRatio.getValue()));
-                    m_K_section[0][0] = G*J;
-                    m_K_section[1][1] = E*Iy;
-                    m_K_section[2][2] = E*Iz;
-               }else {
-                    Real E = d_youngModulus.getValue();
-                    Real G = E/(2.0*(1.0+d_poissonRatio.getValue()));
-                    //Translational Stiffness (X, Y, Z directions):
-                    // Gs * I(i): Shearing modulus times the second moment of the area (torsional stiffness).
-                    // E * Js(i): Young's modulus times the second moment of the area (bending stiffness).
-                    m_K_section[1][1] = E * Iy;
-                    m_K_section[2][2] = E * Iz;
-
-                    //Rotational Stiffness (X, Y, Z directions):
-                    //E * A: Young's modulus times the cross-sectional area (axial stiffness).
-                    //Gs * A: Shearing modulus times the cross-sectional area (shearing stiffness).
-                    m_K_section[0][0] = E * A;
-                }
+                Real E = d_youngModulus.getValue();
+                Real G = E/(2.0*(1.0+d_poissonRatio.getValue()));
+                //Translational Stiffness (X, Y, Z directions):
+                // Gs * I(i): Shearing modulus times the second moment of the area (torsional stiffness).
+                // E * Js(i): Young's modulus times the second moment of the area (bending stiffness).
+                m_K_section[0][0] = G*J;
+                m_K_section[1][1] = E*Iy;
+                m_K_section[2][2] = E*Iz;
+                //Rotational Stiffness (X, Y, Z directions):
+                //E * A: Young's modulus times the cross-sectional area (axial stiffness).
+                //Gs * A: Shearing modulus times the cross-sectional area (shearing stiffness).
             }
         }
     }
 
     template<typename DataTypes>
-    void BeamHookeLawForceField<DataTypes>::addForce(const MechanicalParams* mparams,
+    void BeamHookeLawForceField<DataTypes>::BeamHookeLawForceField::addForce(const MechanicalParams* mparams,
                                                      DataVecDeriv& d_f,
                                                      const DataVecCoord& d_x,
                                                      const DataVecDeriv& d_v)
@@ -239,8 +231,10 @@ namespace sofa::component::forcefield
         }
 
         if(!d_variantSections.getValue())
-            for (unsigned int i=0; i<x.size(); i++)
+            for (unsigned int i=0; i<x.size(); i++){
+//                Vector3 v = Vector3(x[i][0] - x0[i][0], x[i][1] - x0[i][1], x[i][2] - x0[i][2]);
                 f[i] -= (m_K_section * (x[i] - x0[i])) * d_length.getValue()[i];
+            }
         else
             for (unsigned int i=0; i<x.size(); i++)
                 f[i] -= (m_K_sectionList[i] * (x[i] - x0[i])) * d_length.getValue()[i];
@@ -248,10 +242,9 @@ namespace sofa::component::forcefield
 
     }
 
-        template<typename DataTypes>
+    template<typename DataTypes>
     void BeamHookeLawForceField<DataTypes>::addDForce(const MechanicalParams* mparams,
-                                                      DataVecDeriv&  d_df ,
-                                                      const DataVecDeriv&  d_dx)
+                                                      DataVecDeriv&  d_df , const DataVecDeriv&  d_dx)
     {
         if (!compute_df)
             return;

@@ -28,18 +28,102 @@
 
 namespace sofa::component::mapping
 {
-
 using namespace sofa::defaulttype;
+
+template<>
+BaseCosserat<Vec6Types, Rigid3Types, Rigid3Types>::se3 BaseCosserat<Vec6Types, Rigid3Types, Rigid3Types>::build_Xi_hat(const Coord1& strain_i){
+    se3 Xi;
+
+    Xi[0][1] = -strain_i(2);
+    Xi[0][2] = strain_i[1];
+    Xi[1][2] = -strain_i[0];
+
+    Xi[1][0] = -Xi(0,1);
+    Xi[2][0] = -Xi(0,2);
+    Xi[2][1] = -Xi(1,2);
+
+    Xi[0][3] = 1.0;
+    Xi[0][3] = 1.0;
+    for (unsigned int i=3; i<6; i++)
+        Xi[i][3] = strain_i(i);
+
+    return  Xi;
+}
+
+
+
+template<>
+void BaseCosserat<Vec6Types, Rigid3Types, Rigid3Types>::computeExponentialSE3(const double & curv_abs_x_n, const Coord1& strain_n, Transform & Trans){
+    Matrix4 I4; I4.identity();
+    //Get the angular part of the
+    Vector3 k = Vector3(strain_n(0), strain_n(1), strain_n(2));
+    SReal theta = k.norm(); //
+
+    SE3 g_X_n;
+    se3 Xi_hat_n = build_Xi_hat(strain_n);
+
+    if(d_debug.getValue())
+        msg_info("BaseCosserat: ")<< "matrix Xi : "<< Xi_hat_n;
+
+    if(theta <= std::numeric_limits<double>::epsilon()){
+        g_X_n = I4 + curv_abs_x_n*Xi_hat_n;
+    }else {
+        double scalar1= (1.0 - std::cos(curv_abs_x_n*theta))/std::pow(theta,2);
+        double scalar2 = (curv_abs_x_n*theta - std::sin(curv_abs_x_n*theta))/std::pow(theta,3);
+        g_X_n = I4 + curv_abs_x_n*Xi_hat_n + scalar1*Xi_hat_n*Xi_hat_n + scalar2*Xi_hat_n*Xi_hat_n*Xi_hat_n ;
+    }
+
+    //    msg_info("BaseCosserat: ")<< "matrix g_X : "<< g_X;
+    type::Mat3x3 M;
+    g_X_n.getsub(0,0,M); //get the rotation matrix
+
+    // convert the rotation 3x3 matrix to a quaternion
+    sofa::type::Quat<Real> R ; R.fromMatrix(M);
+    Trans = Transform(type::Vec3(g_X_n(0,3),g_X_n(1,3),g_X_n(2,3)),R);
+}
+
+template<>
+void BaseCosserat<Vec6Types, Rigid3Types, Rigid3Types>::compute_Tang_Exp(double & curv_abs_n, const Coord1 & strain_i, Mat6x6 & TgX){
+
+  SReal theta = type::Vec3(strain_i(0), strain_i(1), strain_i(2)).norm(); //Sometimes this is computed over all strain
+  Matrix3 tilde_k = getTildeMatrix(type::Vec3(strain_i(0), strain_i(1), strain_i(2)));
+  /* Younes @23-11-27
+  old version
+  @Todo ???? is p the linear deformation? If so, why didn't I just put a zero vector in place of p and the first element of p is equal to 1?
+  Matrix3 tilde_p = getTildeMatrix(type::Vec3(1.0, 0.0, 0.0));
+  Using the new version does not bring any difference in my three reference scenes, but need more investogation
+  #TECHNICAL_DEBT
+  */
+  Matrix3 tilde_q = getTildeMatrix(type::Vec3(strain_i(3), strain_i(4), strain_i(5)));
+
+  Mat6x6 ad_Xi ;
+  buildAdjoint(tilde_k, tilde_q, ad_Xi);
+
+  Mat6x6 Id6 = Mat6x6::Identity() ;
+  //    for (unsigned int i =0; i< 6;i++) Id6[i][i]=1.0; //define identity 6x6
+
+  if(theta <= std::numeric_limits<double>::epsilon()){
+    double scalar0 = std::pow(curv_abs_n,2)/2.0;
+    TgX = curv_abs_n*Id6 + scalar0 * ad_Xi;
+  }else {
+    double scalar1 = (4.0 -4.0*cos(curv_abs_n*theta)-curv_abs_n*theta*sin(curv_abs_n*theta))/(2.0*theta*theta);
+    double scalar2 = (4.0*curv_abs_n*theta + curv_abs_n*theta*cos(curv_abs_n*theta)-5.0*sin(curv_abs_n*theta))/(2.0*theta*theta*theta);
+    double scalar3 = (2.0 -2.0*cos(curv_abs_n*theta)-curv_abs_n*theta*sin(curv_abs_n*theta))/(2.0*theta*theta*theta*theta);
+    double scalar4 = (2.0*curv_abs_n*theta + curv_abs_n*theta*cos(curv_abs_n*theta)-3.0*sin(curv_abs_n*theta))/(2.0*theta*theta*theta*theta*theta);
+
+    TgX = curv_abs_n*Id6 + scalar1*ad_Xi + scalar2*ad_Xi*ad_Xi + scalar3*ad_Xi*ad_Xi*ad_Xi + scalar4*ad_Xi*ad_Xi*ad_Xi*ad_Xi ;
+  }
+}
+
 
 // Register in the Factory
 int BaseCosseratClass = core::RegisterObject("Set the positions and velocities of points attached to a rigid parent")
         .add< BaseCosserat< sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types > >()
-        .add< BaseCosserat< sofa::defaulttype::Vec3Types, sofa::defaulttype::Vec3Types, sofa::defaulttype::Vec3Types > >()
-
+        .add< BaseCosserat< sofa::defaulttype::Vec6Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types > >()
 ;
 
 
 template class SOFA_COSSERAT_API BaseCosserat< sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types >;
-template class SOFA_COSSERAT_API BaseCosserat< sofa::defaulttype::Vec3Types, sofa::defaulttype::Vec3Types, sofa::defaulttype::Vec3Types >;
+template class SOFA_COSSERAT_API BaseCosserat< sofa::defaulttype::Vec6Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types >;
 
 } // namespace sofa.

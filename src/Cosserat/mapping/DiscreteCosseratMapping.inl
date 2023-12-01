@@ -82,17 +82,17 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::init()
 template <class TIn1, class TIn2, class TOut>
 void DiscreteCosseratMapping<TIn1, TIn2, TOut>::reinit()
 {
-  m_fromModel1 = this->getFromModels1()[0]; // Cosserat deformations (torsion or elongation and bending), in local frame
+  m_fromModel1 = this->getFromModels1()[0]; // Cosserat deformations (torsion, bending_y/_z, elongation and shear_y/_z), in local frame
   m_fromModel2 = this->getFromModels2()[0]; // Cosserat base, in global frame
   m_toModel = this->getToModels()[0];  // Cosserat rigid frames, in global frame
 
-  // Fill the initial vectorvoid init() override;
+  // Fill the initial vector void init() override;
   const OutDataVecCoord* xFromData = m_toModel->read(core::ConstVecCoordId::position());
   const OutVecCoord xFrom = xFromData->getValue();
 
   m_vecTransform.clear(); // initialise with the rigids frames
   for (unsigned int i = 0; i < xFrom.size(); i++) {
-    m_vecTransform.push_back(xFrom[i]);
+        m_vecTransform.push_back(xFrom[i]);
   }
 
   if(d_debug.getValue())
@@ -116,27 +116,28 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::apply(
     const In2VecCoord& in2 = dataVecIn2Pos[0]->getValue();
 
     const auto sz = d_curv_abs_frames.getValue().size();
-    OutVecCoord& out = *dataVecOutPos[0]->beginEdit();
+    OutVecCoord& out = *dataVecOutPos[0]->beginEdit(); //frames states
     out.resize(sz);
     const auto baseIndex = d_baseIndex.getValue();
 
     // update the Exponential matrices according to new deformation
     // Here we update m_framesExponentialSE3Vectors & m_nodesExponentialSE3Vectors
+    // Which are the homogeneous matrices of the frames and the nodes in local coordinate.
     this->update_ExponentialSE3(in1);
-    /* from cossserat to SOFA frame*/
+    /* Apply the transformation to go from cossserat to SOFA frame*/
     Transform frame0 = Transform(In2::getCPos(in2[baseIndex]),In2::getCRot(in2[baseIndex]));
     for(unsigned int i=0; i<sz; i++){
         Transform frame = frame0;
         for (unsigned int u = 0; u < m_indicesVectors[i]; u++) {
-            frame *= m_nodesExponentialSE3Vectors[u];
+            frame *= m_nodesExponentialSE3Vectors[u]; // frame = gX(L_0)*...*gX(L_{n-1})
         }
-        frame *= m_framesExponentialSE3Vectors[i];
+        frame *= m_framesExponentialSE3Vectors[i]; //frame*gX(x)
 
         type::Vec3 v = frame.getOrigin();
         type::Quat q = frame.getOrientation();
         out[i] = OutCoord(v,q);
     }
-    // @todo
+    //
     m_index_input = 0;
     dataVecOutPos[0]->endEdit();
 }
@@ -173,8 +174,6 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::computeLogarithm(const double & 
 //void computeViolation(In1VecCoord& inDeform, const helper::vector<double> m_framesLengthVectors, const
 //                       size_t sz, std::function<double(int i, int j)> f)
 //{
-
-
 //    for (std::size_t i = 0; i < sz; i++) {
 //        Mat6x6 temp ;
 
@@ -200,33 +199,32 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>:: applyJ(
 
     if(dataVecOutVel.empty() || dataVecIn1Vel.empty() ||dataVecIn2Vel.empty() )
         return;
-    const In1VecDeriv& in1 = dataVecIn1Vel[0]->getValue();
-    const In2VecDeriv& in2_vecDeriv = dataVecIn2Vel[0]->getValue();
-    OutVecDeriv& outVel = *dataVecOutVel[0]->beginEdit();
+    const In1VecDeriv& in1_vel = dataVecIn1Vel[0]->getValue();
+    const In2VecDeriv& in2_vel = dataVecIn2Vel[0]->getValue();
+    OutVecDeriv& out_vel = *dataVecOutVel[0]->beginEdit();
     const auto baseIndex = d_baseIndex.getValue();
 
-    // This is the vector of the curv abscissa, X in the paper
+    // Curv abscissa of nodes and frames
     helper::ReadAccessor<Data<type::vector<double>>> curv_abs_section =  d_curv_abs_section;
     helper::ReadAccessor<Data<type::vector<double>>> curv_abs_frames = d_curv_abs_frames;
 
+    const In1VecCoord& inDeform = m_fromModel1->read(core::ConstVecCoordId::position())->getValue(); //Strains
     // Compute the tangent Exponential SE3 vectors
-    const In1VecCoord& inDeform = m_fromModel1->read(core::ConstVecCoordId::position())->getValue();
-    this->update_TangExpSE3(inDeform, curv_abs_section.ref(), curv_abs_frames.ref());
+    this->update_TangExpSE3(inDeform);
 
     //Get base velocity as input this is also called eta
     m_nodesVelocityVectors.clear();
-    Deriv2 _baseVelocity;
-    if (!in2_vecDeriv.empty())
-        _baseVelocity = in2_vecDeriv[baseIndex];
-    //convert to Vec6
-    type::Vec6 baseVelocity;
-    for (auto u=0; u<6; u++) {baseVelocity[u] = _baseVelocity[u];}
 
-    //Apply the local transform i.e from SOFA's frame to Cosserat's frame
+    //Get base velocity and convert to Vec6, for the facility of computation
+    type::Vec6 baseVelocity; //
+    for (auto u=0; u<6; u++)
+      baseVelocity[u] = in2_vel[baseIndex][u];
+
+    //Apply the local transform i.e. from SOFA's frame to Cosserat's frame
     const In2VecCoord& xfrom2Data = m_fromModel2->read(core::ConstVecCoordId::position())->getValue();
     Transform TInverse = Transform(xfrom2Data[baseIndex].getCenter(), xfrom2Data[baseIndex].getOrientation()).inversed();
     Mat6x6 P = this->build_projector(TInverse);
-    type::Vec6 baseLocalVelocity = P * baseVelocity;
+    type::Vec6 baseLocalVelocity = P * baseVelocity; //This is the base velocity in Locale frame
     m_nodesVelocityVectors.push_back(baseLocalVelocity);
     if(d_debug.getValue())
         std::cout << "Base local Velocity :"<< baseLocalVelocity <<std::endl;
@@ -237,31 +235,38 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>:: applyJ(
         Mat6x6 Adjoint; Adjoint.clear();
         this->computeAdjoint(Trans, Adjoint);
 
-        type::Vec6 Xi_dot = Vec6(in1[i-1],type::Vec3(0.0,0.0,0.0)) ;
-        Vec6 temp = Adjoint * (m_nodesVelocityVectors[i-1] + m_nodesTangExpVectors[i] * Xi_dot );
-        m_nodesVelocityVectors.push_back(temp);
+        ///The null vector is replace by the linear velocity in Vec6Type
+        type::Vec6 Xi_dot = Vec6(in1_vel[i-1],type::Vec3(0.0,0.0,0.0)) ;
+
+        Vec6 eta_node_i = Adjoint * (m_nodesVelocityVectors[i-1] + m_nodesTangExpVectors[i] * Xi_dot );
+        m_nodesVelocityVectors.push_back(eta_node_i);
         if(d_debug.getValue())
-            std::cout<< "Node velocity : "<< i << " = " << temp<< std::endl;
+            std::cout<< "Node velocity : "<< i << " = " << eta_node_i<< std::endl;
     }
 
     const OutVecCoord& out = m_toModel->read(core::ConstVecCoordId::position())->getValue();
     auto sz = curv_abs_frames.size();
-    outVel.resize(sz);
+    out_vel.resize(sz);
     for (unsigned int i = 0 ; i < sz; i++) {
         Transform Trans = m_framesExponentialSE3Vectors[i].inversed();
         Mat6x6 Adjoint; Adjoint.clear();
         this->computeAdjoint(Trans, Adjoint);
+        type::Vec6 frame_Xi_dot;
 
-        type::Vec6 Xi_dot = Vec6(in1[m_indicesVectors[i]-1],type::Vec3(0.0,0.0,0.0)) ;
-        Vec6 temp = Adjoint * (m_nodesVelocityVectors[m_indicesVectors[i]-1] + m_framesTangExpVectors[i] * Xi_dot ); // eta
+        for (auto u=0; u<3; u++)
+        {
+            frame_Xi_dot(u) = in1_vel[m_indicesVectors[i]-1][u];
+            frame_Xi_dot(u+3) = 0.;
+        }
+        Vec6 eta_frame_i = Adjoint * (m_nodesVelocityVectors[m_indicesVectors[i]-1] + m_framesTangExpVectors[i] * frame_Xi_dot ); // eta
 
         auto T = Transform(out[i].getCenter(), out[i].getOrientation());
         Mat6x6 Proj = this->build_projector(T);
 
-        outVel[i] = Proj * temp;
+        out_vel[i] = Proj * eta_frame_i;
 
         if(d_debug.getValue())
-            std::cout<< "Frame velocity : "<< i << " = " << temp<< std::endl;
+            std::cout<< "Frame velocity : "<< i << " = " << eta_frame_i<< std::endl;
     }
     dataVecOutVel[0]->endEdit();
     m_index_input = 0;
