@@ -181,7 +181,7 @@ void DiscreteDynamicCosseratMapping<TIn1, TIn2, TOut>:: applyJ(
 
 	// Compute the tangent Exponential SE3 vectors
 	const In1VecCoord& inDeform = m_fromModel1->read(core::ConstVecCoordId::position())->getValue();
-	this->update_TangExpSE3(inDeform,curv_abs_input.ref(),curv_abs_output.ref());
+    this->update_TangExpSE3(inDeform);
 
 	//Get base velocity as input this is also called eta
 	m_nodesVelocityVectors.clear();

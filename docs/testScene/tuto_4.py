@@ -27,7 +27,6 @@ Params = Parameters(beamGeoParams=geoParams, beamPhysicsParams=physicsParams, si
 
 force_null = [0., 0., 0., 0., 0., 0.]  # N
 
-
 class ForceController(Sofa.Core.Controller):
     def __init__(self, *args, **kwargs):
         Sofa.Core.Controller.__init__(self, *args, **kwargs)
@@ -40,33 +39,36 @@ class ForceController(Sofa.Core.Controller):
         self.applyForce = True
         self.forceCoeff = 0.
         self.theta = 0.1
+        self.incremental = 0.01
 
     def onAnimateEndEvent(self, event):
         if self.applyForce:
-            self.forceCoeff += 0.01
+            self.forceCoeff += self.incremental
         else:
-            self.forceCoeff -= 0.01
+            self.forceCoeff -= self.incremental
 
         # choose the type of force 
         if self.force_type == 1:
-            print('inside force type 1')
+            # print('inside force type 1')
+            self.incremental = 0.1
             self.compute_force()
         elif self.force_type == 2:
+            self.incremental = 0.4
             self.compute_orthogonal_force()
         elif self.force_type == 3:
             self.rotate_force()
 
     def compute_force(self):
         with self.forceNode.forces.writeable() as force:
-            vec = [0., 0., 0.,
-            0., self.forceCoeff/sqrt(2), self.forceCoeff/sqrt(2)]
+            vec = [0., 0., 0., 0., self.forceCoeff/sqrt(2), self.forceCoeff/sqrt(2)]
             for i, v in enumerate(vec):
                 force[0][i] = v
 
     def compute_orthogonal_force(self):
         position = self.frames.position[self.size]  # get the last rigid of the cosserat frame
         orientation = Quat(position[3], position[4], position[5], position[6])  # get the orientation
-        # Calculate the direction of the force in order to remain orthogonal to the x axis of the last frame of the beam.
+        # Calculate the direction of the force in order to remain orthogonal to the x_axis
+        # of the last frame of the beam.
         with self.forceNode.forces.writeable() as force:
             vec = orientation.rotate([0., self.forceCoeff * 5.e-2, 0.])
             # vec.normalize()
@@ -93,6 +95,8 @@ class ForceController(Sofa.Core.Controller):
             self.applyForce = False
 
 
+controller_type = 2
+
 def createScene(root_node):
     addHeader(root_node)
     root_node.gravity = [0, 0., 0.]
@@ -112,11 +116,11 @@ def createScene(root_node):
     controller_state = tip_controller.addObject('MechanicalObject', template='Rigid3d', name="controlEndEffector",
                                                 showObjectScale=0.3, position=[geoParams.beamLength, 0, 0, 0, 0, 0, 1],
                                                 showObject=True)
+    if controller_type == 3:
+        cosserat_frames.addObject('RestShapeSpringsForceField', name='spring', stiffness=0., angularStiffness=1.e8,
+                                  external_points=0, external_rest_shape=controller_state.getLinkPath(),
+                                  points=geoParams.nbFrames, template="Rigid3d")
 
-    cosserat_frames.addObject('RestShapeSpringsForceField', name='spring', stiffness=0., angularStiffness=1.e8,
-                              external_points=0, external_rest_shape=controller_state.getLinkPath(),
-                              points=geoParams.nbFrames, template="Rigid3d")
-
-    solver_node.addObject(ForceController(forceNode=const_force_node, frame_node=cosserat_frames, force_type=3, tip_controller=controller_state))
+    solver_node.addObject(ForceController(forceNode=const_force_node, frame_node=cosserat_frames, force_type=controller_type, tip_controller=controller_state))
 
     return root_node

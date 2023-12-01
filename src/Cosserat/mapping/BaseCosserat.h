@@ -82,8 +82,8 @@ public:
     [[maybe_unused]] typedef typename In2::MatrixDeriv In2MatrixDeriv;
     typedef Data<In2VecCoord> In2DataVecCoord;
     typedef Data<In2VecDeriv> In2DataVecDeriv;
-    typedef type::Mat<6,6,Real> Mat6x6;
-    typedef type::Mat<4,4,Real> Mat4x4;
+    typedef type::Mat<6,6,SReal> Mat6x6;
+    typedef type::Mat<4,4,SReal> Mat4x4;
 
     typedef typename Out::VecCoord OutVecCoord;
     typedef typename Out::Coord OutCoord;
@@ -98,7 +98,8 @@ public:
     typedef MultiLink<BaseCosserat<In1,In2,Out>, sofa::core::State< In2 >, BaseLink::FLAG_STOREPATH|BaseLink::FLAG_STRONGLINK> LinkFromModels2;
     [[maybe_unused]] typedef MultiLink<BaseCosserat<In1,In2,Out>, sofa::core::State< Out >, BaseLink::FLAG_STOREPATH|BaseLink::FLAG_STRONGLINK> LinkToModels;
 
-    typedef typename SolidTypes<Real>::Transform      Transform ;
+    typedef typename SolidTypes<SReal>::Transform      Transform ;
+    typedef typename type::vector<SReal> List;
 
 protected:
     Data<type::vector<double>>      d_curv_abs_section ;
@@ -136,7 +137,9 @@ public:
     [[maybe_unused]] type::vector<Mat6x6> m_frameAdjointEtaVectors;
     [[maybe_unused]] type::vector<Mat6x6> m_node_coAdjointEtaVectors;
     [[maybe_unused]] type::vector<Mat6x6> m_frame_coAdjointEtaVectors;
-
+    typedef typename sofa::type::Matrix4   se3;
+    typedef typename sofa::type::Matrix4   SE3;
+    typedef typename type::Mat<6,6,SReal>   Tangent;
 
 protected:
     /// Constructor
@@ -152,6 +155,9 @@ public:
     void reinit() override;
     void draw(const core::visual::VisualParams* vparams) override;
 
+
+
+    /**********************COSSERAT METHODS**************************/
     double computeTheta(const double &x, const Mat4x4 &gX){
         double Tr_gx = 0.0;
         for (int i = 0; i<4; i++) {
@@ -166,15 +172,15 @@ public:
     }
 
 protected:
-    /**********************COSSERAT METHODS**************************/
-    void computeExponentialSE3(const double &x, const type::Vec3& k, Transform & Trans);
+
+    void computeExponentialSE3(const double &x, const Coord1& k, Transform & Trans);
     void computeAdjoint(const Transform & frame, Mat6x6 &adjoint);
     void compute_coAdjoint(const Transform & frame, Mat6x6 &co_adjoint);
     void compute_adjointVec6(const Vec6 & frame, Mat6x6 &adjoint);
 
     void update_ExponentialSE3(const In1VecCoord & inDeform);
-    void update_TangExpSE3(const In1VecCoord & inDeform, const type::vector<double> &curv_abs_section , const type::vector<double> &curv_abs_frames );
-    void compute_Tang_Exp(double & x, const type::Vec3& k, Mat6x6 & TgX);
+    void update_TangExpSE3(const In1VecCoord & inDeform);
+    void compute_Tang_Exp(double & x, const Coord1& k, Mat6x6 & TgX);
 
     [[maybe_unused]] type::Vec6 compute_eta(const Vec6 & baseEta, const In1VecDeriv & k_dot, double abs_input);
     type::Matrix4 computeLogarithm(const double & x, const Mat4x4 &gX);
@@ -203,7 +209,7 @@ public:
                 mat[k][i] = R[k][i];
         return  mat;
     }
-    Mat6x6 build_projector(const Transform &T){
+    Tangent build_projector(const Transform &T){
         Mat6x6 P;
         Real R[4][4]; (T.getOrientation()).buildRotationMatrix(R);
 
@@ -216,6 +222,21 @@ public:
         //        print_matrix(P);
         //        printf("__________________________\n");
         return  P;
+    }
+
+    se3 build_Xi_hat(const Coord1 & strain_i){
+        se3 Xi;
+
+        Xi[0][1] = -strain_i(2);
+        Xi[0][2] = strain_i[1];
+        Xi[1][2] = -strain_i[0];
+
+        Xi[1][0] = -Xi(0,1);
+        Xi[2][0] = -Xi(0,2);
+        Xi[2][1] = -Xi(1,2);
+
+        Xi[0][3] = 1.0;
+        return  Xi;
     }
 
     Matrix3 getTildeMatrix(const type::Vec3 & u){
@@ -272,8 +293,8 @@ public:
 
 
 #if !defined(SOFA_COSSERAT_CPP_BaseCosserat)
-extern template class SOFA_COSSERAT_API BaseCosserat< sofa::defaulttype::Vec3Types, sofa::defaulttype::Vec3Types, sofa::defaulttype::Vec3Types >;
 extern template class SOFA_COSSERAT_API BaseCosserat< sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types >;
+extern template class SOFA_COSSERAT_API BaseCosserat< sofa::defaulttype::Vec6Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types >;
 #endif
 
 } // namespace sofa
