@@ -37,6 +37,8 @@ set(HEADER_FILES
     ${SRC_ROOT_DIR}/engine/PointsManager.inl
     ${SRC_ROOT_DIR}/forcefield/BeamHookeLawForceField.h
     ${SRC_ROOT_DIR}/forcefield/BeamHookeLawForceField.inl
+    ${SRC_ROOT_DIR}/forcefield/BeamHookeLawForceFieldRigid.h
+    ${SRC_ROOT_DIR}/forcefield/BeamHookeLawForceFieldRigid.inl
     ${SRC_ROOT_DIR}/forcefield/CosseratInternalActuation.h
     ${SRC_ROOT_DIR}/forcefield/CosseratInternalActuation.inl
     ${SRC_ROOT_DIR}/constraint/CosseratSlidingConstraint.h
@@ -56,6 +58,7 @@ set(SOURCE_FILES
     ${SRC_ROOT_DIR}/mapping/RigidDistanceMapping.cpp
     ${SRC_ROOT_DIR}/engine/PointsManager.cpp
     ${SRC_ROOT_DIR}/forcefield/BeamHookeLawForceField.cpp
+    ${SRC_ROOT_DIR}/forcefield/BeamHookeLawForceFieldRigid.cpp
     ${SRC_ROOT_DIR}/forcefield/CosseratInternalActuation.cpp
     ${SRC_ROOT_DIR}/constraint/CosseratSlidingConstraint.cpp
     ${SRC_ROOT_DIR}/mapping/LegendrePolynomialsMapping.cpp

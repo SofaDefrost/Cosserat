@@ -21,6 +21,8 @@ set(HEADER_FILES
 
     forcefield/BeamHookeLawForceField.h
     forcefield/BeamHookeLawForceField.inl
+    forcefield/BeamHookeLawForceFieldRigid.h
+    forcefield/BeamHookeLawForceFieldRigid.inl
     forcefield/CosseratInternalActuation.h
     forcefield/CosseratInternalActuation.inl
     forcefield/MyUniformVelocityDampingForceField.h
@@ -46,6 +48,7 @@ set(SOURCE_FILES
     mapping/LegendrePolynomialsMapping.cpp
 
     forcefield/BeamHookeLawForceField.cpp
+    forcefield/BeamHookeLawForceFieldRigid.cpp
     forcefield/CosseratInternalActuation.cpp
     forcefield/MyUniformVelocityDampingForceField.cpp
 

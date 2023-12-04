@@ -96,7 +96,12 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::reinit()
   }
 
   if(d_debug.getValue())
-    msg_info("DiscreteCosseratMapping")<< " m_vecTransform : "<< m_vecTransform;
+  {
+        msg_info("DiscreteCosseratMapping")<< " ================="
+                                               "============================ ";
+        msg_info("DiscreteCosseratMapping")<< " m_vecTransform : "<< m_vecTransform;
+  }
+
 
   this->initialize();
 }
@@ -110,6 +115,8 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::apply(
     if(dataVecOutPos.empty() || dataVecIn1Pos.empty() || dataVecIn2Pos.empty())
         return;
 
+    if(d_debug.getValue())
+        std::cout<< " ########## Apply Function ########"<< std::endl;
     ///Do Apply
     //We need only one input In model and input Root model (if present)
     const In1VecCoord& in1 = dataVecIn1Pos[0]->getValue();
@@ -132,6 +139,9 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::apply(
             frame *= m_nodesExponentialSE3Vectors[u]; // frame = gX(L_0)*...*gX(L_{n-1})
         }
         frame *= m_framesExponentialSE3Vectors[i]; //frame*gX(x)
+
+        if(d_debug.getValue())
+            std::cout<< "Frame  : "<< i << " = " << frame<< std::endl;
 
         type::Vec3 v = frame.getOrigin();
         type::Quat q = frame.getOrientation();
@@ -199,6 +209,8 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>:: applyJ(
 
     if(dataVecOutVel.empty() || dataVecIn1Vel.empty() ||dataVecIn2Vel.empty() )
         return;
+    if(d_debug.getValue())
+        std::cout<< " ########## ApplyJ Function ########"<< std::endl;
     const In1VecDeriv& in1_vel = dataVecIn1Vel[0]->getValue();
     const In2VecDeriv& in2_vel = dataVecIn2Vel[0]->getValue();
     OutVecDeriv& out_vel = *dataVecOutVel[0]->beginEdit();
@@ -282,6 +294,8 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>:: applyJT(
     if(dataVecOut1Force.empty() || dataVecInForce.empty() || dataVecOut2Force.empty())
         return;
 
+    if(d_debug.getValue())
+        std::cout<< " ########## ApplyJT force Function ########"<< std::endl;
     const OutVecDeriv& in = dataVecInForce[0]->getValue();
 
     In1VecDeriv& out1 = *dataVecOut1Force[0]->beginEdit();
@@ -371,6 +385,8 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJT(
     if(dataMatOut1Const.empty() || dataMatOut2Const.empty() || dataMatInConst.empty() )
         return;
 
+    if(d_debug.getValue())
+        std::cout<< " ########## ApplyJT Constraint Function ########"<< std::endl;
     //We need only one input In model and input Root model (if present)
     In1MatrixDeriv& out1 = *dataMatOut1Const[0]->beginEdit(); // constraints on the strain space (reduced coordinate)
     In2MatrixDeriv& out2 = *dataMatOut2Const[0]->beginEdit(); // constraints on the reference frame (base frame)

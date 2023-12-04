@@ -34,6 +34,8 @@ template<>
 BaseCosserat<Vec6Types, Rigid3Types, Rigid3Types>::se3 BaseCosserat<Vec6Types, Rigid3Types, Rigid3Types>::build_Xi_hat(const Coord1& strain_i){
     se3 Xi;
 
+    msg_info("BaseCosserat")<<" ===========> Build Xi Hat rigid is called ";
+
     Xi[0][1] = -strain_i(2);
     Xi[0][2] = strain_i[1];
     Xi[1][2] = -strain_i[0];
@@ -43,9 +45,18 @@ BaseCosserat<Vec6Types, Rigid3Types, Rigid3Types>::se3 BaseCosserat<Vec6Types, R
     Xi[2][1] = -Xi(1,2);
 
     Xi[0][3] = 1.0;
-    Xi[0][3] = 1.0;
-    for (unsigned int i=3; i<6; i++)
-        Xi[i][3] = strain_i(i);
+
+    std::cout <<"Before the linear part : "<< Xi <<std::endl;
+    for (unsigned int i=0; i<3; i++)
+        Xi[i][3] += strain_i(i+3);
+
+    std::cout <<"After the linear part : "<< Xi <<std::endl;
+
+//    se3 = [
+//        0               -screw(3)   screw(2)        screw(4);
+//        screw(3)        0           -screw(1)       screw(5);
+//        -screw(2)   screw(1)        0               screw(6);
+//        0                   0                 0                 0];
 
     return  Xi;
 }
@@ -68,12 +79,20 @@ void BaseCosserat<Vec6Types, Rigid3Types, Rigid3Types>::computeExponentialSE3(co
     if(theta <= std::numeric_limits<double>::epsilon()){
         g_X_n = I4 + curv_abs_x_n*Xi_hat_n;
     }else {
+//        se3 Xi_hat_n_2 = Xi_hat_n * Xi_hat_n;
+//        se3 Xi_hat_n_3 = Xi_hat_n_2 * Xi_hat_n;
+//        SReal costheta =  std::cos(theta);
+//        SReal sintheta =  std::cos(theta);
+//        SReal theta2 = std::pow(theta,2);
+//        SReal theta3 = theta2 * theta;
+//        g_X_n = I4 + curv_abs_x_n*Xi_hat_n + ((1.-costheta)/(theta2))*Xi_hat_n_2 +((theta-sintheta)/theta3)*Xi_hat_n_3;
         double scalar1= (1.0 - std::cos(curv_abs_x_n*theta))/std::pow(theta,2);
         double scalar2 = (curv_abs_x_n*theta - std::sin(curv_abs_x_n*theta))/std::pow(theta,3);
         g_X_n = I4 + curv_abs_x_n*Xi_hat_n + scalar1*Xi_hat_n*Xi_hat_n + scalar2*Xi_hat_n*Xi_hat_n*Xi_hat_n ;
     }
+    if(d_debug.getValue())
+        msg_info("BaseCosserat: ")<< "matrix g_X : "<< g_X_n;
 
-    //    msg_info("BaseCosserat: ")<< "matrix g_X : "<< g_X;
     type::Mat3x3 M;
     g_X_n.getsub(0,0,M); //get the rotation matrix
 
