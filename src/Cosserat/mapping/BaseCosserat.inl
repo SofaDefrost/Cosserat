@@ -101,7 +101,8 @@ void BaseCosserat<TIn1, TIn2, TOut>::computeExponentialSE3(const double & curv_a
         _g_X = I4 + curv_abs_x_n*Xi_hat_n + scalar1*Xi_hat_n*Xi_hat_n + scalar2*Xi_hat_n*Xi_hat_n*Xi_hat_n ;
     }
 
-    //    msg_info("BaseCosserat: ")<< "matrix g_X : "<< g_X;
+    if(d_debug.getValue())
+        msg_info("BaseCosserat: ")<< "matrix _g_X : "<< _g_X;
     type::Mat3x3 M;
     _g_X.getsub(0,0,M); //get the rotation matrix
 
@@ -129,12 +130,12 @@ void BaseCosserat<TIn1, TIn2, TOut>::update_ExponentialSE3(const In1VecCoord & i
         const Coord1 strain_n = inDeform[m_indicesVectors[i]-1]; //Cosserat reduce coordinates (strain) the size varies from 1 to 6
         //  The distance between the frame and the closest beam node toward the base
         const SReal curv_abs_x = m_framesLengthVectors[i];  // curv_abs_x = frame_curv_abs - L_(n-1)
-        computeExponentialSE3(curv_abs_x, strain_n,g_X_frame_i);
+        computeExponentialSE3(curv_abs_x, strain_n, g_X_frame_i);
         m_framesExponentialSE3Vectors.push_back(g_X_frame_i);
 
         if(d_debug.getValue()){
-            msg_info("BaseCosserat:")<< "__________________________________________";
-            msg_info("BaseCosserat:")<< "x :"<< curv_abs_x << "; k :"<< strain_n;
+            msg_info("BaseCosserat:")<< "_________________"<<i<<"_________________________";
+            msg_info("BaseCosserat:")<< "x :"<< curv_abs_x << "; strain :"<< strain_n;
             msg_info("BaseCosserat:")<< "m_framesExponentialSE3Vectors :"<< g_X_frame_i;
         }
     }

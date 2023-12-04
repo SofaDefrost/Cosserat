@@ -27,25 +27,28 @@
 * Contact information: https://project.inria.fr/softrobot/contact/            *
 *                                                                             *
 ******************************************************************************/
-#define SOFA_COSSERAT_CPP_BeamHookeLawForceField
-#include "BeamHookeLawForceField.inl"
+#define SOFA_COSSERAT_BeamHookeLawForceFieldRigid_CPP
+#include "BeamHookeLawForceFieldRigid.inl"
 
 #include <sofa/core/ObjectFactory.h>
 
+using namespace sofa::defaulttype;
+
 namespace sofa::component::forcefield
 {
+
 
 ////////////////////////////////////////////    FACTORY    //////////////////////////////////////////////
 // Registering the component
 // see: http://wiki.sofa-framework.org/wiki/ObjectFactory
 // 1-RegisterObject("description") + .add<> : Register the component
 // 2-.add<>(true) : Set default template
-using namespace sofa::defaulttype;
 
-int BeamHookeLawForceFieldClass = core::RegisterObject("This component is used to compute internal stress for torsion (along x) and bending (y and z)")
-                                      .add<BeamHookeLawForceField<Vec3Types> >(true)
 
-    ;
+int BeamHookeLawForceFieldRigidClass = core::RegisterObject("This component is used to compute internal stress for torsion "
+                                                       "(along x) and bending (y and z)")
+        .add<BeamHookeLawForceFieldRigid<Vec6Types> >()
+        ;
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Force template specialization for the most common sofa floating point related type.
@@ -53,6 +56,8 @@ int BeamHookeLawForceFieldClass = core::RegisterObject("This component is used t
 // avoid the code generation of the template for each compilation unit.
 // see: http://www.stroustrup.com/C++11FAQ.html#extern-templates
 
-template class BeamHookeLawForceField<Vec3Types>;
+template class SOFA_COSSERAT_API BeamHookeLawForceFieldRigid<Vec6Types>;
 
-} // forcefield
+
+
+} // sofa::component::forcefield

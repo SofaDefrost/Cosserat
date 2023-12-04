@@ -45,6 +45,8 @@ namespace sofa::component::forcefield
 {
 
 using sofa::type::Vec ;
+using type::Vec6;
+using type::Vector3;
 using sofa::type::Mat ;
 using sofa::type::vector;
 using sofa::core::MechanicalParams;
@@ -60,23 +62,24 @@ using sofa::helper::OptionsGroup;
  * Only bending and torsion strain / stress are considered here
 */
 template<typename DataTypes>
-class BeamHookeLawForceField : public ForceField<DataTypes>
+class BeamHookeLawForceFieldRigid : public ForceField<DataTypes>
 {
 public :
-    SOFA_CLASS(SOFA_TEMPLATE(BeamHookeLawForceField, DataTypes), SOFA_TEMPLATE(ForceField, DataTypes));
+    SOFA_CLASS(SOFA_TEMPLATE(BeamHookeLawForceFieldRigid, DataTypes), SOFA_TEMPLATE(ForceField, DataTypes));
 
-    typedef typename DataTypes::Real     Real;
+    typedef typename DataTypes::Real Real   ;
+    typedef typename DataTypes::Coord             Coord  ;
+    typedef typename DataTypes::Deriv    Deriv;
     typedef typename DataTypes::VecCoord VecCoord;
     typedef typename DataTypes::VecDeriv VecDeriv;
-    typedef typename DataTypes::Coord    Coord;
-    typedef typename DataTypes::Deriv    Deriv;
-
     typedef Data<VecCoord>    DataVecCoord;
     typedef Data<VecDeriv>    DataVecDeriv;
 
-    typedef Vec<3, Real>                Vec3;
-    typedef Mat<3, 3, Real>             Mat33;
+    typedef typename DataTypes::MatrixDeriv                 MatrixDeriv;
+    typedef typename sofa::core::behavior::MechanicalState<DataTypes> MechanicalState;
 
+    typedef Mat<3, 3, Real>             Mat33;
+    typedef Mat<6, 6, Real>             Mat66;
     typedef CompressedRowSparseMatrix<Mat33> CSRMat33B66;
 
     typedef typename CompressedRowSparseMatrix<Mat33>::ColBlockConstIterator _3_3_ColBlockConstIterator;
@@ -86,8 +89,8 @@ public :
 
 
 public :
-    BeamHookeLawForceField();
-    virtual ~BeamHookeLawForceField();
+    BeamHookeLawForceFieldRigid();
+    virtual ~BeamHookeLawForceFieldRigid();
 
     ////////////////////////// Inherited from BaseObject /////////////////////////
     void init() override;
@@ -103,7 +106,7 @@ public :
     void addDForce(const MechanicalParams* mparams,
                    DataVecDeriv&   df ,
                    const DataVecDeriv&
-                       dx ) override;
+                   dx ) override;
 
 
     void addKToMatrix(const MechanicalParams* mparams,
@@ -136,10 +139,13 @@ protected:
     Data<Real>  d_GI;
     Data<Real>  d_GA;
     Data<Real>  d_EA;
-    Data<Real>  d_EI;
+    Data<Real>  d_EIy;
+    Data<Real>  d_EIz;
+    Data<bool>  d_buildTorsion;
 
     bool compute_df;
     Mat33 m_K_section;
+    Mat66 m_K_section66;
     type::vector<Mat33> m_K_sectionList;
 
     /// Cross-section area
@@ -152,11 +158,15 @@ private :
     /// Bring inherited attributes and function in the current lookup context.
     /// otherwise any access to the base::attribute would require
     /// the "this->" approach.
-    using ForceField<DataTypes>::getContext ;
-    using ForceField<DataTypes>::f_printLog ;
+//    using ForceField<DataTypes>::getContext ;
+//    using ForceField<DataTypes>::f_printLog ;
     //using ForceField<DataTypes>::mstate ;
     ////////////////////////////////////////////////////////////////////////////
 };
 
+#if !defined(SOFA_COSSERAT_BeamHookeLawForceFieldRigid_CPP)
+extern template class SOFA_COSSERAT_API BeamHookeLawForceFieldRigid< defaulttype::Vec6Types>;
+#endif
 
-} // forcefield
+
+} // sofa::component::forcefield

@@ -235,6 +235,7 @@ public:
         Xi[2][0] = -Xi(0,2);
         Xi[2][1] = -Xi(1,2);
 
+        //@TODO:  Why this , if q = 0 ????
         Xi[0][3] = 1.0;
         return  Xi;
     }

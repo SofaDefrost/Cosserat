@@ -37,6 +37,9 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>:: applyJ(
     const type::vector<const In1DataVecDeriv*>& dataVecIn1Vel,
     const type::vector<const In2DataVecDeriv*>& dataVecIn2Vel) {
 
+    if(d_debug.getValue())
+        std::cout<< " ########## ApplyJ R Function ########"<< std::endl;
+
     if(dataVecOutVel.empty() || dataVecIn1Vel.empty() ||dataVecIn2Vel.empty() )
         return;
     const In1VecDeriv& in1_vel = dataVecIn1Vel[0]->getValue();
@@ -84,18 +87,17 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>:: applyJ(
         if(d_debug.getValue())
             std::cout<< "Node velocity : "<< i << " = " << eta_node_i<< std::endl;
     }
-
     const OutVecCoord& out = m_toModel->read(core::ConstVecCoordId::position())->getValue();
     auto sz = curv_abs_frames.size();
     out_vel.resize(sz);
+
     for (unsigned int i = 0 ; i < sz; i++) {
         Transform Trans = m_framesExponentialSE3Vectors[i].inversed();
         Tangent Adjoint; Adjoint.clear();
         this->computeAdjoint(Trans, Adjoint);
-
-        type::Vec6 frame_Xi_dot;
-        for (unsigned int u =0; u<6; u++)
-            frame_Xi_dot(i) = in1_vel[i-1][u];
+        type::Vec6 frame_Xi_dot = in1_vel[m_indicesVectors[i]-1];
+//        for (unsigned int u =0; u<6; u++)
+//            frame_Xi_dot(i) = in1_vel[m_indicesVectors[i]-1][u];
 
         Vec6 eta_frame_i = Adjoint * (m_nodesVelocityVectors[m_indicesVectors[i]-1] + m_framesTangExpVectors[i] * frame_Xi_dot ); // eta
 
@@ -103,7 +105,6 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>:: applyJ(
         Tangent Proj = this->build_projector(T);
 
         out_vel[i] = Proj * eta_frame_i;
-
         if(d_debug.getValue())
             std::cout<< "Frame velocity : "<< i << " = " << eta_frame_i<< std::endl;
     }
@@ -122,6 +123,8 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>:: applyJT(
     if(dataVecOut1Force.empty() || dataVecInForce.empty() || dataVecOut2Force.empty())
         return;
 
+    if(d_debug.getValue())
+        std::cout<< " ########## ApplyJT force R Function ########"<< std::endl;
     const OutVecDeriv& in = dataVecInForce[0]->getValue();
 
     In1VecDeriv& out1 = *dataVecOut1Force[0]->beginEdit();
@@ -209,6 +212,9 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>::applyJT(
 {
     if(dataMatOut1Const.empty() || dataMatOut2Const.empty() || dataMatInConst.empty() )
         return;
+
+    if(d_debug.getValue())
+        std::cout<< " ########## ApplyJT constraint R Function ########"<< std::endl;
 
     //We need only one input In model and input Root model (if present)
     In1MatrixDeriv& out1 = *dataMatOut1Const[0]->beginEdit(); // constraints on the strain space (reduced coordinate)
