@@ -597,7 +597,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::draw(const core::visual::VisualP
         type::vector<int> index = d_index.getValue();
         for (unsigned int i=0; i<sz-1; i++) {
             j = m_indicesVectorsDraw[i]-1; // to get the articulation on which the frame is related to
-            RGBAColor color =  RGBAColor::fromVec4(_eval(xPos[j][d_deformationAxis.getValue()]));
+            RGBAColor color =  RGBAColor(_eval(xPos[j][d_deformationAxis.getValue()]));
             vparams->drawTool()->drawLine(positions[i],positions[i+1],color);
         }
     }
