@@ -148,6 +148,12 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::apply(
         out[i] = OutCoord(v,q);
     }
     //
+    if(d_debug.getValue()){
+        for (auto i =0; i<out.size()-1; i++){
+            type::Vec3 diff = out[i+1].getCenter() - out[i].getCenter();
+            std::cout << "dist "<<i << "  : "<< diff.norm() <<std::endl;
+        }
+    }
     m_index_input = 0;
     dataVecOutPos[0]->endEdit();
 }
@@ -171,8 +177,10 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::computeLogarithm(const double & 
     double sin_2Xtheta = sin(2.0 *x_theta);
     double sin_Xtheta = sin(x_theta);
 
-    if(theta <= std::numeric_limits<double>::epsilon()) log_gX = I4;
-    else {
+    if(theta <= std::numeric_limits<double>::epsilon())
+        log_gX = I4;
+    else
+    {
         log_gX  = cst * ((x_theta*cos_2Xtheta - sin_Xtheta)*I4 -
                          (x_theta*cos_Xtheta + 2.0*x_theta*cos_2Xtheta - sin_Xtheta -sin_2Xtheta)*gX +
                          (2.0*x_theta*cos_Xtheta + x_theta*cos_2Xtheta-sin_Xtheta - sin_2Xtheta) *(gX*gX)-
@@ -612,7 +620,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::draw(const core::visual::VisualP
         type::vector<int> index = d_index.getValue();
         for (unsigned int i=0; i<sz-1; i++) {
             j = m_indicesVectorsDraw[i]-1; // to get the articulation on which the frame is related to
-            RGBAColor color =  RGBAColor::fromVec4(_eval(xPos[j][d_deformationAxis.getValue()]));
+            RGBAColor color =  _eval(xPos[j][d_deformationAxis.getValue()]);
             vparams->drawTool()->drawLine(positions[i],positions[i+1],color);
         }
     }

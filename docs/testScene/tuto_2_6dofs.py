@@ -5,7 +5,7 @@ stiffness_param = 1.e10
 beam_radius = 1.
 
 nb_sections = 6
-nb_frames = 6
+nb_frames = 12
 beam_length = 30
 
 
@@ -16,7 +16,7 @@ def _add_rigid_base(p_node):
                               showObject=1, showObjectScale='0.1')
     rigid_base_node.addObject('RestShapeSpringsForceField', name='spring', stiffness=stiffness_param,
                               angularStiffness=stiffness_param, external_points="0", mstate="@cosserat_base_mo",
-                              points="0", template="Rigid3d")
+                              points="0", template="Rigid3d", activeDirections=[0,1,1,1,1,1,1])
     return rigid_base_node
 
 
@@ -51,12 +51,12 @@ def _add_cosserat_frame(p_node, _bending_node, framesF, _section_curv_abs, _fram
 
 def createScene(root_node):
     root_node.addObject('VisualStyle', displayFlags='showBehaviorModels showCollisionModels showMechanicalMappings')
-#    root_node.gravity = [0, 0, 0]
 #    root_node.addObject('EulerImplicitSolver', firstOrder="0", rayleighStiffness="0.0", rayleighMass='0.0')
 #    root_node.addObject('SparseLDLSolver', name='solver')
 
     addHeader(root_node)
-    root_node.gravity = [0, -9.81, 0.]
+    root_node.gravity = [0, 0, 0]
+#    root_node.gravity = [0, -9.81, 0.]
 
     solver_node = addSolverNode(root_node, name="solver_node")
 
@@ -77,11 +77,7 @@ def createScene(root_node):
         temp += list_sections_length[i]
         section_curv_abs.append(temp)
 #    bending_states[nb_sections-1] = [0, 0.0, 0.3, 0, 0., 0.]
-    bending_states[nb_sections-1] = [0., 0., 0., 0.2, 0., 0.]
-
-
-    print (f'The bending list : {bending_states}')
-    print (f'The section_curv_abs list : {section_curv_abs}')
+    bending_states[nb_sections-1] = [1., 0., 0., 0., 0., 0.]
 
     # call add cosserat state and force field
     bending_node = _add_cosserat_state(solver_node, bending_states, list_sections_length)
@@ -108,7 +104,7 @@ def createScene(root_node):
                         beam_radius)
 
     ## Add a force component to test the stretch
-#    applied_force =[0, -1.e8, 0, 0, 0, 0]
-#    const_force_node = cosserat_frames.addObject('ConstantForceField', name='constForce', showArrowSize=10, indices=nb_frames, forces=applied_force)
+    applied_force =[-1.e1, 0.,  0, 0, 0, 0]
+    cosserat_frames.addObject('ConstantForceField', name='constForce', showArrowSize=1e10, indices=nb_frames, forces=applied_force)
 
     return root_node

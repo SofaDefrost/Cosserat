@@ -30,6 +30,15 @@
 #include <sofa/core/objectmodel/BaseObject.h>
 #include <sofa/type/Vec.h>
 
+#include <iostream>
+#include <cmath>
+
+#include <Eigen/Dense>
+#include <cmath>
+
+using namespace std;
+using namespace Eigen;
+
 #include <cmath>
 
 namespace sofa::component::mapping
@@ -139,7 +148,11 @@ public:
     [[maybe_unused]] type::vector<Mat6x6> m_frame_coAdjointEtaVectors;
     typedef typename sofa::type::Matrix4   se3;
     typedef typename sofa::type::Matrix4   SE3;
+    typedef typename Eigen::Matrix4d   _SE3;
+    typedef typename Eigen::Matrix4d   _se3;
     typedef typename type::Mat<6,6,SReal>   Tangent;
+    typedef typename Eigen::Matrix3d RotMat;
+    typedef typename Eigen::Matrix<SReal, 6, 1> Vector6d;
 
 protected:
     /// Constructor
@@ -225,19 +238,19 @@ public:
     }
 
     se3 build_Xi_hat(const Coord1 & strain_i){
-        se3 Xi;
+        se3 Xi_hat;
 
-        Xi[0][1] = -strain_i(2);
-        Xi[0][2] = strain_i[1];
-        Xi[1][2] = -strain_i[0];
+        Xi_hat[0][1] = -strain_i(2);
+        Xi_hat[0][2] = strain_i[1];
+        Xi_hat[1][2] = -strain_i[0];
 
-        Xi[1][0] = -Xi(0,1);
-        Xi[2][0] = -Xi(0,2);
-        Xi[2][1] = -Xi(1,2);
+        Xi_hat[1][0] = -Xi_hat(0,1);
+        Xi_hat[2][0] = -Xi_hat(0,2);
+        Xi_hat[2][1] = -Xi_hat(1,2);
 
         //@TODO:  Why this , if q = 0 ????
-        Xi[0][3] = 1.0;
-        return  Xi;
+        Xi_hat[0][3] = 1.0;
+        return  Xi_hat;
     }
 
     Matrix3 getTildeMatrix(const type::Vec3 & u){
@@ -289,6 +302,75 @@ public:
         }
         return M;
     }
+
+
+    Vec6 piecewise_logmap(const _SE3& g_x) {
+        _SE3 Xi_hat;
+
+        double x = 1.0;
+        double theta = std::acos(g_x.trace() / 2.0 - 1.0);
+
+        if (theta == 0) {
+            Xi_hat = 1.0 / x * (g_x - Matrix4d::Identity());
+        } else {
+            double x_theta = x * theta;
+            double sin_x_theta = std::sin(x_theta);
+            double cos_x_theta = std::cos(x_theta);
+            double t3 = 2 * sin_x_theta * cos_x_theta;
+            double t4 = 1 - 2 * sin_x_theta * sin_x_theta;
+            double t5 = x_theta * t4;
+
+            ///
+//            double csc_theta = 1.0/(sin(x * theta/2.0));
+//            double sec_theta = 1.0/(cos(x * theta/2.0));
+//            double cst = (1.0/8) * (csc_theta*csc_theta*csc_theta) * sec_theta;
+//            double x_theta = x*theta;
+//            double cos_2Xtheta = cos(2.0 * x_theta);
+//            double cos_Xtheta = cos(x_theta);
+//            double sin_2Xtheta = sin(2.0 *x_theta);
+//            double sin_Xtheta = sin(x_theta);
+            ///
+
+            Matrix4d gp2 = g_x * g_x;
+            Matrix4d gp3 = gp2 * g_x;
+
+            Xi_hat = 1.0 / x * (0.125 * (1.0 / std::sin(x_theta / 2.0) / std::sin(x_theta / 2.0) / std::sin(x_theta / 2.0)) * std::cos(x_theta / 2.0) *
+                                ((t5 - sin_x_theta) * Matrix4d::Identity() - (x_theta * cos_x_theta + 2 * t5 - sin_x_theta - t3) * g_x +
+                                 (2 * x_theta * cos_x_theta + t5 - sin_x_theta - t3) * gp2 - (x_theta * cos_x_theta - sin_x_theta) * gp3));
+        }
+
+        Vec6 xci = Vec6(Xi_hat(2, 1), Xi_hat(0, 2), Xi_hat(1, 0), Xi_hat(0, 3), Xi_hat(1, 3), Xi_hat(2, 3));
+        //xci << Xi_hat(2, 1), Xi_hat(0, 2), Xi_hat(1, 0), Xi_hat(0, 3), Xi_hat(1, 3), Xi_hat(2, 3);
+
+        return xci;
+    }
+
+    Eigen::Matrix3d rotationMatrixX(double angle) {
+        Eigen::Matrix3d rotation;
+        rotation << 1, 0, 0,
+            0, cos(angle), -sin(angle),
+            0, sin(angle), cos(angle);
+        return rotation;
+    }
+
+
+    Eigen::Matrix3d rotationMatrixY(double angle) {
+        Eigen::Matrix3d rotation;
+        rotation << cos(angle), 0, sin(angle),
+            0, 1, 0,
+            -sin(angle), 0, cos(angle);
+        return rotation;
+    }
+
+    RotMat rotationMatrixZ(double angle) {
+        RotMat rotation;
+        rotation << cos(angle), -sin(angle), 0,
+            sin(angle), cos(angle), 0,
+            0, 0, 1;
+        return rotation;
+    }
+
+
 
 };
 
