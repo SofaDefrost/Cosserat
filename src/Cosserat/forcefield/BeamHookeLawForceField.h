@@ -60,7 +60,7 @@ using sofa::helper::OptionsGroup;
  * Only bending and torsion strain / stress are considered here
 */
 template<typename DataTypes>
-class BeamHookeLawForceField : public ForceField<DataTypes>
+class SOFA_COSSERAT_API BeamHookeLawForceField : public ForceField<DataTypes>
 {
 public :
     SOFA_CLASS(SOFA_TEMPLATE(BeamHookeLawForceField, DataTypes), SOFA_TEMPLATE(ForceField, DataTypes));
@@ -76,6 +76,7 @@ public :
 
     typedef Vec<3, Real>                Vec3;
     typedef Mat<3, 3, Real>             Mat33;
+    typedef Mat<6, 6, Real>             Mat66;
 
     typedef CompressedRowSparseMatrix<Mat33> CSRMat33B66;
 
@@ -137,9 +138,12 @@ protected:
     Data<Real>  d_GA;
     Data<Real>  d_EA;
     Data<Real>  d_EI;
+    Data<Real>  d_EIy;
+    Data<Real>  d_EIz;
 
     bool compute_df;
     Mat33 m_K_section;
+    Mat66 m_K_section66;
     type::vector<Mat33> m_K_sectionList;
 
     /// Cross-section area
@@ -154,9 +158,12 @@ private :
     /// the "this->" approach.
     using ForceField<DataTypes>::getContext ;
     using ForceField<DataTypes>::f_printLog ;
-    //using ForceField<DataTypes>::mstate ;
     ////////////////////////////////////////////////////////////////////////////
 };
 
+#if !defined(SOFA_COSSERAT_CPP_BeamHookeLawForceField)
+extern template class SOFA_COSSERAT_API BeamHookeLawForceField<defaulttype::Vec3Types>;
+extern template class SOFA_COSSERAT_API BeamHookeLawForceField<defaulttype::Vec6Types>;
+#endif
 
 } // forcefield
