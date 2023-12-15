@@ -102,12 +102,12 @@ namespace sofa::core::behavior
             {
             case 'S':
             case 's':
-                printf("A point is created \n");
+                msg_info() << "A point is created ."  ;
                 addNewPointToState();
                 break;
             case 'L':
             case 'l':
-                printf("Remove point from state \n");
+                msg_info() <<("Remove point from state \n");
                 removeLastPointfromState();
                 break;
             }

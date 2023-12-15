@@ -30,39 +30,25 @@ force_null = [0., 0., 0., 0., 0., 0.]  # N
 class ForceController(Sofa.Core.Controller):
     def __init__(self, *args, **kwargs):
         Sofa.Core.Controller.__init__(self, *args, **kwargs)
-        self.forceNode = kwargs['forceNode']
+        # self.forceNode = kwargs['forceNode']
         self.frames = kwargs['frame_node'].FramesMO
-        self.force_type = kwargs['force_type']
-        self.tip_controller = kwargs['tip_controller']
-
-        self.size = geoParams.nbFrames
-        self.applyForce = True
-        self.forceCoeff = 0.
-        self.theta = 0.1
-        self.incremental = 0.01
+        #self.edite_frames()
+        self.edit_pos = True
 
     def onAnimateEndEvent(self, event):
-        if self.applyForce:
-            self.forceCoeff += self.incremental
-        else:
-            self.forceCoeff -= self.incremental
+        if self.edit_pos == True:
+            self.edite_frames()
+            self.edit_pos = False 
+        
+        
 
-        # choose the type of force 
-        if self.force_type == 1:
-            # print('inside force type 1')
-            self.incremental = 0.1
-            self.compute_force()
-        elif self.force_type == 2:
-            self.incremental = 0.4
-            self.compute_orthogonal_force()
-        elif self.force_type == 3:
-            self.rotate_force()
-
-    def compute_force(self):
-        with self.forceNode.forces.writeable() as force:
-            vec = [0., 0., 0., 0., self.forceCoeff/sqrt(2), self.forceCoeff/sqrt(2)]
-            for i, v in enumerate(vec):
-                force[0][i] = v
+    def edite_frames(self):
+        with self.frames.rest_position.writeable() as position:
+            last_frame = len(position)
+            print(f'===> The position : {position[last_frame-1]}')
+            position[last_frame-1][1] = 2
+            
+                
 
     def compute_orthogonal_force(self):
         position = self.frames.position[self.size]  # get the last rigid of the cosserat frame
@@ -106,21 +92,10 @@ def createScene(root_node):
     # create cosserat Beam
     cosserat_beam = solver_node.addChild(CosseratBase(parent=solver_node, params=Params))
     cosserat_frames = cosserat_beam.cosseratFrame
+    solver_node.addObject(ForceController(frame_node=cosserat_frames))
 
-    # this constance force is used only in the case we are doing force_type 1 or 2
-    const_force_node = cosserat_frames.addObject('ConstantForceField', name='constForce', showArrowSize=1.e-8, indices=geoParams.nbFrames, forces=force_null)
+    
 
-    # The effector is used only when force_type is 3
-    # create a rigid body to control the end effector of the beam
-    tip_controller = root_node.addChild('tip_controller')
-    controller_state = tip_controller.addObject('MechanicalObject', template='Rigid3d', name="controlEndEffector",
-                                                showObjectScale=0.3, position=[geoParams.beamLength, 0, 0, 0, 0, 0, 1],
-                                                showObject=True)
-    if controller_type == 3:
-        cosserat_frames.addObject('RestShapeSpringsForceField', name='spring', stiffness=0., angularStiffness=1.e8,
-                                  external_points=0, external_rest_shape=controller_state.getLinkPath(),
-                                  points=geoParams.nbFrames, template="Rigid3d")
-
-    solver_node.addObject(ForceController(forceNode=const_force_node, frame_node=cosserat_frames, force_type=controller_type, tip_controller=controller_state))
+    # solver_node.addObject(ForceController(forceNode=const_force_node, frame_node=cosserat_frames, force_type=controller_type, tip_controller=controller_state))
 
     return root_node
