@@ -1,3 +1,11 @@
+[![Gitter](https://img.shields.io/badge/chat-on_Gitter-ff69b4.svg)](https://app.gitter.im/#/room/#sofa-framework_cosserat-needle-insertion:gitter.im)
+[![Support](https://img.shields.io/badge/support-on_GitHub_Discussions-blue.svg)](https://github.com/sofa-framework/sofa/discussions/categories/cosserat)
+
+![download](https://img.shields.io/github/downloads/SofaDefrost/Cosserat/total.svg)
+![forks](https://img.shields.io/github/forks/SofaDefrost/Cosserat.svg)
+![stars](https://img.shields.io/github/stars/SofaDefrost/Cosserat.svg)
+
+
 # Description
 
 Cosserat model has been introduced in continuum robotics to simulate the deformation of the robot body whose geometry
