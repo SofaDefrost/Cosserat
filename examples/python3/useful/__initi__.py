@@ -26,5 +26,5 @@ Content:
 
 """
 
-__all__ = ["utils", "params", "geometry", "compute_logmap", "compute_rotation_matrix"]
+__all__ = ["utils", "params", "geometry", "compute_logmap", "compute_rotation_matrix", "logm"]
 
