@@ -55,6 +55,8 @@ DiscreteDynamicCosseratMapping<TIn1, TIn2, TOut>::DiscreteDynamicCosseratMapping
 template <class TIn1, class TIn2, class TOut>
 void DiscreteDynamicCosseratMapping<TIn1, TIn2, TOut>::init()
 {
+    Inherit1::init();
+
 	if(this->getFromModels1().empty())
 	{
 		msg_error() << "Error while initializing ; input getFromModels1 not found" ;

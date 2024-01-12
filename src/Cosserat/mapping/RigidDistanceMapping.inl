@@ -63,6 +63,8 @@ RigidDistanceMapping<TIn1, TIn2, TOut>::RigidDistanceMapping()
 template <class TIn1, class TIn2, class TOut>
 void RigidDistanceMapping<TIn1, TIn2, TOut>::init()
 {
+    Inherit1::init();
+
     if(this->getFromModels1().empty() || this->getFromModels2().empty() || this->getToModels().empty())
     {
         msg_error() << "Error while initializing ; input getFromModels1/getFromModels2/output not found" ;
