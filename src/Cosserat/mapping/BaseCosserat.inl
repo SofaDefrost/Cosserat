@@ -59,6 +59,8 @@ BaseCosserat<TIn1, TIn2, TOut>::BaseCosserat()
 template <class TIn1, class TIn2, class TOut>
 void BaseCosserat<TIn1, TIn2, TOut>::init()
 {
+    Inherit1::init();
+
     // Fill the initial vector
     const OutDataVecCoord* xfromData = m_toModel->read(core::ConstVecCoordId::position());
     const OutVecCoord xfrom = xfromData->getValue();
