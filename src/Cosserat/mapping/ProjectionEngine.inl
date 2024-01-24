@@ -52,10 +52,11 @@ ProjectionEngine<DataTypes>::ProjectionEngine()
 template<class DataTypes>
 void ProjectionEngine<DataTypes>::init()
 {
-    printf ("<====================================> \n");
     addInput(&d_from);
     addInput(&d_dest);
     addOutput(&d_output);
+
+    Inherit1::init();
 }
 
 template<class DataTypes>
