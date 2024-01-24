@@ -20,6 +20,8 @@ namespace sofa::core::behavior
 
     void PointsManager::init()
     {
+        Inherit1::init();
+
         if (getTopology() == NULL)
             msg_error() << "Error cannot find the topology";
 
