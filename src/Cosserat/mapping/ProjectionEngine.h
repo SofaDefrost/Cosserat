@@ -33,12 +33,7 @@
 #include <iostream>
 
 
-namespace sofa {
-
-namespace component
-{
-
-namespace constraintset
+namespace sofa::component::constraintset
 {
 
 
@@ -129,10 +124,7 @@ private:
 
 //#endif
 
-} // namespace constraintset
+} // namespace sofa::component::constraintset
 
-} // namespace component
-
-} // namespace sofa
 
 #endif // COSSERAT_ProjectionEngine_H
