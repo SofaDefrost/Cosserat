@@ -20,9 +20,10 @@ def _add_cosserat_state(p_node, bending_states, list_sections_length, _radius=2.
     print(f' ===> bendind state : {bending_states}')
     cosserat_coordinate_node.addObject('MechanicalObject', template='Vec3d', name='cosserat_state',
                                        position=bending_states)
-    cosserat_coordinate_node.addObject('BeamHookeLawForceField', crossSectionShape='circular',
+    testNode = cosserat_coordinate_node.addObject('BeamHookeLawForceField', crossSectionShape='circular',
                                        length=list_sections_length, radius=2., youngModulus=1.e4,
                                        poissonRatio=0.4)
+    print(f' the dire of node is : {dir(testNode)}')
     return cosserat_coordinate_node
 
 
