@@ -201,7 +201,7 @@ def createScene(rootNode):
                                                                      ['SofaEngine', 'SofaLoader', 'SofaSimpleFem',
                                                                       'SofaExporter']])
     rootNode.addObject('VisualStyle', displayFlags='showVisualModels showBehaviorModels hideCollisionModels '
-                                                   'hideBoundingCollisionModels hireForceFields '
+                                                   'hideBoundingCollisionModels hideForceFields '
                                                    'hideInteractionForceFields hideWireframe showMechanicalMappings')
     rootNode.findData('dt').value = 0.01
     rootNode.findData('gravity').value = [0., -9.81, 0.]
@@ -222,12 +222,12 @@ def createScene(rootNode):
         Cosserat(parent=solverNode, cosseratGeometry=cosserat_config, name="cosserat", radius=0.15))
 
     # use this to add the collision if the beam will interact with another object
-    collisionModel = cosserat.addCollisionModel()
+    # collisionModel = cosserat.addCollisionModel()
 
     # Attach a force at the beam tip,
     # we can attach this force to non mechanical node thanks to the MechanicalMatrixMapper component
-    beamFrame = cosserat.cosseratFrame
-    beamFrame.addObject('ConstantForceField', name='constForce', showArrowSize=1.e-2, indices=12,
-                        force=[0., -100., 0., 0., 0., 0.])
+    # beamFrame = cosserat.cosseratFrame
+    # beamFrame.addObject('ConstantForceField', name='constForce', showArrowSize=1.e-2, indices=12,
+    #                    forces=[0., -100., 0., 0., 0., 0.])
 
     return rootNode
