@@ -598,6 +598,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::draw(const core::visual::VisualP
     const In1VecCoord xPos = artiData->getValue();
 
     RGBAColor drawColor = d_color.getValue();
+    // draw each segment of the beam as a cylinder.
     for (unsigned int i=0; i<sz-1; i++)
         vparams->drawTool()->drawCylinder(positions[i], positions[i+1], d_radius.getValue(), drawColor);
 

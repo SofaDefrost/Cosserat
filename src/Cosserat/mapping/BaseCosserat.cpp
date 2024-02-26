@@ -34,7 +34,7 @@ template<>
 BaseCosserat<Vec6Types, Rigid3Types, Rigid3Types>::se3 BaseCosserat<Vec6Types, Rigid3Types, Rigid3Types>::build_Xi_hat(const Coord1& strain_i){
     se3 Xi;
 
-    msg_info("BaseCosserat")<<" ===========> Build Xi Hat rigid is called ";
+    //msg_info("BaseCosserat")<<" ===========> Build Xi Hat rigid is called ";
 
     Xi[0][1] = -strain_i(2);
     Xi[0][2] = strain_i[1];
@@ -46,11 +46,11 @@ BaseCosserat<Vec6Types, Rigid3Types, Rigid3Types>::se3 BaseCosserat<Vec6Types, R
 
     Xi[0][3] = 1.0;
 
-    std::cout <<"Before the linear part : "<< Xi <<std::endl;
+    //std::cout <<"Before the linear part : "<< Xi <<std::endl;
     for (unsigned int i=0; i<3; i++)
         Xi[i][3] += strain_i(i+3);
 
-    std::cout <<"After the linear part : "<< Xi <<std::endl;
+    //std::cout <<"After the linear part : "<< Xi <<std::endl;
 
 //    se3 = [
 //        0               -screw(3)   screw(2)        screw(4);

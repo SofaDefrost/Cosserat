@@ -52,7 +52,7 @@ def createScene(root_node):
     base_node = _add_rigid_base(root_node)
 
     #
-    cos_nul_state = [0.0, 0.0, 0.0, 0., 0., 0.]  # torsion, y_bending, z_bending
+    cos_nul_state = [0.0, 0.0, 0.0, 0., 0., 0.]  # torsion, y_bending, z_bending, x_extension, y_shear, z_shear
     bending_states = [cos_nul_state, cos_nul_state, cos_nul_state]
     list_sections_length = [10, 10, 10]
     bending_node = _add_cosserat_state(root_node, bending_states, list_sections_length)
