@@ -92,7 +92,6 @@ namespace sofa::component::mapping {
         helper::ReadAccessor< Data<InVecDeriv> > velIn = dIn;
 
         helper::WriteOnlyAccessor< Data<VecDeriv> > out = dOut;
-        helper::ReadAccessor< Data<InVecDeriv> > in = dIn;
 
         const auto sz = d_vectorOfCurvilinearAbscissa.getValue().size();
         out.resize(sz-1);

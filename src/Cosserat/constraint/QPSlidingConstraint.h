@@ -35,7 +35,7 @@
 
 #include <SoftRobots/component/constraint/model/CableModel.h>
 #include <SoftRobots/component/behavior/SoftRobotsConstraint.h>
-#include <sofa/component/constraint/lagrangian/model/BilateralInteractionConstraint.h>
+#include <sofa/component/constraint/lagrangian/model/BilateralLagrangianConstraint.h>
 
 namespace sofa::component::constraintset
 {
