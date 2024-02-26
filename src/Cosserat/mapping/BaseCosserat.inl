@@ -47,7 +47,7 @@ template <class TIn1, class TIn2, class TOut>
 BaseCosserat<TIn1, TIn2, TOut>::BaseCosserat()
     : d_curv_abs_section(initData(&d_curv_abs_section, "curv_abs_input", " need to be com...."))
     , d_curv_abs_frames(initData(&d_curv_abs_frames, "curv_abs_output", " need to be com...."))
-    , d_debug( initData( &d_debug, true,"debug", "printf for the debug"))
+    , d_debug( initData( &d_debug, false,"debug", "printf for the debug"))
     , m_fromModel1(NULL)
     , m_fromModel2(NULL)
     , m_toModel(NULL)
