@@ -7,11 +7,14 @@ from typing import List
 @dataclass
 class BeamGeometryParameters:
     """Cosserat Beam Geometry parameters"""
+
     beamLength: float = 1.0  # beam length in m
     nbSection: int = 5  # number of sections, sections along the beam length
     nbFrames: int = 30  # number of frames along the beam
     buildCollisionModel: int = 0
-    init_pos: List[float] = field(default_factory=lambda: [0., 0., 0.])  # The beam rigid base position as a list [x, y, z]
+    init_pos: List[float] = field(
+        default_factory=lambda: [0.0, 0.0, 0.0]
+    )  # The beam rigid base position as a list [x, y, z]
 
     """Parameters for the visualisation of the beam"""
     showFramesObject: int = 1
@@ -21,6 +24,7 @@ class BeamGeometryParameters:
 @dataclass
 class BeamPhysicsParameters:
     """Cosserat Beam Physics parameters"""
+
     """First set of parameters"""
     youngModulus: float = 1.205e8
     poissonRatio: float = 0.3
@@ -46,36 +50,49 @@ class BeamPhysicsParameters:
 @dataclass
 class SimulationParameters:
     """Simulation parameters"""
+
     rayleighStiffness: float = 0.2
     rayleighMass: float = 0.1
     firstOrder: bool = False
 
+
 @dataclass
 class VisualParameters:
     """Visual parameters"""
+
     showObject: int = 1
     showObjectScale: float = 1.0
     showObjectColor: List[float] = field(default_factory=lambda: [1.0, 0.0, 0.0, 1.0])
 
+
 @dataclass
 class ContactParameters:
     """Contact parameters"""
-    responseParams: str = 'mu=0.8'
-    response: str = 'FrictionContactConstraint'
+
+    responseParams: str = "mu=0.8"
+    response: str = "FrictionContactConstraint"
     alarmDistance: float = 0.05
     contactDistance: float = 0.01
     isMultithreading: bool = False
-    tolerance: float = 1.e-8
+    tolerance: float = 1.0e-8
     maxIterations: int = 100
-    epsilon: float = 1.e-6
+    epsilon: float = 1.0e-6
+
 
 @dataclass
 class Parameters:
     """Parameters for the Cosserat Beam"""
-    beamPhysicsParams: BeamPhysicsParameters = field(default_factory=BeamPhysicsParameters)
-    simuParams: SimulationParameters = field(default_factory=SimulationParameters) # SimulationParameters()
-    contactParams: ContactParameters = field(default_factory=ContactParameters) # ContactParameters()
-    beamGeoParams: BeamGeometryParameters = field(default_factory=BeamGeometryParameters)
+
+    beamPhysicsParams: BeamPhysicsParameters = field(
+        default_factory=BeamPhysicsParameters
+    )
+    simuParams: SimulationParameters = field(
+        default_factory=SimulationParameters
+    )  # SimulationParameters()
+    contactParams: ContactParameters = field(
+        default_factory=ContactParameters
+    )  # ContactParameters()
+    beamGeoParams: BeamGeometryParameters = field(
+        default_factory=BeamGeometryParameters
+    )
     visualParams: VisualParameters = field(default_factory=VisualParameters)
-
-
