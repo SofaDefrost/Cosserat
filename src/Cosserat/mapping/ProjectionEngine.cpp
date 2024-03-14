@@ -26,13 +26,8 @@
 #include <sofa/component/statecontainer/MechanicalObject.h>
 #include <sofa/core/ObjectFactory.h>
 
-namespace sofa
-{
 
-namespace component
-{
-
-namespace constraintset
+namespace sofa::component::constraintset
 {
 
 using namespace sofa::defaulttype;
@@ -44,9 +39,9 @@ int ProjectionEngineClass = core::RegisterObject("TODO-ProjectionEngine")
 template class ProjectionEngine<Vec3dTypes>;
 
 
-} // namespace constraintset
+} // namespace sofa::component::constraintset
 
-} // namespace component
 
-} // namespace sofa
+
+
 
