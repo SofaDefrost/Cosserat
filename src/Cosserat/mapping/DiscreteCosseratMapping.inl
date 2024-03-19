@@ -60,7 +60,7 @@ DiscreteCosseratMapping<TIn1, TIn2, TOut>::DiscreteCosseratMapping()
                                  "the axis in which we want to show the deformation.\n"))
     , d_drawMapBeam(initData(&d_drawMapBeam, true,"nonColored", "if this parameter is false, you draw the beam with "
                                                                 "color according to the force apply to each beam"))
-    , d_color(initData(&d_color, type::Vec4f (40/255.0, 104/255.0, 137/255.0, 0.8) ,"color", "The default beam color"))
+    , d_color(initData(&d_color, sofa::type::RGBAColor(40/255.0, 104/255.0, 137/255.0, 0.8) ,"color", "The default beam color"))
     , d_index(initData(&d_index, "index", "if this parameter is false, you draw the beam with color "
                                                           "according to the force apply to each beam"))
     , d_baseIndex(initData(&d_baseIndex, (unsigned int) 0, "baseIndex", "This parameter defines the index of the rigid "
@@ -588,7 +588,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::draw(const core::visual::VisualP
     glLineWidth(d_radius.getValue());
     glBegin(GL_LINES);
     if(d_drawMapBeam.getValue()){
-        type::Vec4f _color = d_color.getValue();
+        sofa::type::RGBAColor _color = d_color.getValue();
         RGBAColor colorL = RGBAColor(_color[0],_color[1],_color[2],_color[3]);
         glColor4f(colorL[0], colorL[1], colorL[2],colorL[3]);
         for (unsigned int i=0; i<sz-1; i++) {
