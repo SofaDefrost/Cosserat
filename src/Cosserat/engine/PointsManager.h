@@ -43,8 +43,8 @@ namespace sofa::core::behavior
         PointSetTopologyModifier *m_modifier;
         core::behavior::MechanicalState<DataTypes> *m_beam;
 
-        void init();
-        void handleEvent(sofa::core::objectmodel::Event *event);
+        void init() override;
+        void handleEvent(sofa::core::objectmodel::Event *event) override;
         // void draw(const core::visual::VisualParams *vparams);
 
         void addNewPointToState();
