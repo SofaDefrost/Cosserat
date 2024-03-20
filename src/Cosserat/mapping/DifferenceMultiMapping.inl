@@ -701,7 +701,7 @@ namespace sofa::component::mapping
 
             if (d_lastPointIsFixed.getValue())
             {
-                if ((rowIt.index() / 2) < (x1from.size() - 1))
+                if ((rowIt.index() / 2) < (int)(x1from.size() - 1))
                 {
                     while (colIt != colItEnd)
                     {

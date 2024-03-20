@@ -12,7 +12,7 @@
 #include <sofa/component/statecontainer/MechanicalObject.h>
 #include <sofa/simulation/graph/DAGSimulation.h>
 
-#include <sofa/simulation/graph/SimpleApi.h>
+#include <sofa/simpleapi/SimpleApi.h>
 #include <sofa/simulation/common/SceneLoaderXML.h>
 #include <sofa/helper/logging/Message.h>
 #include <sofa/core/behavior/ForceField.inl>

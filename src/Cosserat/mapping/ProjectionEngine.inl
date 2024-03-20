@@ -30,13 +30,7 @@
 #include <sofa/type/Vec.h>
 
 
-namespace sofa
-{
-
-namespace component
-{
-
-namespace constraintset
+namespace sofa::component::constraintset
 {
 
 
@@ -273,10 +267,7 @@ void ProjectionEngine<DataTypes>::drawLinesBetweenPoints(const core::visual::Vis
 }
 
 
-} // namespace constraintset
+} // namespace sofa::component::constraintset
 
-} // namespace component
-
-} // namespace sofa
 
 #endif

@@ -265,7 +265,6 @@ void DiscreteDynamicCosseratMapping<TIn1, TIn2, TOut>::computeJ_Jdot_i(const Mat
 	Mat6x6 M;
 
 	Mat6x3 Si_dot;
-	Mat6x6 M_dot;
 	Mat6x6 adj_eta; //to be computed
 	//std::cout << "indice vector : "<< this->m_indicesVectors <<" vecId :"<< this->m_indicesVectors[frameId] << std::endl;
 	//std::cout << "this->m_framesTangExpVectors[frameId]  :"<< this->m_framesTangExpVectors[frameId] << std::endl;
