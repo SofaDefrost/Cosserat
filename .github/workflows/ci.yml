@@ -136,7 +136,7 @@ jobs:
             name: ${{ github.ref_name }}
             tag_name: release-${{ github.ref_name }}
             fail_on_unmatched_files: false
-            target_commitish: ${{ github.ref_name }}
+            target_commitish: ${{ github.sha }}
             files: |
               artifacts/CosseratPlugin_*_Linux.zip
               artifacts/CosseratPlugin_*_Windows.zip
