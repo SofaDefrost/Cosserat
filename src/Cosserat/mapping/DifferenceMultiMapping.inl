@@ -74,6 +74,8 @@ namespace sofa::component::mapping
     template <class TIn1, class TIn2, class TOut>
     void DifferenceMultiMapping<TIn1, TIn2, TOut>::init()
     {
+        Inherit1::init();
+
         if (this->getFromModels1().empty())
         {
             msg_error() << "Error while initializing ; input getFromModels1 not found";
@@ -699,7 +701,7 @@ namespace sofa::component::mapping
 
             if (d_lastPointIsFixed.getValue())
             {
-                if ((rowIt.index() / 2) < (x1from.size() - 1))
+                if ((rowIt.index() / 2) < (int)(x1from.size() - 1))
                 {
                     while (colIt != colItEnd)
                     {

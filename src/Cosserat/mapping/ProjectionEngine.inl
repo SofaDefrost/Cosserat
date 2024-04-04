@@ -30,13 +30,7 @@
 #include <sofa/type/Vec.h>
 
 
-namespace sofa
-{
-
-namespace component
-{
-
-namespace constraintset
+namespace sofa::component::constraintset
 {
 
 
@@ -52,10 +46,11 @@ ProjectionEngine<DataTypes>::ProjectionEngine()
 template<class DataTypes>
 void ProjectionEngine<DataTypes>::init()
 {
-    printf ("<====================================> \n");
     addInput(&d_from);
     addInput(&d_dest);
     addOutput(&d_output);
+
+    Inherit1::init();
 }
 
 template<class DataTypes>
@@ -272,10 +267,7 @@ void ProjectionEngine<DataTypes>::drawLinesBetweenPoints(const core::visual::Vis
 }
 
 
-} // namespace constraintset
+} // namespace sofa::component::constraintset
 
-} // namespace component
-
-} // namespace sofa
 
 #endif

@@ -32,7 +32,7 @@
 
 #include <sofa/core/visual/VisualParams.h>
 #include <sofa/type/Vec.h>
-#include <sofa/component/constraint/lagrangian/model/BilateralInteractionConstraint.h>
+#include <sofa/component/constraint/lagrangian/model/BilateralLagrangianConstraint.h>
 
 #include "QPSlidingConstraint.h"
 
@@ -95,7 +95,8 @@ void QPSlidingConstraint<DataTypes>::internalInit()
     if(d_value.getValue().size()==0)
     {
         WriteAccessor<Data<vector<Real>>> value = d_value;
-        value.resize(1,0.);
+        value.resize(1);
+        value[0] = 0.;
     }
 
     // check for errors in the initialization
@@ -205,23 +206,21 @@ void QPSlidingConstraint<DataTypes>::getConstraintResolution(const ConstraintPar
                                                              unsigned int& offset)
 {
     ReadAccessor<Data<VecCoord>> positions = m_state->readPositions();
-    //    std::cout << "The position size is : " << positions.size()<< std::endl;
-    // double imposedValue = 1.0;
-    for (size_t i = 0; i < positions.size(); i++){
 
+    for (size_t i = 0; i < positions.size(); i++){
         resTab[offset++] = new BilateralConstraintResolution();
         resTab[offset++] = new BilateralConstraintResolution();
         if(i == positions.size()-1){
             resTab[offset++] = new BilateralConstraintResolution();
         }
     }
-    //    std::cout << "The position size is END " << std::endl;
 }
 
 
 template<class DataTypes>
-void QPSlidingConstraint<DataTypes>::draw(const VisualParams* /*vparams*/)
+void QPSlidingConstraint<DataTypes>::draw(const VisualParams* vparams)
 {
+    SOFA_UNUSED(vparams);
     if(d_componentState.getValue() != ComponentState::Valid)
         return ;
 

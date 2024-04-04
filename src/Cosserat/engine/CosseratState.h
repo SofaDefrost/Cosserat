@@ -35,7 +35,7 @@ namespace sofa::component::container
     using namespace core::objectmodel;
     using namespace sofa::defaulttype;
     using namespace sofa::core::topology;
-    using sofa::defaulttype::Vector3;
+    using sofa::type::Vec3;
 
     template <class DataTypes>
     class TemperatureState : public sofa::component::container::MechanicalObject<DataTypes>

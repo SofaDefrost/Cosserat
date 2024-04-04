@@ -16,7 +16,7 @@
 * along with this library; if not, write to the Free Software Foundation,     *
 * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA.          *
 *******************************************************************************
-*                           Plugin SoftRobots v1.0                            *
+*                           Plugin Cosserat v1.0                              *
 *                                                                             *
 * This plugin is also distributed under the GNU LGPL (Lesser General          *
 * Public License) license with the same conditions than SOFA.                 *
@@ -83,7 +83,8 @@ void CosseratActuatorConstraint<DataTypes>::internalInit()
     if(d_value.getValue().size()==0)
     {
         WriteAccessor<Data<vector<Real>>> value = d_value;
-        value.resize(1,0.);
+        value.resize(1);
+        value[0] = 0.;
     }
 
     // check for errors in the initialization

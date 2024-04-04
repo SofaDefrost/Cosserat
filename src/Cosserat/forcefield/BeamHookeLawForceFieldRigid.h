@@ -46,7 +46,7 @@ namespace sofa::component::forcefield
 
 using sofa::type::Vec ;
 using type::Vec6;
-using type::Vector3;
+using sofa::type::Vec3;
 using sofa::type::Mat ;
 using sofa::type::vector;
 using sofa::core::MechanicalParams;

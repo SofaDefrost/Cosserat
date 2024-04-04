@@ -67,7 +67,7 @@ template<>
 void BaseCosserat<Vec6Types, Rigid3Types, Rigid3Types>::computeExponentialSE3(const double & curv_abs_x_n, const Coord1& strain_n, Transform & Trans){
     Matrix4 I4; I4.identity();
     //Get the angular part of the
-    Vector3 k = Vector3(strain_n(0), strain_n(1), strain_n(2));
+    Vec3 k = Vec3(strain_n(0), strain_n(1), strain_n(2));
     SReal theta = k.norm(); //
 
     SE3 g_X_n;
