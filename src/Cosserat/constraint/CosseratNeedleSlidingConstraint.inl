@@ -32,7 +32,7 @@
 
 #include <sofa/core/visual/VisualParams.h>
 #include <sofa/type/Vec.h>
-#include <sofa/component/constraint/lagrangian/model/BilateralInteractionConstraint.h>
+#include <sofa/component/constraint/lagrangian/model/BilateralLagrangianConstraint.h>
 #include "CosseratNeedleSlidingConstraint.h"
 
 namespace sofa::component::constraintset
@@ -91,7 +91,8 @@ namespace sofa::component::constraintset
     if (d_value.getValue().size() == 0)
     {
       WriteAccessor<Data<vector<Real>>> value = d_value;
-      value.resize(1, 0.);
+      value.resize(1);
+      value[0] = 0.;
     }
 
     // check for errors in the initialization

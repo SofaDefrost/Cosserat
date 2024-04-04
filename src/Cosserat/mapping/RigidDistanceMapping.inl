@@ -45,8 +45,7 @@ namespace sofa::component::mapping
 
 template <class TIn1, class TIn2, class TOut>
 RigidDistanceMapping<TIn1, TIn2, TOut>::RigidDistanceMapping()
-    : m_toModel(NULL)
-    , d_index1(initData(&d_index1, "first_point", "index of the first model \n"))
+    : d_index1(initData(&d_index1, "first_point", "index of the first model \n"))
     , d_index2(initData(&d_index2, "second_point", "index of the second model \n"))
     , d_max(initData(&d_max, (Real)1.0e-2, "max", "the maximum of the deformation.\n"))
     , d_min(initData(&d_min, (Real)0.0, "min", "the minimum of the deformation.\n"))
@@ -55,6 +54,7 @@ RigidDistanceMapping<TIn1, TIn2, TOut>::RigidDistanceMapping()
     , d_index(initData(&d_index, "index", "if this parameter is false, you draw the beam with color "
                                                           "according to the force apply to each beam"))
     , d_debug(initData(&d_debug, false, "debug", "show debug output.\n"))
+    , m_toModel(NULL)
 {
         d_debug.setValue(false);
 }
@@ -63,6 +63,8 @@ RigidDistanceMapping<TIn1, TIn2, TOut>::RigidDistanceMapping()
 template <class TIn1, class TIn2, class TOut>
 void RigidDistanceMapping<TIn1, TIn2, TOut>::init()
 {
+    Inherit1::init();
+
     if(this->getFromModels1().empty() || this->getFromModels2().empty() || this->getToModels().empty())
     {
         msg_error() << "Error while initializing ; input getFromModels1/getFromModels2/output not found" ;
@@ -136,8 +138,6 @@ void RigidDistanceMapping<TIn1, TIn2, TOut>:: applyJ(
 
     const auto &m1Indices = d_index1.getValue();
     const auto &m2Indices = d_index2.getValue();
-
-    SpatialVector vDOF1, vDOF2;
 
     for (sofa::Index index = 0; index < m_minInd; index++) {
         getVCenter(outVel[index]) = getVCenter(in2Vel[m2Indices[index]]) - getVCenter(in1Vel[m1Indices[index]]);

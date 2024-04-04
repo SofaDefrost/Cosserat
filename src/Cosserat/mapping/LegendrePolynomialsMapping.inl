@@ -58,7 +58,8 @@ namespace sofa::component::mapping {
     template <class TIn, class TOut>
     void LegendrePolynomialsMapping<TIn, TOut>::init()
     {
-        // this->Inherit::init();
+        Inherit1::init();
+
         //Compute the coefficients for each curv_abs at all orders of the polynomials
         reinit();
     }
@@ -91,7 +92,6 @@ namespace sofa::component::mapping {
         helper::ReadAccessor< Data<InVecDeriv> > velIn = dIn;
 
         helper::WriteOnlyAccessor< Data<VecDeriv> > out = dOut;
-        helper::ReadAccessor< Data<InVecDeriv> > in = dIn;
 
         const auto sz = d_vectorOfCurvilinearAbscissa.getValue().size();
         out.resize(sz-1);

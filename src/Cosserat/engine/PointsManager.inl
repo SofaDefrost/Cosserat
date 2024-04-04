@@ -20,6 +20,8 @@ namespace sofa::core::behavior
 
     void PointsManager::init()
     {
+        Inherit1::init();
+
         if (getTopology() == NULL)
             msg_error() << "Error cannot find the topology";
 
@@ -74,10 +76,9 @@ namespace sofa::core::behavior
     {
         helper::WriteAccessor<Data<VecCoord>> x = *this->getMstate()->write(core::VecCoordId::position());
         helper::WriteAccessor<Data<VecCoord>> xfree = *this->getMstate()->write(core::VecCoordId::freePosition());
-
         unsigned nbPoints = this->getTopology()->getNbPoints(); // do not take the last point because there is a bug
-
         sofa::type::vector<unsigned int> Indices;
+
         if (nbPoints > 0)
         {
             Indices.push_back(nbPoints - 1);
