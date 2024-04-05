@@ -68,7 +68,7 @@ DiscreteCosseratMapping<TIn1, TIn2, TOut>::DiscreteCosseratMapping()
 template <class TIn1, class TIn2, class TOut>
 void DiscreteCosseratMapping<TIn1, TIn2, TOut>::init()
 {
-    Inherit1::init();
+
 
     if(this->getFromModels1().empty() || this->getFromModels2().empty() || this->getToModels().empty())
     {
@@ -76,6 +76,8 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::init()
         return;
     }
     reinit();
+    // I call Init here since we build the mechanics only in the
+    Inherit1::init();
 
     m_colorMap.setColorScheme("Blue to Red");
     m_colorMap.reinit();
@@ -151,7 +153,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::apply(
     }
     //
     if(d_debug.getValue()){
-        for (auto i =0; i<out.size()-1; i++){
+        for (unsigned int i =0; i<out.size()-1; i++){
             type::Vec3 diff = out[i+1].getCenter() - out[i].getCenter();
             std::cout << "dist "<<i << "  : "<< diff.norm() <<std::endl;
         }
