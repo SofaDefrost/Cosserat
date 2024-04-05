@@ -87,7 +87,7 @@ if(WIN32)
     add_definitions(-D_WINSOCKAPI_)
 endif()
 
-add_library(${PROJECT_NAME} SHARED ${HEADER_FILES} ${SOURCE_FILES} ${DOC_FILES} ${RESOURCE_FILES} )
+add_library(${PROJECT_NAME} SHARED ${HEADER_FILES} ${SOURCE_FILES} ${DOC_FILES} )
 target_link_libraries(${PROJECT_NAME}
     Sofa.Component.Constraint.Lagrangian.Model
     Sofa.Component.StateContainer
