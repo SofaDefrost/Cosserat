@@ -82,14 +82,12 @@ BeamHookeLawForceField<DataTypes>::BeamHookeLawForceField()
 }
 
 template<typename DataTypes>
-BeamHookeLawForceField<DataTypes>::~BeamHookeLawForceField()
-{}
+BeamHookeLawForceField<DataTypes>::~BeamHookeLawForceField() = default;
 
 template<typename DataTypes>
 void BeamHookeLawForceField<DataTypes>::init()
 {
     Inherit1::init();
-
     reinit();
 }
 
