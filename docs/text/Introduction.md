@@ -64,7 +64,7 @@ Yinoussa Adagolodjo
 ---
 #### **Challenges in Soft Robotics**
 
-- *Modeling* : due to deformable materials
+- *Modeling* : due to non-linear deformable materials
 - [*Control*](../../../Soft_Robot/kinematics_dynamics_control.md) : due to the non-linear, multi-body dynamics of deformable materials
 - [*Multi-dimension*](../../../../../../Projects/ANR/brainStormingANR2023.md) : due to a wide range of shape, volume (3D), surface (2D) and cable (1D)
 - [*Multi-physics*](../../../../../../Projects/ANR/RobotMulti-physics.md) : due a wide range of physical behaviors, including mechanical deformation, thermal effects, electrical responses,
@@ -76,22 +76,29 @@ Yinoussa Adagolodjo
 (To go further on the introduction of deformable robotics ⇾ [Introduction_General](../../../Soft_Robot/Introduction_General.md) )
 
 ---
-##### Why combine different models ?
+##### 1D models usage in Soft-robot modeling ?
 - Introducing a versatile modeling tool for multidimensional Soft-Robot:
-	- Animal locomotion (Bio-inspired robotics)
-	- Flexible arms actuated by cables or similar mechanisms (Robotics)
-	- Medical devices like endoscopes, needles, and catheters (Medical robotics)
+- 1D models are often used to represent the behavior of soft structures
+	- Cables, tubes, or fibers, that can deform in one dimension
+	- Examples include:
+      - Flexible arms actuated by cables or similar mechanisms (Robotics)
+      - Medical devices like endoscopes, needles, and catheters (Medical robotics)
+
 ---
-##### Why combine different models ?
-- Existing design and modeling tools demand enhancement, particularly in the mechanical aspect.
-![](../images/Pasted%20image%2020231108201224.png)
-- Offer a wide range of design possibilities:
-	- Selection of actuators, force transmission within the structure, utilization of materials with varying stiffness profiles, and more.
+##### How to model one 1D object ? see [oneDimensionModels](oneDimensionModels.md)
+- **Geometric Methods**
+- **Mechanics methods**
+-  *Statistical Methods*
+- *Computational Methods*
+- *Analytical Methods:*
+
 ---
-##### Cosserat Theory
+##### Cosserat Theory (Mechanics)
 Choose strain as generalized coordinates, defined in global (or local) frame!
 ![400](../images/Pasted%20image%2020231108233708.png)
 [Lazarus et al. 2013]
+
+---
 - The configuration of the Cosserat rod is defined by its centerline r(s).
 - The orientation of each mass point of the rod is represented by an orthonormal basis ($d_1(s), d_2(s), d_3(s)$)
 - The three local modes of deformation of the elastic rod : - (b1) material curvature $κ_1$ related to the direction $d_1$ of the cross-section, (b2) material curvature $κ_2$ related to $d_2$, and $κ_3$ twist.
@@ -104,7 +111,7 @@ Choose strain as generalized coordinates, defined in global (or local) frame!
 - Piece-wise Constant Strain (PCS, treats rigid, soft, or hybrid robots uniformly)
 ![500](https://lh7-us.googleusercontent.com/hzJA2pzS-naPfFkf-98bPkGsQ86ZGdGwqGW3-un56s3ZcVkdOB0_Jus4a9W_nqO7jU7Tt_FDzCrFIbfA9XFqaPBmmq-do-TIJkFn6NX-RimX2UlWBTis_7bKzAp7fEmIeiuOZ1FueZ5yxijFSJls=nw)
 ---
-##### Discrete Cosserat Modeling: DCM
+##### Discrete Cosserat Modeling(DCM): Piece-Wise Constant Strain
 - Models the deformation of a soft manipulator arm using a finite number of sections
 - Assumes constant strains along each section
 - Accounts for shears and torsion
@@ -113,14 +120,14 @@ Choose strain as generalized coordinates, defined in global (or local) frame!
 ---
 ##### DCM (Kinematics)
 - Configuration $g= \begin{pmatrix}  \mathcal{R} & u \\  0 & 1  \end{pmatrix} ∈SE(3)$
-- Velocity $\begin{align}\eta(s,t) &= \begin{bmatrix}\mathcal{w} \\ \mathcal{v} \end{bmatrix}\end{align} \in R^6$
-- Strain $\begin{align}\xi(s,t) &= \begin{bmatrix}\mathcal{k} \\ \mathcal{p} \end{bmatrix}\end{align} \in R^6$
-- Kinematics : $g'=g\hat{\xi}(X)$ ; $\dot{g} = g\hat{\eta}$
-- Differntial Kinematics : $\eta'=\dot{\xi}(X)-ad_{\xi(X)}\eta(X)$
-![](../images/Pasted%20image%2020231109002926.png)
+- Strain $\begin{align}\xi(s,t) = g^{-1} \frac{\partial g}{\partial s} &= \begin{bmatrix}\mathcal{k} \\ \mathcal{p} \end{bmatrix}\end{align} \in R^6$
+- Velocity $\begin{align}\eta(s,t) =g^{-1}\frac{\partial g}{\partial t} &= \begin{bmatrix}\mathcal{w} \\ \mathcal{v} \end{bmatrix}\end{align} \in R^6$
 ---
-![0](../images/Pasted%20image%2020231108234643.png)
+##### DCM (Kinematics)
 
+- => Kinematics (deformation) : $\frac{\partial g}{\partial s} = g'=g\hat{\xi}$ ; $\dot{g} = g\hat{\eta}$
+- Differential Kinematics : $\eta'= \frac{\partial g}{\partial s}  = \dot{\xi} - ad_{\xi}\eta$
+![](../images/Pasted%20image%2020231109002926.png)
 ---
 ##### DCM (Dynamics)
 ![800](../images/Pasted%20image%2020231109003349.png)
@@ -184,3 +191,8 @@ For example, it allows us to effectively simulate scenarios where inextensible c
 - *FEM's Material Modeling*: FEM excels at modeling the deformations and stress distributions in complex materials, including soft and deformable ones. It considers the local behavior of materials, making it more accurate for understanding the mechanical properties of soft robots.
 - *Cosserat theory's Beam-Like Modeling*: DCM, on the other hand, is suitable for modeling the overall shape and bending of structures, making it a natural choice for cables, rods, and flexible elements in soft robots.
 --- 
+
+
+
+
+![0](../images/Pasted%20image%2020231108234643.png)

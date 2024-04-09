@@ -95,7 +95,7 @@ class ForceController(Sofa.Core.Controller):
             self.applyForce = False
 
 
-controller_type = 2
+controller_type = 1
 
 def createScene(root_node):
     addHeader(root_node)
