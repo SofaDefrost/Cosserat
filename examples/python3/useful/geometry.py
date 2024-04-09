@@ -53,6 +53,7 @@ def calculate_frame_parameters(beamGeoParams):
     curv_abs_output_f = []
     cable_position_f = []
 
+    # @Todo: improve this for
     for i in range(nb_frames):
         sol = i * length_f
         frames_f.append([sol + x, y, z, 0, 0, 0, 1])

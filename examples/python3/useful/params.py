@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from typing import List
 
 
+# @TODO: Improve this function, remove hard coding.
 @dataclass
 class BeamGeometryParameters:
     """Cosserat Beam Geometry parameters"""
@@ -21,6 +22,7 @@ class BeamGeometryParameters:
     showRigidBaseObject: int = 1
 
 
+#Todo: two objects from the same base class to define different instead of useInertia
 @dataclass
 class BeamPhysicsParameters:
     """Cosserat Beam Physics parameters"""

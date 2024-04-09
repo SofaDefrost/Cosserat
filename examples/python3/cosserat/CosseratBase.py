@@ -47,18 +47,18 @@ class CosseratBase(Sofa.Prefab):
             "help": "Cosserat base Rotation",
             "default": [0.0, 0.0, 0.0],
         },
-        {
+        { # to be removed
             "name": "attachingToLink",
-            "type": "string",
+            "type": bool,
             "help": "a rest shape force field will constraint the object "
             "to follow arm position",
-            "default": "1",
+            "default": True,
         },
         {
             "name": "showObject",
-            "type": "string",
+            "type": bool,
             "help": " Draw object arrow ",
-            "default": "0",
+            "default": False,
         },
     ]
 
@@ -71,10 +71,12 @@ class CosseratBase(Sofa.Prefab):
         beamGeometryParams = self.params.beamGeoParams
 
         self.beamMass = beamPhysicsParams.beamMass  # self.cosseratGeometry['beamMass']
+        # Todo: add option in case None
         self.parent = kwargs.get("parent")
         self.useInertiaParams = beamPhysicsParams.useInertia  # False
         self.radius = beamPhysicsParams.beamRadius  # kwargs.get('radius')
 
+        # Todo: To be removed
         if self.parent.hasObject("EulerImplicitSolver") is False:
             print("The code does not have parent EulerImplicit")
             self.solverNode = addSolverNode(self.parent)
@@ -142,19 +144,24 @@ class CosseratBase(Sofa.Prefab):
         rigidBaseNode = self.addChild("rigidBase")
         trans = list(self.translation.value)
         rot = list(self.rotation.value)
+        # To be improved with classes in top
         positions = [[self.params.beamGeoParams.init_pos] + [0.0, 0.0, 0.0, 1.0]]
 
-        rigidBaseNode.addObject(
+
+        rigidBaseNodeMo = rigidBaseNode.addObject(
             "MechanicalObject",
             template="Rigid3d",
             name="RigidBaseMO",
             showObjectScale=0.2,
-            translation=trans,
+            translation=trans, # @Todo: To be removed
             position=positions,
-            rotation=rot,
-            showObject=int(self.showObject.value),
+            rotation=rot,      #  @Todo: To be removed
+            #showObject=int(self.showObject.value),
         )
+        rigidBaseNodeMo.showObject.setParent(self.showObject)
 
+
+        # @TODO: remove this hard coded.
         # one can choose to set this to false and directly attach the beam base
         # to a control object in order to be able to drive it.
         if int(self.attachingToLink.value):
@@ -232,12 +239,10 @@ class CosseratBase(Sofa.Prefab):
             position=framesF,
             showIndices=self.params.beamGeoParams.showFramesObject,
             showObject=self.params.beamGeoParams.showFramesObject,
-            showObjectScale=1.8,
+            showObjectScale=1.8, # Todo: remove this hard code
         )
-        if self.beamMass != 0.0:
-            cosseratInSofaFrameNode.addObject(
-                "UniformMass", totalMass=self.beamMass, showAxisSizeFactor="0"
-            )
+
+        cosseratInSofaFrameNode.addObject("UniformMass", totalMass=self.beamMass, showAxisSizeFactor="0")
 
         cosseratInSofaFrameNode.addObject(
             "DiscreteCosseratMapping",

@@ -54,7 +54,8 @@ def createScene(root_node):
     #
     cos_nul_state = [0.0, 0.0, 0.0]  # torsion, y_bending, z_bending
     bending_states = [cos_nul_state, cos_nul_state, cos_nul_state]
-    list_sections_length = [10, 10, 10]
+    list_sections_length = [10, 10, 10] # SI units
+
     bending_node = _add_cosserat_state(root_node, bending_states, list_sections_length)
 
     section_curv_abs = [0, 10, 20, 30]

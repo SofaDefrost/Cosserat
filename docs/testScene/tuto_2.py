@@ -64,17 +64,17 @@ def createScene(root_node):
     section_curv_abs = [0.]  # section/segment curve abscissa
 
     for i in range(nb_sections):
-        bending_states.append([0, 0.0, 0.0])  # torsion, y_bending, z_bending
+        bending_states.append([0, 0., 0.2])  # torsion, y_bending, z_bending
         list_sections_length.append((((i + 1) * length_s) - i * length_s))
         temp += list_sections_length[i]
         section_curv_abs.append(temp)
-    bending_states[nb_sections-1] = [0, 0.0, 0.52359878]
+    bending_states[nb_sections-1] = [0, 0.1, 0.2]
 
     # call add cosserat state and force field
     bending_node = _add_cosserat_state(root_node, bending_states, list_sections_length)
 
     # comment : ???
-    nb_frames = 6
+    nb_frames = 32
     length_f = beam_length/float(nb_frames)
     cosserat_G_frames = []
     frames_curv_abs = []
