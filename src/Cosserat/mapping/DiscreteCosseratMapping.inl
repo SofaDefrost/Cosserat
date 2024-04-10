@@ -72,14 +72,14 @@ DiscreteCosseratMapping<TIn1, TIn2, TOut>::DiscreteCosseratMapping()
 template <class TIn1, class TIn2, class TOut>
 void DiscreteCosseratMapping<TIn1, TIn2, TOut>::init()
 {
-    Inherit1::init();
-
     if(this->getFromModels1().empty() || this->getFromModels2().empty() || this->getToModels().empty())
     {
         msg_error() << "Error while initializing ; input getFromModels1/getFromModels2/output not found" ;
         return;
     }
+
     reinit();
+    Inherit1::init();
 
     m_colorMap.setColorScheme("Blue to Red");
     m_colorMap.reinit();
