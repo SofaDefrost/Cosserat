@@ -66,8 +66,8 @@ Yinoussa Adagolodjo
 
 - *Modeling* : due to non-linear deformable materials
 - [*Control*](../../../Soft_Robot/kinematics_dynamics_control.md) : due to the non-linear, multi-body dynamics of deformable materials
-- [*Multi-dimension*](../../../../../../Projects/ANR/brainStormingANR2023.md) : due to a wide range of shape, volume (3D), surface (2D) and cable (1D)
-- [*Multi-physics*](../../../../../../Projects/ANR/RobotMulti-physics.md) : due a wide range of physical behaviors, including mechanical deformation, thermal effects, electrical responses,
+- [*Multi-dimension*](../../../../../../Professionnel/research_md/Projects/ANR/brainStormingANR2023.md) : due to a wide range of shape, volume (3D), surface (2D) and cable (1D)
+- [*Multi-physics*](../../../../../../Professionnel/research_md/Projects/ANR/RobotMulti-physics.md) : due a wide range of physical behaviors, including mechanical deformation, thermal effects, electrical responses,
 
 ---
 #### **Challenges in Soft Robotics**
