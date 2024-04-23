@@ -21,7 +21,7 @@ def _add_cosserat_state(p_node, bending_states, list_sections_length, _radius=2.
     cosserat_coordinate_node.addObject('MechanicalObject', template='Vec3d', name='cosserat_state',
                                        position=bending_states)
     testNode = cosserat_coordinate_node.addObject('BeamHookeLawForceField', crossSectionShape='circular',
-                                       length=list_sections_length, radius=2., youngModulus=1.e4,
+                                       length=list_sections_length, radius=_radius, youngModulus=1.e4,
                                        poissonRatio=0.4)
     print(f' the dire of node is : {dir(testNode)}')
     return cosserat_coordinate_node
@@ -64,7 +64,7 @@ def createScene(root_node):
     section_curv_abs = [0.]  # section/segment curve abscissa
 
     for i in range(nb_sections):
-        bending_states.append([0, 0., 0.2])  # torsion, y_bending, z_bending
+        bending_states.append([0, 0., 0.0])  # torsion, y_bending, z_bending
         list_sections_length.append((((i + 1) * length_s) - i * length_s))
         temp += list_sections_length[i]
         section_curv_abs.append(temp)
@@ -91,7 +91,6 @@ def createScene(root_node):
     cable_position_f.append([beam_length + x, y, z])
     frames_curv_abs.append(beam_length + x)
 
-    _add_cosserat_frame(base_node, bending_node, cosserat_G_frames, section_curv_abs, frames_curv_abs,
-                        beam_radius)
+    _add_cosserat_frame(base_node, bending_node, cosserat_G_frames, section_curv_abs, frames_curv_abs, beam_radius)
 
     return root_node
