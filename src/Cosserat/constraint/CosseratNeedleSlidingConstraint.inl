@@ -113,7 +113,7 @@ namespace sofa::component::constraintset
     SOFA_UNUSED(cParams);
     MatrixDeriv &matrix = *cMatrix.beginEdit();
     VecCoord positions = x.getValue();
-    m_constraintId = cIndex;
+    m_constraintIndex.setValue(cIndex);
 
     type::Vec<3, bool> use = d_useDirections.getValue();
 
@@ -131,7 +131,7 @@ namespace sofa::component::constraintset
       }
     }
     cMatrix.endEdit();
-    m_nbLines = cIndex - m_constraintId;
+    m_nbLines = cIndex - m_constraintIndex.getValue();
     
   }
 
@@ -151,20 +151,21 @@ namespace sofa::component::constraintset
     //ReadAccessor<Data<VecCoord>> positions = this->mstate->readPositions();
     const VecCoord positions = x.getValue();
     type::Vec<3, bool> use = d_useDirections.getValue();
+    const auto& constraintIndex = sofa::helper::getReadAccessor(m_constraintIndex);
 
     for (unsigned int i = 0; i < positions.size(); i++)
     {
       if (use[0]){
         Real dfree0 = positions[i][0];
-        resV->set(m_constraintId + 2 * i, dfree0);
+        resV->set(constraintIndex + 2 * i, dfree0);
       }
       if (use[1]){
         Real dfree1 = positions[i][1];
-        resV->set(m_constraintId + 2 * i, dfree1);
+        resV->set(constraintIndex + 2 * i, dfree1);
       }
       if (use[2]){
         Real dfree2 = positions[i][2];
-        resV->set(m_constraintId + 2 * i + 1, dfree2);
+        resV->set(constraintIndex + 2 * i + 1, dfree2);
       }
     }
   }

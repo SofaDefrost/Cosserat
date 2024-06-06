@@ -104,11 +104,12 @@ void CosseratActuatorConstraint<DataTypes>::buildConstraintMatrix(const Constrai
 
     SOFA_UNUSED(cParams);
 
-    m_constraintId = cIndex;
+    m_constraintIndex.setValue(cIndex);
+    const auto& constraintIndex = sofa::helper::getReadAccessor(m_constraintIndex);
 
     MatrixDeriv& matrix = *cMatrix.beginEdit();
 
-    MatrixDerivRowIterator rowIterator = matrix.writeLine(m_constraintId);
+    MatrixDerivRowIterator rowIterator = matrix.writeLine(constraintIndex);
 
     VecCoord positions = x.getValue();
 
@@ -144,7 +145,7 @@ void CosseratActuatorConstraint<DataTypes>::buildConstraintMatrix(const Constrai
     }
     cIndex++;
     cMatrix.endEdit();
-    m_nbLines = cIndex - m_constraintId;
+    m_nbLines = cIndex - constraintIndex;
 }
 
 
@@ -168,7 +169,7 @@ void CosseratActuatorConstraint<DataTypes>::getConstraintViolation(const Constra
 
 
     for (unsigned i=0;i<d_indices.getValue().size();i++) {
-        resV->set(m_constraintId, dfree);
+        resV->set(m_constraintIndex.getValue(), dfree);
     }
 }
 
