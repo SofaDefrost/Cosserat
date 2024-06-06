@@ -118,7 +118,8 @@ void QPSlidingConstraint<DataTypes>::buildConstraintMatrix(const ConstraintParam
     SOFA_UNUSED(cParams);
     MatrixDeriv& matrix = *cMatrix.beginEdit();
     VecCoord positions = x.getValue();
-    m_constraintId= cIndex;
+    m_constraintIndex.setValue(cIndex);
+    const auto& constraintIndex = sofa::helper::getReadAccessor(m_constraintIndex);
 
     for (unsigned int i=0; i<positions.size(); i++)
     {
@@ -141,7 +142,7 @@ void QPSlidingConstraint<DataTypes>::buildConstraintMatrix(const ConstraintParam
 
     }
     cMatrix.endEdit();
-    m_nbLines = cIndex - m_constraintId;
+    m_nbLines = cIndex - constraintIndex;
 }
 
 
@@ -155,6 +156,7 @@ void QPSlidingConstraint<DataTypes>::getConstraintViolation(const ConstraintPara
 
     SOFA_UNUSED(cParams);
     ReadAccessor<Data<VecCoord>> positions = m_state->readPositions();
+    const auto& constraintIndex = sofa::helper::getReadAccessor(m_constraintIndex);
 
     if(Jdx->size()==0){
         //std::cout << "Size JDX = "<< Jdx->size() << std::endl;
@@ -163,16 +165,16 @@ void QPSlidingConstraint<DataTypes>::getConstraintViolation(const ConstraintPara
                 Real dfree1 =  positions[i][1];
                 Real dfree2 =  positions[i][2];
 
-                resV->set(m_constraintId + 2*i   , dfree1);
-                resV->set(m_constraintId + 2*i +1, dfree2);
+                resV->set(constraintIndex + 2*i   , dfree1);
+                resV->set(constraintIndex + 2*i +1, dfree2);
             }else{
                 Real dfree0 =  positions[i][0];
                 Real dfree1 =  positions[i][1];
                 Real dfree2 =  positions[i][2];
 
-                resV->set(m_constraintId + 2*i   , dfree0);
-                resV->set(m_constraintId + 2*i +1, dfree1);
-                resV->set(m_constraintId + 2*i +2, dfree2);
+                resV->set(constraintIndex + 2*i   , dfree0);
+                resV->set(constraintIndex + 2*i +1, dfree1);
+                resV->set(constraintIndex + 2*i +2, dfree2);
             }
         }
 
@@ -183,8 +185,8 @@ void QPSlidingConstraint<DataTypes>::getConstraintViolation(const ConstraintPara
                 Real dfree1 = Jdx->element(2*i)   + positions[i][1];
                 Real dfree2 = Jdx->element(2*i+1) + positions[i][2];
 
-                resV->set(m_constraintId + 2*i   , dfree1);
-                resV->set(m_constraintId + 2*i +1, dfree2);
+                resV->set(constraintIndex + 2*i   , dfree1);
+                resV->set(constraintIndex + 2*i +1, dfree2);
             }else{
                 //std::cout << " The laste position : "<< positions[i] << "; Jdx->element() "<< Jdx->element(2*i) <<" "<< Jdx->element(2*i+1) <<" "<< Jdx->element(2*i+2) << std::endl;
                 Real dfree0 = Jdx->element(2*i)   + positions[i][0];
@@ -192,9 +194,9 @@ void QPSlidingConstraint<DataTypes>::getConstraintViolation(const ConstraintPara
                 Real dfree2 = Jdx->element(2*i+2) + positions[i][2];
 
                 //std::cout << " m_constraintId + 2*i : "<< m_constraintId + 2*i << std::endl;
-                resV->set(m_constraintId + 2*i   , dfree0);
-                resV->set(m_constraintId + 2*i +1, dfree1);
-                resV->set(m_constraintId + 2*i +2, dfree2);
+                resV->set(constraintIndex + 2*i   , dfree0);
+                resV->set(constraintIndex + 2*i +1, dfree1);
+                resV->set(constraintIndex + 2*i +2, dfree2);
             }
         }
     }
