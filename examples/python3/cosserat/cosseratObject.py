@@ -21,10 +21,26 @@ cosserat_config = {
     "buildCollisionModel": 1,
     "beamMass": 0.22,
 }
+<<<<<<< HEAD
 
 
 class Cosserat(Sofa.Prefab):
     """Cosserat beam prefab class. It is a prefab class that allow to create a cosserat beam in Sofa.
+=======
+
+
+# @dataclass
+
+
+class Cosserat(Sofa.Prefab):
+    """ActuatedArm is a reusable sofa model of a S90 servo motor and the tripod actuation arm.
+    Parameters:
+        -parent:        node where the ServoArm will be attached
+         - translation the position in space of the structure
+         - eulerRotation the orientation of the structure
+         - attachingTo (MechanicalObject)    a rest shape force field will constraint the object
+                                          to follow arm position
+>>>>>>> master
     Structure:
     Node : {
          name : 'Cosserat'
@@ -37,8 +53,12 @@ class Cosserat(Sofa.Prefab):
     """
 
     prefabParameters = [
+<<<<<<< HEAD
         {"name": "name", "type": "string",
             "help": "Node name", "default": "Cosserat"},
+=======
+        {"name": "name", "type": "string", "help": "Node name", "default": "Cosserat"},
+>>>>>>> master
         {
             "name": "position",
             "type": "Rigid3d::VecCoord",
@@ -125,7 +145,7 @@ class Cosserat(Sofa.Prefab):
         )
 
         if self.parent.hasObject("EulerImplicitSolver") is False:
-            print("The code does not have parent EulerImplicit")
+            print("The code does not have parent EulerImplicite")
             self.solverNode = self.addSolverNode()
         else:
             self.solverNode = self.parent
@@ -150,7 +170,6 @@ class Cosserat(Sofa.Prefab):
         self.cosseratFrame = self.addCosseratFrame(
             framesF, curv_abs_inputS, curv_abs_outputF
         )
-        # print(f'=== > {curv_abs_inputS}')
 
     def init(self):
         pass
@@ -294,7 +313,7 @@ class Cosserat(Sofa.Prefab):
     def addCosseratFrame(self, framesF, curv_abs_inputS, curv_abs_outputF):
         cosseratInSofaFrameNode = self.rigidBaseNode.addChild(
             "cosseratInSofaFrameNode")
-        self.cosseratCoordinateNode.addChild(cosseratInSofaFrameNode)
+       self.cosseratCoordinateNode.addChild(cosseratInSofaFrameNode)
         framesMO = cosseratInSofaFrameNode.addObject(
             "MechanicalObject",
             template="Rigid3d",
