@@ -35,11 +35,16 @@
 // To go further =>
 // https://www.mathworks.com/matlabcentral/fileexchange/83038-sorosim/
 
-namespace sofa::component::mapping {
-using sofa::core::objectmodel::BaseContext;
-using sofa::helper::AdvancedTimer;
-using sofa::helper::WriteAccessor;
-using sofa::type::vector;
+namespace sofa::component::mapping
+{
+
+namespace
+{
+    using sofa::core::objectmodel::BaseContext;
+    using sofa::helper::AdvancedTimer;
+    using sofa::helper::WriteAccessor;
+    using sofa::type::vector;
+}
 
 template <class TIn1, class TIn2, class TOut>
 BaseCosserat<TIn1, TIn2, TOut>::BaseCosserat()
@@ -62,12 +67,6 @@ void BaseCosserat<TIn1, TIn2, TOut>::init() {
       m_toModel->read(core::ConstVecCoordId::position());
   const OutVecCoord xfrom = xfromData->getValue();
 }
-
-template <class TIn1, class TIn2, class TOut>
-void BaseCosserat<TIn1, TIn2, TOut>::bwdInit() {}
-
-template <class TIn1, class TIn2, class TOut>
-void BaseCosserat<TIn1, TIn2, TOut>::reinit() {}
 
 template <class TIn1, class TIn2, class TOut>
 void BaseCosserat<TIn1, TIn2, TOut>::computeExponentialSE3(
@@ -466,11 +465,181 @@ void BaseCosserat<TIn1, TIn2, TOut>::initialize() {
 }
 
 template <class TIn1, class TIn2, class TOut>
-void BaseCosserat<TIn1, TIn2, TOut>::draw(
-    const core::visual::VisualParams *vparams) {
+void BaseCosserat<TIn1, TIn2, TOut>::draw(const core::visual::VisualParams *vparams)
+{
+  // TODO(dmarchal: 2024/06/07) It is unclear to me why we are overriding a base function
+  // to enforce it does nothing,
   if (!vparams->displayFlags().getShowMappings())
 
     if (!d_debug.getValue())
       return;
 }
+
+template <class TIn1, class TIn2, class TOut>
+double BaseCosserat<TIn1, TIn2, TOut>::computeTheta(const double &x, const Mat4x4 &gX){
+    double Tr_gx = 0.0;
+    for (int i = 0; i<4; i++) {
+        Tr_gx += gX[i][i];
+    }
+
+    double theta;
+    if( x <= std::numeric_limits<double>::epsilon()) theta = 0.0;
+    else theta = (1.0/x) * std::acos((Tr_gx/2.0) -1);
+
+    return  theta;
+}
+
+template <class TIn1, class TIn2, class TOut>
+void BaseCosserat<TIn1, TIn2, TOut>::print_matrix(const Mat6x6 R){
+    // TODO(dmarchal: 2024/06/07): Remove the use of printf in addition to
+    // reconsider the implementation of common utility functions in instance method.
+    for (unsigned int k = 0; k < 6 ; k++) {
+        for (unsigned int i = 0; i < 6; i++)
+            printf("  %lf",R[k][i]);
+        printf("\n");
+    }
+}
+
+template <class TIn1, class TIn2, class TOut>
+Matrix3 BaseCosserat<TIn1, TIn2, TOut>::extract_rotMatrix(const Transform & frame)
+{
+
+    type::Quat q = frame.getOrientation();
+
+    // TODO(dmarchal: 2024/06/07) The following code should probably become utility function
+    // building a 3x3 matix from a quaternion should probably does not need this amount of code.
+    Real R[4][4];
+    q.buildRotationMatrix(R);
+    Matrix3 mat;
+    for (unsigned int k = 0; k < 3 ; k++)
+        for (unsigned int i = 0; i < 3; i++)
+            mat[k][i] = R[k][i];
+    return  mat;
+}
+
+
+template <class TIn1, class TIn2, class TOut>
+auto BaseCosserat<TIn1, TIn2, TOut>::build_projector(const Transform &T) -> Tangent
+{
+    Mat6x6 P;
+
+    // TODO(dmarchal: 2024/06/07) The following code should probably become utility function
+    // building a 3x3 matix from a quaternion should probably does not need this amount of code.
+    Real R[4][4]; (T.getOrientation()).buildRotationMatrix(R);
+    for (unsigned int i = 0; i < 3;  i++) {
+        for (unsigned int j = 0; j < 3; j++) {
+            P[i][j+3] = R[i][j];
+            P[i+3][j] = R[i][j];
+        }
+    }
+    return  P;
+}
+
+
+template <class TIn1, class TIn2, class TOut>
+auto BaseCosserat<TIn1, TIn2, TOut>::build_Xi_hat(const Coord1 & strain_i) -> se3
+{
+    se3 Xi_hat;
+
+    Xi_hat[0][1] = -strain_i(2);
+    Xi_hat[0][2] = strain_i[1];
+    Xi_hat[1][2] = -strain_i[0];
+
+    Xi_hat[1][0] = -Xi_hat(0,1);
+    Xi_hat[2][0] = -Xi_hat(0,2);
+    Xi_hat[2][1] = -Xi_hat(1,2);
+
+    //@TODO:  Why this , if q = 0 ????
+    Xi_hat[0][3] = 1.0;
+    return  Xi_hat;
+}
+
+template <class TIn1, class TIn2, class TOut>
+auto BaseCosserat<TIn1, TIn2, TOut>::getTildeMatrix(const type::Vec3 & u) -> Matrix3
+{
+    type::Matrix3 tild;
+    tild[0][1] = -u[2];
+    tild[0][2] = u[1];
+    tild[1][2] = -u[0];
+
+    tild[1][0] = -tild[0][1];
+    tild[2][0] = -tild[0][2];
+    tild[2][1] = -tild[1][2];
+    return  tild;
+}
+
+template <class TIn1, class TIn2, class TOut>
+auto BaseCosserat<TIn1, TIn2, TOut>::buildAdjoint(const Matrix3 &A, const Matrix3 & B, Mat6x6 & Adjoint) -> void
+{
+    Adjoint.clear();
+    for (unsigned int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; ++j) {        // TODO(dmarchal:2024/06/07) unify i++ and ++j
+            Adjoint [i][j]= A[i][j];
+            Adjoint [i+3][j+3]= A[i][j];
+            Adjoint [i+3][j]= B[i][j];
+        }
+    }
+}
+
+template <class TIn1, class TIn2, class TOut>
+auto BaseCosserat<TIn1, TIn2, TOut>::build_coaAdjoint(const Matrix3 &A, const Matrix3 & B, Mat6x6 & coAdjoint) -> void
+{
+    coAdjoint.clear();
+    for (unsigned int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; ++j) { // TODO(dmarchal:2024/06/07) unify i++ and ++j
+            coAdjoint [i][j]= A[i][j];
+            coAdjoint [i+3][j+3]= A[i][j];
+
+            // TODO(dmarchal: 2024/06/07) if co-adjoint is juste this single change (the j+3)
+            coAdjoint [i][j+3]= B[i][j];
+        }
+    }
+}
+
+template <class TIn1, class TIn2, class TOut>
+auto BaseCosserat<TIn1, TIn2, TOut>::convertTransformToMatrix4x4(const Transform & T) -> Matrix4
+{
+    Matrix4 M; M.identity();
+    Matrix3 R = extract_rotMatrix(T);
+    type::Vec3 trans = T.getOrigin();
+
+    for (unsigned int i = 0; i < 3; i++) {
+        for (unsigned int j=0; j<3; j++){
+            M(i,j) = R[i][j];
+            M(i,3) = trans[i];
+        }
+    }
+    return M;
+}
+
+template <class TIn1, class TIn2, class TOut>
+auto BaseCosserat<TIn1, TIn2, TOut>::piecewise_logmap(const _SE3& g_x) -> Vec6
+{
+    _SE3 Xi_hat;
+
+    double x = 1.0;
+    double theta = std::acos(g_x.trace() / 2.0 - 1.0);
+
+    if (theta == 0) {
+        Xi_hat = 1.0 / x * (g_x - Matrix4d::Identity());
+    } else {
+        double x_theta = x * theta;
+        double sin_x_theta = std::sin(x_theta);
+        double cos_x_theta = std::cos(x_theta);
+        double t3 = 2 * sin_x_theta * cos_x_theta;
+        double t4 = 1 - 2 * sin_x_theta * sin_x_theta;
+        double t5 = x_theta * t4;
+
+        Matrix4d gp2 = g_x * g_x;
+        Matrix4d gp3 = gp2 * g_x;
+
+        Xi_hat = 1.0 / x * (0.125 * (1.0 / std::sin(x_theta / 2.0) / std::sin(x_theta / 2.0) / std::sin(x_theta / 2.0)) * std::cos(x_theta / 2.0) *
+                            ((t5 - sin_x_theta) * Matrix4d::Identity() - (x_theta * cos_x_theta + 2 * t5 - sin_x_theta - t3) * g_x +
+                             (2 * x_theta * cos_x_theta + t5 - sin_x_theta - t3) * gp2 - (x_theta * cos_x_theta - sin_x_theta) * gp3));
+    }
+
+    Vec6 xci = Vec6(Xi_hat(2, 1), Xi_hat(0, 2), Xi_hat(1, 0), Xi_hat(0, 3), Xi_hat(1, 3), Xi_hat(2, 3));
+    return xci;
+}
+
 } // namespace sofa::component::mapping
