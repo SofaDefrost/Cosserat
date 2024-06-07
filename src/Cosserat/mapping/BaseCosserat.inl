@@ -177,7 +177,7 @@ void BaseCosserat<TIn1, TIn2, TOut>::update_ExponentialSE3(
 template <class TIn1, class TIn2, class TOut>
 void BaseCosserat<TIn1, TIn2, TOut>::computeAdjoint(const Transform &frame,
                                                     Tangent &adjoint) {
-  Matrix3 R = extract_rotMatrix(frame);
+    Matrix3 R = extractRotMatrix(frame);
   type::Vec3 u = frame.getOrigin();
   Matrix3 tilde_u = getTildeMatrix(u);
   Matrix3 tilde_u_R = tilde_u * R;
@@ -187,7 +187,7 @@ void BaseCosserat<TIn1, TIn2, TOut>::computeAdjoint(const Transform &frame,
 template <class TIn1, class TIn2, class TOut>
 void BaseCosserat<TIn1, TIn2, TOut>::compute_coAdjoint(const Transform &frame,
                                                        Mat6x6 &co_adjoint) {
-  Matrix3 R = extract_rotMatrix(frame);
+    Matrix3 R = extractRotMatrix(frame);
   type::Vec3 u = frame.getOrigin();
   Matrix3 tilde_u = getTildeMatrix(u);
   Matrix3 tilde_u_R = tilde_u * R;
@@ -490,7 +490,7 @@ double BaseCosserat<TIn1, TIn2, TOut>::computeTheta(const double &x, const Mat4x
 }
 
 template <class TIn1, class TIn2, class TOut>
-void BaseCosserat<TIn1, TIn2, TOut>::print_matrix(const Mat6x6 R){
+void BaseCosserat<TIn1, TIn2, TOut>::printMatrix(const Mat6x6 R){
     // TODO(dmarchal: 2024/06/07): Remove the use of printf in addition to
     // reconsider the implementation of common utility functions in instance method.
     for (unsigned int k = 0; k < 6 ; k++) {
@@ -501,7 +501,7 @@ void BaseCosserat<TIn1, TIn2, TOut>::print_matrix(const Mat6x6 R){
 }
 
 template <class TIn1, class TIn2, class TOut>
-Matrix3 BaseCosserat<TIn1, TIn2, TOut>::extract_rotMatrix(const Transform & frame)
+Matrix3 BaseCosserat<TIn1, TIn2, TOut>::extractRotMatrix(const Transform & frame)
 {
 
     type::Quat q = frame.getOrientation();
@@ -519,7 +519,7 @@ Matrix3 BaseCosserat<TIn1, TIn2, TOut>::extract_rotMatrix(const Transform & fram
 
 
 template <class TIn1, class TIn2, class TOut>
-auto BaseCosserat<TIn1, TIn2, TOut>::build_projector(const Transform &T) -> Tangent
+auto BaseCosserat<TIn1, TIn2, TOut>::buildProjector(const Transform &T) -> Tangent
 {
     Mat6x6 P;
 
@@ -600,7 +600,7 @@ template <class TIn1, class TIn2, class TOut>
 auto BaseCosserat<TIn1, TIn2, TOut>::convertTransformToMatrix4x4(const Transform & T) -> Matrix4
 {
     Matrix4 M; M.identity();
-    Matrix3 R = extract_rotMatrix(T);
+    Matrix3 R = extractRotMatrix(T);
     type::Vec3 trans = T.getOrigin();
 
     for (unsigned int i = 0; i < 3; i++) {

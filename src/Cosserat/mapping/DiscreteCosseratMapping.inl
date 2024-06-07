@@ -270,7 +270,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJ(
   Transform TInverse = Transform(xfrom2Data[baseIndex].getCenter(),
                                  xfrom2Data[baseIndex].getOrientation())
                            .inversed();
-  Mat6x6 P = this->build_projector(TInverse);
+  Mat6x6 P = this->buildProjector(TInverse);
   type::Vec6 baseLocalVelocity =
       P * baseVelocity; // This is the base velocity in Locale frame
   m_nodesVelocityVectors.push_back(baseLocalVelocity);
@@ -314,7 +314,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJ(
                    m_framesTangExpVectors[i] * frame_Xi_dot); // eta
 
     auto T = Transform(out[i].getCenter(), out[i].getOrientation());
-    Mat6x6 Proj = this->build_projector(T);
+    Mat6x6 Proj = this->buildProjector(T);
 
     out_vel[i] = Proj * eta_frame_i;
 
@@ -364,7 +364,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJT(
     // Convert input from global frame(SOFA) to local frame
     Transform _T =
         Transform(frame[var].getCenter(), frame[var].getOrientation());
-    Mat6x6 P_trans = (this->build_projector(_T));
+    Mat6x6 P_trans = (this->buildProjector(_T));
     P_trans.transpose();
     type::Vec6 local_F = P_trans * vec;
     local_F_Vec.push_back(local_F);
@@ -421,7 +421,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJT(
   }
 
   Transform frame0 = Transform(frame[0].getCenter(), frame[0].getOrientation());
-  Mat6x6 M = this->build_projector(frame0);
+  Mat6x6 M = this->buildProjector(frame0);
   out2[baseIndex] += M * F_tot;
 
   if (d_debug.getValue()) {
@@ -508,7 +508,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJT(
 
       Transform _T = Transform(frame[childIndex].getCenter(),
                                frame[childIndex].getOrientation());
-      Mat6x6 P_trans = (this->build_projector(_T));
+      Mat6x6 P_trans = (this->buildProjector(_T));
       P_trans.transpose();
 
       Mat6x6 coAdjoint;
@@ -608,7 +608,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJT(
 
       Transform frame0 =
           Transform(frame[0].getCenter(), frame[0].getOrientation());
-      Mat6x6 M = this->build_projector(frame0);
+      Mat6x6 M = this->buildProjector(frame0);
 
       Vec6 base_force = M * CumulativeF;
       o2.addCol(d_baseIndex.getValue(), base_force);
