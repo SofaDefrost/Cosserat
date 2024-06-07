@@ -131,20 +131,6 @@ public:
     typedef typename Eigen::Matrix3d RotMat;
     typedef typename Eigen::Matrix<SReal, 6, 1> Vector6d;
 
-protected:
-    Data<type::vector<double>>      d_curv_abs_section ;
-    Data<type::vector<double>>      d_curv_abs_frames ;
-    Data<bool>                      d_debug ;
-
-    /// Input Models container. New inputs are added through addInputModel(In* ).
-    core::State<In1>* m_fromModel1;
-
-    // TODO(dmarchal): why this maybe_unused on a data field ?
-    [[maybe_unused]] core::State<In2>* m_fromModel2;
-
-
-    core::State<Out>* m_toModel;
-
 public:
     // TODO(dmarchal: 2024/06/07): There is a lot of public attributes is this really needed ?
 
@@ -186,21 +172,19 @@ public:
     // roles is unclear and generates ambiguities
     void initialize();
 
-    // TODO(dmarchal: 2024/06/07), there is a mix of coding style naming convention
-    // in Sofa we use "CamlCaseStyle" instead of the "python_style"
     double computeTheta(const double &x, const Mat4x4 &gX);
     void printMatrix(const Mat6x6 R);
 
     Matrix3 extractRotMatrix(const Transform & frame);
     Tangent buildProjector(const Transform &T);
-    se3 build_Xi_hat(const Coord1 & strain_i);
+    se3 buildXiHat(const Coord1 & strain_i);
     Matrix3 getTildeMatrix(const type::Vec3 & u);
 
     void buildAdjoint(const Matrix3 &A, const Matrix3 & B, Mat6x6 & Adjoint);
-    void build_coaAdjoint(const Matrix3 &A, const Matrix3 & B, Mat6x6 & coAdjoint);
+    void buildCoAdjoint(const Matrix3 &A, const Matrix3 & B, Mat6x6 & coAdjoint);
 
     Matrix4 convertTransformToMatrix4x4(const Transform & T);
-    Vec6 piecewise_logmap(const _SE3& g_x) ;
+    Vec6 piecewiseLogmap(const _SE3& g_x) ;
 
     // TODO(dmarchal: 2024/06/07), this looks like a very common utility function... it shouldn't
     // be (re)implemented in a base classe.
@@ -233,6 +217,19 @@ public:
         return rotation;
     }
 
+protected:
+    Data<type::vector<double>>      d_curv_abs_section ;
+    Data<type::vector<double>>      d_curv_abs_frames ;
+    Data<bool>                      d_debug ;
+
+    /// Input Models container. New inputs are added through addInputModel(In* ).
+    core::State<In1>* m_fromModel1;
+
+    // TODO(dmarchal): why this maybe_unused on a data field ?
+    [[maybe_unused]] core::State<In2>* m_fromModel2;
+
+    core::State<Out>* m_toModel;
+
 protected:    
     /// Constructor
     BaseCosserat() ;
@@ -245,15 +242,15 @@ protected:
     //   - two naming convention
     //   - unclear the difference between computeAdjoing and buildAdjoint ... is there room for factoring things ?
     void computeAdjoint(const Transform & frame, Mat6x6 &adjoint);
-    void compute_coAdjoint(const Transform & frame, Mat6x6 &co_adjoint);
+    void computeAdjoint(const Vec6 & frame, Mat6x6 &adjoint);
 
-    void compute_adjointVec6(const Vec6 & frame, Mat6x6 &adjoint);
+    void computeCoAdjoint(const Transform & frame, Mat6x6 &coAdjoint);
 
-    void update_ExponentialSE3(const In1VecCoord & inDeform);
-    void update_TangExpSE3(const In1VecCoord & inDeform);
-    void compute_Tang_Exp(double & x, const Coord1& k, Mat6x6 & TgX);
+    void updateExponentialSE3(const In1VecCoord & inDeform);
+    void updateTangExpSE3(const In1VecCoord & inDeform);
+    void computeTangExp(double & x, const Coord1& k, Mat6x6 & TgX);
 
-    [[maybe_unused]] type::Vec6 compute_eta(const Vec6 & baseEta, const In1VecDeriv & k_dot, double abs_input);
+    [[maybe_unused]] type::Vec6 computeETA(const Vec6 & baseEta, const In1VecDeriv & k_dot, double abs_input);
     type::Matrix4 computeLogarithm(const double & x, const Mat4x4 &gX);
 };
 

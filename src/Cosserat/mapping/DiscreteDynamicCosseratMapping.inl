@@ -139,7 +139,7 @@ void DiscreteDynamicCosseratMapping<TIn1, TIn2, TOut>::apply(
 	out.resize(sz);
 
 	//update the Exponential Matrices according to new deformation
-	this->update_ExponentialSE3(in1); // ==> update m_framesExponentialSE3Vectors & m_nodesExponentialSE3Vectors
+    this->updateExponentialSE3(in1);
 
 	Transform frame0 = Transform(In2::getCPos(in2[0]),In2::getCRot(in2[0]));
 	for(unsigned int i=0; i<sz; i++){
@@ -183,7 +183,7 @@ void DiscreteDynamicCosseratMapping<TIn1, TIn2, TOut>:: applyJ(
 
 	// Compute the tangent Exponential SE3 vectors
 	const In1VecCoord& inDeform = m_fromModel1->read(core::ConstVecCoordId::position())->getValue();
-    this->update_TangExpSE3(inDeform);
+    this->updateTangExpSE3(inDeform);
 
 	//Get base velocity as input this is also called eta
 	m_nodesVelocityVectors.clear();
@@ -266,54 +266,41 @@ void DiscreteDynamicCosseratMapping<TIn1, TIn2, TOut>::computeJ_Jdot_i(const Mat
 
 	Mat6x3 Si_dot;
 	Mat6x6 adj_eta; //to be computed
-	//std::cout << "indice vector : "<< this->m_indicesVectors <<" vecId :"<< this->m_indicesVectors[frameId] << std::endl;
-	//std::cout << "this->m_framesTangExpVectors[frameId]  :"<< this->m_framesTangExpVectors[frameId] << std::endl;
-	//std::cout << "m_nodesTangExpVectors[frameId]  :"<< this->m_nodesTangExpVectors << std::endl;
 
 	bool reachNode = false;
 	for (unsigned int i = 1; i < sz; i++) {
 		M = Adjoint;
 		unsigned int u = m_indicesVectors[frameId];
-		//std::cout << "frame : "<< frameId << " ==> section :" << i << " ==> u :"<< u << std::endl;
 		if(i < u ){
 			for (int j = u; j>0; j--) {
 				M = M * m_nodeAdjointVectors[j] ;
 			}
-			//std::cout << "this->m_nodesTangExpVectors[u] : "<< this->m_nodesTangExpVectors[u]<< std::endl;
 			Mat6x6 temp = M * m_nodesTangExpVectors[u];
 			Si = temp * m_matrixBi;
 			J_i.push_back(Si);
 
 			Vec6 etaNode = m_nodesVelocityVectors[i];
-			this->compute_adjointVec6(etaNode, adj_eta);
+            this->computeAdjoint(etaNode, adj_eta);
 			Si_dot = temp * adj_eta * m_matrixBi;
 			J_dot_i.push_back(Si_dot);
-			//std::cout << "K1 Si : "<< Si << std::endl;
 		}else{
 			if(!reachNode){
 				Mat6x6 temp = M * m_framesTangExpVectors[frameId] ;
 				Si = temp * m_matrixBi;
 				J_i.push_back(Si);
 
-				this->compute_adjointVec6(etaFrame, adj_eta);
+                this->computeAdjoint(etaFrame, adj_eta);
 				Si_dot = temp * adj_eta * m_matrixBi;
 				J_dot_i.push_back(Si_dot);
 				reachNode = true;
-				//std::cout << "K2 Si : "<< Si << std::endl;
 			}else {
 				Si.clear();
 				J_i.push_back(Si);
 				Si_dot.clear();
 				J_dot_i.push_back(Si);
-				//std::cout << "K3 Si : "<< Si << std::endl;
 			}
 		}
 	}
-    //    printf("J_%d:\n",frameId);
-	for (unsigned int k=0; k<J_i.size(); k++) {
-		std::cout << J_i[k] << std::endl;
-	}
-	printf("_____________________________________\n");
 }
 
 template <class TIn1, class TIn2, class TOut>
@@ -331,8 +318,6 @@ void DiscreteDynamicCosseratMapping<TIn1, TIn2, TOut>:: applyJT(
 	In2VecDeriv& out2 = *dataVecOut2Force[0]->beginEdit();
 
 	//Maybe need, in case the apply funcion is not call this must be call before
-	//update_ExponentialSE3(in1);
-
 	const OutVecCoord& frame = m_toModel->read(core::ConstVecCoordId::position())->getValue();
 	const In1DataVecCoord* x1fromData = m_fromModel1->read(core::ConstVecCoordId::position());
 	const In1VecCoord x1from = x1fromData->getValue();
@@ -341,7 +326,6 @@ void DiscreteDynamicCosseratMapping<TIn1, TIn2, TOut>:: applyJT(
 	out1.resize(x1from.size());
 
 	//convert the input from Deriv type to vec6 type, for the purpose of the matrix vector multiplication
-	//    std::cout<< "Size of frames :"<< in.size()<< std::endl;
 	for (size_t var = 0; var < in.size(); ++var) {
         type::Vec6 vec;
 		for(unsigned j = 0; j < 6; j++) vec[j] = in[var][j];
@@ -368,7 +352,7 @@ void DiscreteDynamicCosseratMapping<TIn1, TIn2, TOut>:: applyJT(
 	for (unsigned int s = sz ; s-- ; ) {
 		Mat6x6 coAdjoint;
 		//
-		this->compute_coAdjoint(m_framesExponentialSE3Vectors[s], coAdjoint);  // m_framesExponentialSE3Vectors[s] computed in apply
+		this->computeCoAdjoint(m_framesExponentialSE3Vectors[s], coAdjoint);  // m_framesExponentialSE3Vectors[s] computed in apply
 		Vec6 node_F_Vec = coAdjoint * local_F_Vec[s];
 		Mat6x6 temp = m_framesTangExpVectors[s];   // m_framesTangExpVectors[s] computed in applyJ (here we transpose)
 		temp.transpose();
@@ -377,7 +361,7 @@ void DiscreteDynamicCosseratMapping<TIn1, TIn2, TOut>:: applyJT(
 		if(index!=m_indicesVectors[s]){ // TODO to be replaced by while
 			index--;
 			//bring F_tot to the reference of the new beam
-			this->compute_coAdjoint(m_nodesExponentialSE3Vectors[index],coAdjoint);  //m_nodesExponentialSE3Vectors computed in apply
+			this->computeCoAdjoint(m_nodesExponentialSE3Vectors[index],coAdjoint);  //m_nodesExponentialSE3Vectors computed in apply
 			F_tot = coAdjoint * F_tot;
 			Mat6x6 temp = m_nodesTangExpVectors[index];
 			temp.transpose();
@@ -477,7 +461,7 @@ void DiscreteDynamicCosseratMapping<TIn1, TIn2, TOut>::applyJT(
 			P_trans.transpose();
 
 			Mat6x6 coAdjoint;
-			this->compute_coAdjoint(m_framesExponentialSE3Vectors[childIndex], coAdjoint);  // m_framesExponentialSE3Vectors[s] computed in apply
+			this->computeCoAdjoint(m_framesExponentialSE3Vectors[childIndex], coAdjoint);  // m_framesExponentialSE3Vectors[s] computed in apply
 			Mat6x6 temp = m_framesTangExpVectors[childIndex];   // m_framesTangExpVectors[s] computed in applyJ (here we transpose)
 			temp.transpose();
 
@@ -563,7 +547,7 @@ void DiscreteDynamicCosseratMapping<TIn1, TIn2, TOut>::applyJT(
 			{
 				//cumulate on beam frame
 				Mat6x6 coAdjoint;
-				this->compute_coAdjoint(m_nodesExponentialSE3Vectors[i-1],coAdjoint);  //m_nodesExponentialSE3Vectors computed in apply
+				this->computeCoAdjoint(m_nodesExponentialSE3Vectors[i-1],coAdjoint);  //m_nodesExponentialSE3Vectors computed in apply
 				CumulativeF = coAdjoint * CumulativeF;
 				// transfer to strain space (local coordinates)
 				Mat6x6 temp = m_nodesTangExpVectors[i-1];

@@ -53,7 +53,7 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>:: applyJ(
 
     const In1VecCoord& inDeform = m_fromModel1->read(core::ConstVecCoordId::position())->getValue(); //Strains
     // Compute the tangent Exponential SE3 vectors
-    this->update_TangExpSE3(inDeform);
+    this->updateTangExpSE3(inDeform);
 
     //Get base velocity as input this is also called eta
     m_nodesVelocityVectors.clear();
@@ -165,7 +165,7 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>:: applyJT(
     for (auto s = sz ; s-- ; ) {
         Tangent coAdjoint;
 
-        this->compute_coAdjoint(m_framesExponentialSE3Vectors[s], coAdjoint);  // m_framesExponentialSE3Vectors[s] computed in apply
+        this->computeCoAdjoint(m_framesExponentialSE3Vectors[s], coAdjoint);  // m_framesExponentialSE3Vectors[s] computed in apply
         Vec6 node_F_Vec = coAdjoint * local_F_Vec[s];
         Mat6x6 temp = m_framesTangExpVectors[s];   // m_framesTangExpVectors[s] computed in applyJ (here we transpose)
         temp.transpose();
@@ -174,7 +174,7 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>:: applyJT(
         if(index != m_indicesVectors[s]){
             index--;
             //bring F_tot to the reference of the new beam
-            this->compute_coAdjoint(m_nodesExponentialSE3Vectors[index],coAdjoint);  //m_nodesExponentialSE3Vectors computed in apply
+            this->computeCoAdjoint(m_nodesExponentialSE3Vectors[index],coAdjoint);  //m_nodesExponentialSE3Vectors computed in apply
             F_tot = coAdjoint * F_tot;
             Mat6x6 temp = m_nodesTangExpVectors[index];
             temp.transpose();
@@ -271,7 +271,7 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>::applyJT(
             P_trans.transpose();
 
             Mat6x6 coAdjoint;
-            this->compute_coAdjoint(m_framesExponentialSE3Vectors[childIndex], coAdjoint);  // m_framesExponentialSE3Vectors[s] computed in apply
+            this->computeCoAdjoint(m_framesExponentialSE3Vectors[childIndex], coAdjoint);  // m_framesExponentialSE3Vectors[s] computed in apply
             Tangent temp = m_framesTangExpVectors[childIndex];   // m_framesTangExpVectors[s] computed in applyJ (here we transpose)
             temp.transpose();
 
@@ -347,7 +347,7 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>::applyJT(
             {
                 //cumulate on beam frame
                 Mat6x6 coAdjoint;
-                this->compute_coAdjoint(m_nodesExponentialSE3Vectors[i-1],coAdjoint);  //m_nodesExponentialSE3Vectors computed in apply
+                this->computeCoAdjoint(m_nodesExponentialSE3Vectors[i-1],coAdjoint);  //m_nodesExponentialSE3Vectors computed in apply
                 CumulativeF = coAdjoint * CumulativeF;
                 // transfer to strain space (local coordinates)
                 Mat6x6 temp = m_nodesTangExpVectors[i-1];

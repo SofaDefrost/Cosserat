@@ -143,7 +143,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::apply(
   // Here we update m_framesExponentialSE3Vectors & m_nodesExponentialSE3Vectors
   // Which are the homogeneous matrices of the frames and the nodes in local
   // coordinate.
-  this->update_ExponentialSE3(in1);
+  this->updateExponentialSE3(in1);
   /* Apply the transformation to go from cossserat to SOFA frame*/
   Transform frame0 =
       Transform(In2::getCPos(in2[baseIndex]), In2::getCRot(in2[baseIndex]));
@@ -254,7 +254,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJ(
       m_fromModel1->read(core::ConstVecCoordId::position())
           ->getValue(); // Strains
   // Compute the tangent Exponential SE3 vectors
-  this->update_TangExpSE3(inDeform);
+  this->updateTangExpSE3(inDeform);
 
   // Get base velocity as input this is also called eta
   m_nodesVelocityVectors.clear();
@@ -388,7 +388,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJT(
   for (auto s = sz; s--;) {
     Mat6x6 coAdjoint;
 
-    this->compute_coAdjoint(
+    this->computeCoAdjoint(
         m_framesExponentialSE3Vectors[s],
         coAdjoint); // m_framesExponentialSE3Vectors[s] computed in apply
     Vec6 node_F_Vec = coAdjoint * local_F_Vec[s];
@@ -401,7 +401,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJT(
     if (index != m_indicesVectors[s]) {
       index--;
       // bring F_tot to the reference of the new beam
-      this->compute_coAdjoint(
+      this->computeCoAdjoint(
           m_nodesExponentialSE3Vectors[index],
           coAdjoint); // m_nodesExponentialSE3Vectors computed in apply
       F_tot = coAdjoint * F_tot;
@@ -512,7 +512,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJT(
       P_trans.transpose();
 
       Mat6x6 coAdjoint;
-      this->compute_coAdjoint(
+      this->computeCoAdjoint(
           m_framesExponentialSE3Vectors[childIndex],
           coAdjoint); // m_framesExponentialSE3Vectors[s] computed in apply
       Mat6x6 temp = m_framesTangExpVectors[childIndex]; // m_framesTangExpVectors[s]
@@ -592,7 +592,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJT(
       while (i > 0) {
         // cumulate on beam frame
         Mat6x6 coAdjoint;
-        this->compute_coAdjoint(
+        this->computeCoAdjoint(
             m_nodesExponentialSE3Vectors[i - 1],
             coAdjoint); // m_nodesExponentialSE3Vectors computed in apply
         CumulativeF = coAdjoint * CumulativeF;
