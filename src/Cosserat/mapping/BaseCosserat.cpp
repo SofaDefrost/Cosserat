@@ -31,7 +31,7 @@ namespace sofa::component::mapping
 using namespace sofa::defaulttype;
 
 template<>
-BaseCosserat<Vec6Types, Rigid3Types, Rigid3Types>::se3 BaseCosserat<Vec6Types, Rigid3Types, Rigid3Types>::build_Xi_hat(const Coord1& strain_i){
+BaseCosserat<Vec6Types, Rigid3Types, Rigid3Types>::se3 BaseCosserat<Vec6Types, Rigid3Types, Rigid3Types>::buildXiHat(const Coord1& strain_i){
     se3 Xi;
 
     Xi[0][1] = -strain_i(2);
@@ -67,7 +67,7 @@ void BaseCosserat<Vec6Types, Rigid3Types, Rigid3Types>::computeExponentialSE3(co
     SReal theta = k.norm(); //
 
     SE3 g_X_n;
-    se3 Xi_hat_n = build_Xi_hat(strain_n);
+    se3 Xi_hat_n = buildXiHat(strain_n);
 
     msg_info()<< "matrix Xi : "<< Xi_hat_n;
 
@@ -90,7 +90,7 @@ void BaseCosserat<Vec6Types, Rigid3Types, Rigid3Types>::computeExponentialSE3(co
 }
 
 template<>
-void BaseCosserat<Vec6Types, Rigid3Types, Rigid3Types>::compute_Tang_Exp(double & curv_abs_n, const Coord1 & strain_i, Mat6x6 & TgX){
+void BaseCosserat<Vec6Types, Rigid3Types, Rigid3Types>::computeTangExp(double & curv_abs_n, const Coord1 & strain_i, Mat6x6 & TgX){
 
   SReal theta = type::Vec3(strain_i(0), strain_i(1), strain_i(2)).norm(); //Sometimes this is computed over all strain
   Matrix3 tilde_k = getTildeMatrix(type::Vec3(strain_i(0), strain_i(1), strain_i(2)));
