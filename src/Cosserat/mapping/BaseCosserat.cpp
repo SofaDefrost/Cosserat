@@ -34,8 +34,6 @@ template<>
 BaseCosserat<Vec6Types, Rigid3Types, Rigid3Types>::se3 BaseCosserat<Vec6Types, Rigid3Types, Rigid3Types>::build_Xi_hat(const Coord1& strain_i){
     se3 Xi;
 
-    //msg_info("BaseCosserat")<<" ===========> Build Xi Hat rigid is called ";
-
     Xi[0][1] = -strain_i(2);
     Xi[0][2] = strain_i[1];
     Xi[1][2] = -strain_i[0];
@@ -46,11 +44,8 @@ BaseCosserat<Vec6Types, Rigid3Types, Rigid3Types>::se3 BaseCosserat<Vec6Types, R
 
     Xi[0][3] = 1.0;
 
-    //std::cout <<"Before the linear part : "<< Xi <<std::endl;
     for (unsigned int i=0; i<3; i++)
         Xi[i][3] += strain_i(i+3);
-
-    //std::cout <<"After the linear part : "<< Xi <<std::endl;
 
 //    se3 = [
 //        0               -screw(3)   screw(2)        screw(4);
@@ -66,6 +61,7 @@ BaseCosserat<Vec6Types, Rigid3Types, Rigid3Types>::se3 BaseCosserat<Vec6Types, R
 template<>
 void BaseCosserat<Vec6Types, Rigid3Types, Rigid3Types>::computeExponentialSE3(const double & curv_abs_x_n, const Coord1& strain_n, Transform & Trans){
     Matrix4 I4; I4.identity();
+
     //Get the angular part of the
     Vec3 k = Vec3(strain_n(0), strain_n(1), strain_n(2));
     SReal theta = k.norm(); //
@@ -73,25 +69,17 @@ void BaseCosserat<Vec6Types, Rigid3Types, Rigid3Types>::computeExponentialSE3(co
     SE3 g_X_n;
     se3 Xi_hat_n = build_Xi_hat(strain_n);
 
-    if(d_debug.getValue())
-        msg_info("BaseCosserat: ")<< "matrix Xi : "<< Xi_hat_n;
+    msg_info()<< "matrix Xi : "<< Xi_hat_n;
 
     if(theta <= std::numeric_limits<double>::epsilon()){
         g_X_n = I4 + curv_abs_x_n*Xi_hat_n;
     }else {
-//        se3 Xi_hat_n_2 = Xi_hat_n * Xi_hat_n;
-//        se3 Xi_hat_n_3 = Xi_hat_n_2 * Xi_hat_n;
-//        SReal costheta =  std::cos(theta);
-//        SReal sintheta =  std::cos(theta);
-//        SReal theta2 = std::pow(theta,2);
-//        SReal theta3 = theta2 * theta;
-//        g_X_n = I4 + curv_abs_x_n*Xi_hat_n + ((1.-costheta)/(theta2))*Xi_hat_n_2 +((theta-sintheta)/theta3)*Xi_hat_n_3;
         double scalar1= (1.0 - std::cos(curv_abs_x_n*theta))/std::pow(theta,2);
         double scalar2 = (curv_abs_x_n*theta - std::sin(curv_abs_x_n*theta))/std::pow(theta,3);
         g_X_n = I4 + curv_abs_x_n*Xi_hat_n + scalar1*Xi_hat_n*Xi_hat_n + scalar2*Xi_hat_n*Xi_hat_n*Xi_hat_n ;
     }
-    if(d_debug.getValue())
-        msg_info("BaseCosserat: ")<< "matrix g_X : "<< g_X_n;
+
+    msg_info()<< "matrix g_X : "<< g_X_n;
 
     type::Mat3x3 M;
     g_X_n.getsub(0,0,M); //get the rotation matrix
@@ -106,6 +94,7 @@ void BaseCosserat<Vec6Types, Rigid3Types, Rigid3Types>::compute_Tang_Exp(double 
 
   SReal theta = type::Vec3(strain_i(0), strain_i(1), strain_i(2)).norm(); //Sometimes this is computed over all strain
   Matrix3 tilde_k = getTildeMatrix(type::Vec3(strain_i(0), strain_i(1), strain_i(2)));
+
   /* Younes @23-11-27
   old version
   @Todo ???? is p the linear deformation? If so, why didn't I just put a zero vector in place of p and the first element of p is equal to 1?
@@ -113,13 +102,13 @@ void BaseCosserat<Vec6Types, Rigid3Types, Rigid3Types>::compute_Tang_Exp(double 
   Using the new version does not bring any difference in my three reference scenes, but need more investogation
   #TECHNICAL_DEBT
   */
+  //TODO(dmarchal: 2024/06/07) could the debt by solved ?
   Matrix3 tilde_q = getTildeMatrix(type::Vec3(strain_i(3), strain_i(4), strain_i(5)));
 
   Mat6x6 ad_Xi ;
   buildAdjoint(tilde_k, tilde_q, ad_Xi);
 
   Mat6x6 Id6 = Mat6x6::Identity() ;
-  //    for (unsigned int i =0; i< 6;i++) Id6[i][i]=1.0; //define identity 6x6
 
   if(theta <= std::numeric_limits<double>::epsilon()){
     double scalar0 = std::pow(curv_abs_n,2)/2.0;

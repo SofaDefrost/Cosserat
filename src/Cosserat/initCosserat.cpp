@@ -33,6 +33,8 @@ using sofa::helper::system::PluginManager;
 #include <cstring>
 #include <string>
 
+// TODO(dmarchal: 2024/06/07) This is the wrong namespace, it should be "cosserat"
+// or sofacosserat if you rename the plugin into SofaCosserat :)
 namespace sofa::component
 {
 
@@ -81,6 +83,9 @@ const char* getModuleVersion()
 
 const char* getModuleDescription()
 {
+    // TODO(dmarchal: 2024/06/07): I think this is not the correct module description... as we are planning
+    // to use these string to generate the documentation... please correct that and also be much more
+    // descriptive with multi line comment.
     return "A dynamic adapter that modulates the DOF repartition of a beam model according to its radius of curvature.";
 }
 
