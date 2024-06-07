@@ -197,7 +197,7 @@ void DiscreteDynamicCosseratMapping<TIn1, TIn2, TOut>:: applyJ(
 	//Apply the local transform i.e from SOFA frame to Frederico frame
 	const In2VecCoord& xfrom2Data = m_fromModel2->read(core::ConstVecCoordId::position())->getValue();
 	Transform Tinverse = Transform(xfrom2Data[0].getCenter(),xfrom2Data[0].getOrientation()).inversed();
-	Mat6x6 P = this->build_projector(Tinverse);
+    Mat6x6 P = this->buildProjector(Tinverse);
 	m_nodeAdjointVectors.clear();
 
 	type::Vec6 baseLocalVelocity = P * baseVelocity;
@@ -244,7 +244,7 @@ void DiscreteDynamicCosseratMapping<TIn1, TIn2, TOut>:: applyJ(
 
         //Convert from Federico node to Sofa node
         Transform _T = Transform(out[i].getCenter(),out[i].getOrientation());
-        Mat6x6 _P = this->build_projector(_T);
+        Mat6x6 _P = this->buildProjector(_T);
         //std::cout<< "Eta local : "<< eta << std::endl;
 
         outVel[i] = _P * etaFrame;
@@ -348,7 +348,7 @@ void DiscreteDynamicCosseratMapping<TIn1, TIn2, TOut>:: applyJT(
 
 		//Convert input from global frame(SOFA) to local frame
 		Transform _T = Transform(frame[var].getCenter(),frame[var].getOrientation());
-		Mat6x6 P_trans =(this->build_projector(_T)); P_trans.transpose();
+        Mat6x6 P_trans =(this->buildProjector(_T)); P_trans.transpose();
         type::Vec6 local_F = P_trans * vec;
 		local_F_Vec.push_back(local_F);
 	}
@@ -393,7 +393,7 @@ void DiscreteDynamicCosseratMapping<TIn1, TIn2, TOut>:: applyJT(
 		out1[m_indicesVectors[s]-1] += f;
 	}
 	Transform frame0 = Transform(frame[0].getCenter(),frame[0].getOrientation());
-	Mat6x6 M = this->build_projector(frame0);
+    Mat6x6 M = this->buildProjector(frame0);
 	out2[0] += M * F_tot;
 
 	if(d_debug.getValue()){
@@ -473,7 +473,7 @@ void DiscreteDynamicCosseratMapping<TIn1, TIn2, TOut>::applyJT(
 			int indexBeam =  m_indicesVectors[childIndex];
 
 			Transform _T = Transform(frame[childIndex].getCenter(),frame[childIndex].getOrientation());
-			Mat6x6 P_trans =(this->build_projector(_T));
+            Mat6x6 P_trans =(this->buildProjector(_T));
 			P_trans.transpose();
 
 			Mat6x6 coAdjoint;
@@ -576,7 +576,7 @@ void DiscreteDynamicCosseratMapping<TIn1, TIn2, TOut>::applyJT(
 			}
 
 			Transform frame0 = Transform(frame[0].getCenter(),frame[0].getOrientation());
-			Mat6x6 M = this->build_projector(frame0);
+            Mat6x6 M = this->buildProjector(frame0);
 
 			Vec6 base_force = M * CumulativeF;
 			o2.addCol(0, base_force);

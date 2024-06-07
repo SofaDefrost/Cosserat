@@ -69,6 +69,8 @@ using sofa::core::objectmodel::BaseObject;
  */
 
 
+// TODO(dmarchal: 2024/06/07) This component looks like a mapping but inherit from BaseObject *
+// can you clarify why is is not inhering from BaseMapping
 template <class TIn1, class TIn2, class TOut>
 class BaseCosserat : public virtual sofa::core::objectmodel::BaseObject
 {
@@ -139,6 +141,8 @@ protected:
 
     // TODO(dmarchal): why this maybe_unused on a data field ?
     [[maybe_unused]] core::State<In2>* m_fromModel2;
+
+
     core::State<Out>* m_toModel;
 
 public:
@@ -185,10 +189,10 @@ public:
     // TODO(dmarchal: 2024/06/07), there is a mix of coding style naming convention
     // in Sofa we use "CamlCaseStyle" instead of the "python_style"
     double computeTheta(const double &x, const Mat4x4 &gX);
-    void print_matrix(const Mat6x6 R);
+    void printMatrix(const Mat6x6 R);
 
-    Matrix3 extract_rotMatrix(const Transform & frame);
-    Tangent build_projector(const Transform &T);
+    Matrix3 extractRotMatrix(const Transform & frame);
+    Tangent buildProjector(const Transform &T);
     se3 build_Xi_hat(const Coord1 & strain_i);
     Matrix3 getTildeMatrix(const type::Vec3 & u);
 
