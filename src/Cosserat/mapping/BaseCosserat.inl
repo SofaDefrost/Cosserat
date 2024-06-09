@@ -176,8 +176,9 @@ void BaseCosserat<TIn1, TIn2, TOut>::updateExponentialSE3(
 
 template <class TIn1, class TIn2, class TOut>
 void BaseCosserat<TIn1, TIn2, TOut>::computeAdjoint(const Transform &frame,
-                                                    Tangent &adjoint) {
-    Matrix3 R = extractRotMatrix(frame);
+                                                    Tangent &adjoint)
+{
+  Matrix3 R = extractRotMatrix(frame);
   type::Vec3 u = frame.getOrigin();
   Matrix3 tilde_u = getTildeMatrix(u);
   Matrix3 tilde_u_R = tilde_u * R;
@@ -186,8 +187,9 @@ void BaseCosserat<TIn1, TIn2, TOut>::computeAdjoint(const Transform &frame,
 
 template <class TIn1, class TIn2, class TOut>
 void BaseCosserat<TIn1, TIn2, TOut>::computeCoAdjoint(const Transform &frame,
-                                                       Mat6x6 &co_adjoint) {
-    Matrix3 R = extractRotMatrix(frame);
+                                                       Mat6x6 &co_adjoint)
+{
+  Matrix3 R = extractRotMatrix(frame);
   type::Vec3 u = frame.getOrigin();
   Matrix3 tilde_u = getTildeMatrix(u);
   Matrix3 tilde_u_R = tilde_u * R;
@@ -196,7 +198,8 @@ void BaseCosserat<TIn1, TIn2, TOut>::computeCoAdjoint(const Transform &frame,
 
 template <class TIn1, class TIn2, class TOut>
 void BaseCosserat<TIn1, TIn2, TOut>::computeAdjoint(const Vec6 &eta,
-                                                         Mat6x6 &adjoint) {
+                                                         Mat6x6 &adjoint)
+{
   Matrix3 tildeMat = getTildeMatrix(type::Vec3(eta[0], eta[1], eta[2]));
   adjoint.setsub(0, 0, tildeMat);
   adjoint.setsub(3, 3, tildeMat);
@@ -205,8 +208,8 @@ void BaseCosserat<TIn1, TIn2, TOut>::computeAdjoint(const Vec6 &eta,
 
 template <class TIn1, class TIn2, class TOut>
 Matrix4 BaseCosserat<TIn1, TIn2, TOut>::computeLogarithm(const double &x,
-                                                         const Mat4x4 &gX) {
-
+                                                         const Mat4x4 &gX)
+{
   // Compute theta before everything
   const double theta = computeTheta(x, gX);
   Mat4x4 I4;
@@ -443,14 +446,8 @@ void BaseCosserat<TIn1, TIn2, TOut>::initialize() {
 }
 
 template <class TIn1, class TIn2, class TOut>
-void BaseCosserat<TIn1, TIn2, TOut>::draw(const core::visual::VisualParams *vparams)
+void BaseCosserat<TIn1, TIn2, TOut>::draw(const core::visual::VisualParams *)
 {
-  // TODO(dmarchal: 2024/06/07) It is unclear to me why we are overriding a base function
-  // to enforce it does nothing,
-  if (!vparams->displayFlags().getShowMappings())
-
-    if (!d_debug.getValue())
-      return;
 }
 
 template <class TIn1, class TIn2, class TOut>
