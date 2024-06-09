@@ -35,7 +35,7 @@ using sofa::helper::system::PluginManager;
 
 // TODO(dmarchal: 2024/06/07) This is the wrong namespace, it should be
 // "cosserat" or sofacosserat if you rename the plugin into SofaCosserat :)
-namespace cosserat {
+namespace Cosserat {
 
 extern "C" {
 SOFA_COSSERAT_API void initExternalModule();
@@ -65,19 +65,12 @@ void initExternalModule() {
 }
 const char *getModuleLicense() { return "LGPL"; }
 
-const char *getModuleName() { return cosserat::MODULE_NAME; }
+const char *getModuleName() { return Cosserat::MODULE_NAME; }
 
-const char *getModuleVersion() { return cosserat::MODULE_VERSION; }
+const char *getModuleVersion() { return Cosserat::MODULE_VERSION; }
 
 const char *getModuleDescription() {
-  static std::string classes =
-      sofa::core::ObjectFactory::getInstance()->listClassesFromTarget(
-          cosserat::MODULE_NAME);
-  // TODO(dmarchal: 2024/06/07): I think this is not the correct module
-  // description... as we are planning to use these string to generate the
-  // documentation... please correct that and also be much more descriptive with
-  // multi line comment.
-  return classes.c_str();
+  return "This plugin is used to implement slender object";
 }
 
 const char *getModuleComponentList() {

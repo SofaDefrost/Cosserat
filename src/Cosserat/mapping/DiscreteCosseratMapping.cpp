@@ -20,22 +20,22 @@
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
 #define SOFA_COSSERAT_CPP_DiscreteCosseratMapping
-#include "DiscreteCosseratMapping.inl"
+#include <Cosserat/mapping/DiscreteCosseratMapping.inl>
 
 #include <sofa/defaulttype/VecTypes.h>
 #include <sofa/defaulttype/RigidTypes.h>
 #include <sofa/core/ObjectFactory.h>
 
-namespace sofa::component::mapping
+namespace Cosserat::mapping
 {
 using namespace sofa::defaulttype;
 
 
 template <>
 void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>:: applyJ(
-    const core::MechanicalParams* /* mparams */, const type::vector< OutDataVecDeriv*>& dataVecOutVel,
-    const type::vector<const In1DataVecDeriv*>& dataVecIn1Vel,
-    const type::vector<const In2DataVecDeriv*>& dataVecIn2Vel) {
+    const sofa::core::MechanicalParams* /* mparams */, const vector< OutDataVecDeriv*>& dataVecOutVel,
+    const vector<const In1DataVecDeriv*>& dataVecIn1Vel,
+    const vector<const In2DataVecDeriv*>& dataVecIn2Vel) {
 
     if(d_debug.getValue())
         std::cout<< " ########## ApplyJ R Function ########"<< std::endl;
@@ -48,10 +48,10 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>:: applyJ(
     const auto baseIndex = d_baseIndex.getValue();
 
     // Curv abscissa of nodes and frames
-    helper::ReadAccessor<Data<List>> curv_abs_section =  d_curv_abs_section;
-    helper::ReadAccessor<Data<List>> curv_abs_frames = d_curv_abs_frames;
+    sofa::helper::ReadAccessor<Data<List>> curv_abs_section =  d_curv_abs_section;
+    sofa::helper::ReadAccessor<Data<List>> curv_abs_frames = d_curv_abs_frames;
 
-    const In1VecCoord& inDeform = m_fromModel1->read(core::ConstVecCoordId::position())->getValue(); //Strains
+    const In1VecCoord& inDeform = m_fromModel1->read(sofa::core::ConstVecCoordId::position())->getValue(); //Strains
     // Compute the tangent Exponential SE3 vectors
     this->updateTangExpSE3(inDeform);
 
@@ -59,15 +59,15 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>:: applyJ(
     m_nodesVelocityVectors.clear();
 
     //Get base velocity and convert to Vec6, for the facility of computation
-    type::Vec6 baseVelocity; //
+    Vec6 baseVelocity; //
     for (auto u=0; u<6; u++)
         baseVelocity[u] = in2_vel[baseIndex][u];
 
     //Apply the local transform i.e. from SOFA's frame to Cosserat's frame
-    const In2VecCoord& xfrom2Data = m_fromModel2->read(core::ConstVecCoordId::position())->getValue();
+    const In2VecCoord& xfrom2Data = m_fromModel2->read(sofa::core::ConstVecCoordId::position())->getValue();
     Transform TInverse = Transform(xfrom2Data[baseIndex].getCenter(), xfrom2Data[baseIndex].getOrientation()).inversed();
     Mat6x6 P = this->buildProjector(TInverse);
-    type::Vec6 baseLocalVelocity = P * baseVelocity; //This is the base velocity in Locale frame
+    Vec6 baseLocalVelocity = P * baseVelocity; //This is the base velocity in Locale frame
     m_nodesVelocityVectors.push_back(baseLocalVelocity);
     if(d_debug.getValue())
         std::cout << "Base local Velocity :"<< baseLocalVelocity <<std::endl;
@@ -78,7 +78,7 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>:: applyJ(
         Tangent Adjoint; Adjoint.clear();
         this->computeAdjoint(Trans, Adjoint);
 
-        type::Vec6 node_Xi_dot;
+        Vec6 node_Xi_dot;
         for (unsigned int u =0; u<6; u++)
             node_Xi_dot(i) = in1_vel[i-1][u];
 
@@ -87,7 +87,7 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>:: applyJ(
         if(d_debug.getValue())
             std::cout<< "Node velocity : "<< i << " = " << eta_node_i<< std::endl;
     }
-    const OutVecCoord& out = m_toModel->read(core::ConstVecCoordId::position())->getValue();
+    const OutVecCoord& out = m_toModel->read(sofa::core::ConstVecCoordId::position())->getValue();
     auto sz = curv_abs_frames.size();
     out_vel.resize(sz);
 
@@ -95,7 +95,7 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>:: applyJ(
         Transform Trans = m_framesExponentialSE3Vectors[i].inversed();
         Tangent Adjoint; Adjoint.clear();
         this->computeAdjoint(Trans, Adjoint);
-        type::Vec6 frame_Xi_dot = in1_vel[m_indicesVectors[i]-1];
+        Vec6 frame_Xi_dot = in1_vel[m_indicesVectors[i]-1];
 //        for (unsigned int u =0; u<6; u++)
 //            frame_Xi_dot(i) = in1_vel[m_indicesVectors[i]-1][u];
 
@@ -116,9 +116,9 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>:: applyJ(
 
 template <>
 void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>:: applyJT(
-    const core::MechanicalParams* /*mparams*/, const type::vector< In1DataVecDeriv*>& dataVecOut1Force,
-    const type::vector< In2DataVecDeriv*>& dataVecOut2Force,
-    const type::vector<const OutDataVecDeriv*>& dataVecInForce)  {
+    const sofa::core::MechanicalParams* /*mparams*/, const vector< In1DataVecDeriv*>& dataVecOut1Force,
+    const vector< In2DataVecDeriv*>& dataVecOut2Force,
+    const vector<const OutDataVecDeriv*>& dataVecInForce)  {
 
     if(dataVecOut1Force.empty() || dataVecInForce.empty() || dataVecOut2Force.empty())
         return;
@@ -131,21 +131,21 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>:: applyJT(
     In2VecDeriv& out2 = *dataVecOut2Force[0]->beginEdit();
     const auto baseIndex = d_baseIndex.getValue();
 
-    const OutVecCoord& frame = m_toModel->read(core::ConstVecCoordId::position())->getValue();
-    const In1DataVecCoord* x1fromData = m_fromModel1->read(core::ConstVecCoordId::position());
+    const OutVecCoord& frame = m_toModel->read(sofa::core::ConstVecCoordId::position())->getValue();
+    const In1DataVecCoord* x1fromData = m_fromModel1->read(sofa::core::ConstVecCoordId::position());
     const In1VecCoord x1from = x1fromData->getValue();
-    type::vector<Vec6> local_F_Vec;  local_F_Vec.clear();
+    vector<Vec6> local_F_Vec;  local_F_Vec.clear();
 
     out1.resize(x1from.size());
 
     //convert the input from Deriv type to vec6 type, for the purpose of the matrix vector multiplication
     for (unsigned int var = 0; var < in.size(); ++var) {
-        type::Vec6 vec;
+        Vec6 vec;
         for(unsigned j = 0; j < 6; j++) vec[j] = in[var][j];
         //Convert input from global frame(SOFA) to local frame
         Transform _T = Transform(frame[var].getCenter(),frame[var].getOrientation());
         Mat6x6 P_trans =(this->buildProjector(_T)); P_trans.transpose();
-        type::Vec6 local_F = P_trans * vec;
+        Vec6 local_F = P_trans * vec;
         local_F_Vec.push_back(local_F);
     }
 
@@ -169,7 +169,7 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>:: applyJT(
         Vec6 node_F_Vec = coAdjoint * local_F_Vec[s];
         Mat6x6 temp = m_framesTangExpVectors[s];   // m_framesTangExpVectors[s] computed in applyJ (here we transpose)
         temp.transpose();
-        type::Vec6 f = matB_trans * temp * node_F_Vec;
+        Vec6 f = matB_trans * temp * node_F_Vec;
 
         if(index != m_indicesVectors[s]){
             index--;
@@ -179,7 +179,7 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>:: applyJT(
             Mat6x6 temp = m_nodesTangExpVectors[index];
             temp.transpose();
             //apply F_tot to the new beam
-            type::Vec6 temp_f = matB_trans * temp * F_tot;
+            Vec6 temp_f = matB_trans * temp * F_tot;
             out1[index-1] += temp_f;
         }
         if(d_debug.getValue())
@@ -206,9 +206,9 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>:: applyJT(
 
 template <>
 void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>::applyJT(
-    const core::ConstraintParams*/*cparams*/ , const type::vector< In1DataMatrixDeriv*>&  dataMatOut1Const,
-    const type::vector< In2DataMatrixDeriv*>&  dataMatOut2Const ,
-    const type::vector<const OutDataMatrixDeriv*>& dataMatInConst)
+    const sofa::core::ConstraintParams*/*cparams*/ , const vector< In1DataMatrixDeriv*>&  dataMatOut1Const,
+    const vector< In2DataMatrixDeriv*>&  dataMatOut2Const ,
+    const vector<const OutDataMatrixDeriv*>& dataMatInConst)
 {
     if(dataMatOut1Const.empty() || dataMatOut2Const.empty() || dataMatInConst.empty() )
         return;
@@ -221,15 +221,15 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>::applyJT(
     In2MatrixDeriv& out2 = *dataMatOut2Const[0]->beginEdit(); // constraints on the reference frame (base frame)
     const OutMatrixDeriv& in = dataMatInConst[0]->getValue(); // input constraints defined on the mapped frames
 
-    const OutVecCoord& frame = m_toModel->read(core::ConstVecCoordId::position())->getValue();
-    const In1DataVecCoord* x1fromData = m_fromModel1->read(core::ConstVecCoordId::position());
+    const OutVecCoord& frame = m_toModel->read(sofa::core::ConstVecCoordId::position())->getValue();
+    const In1DataVecCoord* x1fromData = m_fromModel1->read(sofa::core::ConstVecCoordId::position());
     const In1VecCoord x1from = x1fromData->getValue();
 
     Tangent matB_trans; matB_trans.clear();
     for(unsigned int k=0; k<3; k++) matB_trans[k][k] = 1.0;
 
-    type::vector< std::tuple<int,Vec6> > NodesInvolved;
-    type::vector< std::tuple<int,Vec6> > NodesInvolvedCompressed;
+    vector< std::tuple<int,Vec6> > NodesInvolved;
+    vector< std::tuple<int,Vec6> > NodesInvolvedCompressed;
     //helper::vector<Vec6> NodesConstraintDirection;
 
     typename OutMatrixDeriv::RowConstIterator rowItEnd = in.end();
@@ -260,7 +260,7 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>::applyJT(
         {
             int childIndex = colIt.index();
 
-            type::Vec6 valueConst;
+            Vec6 valueConst;
             for(unsigned j = 0; j < 6; j++)
                 valueConst[j] = colIt.val()[j];
 
@@ -275,9 +275,9 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>::applyJT(
             Tangent temp = m_framesTangExpVectors[childIndex];   // m_framesTangExpVectors[s] computed in applyJ (here we transpose)
             temp.transpose();
 
-            type::Vec6 local_F =  coAdjoint * P_trans * valueConst; // constraint direction in local frame of the beam.
+            Vec6 local_F =  coAdjoint * P_trans * valueConst; // constraint direction in local frame of the beam.
 
-            type::Vec6 f = matB_trans * temp * local_F; // constraint direction in the strain space.
+            Vec6 f = matB_trans * temp * local_F; // constraint direction in the strain space.
 
             o1.addCol(indexBeam-1, f);
             std::tuple<int,Vec6> node_force = std::make_tuple(indexBeam, local_F);
@@ -352,7 +352,7 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>::applyJT(
                 // transfer to strain space (local coordinates)
                 Mat6x6 temp = m_nodesTangExpVectors[i-1];
                 temp.transpose();
-                type::Vec6 temp_f = matB_trans * temp * CumulativeF;
+                Vec6 temp_f = matB_trans * temp * CumulativeF;
 
                 if(i>1) o1.addCol(i-2, temp_f);
                 i--;
@@ -373,7 +373,7 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>::applyJT(
 
 
 // Register in the Factory
-int DiscreteCosseratMappingClass = core::RegisterObject("Set the positions and velocities of points attached to a rigid parent")
+int DiscreteCosseratMappingClass = sofa::core::RegisterObject("Set the positions and velocities of points attached to a rigid parent")
                                        .add< DiscreteCosseratMapping< sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types > >(true)
                                        .add< DiscreteCosseratMapping< sofa::defaulttype::Vec6Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types > >()
     ;
