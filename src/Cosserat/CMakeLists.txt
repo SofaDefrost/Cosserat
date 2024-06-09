@@ -40,8 +40,8 @@ set(SOURCE_FILES
     initCosserat.cpp
 
     mapping/BaseCosserat.cpp
+    mapping/DiscreteCosseratMapping.cpp
     mapping/ProjectionEngine.cpp
-        mapping/DiscreteCosseratMapping.cpp
     mapping/DiscreteDynamicCosseratMapping.cpp
     mapping/DifferenceMultiMapping.cpp
     mapping/RigidDistanceMapping.cpp

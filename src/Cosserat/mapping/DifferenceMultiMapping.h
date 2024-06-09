@@ -20,8 +20,7 @@
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
 #pragma once
-#include <Cosserat/config.h>
-
+#include <Cosserat/initCosserat.h>
 #include <Cosserat/mapping/BaseCosserat.h>
 
 #include <sofa/core/BaseMapping.h>
@@ -31,7 +30,7 @@
 #include <sofa/defaulttype/RigidTypes.h>
 
 
-namespace sofa::component::mapping
+namespace Cosserat::mapping
 {
 using sofa::defaulttype::SolidTypes ;
 using sofa::core::objectmodel::BaseContext ;
@@ -39,8 +38,10 @@ using sofa::type::Matrix3;
 using sofa::type::Matrix4;
 using sofa::type::Vec3;
 using sofa::type::Vec6;
+using sofa::type::Quat;
 using std::get;
-using type::vector;
+using sofa::type::vector;
+using Cosserat::mapping::BaseCosserat;
 
 /*!
  * \class DifferenceMultiMapping
@@ -49,15 +50,14 @@ using type::vector;
  * This is a component:
  * https://www.sofa-framework.org/community/doc/programming-with-sofa/create-your-component/
  */
-using mapping::BaseCosserat;
-
 
 template <class TIn1, class TIn2, class TOut>
-class DifferenceMultiMapping : public core::Multi2Mapping<TIn1, TIn2, TOut> //, public component::mapping::BaseCosserat<TIn1, TIn2, TOut>
+class DifferenceMultiMapping : public sofa::core::Multi2Mapping<TIn1, TIn2, TOut>
 {
 public:
-    SOFA_CLASS(SOFA_TEMPLATE3(DifferenceMultiMapping, TIn1,TIn2, TOut), SOFA_TEMPLATE3(core::Multi2Mapping, TIn1, TIn2, TOut) );
-    typedef core::Multi2Mapping<TIn1, TIn2, TOut> Inherit;
+    SOFA_CLASS(SOFA_TEMPLATE3(DifferenceMultiMapping, TIn1,TIn2, TOut),
+               SOFA_TEMPLATE3(sofa::core::Multi2Mapping, TIn1, TIn2, TOut) );
+    typedef sofa::core::Multi2Mapping<TIn1, TIn2, TOut> Inherit;
 
     /// Input Model Type
     typedef TIn1 In1;
@@ -71,9 +71,9 @@ public:
     typedef typename In1::VecCoord In1VecCoord;
     typedef typename In1::VecDeriv In1VecDeriv;
     typedef typename In1::MatrixDeriv In1MatrixDeriv;
-    typedef Data<In1VecCoord> In1DataVecCoord;
-    typedef Data<In1VecDeriv> In1DataVecDeriv;
-    typedef Data<In1MatrixDeriv> In1DataMatrixDeriv;
+    typedef sofa::Data<In1VecCoord> In1DataVecCoord;
+    typedef sofa::Data<In1VecDeriv> In1DataVecDeriv;
+    typedef sofa::Data<In1MatrixDeriv> In1DataMatrixDeriv;
 
     typedef sofa::defaulttype::Rigid3dTypes::Coord Rigid;
     
@@ -83,36 +83,36 @@ public:
     typedef typename In2::VecCoord In2VecCoord;
     typedef typename In2::VecDeriv In2VecDeriv;
     typedef typename In2::MatrixDeriv In2MatrixDeriv;
-    typedef Data<In2VecCoord> In2DataVecCoord;
-    typedef Data<In2VecDeriv> In2DataVecDeriv;
-    typedef Data<In2MatrixDeriv> In2DataMatrixDeriv;
-    typedef type::Mat<4,4,Real> Mat4x4;
+    typedef sofa::Data<In2VecCoord> In2DataVecCoord;
+    typedef sofa::Data<In2VecDeriv> In2DataVecDeriv;
+    typedef sofa::Data<In2MatrixDeriv> In2DataMatrixDeriv;
+    typedef sofa::type::Mat<4,4,Real> Mat4x4;
 
     typedef typename Out::VecCoord OutVecCoord;
     typedef typename Out::Coord OutCoord;
     typedef typename Out::Deriv OutDeriv;
     typedef typename Out::VecDeriv OutVecDeriv;
     typedef typename Out::MatrixDeriv OutMatrixDeriv;
-    typedef Data<OutVecCoord> OutDataVecCoord;
-    typedef Data<OutVecDeriv> OutDataVecDeriv;
-    typedef Data<OutMatrixDeriv> OutDataMatrixDeriv;
+    typedef sofa::Data<OutVecCoord> OutDataVecCoord;
+    typedef sofa::Data<OutVecDeriv> OutDataVecDeriv;
+    typedef sofa::Data<OutMatrixDeriv> OutDataMatrixDeriv;
 
     typedef typename SolidTypes<Real>::Transform      Transform ;
 
 public:
     /********************** The component Data **************************/
     //Input data
-    Data<vector<Rigid>>                 d_direction;
-    Data<vector<unsigned int>>          d_indices;
-    Data<double>                        d_radius;
-    Data<sofa::type::Vec4f>             d_color;
-    Data<bool>                          d_drawArrows;
-    Data<bool>                          d_lastPointIsFixed;
+    sofa::Data<vector<Rigid>>                 d_direction;
+    sofa::Data<vector<unsigned int>>          d_indices;
+    sofa::Data<double>                        d_radius;
+    sofa::Data<sofa::type::Vec4f>             d_color;
+    sofa::Data<bool>                          d_drawArrows;
+    sofa::Data<bool>                          d_lastPointIsFixed;
 
 protected:   
-    core::State<In1>* m_fromModel1;
-    core::State<In2>* m_fromModel2;
-    core::State<Out>* m_toModel;
+    sofa::core::State<In1>* m_fromModel1;
+    sofa::core::State<In2>* m_fromModel2;
+    sofa::core::State<Out>* m_toModel;
 
 protected:
     /// Constructor
@@ -126,32 +126,32 @@ public:
     void bwdInit() override;  // get the points
     void reset() override;
     void reinit() override;
-    void draw(const core::visual::VisualParams* vparams) override;
+    void draw(const sofa::core::visual::VisualParams* vparams) override;
 
     /**********************MAPPING METHODS**************************/
     void apply(
-            const core::MechanicalParams* /* mparams */, const type::vector<OutDataVecCoord*>& dataVecOutPos,
-            const type::vector<const In1DataVecCoord*>& dataVecIn1Pos ,
-            const type::vector<const In2DataVecCoord*>& dataVecIn2Pos) override;
+        const sofa::core::MechanicalParams* /* mparams */, const vector<OutDataVecCoord*>& dataVecOutPos,
+        const vector<const In1DataVecCoord*>& dataVecIn1Pos ,
+        const vector<const In2DataVecCoord*>& dataVecIn2Pos) override;
 
     void applyJ(
-            const core::MechanicalParams* /* mparams */, const type::vector< OutDataVecDeriv*>& dataVecOutVel,
-            const type::vector<const In1DataVecDeriv*>& dataVecIn1Vel,
-            const type::vector<const In2DataVecDeriv*>& dataVecIn2Vel) override;
+        const sofa::core::MechanicalParams* /* mparams */, const vector< OutDataVecDeriv*>& dataVecOutVel,
+        const vector<const In1DataVecDeriv*>& dataVecIn1Vel,
+        const vector<const In2DataVecDeriv*>& dataVecIn2Vel) override;
 
     //ApplyJT Force
     void applyJT(
-            const core::MechanicalParams* /* mparams */, const type::vector< In1DataVecDeriv*>& dataVecOut1Force,
-            const type::vector< In2DataVecDeriv*>& dataVecOut2RootForce,
-            const type::vector<const OutDataVecDeriv*>& dataVecInForce) override;
+        const sofa::core::MechanicalParams* /* mparams */, const vector< In1DataVecDeriv*>& dataVecOut1Force,
+        const vector< In2DataVecDeriv*>& dataVecOut2RootForce,
+        const vector<const OutDataVecDeriv*>& dataVecInForce) override;
 
-    void applyDJT(const core::MechanicalParams* /*mparams*/, core::MultiVecDerivId /*inForce*/, core::ConstMultiVecDerivId /*outForce*/) override{}
+    void applyDJT(const sofa::core::MechanicalParams* /*mparams*/, sofa::core::MultiVecDerivId /*inForce*/, sofa::core::ConstMultiVecDerivId /*outForce*/) override{}
 
     /// This method must be reimplemented by all mappings if they need to support constraints.
     void applyJT(
-            const core::ConstraintParams*  cparams , const type::vector< In1DataMatrixDeriv*>& dataMatOut1Const  ,
-            const type::vector< In2DataMatrixDeriv*>&  dataMatOut2Const ,
-            const type::vector<const OutDataMatrixDeriv*>&  dataMatInConst) override;
+        const sofa::core::ConstraintParams*  cparams , const vector< In1DataMatrixDeriv*>& dataMatOut1Const  ,
+        const vector< In2DataMatrixDeriv*>&  dataMatOut2Const ,
+        const vector<const OutDataMatrixDeriv*>&  dataMatInConst) override;
 
     /**********************MAPPING METHODS**************************/
     void initiateTopologies();
@@ -178,7 +178,7 @@ private:
         Real thirdConstraint;
     } Constraint;
 
-    type::vector<Constraint> m_constraints;
+    vector<Constraint> m_constraints;
 };
 
 } // sofa::component::mapping
