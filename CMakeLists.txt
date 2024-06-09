@@ -20,7 +20,7 @@ endif()
 set(SRC_ROOT_DIR src/${PROJECT_NAME})
 
 set(HEADER_FILES
-    ${SRC_ROOT_DIR}/config.h.in
+    ${SRC_ROOT_DIR}/initCosserat.h.in
     ${SRC_ROOT_DIR}/mapping/BaseCosserat.h
     ${SRC_ROOT_DIR}/mapping/BaseCosserat.inl
     ${SRC_ROOT_DIR}/mapping/DiscreteCosseratMapping.h

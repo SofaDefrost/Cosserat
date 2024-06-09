@@ -157,6 +157,8 @@ public:
     type::vector<Mat6x6> m_nodeAdjointVectors;
 
     // TODO(dmarchal:2024/06/07): explain why these attributes are unused
+    // TODO : yadagolo: Need for the dynamic function, which is not working yet.
+    //  But the component is in this folder
     [[maybe_unused]] type::vector<Mat6x6> m_nodeAdjointEtaVectors;
     [[maybe_unused]] type::vector<Mat6x6> m_frameAdjointEtaVectors;
     [[maybe_unused]] type::vector<Mat6x6> m_node_coAdjointEtaVectors;
@@ -165,11 +167,14 @@ public:
 public:
     /********************** Inhertited from BaseObject   **************/
     void init() override;
-    void draw(const core::visual::VisualParams* vparams) override;
+    void draw(const core::visual::VisualParams* ) override;
 
     /************************* BaseCosserat **************************/
-    // TODO(dmarchal:2024/06/07), so we have "initialize" and "init" co-existances of both and their
+    // TODO(dmarchal:2024/06/07), so we have "initialize" and "init"
+    //  co-existances of both and their
     // roles is unclear and generates ambiguities
+    //TODO @yadagolo: Yes, because the function is used by callback, when we
+    // do dynamic meshing.
     void initialize();
 
     double computeTheta(const double &x, const Mat4x4 &gX);
@@ -188,7 +193,7 @@ public:
 
     // TODO(dmarchal: 2024/06/07), this looks like a very common utility function... it shouldn't
     // be (re)implemented in a base classe.
-    Eigen::Matrix3d rotationMatrixX(double angle) {
+    RotMat rotationMatrixX(double angle) {
         Eigen::Matrix3d rotation;
         rotation << 1, 0, 0,
             0, cos(angle), -sin(angle),
@@ -198,7 +203,7 @@ public:
 
     // TODO(dmarchal: 2024/06/07), this looks like a very common utility function... it shouldn't
     // be (re)implemented in a base classe.
-    Eigen::Matrix3d rotationMatrixY(double angle) {
+    RotMat rotationMatrixY(double angle) {
         Eigen::Matrix3d rotation;
         rotation << cos(angle), 0, sin(angle),
             0, 1, 0,
