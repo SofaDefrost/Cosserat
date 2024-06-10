@@ -22,14 +22,12 @@
 #ifndef COSSERAT_ProjectionEngine_H
 #define COSSERAT_ProjectionEngine_H
 
-#include <Cosserat/config.h>
-
+#include <Cosserat/initCosserat.h>
 #include <sofa/core/behavior/PairInteractionConstraint.h>
 #include <sofa/core/behavior/MechanicalState.h>
 #include <sofa/core/DataEngine.h>
 #include <sofa/type/Vec.h>
 #include <sofa/simulation/AnimateBeginEvent.h>
-
 #include <iostream>
 
 
@@ -66,17 +64,7 @@ protected:
     Data<VecCoord> d_dest; ///< vector to substract to input
     Data<VecCoord> d_output;
 
-
-    //Data<Deriv> d_force; ///< interaction force
-
-    //    Real m_dist;	// constraint violation
-    //    Real m_thirdConstraint; // 0 if A<proj<B, -1 if proj<A, 1 if B<proj
-    //    bool m_yetIntegrated;
-    //    unsigned int m_cid;
-
-
     ProjectionEngine();
-
     virtual ~ProjectionEngine(){}
 
 public:
@@ -84,12 +72,9 @@ public:
     void reinit() override;
 
     void handleEvent(core::objectmodel::Event *ev) override;
-
     void computeProximity();
-
     void draw(const core::visual::VisualParams* vparams) override;
     void drawLinesBetweenPoints(const core::visual::VisualParams* vparams);
-
 
 
 private:
@@ -118,11 +103,6 @@ private:
     }
 
 };
-
-//#if !defined(SOFA_COSSERAT_CPP_ProjectionEngine)
-//extern template class SOFA_CONSTRAINT_API ProjectionEngine< sofa::defaulttype::Vec3Types >;
-
-//#endif
 
 } // namespace sofa::component::constraintset
 

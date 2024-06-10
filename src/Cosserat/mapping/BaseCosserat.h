@@ -60,6 +60,8 @@ using sofa::type::vector;
 using sofa::type::Vec3;
 using sofa::type::Vec6;
 using sofa::type::Mat;
+
+typedef typename Eigen::Matrix4d _SE3;
 } // namespace
 
 /*!
@@ -132,7 +134,7 @@ public:
 
     typedef typename sofa::type::Matrix4 se3;
     typedef typename sofa::type::Matrix4 SE3;
-    typedef typename Eigen::Matrix4d _SE3;
+
     typedef typename Eigen::Matrix4d _se3;
     typedef typename sofa::type::Mat<6, 6, SReal> Tangent;
     typedef typename Eigen::Matrix3d RotMat;

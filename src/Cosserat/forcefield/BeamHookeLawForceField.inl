@@ -28,7 +28,7 @@
 *                                                                             *
 ******************************************************************************/
 #pragma once
-#include "BeamHookeLawForceField.h"
+#include <Cosserat/forcefield/BeamHookeLawForceField.h>
 
 #include <sofa/linearalgebra/FullVector.h>
 #include <sofa/core/behavior/MechanicalState.h>
