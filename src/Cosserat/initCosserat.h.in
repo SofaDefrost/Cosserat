@@ -46,6 +46,13 @@
 */
 
 namespace Cosserat {
+
+namespace type {
+//using Vec3 = sofa::defaulttype::Vec3;
+//using cosserat::type::SE3;
+}
+
+
 SOFA_COSSERAT_API void init();
 constexpr const char *MODULE_NAME = "@PROJECT_NAME@";
 constexpr const char *MODULE_VERSION = "@PROJECT_VERSION@";

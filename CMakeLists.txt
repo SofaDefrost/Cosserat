@@ -27,8 +27,8 @@ set(HEADER_FILES
     ${SRC_ROOT_DIR}/mapping/DiscreteCosseratMapping.inl
     ${SRC_ROOT_DIR}/mapping/DiscreteDynamicCosseratMapping.h
     ${SRC_ROOT_DIR}/mapping/DiscreteDynamicCosseratMapping.inl
-    ${SRC_ROOT_DIR}/mapping/ProjectionEngine.h
-    ${SRC_ROOT_DIR}/mapping/ProjectionEngine.inl
+    ${SRC_ROOT_DIR}/engine/ProjectionEngine.h
+    ${SRC_ROOT_DIR}/engine/ProjectionEngine.inl
     ${SRC_ROOT_DIR}/mapping/DifferenceMultiMapping.h
     ${SRC_ROOT_DIR}/mapping/DifferenceMultiMapping.inl
     ${SRC_ROOT_DIR}/mapping/RigidDistanceMapping.h
@@ -53,7 +53,7 @@ set(SOURCE_FILES
     ${SRC_ROOT_DIR}/mapping/BaseCosserat.cpp
     ${SRC_ROOT_DIR}/mapping/DiscreteCosseratMapping.cpp
     ${SRC_ROOT_DIR}/mapping/DiscreteDynamicCosseratMapping.cpp
-    ${SRC_ROOT_DIR}/mapping/ProjectionEngine.cpp
+    ${SRC_ROOT_DIR}/engine/ProjectionEngine.cpp
     ${SRC_ROOT_DIR}/mapping/DifferenceMultiMapping.cpp
     ${SRC_ROOT_DIR}/mapping/RigidDistanceMapping.cpp
     ${SRC_ROOT_DIR}/engine/PointsManager.cpp

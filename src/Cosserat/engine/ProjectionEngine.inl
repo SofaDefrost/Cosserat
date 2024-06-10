@@ -55,9 +55,7 @@ void ProjectionEngine<DataTypes>::init()
 
 template<class DataTypes>
 void ProjectionEngine<DataTypes>::reinit()
-{
-
-}
+{}
 
 
 template<class DataTypes>
@@ -218,24 +216,9 @@ void ProjectionEngine<DataTypes>::draw(const core::visual::VisualParams* vparams
     vparams->drawTool()->disableLighting();
 
     sofa::type::RGBAColor color;
-    //    Constraint& c = m_constraints[0];
-
-    //    if(c.thirdConstraint<0)
-    //        color = sofa::defaulttype::RGBAColor::yellow();
-    //    else if(c.thirdConstraint>0)
-    //        color = sofa::defaulttype::RGBAColor::green();
-    //    else
     color = sofa::type::RGBAColor::magenta();
 
     std::vector<sofa::type::Vec3> vertices;
-    //    vertices.push_back(DataTypes::getCPos((this->mstate1->read(core::ConstVecCoordId::position())->getValue())[d_m1.getValue()]));
-
-    //    vparams->drawTool()->drawPoints(vertices, 10, color);
-    //    vertices.clear();
-
-    //    color = sofa::defaulttype::RGBAColor::blue();
-    //    vertices.push_back(DataTypes::getCPos((this->mstate2->read(core::ConstVecCoordId::position())->getValue())[d_m2a.getValue()]));
-    //    vertices.push_back(DataTypes::getCPos((this->mstate2->read(core::ConstVecCoordId::position())->getValue())[d_m2b.getValue()]));
     vparams->drawTool()->drawLines(vertices, 1, color);
 
     for (size_t i =0 ; i < m_constraints.size(); i++) {
@@ -244,9 +227,7 @@ void ProjectionEngine<DataTypes>::draw(const core::visual::VisualParams* vparams
         vertices.push_back(m_constraints[i].Q);
         vparams->drawTool()->drawLines(vertices, 1, color);
     }
-    //printf("ProjectionEngine<DataTypes>::draw(const core::visual::VisualParams* vparams) After \n");
 
-    //drawLinesBetweenPoints(vparams);
     vparams->drawTool()->restoreLastState();
 }
 
@@ -268,6 +249,5 @@ void ProjectionEngine<DataTypes>::drawLinesBetweenPoints(const core::visual::Vis
 
 
 } // namespace sofa::component::constraintset
-
 
 #endif
