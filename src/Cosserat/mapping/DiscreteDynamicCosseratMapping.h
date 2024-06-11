@@ -39,7 +39,7 @@ using sofa::type::Vec6;
 using std::get;
 using sofa::Data;
 using sofa::type::Mat;
-using Cosserat::mapping::BaseCosserat;
+using Cosserat::mapping::BaseCosseratMapping;
 
 /*!
  * \class DiscretDynamicCosseratMapping
@@ -52,7 +52,7 @@ using Cosserat::mapping::BaseCosserat;
 
 template <class TIn1, class TIn2, class TOut>
 class DiscreteDynamicCosseratMapping : public sofa::core::Multi2Mapping<TIn1, TIn2, TOut>,
-                                       BaseCosserat<TIn1, TIn2, TOut>
+        BaseCosseratMapping<TIn1, TIn2, TOut>
 {
 public:
     SOFA_CLASS(SOFA_TEMPLATE3(DiscreteDynamicCosseratMapping, TIn1,TIn2, TOut),
@@ -131,19 +131,19 @@ protected:
     /// otherwise any access to the base::attribute would require
     /// the "this->" approach.
     ///
-    using BaseCosserat<TIn1, TIn2, TOut>::m_indicesVectors ;
-    using BaseCosserat<TIn1, TIn2, TOut>::d_curv_abs_section  ;
-    using BaseCosserat<TIn1, TIn2, TOut>::d_curv_abs_frames ;
-    using BaseCosserat<TIn1, TIn2, TOut>::m_nodesTangExpVectors;
-    using BaseCosserat<TIn1, TIn2, TOut>::m_nodesVelocityVectors;
-    using BaseCosserat<TIn1, TIn2, TOut>::m_framesExponentialSE3Vectors;
-    using BaseCosserat<TIn1, TIn2, TOut>::m_framesTangExpVectors ;
-    using BaseCosserat<TIn1, TIn2, TOut>::m_totalBeamForceVectors ;
-    using BaseCosserat<TIn1, TIn2, TOut>::m_nodesExponentialSE3Vectors ;
-    using BaseCosserat<TIn1, TIn2, TOut>::d_debug;
-    using BaseCosserat<TIn1, TIn2, TOut>::m_vecTransform ;
-    using BaseCosserat<TIn1, TIn2, TOut>::m_nodeAdjointVectors;
-    using BaseCosserat<TIn1, TIn2, TOut>::m_index_input;
+    using BaseCosseratMapping<TIn1, TIn2, TOut>::m_indicesVectors ;
+    using BaseCosseratMapping<TIn1, TIn2, TOut>::d_curv_abs_section  ;
+    using BaseCosseratMapping<TIn1, TIn2, TOut>::d_curv_abs_frames ;
+    using BaseCosseratMapping<TIn1, TIn2, TOut>::m_nodesTangExpVectors;
+    using BaseCosseratMapping<TIn1, TIn2, TOut>::m_nodesVelocityVectors;
+    using BaseCosseratMapping<TIn1, TIn2, TOut>::m_framesExponentialSE3Vectors;
+    using BaseCosseratMapping<TIn1, TIn2, TOut>::m_framesTangExpVectors ;
+    using BaseCosseratMapping<TIn1, TIn2, TOut>::m_totalBeamForceVectors ;
+    using BaseCosseratMapping<TIn1, TIn2, TOut>::m_nodesExponentialSE3Vectors ;
+    using BaseCosseratMapping<TIn1, TIn2, TOut>::d_debug;
+    using BaseCosseratMapping<TIn1, TIn2, TOut>::m_vecTransform ;
+    using BaseCosseratMapping<TIn1, TIn2, TOut>::m_nodeAdjointVectors;
+    using BaseCosseratMapping<TIn1, TIn2, TOut>::m_index_input;
 
 
 public:

@@ -75,9 +75,9 @@ typedef typename Eigen::Matrix4d _SE3;
 // TODO(dmarchal: 2024/06/07) This component looks like a mapping but inherit
 // from BaseObject * can you clarify why is is not inhering from BaseMapping
 template <class TIn1, class TIn2, class TOut>
-class BaseCosserat : public virtual sofa::core::objectmodel::BaseObject {
+class BaseCosseratMapping : public virtual sofa::core::objectmodel::BaseObject {
 public:
-    SOFA_CLASS(SOFA_TEMPLATE3(BaseCosserat, TIn1, TIn2, TOut), BaseObject);
+    SOFA_CLASS(SOFA_TEMPLATE3(BaseCosseratMapping, TIn1, TIn2, TOut), BaseObject);
     typedef BaseObject Inherit;
 
     /// Input Model Type
@@ -118,14 +118,14 @@ public:
     typedef sofa::Data<OutVecDeriv> OutDataVecDeriv;
     typedef sofa::Data<OutMatrixDeriv> OutDataMatrixDeriv;
 
-    typedef sofa::MultiLink<BaseCosserat<In1, In2, Out>, sofa::core::State<In1>,
+    typedef sofa::MultiLink<BaseCosseratMapping<In1, In2, Out>, sofa::core::State<In1>,
                             sofa::BaseLink::FLAG_STOREPATH | sofa::BaseLink::FLAG_STRONGLINK>
         LinkFromModels1;
-    typedef sofa::MultiLink<BaseCosserat<In1, In2, Out>, sofa::core::State<In2>,
+    typedef sofa::MultiLink<BaseCosseratMapping<In1, In2, Out>, sofa::core::State<In2>,
                             sofa::BaseLink::FLAG_STOREPATH | sofa::BaseLink::FLAG_STRONGLINK>
         LinkFromModels2;
     [[maybe_unused]] typedef sofa::MultiLink<
-        BaseCosserat<In1, In2, Out>, sofa::core::State<Out>,
+    BaseCosseratMapping<In1, In2, Out>, sofa::core::State<Out>,
         sofa::BaseLink::FLAG_STOREPATH | sofa::BaseLink::FLAG_STRONGLINK>
         LinkToModels;
 
@@ -241,9 +241,9 @@ protected:
 
 protected:
     /// Constructor
-    BaseCosserat();
+    BaseCosseratMapping();
     /// Destructor
-    ~BaseCosserat() override = default;
+    ~BaseCosseratMapping() override = default;
 
     void computeExponentialSE3(const double &x, const Coord1 &k,
                                Transform &Trans);
@@ -266,12 +266,12 @@ protected:
     Matrix4 computeLogarithm(const double &x, const Mat4x4 &gX);
 };
 
-#if !defined(SOFA_COSSERAT_CPP_BaseCosserat)
+#if !defined(SOFA_COSSERAT_CPP_BaseCosseratMapping)
 extern template class SOFA_COSSERAT_API
-    BaseCosserat<sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types,
+BaseCosseratMapping<sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types,
                  sofa::defaulttype::Rigid3Types>;
 extern template class SOFA_COSSERAT_API
-    BaseCosserat<sofa::defaulttype::Vec6Types, sofa::defaulttype::Rigid3Types,
+BaseCosseratMapping<sofa::defaulttype::Vec6Types, sofa::defaulttype::Rigid3Types,
                  sofa::defaulttype::Rigid3Types>;
 #endif
 

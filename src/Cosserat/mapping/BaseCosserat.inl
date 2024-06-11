@@ -39,15 +39,17 @@
 
 namespace Cosserat::mapping {
 
-namespace {
+namespace
+{
+using namespace sofa::defaulttype;
 using sofa::core::objectmodel::BaseContext;
 using sofa::helper::AdvancedTimer;
 using sofa::helper::WriteAccessor;
 using sofa::type::vector;
-} // namespace
+}
 
 template <class TIn1, class TIn2, class TOut>
-BaseCosserat<TIn1, TIn2, TOut>::BaseCosserat()
+BaseCosseratMapping<TIn1, TIn2, TOut>::BaseCosseratMapping()
     : d_curv_abs_section(initData(&d_curv_abs_section, "curv_abs_input",
                                   " need to be com....")),
     d_curv_abs_frames(initData(&d_curv_abs_frames, "curv_abs_output",
@@ -59,7 +61,7 @@ BaseCosserat<TIn1, TIn2, TOut>::BaseCosserat()
 // _________________________________________________________________________________________
 
 template <class TIn1, class TIn2, class TOut>
-void BaseCosserat<TIn1, TIn2, TOut>::init() {
+void BaseCosseratMapping<TIn1, TIn2, TOut>::init() {
     Inherit1::init();
 
     // Fill the initial vector
@@ -69,7 +71,7 @@ void BaseCosserat<TIn1, TIn2, TOut>::init() {
 }
 
 template <class TIn1, class TIn2, class TOut>
-void BaseCosserat<TIn1, TIn2, TOut>::computeExponentialSE3(
+void BaseCosseratMapping<TIn1, TIn2, TOut>::computeExponentialSE3(
     const double &curv_abs_x_n, const Coord1 &strain_n, Transform &g_X_n) {
     Matrix4 I4;
     I4.identity();
@@ -107,7 +109,7 @@ void BaseCosserat<TIn1, TIn2, TOut>::computeExponentialSE3(
 
 // Fill exponential vectors
 template <class TIn1, class TIn2, class TOut>
-void BaseCosserat<TIn1, TIn2, TOut>::updateExponentialSE3(
+void BaseCosseratMapping<TIn1, TIn2, TOut>::updateExponentialSE3(
     const In1VecCoord &inDeform) {
     // helper::ReadAccessor<Data<helper::vector<double>>> curv_abs_input =
     // d_curv_abs_section;
@@ -175,7 +177,7 @@ void BaseCosserat<TIn1, TIn2, TOut>::updateExponentialSE3(
 //        m_nodesLogarithmSE3Vectors.push_back(log_gX);
 
 template <class TIn1, class TIn2, class TOut>
-void BaseCosserat<TIn1, TIn2, TOut>::computeAdjoint(const Transform &frame,
+void BaseCosseratMapping<TIn1, TIn2, TOut>::computeAdjoint(const Transform &frame,
                                                     Tangent &adjoint) {
     Matrix3 R = extractRotMatrix(frame);
     Vec3 u = frame.getOrigin();
@@ -185,7 +187,7 @@ void BaseCosserat<TIn1, TIn2, TOut>::computeAdjoint(const Transform &frame,
 }
 
 template <class TIn1, class TIn2, class TOut>
-void BaseCosserat<TIn1, TIn2, TOut>::computeCoAdjoint(const Transform &frame,
+void BaseCosseratMapping<TIn1, TIn2, TOut>::computeCoAdjoint(const Transform &frame,
                                                       Mat6x6 &co_adjoint) {
     Matrix3 R = extractRotMatrix(frame);
     Vec3 u = frame.getOrigin();
@@ -195,7 +197,7 @@ void BaseCosserat<TIn1, TIn2, TOut>::computeCoAdjoint(const Transform &frame,
 }
 
 template <class TIn1, class TIn2, class TOut>
-void BaseCosserat<TIn1, TIn2, TOut>::computeAdjoint(const Vec6 &eta,
+void BaseCosseratMapping<TIn1, TIn2, TOut>::computeAdjoint(const Vec6 &eta,
                                                     Mat6x6 &adjoint) {
     Matrix3 tildeMat = getTildeMatrix(Vec3(eta[0], eta[1], eta[2]));
     adjoint.setsub(0, 0, tildeMat);
@@ -204,7 +206,7 @@ void BaseCosserat<TIn1, TIn2, TOut>::computeAdjoint(const Vec6 &eta,
 }
 
 template <class TIn1, class TIn2, class TOut>
-Matrix4 BaseCosserat<TIn1, TIn2, TOut>::computeLogarithm(const double &x,
+Matrix4 BaseCosseratMapping<TIn1, TIn2, TOut>::computeLogarithm(const double &x,
                                                          const Mat4x4 &gX) {
     // Compute theta before everything
     const double theta = computeTheta(x, gX);
@@ -238,7 +240,7 @@ Matrix4 BaseCosserat<TIn1, TIn2, TOut>::computeLogarithm(const double &x,
 }
 
 template <class TIn1, class TIn2, class TOut>
-void BaseCosserat<TIn1, TIn2, TOut>::updateTangExpSE3(
+void BaseCosseratMapping<TIn1, TIn2, TOut>::updateTangExpSE3(
     const In1VecCoord &inDeform) {
 
     // Curv abscissa of nodes and frames
@@ -289,7 +291,7 @@ void BaseCosserat<TIn1, TIn2, TOut>::updateTangExpSE3(
 }
 
 template <class TIn1, class TIn2, class TOut>
-void BaseCosserat<TIn1, TIn2, TOut>::computeTangExp(double &curv_abs_n,
+void BaseCosseratMapping<TIn1, TIn2, TOut>::computeTangExp(double &curv_abs_n,
                                                     const Coord1 &strain_i,
                                                     Mat6x6 &TgX) {
 
@@ -340,7 +342,7 @@ void BaseCosserat<TIn1, TIn2, TOut>::computeTangExp(double &curv_abs_n,
 
 template <class TIn1, class TIn2, class TOut>
 [[maybe_unused]] Vec6
-BaseCosserat<TIn1, TIn2, TOut>::computeETA(const Vec6 &baseEta,
+BaseCosseratMapping<TIn1, TIn2, TOut>::computeETA(const Vec6 &baseEta,
                                            const In1VecDeriv &k_dot,
                                            const double abs_input) {
 
@@ -382,7 +384,7 @@ BaseCosserat<TIn1, TIn2, TOut>::computeETA(const Vec6 &baseEta,
 
 //___________________________________________________________________________
 template <class TIn1, class TIn2, class TOut>
-void BaseCosserat<TIn1, TIn2, TOut>::initialize() {
+void BaseCosseratMapping<TIn1, TIn2, TOut>::initialize() {
     // For each frame in the global frame, find the segment of the beam to which
     // it is attached. Here we only use the information from the curvilinear
     // abscissa of each frame.
@@ -442,10 +444,10 @@ void BaseCosserat<TIn1, TIn2, TOut>::initialize() {
 }
 
 template <class TIn1, class TIn2, class TOut>
-void BaseCosserat<TIn1, TIn2, TOut>::draw(const sofa::core::visual::VisualParams *) {}
+void BaseCosseratMapping<TIn1, TIn2, TOut>::draw(const sofa::core::visual::VisualParams *) {}
 
 template <class TIn1, class TIn2, class TOut>
-double BaseCosserat<TIn1, TIn2, TOut>::computeTheta(const double &x,
+double BaseCosseratMapping<TIn1, TIn2, TOut>::computeTheta(const double &x,
                                                     const Mat4x4 &gX) {
     double Tr_gx = 0.0;
     for (int i = 0; i < 4; i++) {
@@ -462,7 +464,7 @@ double BaseCosserat<TIn1, TIn2, TOut>::computeTheta(const double &x,
 }
 
 template <class TIn1, class TIn2, class TOut>
-void BaseCosserat<TIn1, TIn2, TOut>::printMatrix(const Mat6x6 R) {
+void BaseCosseratMapping<TIn1, TIn2, TOut>::printMatrix(const Mat6x6 R) {
     // TODO(dmarchal: 2024/06/07): Remove the use of printf in addition to
     // reconsider the implementation of common utility functions in instance
     // method.
@@ -475,7 +477,7 @@ void BaseCosserat<TIn1, TIn2, TOut>::printMatrix(const Mat6x6 R) {
 
 template <class TIn1, class TIn2, class TOut>
 Matrix3
-BaseCosserat<TIn1, TIn2, TOut>::extractRotMatrix(const Transform &frame) {
+BaseCosseratMapping<TIn1, TIn2, TOut>::extractRotMatrix(const Transform &frame) {
 
     sofa::type::Quat q = frame.getOrientation();
 
@@ -492,7 +494,7 @@ BaseCosserat<TIn1, TIn2, TOut>::extractRotMatrix(const Transform &frame) {
 }
 
 template <class TIn1, class TIn2, class TOut>
-auto BaseCosserat<TIn1, TIn2, TOut>::buildProjector(const Transform &T)
+auto BaseCosseratMapping<TIn1, TIn2, TOut>::buildProjector(const Transform &T)
     -> Tangent {
     Mat6x6 P;
 
@@ -511,7 +513,7 @@ auto BaseCosserat<TIn1, TIn2, TOut>::buildProjector(const Transform &T)
 }
 
 template <class TIn1, class TIn2, class TOut>
-auto BaseCosserat<TIn1, TIn2, TOut>::buildXiHat(const Coord1 &strain_i) -> se3 {
+auto BaseCosseratMapping<TIn1, TIn2, TOut>::buildXiHat(const Coord1 &strain_i) -> se3 {
     se3 Xi_hat;
 
     Xi_hat[0][1] = -strain_i(2);
@@ -528,7 +530,7 @@ auto BaseCosserat<TIn1, TIn2, TOut>::buildXiHat(const Coord1 &strain_i) -> se3 {
 }
 
 template <class TIn1, class TIn2, class TOut>
-auto BaseCosserat<TIn1, TIn2, TOut>::getTildeMatrix(const sofa::type::Vec3 &u)
+auto BaseCosseratMapping<TIn1, TIn2, TOut>::getTildeMatrix(const sofa::type::Vec3 &u)
     -> Matrix3 {
     sofa::type::Matrix3 tild;
     tild[0][1] = -u[2];
@@ -542,7 +544,7 @@ auto BaseCosserat<TIn1, TIn2, TOut>::getTildeMatrix(const sofa::type::Vec3 &u)
 }
 
 template <class TIn1, class TIn2, class TOut>
-auto BaseCosserat<TIn1, TIn2, TOut>::buildAdjoint(const Matrix3 &A,
+auto BaseCosseratMapping<TIn1, TIn2, TOut>::buildAdjoint(const Matrix3 &A,
                                                   const Matrix3 &B,
                                                   Mat6x6 &Adjoint) -> void {
     Adjoint.clear();
@@ -556,7 +558,7 @@ auto BaseCosserat<TIn1, TIn2, TOut>::buildAdjoint(const Matrix3 &A,
 }
 
 template <class TIn1, class TIn2, class TOut>
-auto BaseCosserat<TIn1, TIn2, TOut>::buildCoAdjoint(const Matrix3 &A,
+auto BaseCosseratMapping<TIn1, TIn2, TOut>::buildCoAdjoint(const Matrix3 &A,
                                                     const Matrix3 &B,
                                                     Mat6x6 &coAdjoint) -> void {
     coAdjoint.clear();
@@ -573,7 +575,7 @@ auto BaseCosserat<TIn1, TIn2, TOut>::buildCoAdjoint(const Matrix3 &A,
 }
 
 template <class TIn1, class TIn2, class TOut>
-auto BaseCosserat<TIn1, TIn2, TOut>::convertTransformToMatrix4x4(
+auto BaseCosseratMapping<TIn1, TIn2, TOut>::convertTransformToMatrix4x4(
     const Transform &T) -> Matrix4 {
     Matrix4 M;
     M.identity();
@@ -590,7 +592,7 @@ auto BaseCosserat<TIn1, TIn2, TOut>::convertTransformToMatrix4x4(
 }
 
 template <class TIn1, class TIn2, class TOut>
-auto BaseCosserat<TIn1, TIn2, TOut>::piecewiseLogmap(const _SE3 &g_x) -> Vec6 {
+auto BaseCosseratMapping<TIn1, TIn2, TOut>::piecewiseLogmap(const _SE3 &g_x) -> Vec6 {
     _SE3 Xi_hat;
 
     double x = 1.0;
@@ -624,5 +626,8 @@ auto BaseCosserat<TIn1, TIn2, TOut>::piecewiseLogmap(const _SE3 &g_x) -> Vec6 {
                     Xi_hat(1, 3), Xi_hat(2, 3));
     return xci;
 }
+
+
+
 
 } // namespace cosserat::mapping
