@@ -20,7 +20,7 @@
  * Contact information: contact@sofa-framework.org                             *
  ******************************************************************************/
 #pragma once
-#include <cosserat/mapping/DifferenceMultiMapping.h>
+#include <Cosserat/mapping/DifferenceMultiMapping.h>
 
 #include <sofa/core/Multi2Mapping.inl>
 #include <sofa/core/visual/VisualParams.h>

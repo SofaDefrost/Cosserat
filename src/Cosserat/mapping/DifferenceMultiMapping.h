@@ -41,7 +41,7 @@ using sofa::type::Vec6;
 using sofa::type::Quat;
 using std::get;
 using sofa::type::vector;
-using Cosserat::mapping::BaseCosserat;
+using Cosserat::mapping::BaseCosseratMapping;
 
 /*!
  * \class DifferenceMultiMapping

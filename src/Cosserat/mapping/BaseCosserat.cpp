@@ -19,20 +19,21 @@
  *                                                                             *
  * Contact information: contact@sofa-framework.org                             *
  ******************************************************************************/
-#define SOFA_COSSERAT_CPP_BaseCosserat
+#define SOFA_COSSERAT_CPP_BaseCosseratMapping
 #include <Cosserat/mapping/BaseCosserat.inl>
 
 #include <sofa/core/ObjectFactory.h>
 #include <sofa/defaulttype/RigidTypes.h>
 #include <sofa/defaulttype/VecTypes.h>
 
-namespace Cosserat::mapping {
+namespace Cosserat::mapping
+{
 using namespace sofa::defaulttype;
 
 template <>
-BaseCosserat<Vec6Types, Rigid3Types, Rigid3Types>::se3
-BaseCosserat<Vec6Types, Rigid3Types, Rigid3Types>::buildXiHat(
-    const Coord1 &strain_i) {
+BaseCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>::se3
+BaseCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>::buildXiHat(const Coord1 &strain_i)
+{
   se3 Xi;
 
   Xi[0][1] = -strain_i(2);
@@ -58,7 +59,7 @@ BaseCosserat<Vec6Types, Rigid3Types, Rigid3Types>::buildXiHat(
 }
 
 template <>
-void BaseCosserat<Vec6Types, Rigid3Types, Rigid3Types>::computeExponentialSE3(
+void BaseCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>::computeExponentialSE3(
     const double &curv_abs_x_n, const Coord1 &strain_n, Transform &Trans) {
   Matrix4 I4;
   I4.identity();
@@ -95,7 +96,7 @@ void BaseCosserat<Vec6Types, Rigid3Types, Rigid3Types>::computeExponentialSE3(
 }
 
 template <>
-void BaseCosserat<Vec6Types, Rigid3Types, Rigid3Types>::computeTangExp(
+void BaseCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>::computeTangExp(
     double &curv_abs_n, const Coord1 &strain_i, Mat6x6 &TgX) {
 
   SReal theta = Vec3(strain_i(0), strain_i(1), strain_i(2))
@@ -145,22 +146,23 @@ void BaseCosserat<Vec6Types, Rigid3Types, Rigid3Types>::computeTangExp(
   }
 }
 
+
 // Register in the Factory
-int BaseCosseratClass =
+int BaseCosseratMappingClass =
     sofa::core::RegisterObject(
         "Set the positions and velocities of points attached to a rigid parent")
-        .add<BaseCosserat<sofa::defaulttype::Vec3Types,
+        .add<BaseCosseratMapping<sofa::defaulttype::Vec3Types,
                           sofa::defaulttype::Rigid3Types,
                           sofa::defaulttype::Rigid3Types>>()
-        .add<BaseCosserat<sofa::defaulttype::Vec6Types,
+        .add<BaseCosseratMapping<sofa::defaulttype::Vec6Types,
                           sofa::defaulttype::Rigid3Types,
                           sofa::defaulttype::Rigid3Types>>();
 
 template class SOFA_COSSERAT_API
-    BaseCosserat<sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types,
+    BaseCosseratMapping<sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types,
                  sofa::defaulttype::Rigid3Types>;
 template class SOFA_COSSERAT_API
-    BaseCosserat<sofa::defaulttype::Vec6Types, sofa::defaulttype::Rigid3Types,
+    BaseCosseratMapping<sofa::defaulttype::Vec6Types, sofa::defaulttype::Rigid3Types,
                  sofa::defaulttype::Rigid3Types>;
 
 } // namespace cosserat::mapping
