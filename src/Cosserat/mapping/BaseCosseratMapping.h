@@ -75,7 +75,8 @@ typedef typename Eigen::Matrix4d _SE3;
 // TODO(dmarchal: 2024/06/07) This component looks like a mapping but inherit
 // from BaseObject * can you clarify why is is not inhering from BaseMapping
 template <class TIn1, class TIn2, class TOut>
-class BaseCosseratMapping : public virtual sofa::core::objectmodel::BaseObject {
+class BaseCosseratMapping : public sofa::core::Multi2Mapping<TIn1, TIn2, TOut>
+{
 public:
     SOFA_CLASS(SOFA_TEMPLATE3(BaseCosseratMapping, TIn1, TIn2, TOut), BaseObject);
     typedef BaseObject Inherit;

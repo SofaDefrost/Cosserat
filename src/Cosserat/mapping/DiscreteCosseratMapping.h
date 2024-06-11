@@ -54,13 +54,10 @@ using sofa::Data;
 // using Cosserat::mapping::BaseCosserat;
 
 template <class TIn1, class TIn2, class TOut>
-class DiscreteCosseratMapping
-    : public sofa::core::Multi2Mapping<TIn1, TIn2, TOut>,
-        public Cosserat::mapping::BaseCosseratMapping<TIn1, TIn2, TOut> {
+class DiscreteCosseratMapping : public BaseCosseratMapping<TIn1, TIn2, TOut> {
 public:
-    SOFA_CLASS2(SOFA_TEMPLATE3(DiscreteCosseratMapping, TIn1, TIn2, TOut),
-               SOFA_TEMPLATE3(sofa::core::Multi2Mapping, TIn1, TIn2, TOut),
-                SOFA_TEMPLATE3(Cosserat::mapping::BaseCosseratMapping, TIn1, TIn2, TOut));
+    SOFA_CLASS(SOFA_TEMPLATE3(DiscreteCosseratMapping, TIn1, TIn2, TOut),
+               SOFA_TEMPLATE3(Cosserat::mapping::BaseCosseratMapping, TIn1, TIn2, TOut));
 
     /// Input Model Type
     typedef TIn1 In1;

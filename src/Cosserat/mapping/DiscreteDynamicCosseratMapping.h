@@ -51,12 +51,11 @@ using Cosserat::mapping::BaseCosseratMapping;
 
 
 template <class TIn1, class TIn2, class TOut>
-class DiscreteDynamicCosseratMapping : public sofa::core::Multi2Mapping<TIn1, TIn2, TOut>,
-        BaseCosseratMapping<TIn1, TIn2, TOut>
+class DiscreteDynamicCosseratMapping : public BaseCosseratMapping<TIn1, TIn2, TOut>
 {
 public:
     SOFA_CLASS(SOFA_TEMPLATE3(DiscreteDynamicCosseratMapping, TIn1,TIn2, TOut),
-               SOFA_TEMPLATE3(sofa::core::Multi2Mapping, TIn1, TIn2, TOut) );
+               SOFA_TEMPLATE3(Cosserat::mapping::BaseCosseratMapping, TIn1, TIn2, TOut) );
     typedef sofa::core::Multi2Mapping<TIn1, TIn2, TOut> Inherit;
 
     /// Input Model Type
