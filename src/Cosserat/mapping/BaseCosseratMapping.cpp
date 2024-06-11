@@ -146,18 +146,6 @@ void BaseCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>::computeTangExp(
   }
 }
 
-
-// Register in the Factory
-int BaseCosseratMappingClass =
-    sofa::core::RegisterObject(
-        "Set the positions and velocities of points attached to a rigid parent")
-        .add<BaseCosseratMapping<sofa::defaulttype::Vec3Types,
-                          sofa::defaulttype::Rigid3Types,
-                          sofa::defaulttype::Rigid3Types>>()
-        .add<BaseCosseratMapping<sofa::defaulttype::Vec6Types,
-                          sofa::defaulttype::Rigid3Types,
-                          sofa::defaulttype::Rigid3Types>>();
-
 template class SOFA_COSSERAT_API
     BaseCosseratMapping<sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types,
                  sofa::defaulttype::Rigid3Types>;

@@ -85,7 +85,6 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::init() {
     reinit();
     // I call Init here since we build the mechanics only in the
     Inherit1::init();
-    Inherit2::init();
 
     m_colorMap.setColorScheme("Blue to Red");
     m_colorMap.reinit();
