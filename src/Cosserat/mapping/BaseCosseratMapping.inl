@@ -22,7 +22,7 @@
 #pragma once
 
 #include <Cosserat/initCosserat.h>
-#include <Cosserat/mapping/BaseCosserat.h>
+#include <Cosserat/mapping/BaseCosseratMapping.h>
 
 #include <sofa/core/Multi2Mapping.inl>
 #include <sofa/core/behavior/MechanicalState.h>
