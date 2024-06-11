@@ -23,7 +23,7 @@
 #include <Cosserat/initCosserat.h>
 
 #include <Cosserat/forcefield/BeamHookeLawForceField.h>
-#include <Cosserat/mapping/BaseCosserat.h>
+#include <Cosserat/mapping/BaseCosseratMapping.h>
 
 #include <sofa/core/BaseMapping.h>
 #include <sofa/core/Multi2Mapping.h>

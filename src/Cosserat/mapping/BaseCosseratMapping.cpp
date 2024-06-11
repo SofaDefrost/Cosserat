@@ -20,7 +20,7 @@
  * Contact information: contact@sofa-framework.org                             *
  ******************************************************************************/
 #define SOFA_COSSERAT_CPP_BaseCosseratMapping
-#include <Cosserat/mapping/BaseCosserat.inl>
+#include <Cosserat/mapping/BaseCosseratMapping.inl>
 
 #include <sofa/core/ObjectFactory.h>
 #include <sofa/defaulttype/RigidTypes.h>
