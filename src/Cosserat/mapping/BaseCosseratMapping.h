@@ -29,7 +29,7 @@
 #include <sofa/defaulttype/RigidTypes.h>
 #include <sofa/defaulttype/SolidTypes.h>
 #include <sofa/type/Vec.h>
-#include <iostream>
+//#include <iostream>
 #include <Eigen/Dense>
 #include <cmath>
 
@@ -63,6 +63,7 @@ using _SE3 = Eigen::Matrix4d;
 using Cosserat::type::Transform;
 using Cosserat::type::Tangent;
 using Cosserat::type::RotMat;
+
 
 }
 
