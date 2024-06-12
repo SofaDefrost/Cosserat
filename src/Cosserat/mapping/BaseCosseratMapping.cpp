@@ -31,8 +31,7 @@ namespace Cosserat::mapping
 using namespace sofa::defaulttype;
 
 template <>
-BaseCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>::se3
-BaseCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>::buildXiHat(const Coord1 &strain_i)
+auto BaseCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>::buildXiHat(const Coord1 &strain_i) -> se3
 {
   se3 Xi;
 
