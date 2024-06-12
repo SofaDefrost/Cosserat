@@ -50,13 +50,14 @@ using sofa::type::vector;
 
 template <class TIn1, class TIn2, class TOut>
 BaseCosseratMapping<TIn1, TIn2, TOut>::BaseCosseratMapping()
+    // TODO(dmarchal: 2024/06/12): please add the help comments !
     : d_curv_abs_section(initData(&d_curv_abs_section, "curv_abs_input",
                                   " need to be com....")),
-    d_curv_abs_frames(initData(&d_curv_abs_frames, "curv_abs_output",
-                               " need to be com....")),
-    d_debug(initData(&d_debug, false, "debug", "printf for the debug")),
-    m_fromModel1(NULL), m_fromModel2(NULL), m_toModel(NULL),
-    m_index_input(0) {}
+      d_curv_abs_frames(initData(&d_curv_abs_frames, "curv_abs_output",
+                                 " need to be com....")),
+      d_debug(initData(&d_debug, false, "debug", "printf for the debug")),
+      m_fromModel1(NULL), m_fromModel2(NULL), m_toModel(NULL),
+      m_index_input(0) {}
 
 // _________________________________________________________________________________________
 
@@ -67,7 +68,7 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::init()
 
     // Fill the initial vector
     const OutDataVecCoord *xfromData =
-        m_toModel->read(sofa::core::ConstVecCoordId::position());
+            m_toModel->read(sofa::core::ConstVecCoordId::position());
 
     //TODO(dmarchal, 2024/07/12): is this line really needed ?
     // it initialize a local variable, is it to force a xfromData updates ?
@@ -76,7 +77,7 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::init()
 
 template <class TIn1, class TIn2, class TOut>
 void BaseCosseratMapping<TIn1, TIn2, TOut>::computeExponentialSE3(
-    const double &curv_abs_x_n, const Coord1 &strain_n, Transform &g_X_n) {
+        const double &curv_abs_x_n, const Coord1 &strain_n, Transform &g_X_n) {
     Mat4x4 I4;
     I4.identity();
     // Get the angular part of the
@@ -92,7 +93,7 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::computeExponentialSE3(
         _g_X = I4 + curv_abs_x_n * Xi_hat_n;
     } else {
         double scalar1 =
-            (1.0 - std::cos(curv_abs_x_n * theta)) / std::pow(theta, 2);
+                (1.0 - std::cos(curv_abs_x_n * theta)) / std::pow(theta, 2);
         double scalar2 = (curv_abs_x_n * theta - std::sin(curv_abs_x_n * theta)) /
                          std::pow(theta, 3);
         _g_X = I4 + curv_abs_x_n * Xi_hat_n + scalar1 * Xi_hat_n * Xi_hat_n +
@@ -113,11 +114,11 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::computeExponentialSE3(
 // Fill exponential vectors
 template <class TIn1, class TIn2, class TOut>
 void BaseCosseratMapping<TIn1, TIn2, TOut>::updateExponentialSE3(
-    const In1VecCoord &inDeform) {
+        const In1VecCoord &inDeform) {
     // helper::ReadAccessor<Data<helper::vector<double>>> curv_abs_input =
     // d_curv_abs_section;
     sofa::helper::ReadAccessor<sofa::Data<vector<double>>> curv_abs_frames =
-        d_curv_abs_frames;
+            d_curv_abs_frames;
 
     m_framesExponentialSE3Vectors.clear();
     m_nodesExponentialSE3Vectors.clear();
@@ -128,53 +129,46 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::updateExponentialSE3(
     for (size_t i = 0; i < sz; i++) {
         Transform g_X_frame_i;
 
-        const Coord1 strain_n = inDeform[m_indicesVectors[i] -
-                                         1]; // Cosserat reduce coordinates (strain)
-            // the size varies from 1 to 6
-        //  The distance between the frame and the closest beam node toward the base
+        const Coord1 strain_n = inDeform[m_indicesVectors[i] - 1]; // Cosserat reduce coordinates (strain)
+
+        // the size varies from 1 to 6
+        // The distance between the frame and the closest beam node toward the base
         const SReal curv_abs_x =
-            m_framesLengthVectors[i]; // curv_abs_x = frame_curv_abs - L_(n-1)
+                m_framesLengthVectors[i]; // curv_abs_x = frame_curv_abs - L_(n-1)
         computeExponentialSE3(curv_abs_x, strain_n, g_X_frame_i);
         m_framesExponentialSE3Vectors.push_back(g_X_frame_i);
 
-        if (d_debug.getValue()) {
-            msg_info("BaseCosserat:")
-                << "_________________" << i << "_________________________";
-            msg_info("BaseCosserat:")
-                << "x :" << curv_abs_x << "; strain :" << strain_n;
-            msg_info("BaseCosserat:")
+        msg_info()
+                << "_________________" << i << "_________________________" << msgendl
+                << "x :" << curv_abs_x << "; strain :" << strain_n << msgendl
                 << "m_framesExponentialSE3Vectors :" << g_X_frame_i;
-        }
     }
 
     // Compute the exponential on the nodes
     m_nodesExponentialSE3Vectors.push_back(
-        Transform(sofa::type::Vec3(0.0, 0.0, 0.0),
-                  sofa::type::Quat(0., 0., 0., 1.))); // The first node.
+                Transform(sofa::type::Vec3(0.0, 0.0, 0.0),
+                          sofa::type::Quat(0., 0., 0., 1.))); // The first node.
 
     for (unsigned int j = 0; j < inDeform.size(); j++) {
         Coord1 strain_n = inDeform[j]; // Strain_n
         const SReal curv_abs_x =
-            m_BeamLengthVectors[j]; // curv_abs_x = L_n - L_(n-1)
+                m_BeamLengthVectors[j]; // curv_abs_x = L_n - L_(n-1)
 
         Transform g_X_node_j;
         computeExponentialSE3(curv_abs_x, strain_n, g_X_node_j);
         m_nodesExponentialSE3Vectors.push_back(g_X_node_j);
 
-        if (d_debug.getValue()) {
-            msg_info("BaseCosserat:")
-                << "_________________Beam Node Expo___________________" << j;
-            msg_info("BaseCosserat:")
-                << "Node m_framesExponentialSE3Vectors :" << g_X_node_j;
-            msg_info("BaseCosserat:")
+        msg_info()
+                << "_________________Beam Node Expo___________________" << msgendl
+                << "Node m_framesExponentialSE3Vectors :" << g_X_node_j << msgendl
                 << "_________________Beam Node Expo___________________";
-        }
+
     }
 }
 
 template <class TIn1, class TIn2, class TOut>
 void BaseCosseratMapping<TIn1, TIn2, TOut>::computeAdjoint(const Transform &frame,
-                                                    Tangent &adjoint) {
+                                                           Tangent &adjoint) {
     Mat3x3 R = extractRotMatrix(frame);
     Vec3 u = frame.getOrigin();
     Mat3x3 tilde_u = getTildeMatrix(u);
@@ -184,7 +178,7 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::computeAdjoint(const Transform &fram
 
 template <class TIn1, class TIn2, class TOut>
 void BaseCosseratMapping<TIn1, TIn2, TOut>::computeCoAdjoint(const Transform &frame,
-                                                      Mat6x6 &co_adjoint) {
+                                                             Mat6x6 &co_adjoint) {
     Mat3x3 R = extractRotMatrix(frame);
     Vec3 u = frame.getOrigin();
     Mat3x3 tilde_u = getTildeMatrix(u);
@@ -194,7 +188,7 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::computeCoAdjoint(const Transform &fr
 
 template <class TIn1, class TIn2, class TOut>
 void BaseCosseratMapping<TIn1, TIn2, TOut>::computeAdjoint(const Vec6 &eta,
-                                                    Mat6x6 &adjoint) {
+                                                           Mat6x6 &adjoint) {
     Mat3x3 tildeMat = getTildeMatrix(Vec3(eta[0], eta[1], eta[2]));
     adjoint.setsub(0, 0, tildeMat);
     adjoint.setsub(3, 3, tildeMat);
@@ -203,7 +197,7 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::computeAdjoint(const Vec6 &eta,
 
 template <class TIn1, class TIn2, class TOut>
 auto BaseCosseratMapping<TIn1, TIn2, TOut>::computeLogarithm(const double &x,
-                                                         const Mat4x4 &gX) -> Mat4x4
+                                                             const Mat4x4 &gX) -> Mat4x4
 {
     // Compute theta before everything
     const double theta = computeTheta(x, gX);
@@ -226,10 +220,10 @@ auto BaseCosseratMapping<TIn1, TIn2, TOut>::computeLogarithm(const double &x,
         log_gX = cst * ((x_theta * cos_2XTheta - sin_XTheta) * I4 -
                         (x_theta * cos_XTheta + 2.0 * x_theta * cos_2XTheta -
                          sin_XTheta - sin_2XTheta) *
-                            gX +
+                        gX +
                         (2.0 * x_theta * cos_XTheta + x_theta * cos_2XTheta -
                          sin_XTheta - sin_2XTheta) *
-                            (gX * gX) -
+                        (gX * gX) -
                         (x_theta * cos_XTheta - sin_XTheta) * (gX * gX * gX));
     }
 
@@ -238,18 +232,20 @@ auto BaseCosseratMapping<TIn1, TIn2, TOut>::computeLogarithm(const double &x,
 
 template <class TIn1, class TIn2, class TOut>
 void BaseCosseratMapping<TIn1, TIn2, TOut>::updateTangExpSE3(
-    const In1VecCoord &inDeform) {
+        const In1VecCoord &inDeform) {
 
     // Curv abscissa of nodes and frames
     sofa::helper::ReadAccessor<sofa::Data<vector<double>>> curv_abs_section =
-        d_curv_abs_section;
+            d_curv_abs_section;
     sofa::helper::ReadAccessor<sofa::Data<sofa::type::vector<double>>> curv_abs_frames =
-        d_curv_abs_frames;
+            d_curv_abs_frames;
 
     m_framesTangExpVectors.clear();
     unsigned int sz = curv_abs_frames.size();
+
     // Compute tangExpo at frame points
-    for (unsigned int i = 0; i < sz; i++) {
+    for (unsigned int i = 0; i < sz; i++)
+    {
         Tangent temp;
 
         Coord1 strain_frame_i = inDeform[m_indicesVectors[i] - 1];
@@ -258,13 +254,9 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::updateTangExpSE3(
 
         m_framesTangExpVectors.push_back(temp);
 
-        if (d_debug.getValue()) {
-            printf("__________________________________________\n");
-            std::cout << "x :" << curv_abs_x_i << "; k :" << strain_frame_i
-                      << std::endl;
-            std::cout << "m_framesTangExpVectors :" << m_framesTangExpVectors[i]
-                      << std::endl;
-        }
+        msg_info()
+                <<  "x :" << curv_abs_x_i << "; k :" << strain_frame_i << msgendl
+                 << "m_framesTangExpVectors :" << m_framesTangExpVectors[i];
     }
 
     // Compute the TangExpSE3 at the nodes
@@ -281,21 +273,18 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::updateTangExpSE3(
         computeTangExp(x, strain_node_i, temp);
         m_nodesTangExpVectors.push_back(temp);
     }
-    if (d_debug.getValue()) {
-        printf("_________________Node TangExpo___________________\n");
-        std::cout << "Node TangExpo : " << m_nodesTangExpVectors << std::endl;
-    }
+    msg_info() << "Node TangExpo : " << m_nodesTangExpVectors;
 }
 
 template <class TIn1, class TIn2, class TOut>
 void BaseCosseratMapping<TIn1, TIn2, TOut>::computeTangExp(double &curv_abs_n,
-                                                    const Coord1 &strain_i,
-                                                    Mat6x6 &TgX) {
+                                                           const Coord1 &strain_i,
+                                                           Mat6x6 &TgX) {
 
     SReal theta = Vec3(strain_i(0), strain_i(1), strain_i(2))
-                      .norm(); // Sometimes this is computed over all strain
+                  .norm(); // Sometimes this is computed over all strain
     Mat3x3 tilde_k =
-        getTildeMatrix(Vec3(strain_i(0), strain_i(1), strain_i(2)));
+            getTildeMatrix(Vec3(strain_i(0), strain_i(1), strain_i(2)));
     /* Younes @23-11-27
   old version
   @Todo ???? is p the linear deformation? If so, why didn't I just put a zero
@@ -340,18 +329,16 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::computeTangExp(double &curv_abs_n,
 template <class TIn1, class TIn2, class TOut>
 [[maybe_unused]] Vec6
 BaseCosseratMapping<TIn1, TIn2, TOut>::computeETA(const Vec6 &baseEta,
-                                           const In1VecDeriv &k_dot,
-                                           const double abs_input) {
+                                                  const In1VecDeriv &k_dot,
+                                                  const double abs_input) {
 
     // Fill the initial vector
     const In1DataVecCoord *x1fromData =
-        m_fromModel1->read(sofa::core::ConstVecCoordId::position());
+            m_fromModel1->read(sofa::core::ConstVecCoordId::position());
     const In1VecCoord x1from = x1fromData->getValue();
 
     sofa::helper::ReadAccessor<sofa::Data<vector<double>>> curv_abs_input =
-        d_curv_abs_section;
-    // helper::ReadAccessor<Data<helper::vector<double>>> curv_abs_output =
-    // d_curv_abs_frames;
+            d_curv_abs_section;
 
     Transform out_Trans;
     Mat6x6 Adjoint, Tg;
@@ -386,14 +373,13 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::initialize() {
     // it is attached. Here we only use the information from the curvilinear
     // abscissa of each frame.
     sofa::helper::ReadAccessor<sofa::Data<sofa::type::vector<double>>> curv_abs_section =
-        d_curv_abs_section;
+            d_curv_abs_section;
     sofa::helper::ReadAccessor<sofa::Data<vector<double>>> curv_abs_frames =
-        d_curv_abs_frames;
+            d_curv_abs_frames;
 
     size_t sz = d_curv_abs_frames.getValue().size();
 
-    if (d_debug.getValue())
-        msg_info("BaseCosserat:")
+    msg_info()
             << " curv_abs_section " << d_curv_abs_frames.getValue().size()
             << "; curv_abs_frames: " << d_curv_abs_frames.getValue().size();
 
@@ -408,7 +394,7 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::initialize() {
         if (curv_abs_section[input_index] > curv_abs_frames[i]) {
             m_indicesVectors.emplace_back(input_index);
             m_indicesVectorsDraw.emplace_back(
-                input_index); // maybe I shouldn't do this here !!!
+                        input_index); // maybe I shouldn't do this here !!!
         } else if (curv_abs_section[input_index] == curv_abs_frames[i]) {
             m_indicesVectors.emplace_back(input_index);
             input_index++;
@@ -423,21 +409,18 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::initialize() {
         // m_framesLengthVectors.push_back(curv_abs_frames[i] -
         // curv_abs_section[m_indicesVectors[i] - 1]);
         m_framesLengthVectors.emplace_back(
-            curv_abs_frames[i] - curv_abs_section[m_indicesVectors.back() - 1]);
+                    curv_abs_frames[i] - curv_abs_section[m_indicesVectors.back() - 1]);
     }
 
     for (size_t j = 0; j < curv_abs_section.size() - 1; j++) {
         m_BeamLengthVectors.emplace_back(curv_abs_section[j + 1] -
-                                         curv_abs_section[j]);
+                curv_abs_section[j]);
     }
 
-    if (d_debug.getValue()) {
-        msg_info("BaseCosserat:") << "m_indicesVectors : " << m_indicesVectors;
-        msg_info("BaseCosserat:")
-            << "m_framesLengthVectors : " << m_framesLengthVectors;
-        msg_info("BaseCosserat:")
-            << "m_BeamLengthVectors : " << m_BeamLengthVectors;
-    }
+    msg_info()
+            << "m_indicesVectors : " << m_indicesVectors << msgendl
+            << "m_framesLengthVectors : " << msgendl
+            << "m_BeamLengthVectors : " << msgendl;
 }
 
 template <class TIn1, class TIn2, class TOut>
@@ -445,7 +428,7 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::draw(const sofa::core::visual::Visua
 
 template <class TIn1, class TIn2, class TOut>
 double BaseCosseratMapping<TIn1, TIn2, TOut>::computeTheta(const double &x,
-                                                    const Mat4x4 &gX) {
+                                                           const Mat4x4 &gX) {
     double Tr_gx = 0.0;
     for (int i = 0; i < 4; i++) {
         Tr_gx += gX[i][i];
@@ -491,7 +474,7 @@ Mat3x3 BaseCosseratMapping<TIn1, TIn2, TOut>::extractRotMatrix(const Transform &
 
 template <class TIn1, class TIn2, class TOut>
 auto BaseCosseratMapping<TIn1, TIn2, TOut>::buildProjector(const Transform &T)
-    -> Tangent {
+-> Tangent {
     Mat6x6 P;
 
     // TODO(dmarchal: 2024/06/07) The following code should probably become
@@ -527,7 +510,7 @@ auto BaseCosseratMapping<TIn1, TIn2, TOut>::buildXiHat(const Coord1 &strain_i) -
 
 template <class TIn1, class TIn2, class TOut>
 auto BaseCosseratMapping<TIn1, TIn2, TOut>::getTildeMatrix(const sofa::type::Vec3 &u)
-    -> Mat3x3 {
+-> Mat3x3 {
     sofa::type::Matrix3 tild;
     tild[0][1] = -u[2];
     tild[0][2] = u[1];
@@ -541,8 +524,8 @@ auto BaseCosseratMapping<TIn1, TIn2, TOut>::getTildeMatrix(const sofa::type::Vec
 
 template <class TIn1, class TIn2, class TOut>
 auto BaseCosseratMapping<TIn1, TIn2, TOut>::buildAdjoint(const Mat3x3 &A,
-                                                  const Mat3x3 &B,
-                                                  Mat6x6 &Adjoint) -> void {
+                                                         const Mat3x3 &B,
+                                                         Mat6x6 &Adjoint) -> void {
     Adjoint.clear();
     for (unsigned int i = 0; i < 3; i++) {
         for (int j = 0; j < 3; ++j) { // TODO(dmarchal:2024/06/07) unify i++ and ++j
@@ -555,8 +538,8 @@ auto BaseCosseratMapping<TIn1, TIn2, TOut>::buildAdjoint(const Mat3x3 &A,
 
 template <class TIn1, class TIn2, class TOut>
 auto BaseCosseratMapping<TIn1, TIn2, TOut>::buildCoAdjoint(const Mat3x3 &A,
-                                                    const Mat3x3 &B,
-                                                    Mat6x6 &coAdjoint) -> void {
+                                                           const Mat3x3 &B,
+                                                           Mat6x6 &coAdjoint) -> void {
     coAdjoint.clear();
     for (unsigned int i = 0; i < 3; i++) {
         for (int j = 0; j < 3; ++j) { // TODO(dmarchal:2024/06/07) unify i++ and ++j
@@ -572,7 +555,7 @@ auto BaseCosseratMapping<TIn1, TIn2, TOut>::buildCoAdjoint(const Mat3x3 &A,
 
 template <class TIn1, class TIn2, class TOut>
 auto BaseCosseratMapping<TIn1, TIn2, TOut>::convertTransformToMatrix4x4(
-    const Transform &T) -> Mat4x4 {
+        const Transform &T) -> Mat4x4 {
     Mat4x4 M;
     M.identity();
     Mat3x3 R = extractRotMatrix(T);
