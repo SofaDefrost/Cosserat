@@ -163,7 +163,6 @@ public:
 public:
     /********************** Inhertited from BaseObject   **************/
     void init() override;
-    void draw(const sofa::core::visual::VisualParams *) override;
 
     /************************* BaseCosserat **************************/
     // TODO(dmarchal:2024/06/07), so we have "initialize" and "init"
@@ -224,6 +223,7 @@ protected:
 protected:
     /// Constructor
     BaseCosseratMapping();
+
     /// Destructor
     ~BaseCosseratMapping() override = default;
 
