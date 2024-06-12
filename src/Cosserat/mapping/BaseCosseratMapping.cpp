@@ -48,12 +48,6 @@ auto BaseCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>::buildXiHat(const 
   for (unsigned int i = 0; i < 3; i++)
     Xi[i][3] += strain_i(i + 3);
 
-  //    se3 = [
-  //        0               -screw(3)   screw(2)        screw(4);
-  //        screw(3)        0           -screw(1)       screw(5);
-  //        -screw(2)   screw(1)        0               screw(6);
-  //        0                   0                 0                 0];
-
   return Xi;
 }
 
