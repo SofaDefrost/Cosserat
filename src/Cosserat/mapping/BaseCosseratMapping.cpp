@@ -60,7 +60,7 @@ auto BaseCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>::buildXiHat(const 
 template <>
 void BaseCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>::computeExponentialSE3(
     const double &curv_abs_x_n, const Coord1 &strain_n, Transform &Trans) {
-  Matrix4 I4;
+  Mat4x4 I4;
   I4.identity();
 
   // Get the angular part of the
@@ -100,7 +100,7 @@ void BaseCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>::computeTangExp(
 
   SReal theta = Vec3(strain_i(0), strain_i(1), strain_i(2))
                     .norm(); // Sometimes this is computed over all strain
-  Matrix3 tilde_k =
+  Mat3x3 tilde_k =
       getTildeMatrix(Vec3(strain_i(0), strain_i(1), strain_i(2)));
 
   /* Younes @23-11-27
@@ -112,7 +112,7 @@ void BaseCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>::computeTangExp(
   #TECHNICAL_DEBT
   */
   // TODO(dmarchal: 2024/06/07) could the debt by solved ?
-  Matrix3 tilde_q =
+  Mat3x3 tilde_q =
       getTildeMatrix(Vec3(strain_i(3), strain_i(4), strain_i(5)));
 
   Mat6x6 ad_Xi;

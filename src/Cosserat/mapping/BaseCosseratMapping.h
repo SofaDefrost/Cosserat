@@ -45,10 +45,9 @@ using namespace Eigen;
 using sofa::core::objectmodel::BaseContext;
 using sofa::core::objectmodel::BaseObject;
 using sofa::defaulttype::SolidTypes;
-using sofa::type::Matrix3;
-using sofa::type::Matrix4;
 using sofa::type::Mat6x6;
 using sofa::type::Mat4x4;
+using sofa::type::Mat3x3;
 
 using std::get;
 using sofa::type::vector;
@@ -135,7 +134,7 @@ public:
 
     vector<Transform> m_framesExponentialSE3Vectors;
     vector<Transform> m_nodesExponentialSE3Vectors;
-    vector<Matrix4> m_nodesLogarithmeSE3Vectors;
+    vector<Mat4x4> m_nodesLogarithmeSE3Vectors;
 
     // @todo comment or explain more vectors
     vector<unsigned int> m_indicesVectors;
@@ -152,8 +151,9 @@ public:
     vector<Mat6x6> m_nodeAdjointVectors;
 
     // TODO(dmarchal:2024/06/07): explain why these attributes are unused
-    // TODO : yadagolo: Need for the dynamic function, which is not working yet.
-    //  But the component is in this folder
+    // : yadagolo: Need for the dynamic function, which is not working yet. But the component is in this folder
+    // : dmarchal: don't add something that will be used "one day"
+    // : dmarchal: it look like as if you should be working in a branch for making new feature and merge it when it is ready.
     [[maybe_unused]] vector<Mat6x6> m_nodeAdjointEtaVectors;
     [[maybe_unused]] vector<Mat6x6> m_frameAdjointEtaVectors;
     [[maybe_unused]] vector<Mat6x6> m_node_coAdjointEtaVectors;
@@ -175,15 +175,15 @@ public:
     double computeTheta(const double &x, const Mat4x4 &gX);
     void printMatrix(const Mat6x6 R);
 
-    Matrix3 extractRotMatrix(const Transform &frame);
+    sofa::type::Mat3x3 extractRotMatrix(const Transform &frame);
     Tangent buildProjector(const Transform &T);
     se3 buildXiHat(const Coord1 &strain_i);
-    Matrix3 getTildeMatrix(const Vec3 &u);
+    Mat3x3 getTildeMatrix(const Vec3 &u);
 
-    void buildAdjoint(const Matrix3 &A, const Matrix3 &B, Mat6x6 &Adjoint);
-    void buildCoAdjoint(const Matrix3 &A, const Matrix3 &B, Mat6x6 &coAdjoint);
+    void buildAdjoint(const Mat3x3 &A, const Mat3x3 &B, Mat6x6 &Adjoint);
+    void buildCoAdjoint(const Mat3x3 &A, const Mat3x3 &B, Mat6x6 &coAdjoint);
 
-    Matrix4 convertTransformToMatrix4x4(const Transform &T);
+    Mat4x4 convertTransformToMatrix4x4(const Transform &T);
     Vec6 piecewiseLogmap(const _SE3 &g_x);
 
     // TODO(dmarchal: 2024/06/07), this looks like a very common utility
@@ -248,7 +248,7 @@ protected:
 
     [[maybe_unused]] Vec6
     computeETA(const Vec6 &baseEta, const In1VecDeriv &k_dot, double abs_input);
-    Matrix4 computeLogarithm(const double &x, const Mat4x4 &gX);
+    Mat4x4 computeLogarithm(const double &x, const Mat4x4 &gX);
 };
 
 #if !defined(SOFA_COSSERAT_CPP_BaseCosseratMapping)
