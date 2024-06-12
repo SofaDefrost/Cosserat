@@ -68,6 +68,9 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::init()
     // Fill the initial vector
     const OutDataVecCoord *xfromData =
         m_toModel->read(sofa::core::ConstVecCoordId::position());
+
+    //TODO(dmarchal, 2024/07/12): is this line really needed ?
+    // it initialize a local variable, is it to force a xfromData updates ?
     const OutVecCoord xfrom = xfromData->getValue();
 }
 
@@ -83,8 +86,7 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::computeExponentialSE3(
     SE3 _g_X;
     se3 Xi_hat_n = buildXiHat(strain_n);
 
-    if (d_debug.getValue())
-        msg_info("BaseCosserat: ") << "matrix Xi : " << Xi_hat_n;
+    msg_info() << "matrix Xi : " << Xi_hat_n;
 
     if (theta <= std::numeric_limits<double>::epsilon()) {
         _g_X = I4 + curv_abs_x_n * Xi_hat_n;
