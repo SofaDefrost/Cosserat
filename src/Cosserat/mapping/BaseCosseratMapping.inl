@@ -77,7 +77,7 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::init()
 template <class TIn1, class TIn2, class TOut>
 void BaseCosseratMapping<TIn1, TIn2, TOut>::computeExponentialSE3(
     const double &curv_abs_x_n, const Coord1 &strain_n, Transform &g_X_n) {
-    Matrix4 I4;
+    Mat4x4 I4;
     I4.identity();
     // Get the angular part of the
     sofa::type::Vec3 k = Vec3(strain_n(0), strain_n(1), strain_n(2));
@@ -99,8 +99,8 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::computeExponentialSE3(
                scalar2 * Xi_hat_n * Xi_hat_n * Xi_hat_n;
     }
 
-    if (d_debug.getValue())
-        msg_info("BaseCosserat: ") << "matrix _g_X : " << _g_X;
+    msg_info() << "matrix _g_X : " << _g_X;
+
     sofa::type::Mat3x3 M;
     _g_X.getsub(0, 0, M); // get the rotation matrix
 
@@ -172,45 +172,39 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::updateExponentialSE3(
     }
 }
 
-////////////////// Test the logarithm code
-//        Eigen::Matrix4d gX = convertTransformToMatrix4x4(T);
-//        Eigen::Matrix4d log_gX= (1.0/x) * computeLogarithm(x, gX);
-//        std::cout << "k : \n"<< k << std::endl;
-//        std::cout << "The logarithm : \n"<< log_gX << std::endl;
-//        m_nodesLogarithmSE3Vectors.push_back(log_gX);
-
 template <class TIn1, class TIn2, class TOut>
 void BaseCosseratMapping<TIn1, TIn2, TOut>::computeAdjoint(const Transform &frame,
                                                     Tangent &adjoint) {
-    Matrix3 R = extractRotMatrix(frame);
+    Mat3x3 R = extractRotMatrix(frame);
     Vec3 u = frame.getOrigin();
-    Matrix3 tilde_u = getTildeMatrix(u);
-    Matrix3 tilde_u_R = tilde_u * R;
+    Mat3x3 tilde_u = getTildeMatrix(u);
+    Mat3x3 tilde_u_R = tilde_u * R;
     buildAdjoint(R, tilde_u_R, adjoint);
 }
 
 template <class TIn1, class TIn2, class TOut>
 void BaseCosseratMapping<TIn1, TIn2, TOut>::computeCoAdjoint(const Transform &frame,
                                                       Mat6x6 &co_adjoint) {
-    Matrix3 R = extractRotMatrix(frame);
+    Mat3x3 R = extractRotMatrix(frame);
     Vec3 u = frame.getOrigin();
-    Matrix3 tilde_u = getTildeMatrix(u);
-    Matrix3 tilde_u_R = tilde_u * R;
+    Mat3x3 tilde_u = getTildeMatrix(u);
+    Mat3x3 tilde_u_R = tilde_u * R;
     buildCoAdjoint(R, tilde_u_R, co_adjoint);
 }
 
 template <class TIn1, class TIn2, class TOut>
 void BaseCosseratMapping<TIn1, TIn2, TOut>::computeAdjoint(const Vec6 &eta,
                                                     Mat6x6 &adjoint) {
-    Matrix3 tildeMat = getTildeMatrix(Vec3(eta[0], eta[1], eta[2]));
+    Mat3x3 tildeMat = getTildeMatrix(Vec3(eta[0], eta[1], eta[2]));
     adjoint.setsub(0, 0, tildeMat);
     adjoint.setsub(3, 3, tildeMat);
     adjoint.setsub(3, 0, getTildeMatrix(Vec3(eta[3], eta[4], eta[5])));
 }
 
 template <class TIn1, class TIn2, class TOut>
-Matrix4 BaseCosseratMapping<TIn1, TIn2, TOut>::computeLogarithm(const double &x,
-                                                         const Mat4x4 &gX) {
+auto BaseCosseratMapping<TIn1, TIn2, TOut>::computeLogarithm(const double &x,
+                                                         const Mat4x4 &gX) -> Mat4x4
+{
     // Compute theta before everything
     const double theta = computeTheta(x, gX);
     Mat4x4 I4;
@@ -300,7 +294,7 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::computeTangExp(double &curv_abs_n,
 
     SReal theta = Vec3(strain_i(0), strain_i(1), strain_i(2))
                       .norm(); // Sometimes this is computed over all strain
-    Matrix3 tilde_k =
+    Mat3x3 tilde_k =
         getTildeMatrix(Vec3(strain_i(0), strain_i(1), strain_i(2)));
     /* Younes @23-11-27
   old version
@@ -310,7 +304,7 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::computeTangExp(double &curv_abs_n,
   bring any difference in my three reference scenes, but need more investogation
   #TECHNICAL_DEBT
   */
-    Matrix3 tilde_q = getTildeMatrix(Vec3(0.0, 0.0, 0.0));
+    Mat3x3 tilde_q = getTildeMatrix(Vec3(0.0, 0.0, 0.0));
 
     Mat6x6 ad_Xi;
     buildAdjoint(tilde_k, tilde_q, ad_Xi);
@@ -479,8 +473,7 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::printMatrix(const Mat6x6 R) {
 }
 
 template <class TIn1, class TIn2, class TOut>
-Matrix3
-BaseCosseratMapping<TIn1, TIn2, TOut>::extractRotMatrix(const Transform &frame) {
+Mat3x3 BaseCosseratMapping<TIn1, TIn2, TOut>::extractRotMatrix(const Transform &frame) {
 
     sofa::type::Quat q = frame.getOrientation();
 
@@ -489,7 +482,7 @@ BaseCosseratMapping<TIn1, TIn2, TOut>::extractRotMatrix(const Transform &frame) 
     // does not need this amount of code.
     Real R[4][4];
     q.buildRotationMatrix(R);
-    Matrix3 mat;
+    Mat3x3 mat;
     for (unsigned int k = 0; k < 3; k++)
         for (unsigned int i = 0; i < 3; i++)
             mat[k][i] = R[k][i];
@@ -534,7 +527,7 @@ auto BaseCosseratMapping<TIn1, TIn2, TOut>::buildXiHat(const Coord1 &strain_i) -
 
 template <class TIn1, class TIn2, class TOut>
 auto BaseCosseratMapping<TIn1, TIn2, TOut>::getTildeMatrix(const sofa::type::Vec3 &u)
-    -> Matrix3 {
+    -> Mat3x3 {
     sofa::type::Matrix3 tild;
     tild[0][1] = -u[2];
     tild[0][2] = u[1];
@@ -547,8 +540,8 @@ auto BaseCosseratMapping<TIn1, TIn2, TOut>::getTildeMatrix(const sofa::type::Vec
 }
 
 template <class TIn1, class TIn2, class TOut>
-auto BaseCosseratMapping<TIn1, TIn2, TOut>::buildAdjoint(const Matrix3 &A,
-                                                  const Matrix3 &B,
+auto BaseCosseratMapping<TIn1, TIn2, TOut>::buildAdjoint(const Mat3x3 &A,
+                                                  const Mat3x3 &B,
                                                   Mat6x6 &Adjoint) -> void {
     Adjoint.clear();
     for (unsigned int i = 0; i < 3; i++) {
@@ -561,8 +554,8 @@ auto BaseCosseratMapping<TIn1, TIn2, TOut>::buildAdjoint(const Matrix3 &A,
 }
 
 template <class TIn1, class TIn2, class TOut>
-auto BaseCosseratMapping<TIn1, TIn2, TOut>::buildCoAdjoint(const Matrix3 &A,
-                                                    const Matrix3 &B,
+auto BaseCosseratMapping<TIn1, TIn2, TOut>::buildCoAdjoint(const Mat3x3 &A,
+                                                    const Mat3x3 &B,
                                                     Mat6x6 &coAdjoint) -> void {
     coAdjoint.clear();
     for (unsigned int i = 0; i < 3; i++) {
@@ -579,10 +572,10 @@ auto BaseCosseratMapping<TIn1, TIn2, TOut>::buildCoAdjoint(const Matrix3 &A,
 
 template <class TIn1, class TIn2, class TOut>
 auto BaseCosseratMapping<TIn1, TIn2, TOut>::convertTransformToMatrix4x4(
-    const Transform &T) -> Matrix4 {
-    Matrix4 M;
+    const Transform &T) -> Mat4x4 {
+    Mat4x4 M;
     M.identity();
-    Matrix3 R = extractRotMatrix(T);
+    Mat3x3 R = extractRotMatrix(T);
     sofa::type::Vec3 trans = T.getOrigin();
 
     for (unsigned int i = 0; i < 3; i++) {
