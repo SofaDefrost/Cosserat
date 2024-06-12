@@ -61,7 +61,8 @@ BaseCosseratMapping<TIn1, TIn2, TOut>::BaseCosseratMapping()
 // _________________________________________________________________________________________
 
 template <class TIn1, class TIn2, class TOut>
-void BaseCosseratMapping<TIn1, TIn2, TOut>::init() {
+void BaseCosseratMapping<TIn1, TIn2, TOut>::init()
+{
     Inherit1::init();
 
     // Fill the initial vector
