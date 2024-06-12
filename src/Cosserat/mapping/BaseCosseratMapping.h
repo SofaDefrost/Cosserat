@@ -53,7 +53,9 @@ using sofa::type::Vec3;
 using sofa::type::Vec6;
 using sofa::type::Mat;
 
-using Cosserat::type::SE3;
+using se3 = sofa::type::Matrix4;
+using SE3 = sofa::type::Matrix4;
+using _se3 = Eigen::Matrix4d;
 using _SE3 = Eigen::Matrix4d;
 
 }
@@ -123,10 +125,6 @@ public:
     typedef typename SolidTypes<SReal>::Transform Transform;
     typedef typename sofa::type::vector<SReal> List;
 
-    typedef typename sofa::type::Matrix4 se3;
-    typedef typename sofa::type::Matrix4 SE3;
-
-    typedef typename Eigen::Matrix4d _se3;
     typedef typename sofa::type::Mat<6, 6, SReal> Tangent;
     typedef typename Eigen::Matrix3d RotMat;
     typedef typename Eigen::Matrix<SReal, 6, 1> Vector6d;
