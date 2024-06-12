@@ -56,7 +56,6 @@ BaseCosseratMapping<TIn1, TIn2, TOut>::BaseCosseratMapping()
       d_curv_abs_frames(initData(&d_curv_abs_frames, "curv_abs_output",
                                  " need to be com....")),
       d_debug(initData(&d_debug, false, "debug", "printf for the debug")),
-      m_fromModel1(NULL), m_fromModel2(NULL), m_toModel(NULL),
       m_index_input(0) {}
 
 // _________________________________________________________________________________________
@@ -68,7 +67,7 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::init()
 
     // Fill the initial vector
     const OutDataVecCoord *xfromData =
-            m_toModel->read(sofa::core::ConstVecCoordId::position());
+            toModels[0]->read(sofa::core::ConstVecCoordId::position());
 
     //TODO(dmarchal, 2024/07/12): is this line really needed ?
     // it initialize a local variable, is it to force a xfromData updates ?
@@ -330,7 +329,7 @@ BaseCosseratMapping<TIn1, TIn2, TOut>::computeETA(const Vec6 &baseEta,
 
     // Fill the initial vector
     const In1DataVecCoord *x1fromData =
-            m_fromModel1->read(sofa::core::ConstVecCoordId::position());
+            fromModels1[0]->read(sofa::core::ConstVecCoordId::position());
     const In1VecCoord x1from = x1fromData->getValue();
 
     auto curv_abs_input = sofa::helper::getReadAccessor(d_curv_abs_section);

@@ -217,13 +217,9 @@ protected:
     sofa::Data<vector<double>> d_curv_abs_frames;
     sofa::Data<bool> d_debug;
 
-    /// Input Models container. New inputs are added through addInputModel(In* ).
-    sofa::core::State<In1> *m_fromModel1;
-
-    // TODO(dmarchal): why this maybe_unused on a data field ?
-    [[maybe_unused]] sofa::core::State<In2> *m_fromModel2;
-
-    sofa::core::State<Out> *m_toModel;
+    using Inherit1::fromModels1;
+    using Inherit1::fromModels2;
+    using Inherit1::toModels;
 
 protected:
     /// Constructor
