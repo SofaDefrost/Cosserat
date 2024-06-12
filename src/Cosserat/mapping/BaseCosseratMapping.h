@@ -21,35 +21,27 @@
  ******************************************************************************/
 #pragma once
 #include <Cosserat/initCosserat.h>
+#include <Cosserat/fwd.h>
 
-#include <sofa/core/BaseMapping.h>
 #include <sofa/core/Multi2Mapping.h>
 #include <sofa/core/config.h>
 #include <sofa/core/objectmodel/BaseObject.h>
 #include <sofa/defaulttype/RigidTypes.h>
 #include <sofa/defaulttype/SolidTypes.h>
 #include <sofa/type/Vec.h>
-
-#include <cmath>
 #include <iostream>
-
 #include <Eigen/Dense>
 #include <cmath>
 
-using namespace std;
-using namespace Eigen;
-
-#include <cmath>
-
-// TODO(dmarchal, 2024/06/07): This is polluating the namespace of
-// sofa::components
-//                             plugins should be in their own namespace like
-//                             eg: cosserat::component::mapping
-namespace Cosserat::mapping {
+namespace Cosserat::mapping
+{
 
 // with a private namespace the used named are not polluating the whole
 // sofa::component::mapping ones.
-namespace {
+namespace
+{
+using namespace std;
+using namespace Eigen;
 using sofa::core::objectmodel::BaseContext;
 using sofa::core::objectmodel::BaseObject;
 using sofa::defaulttype::SolidTypes;
@@ -61,19 +53,17 @@ using sofa::type::Vec3;
 using sofa::type::Vec6;
 using sofa::type::Mat;
 
-typedef typename Eigen::Matrix4d _SE3;
-} // namespace
+using Cosserat::type::SE3;
+using _SE3 = Eigen::Matrix4d;
 
+}
+
+// TODO(dmarchal: 2024/10/07) Is the description valid ?
 /*!
- * \class BaseCosserat
+ * \class BaseCosseratMapping
  * @brief Computes and map the length of the beams
  *
- * This is a component:
- * https://www.sofa-framework.org/community/doc/programming-with-sofa/create-your-component/
  */
-
-// TODO(dmarchal: 2024/06/07) This component looks like a mapping but inherit
-// from BaseObject * can you clarify why is is not inhering from BaseMapping
 template <class TIn1, class TIn2, class TOut>
 class BaseCosseratMapping : public sofa::core::Multi2Mapping<TIn1, TIn2, TOut>
 {
