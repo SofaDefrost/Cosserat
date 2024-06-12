@@ -21,7 +21,7 @@
  ******************************************************************************/
 #pragma once
 #include <Cosserat/initCosserat.h>
-#include <Cosserat/fwd.h>
+#include <Cosserat/types.h>
 
 #include <sofa/core/Multi2Mapping.h>
 #include <sofa/core/config.h>
@@ -47,6 +47,9 @@ using sofa::core::objectmodel::BaseObject;
 using sofa::defaulttype::SolidTypes;
 using sofa::type::Matrix3;
 using sofa::type::Matrix4;
+using sofa::type::Mat6x6;
+using sofa::type::Mat4x4;
+
 using std::get;
 using sofa::type::vector;
 using sofa::type::Vec3;
@@ -57,6 +60,10 @@ using se3 = sofa::type::Matrix4;
 using SE3 = sofa::type::Matrix4;
 using _se3 = Eigen::Matrix4d;
 using _SE3 = Eigen::Matrix4d;
+
+using Cosserat::type::Transform;
+using Cosserat::type::Tangent;
+using Cosserat::type::RotMat;
 
 }
 
@@ -70,14 +77,11 @@ template <class TIn1, class TIn2, class TOut>
 class BaseCosseratMapping : public sofa::core::Multi2Mapping<TIn1, TIn2, TOut>
 {
 public:
-    SOFA_CLASS(SOFA_TEMPLATE3(BaseCosseratMapping, TIn1, TIn2, TOut), BaseObject);
-    typedef BaseObject Inherit;
+    SOFA_ABSTRACT_CLASS(SOFA_TEMPLATE3(BaseCosseratMapping, TIn1, TIn2, TOut),
+                        SOFA_TEMPLATE3(sofa::core::Multi2Mapping,TIn1, TIn2, TOut));
 
-    /// Input Model Type
     typedef TIn1 In1;
     typedef TIn2 In2;
-
-    /// Output Model Type
     typedef TOut Out;
 
     // TODO(dmarchal:2024/06/07) This very long list of public typedefs looks
@@ -99,8 +103,6 @@ public:
     [[maybe_unused]] typedef typename In2::MatrixDeriv In2MatrixDeriv;
     typedef sofa::Data<In2VecCoord> In2DataVecCoord;
     typedef sofa::Data<In2VecDeriv> In2DataVecDeriv;
-    typedef Mat<6, 6, SReal> Mat6x6;
-    typedef Mat<4, 4, SReal> Mat4x4;
 
     typedef typename Out::VecCoord OutVecCoord;
     typedef typename Out::Coord OutCoord;
@@ -117,17 +119,11 @@ public:
     typedef sofa::MultiLink<BaseCosseratMapping<In1, In2, Out>, sofa::core::State<In2>,
                             sofa::BaseLink::FLAG_STOREPATH | sofa::BaseLink::FLAG_STRONGLINK>
         LinkFromModels2;
+
     [[maybe_unused]] typedef sofa::MultiLink<
     BaseCosseratMapping<In1, In2, Out>, sofa::core::State<Out>,
         sofa::BaseLink::FLAG_STOREPATH | sofa::BaseLink::FLAG_STRONGLINK>
         LinkToModels;
-
-    typedef typename SolidTypes<SReal>::Transform Transform;
-    typedef typename sofa::type::vector<SReal> List;
-
-    typedef typename sofa::type::Mat<6, 6, SReal> Tangent;
-    typedef typename Eigen::Matrix3d RotMat;
-    typedef typename Eigen::Matrix<SReal, 6, 1> Vector6d;
 
 public:
     // TODO(dmarchal: 2024/06/07): There is a lot of public attributes is this

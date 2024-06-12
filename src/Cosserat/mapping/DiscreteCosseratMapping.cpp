@@ -48,8 +48,8 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>:: applyJ(
     const auto baseIndex = d_baseIndex.getValue();
 
     // Curv abscissa of nodes and frames
-    sofa::helper::ReadAccessor<Data<List>> curv_abs_section =  d_curv_abs_section;
-    sofa::helper::ReadAccessor<Data<List>> curv_abs_frames = d_curv_abs_frames;
+    sofa::helper::ReadAccessor<Data<vector<double>>> curv_abs_section =  d_curv_abs_section;
+    sofa::helper::ReadAccessor<Data<vector<double>>> curv_abs_frames = d_curv_abs_frames;
 
     const In1VecCoord& inDeform = m_fromModel1->read(sofa::core::ConstVecCoordId::position())->getValue(); //Strains
     // Compute the tangent Exponential SE3 vectors
