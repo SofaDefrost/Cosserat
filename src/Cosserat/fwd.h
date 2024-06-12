@@ -29,24 +29,13 @@
  ******************************************************************************/
 #pragma once
 
-#include <sofa/config.h>
-
-#define COSSERAT_VERSION @PROJECT_VERSION @
-
-#ifdef SOFA_BUILD_COSSERAT
-#define SOFA_TARGET Cosserat
-#define SOFA_COSSERAT_API SOFA_EXPORT_DYNAMIC_LIBRARY
-#else
-#define SOFA_COSSERAT_API SOFA_IMPORT_DYNAMIC_LIBRARY
-#endif
-
-/** \mainpage
-  This is the plugin for the Discret Cosserat Plugin
-*/
-
+#include <Cosserat/initCosserat.h>
+#include <sofa/type/fwd.h>
 namespace Cosserat
 {
-    SOFA_COSSERAT_API void init();
-    constexpr const char *MODULE_NAME = "@PROJECT_NAME@";
-    constexpr const char *MODULE_VERSION = "@PROJECT_VERSION@";
+    namespace type
+    {
+        using SE3 =  sofa::type::Matrix4;
+    }
 }
+
