@@ -37,16 +37,9 @@
 // To go further =>
 // https://www.mathworks.com/matlabcentral/fileexchange/83038-sorosim/
 
-namespace Cosserat::mapping {
-
-namespace
+namespace Cosserat::mapping
 {
-using namespace sofa::defaulttype;
-using sofa::core::objectmodel::BaseContext;
-using sofa::helper::AdvancedTimer;
-using sofa::helper::WriteAccessor;
-using sofa::type::vector;
-}
+
 
 template <class TIn1, class TIn2, class TOut>
 BaseCosseratMapping<TIn1, TIn2, TOut>::BaseCosseratMapping()
@@ -65,20 +58,20 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::init()
 {
     Inherit1::init();
 
-    // Fill the initial vector
-    const OutDataVecCoord *xfromData =
-            toModels[0]->read(sofa::core::ConstVecCoordId::position());
-
-    //TODO(dmarchal, 2024/07/12): is this line really needed ?
-    // it initialize a local variable, is it to force a xfromData updates ?
+    //TODO(dmarchal, 2024/07/12): is the following line really needed ?
+    //     it initialize a local variable which initialize another data.
+    //     is it to force a xfromData updates through the use of getValue(). In addition
+    //     this is puzzleing as toModel is the destination of the computation of the mapping.
+    //     to me it should be safe to remove the two line.. and thus the init :)
+    const OutDataVecCoord *xfromData = toModels[0]->read(sofa::core::ConstVecCoordId::position());
     const OutVecCoord xfrom = xfromData->getValue();
 }
 
 template <class TIn1, class TIn2, class TOut>
 void BaseCosseratMapping<TIn1, TIn2, TOut>::computeExponentialSE3(
         const double &curv_abs_x_n, const Coord1 &strain_n, Transform &g_X_n) {
-    Mat4x4 I4;
-    I4.identity();
+    const auto I4 = Mat4x4::Identity();
+
     // Get the angular part of the
     sofa::type::Vec3 k = Vec3(strain_n(0), strain_n(1), strain_n(2));
     SReal theta = k.norm(); //
@@ -120,6 +113,7 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::updateExponentialSE3(
     m_framesExponentialSE3Vectors.clear();
     m_nodesExponentialSE3Vectors.clear();
     m_nodesLogarithmeSE3Vectors.clear();
+
     const unsigned int sz = curv_abs_frames.size();
 
     // Compute exponential at each frame point
@@ -369,11 +363,11 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::initialize() {
     auto curv_abs_section = sofa::helper::getReadAccessor(d_curv_abs_section);
     auto curv_abs_frames = sofa::helper::getReadAccessor(d_curv_abs_frames);
 
-    size_t sz = d_curv_abs_frames.getValue().size();
+    size_t sz = curv_abs_frames.size();
 
     msg_info()
-            << " curv_abs_section " << d_curv_abs_frames.getValue().size()
-            << "; curv_abs_frames: " << d_curv_abs_frames.getValue().size();
+            << " curv_abs_section " << curv_abs_frames.size()
+            << "; curv_abs_frames: " << curv_abs_frames.size();
 
     m_indicesVectors.clear();
     m_framesLengthVectors.clear();
@@ -381,13 +375,14 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::initialize() {
     m_indicesVectorsDraw.clear();
 
     size_t input_index = 1;
-
-    for (size_t i = 0; i < sz; i++) {
-        if (curv_abs_section[input_index] > curv_abs_frames[i]) {
+    for (size_t i = 0; i < sz; ++i)
+    {
+        if (curv_abs_section[input_index] > curv_abs_frames[i])
+        {
             m_indicesVectors.emplace_back(input_index);
-            m_indicesVectorsDraw.emplace_back(
-                        input_index); // maybe I shouldn't do this here !!!
-        } else if (curv_abs_section[input_index] == curv_abs_frames[i]) {
+            m_indicesVectorsDraw.emplace_back(input_index); // maybe I shouldn't do this here !!!
+        } else if (curv_abs_section[input_index] == curv_abs_frames[i])
+        {
             m_indicesVectors.emplace_back(input_index);
             input_index++;
             m_indicesVectorsDraw.emplace_back(input_index);
@@ -396,6 +391,7 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::initialize() {
             m_indicesVectors.emplace_back(input_index);
             m_indicesVectorsDraw.emplace_back(input_index);
         }
+
         // Fill the vector m_framesLengthVectors with the distance
         // between frame(output) and the closest beam node toward the base
         // m_framesLengthVectors.push_back(curv_abs_frames[i] -
@@ -404,7 +400,8 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::initialize() {
                     curv_abs_frames[i] - curv_abs_section[m_indicesVectors.back() - 1]);
     }
 
-    for (size_t j = 0; j < curv_abs_section.size() - 1; j++) {
+    for (size_t j = 0; j < sz - 1; j++)
+    {
         m_BeamLengthVectors.emplace_back(curv_abs_section[j + 1] -
                 curv_abs_section[j]);
     }
@@ -414,9 +411,6 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::initialize() {
             << "m_framesLengthVectors : " << msgendl
             << "m_BeamLengthVectors : " << msgendl;
 }
-
-template <class TIn1, class TIn2, class TOut>
-void BaseCosseratMapping<TIn1, TIn2, TOut>::draw(const sofa::core::visual::VisualParams *) {}
 
 template <class TIn1, class TIn2, class TOut>
 double BaseCosseratMapping<TIn1, TIn2, TOut>::computeTheta(const double &x,
@@ -519,8 +513,10 @@ auto BaseCosseratMapping<TIn1, TIn2, TOut>::buildAdjoint(const Mat3x3 &A,
                                                          const Mat3x3 &B,
                                                          Mat6x6 &Adjoint) -> void {
     Adjoint.clear();
-    for (unsigned int i = 0; i < 3; i++) {
-        for (int j = 0; j < 3; ++j) { // TODO(dmarchal:2024/06/07) unify i++ and ++j
+    for (unsigned int i = 0; i < 3; ++i)
+    {
+        for (int j = 0; j < 3; ++j)
+        {
             Adjoint[i][j] = A[i][j];
             Adjoint[i + 3][j + 3] = A[i][j];
             Adjoint[i + 3][j] = B[i][j];
@@ -533,8 +529,10 @@ auto BaseCosseratMapping<TIn1, TIn2, TOut>::buildCoAdjoint(const Mat3x3 &A,
                                                            const Mat3x3 &B,
                                                            Mat6x6 &coAdjoint) -> void {
     coAdjoint.clear();
-    for (unsigned int i = 0; i < 3; i++) {
-        for (int j = 0; j < 3; ++j) { // TODO(dmarchal:2024/06/07) unify i++ and ++j
+    for (unsigned int i = 0; i < 3; ++i)
+    {
+        for (int j = 0; j < 3; ++j)
+        {
             coAdjoint[i][j] = A[i][j];
             coAdjoint[i + 3][j + 3] = A[i][j];
 
