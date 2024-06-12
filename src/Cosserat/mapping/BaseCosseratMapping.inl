@@ -114,11 +114,9 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::computeExponentialSE3(
 // Fill exponential vectors
 template <class TIn1, class TIn2, class TOut>
 void BaseCosseratMapping<TIn1, TIn2, TOut>::updateExponentialSE3(
-        const In1VecCoord &inDeform) {
-    // helper::ReadAccessor<Data<helper::vector<double>>> curv_abs_input =
-    // d_curv_abs_section;
-    sofa::helper::ReadAccessor<sofa::Data<vector<double>>> curv_abs_frames =
-            d_curv_abs_frames;
+        const In1VecCoord &inDeform)
+{
+    auto curv_abs_frames = sofa::helper::getReadAccessor(d_curv_abs_frames);
 
     m_framesExponentialSE3Vectors.clear();
     m_nodesExponentialSE3Vectors.clear();
@@ -235,13 +233,11 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::updateTangExpSE3(
         const In1VecCoord &inDeform) {
 
     // Curv abscissa of nodes and frames
-    sofa::helper::ReadAccessor<sofa::Data<vector<double>>> curv_abs_section =
-            d_curv_abs_section;
-    sofa::helper::ReadAccessor<sofa::Data<sofa::type::vector<double>>> curv_abs_frames =
-            d_curv_abs_frames;
+    auto curv_abs_section = sofa::helper::getReadAccessor(d_curv_abs_section);
+    auto curv_abs_frames = sofa::helper::getReadAccessor(d_curv_abs_frames);
 
-    m_framesTangExpVectors.clear();
     unsigned int sz = curv_abs_frames.size();
+    m_framesTangExpVectors.resize(sz);
 
     // Compute tangExpo at frame points
     for (unsigned int i = 0; i < sz; i++)
@@ -252,7 +248,7 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::updateTangExpSE3(
         double curv_abs_x_i = m_framesLengthVectors[i];
         computeTangExp(curv_abs_x_i, strain_frame_i, temp);
 
-        m_framesTangExpVectors.push_back(temp);
+        m_framesTangExpVectors[i] = temp;
 
         msg_info()
                 <<  "x :" << curv_abs_x_i << "; k :" << strain_frame_i << msgendl
@@ -337,8 +333,7 @@ BaseCosseratMapping<TIn1, TIn2, TOut>::computeETA(const Vec6 &baseEta,
             m_fromModel1->read(sofa::core::ConstVecCoordId::position());
     const In1VecCoord x1from = x1fromData->getValue();
 
-    sofa::helper::ReadAccessor<sofa::Data<vector<double>>> curv_abs_input =
-            d_curv_abs_section;
+    auto curv_abs_input = sofa::helper::getReadAccessor(d_curv_abs_section);
 
     Transform out_Trans;
     Mat6x6 Adjoint, Tg;
@@ -372,10 +367,8 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::initialize() {
     // For each frame in the global frame, find the segment of the beam to which
     // it is attached. Here we only use the information from the curvilinear
     // abscissa of each frame.
-    sofa::helper::ReadAccessor<sofa::Data<sofa::type::vector<double>>> curv_abs_section =
-            d_curv_abs_section;
-    sofa::helper::ReadAccessor<sofa::Data<vector<double>>> curv_abs_frames =
-            d_curv_abs_frames;
+    auto curv_abs_section = sofa::helper::getReadAccessor(d_curv_abs_section);
+    auto curv_abs_frames = sofa::helper::getReadAccessor(d_curv_abs_frames);
 
     size_t sz = d_curv_abs_frames.getValue().size();
 
