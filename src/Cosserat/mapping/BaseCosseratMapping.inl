@@ -121,7 +121,8 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::updateExponentialSE3(
     const unsigned int sz = curv_abs_frames.size();
 
     // Compute exponential at each frame point
-    for (size_t i = 0; i < sz; i++) {
+    for (size_t i = 0; i < sz; ++i)
+    {
         Transform g_X_frame_i;
 
         const Coord1 strain_n = inDeform[m_indicesVectors[i] - 1]; // Cosserat reduce coordinates (strain)
@@ -334,12 +335,9 @@ BaseCosseratMapping<TIn1, TIn2, TOut>::computeETA(const Vec6 &baseEta,
     // Same as for x1, query a read accessor so we can access the content of d_curv_abs_section
     auto curv_abs_input = getReadAccessor(d_curv_abs_section);
 
-    Transform out_Trans;
-    Mat6x6 Adjoint, Tg;
-    Vec6 Xi_dot;
-
-    for (unsigned int i = 0; i < 3; ++i)
-        Xi_dot[i] = k_dot[m_index_input][i];
+    auto& kdot = k_dot[m_index_input];
+    Vec6 Xi_dot {kdot[0], kdot[1], kdot[2],
+                 0,0,0};
 
     double diff0 = abs_input;
     double _diff0 = -abs_input;
@@ -350,11 +348,16 @@ BaseCosseratMapping<TIn1, TIn2, TOut>::computeETA(const Vec6 &baseEta,
         _diff0 = curv_abs_input[m_index_input - 1] - abs_input;
     }
 
-    computeExponentialSE3(_diff0, x1[m_index_input], out_Trans);
-    computeAdjoint(out_Trans, Adjoint);
-    computeTangExp(diff0, x1[m_index_input], Tg);
+    Transform outTransform;
+    computeExponentialSE3(_diff0, x1[m_index_input], outTransform);
 
-    return Adjoint * (baseEta + Tg * Xi_dot);
+    Mat6x6 adjointMatrix;
+    computeAdjoint(outTransform, adjointMatrix);
+
+    Tangent tangentMatrix;
+    computeTangExp(diff0, x1[m_index_input], tangentMatrix);
+
+    return adjointMatrix * (baseEta + tangentMatrix * Xi_dot);
 }
 
 //___________________________________________________________________________
