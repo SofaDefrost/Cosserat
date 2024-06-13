@@ -44,9 +44,11 @@ namespace Cosserat
         typedef typename sofa::defaulttype::SolidTypes<SReal>::Transform Transform;
         typedef typename sofa::type::vector<SReal> List;
 
-        typedef typename sofa::type::Mat<6, 6, SReal> Tangent;
         typedef typename Eigen::Matrix3d RotMat;
         typedef typename Eigen::Matrix<SReal, 6, 1> Vector6d;
+
+        using Tangent = sofa::type::Mat6x6;
+        //class Tangent : public sofa::type::Mat<6, 6, SReal>{};
 
     }
 }

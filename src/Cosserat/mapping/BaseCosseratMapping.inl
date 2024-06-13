@@ -69,6 +69,10 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::init()
     //     to me it should be safe to remove the two line.. and thus the init :)
     const OutDataVecCoord *xfromData = toModels[0]->read(sofa::core::ConstVecCoordId::position());
     const OutVecCoord xfrom = xfromData->getValue();
+
+    m_fromModel1 = fromModels1[0];
+    m_fromModel2 = fromModels2[0];
+    m_toModel = toModels[0];
 }
 
 template <class TIn1, class TIn2, class TOut>

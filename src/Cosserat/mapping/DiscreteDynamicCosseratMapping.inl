@@ -43,11 +43,7 @@ using sofa::helper::WriteAccessor;
 
 template <class TIn1, class TIn2, class TOut>
 DiscreteDynamicCosseratMapping<TIn1, TIn2, TOut>::DiscreteDynamicCosseratMapping()
-    : m_fromModel1(NULL)
-    , m_fromModel2(NULL)
-    , m_toModel(NULL)
-{
-}
+{}
 
 
 // _________________________________________________________________________________________
@@ -76,10 +72,6 @@ void DiscreteDynamicCosseratMapping<TIn1, TIn2, TOut>::init()
     }
 
     printf("=================================> Init from the DiscretDynamicCosseratMapping component \n");
-
-    m_fromModel1 = this->getFromModels1()[0];
-    m_fromModel2 = this->getFromModels2()[0];
-    m_toModel = this->getToModels()[0];
 
     // Fill the initial vector
     const OutDataVecCoord* xfromData = m_toModel->read(sofa::core::ConstVecCoordId::position());
@@ -208,7 +200,7 @@ void DiscreteDynamicCosseratMapping<TIn1, TIn2, TOut>:: applyJ(
     for (size_t i = 1 ; i < curv_abs_input.size(); i++)
     {
         Transform t= m_nodesExponentialSE3Vectors[i].inversed();
-        Mat6x6 Adjoint; Adjoint.clear();
+        Tangent Adjoint; Adjoint.clear();
         this->computeAdjoint(t,Adjoint);
         //Add this line because need for the jacobian computation
         m_nodeAdjointVectors.push_back(Adjoint);

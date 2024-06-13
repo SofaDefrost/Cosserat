@@ -198,6 +198,10 @@ protected:
     using Inherit1::fromModels2;
     using Inherit1::toModels;
 
+    sofa::core::State<In1>* m_fromModel1;
+    sofa::core::State<In2>* m_fromModel2;
+    sofa::core::State<Out>* m_toModel;
+
 protected:
     /// Constructor
     BaseCosseratMapping();
@@ -210,8 +214,8 @@ protected:
 
     // TODO(dmarchal: 2024/06/07):
     //   - clarify the difference between computeAdjoing and buildAdjoint ...
-    //   - clarify why we need Transform and Vec6.
-    void computeAdjoint(const Transform &frame, Mat6x6 &adjoint);
+    //   - clarify why we need Transform and Vec6 and Tangent & Mat6x6
+    void computeAdjoint(const Transform &frame, Tangent &adjoint);
     void computeAdjoint(const Vec6 &frame, Mat6x6 &adjoint);
 
     void computeCoAdjoint(const Transform &frame, Mat6x6 &coAdjoint);

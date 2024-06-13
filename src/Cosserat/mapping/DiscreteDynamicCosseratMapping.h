@@ -107,11 +107,6 @@ public:
     typedef typename SolidTypes<Real>::Transform      Transform ;
 
 protected:
-    sofa::core::State<In1>* m_fromModel1;
-    sofa::core::State<In2>* m_fromModel2;
-    sofa::core::State<Out>* m_toModel;
-
-protected:
     /// Constructor
     DiscreteDynamicCosseratMapping() ;
     /// Destructor
@@ -143,6 +138,9 @@ protected:
     using BaseCosseratMapping<TIn1, TIn2, TOut>::m_vecTransform ;
     using BaseCosseratMapping<TIn1, TIn2, TOut>::m_nodeAdjointVectors;
     using BaseCosseratMapping<TIn1, TIn2, TOut>::m_index_input;
+    using BaseCosseratMapping<TIn1, TIn2, TOut>::m_toModel;
+    using BaseCosseratMapping<TIn1, TIn2, TOut>::m_fromModel1;
+    using BaseCosseratMapping<TIn1, TIn2, TOut>::m_fromModel2;
 
 
 public:

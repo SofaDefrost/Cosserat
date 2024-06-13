@@ -180,13 +180,14 @@ protected:
     using BaseCosseratMapping<TIn1, TIn2, TOut>::m_index_input;
     using BaseCosseratMapping<TIn1, TIn2, TOut>::m_indicesVectorsDraw;
     using BaseCosseratMapping<TIn1, TIn2, TOut>::computeTheta;
+
+    using BaseCosseratMapping<TIn1, TIn2, TOut>::m_toModel;
+    using BaseCosseratMapping<TIn1, TIn2, TOut>::m_fromModel1;
+    using BaseCosseratMapping<TIn1, TIn2, TOut>::m_fromModel2;
+
     //////////////////////////////////////////////////////////////////////////////
 
     sofa::helper::ColorMap m_colorMap;
-    sofa::core::State<In1> *m_fromModel1;
-    sofa::core::State<In2> *m_fromModel2;
-    sofa::core::State<Out> *m_toModel;
-
 protected:
     DiscreteCosseratMapping();
     ~DiscreteCosseratMapping() override {}
