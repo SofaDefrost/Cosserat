@@ -62,6 +62,24 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::init()
 {
     Inherit1::init();
 
+    if(fromModels1.empty())
+    {
+        msg_error() << "Error while initializing ; input getFromModels1 not found" ;
+        return;
+    }
+
+    if(fromModels2.empty())
+    {
+        msg_error() << "Error while initializing ; output getFromModels2 not found" ;
+        return;
+    }
+
+    if(toModels.empty())
+    {
+        msg_error() << "Error while initializing ; output Model not found" ;
+        return;
+    }
+
     //TODO(dmarchal, 2024/07/12): is the following line really needed ?
     //     it initialize a local variable which initialize another data.
     //     is it to force a xfromData updates through the use of getValue(). In addition
