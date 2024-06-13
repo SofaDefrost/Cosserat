@@ -79,29 +79,18 @@ public:
     // typedefs are public
     typedef typename In1::Coord Coord1;
     typedef typename In1::Deriv Deriv1;
-    typedef typename In1::VecCoord In1VecCoord;
-    typedef typename In1::VecDeriv In1VecDeriv;
-    [[maybe_unused]] typedef typename In1::MatrixDeriv In1MatrixDeriv;
-    typedef sofa::Data<In1VecCoord> In1DataVecCoord;
-    typedef sofa::Data<In1VecDeriv> In1DataVecDeriv;
+    //typedef typename In1::VecCoord In1VecCoord;
+    //typedef typename In1::VecDeriv In1VecDeriv;
 
-    typedef typename In2::Coord::value_type Real;
     typedef typename In2::Coord Coord2;
     typedef typename In2::Deriv Deriv2;
-    typedef typename In2::VecCoord In2VecCoord;
-    typedef typename In2::VecDeriv In2VecDeriv;
-    [[maybe_unused]] typedef typename In2::MatrixDeriv In2MatrixDeriv;
-    typedef sofa::Data<In2VecCoord> In2DataVecCoord;
-    typedef sofa::Data<In2VecDeriv> In2DataVecDeriv;
+    //typedef typename In2::VecCoord In2VecCoord;
+    //typedef typename In2::VecDeriv In2VecDeriv;
 
-    typedef typename Out::VecCoord OutVecCoord;
     typedef typename Out::Coord OutCoord;
     typedef typename Out::Deriv OutDeriv;
-    typedef typename Out::VecDeriv OutVecDeriv;
-    typedef typename Out::MatrixDeriv OutMatrixDeriv;
-    typedef sofa::Data<OutVecCoord> OutDataVecCoord;
-    typedef sofa::Data<OutVecDeriv> OutDataVecDeriv;
-    typedef sofa::Data<OutMatrixDeriv> OutDataMatrixDeriv;
+    //typedef typename Out::VecCoord OutVecCoord;
+    //typedef typename Out::VecDeriv OutVecDeriv;
 
 public:
     // TODO(dmarchal: 2024/06/07): There is a lot of public attributes is this
@@ -109,7 +98,7 @@ public:
 
     /*===========COSSERAT VECTORS ======================*/
     unsigned int m_index_input;
-    OutVecCoord m_vecTransform;
+    vector<OutCoord> m_vecTransform;
 
     vector<Transform> m_framesExponentialSE3Vectors;
     vector<Transform> m_nodesExponentialSE3Vectors;
@@ -119,7 +108,7 @@ public:
     vector<unsigned int> m_indicesVectors;
     vector<unsigned int> m_indicesVectorsDraw;
 
-    vector<double> m_BeamLengthVectors;
+    vector<double> m_beamLengthVectors;
     vector<double> m_framesLengthVectors;
 
     vector<Vec6> m_nodesVelocityVectors;
@@ -149,7 +138,7 @@ public:
     // roles is unclear and generates ambiguities
     // TODO @yadagolo: Yes, because the function is used by callback, when we
     // do dynamic meshing.
-    void initialize();
+    void initializeFrames();
 
     double computeTheta(const double &x, const Mat4x4 &gX);
     void printMatrix(const Mat6x6 R);
@@ -221,12 +210,12 @@ protected:
 
     void computeCoAdjoint(const Transform &frame, Mat6x6 &coAdjoint);
 
-    void updateExponentialSE3(const In1VecCoord &inDeform);
-    void updateTangExpSE3(const In1VecCoord &inDeform);
+    void updateExponentialSE3(const vector<Coord1> &inDeform);
+    void updateTangExpSE3(const vector<Coord1> &inDeform);
     void computeTangExp(double &x, const Coord1 &k, Mat6x6 &TgX);
 
     [[maybe_unused]] Vec6
-    computeETA(const Vec6 &baseEta, const In1VecDeriv &k_dot, double abs_input);
+    computeETA(const Vec6 &baseEta, const vector<Deriv1> &k_dot, double abs_input);
     Mat4x4 computeLogarithm(const double &x, const Mat4x4 &gX);
 };
 
