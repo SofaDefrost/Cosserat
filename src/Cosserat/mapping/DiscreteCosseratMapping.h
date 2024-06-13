@@ -22,29 +22,24 @@
 #pragma once
 #include <Cosserat/initCosserat.h>
 
-#include <Cosserat/forcefield/BeamHookeLawForceField.h>
 #include <Cosserat/mapping/BaseCosseratMapping.h>
-
-#include <sofa/core/BaseMapping.h>
-#include <sofa/core/Multi2Mapping.h>
-#include <sofa/core/config.h>
-#include <sofa/defaulttype/RigidTypes.h>
-#include <sofa/defaulttype/SolidTypes.h>
 #include <sofa/helper/ColorMap.h>
 
-namespace Cosserat::mapping {
-using sofa::component::forcefield::BeamHookeLawForceField;
-using sofa::core::objectmodel::BaseContext;
-using sofa::defaulttype::SolidTypes;
-using sofa::type::Matrix3;
-using sofa::type::Matrix4;
+namespace Cosserat::mapping
+{
+namespace
+{
+using Mat3x6 = sofa::type::Mat<3, 6, SReal>;
+using Mat6x3 = sofa::type::Mat<6, 3, SReal>;
+using sofa::type::Mat4x4;
+using sofa::type::Mat6x6;
 using sofa::type::Vec3;
 using sofa::type::Vec6;
 using sofa::type::Quat;
-using std::get;
 using sofa::Data;
+}
 
-
+// TODO(dmarchal: 2024/10/07) Is the description valid ? I don't think so.
 /*!
  * \class DiscreteCosseratMapping
  * @brief Computes and map the length of the beams
@@ -59,53 +54,41 @@ public:
     /// Input Model Type
     typedef TIn1 In1;
     typedef TIn2 In2;
-
-    /// Output Model Type
     typedef TOut Out;
-    typedef typename In2::Coord::value_type Real1;
-    typedef typename In1::Coord Coord1;
-    typedef typename In1::Deriv Deriv1;
-    typedef typename In1::VecCoord In1VecCoord;
-    typedef typename In1::VecDeriv In1VecDeriv;
-    typedef typename In1::MatrixDeriv In1MatrixDeriv;
-    typedef Data<In1VecCoord> In1DataVecCoord;
-    typedef Data<In1VecDeriv> In1DataVecDeriv;
-    typedef Data<In1MatrixDeriv> In1DataMatrixDeriv;
 
-    typedef typename In2::Coord::value_type Real2;
-    typedef typename In2::Coord Coord2;
-    typedef typename In2::Deriv Deriv2;
-    typedef typename In2::VecCoord In2VecCoord;
-    typedef typename In2::VecDeriv In2VecDeriv;
-    typedef typename In2::MatrixDeriv In2MatrixDeriv;
-    typedef Data<In2VecCoord> In2DataVecCoord;
-    typedef Data<In2VecDeriv> In2DataVecDeriv;
-    typedef Data<In2MatrixDeriv> In2DataMatrixDeriv;
-    typedef sofa::type::Mat<6, 6, Real2> Mat6x6;
-    typedef sofa::type::Mat<3, 6, Real2> Mat3x6;
-    typedef sofa::type::Mat<6, 3, Real2> Mat6x3;
-    typedef sofa::type::Mat<4, 4, Real2> Mat4x4;
+    using typename Inherit1::In1VecCoord;
+    using typename Inherit1::In1VecDeriv;
+    using typename Inherit1::In1MatrixDeriv;
+    using typename Inherit1::In1DataVecCoord;
+    using typename Inherit1::In1DataVecDeriv;
+    using typename Inherit1::In1DataMatrixDeriv;
 
-    typedef typename Out::VecCoord OutVecCoord;
-    typedef typename Out::Coord OutCoord;
-    typedef typename Out::Deriv OutDeriv;
-    typedef typename Out::VecDeriv OutVecDeriv;
-    typedef typename Out::MatrixDeriv OutMatrixDeriv;
-    typedef Data<OutVecCoord> OutDataVecCoord;
-    typedef Data<OutVecDeriv> OutDataVecDeriv;
-    typedef Data<OutMatrixDeriv> OutDataMatrixDeriv;
-    typedef typename SolidTypes<Real2>::Transform Transform;
+    using typename Inherit1::In2VecCoord;
+    using typename Inherit1::In2VecDeriv;
+    using typename Inherit1::In2MatrixDeriv;
+    using typename Inherit1::In2DataVecCoord;
+    using typename Inherit1::In2DataVecDeriv;
+    using typename Inherit1::In2DataMatrixDeriv;
+
+    using typename Inherit1::OutCoord;
+    using typename Inherit1::OutDeriv;
+    using typename Inherit1::OutVecCoord;
+    using typename Inherit1::OutVecDeriv;
+    using typename Inherit1::OutMatrixDeriv;
+    using typename Inherit1::OutDataVecCoord;
+    using typename Inherit1::OutDataVecDeriv;
+    using typename Inherit1::OutDataMatrixDeriv;
 
     //////////////////////////////////////////////////////////////////////
     /// @name Data Fields
     /// @{
-    Data<int> d_deformationAxis;
-    Data<Real2> d_max;
-    Data<Real2> d_min;
-    Data<Real1> d_radius;
-    Data<bool> d_drawMapBeam;
+    Data<int>   d_deformationAxis;
+    Data<SReal> d_max;
+    Data<SReal> d_min;
+    Data<SReal> d_radius;
+    Data<bool>  d_drawMapBeam;
     Data<sofa::type::RGBAColor> d_color;
-    Data<vector<int>> d_index;
+    Data<vector<int>>  d_index;
     Data<unsigned int> d_baseIndex;
     /// @}
     //////////////////////////////////////////////////////////////////////
@@ -124,19 +107,19 @@ public:
     /// The following method are inherited from MultiMapping
     /// @{
     void apply(const sofa::core::MechanicalParams * /* mparams */,
-          const vector<OutDataVecCoord *> &dataVecOutPos,
-          const vector<const In1DataVecCoord *> &dataVecIn1Pos,
-          const vector<const In2DataVecCoord *> &dataVecIn2Pos) override;
+               const vector<OutDataVecCoord *> &dataVecOutPos,
+               const vector<const In1DataVecCoord *> &dataVecIn1Pos,
+               const vector<const In2DataVecCoord *> &dataVecIn2Pos) override;
 
     void applyJ(const sofa::core::MechanicalParams * /* mparams */,
-           const vector<OutDataVecDeriv *> &dataVecOutVel,
-           const vector<const In1DataVecDeriv *> &dataVecIn1Vel,
-           const vector<const In2DataVecDeriv *> &dataVecIn2Vel) override;
+                const vector<OutDataVecDeriv *> &dataVecOutVel,
+                const vector<const In1DataVecDeriv *> &dataVecIn1Vel,
+                const vector<const In2DataVecDeriv *> &dataVecIn2Vel) override;
 
     void applyJT(const sofa::core::MechanicalParams * /* mparams */,
-            const vector<In1DataVecDeriv *> &dataVecOut1Force,
-            const vector<In2DataVecDeriv *> &dataVecOut2RootForce,
-            const vector<const OutDataVecDeriv *> &dataVecInForce) override;
+                 const vector<In1DataVecDeriv *> &dataVecOut1Force,
+                 const vector<In2DataVecDeriv *> &dataVecOut2RootForce,
+                 const vector<const OutDataVecDeriv *> &dataVecInForce) override;
 
     // TODO(dmarchal:2024/06/13): Override with an empty function is a rare code pattern
     // to make it clear this is the intented and not just an "I'm too lazy to implement it"
@@ -147,16 +130,16 @@ public:
 
     /// Support for constraints.
     void applyJT(
-        const sofa::core::ConstraintParams *cparams,
-        const vector<In1DataMatrixDeriv *> &dataMatOut1Const,
-        const vector<In2DataMatrixDeriv *> &dataMatOut2Const,
-        const vector<const OutDataMatrixDeriv *> &dataMatInConst) override;
+            const sofa::core::ConstraintParams *cparams,
+            const vector<In1DataMatrixDeriv *> &dataMatOut1Const,
+            const vector<In2DataMatrixDeriv *> &dataMatOut2Const,
+            const vector<const OutDataMatrixDeriv *> &dataMatInConst) override;
     /// @}
     /////////////////////////////////////////////////////////////////////////////
 
 
     void computeBBox(const sofa::core::ExecParams *params, bool onlyVisible) override;
-    void computeLogarithm(const double &x, const Matrix4 &gX, Matrix4 &log_gX);
+    void computeLogarithm(const double &x, const Mat4x4 &gX, Mat4x4 &log_gX);
 
 protected:
     ////////////////////////// Inherited attributes ////////////////////////////
@@ -194,11 +177,11 @@ protected:
 
 #if !defined(SOFA_COSSERAT_CPP_DiscreteCosseratMapping)
 extern template class SOFA_COSSERAT_API DiscreteCosseratMapping<
-    sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types,
-    sofa::defaulttype::Rigid3Types>;
+        sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types,
+        sofa::defaulttype::Rigid3Types>;
 extern template class SOFA_COSSERAT_API DiscreteCosseratMapping<
-    sofa::defaulttype::Vec6Types, sofa::defaulttype::Rigid3Types,
-    sofa::defaulttype::Rigid3Types>;
+        sofa::defaulttype::Vec6Types, sofa::defaulttype::Rigid3Types,
+        sofa::defaulttype::Rigid3Types>;
 #endif
 
 } // namespace Cosserat::mapping

@@ -79,18 +79,12 @@ public:
     // typedefs are public
     typedef typename In1::Coord Coord1;
     typedef typename In1::Deriv Deriv1;
-    //typedef typename In1::VecCoord In1VecCoord;
-    //typedef typename In1::VecDeriv In1VecDeriv;
 
     typedef typename In2::Coord Coord2;
     typedef typename In2::Deriv Deriv2;
-    //typedef typename In2::VecCoord In2VecCoord;
-    //typedef typename In2::VecDeriv In2VecDeriv;
 
     typedef typename Out::Coord OutCoord;
     typedef typename Out::Deriv OutDeriv;
-    //typedef typename Out::VecCoord OutVecCoord;
-    //typedef typename Out::VecDeriv OutVecDeriv;
 
 public:
     // TODO(dmarchal: 2024/06/07): There is a lot of public attributes is this
