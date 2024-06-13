@@ -49,67 +49,21 @@ DiscreteDynamicCosseratMapping<TIn1, TIn2, TOut>::DiscreteDynamicCosseratMapping
 // _________________________________________________________________________________________
 
 template <class TIn1, class TIn2, class TOut>
-void DiscreteDynamicCosseratMapping<TIn1, TIn2, TOut>::init()
+void DiscreteDynamicCosseratMapping<TIn1, TIn2, TOut>::doBaseCosseratInit()
 {
-    Inherit1::init();
-
-    if(this->getFromModels1().empty())
-    {
-        msg_error() << "Error while initializing ; input getFromModels1 not found" ;
-        return;
-    }
-
-    if(this->getFromModels2().empty())
-    {
-        msg_error() << "Error while initializing ; output getFromModels2 not found" ;
-        return;
-    }
-
-    if(this->getToModels().empty())
-    {
-        msg_error() << "Error while initializing ; output Model not found" ;
-        return;
-    }
-
-    printf("=================================> Init from the DiscretDynamicCosseratMapping component \n");
-
     // Fill the initial vector
     const OutDataVecCoord* xfromData = m_toModel->read(sofa::core::ConstVecCoordId::position());
     const OutVecCoord xfrom = xfromData->getValue();
-    //    WriteAccessor<Data < helper::vector<double>>> curv_abs_output = d_curv_abs_frames;
-    //    curv_abs_output.clear();
 
     m_vecTransform.clear();
     for (unsigned int i = 0; i < xfrom.size(); i++) {
         m_vecTransform.push_back(xfrom[i]);
     }
 
-    //initialize the constant matrix m_matrixBi[0][0] = 1.0;
     for(size_t i = 0 ; i < 3; i++) m_matrixBi[i][i] = 1.0;
 
     this->initialize();
 }
-
-
-template <class TIn1, class TIn2, class TOut>
-void DiscreteDynamicCosseratMapping<TIn1, TIn2, TOut>::bwdInit()
-{
-
-}
-
-template <class TIn1, class TIn2, class TOut>
-void DiscreteDynamicCosseratMapping<TIn1, TIn2, TOut>::reinit()
-{
-
-}
-
-template <class TIn1, class TIn2, class TOut>
-void DiscreteDynamicCosseratMapping<TIn1, TIn2, TOut>::reset()
-{
-    reinit();
-}
-
-
 
 template <class TIn1, class TIn2, class TOut>
 void DiscreteDynamicCosseratMapping<TIn1, TIn2, TOut>::apply(

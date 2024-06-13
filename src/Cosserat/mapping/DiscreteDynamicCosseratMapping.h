@@ -142,17 +142,10 @@ protected:
     using BaseCosseratMapping<TIn1, TIn2, TOut>::m_fromModel1;
     using BaseCosseratMapping<TIn1, TIn2, TOut>::m_fromModel2;
 
-
 public:
-
-
     /**********************SOFA METHODS**************************/
-    void init() override;
-    virtual void bwdInit() override;  // get the points
-    virtual void reset() override;
-    virtual void reinit() override;
+    void doBaseCosseratInit() final override;
     void draw(const sofa::core::visual::VisualParams* vparams) override;
-
     /**********************MAPPING METHODS**************************/
     void apply(
         const sofa::core::MechanicalParams* /* mparams */,

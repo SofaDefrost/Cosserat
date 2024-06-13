@@ -73,32 +73,8 @@ DiscreteCosseratMapping<TIn1, TIn2, TOut>::DiscreteCosseratMapping() :
                          "by another body.")) {}
 
 template <class TIn1, class TIn2, class TOut>
-void DiscreteCosseratMapping<TIn1, TIn2, TOut>::init()
+void DiscreteCosseratMapping<TIn1, TIn2, TOut>::doBaseCosseratInit()
 {
-
-    if (this->getFromModels1().empty() || this->getFromModels2().empty() ||
-        this->getToModels().empty()) {
-        msg_error() << "Error while initializing ; input "
-                       "getFromModels1/getFromModels2/output not found";
-        return;
-    }
-
-    reinit();
-    // I call Init here since we build the mechanics only in the
-    Inherit1::init();
-
-    m_colorMap.setColorScheme("Blue to Red");
-    m_colorMap.reinit();
-}
-
-template <class TIn1, class TIn2, class TOut>
-void DiscreteCosseratMapping<TIn1, TIn2, TOut>::reinit()
-{
-
-    m_fromModel1 = this->getFromModels1()[0]; /// Cosserat deformations (torsion, bending_y/_z, elongation and shear_y/_z), in local frame
-    m_fromModel2 = this->getFromModels2()[0]; ///< Cosserat base, in global frame
-    m_toModel = this->getToModels()[0];       ///< Cosserat rigid frames, in global frame
-
     // Fill the initial vector void init() override;
     const OutDataVecCoord *xFromData =
         m_toModel->read(sofa::core::ConstVecCoordId::position());
@@ -109,14 +85,12 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::reinit()
         m_vecTransform.push_back(xFrom[i]);
     }
 
-    if (d_debug.getValue()) {
-        msg_info("DiscreteCosseratMapping") << " ================="
-                                               "============================ ";
-        msg_info("DiscreteCosseratMapping")
-            << " m_vecTransform : " << m_vecTransform;
-    }
-
     this->initialize();
+
+    m_colorMap.setColorScheme("Blue to Red");
+    m_colorMap.reinit();
+
+    msg_info() << " m_vecTransform : " << m_vecTransform;
 }
 
 template <class TIn1, class TIn2, class TOut>

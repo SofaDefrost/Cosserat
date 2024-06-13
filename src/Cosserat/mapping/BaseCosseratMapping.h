@@ -140,7 +140,8 @@ public:
 
 public:
     /********************** Inhertited from BaseObject   **************/
-    void init() override;
+    void init() final override;
+    virtual void doBaseCosseratInit() = 0;
 
     /************************* BaseCosserat **************************/
     // TODO(dmarchal:2024/06/07), so we have "initialize" and "init"
