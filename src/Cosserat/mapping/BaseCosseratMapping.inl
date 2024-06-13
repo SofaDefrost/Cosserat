@@ -55,7 +55,6 @@ BaseCosseratMapping<TIn1, TIn2, TOut>::BaseCosseratMapping()
       d_debug(initData(&d_debug, false, "debug", "printf for the debug")),
       m_index_input(0) {}
 
-// _________________________________________________________________________________________
 
 template <class TIn1, class TIn2, class TOut>
 void BaseCosseratMapping<TIn1, TIn2, TOut>::init()
@@ -87,22 +86,23 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::init()
     m_toModel = toModels[0];
 
     // Fill the initial vector
-    const OutDataVecCoord* xfromData = m_toModel->read(sofa::core::ConstVecCoordId::position());
-    const OutVecCoord xfrom = xfromData->getValue();
+    auto xfromData = m_toModel->read(sofa::core::ConstVecCoordId::position());
+    const vector<OutCoord> xfrom = xfromData->getValue();
 
     m_vecTransform.clear();
     for (unsigned int i = 0; i < xfrom.size(); i++) {
         m_vecTransform.push_back(xfrom[i]);
     }
 
-    initialize();
+    initializeFrames();
     doBaseCosseratInit();
     Inherit1::init();
 }
 
 //___________________________________________________________________________
 template <class TIn1, class TIn2, class TOut>
-void BaseCosseratMapping<TIn1, TIn2, TOut>::initialize() {
+void BaseCosseratMapping<TIn1, TIn2, TOut>::initializeFrames()
+{
     // For each frame in the global frame, find the segment of the beam to which
     // it is attached. Here we only use the information from the curvilinear
     // abscissa of each frame.
@@ -114,7 +114,7 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::initialize() {
 
     m_indicesVectors.clear();
     m_framesLengthVectors.clear();
-    m_BeamLengthVectors.clear();
+    m_beamLengthVectors.clear();
     m_indicesVectorsDraw.clear();
 
     size_t sz = curv_abs_frames.size();
@@ -144,7 +144,7 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::initialize() {
 
     for (size_t j = 0; j < sz - 1; ++j)
     {
-        m_BeamLengthVectors.emplace_back(curv_abs_section[j + 1] - curv_abs_section[j]);
+        m_beamLengthVectors.emplace_back(curv_abs_section[j + 1] - curv_abs_section[j]);
     }
 
     msg_info()
@@ -185,7 +185,7 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::computeExponentialSE3(
     _g_X.getsub(0, 0, M); // get the rotation matrix
 
     // convert the rotation 3x3 matrix to a quaternion
-    Quat<Real> R;
+    Quat<SReal> R;
     R.fromMatrix(M);
     g_X_n = Transform(Vec3(_g_X(0, 3), _g_X(1, 3), _g_X(2, 3)), R);
 }
@@ -193,10 +193,9 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::computeExponentialSE3(
 // Fill exponential vectors
 template <class TIn1, class TIn2, class TOut>
 void BaseCosseratMapping<TIn1, TIn2, TOut>::updateExponentialSE3(
-        const In1VecCoord &inDeform)
+        const vector<Coord1> &inDeform)
 {
-    msg_info() << " ########## updateMap 2########";
-    auto curv_abs_frames = sofa::helper::getReadAccessor(d_curv_abs_frames);
+    auto curv_abs_frames = getReadAccessor(d_curv_abs_frames);
 
     m_framesExponentialSE3Vectors.clear();
     m_nodesExponentialSE3Vectors.clear();
@@ -204,14 +203,10 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::updateExponentialSE3(
 
     const unsigned int sz = curv_abs_frames.size();
 
-    msg_info() << " ########## updateMap 3 , "<< sz << " et " << inDeform.size() << "########";
-
     // Compute exponential at each frame point
     for (size_t i = 0; i < sz; ++i)
     {
         Transform g_X_frame_i;
-        msg_info() << " ########## updateMap 4, "<< i  << "-> "  << "########";
-        msg_info() << " ########## updateMap 5, "<< i  << "-> " << m_indicesVectors[i] << "########";
 
         const Coord1 strain_n = inDeform[m_indicesVectors[i] - 1]; // Cosserat reduce coordinates (strain)
 
@@ -235,7 +230,7 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::updateExponentialSE3(
     for (unsigned int j = 0; j < inDeform.size(); ++j)
     {
         Coord1 strain_n = inDeform[j];
-        const SReal curv_abs_x = m_BeamLengthVectors[j];
+        const SReal curv_abs_x = m_beamLengthVectors[j];
 
         Transform g_X_node_j;
         computeExponentialSE3(curv_abs_x, strain_n, g_X_node_j);
@@ -315,7 +310,7 @@ auto BaseCosseratMapping<TIn1, TIn2, TOut>::computeLogarithm(const double &x,
 
 template <class TIn1, class TIn2, class TOut>
 void BaseCosseratMapping<TIn1, TIn2, TOut>::updateTangExpSE3(
-        const In1VecCoord &inDeform) {
+        const vector<Coord1> &inDeform) {
 
     // Curv abscissa of nodes and frames
     auto curv_abs_section = getReadAccessor(d_curv_abs_section);
@@ -348,7 +343,7 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::updateTangExpSE3(
 
     for (size_t j = 1; j < curv_abs_section.size(); j++) {
         Coord1 strain_node_i = inDeform[j - 1];
-        double x = m_BeamLengthVectors[j - 1];
+        double x = m_beamLengthVectors[j - 1];
         Tangent temp;
         temp.clear();
         computeTangExp(x, strain_node_i, temp);
@@ -409,12 +404,12 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::computeTangExp(double &curv_abs_n,
 template <class TIn1, class TIn2, class TOut>
 [[maybe_unused]] Vec6
 BaseCosseratMapping<TIn1, TIn2, TOut>::computeETA(const Vec6 &baseEta,
-                                                  const In1VecDeriv &k_dot,
+                                                  const vector<Deriv1> &k_dot,
                                                   const double abs_input)
 {
 
     // Get the positions from model 0. This function returns the position wrapped in a Data<>
-    auto d_x1 = fromModels1[0]->read(sofa::core::ConstVecCoordId::position());
+    auto d_x1 = m_fromModel1->read(sofa::core::ConstVecCoordId::position());
 
     // To access the actual content (in this case position) from a data, we have to use
     // a read accessor that insures the data is updated according to DDGNode state
@@ -480,7 +475,7 @@ Mat3x3 BaseCosseratMapping<TIn1, TIn2, TOut>::extractRotMatrix(const Transform &
     // TODO(dmarchal: 2024/06/07) The following code should probably become
     // utility function building a 3x3 matix from a quaternion should probably
     // does not need this amount of code.
-    Real R[4][4];
+    SReal R[4][4];
     q.buildRotationMatrix(R);
     Mat3x3 mat;
     for (unsigned int k = 0; k < 3; k++)
@@ -497,7 +492,7 @@ auto BaseCosseratMapping<TIn1, TIn2, TOut>::buildProjector(const Transform &T)
     // TODO(dmarchal: 2024/06/07) The following code should probably become
     // utility function building a 3x3 matix from a quaternion should probably
     // does not need this amount of code.
-    Real R[4][4];
+    SReal R[4][4];
     (T.getOrientation()).buildRotationMatrix(R);
     for (unsigned int i = 0; i < 3; i++) {
         for (unsigned int j = 0; j < 3; j++) {
@@ -526,7 +521,7 @@ auto BaseCosseratMapping<TIn1, TIn2, TOut>::buildXiHat(const Coord1 &strain_i) -
 }
 
 template <class TIn1, class TIn2, class TOut>
-auto BaseCosseratMapping<TIn1, TIn2, TOut>::getTildeMatrix(const sofa::type::Vec3 &u)
+auto BaseCosseratMapping<TIn1, TIn2, TOut>::getTildeMatrix(const Vec3 &u)
 -> Mat3x3 {
     sofa::type::Matrix3 tild;
     tild[0][1] = -u[2];
@@ -627,8 +622,5 @@ auto BaseCosseratMapping<TIn1, TIn2, TOut>::piecewiseLogmap(const _SE3 &g_x) -> 
                     Xi_hat(1, 3), Xi_hat(2, 3));
     return xci;
 }
-
-
-
 
 } // namespace cosserat::mapping

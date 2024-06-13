@@ -83,7 +83,7 @@ void BaseCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>::computeExponentia
   g_X_n.getsub(0, 0, M); // get the rotation matrix
 
   // convert the rotation 3x3 matrix to a quaternion
-  sofa::type::Quat<Real> R;
+  sofa::type::Quat<SReal> R;
   R.fromMatrix(M);
   Trans = Transform(Vec3(g_X_n(0, 3), g_X_n(1, 3), g_X_n(2, 3)), R);
 }
