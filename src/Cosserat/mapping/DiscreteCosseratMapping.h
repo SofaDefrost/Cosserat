@@ -44,15 +44,12 @@ using sofa::type::Quat;
 using std::get;
 using sofa::Data;
 
+
 /*!
  * \class DiscreteCosseratMapping
  * @brief Computes and map the length of the beams
  *
- * This is a component:
- * https://www.sofa-framework.org/community/doc/programming-with-sofa/create-your-component/
  */
-// using Cosserat::mapping::BaseCosserat;
-
 template <class TIn1, class TIn2, class TOut>
 class DiscreteCosseratMapping : public BaseCosseratMapping<TIn1, TIn2, TOut> {
 public:
@@ -99,10 +96,9 @@ public:
     typedef Data<OutMatrixDeriv> OutDataMatrixDeriv;
     typedef typename SolidTypes<Real2>::Transform Transform;
 
-protected:
-    sofa::core::State<In1> *m_fromModel1;
-    sofa::core::State<In2> *m_fromModel2;
-    sofa::core::State<Out> *m_toModel;
+    //////////////////////////////////////////////////////////////////////
+    /// @name Data Fields
+    /// @{
     Data<int> d_deformationAxis;
     Data<Real2> d_max;
     Data<Real2> d_min;
@@ -111,20 +107,57 @@ protected:
     Data<sofa::type::RGBAColor> d_color;
     Data<vector<int>> d_index;
     Data<unsigned int> d_baseIndex;
+    /// @}
+    //////////////////////////////////////////////////////////////////////
 
 public:
-    typedef sofa::MultiLink<DiscreteCosseratMapping<In1, In2, Out>,
-                            sofa::core::State<In1>,
-                            sofa::BaseLink::FLAG_STOREPATH | sofa::BaseLink::FLAG_STRONGLINK>
-        LinkFromModels1;
-    typedef sofa::MultiLink<DiscreteCosseratMapping<In1, In2, Out>,
-                            sofa::core::State<In2>,
-                            sofa::BaseLink::FLAG_STOREPATH | sofa::BaseLink::FLAG_STRONGLINK>
-        LinkFromModels2;
-    typedef sofa::MultiLink<DiscreteCosseratMapping<In1, In2, Out>,
-                            sofa::core::State<Out>,
-                            sofa::BaseLink::FLAG_STOREPATH | sofa::BaseLink::FLAG_STRONGLINK>
-        LinkToModels;
+    //////////////////////////////////////////////////////////////////////
+    /// The following methods are inherited from BaseObject
+    /// @{
+    void init() override;
+    void reinit() override;
+    void draw(const sofa::core::visual::VisualParams *vparams) override;
+    /// @}
+    //////////////////////////////////////////////////////////////////////
+
+
+    //////////////////////////////////////////////////////////////////////
+    /// The following method are inherited from MultiMapping
+    /// @{
+    void apply(const sofa::core::MechanicalParams * /* mparams */,
+          const vector<OutDataVecCoord *> &dataVecOutPos,
+          const vector<const In1DataVecCoord *> &dataVecIn1Pos,
+          const vector<const In2DataVecCoord *> &dataVecIn2Pos) override;
+
+    void applyJ(const sofa::core::MechanicalParams * /* mparams */,
+           const vector<OutDataVecDeriv *> &dataVecOutVel,
+           const vector<const In1DataVecDeriv *> &dataVecIn1Vel,
+           const vector<const In2DataVecDeriv *> &dataVecIn2Vel) override;
+
+    void applyJT(const sofa::core::MechanicalParams * /* mparams */,
+            const vector<In1DataVecDeriv *> &dataVecOut1Force,
+            const vector<In2DataVecDeriv *> &dataVecOut2RootForce,
+            const vector<const OutDataVecDeriv *> &dataVecInForce) override;
+
+    // TODO(dmarchal:2024/06/13): Override with an empty function is a rare code pattern
+    // to make it clear this is the intented and not just an "I'm too lazy to implement it"
+    // please always have a precise code comment explaning with details why it is empty.
+    void applyDJT(const sofa::core::MechanicalParams * /*mparams*/,
+                  sofa::core::MultiVecDerivId /*inForce*/,
+                  sofa::core::ConstMultiVecDerivId /*outForce*/) override {}
+
+    /// Support for constraints.
+    void applyJT(
+        const sofa::core::ConstraintParams *cparams,
+        const vector<In1DataMatrixDeriv *> &dataMatOut1Const,
+        const vector<In2DataMatrixDeriv *> &dataMatOut2Const,
+        const vector<const OutDataMatrixDeriv *> &dataMatInConst) override;
+    /// @}
+    /////////////////////////////////////////////////////////////////////////////
+
+
+    void computeBBox(const sofa::core::ExecParams *params, bool onlyVisible) override;
+    void computeLogarithm(const double &x, const Matrix4 &gX, Matrix4 &log_gX);
 
 protected:
     ////////////////////////// Inherited attributes ////////////////////////////
@@ -132,7 +165,6 @@ protected:
     /// Bring inherited attributes and function in the current lookup context.
     /// otherwise any access to the base::attribute would require
     /// the "this->" approach.
-    ///
     using BaseCosseratMapping<TIn1, TIn2, TOut>::m_indicesVectors;
     using BaseCosseratMapping<TIn1, TIn2, TOut>::d_curv_abs_section;
     using BaseCosseratMapping<TIn1, TIn2, TOut>::d_curv_abs_frames;
@@ -148,55 +180,16 @@ protected:
     using BaseCosseratMapping<TIn1, TIn2, TOut>::m_index_input;
     using BaseCosseratMapping<TIn1, TIn2, TOut>::m_indicesVectorsDraw;
     using BaseCosseratMapping<TIn1, TIn2, TOut>::computeTheta;
+    //////////////////////////////////////////////////////////////////////////////
 
-protected:
-    /// Constructor
-    DiscreteCosseratMapping();
-    /// Destructor
-    ~DiscreteCosseratMapping() override {}
-
-public:
-    /**********************SOFA METHODS**************************/
-    void init() override;
-    void reinit() override;
-    void draw(const sofa::core::visual::VisualParams *vparams) override;
-
-    /**********************MAPPING METHODS**************************/
-    void
-    apply(const sofa::core::MechanicalParams * /* mparams */,
-          const vector<OutDataVecCoord *> &dataVecOutPos,
-          const vector<const In1DataVecCoord *> &dataVecIn1Pos,
-          const vector<const In2DataVecCoord *> &dataVecIn2Pos) override;
-
-    void
-    applyJ(const sofa::core::MechanicalParams * /* mparams */,
-           const vector<OutDataVecDeriv *> &dataVecOutVel,
-           const vector<const In1DataVecDeriv *> &dataVecIn1Vel,
-           const vector<const In2DataVecDeriv *> &dataVecIn2Vel) override;
-
-    // ApplyJT Force
-    void
-    applyJT(const sofa::core::MechanicalParams * /* mparams */,
-            const vector<In1DataVecDeriv *> &dataVecOut1Force,
-            const vector<In2DataVecDeriv *> &dataVecOut2RootForce,
-            const vector<const OutDataVecDeriv *> &dataVecInForce) override;
-
-    void applyDJT(const sofa::core::MechanicalParams * /*mparams*/,
-                  sofa::core::MultiVecDerivId /*inForce*/,
-                  sofa::core::ConstMultiVecDerivId /*outForce*/) override {}
-
-    /// This method must be reimplemented by all mappings if they need to support
-    /// constraints.
-    virtual void applyJT(
-        const sofa::core::ConstraintParams *cparams,
-        const vector<In1DataMatrixDeriv *> &dataMatOut1Const,
-        const vector<In2DataMatrixDeriv *> &dataMatOut2Const,
-        const vector<const OutDataMatrixDeriv *> &dataMatInConst) override;
-    void computeBBox(const sofa::core::ExecParams *params, bool onlyVisible) override;
-    void computeLogarithm(const double &x, const Matrix4 &gX, Matrix4 &log_gX);
-
-protected:
     sofa::helper::ColorMap m_colorMap;
+    sofa::core::State<In1> *m_fromModel1;
+    sofa::core::State<In2> *m_fromModel2;
+    sofa::core::State<Out> *m_toModel;
+
+protected:
+    DiscreteCosseratMapping();
+    ~DiscreteCosseratMapping() override {}
 };
 
 #if !defined(SOFA_COSSERAT_CPP_DiscreteCosseratMapping)

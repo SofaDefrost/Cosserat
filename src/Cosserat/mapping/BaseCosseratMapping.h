@@ -113,18 +113,6 @@ public:
     typedef sofa::Data<OutVecDeriv> OutDataVecDeriv;
     typedef sofa::Data<OutMatrixDeriv> OutDataMatrixDeriv;
 
-    typedef sofa::MultiLink<BaseCosseratMapping<In1, In2, Out>, sofa::core::State<In1>,
-                            sofa::BaseLink::FLAG_STOREPATH | sofa::BaseLink::FLAG_STRONGLINK>
-        LinkFromModels1;
-    typedef sofa::MultiLink<BaseCosseratMapping<In1, In2, Out>, sofa::core::State<In2>,
-                            sofa::BaseLink::FLAG_STOREPATH | sofa::BaseLink::FLAG_STRONGLINK>
-        LinkFromModels2;
-
-    [[maybe_unused]] typedef sofa::MultiLink<
-    BaseCosseratMapping<In1, In2, Out>, sofa::core::State<Out>,
-        sofa::BaseLink::FLAG_STOREPATH | sofa::BaseLink::FLAG_STRONGLINK>
-        LinkToModels;
-
 public:
     // TODO(dmarchal: 2024/06/07): There is a lot of public attributes is this
     // really needed ?
@@ -231,9 +219,8 @@ protected:
                                Transform &Trans);
 
     // TODO(dmarchal: 2024/06/07):
-    //   - two naming convention
-    //   - unclear the difference between computeAdjoing and buildAdjoint ... is
-    //   there room for factoring things ?
+    //   - clarify the difference between computeAdjoing and buildAdjoint ...
+    //   - clarify why we need Transform and Vec6.
     void computeAdjoint(const Transform &frame, Mat6x6 &adjoint);
     void computeAdjoint(const Vec6 &frame, Mat6x6 &adjoint);
 
