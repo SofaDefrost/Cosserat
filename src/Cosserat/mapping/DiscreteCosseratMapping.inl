@@ -47,12 +47,12 @@ DiscreteCosseratMapping<TIn1, TIn2, TOut>::DiscreteCosseratMapping() :
     d_deformationAxis(
         initData(&d_deformationAxis, (int)1, "deformationAxis",
                  "the axis in which we want to show the deformation.\n")),
-    d_max(initData(&d_max, (Real2)1.0e-2, "max",
+    d_max(initData(&d_max, (SReal)1.0e-2, "max",
                    "the maximum of the deformation.\n")),
-    d_min(initData(&d_min, (Real2)0.0, "min",
+    d_min(initData(&d_min, (SReal)0.0, "min",
                    "the minimum of the deformation.\n")),
     d_radius(
-        initData(&d_radius, (Real2)0.05, "radius",
+        initData(&d_radius, (SReal)0.05, "radius",
                  "the axis in which we want to show the deformation.\n")),
     d_drawMapBeam(
         initData(&d_drawMapBeam, true, "nonColored",
@@ -138,11 +138,11 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::apply(
 
 template <class TIn1, class TIn2, class TOut>
 void DiscreteCosseratMapping<TIn1, TIn2, TOut>::computeLogarithm(
-    const double &x, const Matrix4 &gX, Matrix4 &log_gX) {
+    const double &x, const Mat4x4 &gX, Mat4x4 &log_gX) {
 
     // Compute theta before everything
     double theta = computeTheta(x, gX);
-    Matrix4 I4;
+    Mat4x4 I4;
     I4.clear();
     I4.identity();
     log_gX.clear();
@@ -564,17 +564,17 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJT(
 
 template <class TIn1, class TIn2, class TOut>
 void DiscreteCosseratMapping<TIn1, TIn2, TOut>::computeBBox(
-    const sofa::core::ExecParams *, bool) {
-    //  const VecCoord& x = getVertices(); //m_vertices.getValue();
+    const sofa::core::ExecParams *, bool)
+{
     const OutVecCoord &x =
         m_toModel->read(sofa::core::ConstVecCoordId::position())->getValue();
 
-    SReal minBBox[3] = {std::numeric_limits<Real1>::max(),
-                        std::numeric_limits<Real1>::max(),
-                        std::numeric_limits<Real1>::max()};
-    SReal maxBBox[3] = {-std::numeric_limits<Real1>::max(),
-                        -std::numeric_limits<Real1>::max(),
-                        -std::numeric_limits<Real1>::max()};
+    SReal minBBox[3] = {std::numeric_limits<SReal>::max(),
+                        std::numeric_limits<SReal>::max(),
+                        std::numeric_limits<SReal>::max()};
+    SReal maxBBox[3] = {-std::numeric_limits<SReal>::max(),
+                        -std::numeric_limits<SReal>::max(),
+                        -std::numeric_limits<SReal>::max()};
     for (std::size_t i = 0; i < x.size(); i++) {
         const OutCoord &p = x[i];
         for (int c = 0; c < 3; c++) {
@@ -602,7 +602,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::draw(
         m_toModel->read(sofa::core::ConstVecCoordId::position());
     const OutVecCoord xData = xfromData->getValue();
     vector<Vec3> positions;
-    vector<sofa::type::Quat<Real2>> Orientation;
+    vector<sofa::type::Quat<SReal>> Orientation;
     positions.clear();
     Orientation.clear();
     unsigned int sz = xData.size();
@@ -623,9 +623,9 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::draw(
                                           d_radius.getValue(), drawColor);
 
     // Define color map
-    Real2 min = d_min.getValue();
-    Real2 max = d_max.getValue();
-    sofa::helper::ColorMap::evaluator<Real2> _eval = m_colorMap.getEvaluator(min, max);
+    SReal min = d_min.getValue();
+    SReal max = d_max.getValue();
+    sofa::helper::ColorMap::evaluator<SReal> _eval = m_colorMap.getEvaluator(min, max);
 
     glLineWidth(d_radius.getValue());
     glBegin(GL_LINES);
