@@ -89,14 +89,10 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::apply(
     if (dataVecOutPos.empty() || dataVecIn1Pos.empty() || dataVecIn2Pos.empty())
         return;
 
-    msg_info() << " ########## Apply Function ########";
-
     /// Do Apply
     // We need only one input In model and input Root model (if present)
     const In1VecCoord &in1 = dataVecIn1Pos[0]->getValue();
     const In2VecCoord &in2 = dataVecIn2Pos[0]->getValue();
-
-    msg_info() << " ########## Apply Function 2########";
 
     const auto sz = d_curv_abs_frames.getValue().size();
     OutVecCoord &out = *dataVecOutPos[0]->beginEdit(); // frames states
@@ -173,27 +169,6 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::computeLogarithm(
                         (x_theta * cos_Xtheta - sin_Xtheta) * (gX * gX * gX));
     }
 }
-
-// template<class In1VecCoord, class Mat6x6>
-// void computeViolation(In1VecCoord& inDeform, const helper::vector<double>
-// m_framesLengthVectors, const
-//                        size_t sz, std::function<double(int i, int j)> f)
-//{
-//     for (std::size_t i = 0; i < sz; i++) {
-//         Mat6x6 temp ;
-
-//        type::Vec3 k = inDeform[m_indicesVectors[i]-1];
-//        double  x = m_framesLengthVectors[i];
-//        compute_Tang_Exp(x,k,temp) ;
-//        m_framesTangExpVectors.push_back(temp);
-
-////        if (d_debug.getValue()){
-////            printf("__________________________________________\n");
-////            std::cout << "x :"<< x << "; k :"<< k << std::endl;
-////            std::cout<< "m_framesTangExpVectors :"<<
-///m_framesTangExpVectors[i] << std::endl; /        }
-//    }
-//}
 
 template <class TIn1, class TIn2, class TOut>
 void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJ(

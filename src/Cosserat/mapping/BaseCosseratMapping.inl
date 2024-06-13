@@ -86,22 +86,6 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::init()
     m_fromModel2 = fromModels2[0];
     m_toModel = toModels[0];
 
-    if(m_fromModel1==nullptr)
-    {
-        msg_error() << "input1 not found" ;
-        return;
-    }
-    if(m_fromModel2==nullptr)
-    {
-        msg_error() << "input1 not found" ;
-        return;
-    }
-    if(m_toModel==nullptr)
-    {
-        msg_error() << "input1 not found" ;
-        return;
-    }
-
     // Fill the initial vector
     const OutDataVecCoord* xfromData = m_toModel->read(sofa::core::ConstVecCoordId::position());
     const OutVecCoord xfrom = xfromData->getValue();
