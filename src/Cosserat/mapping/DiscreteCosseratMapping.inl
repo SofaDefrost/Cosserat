@@ -75,22 +75,8 @@ DiscreteCosseratMapping<TIn1, TIn2, TOut>::DiscreteCosseratMapping() :
 template <class TIn1, class TIn2, class TOut>
 void DiscreteCosseratMapping<TIn1, TIn2, TOut>::doBaseCosseratInit()
 {
-    // Fill the initial vector void init() override;
-    const OutDataVecCoord *xFromData =
-        m_toModel->read(sofa::core::ConstVecCoordId::position());
-    const OutVecCoord xFrom = xFromData->getValue();
-
-    m_vecTransform.clear(); // initialise with the rigids frames
-    for (unsigned int i = 0; i < xFrom.size(); i++) {
-        m_vecTransform.push_back(xFrom[i]);
-    }
-
-    this->initialize();
-
     m_colorMap.setColorScheme("Blue to Red");
     m_colorMap.reinit();
-
-    msg_info() << " m_vecTransform : " << m_vecTransform;
 }
 
 template <class TIn1, class TIn2, class TOut>

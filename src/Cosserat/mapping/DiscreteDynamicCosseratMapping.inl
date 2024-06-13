@@ -45,25 +45,13 @@ template <class TIn1, class TIn2, class TOut>
 DiscreteDynamicCosseratMapping<TIn1, TIn2, TOut>::DiscreteDynamicCosseratMapping()
 {}
 
-
-// _________________________________________________________________________________________
-
 template <class TIn1, class TIn2, class TOut>
 void DiscreteDynamicCosseratMapping<TIn1, TIn2, TOut>::doBaseCosseratInit()
 {
-    // Fill the initial vector
-    const OutDataVecCoord* xfromData = m_toModel->read(sofa::core::ConstVecCoordId::position());
-    const OutVecCoord xfrom = xfromData->getValue();
-
-    m_vecTransform.clear();
-    for (unsigned int i = 0; i < xfrom.size(); i++) {
-        m_vecTransform.push_back(xfrom[i]);
-    }
-
-    for(size_t i = 0 ; i < 3; i++) m_matrixBi[i][i] = 1.0;
-
-    this->initialize();
+    for(size_t i = 0 ; i < 3; i++)
+        m_matrixBi[i][i] = 1.0;
 }
+
 
 template <class TIn1, class TIn2, class TOut>
 void DiscreteDynamicCosseratMapping<TIn1, TIn2, TOut>::apply(

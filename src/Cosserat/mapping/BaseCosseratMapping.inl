@@ -64,33 +64,36 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::init()
 
     if(fromModels1.empty())
     {
-        msg_error() << "Error while initializing ; input getFromModels1 not found" ;
+        msg_error() << "input1 not found" ;
         return;
     }
 
     if(fromModels2.empty())
     {
-        msg_error() << "Error while initializing ; output getFromModels2 not found" ;
+        msg_error() << "input2 not found" ;
         return;
     }
 
     if(toModels.empty())
     {
-        msg_error() << "Error while initializing ; output Model not found" ;
+        msg_error() << "output missing" ;
         return;
     }
-
-    //TODO(dmarchal, 2024/07/12): is the following line really needed ?
-    //     it initialize a local variable which initialize another data.
-    //     is it to force a xfromData updates through the use of getValue(). In addition
-    //     this is puzzleing as toModel is the destination of the computation of the mapping.
-    //     to me it should be safe to remove the two line.. and thus the init :)
-    const OutDataVecCoord *xfromData = toModels[0]->read(sofa::core::ConstVecCoordId::position());
-    const OutVecCoord xfrom = xfromData->getValue();
 
     m_fromModel1 = fromModels1[0];
     m_fromModel2 = fromModels2[0];
     m_toModel = toModels[0];
+
+    // Fill the initial vector
+    const OutDataVecCoord* xfromData = m_toModel->read(sofa::core::ConstVecCoordId::position());
+    const OutVecCoord xfrom = xfromData->getValue();
+
+    m_vecTransform.clear();
+    for (unsigned int i = 0; i < xfrom.size(); i++) {
+        m_vecTransform.push_back(xfrom[i]);
+    }
+
+    doBaseCosseratInit();
 }
 
 template <class TIn1, class TIn2, class TOut>
@@ -392,7 +395,7 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::initialize() {
     auto curv_abs_frames = getReadAccessor(d_curv_abs_frames);
 
     msg_info()
-            << " curv_abs_section " << curv_abs_frames.size() << "; curv_abs_frames: " << curv_abs_frames.size();
+            << " curv_abs_section " << curv_abs_section.size() << "; curv_abs_frames: " << curv_abs_frames.size();
 
     m_indicesVectors.clear();
     m_framesLengthVectors.clear();
