@@ -24,26 +24,15 @@
 #include <Cosserat/types.h>
 
 #include <sofa/core/Multi2Mapping.h>
-#include <sofa/core/config.h>
-#include <sofa/core/objectmodel/BaseObject.h>
-#include <sofa/defaulttype/RigidTypes.h>
-#include <sofa/defaulttype/SolidTypes.h>
-#include <sofa/type/Vec.h>
-//#include <iostream>
-#include <Eigen/Dense>
-#include <cmath>
 
 namespace Cosserat::mapping
 {
 
-// with a private namespace the used named are not polluating the whole
-// sofa::component::mapping ones.
+// Use a private namespace so we are not polluating the Cosserat::mapping.
 namespace
 {
 using namespace std;
 using namespace Eigen;
-using sofa::core::objectmodel::BaseContext;
-using sofa::core::objectmodel::BaseObject;
 using sofa::defaulttype::SolidTypes;
 using sofa::type::Mat6x6;
 using sofa::type::Mat4x4;
@@ -55,8 +44,9 @@ using sofa::type::Vec3;
 using sofa::type::Vec6;
 using sofa::type::Mat;
 
-using se3 = sofa::type::Matrix4;
-using SE3 = sofa::type::Matrix4;
+// TODO(dmarchal: 2024/06/12): please check the comment to confirme this is true
+using SE3 = sofa::type::Matrix4; ///< The "coordinate" in SE3
+using se3 = sofa::type::Matrix4; ///< The "speed" of change of SE3.
 using _se3 = Eigen::Matrix4d;
 using _SE3 = Eigen::Matrix4d;
 
