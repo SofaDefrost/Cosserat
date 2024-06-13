@@ -43,8 +43,7 @@ using sofa::helper::WriteAccessor;
 using sofa::type::RGBAColor;
 
 template <class TIn1, class TIn2, class TOut>
-DiscreteCosseratMapping<TIn1, TIn2, TOut>::DiscreteCosseratMapping()
-    : m_fromModel1(NULL), m_fromModel2(NULL), m_toModel(NULL),
+DiscreteCosseratMapping<TIn1, TIn2, TOut>::DiscreteCosseratMapping() :
     d_deformationAxis(
         initData(&d_deformationAxis, (int)1, "deformationAxis",
                  "the axis in which we want to show the deformation.\n")),
@@ -74,7 +73,9 @@ DiscreteCosseratMapping<TIn1, TIn2, TOut>::DiscreteCosseratMapping()
                          "by another body.")) {}
 
 template <class TIn1, class TIn2, class TOut>
-void DiscreteCosseratMapping<TIn1, TIn2, TOut>::init() {
+void DiscreteCosseratMapping<TIn1, TIn2, TOut>::init()
+{
+
     if (this->getFromModels1().empty() || this->getFromModels2().empty() ||
         this->getToModels().empty()) {
         msg_error() << "Error while initializing ; input "
@@ -91,12 +92,12 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::init() {
 }
 
 template <class TIn1, class TIn2, class TOut>
-void DiscreteCosseratMapping<TIn1, TIn2, TOut>::reinit() {
-    m_fromModel1 = this->getFromModels1()[0]; // Cosserat deformations (torsion,
-        // bending_y/_z, elongation and
-        // shear_y/_z), in local frame
-    m_fromModel2 = this->getFromModels2()[0]; // Cosserat base, in global frame
-    m_toModel = this->getToModels()[0]; // Cosserat rigid frames, in global frame
+void DiscreteCosseratMapping<TIn1, TIn2, TOut>::reinit()
+{
+
+    m_fromModel1 = this->getFromModels1()[0]; /// Cosserat deformations (torsion, bending_y/_z, elongation and shear_y/_z), in local frame
+    m_fromModel2 = this->getFromModels2()[0]; ///< Cosserat base, in global frame
+    m_toModel = this->getToModels()[0];       ///< Cosserat rigid frames, in global frame
 
     // Fill the initial vector void init() override;
     const OutDataVecCoord *xFromData =
