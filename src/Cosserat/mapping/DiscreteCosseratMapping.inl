@@ -85,15 +85,18 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::apply(
     const vector<OutDataVecCoord *> &dataVecOutPos,
     const vector<const In1DataVecCoord *> &dataVecIn1Pos,
     const vector<const In2DataVecCoord *> &dataVecIn2Pos) {
+
     if (dataVecOutPos.empty() || dataVecIn1Pos.empty() || dataVecIn2Pos.empty())
         return;
 
-    if (d_debug.getValue())
-        std::cout << " ########## Apply Function ########" << std::endl;
+    msg_info() << " ########## Apply Function ########";
+
     /// Do Apply
     // We need only one input In model and input Root model (if present)
     const In1VecCoord &in1 = dataVecIn1Pos[0]->getValue();
     const In2VecCoord &in2 = dataVecIn2Pos[0]->getValue();
+
+    msg_info() << " ########## Apply Function 2########";
 
     const auto sz = d_curv_abs_frames.getValue().size();
     OutVecCoord &out = *dataVecOutPos[0]->beginEdit(); // frames states
@@ -105,6 +108,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::apply(
     // Which are the homogeneous matrices of the frames and the nodes in local
     // coordinate.
     this->updateExponentialSE3(in1);
+
     /* Apply the transformation to go from cossserat to SOFA frame*/
     Transform frame0 =
         Transform(In2::getCPos(in2[baseIndex]), In2::getCRot(in2[baseIndex]));
@@ -116,19 +120,21 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::apply(
         }
         frame *= m_framesExponentialSE3Vectors[i]; // frame*gX(x)
 
-        if (d_debug.getValue())
-            std::cout << "Frame  : " << i << " = " << frame << std::endl;
+        msg_info() << "Frame  : " << i << " = " << frame;
 
         Vec3 v = frame.getOrigin();
         Quat q = frame.getOrientation();
         out[i] = OutCoord(v, q);
     }
-    //
-    if (d_debug.getValue()) {
+
+    if (this->f_printLog.getValue())
+    {
+        std::stringstream tmp;
         for (unsigned int i = 0; i < out.size() - 1; i++) {
             Vec3 diff = out[i + 1].getCenter() - out[i].getCenter();
-            std::cout << "dist " << i << "  : " << diff.norm() << std::endl;
+            tmp << "dist " << i << "  : " << diff.norm() << msgendl;
         }
+        msg_info() << tmp.str();
     }
     m_index_input = 0;
     dataVecOutPos[0]->endEdit();

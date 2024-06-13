@@ -60,7 +60,9 @@ BaseCosseratMapping<TIn1, TIn2, TOut>::BaseCosseratMapping()
 template <class TIn1, class TIn2, class TOut>
 void BaseCosseratMapping<TIn1, TIn2, TOut>::init()
 {
-    Inherit1::init();
+    m_fromModel1 = nullptr;
+    m_fromModel2 = nullptr;
+    m_toModel = nullptr;
 
     if(fromModels1.empty())
     {
@@ -84,6 +86,22 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::init()
     m_fromModel2 = fromModels2[0];
     m_toModel = toModels[0];
 
+    if(m_fromModel1==nullptr)
+    {
+        msg_error() << "input1 not found" ;
+        return;
+    }
+    if(m_fromModel2==nullptr)
+    {
+        msg_error() << "input1 not found" ;
+        return;
+    }
+    if(m_toModel==nullptr)
+    {
+        msg_error() << "input1 not found" ;
+        return;
+    }
+
     // Fill the initial vector
     const OutDataVecCoord* xfromData = m_toModel->read(sofa::core::ConstVecCoordId::position());
     const OutVecCoord xfrom = xfromData->getValue();
@@ -93,8 +111,64 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::init()
         m_vecTransform.push_back(xfrom[i]);
     }
 
+    initialize();
     doBaseCosseratInit();
+    Inherit1::init();
 }
+
+//___________________________________________________________________________
+template <class TIn1, class TIn2, class TOut>
+void BaseCosseratMapping<TIn1, TIn2, TOut>::initialize() {
+    // For each frame in the global frame, find the segment of the beam to which
+    // it is attached. Here we only use the information from the curvilinear
+    // abscissa of each frame.
+    auto curv_abs_section = getReadAccessor(d_curv_abs_section);
+    auto curv_abs_frames = getReadAccessor(d_curv_abs_frames);
+
+    msg_info()
+            << " curv_abs_section " << curv_abs_section.size() << "; curv_abs_frames: " << curv_abs_frames.size();
+
+    m_indicesVectors.clear();
+    m_framesLengthVectors.clear();
+    m_BeamLengthVectors.clear();
+    m_indicesVectorsDraw.clear();
+
+    size_t sz = curv_abs_frames.size();
+    size_t input_index = 1;
+    for (size_t i = 0; i < sz; ++i)
+    {
+        if (curv_abs_section[input_index] > curv_abs_frames[i])
+        {
+            m_indicesVectors.emplace_back(input_index);
+            m_indicesVectorsDraw.emplace_back(input_index); // maybe I shouldn't do this here !!!
+        } else if (curv_abs_section[input_index] == curv_abs_frames[i])
+        {
+            m_indicesVectors.emplace_back(input_index);
+            input_index++;
+            m_indicesVectorsDraw.emplace_back(input_index);
+        } else {
+            input_index++;
+            m_indicesVectors.emplace_back(input_index);
+            m_indicesVectorsDraw.emplace_back(input_index);
+        }
+
+        // Fill the vector m_framesLengthVectors with the distance
+        // between frame(output) and the closest beam node toward the base
+        m_framesLengthVectors.emplace_back(
+                    curv_abs_frames[i] - curv_abs_section[m_indicesVectors.back() - 1]);
+    }
+
+    for (size_t j = 0; j < sz - 1; ++j)
+    {
+        m_BeamLengthVectors.emplace_back(curv_abs_section[j + 1] - curv_abs_section[j]);
+    }
+
+    msg_info()
+            << "m_indicesVectors : " << m_indicesVectors << msgendl
+            << "m_framesLengthVectors : " << msgendl
+            << "m_BeamLengthVectors : " << msgendl;
+}
+
 
 template <class TIn1, class TIn2, class TOut>
 void BaseCosseratMapping<TIn1, TIn2, TOut>::computeExponentialSE3(
@@ -137,6 +211,7 @@ template <class TIn1, class TIn2, class TOut>
 void BaseCosseratMapping<TIn1, TIn2, TOut>::updateExponentialSE3(
         const In1VecCoord &inDeform)
 {
+    msg_info() << " ########## updateMap 2########";
     auto curv_abs_frames = sofa::helper::getReadAccessor(d_curv_abs_frames);
 
     m_framesExponentialSE3Vectors.clear();
@@ -145,10 +220,14 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::updateExponentialSE3(
 
     const unsigned int sz = curv_abs_frames.size();
 
+    msg_info() << " ########## updateMap 3 , "<< sz << " et " << inDeform.size() << "########";
+
     // Compute exponential at each frame point
     for (size_t i = 0; i < sz; ++i)
     {
         Transform g_X_frame_i;
+        msg_info() << " ########## updateMap 4, "<< i  << "-> "  << "########";
+        msg_info() << " ########## updateMap 5, "<< i  << "-> " << m_indicesVectors[i] << "########";
 
         const Coord1 strain_n = inDeform[m_indicesVectors[i] - 1]; // Cosserat reduce coordinates (strain)
 
@@ -385,58 +464,6 @@ BaseCosseratMapping<TIn1, TIn2, TOut>::computeETA(const Vec6 &baseEta,
     return adjointMatrix * (baseEta + tangentMatrix * Xi_dot);
 }
 
-//___________________________________________________________________________
-template <class TIn1, class TIn2, class TOut>
-void BaseCosseratMapping<TIn1, TIn2, TOut>::initialize() {
-    // For each frame in the global frame, find the segment of the beam to which
-    // it is attached. Here we only use the information from the curvilinear
-    // abscissa of each frame.
-    auto curv_abs_section = getReadAccessor(d_curv_abs_section);
-    auto curv_abs_frames = getReadAccessor(d_curv_abs_frames);
-
-    msg_info()
-            << " curv_abs_section " << curv_abs_section.size() << "; curv_abs_frames: " << curv_abs_frames.size();
-
-    m_indicesVectors.clear();
-    m_framesLengthVectors.clear();
-    m_BeamLengthVectors.clear();
-    m_indicesVectorsDraw.clear();
-
-    size_t sz = curv_abs_frames.size();
-    size_t input_index = 1;
-    for (size_t i = 0; i < sz; ++i)
-    {
-        if (curv_abs_section[input_index] > curv_abs_frames[i])
-        {
-            m_indicesVectors.emplace_back(input_index);
-            m_indicesVectorsDraw.emplace_back(input_index); // maybe I shouldn't do this here !!!
-        } else if (curv_abs_section[input_index] == curv_abs_frames[i])
-        {
-            m_indicesVectors.emplace_back(input_index);
-            input_index++;
-            m_indicesVectorsDraw.emplace_back(input_index);
-        } else {
-            input_index++;
-            m_indicesVectors.emplace_back(input_index);
-            m_indicesVectorsDraw.emplace_back(input_index);
-        }
-
-        // Fill the vector m_framesLengthVectors with the distance
-        // between frame(output) and the closest beam node toward the base
-        m_framesLengthVectors.emplace_back(
-                    curv_abs_frames[i] - curv_abs_section[m_indicesVectors.back() - 1]);
-    }
-
-    for (size_t j = 0; j < sz - 1; ++j)
-    {
-        m_BeamLengthVectors.emplace_back(curv_abs_section[j + 1] - curv_abs_section[j]);
-    }
-
-    msg_info()
-            << "m_indicesVectors : " << m_indicesVectors << msgendl
-            << "m_framesLengthVectors : " << msgendl
-            << "m_BeamLengthVectors : " << msgendl;
-}
 
 template <class TIn1, class TIn2, class TOut>
 double BaseCosseratMapping<TIn1, TIn2, TOut>::computeTheta(const double &x,
