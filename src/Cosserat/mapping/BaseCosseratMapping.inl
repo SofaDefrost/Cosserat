@@ -53,7 +53,7 @@ BaseCosseratMapping<TIn1, TIn2, TOut>::BaseCosseratMapping()
       d_curv_abs_frames(initData(&d_curv_abs_frames, "curv_abs_output",
                                  " need to be com....")),
       d_debug(initData(&d_debug, false, "debug", "printf for the debug")),
-      m_index_input(0) {}
+      m_indexInput(0) {}
 
 
 template <class TIn1, class TIn2, class TOut>
@@ -153,15 +153,43 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::initializeFrames()
             << "m_BeamLengthVectors : " << msgendl;
 }
 
+auto buildXiHat(const Vec3& strain_i) -> se3
+{
+    se3 Xi_hat;
+
+    Xi_hat[0][1] = -strain_i[2];
+    Xi_hat[0][2] =  strain_i[1];
+    Xi_hat[1][2] = -strain_i[0];
+
+    Xi_hat[1][0] = -Xi_hat(0, 1);
+    Xi_hat[2][0] = -Xi_hat(0, 2);
+    Xi_hat[2][1] = -Xi_hat(1, 2);
+
+    //@TODO:  Why this , if q = 0 ????
+    Xi_hat[0][3] = 1.0;
+    return Xi_hat;
+}
+
+auto buildXiHat(const Vec6& strain_i) -> se3
+{
+    se3 Xi = buildXiHat(Vec3(strain_i(0), strain_i(1), strain_i(2)));
+
+    for (unsigned int i = 0; i < 3; i++)
+      Xi[i][3] += strain_i(i + 3);
+
+    return Xi;
+}
 
 template <class TIn1, class TIn2, class TOut>
-void BaseCosseratMapping<TIn1, TIn2, TOut>::computeExponentialSE3(
-        const double &curv_abs_x_n, const Coord1 &strain_n, Transform &g_X_n) {
+void BaseCosseratMapping<TIn1, TIn2, TOut>::computeExponentialSE3(const double &curv_abs_x_n,
+                                                                  const Coord1 &strain_n,
+                                                                  Transform &g_X_n)
+{
     const auto I4 = Mat4x4::Identity();
 
-    // Get the angular part of the
+    // Get the angular part of the strain
     Vec3 k = Vec3(strain_n(0), strain_n(1), strain_n(2));
-    SReal theta = k.norm(); //
+    SReal theta = k.norm();
 
     SE3 _g_X;
     se3 Xi_hat_n = buildXiHat(strain_n);
@@ -246,7 +274,8 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::updateExponentialSE3(
 
 template <class TIn1, class TIn2, class TOut>
 void BaseCosseratMapping<TIn1, TIn2, TOut>::computeAdjoint(const Transform &frame,
-                                                           Tangent &adjoint) {
+                                                           TangentTransform &adjoint)
+{
     Mat3x3 R = extractRotMatrix(frame);
     Vec3 u = frame.getOrigin();
     Mat3x3 tilde_u = getTildeMatrix(u);
@@ -266,12 +295,13 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::computeCoAdjoint(const Transform &fr
 
 template <class TIn1, class TIn2, class TOut>
 void BaseCosseratMapping<TIn1, TIn2, TOut>::computeAdjoint(const Vec6 &eta,
-                                                           Mat6x6 &adjoint) {
-    Mat3x3 tildeMat = getTildeMatrix(Vec3(eta[0], eta[1], eta[2]));
-    adjoint.setsub(0, 0, tildeMat);
-    adjoint.setsub(3, 3, tildeMat);
-    adjoint.setsub(3, 0, getTildeMatrix(Vec3(eta[3], eta[4], eta[5])));
+                                                           Mat6x6 &adjoint)
+{
+    Mat3x3 tildeMat1 = getTildeMatrix(Vec3(eta[0], eta[1], eta[2]));
+    Mat3x3 tildeMat2 = getTildeMatrix(Vec3(eta[3], eta[4], eta[5]));
+    buildAdjoint(tildeMat1, tildeMat2, adjoint);
 }
+
 
 template <class TIn1, class TIn2, class TOut>
 auto BaseCosseratMapping<TIn1, TIn2, TOut>::computeLogarithm(const double &x,
@@ -279,8 +309,7 @@ auto BaseCosseratMapping<TIn1, TIn2, TOut>::computeLogarithm(const double &x,
 {
     // Compute theta before everything
     const double theta = computeTheta(x, gX);
-    Mat4x4 I4;
-    I4.identity();
+    Mat4x4 I4 = Mat4x4::Identity();
     Mat4x4 log_gX;
 
     double csc_theta = 1.0 / (sin(x * theta / 2.0));
@@ -322,7 +351,7 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::updateTangExpSE3(
     // Compute tangExpo at frame points
     for (unsigned int i = 0; i < sz; i++)
     {
-        Tangent temp;
+        TangentTransform temp;
 
         Coord1 strain_frame_i = inDeform[m_indicesVectors[i] - 1];
         double curv_abs_x_i = m_framesLengthVectors[i];
@@ -337,14 +366,14 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::updateTangExpSE3(
 
     // Compute the TangExpSE3 at the nodes
     m_nodesTangExpVectors.clear();
-    Tangent tangExpO;
+    TangentTransform tangExpO;
     tangExpO.clear();
     m_nodesTangExpVectors.push_back(tangExpO);
 
     for (size_t j = 1; j < curv_abs_section.size(); j++) {
         Coord1 strain_node_i = inDeform[j - 1];
         double x = m_beamLengthVectors[j - 1];
-        Tangent temp;
+        TangentTransform temp;
         temp.clear();
         computeTangExp(x, strain_node_i, temp);
         m_nodesTangExpVectors.push_back(temp);
@@ -355,27 +384,27 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::updateTangExpSE3(
 template <class TIn1, class TIn2, class TOut>
 void BaseCosseratMapping<TIn1, TIn2, TOut>::computeTangExp(double &curv_abs_n,
                                                            const Coord1 &strain_i,
-                                                           Mat6x6 &TgX) {
+                                                           Mat6x6 &TgX)
+{
+    if constexpr( Coord1::static_size == 3 )
+        computeTangExpImplementation(curv_abs_n, Vec6(strain_i(0),strain_i(1),strain_i(2),0,0,0), TgX);
+    else
+        computeTangExpImplementation(curv_abs_n, strain_i, TgX);
+}
 
-    SReal theta = Vec3(strain_i(0), strain_i(1), strain_i(2))
-                  .norm(); // Sometimes this is computed over all strain
-    Mat3x3 tilde_k =
-            getTildeMatrix(Vec3(strain_i(0), strain_i(1), strain_i(2)));
-    /* Younes @23-11-27
-  old version
-  @Todo ???? is p the linear deformation? If so, why didn't I just put a zero
-  vector in place of p and the first element of p is equal to 1? Matrix3 tilde_p
-  = getTildeMatrix(type::Vec3(1.0, 0.0, 0.0)); Using the new version does not
-  bring any difference in my three reference scenes, but need more investogation
-  #TECHNICAL_DEBT
-  */
-    Mat3x3 tilde_q = getTildeMatrix(Vec3(0.0, 0.0, 0.0));
+template <class TIn1, class TIn2, class TOut>
+void BaseCosseratMapping<TIn1, TIn2, TOut>::computeTangExpImplementation(double &curv_abs_n,
+                                                                         const Vec6 &strain_i,
+                                                                         Mat6x6 &TgX)
+{
+    SReal theta = Vec3(strain_i(0), strain_i(1), strain_i(2)).norm();
+    Mat3x3 tilde_k = getTildeMatrix(Vec3(strain_i(0), strain_i(1), strain_i(2)));
+    Mat3x3 tilde_q = getTildeMatrix(Vec3(strain_i(3), strain_i(4), strain_i(5)));
 
     Mat6x6 ad_Xi;
     buildAdjoint(tilde_k, tilde_q, ad_Xi);
 
     Mat6x6 Id6 = Mat6x6::Identity();
-
     if (theta <= std::numeric_limits<double>::epsilon()) {
         double scalar0 = std::pow(curv_abs_n, 2) / 2.0;
         TgX = curv_abs_n * Id6 + scalar0 * ad_Xi;
@@ -418,27 +447,28 @@ BaseCosseratMapping<TIn1, TIn2, TOut>::computeETA(const Vec6 &baseEta,
     // Same as for x1, query a read accessor so we can access the content of d_curv_abs_section
     auto curv_abs_input = getReadAccessor(d_curv_abs_section);
 
-    auto& kdot = k_dot[m_index_input];
+    auto& kdot = k_dot[m_indexInput];
     Vec6 Xi_dot {kdot[0], kdot[1], kdot[2],
                  0,0,0};
 
+    // if m_indexInput is == 0
     double diff0 = abs_input;
     double _diff0 = -abs_input;
 
-    if (m_index_input != 0)
+    if (m_indexInput != 0)
     {
-        diff0 = abs_input - curv_abs_input[m_index_input - 1];
-        _diff0 = curv_abs_input[m_index_input - 1] - abs_input;
+        diff0 = abs_input - curv_abs_input[m_indexInput - 1];
+        _diff0 = curv_abs_input[m_indexInput - 1] - abs_input;
     }
 
     Transform outTransform;
-    computeExponentialSE3(_diff0, x1[m_index_input], outTransform);
+    computeExponentialSE3(_diff0, x1[m_indexInput], outTransform);
 
-    Mat6x6 adjointMatrix;
+    TangentTransform adjointMatrix;
     computeAdjoint(outTransform, adjointMatrix);
 
-    Tangent tangentMatrix;
-    computeTangExp(diff0, x1[m_index_input], tangentMatrix);
+    TangentTransform tangentMatrix;
+    computeTangExp(diff0, x1[m_indexInput], tangentMatrix);
 
     return adjointMatrix * (baseEta + tangentMatrix * Xi_dot);
 }
@@ -486,8 +516,8 @@ Mat3x3 BaseCosseratMapping<TIn1, TIn2, TOut>::extractRotMatrix(const Transform &
 
 template <class TIn1, class TIn2, class TOut>
 auto BaseCosseratMapping<TIn1, TIn2, TOut>::buildProjector(const Transform &T)
--> Tangent {
-    Mat6x6 P;
+-> TangentTransform {
+    TangentTransform P;
 
     // TODO(dmarchal: 2024/06/07) The following code should probably become
     // utility function building a 3x3 matix from a quaternion should probably
@@ -501,23 +531,6 @@ auto BaseCosseratMapping<TIn1, TIn2, TOut>::buildProjector(const Transform &T)
         }
     }
     return P;
-}
-
-template <class TIn1, class TIn2, class TOut>
-auto BaseCosseratMapping<TIn1, TIn2, TOut>::buildXiHat(const Coord1 &strain_i) -> se3 {
-    se3 Xi_hat;
-
-    Xi_hat[0][1] = -strain_i(2);
-    Xi_hat[0][2] = strain_i[1];
-    Xi_hat[1][2] = -strain_i[0];
-
-    Xi_hat[1][0] = -Xi_hat(0, 1);
-    Xi_hat[2][0] = -Xi_hat(0, 2);
-    Xi_hat[2][1] = -Xi_hat(1, 2);
-
-    //@TODO:  Why this , if q = 0 ????
-    Xi_hat[0][3] = 1.0;
-    return Xi_hat;
 }
 
 template <class TIn1, class TIn2, class TOut>

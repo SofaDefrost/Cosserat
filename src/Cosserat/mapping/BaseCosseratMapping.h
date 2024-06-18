@@ -51,7 +51,7 @@ using _se3 = Eigen::Matrix4d;
 using _SE3 = Eigen::Matrix4d;
 
 using Cosserat::type::Transform;
-using Cosserat::type::Tangent;
+using Cosserat::type::TangentTransform;
 using Cosserat::type::RotMat;
 
 
@@ -91,7 +91,7 @@ public:
     // really needed ?
 
     /*===========COSSERAT VECTORS ======================*/
-    unsigned int m_index_input;
+    unsigned int m_indexInput;
     vector<OutCoord> m_vecTransform;
 
     vector<Transform> m_framesExponentialSE3Vectors;
@@ -138,8 +138,7 @@ public:
     void printMatrix(const Mat6x6 R);
 
     sofa::type::Mat3x3 extractRotMatrix(const Transform &frame);
-    Tangent buildProjector(const Transform &T);
-    se3 buildXiHat(const Coord1 &strain_i);
+    TangentTransform buildProjector(const Transform &T);
     Mat3x3 getTildeMatrix(const Vec3 &u);
 
     void buildAdjoint(const Mat3x3 &A, const Mat3x3 &B, Mat6x6 &Adjoint);
@@ -198,15 +197,17 @@ protected:
 
     // TODO(dmarchal: 2024/06/07):
     //   - clarify the difference between computeAdjoing and buildAdjoint ...
-    //   - clarify why we need Transform and Vec6 and Tangent & Mat6x6
-    void computeAdjoint(const Transform &frame, Tangent &adjoint);
+    //   - clarify why we need Transform and Vec6 and TangentTransform & Mat6x6
+    void computeAdjoint(const Transform &frame, TangentTransform &adjoint);
     void computeAdjoint(const Vec6 &frame, Mat6x6 &adjoint);
 
     void computeCoAdjoint(const Transform &frame, Mat6x6 &coAdjoint);
 
     void updateExponentialSE3(const vector<Coord1> &inDeform);
     void updateTangExpSE3(const vector<Coord1> &inDeform);
+
     void computeTangExp(double &x, const Coord1 &k, Mat6x6 &TgX);
+    void computeTangExpImplementation(double &x, const Vec6 &k, Mat6x6 &TgX);
 
     [[maybe_unused]] Vec6
     computeETA(const Vec6 &baseEta, const vector<Deriv1> &k_dot, double abs_input);

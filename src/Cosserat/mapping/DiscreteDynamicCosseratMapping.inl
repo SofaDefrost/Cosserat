@@ -70,16 +70,18 @@ void DiscreteDynamicCosseratMapping<TIn1, TIn2, TOut>::apply(
     const In2VecCoord& in2 = dataVecIn2Pos[0]->getValue();
 
     size_t sz = d_curv_abs_frames.getValue().size();
-    OutVecCoord& out = *dataVecOutPos[0]->beginEdit();
+    OutVecCoord out = sofa::helper::getWriteAccessor(*dataVecOutPos[0]);
     out.resize(sz);
 
     //update the Exponential Matrices according to new deformation
     this->updateExponentialSE3(in1);
 
     Transform frame0 = Transform(In2::getCPos(in2[0]),In2::getCRot(in2[0]));
-    for(unsigned int i=0; i<sz; i++){
+    for(unsigned int i=0; i<sz; i++)
+    {
         Transform frame = frame0;
-        for (unsigned int u = 0; u < m_indicesVectors[i]; u++) {
+        for (unsigned int u = 0; u < m_indicesVectors[i]; u++)
+        {
             frame *= m_nodesExponentialSE3Vectors[u];
         }
         frame *= m_framesExponentialSE3Vectors[i];
@@ -89,8 +91,7 @@ void DiscreteDynamicCosseratMapping<TIn1, TIn2, TOut>::apply(
         out[i] = OutCoord(v,q);
     }
 
-    m_index_input = 0;
-    dataVecOutPos[0]->endEdit();
+    m_indexInput = 0;
 }
 
 
@@ -142,7 +143,7 @@ void DiscreteDynamicCosseratMapping<TIn1, TIn2, TOut>:: applyJ(
     for (size_t i = 1 ; i < curv_abs_input.size(); i++)
     {
         Transform t= m_nodesExponentialSE3Vectors[i].inversed();
-        Tangent Adjoint; Adjoint.clear();
+        TangentTransform Adjoint; Adjoint.clear();
         this->computeAdjoint(t,Adjoint);
         //Add this line because need for the jacobian computation
         m_nodeAdjointVectors.push_back(Adjoint);
@@ -159,19 +160,21 @@ void DiscreteDynamicCosseratMapping<TIn1, TIn2, TOut>:: applyJ(
     const OutVecCoord& out = m_toModel->read(sofa::core::ConstVecCoordId::position())->getValue();
     size_t sz =curv_abs_output.size();
     outVel.resize(sz);
-    for (size_t i = 0 ; i < sz; i++) {
-        Transform t= m_framesExponentialSE3Vectors[i].inversed();
-        Mat6x6 Adjoint; Adjoint.clear();
-        this->computeAdjoint(t,Adjoint);
+    for (size_t i = 0 ; i < sz; i++)
+    {
+        Transform transform= m_framesExponentialSE3Vectors[i].inversed();
+        TangentTransform tangentTransform;
+        tangentTransform.clear();
+        this->computeAdjoint(transform, tangentTransform);
 
         Vec6 Xi_dot = Vec6(in1[m_indicesVectors[i]-1], Vec3(0.0,0.0,0.0));
         // eta
-        Vec6 etaFrame = Adjoint * (m_nodesVelocityVectors[m_indicesVectors[i]-1]
+        Vec6 etaFrame = tangentTransform * (m_nodesVelocityVectors[m_indicesVectors[i]-1]
                                    + m_framesTangExpVectors[i] * Xi_dot );
 
         //Compute here jacobien and jacobien_dot
         vector<Mat6x3> J_i, J_dot_i;
-        computeJ_Jdot_i(Adjoint, i, J_i, etaFrame, J_dot_i);
+        computeJ_Jdot_i(tangentTransform, i, J_i, etaFrame, J_dot_i);
         m_frameJacobienVector.push_back(J_i);
         m_frameJacobienVector.push_back(J_dot_i);
 
@@ -186,7 +189,7 @@ void DiscreteDynamicCosseratMapping<TIn1, TIn2, TOut>:: applyJ(
     }
     //    std::cout << "Inside the apply J, outVel after computation  :  "<< outVel << std::endl;
     dataVecOutVel[0]->endEdit();
-    m_index_input = 0;
+    m_indexInput = 0;
 }
 
 template <class TIn1, class TIn2, class TOut>

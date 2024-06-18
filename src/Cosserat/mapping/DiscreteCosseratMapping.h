@@ -159,7 +159,7 @@ protected:
     using BaseCosseratMapping<TIn1, TIn2, TOut>::d_debug;
     using BaseCosseratMapping<TIn1, TIn2, TOut>::m_vecTransform;
     using BaseCosseratMapping<TIn1, TIn2, TOut>::m_nodeAdjointVectors;
-    using BaseCosseratMapping<TIn1, TIn2, TOut>::m_index_input;
+    using BaseCosseratMapping<TIn1, TIn2, TOut>::m_indexInput;
     using BaseCosseratMapping<TIn1, TIn2, TOut>::m_indicesVectorsDraw;
     using BaseCosseratMapping<TIn1, TIn2, TOut>::computeTheta;
 
