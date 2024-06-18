@@ -47,8 +47,12 @@ namespace Cosserat
         typedef typename Eigen::Matrix3d RotMat;
         typedef typename Eigen::Matrix<SReal, 6, 1> Vector6d;
 
-        using Tangent = sofa::type::Mat6x6;
-        //class Tangent : public sofa::type::Mat<6, 6, SReal>{};
+        //using TangentTransform = sofa::type::Mat6x6;
+        class TangentTransform : public sofa::type::Mat<6, 6, SReal>
+        {
+        public:
+            //TangentTransform(SReal v=0) : sofa::type::Mat6x6(v){}
+        };
 
     }
 }

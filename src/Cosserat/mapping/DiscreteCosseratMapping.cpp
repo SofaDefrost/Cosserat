@@ -37,21 +37,23 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>:: applyJ(
     const vector<const In1DataVecDeriv*>& dataVecIn1Vel,
     const vector<const In2DataVecDeriv*>& dataVecIn2Vel) {
 
-    if(d_debug.getValue())
-        std::cout<< " ########## ApplyJ R Function ########"<< std::endl;
-
     if(dataVecOutVel.empty() || dataVecIn1Vel.empty() ||dataVecIn2Vel.empty() )
         return;
-    const In1VecDeriv& in1_vel = dataVecIn1Vel[0]->getValue();
-    const In2VecDeriv& in2_vel = dataVecIn2Vel[0]->getValue();
-    OutVecDeriv& out_vel = *dataVecOutVel[0]->beginEdit();
+
+    msg_info() << " ########## ApplyJ R Function ########";
+
+    const In1VecDeriv& in1_vel = sofa::helper::getReadAccessor(*dataVecIn1Vel[0]);
+    const In2VecDeriv& in2_vel = sofa::helper::getReadAccessor(*dataVecIn2Vel[0]);
+
+    auto out_vel = sofa::helper::getWriteOnlyAccessor(*dataVecOutVel[0]);
+
     const auto baseIndex = d_baseIndex.getValue();
 
     // Curv abscissa of nodes and frames
-    sofa::helper::ReadAccessor<Data<vector<double>>> curv_abs_section =  d_curv_abs_section;
-    sofa::helper::ReadAccessor<Data<vector<double>>> curv_abs_frames = d_curv_abs_frames;
+    auto curv_abs_section = sofa::helper::getReadAccessor(d_curv_abs_section);
+    auto curv_abs_frames = sofa::helper::getReadAccessor(d_curv_abs_frames);
 
-    const In1VecCoord& inDeform = m_fromModel1->read(sofa::core::ConstVecCoordId::position())->getValue(); //Strains
+    const auto inDeform = sofa::helper::getReadAccessor(*m_fromModel1->read(sofa::core::ConstVecCoordId::position()));
 
     // Compute the tangent Exponential SE3 vectors
     this->updateTangExpSE3(inDeform);
@@ -65,18 +67,19 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>:: applyJ(
         baseVelocity[u] = in2_vel[baseIndex][u];
 
     //Apply the local transform i.e. from SOFA's frame to Cosserat's frame
-    const In2VecCoord& xfrom2Data = m_fromModel2->read(sofa::core::ConstVecCoordId::position())->getValue();
+    const In2VecCoord& xfrom2Data = sofa::helper::getReadAccessor(*m_fromModel2->read(sofa::core::ConstVecCoordId::position()));
     Transform TInverse = Transform(xfrom2Data[baseIndex].getCenter(), xfrom2Data[baseIndex].getOrientation()).inversed();
     Mat6x6 P = this->buildProjector(TInverse);
     Vec6 baseLocalVelocity = P * baseVelocity; //This is the base velocity in Locale frame
     m_nodesVelocityVectors.push_back(baseLocalVelocity);
-    if(d_debug.getValue())
-        std::cout << "Base local Velocity :"<< baseLocalVelocity <<std::endl;
+
+    msg_info() << "Base local Velocity :"<< baseLocalVelocity;
 
     //Compute velocity at nodes
-    for (unsigned int i = 1 ; i < curv_abs_section.size(); i++) {
+    for (unsigned int i = 1 ; i < curv_abs_section.size(); i++)
+    {
         Transform Trans = m_nodesExponentialSE3Vectors[i].inversed();
-        Tangent Adjoint; Adjoint.clear();
+        TangentTransform Adjoint;
         this->computeAdjoint(Trans, Adjoint);
 
         Vec6 node_Xi_dot;
@@ -85,35 +88,27 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>:: applyJ(
 
         Vec6 eta_node_i = Adjoint * (m_nodesVelocityVectors[i-1] + m_nodesTangExpVectors[i] *node_Xi_dot );
         m_nodesVelocityVectors.push_back(eta_node_i);
-        if(d_debug.getValue())
-            std::cout<< "Node velocity : "<< i << " = " << eta_node_i<< std::endl;
+        msg_info() << "Node velocity : "<< i << " = " << eta_node_i;
     }
-    const OutVecCoord& out = m_toModel->read(sofa::core::ConstVecCoordId::position())->getValue();
+    const OutVecCoord& out = sofa::helper::getReadAccessor(*m_toModel->read(sofa::core::ConstVecCoordId::position()));
+
     auto sz = curv_abs_frames.size();
     out_vel.resize(sz);
-
     for (unsigned int i = 0 ; i < sz; i++) {
         Transform Trans = m_framesExponentialSE3Vectors[i].inversed();
-        Tangent Adjoint; Adjoint.clear();
+        TangentTransform Adjoint; Adjoint.clear();
         this->computeAdjoint(Trans, Adjoint);
         Vec6 frame_Xi_dot = in1_vel[m_indicesVectors[i]-1];
-//        for (unsigned int u =0; u<6; u++)
-//            frame_Xi_dot(i) = in1_vel[m_indicesVectors[i]-1][u];
-
         Vec6 eta_frame_i = Adjoint * (m_nodesVelocityVectors[m_indicesVectors[i]-1] + m_framesTangExpVectors[i] * frame_Xi_dot ); // eta
 
         auto T = Transform(out[i].getCenter(), out[i].getOrientation());
-        Tangent Proj = this->buildProjector(T);
+        TangentTransform Proj = this->buildProjector(T);
 
         out_vel[i] = Proj * eta_frame_i;
-        if(d_debug.getValue())
-            std::cout<< "Frame velocity : "<< i << " = " << eta_frame_i<< std::endl;
+        msg_info() << "Frame velocity : "<< i << " = " << eta_frame_i;
     }
-    dataVecOutVel[0]->endEdit();
-    m_index_input = 0;
+    m_indexInput = 0;
 }
-
-
 
 template <>
 void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>:: applyJT(
@@ -124,12 +119,11 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>:: applyJT(
     if(dataVecOut1Force.empty() || dataVecInForce.empty() || dataVecOut2Force.empty())
         return;
 
-    if(d_debug.getValue())
-        std::cout<< " ########## ApplyJT force R Function ########"<< std::endl;
+    msg_info() << " ########## ApplyJT force R Function ########";
     const OutVecDeriv& in = dataVecInForce[0]->getValue();
 
-    In1VecDeriv& out1 = *dataVecOut1Force[0]->beginEdit();
-    In2VecDeriv& out2 = *dataVecOut2Force[0]->beginEdit();
+    In1VecDeriv out1 = sofa::helper::getWriteAccessor(*dataVecOut1Force[0]);
+    In2VecDeriv out2 = sofa::helper::getWriteAccessor(*dataVecOut2Force[0]);
     const auto baseIndex = d_baseIndex.getValue();
 
     const OutVecCoord& frame = m_toModel->read(sofa::core::ConstVecCoordId::position())->getValue();
@@ -159,12 +153,11 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>:: applyJT(
     Vec6 F_tot; F_tot.clear();
     m_totalBeamForceVectors.push_back(F_tot);
 
-    Tangent matB_trans; matB_trans.clear();
+    TangentTransform matB_trans; matB_trans.clear();
     for(unsigned int k=0; k<3; k++) matB_trans[k][k] = 1.0;
 
-
     for (auto s = sz ; s-- ; ) {
-        Tangent coAdjoint;
+        TangentTransform coAdjoint;
 
         this->computeCoAdjoint(m_framesExponentialSE3Vectors[s], coAdjoint);  // m_framesExponentialSE3Vectors[s] computed in apply
         Vec6 node_F_Vec = coAdjoint * local_F_Vec[s];
@@ -183,9 +176,8 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>:: applyJT(
             Vec6 temp_f = matB_trans * temp * F_tot;
             out1[index-1] += temp_f;
         }
-        if(d_debug.getValue())
-            std::cout << "f at s ="<< s <<" and index"<< index <<  " is : "<< f << std::endl;
 
+        msg_info() << "f at s ="<< s <<" and index"<< index <<  " is : "<< f;
 
         //compute F_tot
         F_tot += node_F_Vec;
@@ -196,13 +188,9 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>:: applyJT(
     Mat6x6 M = this->buildProjector(frame0);
     out2[baseIndex] += M * F_tot;
 
-    if(d_debug.getValue()){
-        std::cout << "Node forces "<< out1 << std::endl;
-        std::cout << "base Force: "<< out2[baseIndex] << std::endl;
-    }
-
-    dataVecOut1Force[0]->endEdit();
-    dataVecOut2Force[0]->endEdit();
+    msg_info()
+            << "Node forces "<< out1 << msgendl
+            << "base Force: "<< out2[baseIndex];
 }
 
 template <>
@@ -214,43 +202,41 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>::applyJT(
     if(dataMatOut1Const.empty() || dataMatOut2Const.empty() || dataMatInConst.empty() )
         return;
 
-    if(d_debug.getValue())
-        std::cout<< " ########## ApplyJT constraint R Function ########"<< std::endl;
+    msg_info() << " ########## ApplyJT constraint R Function ########";
 
     //We need only one input In model and input Root model (if present)
-    In1MatrixDeriv& out1 = *dataMatOut1Const[0]->beginEdit(); // constraints on the strain space (reduced coordinate)
-    In2MatrixDeriv& out2 = *dataMatOut2Const[0]->beginEdit(); // constraints on the reference frame (base frame)
+    In1MatrixDeriv& out1 = sofa::helper::getWriteAccessor(*dataMatOut1Const[0]); // constraints on the strain space (reduced coordinate)
+    In2MatrixDeriv& out2 = sofa::helper::getWriteAccessor(*dataMatOut2Const[0]); // constraints on the reference frame (base frame)
     const OutMatrixDeriv& in = dataMatInConst[0]->getValue(); // input constraints defined on the mapped frames
 
     const OutVecCoord& frame = m_toModel->read(sofa::core::ConstVecCoordId::position())->getValue();
     const In1DataVecCoord* x1fromData = m_fromModel1->read(sofa::core::ConstVecCoordId::position());
     const In1VecCoord x1from = x1fromData->getValue();
 
-    Tangent matB_trans; matB_trans.clear();
+    TangentTransform matB_trans; matB_trans.clear();
     for(unsigned int k=0; k<3; k++) matB_trans[k][k] = 1.0;
 
     vector< std::tuple<int,Vec6> > NodesInvolved;
     vector< std::tuple<int,Vec6> > NodesInvolvedCompressed;
-    //helper::vector<Vec6> NodesConstraintDirection;
 
     typename OutMatrixDeriv::RowConstIterator rowItEnd = in.end();
 
+    bool doPrintLog = f_printLog.getValue();
     for (typename OutMatrixDeriv::RowConstIterator rowIt = in.begin(); rowIt != rowItEnd; ++rowIt)
     {
-        if (d_debug.getValue()){
-            std::cout<<"************* Apply JT (MatrixDeriv) iteration on line ";
-            std::cout<<rowIt.index();
-            std::cout<<"*************  "<<std::endl;
-        }
+        msg_info_when(doPrintLog)
+             <<"************* Apply JT (MatrixDeriv) iteration on line "
+             << rowIt.index()
+             <<"*************  ";
+
         auto colIt = rowIt.begin();
         auto colItEnd = rowIt.end();
 
         // Creates a constraints if the input constraint is not empty.
         if (colIt == colItEnd)
         {
-            if (d_debug.getValue()){
-                std::cout<<"no column for this constraint"<<std::endl;
-            }
+            msg_info_when(doPrintLog)
+                <<"no column for this constraint";
             continue;
         }
         typename In1MatrixDeriv::RowIterator o1 = out1.writeLine(rowIt.index()); // we store the constraint number
@@ -268,12 +254,12 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>::applyJT(
             int indexBeam =  m_indicesVectors[childIndex];
 
             Transform _T = Transform(frame[childIndex].getCenter(),frame[childIndex].getOrientation());
-            Tangent P_trans =(this->buildProjector(_T));
+            TangentTransform P_trans =(this->buildProjector(_T));
             P_trans.transpose();
 
             Mat6x6 coAdjoint;
             this->computeCoAdjoint(m_framesExponentialSE3Vectors[childIndex], coAdjoint);  // m_framesExponentialSE3Vectors[s] computed in apply
-            Tangent temp = m_framesTangExpVectors[childIndex];   // m_framesTangExpVectors[s] computed in applyJ (here we transpose)
+            Mat6x6 temp = m_framesTangExpVectors[childIndex];   // m_framesTangExpVectors[s] computed in applyJ (here we transpose)
             temp.transpose();
 
             Vec6 local_F =  coAdjoint * P_trans * valueConst; // constraint direction in local frame of the beam.
@@ -285,19 +271,20 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>::applyJT(
 
             NodesInvolved.push_back(node_force);
             colIt++;
-
         }
-        if (d_debug.getValue()){
-            std::cout<<"==> NodesInvolved : "<<std::endl;
+
+        if(doPrintLog)
+        {
+            std::stringstream tmp;
             for (size_t i = 0; i < NodesInvolved.size(); i++)
-                std::cout << "index :" <<get<0>(NodesInvolved[i]) << " force :"
-                          << get<1>(NodesInvolved[i]) << "\n ";
+                tmp << "index :" <<get<0>(NodesInvolved[i]) << " force :" << get<1>(NodesInvolved[i]) << msgendl;
+            msg_info() <<"==> NodesInvolved : " << tmp.str();
         }
 
-        // sort the Nodes Invoved by decreasing order
+        // sort the Nodes Involved by decreasing order
         std::sort(begin(NodesInvolved), end(NodesInvolved),
                   [](std::tuple<int, Vec6> const &t1, std::tuple<int, Vec6> const &t2) {
-                      return std::get<0>(t1) > std::get<0>(t2); // custom compare function
+                      return std::get<0>(t1) > std::get<0>(t2);
                   } );
 
         NodesInvolvedCompressed.clear();
@@ -316,8 +303,6 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>::applyJT(
                 while (numNode_i == numNode_i1)
                 {
                     cumulativeF += std::get<1>(test_i1);
-                    //// This was if ((n!=NodesInvolved.size()-2)||(n==0)) before and I change it to
-                    /// if ((n!=NodesInvolved.size()-1)||(n==0)) since the code can't leave the will loop
                     if ((n!=NodesInvolved.size()-1)||(n==0)){
                         n++;
                         break;
@@ -330,13 +315,17 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>::applyJT(
             NodesInvolvedCompressed.push_back(std::make_tuple(numNode_i, cumulativeF));
         }
 
-        if (d_debug.getValue()){
-            std::cout<<" NodesInvolved after sort and compress"<<std::endl;
+        if(doPrintLog)
+        {
+            std::stringstream tmp;
+            tmp<<" NodesInvolved after sort and compress"<<msgendl;
             for (size_t i = 0; i < NodesInvolvedCompressed.size(); i++)
-                std::cout << "index :" <<get<0>(NodesInvolvedCompressed[i]) << " force :"
-                          << get<1>(NodesInvolvedCompressed[i]) << "\n ";
+                tmp << "index :" <<get<0>(NodesInvolvedCompressed[i]) << " force :"
+                          << get<1>(NodesInvolvedCompressed[i]) << msgendl;
+            msg_info() << tmp.str();
         }
 
+        auto baseIndex = d_baseIndex.getValue();
         for (unsigned n=0; n<NodesInvolvedCompressed.size(); n++)
         {
             std::tuple<int,Vec6> test = NodesInvolvedCompressed[n];
@@ -348,7 +337,7 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>::applyJT(
             {
                 //cumulate on beam frame
                 Mat6x6 coAdjoint;
-                this->computeCoAdjoint(m_nodesExponentialSE3Vectors[i-1],coAdjoint);  //m_nodesExponentialSE3Vectors computed in apply
+                this->computeCoAdjoint(m_nodesExponentialSE3Vectors[i-1],coAdjoint);
                 CumulativeF = coAdjoint * CumulativeF;
                 // transfer to strain space (local coordinates)
                 Mat6x6 temp = m_nodesTangExpVectors[i-1];
@@ -363,22 +352,15 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>::applyJT(
             Mat6x6 M = this->buildProjector(frame0);
 
             Vec6 base_force = M * CumulativeF;
-            o2.addCol(d_baseIndex.getValue(), base_force);
+            o2.addCol(baseIndex, base_force);
         }
     }
-
-    //"""END ARTICULATION SYSTEM MAPPING"""
-    dataMatOut1Const[0]->endEdit();
-    dataMatOut2Const[0]->endEdit();
 }
-
 
 // Register in the Factory
 int DiscreteCosseratMappingClass = sofa::core::RegisterObject("Set the positions and velocities of points attached to a rigid parent")
                                        .add< DiscreteCosseratMapping< sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types > >(true)
-                                       .add< DiscreteCosseratMapping< sofa::defaulttype::Vec6Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types > >()
-    ;
-
+                                       .add< DiscreteCosseratMapping< sofa::defaulttype::Vec6Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types > >();
 template class SOFA_COSSERAT_API DiscreteCosseratMapping< sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types >;
 template class SOFA_COSSERAT_API DiscreteCosseratMapping< sofa::defaulttype::Vec6Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types >;
 
