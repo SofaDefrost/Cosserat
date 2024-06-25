@@ -28,7 +28,7 @@
 namespace Cosserat::mapping
 {
 
-// Use a private namespace so we are not polluating the Cosserat::mapping.
+// Use a private namespace so we are not polluting the Cosserat::mapping.
 namespace
 {
 using namespace std;
