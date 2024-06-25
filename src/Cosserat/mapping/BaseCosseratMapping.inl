@@ -90,9 +90,8 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::init()
     const vector<OutCoord> xfrom = xfromData->getValue();
 
     m_vecTransform.clear();
-    for (unsigned int i = 0; i < xfrom.size(); i++) {
+    for (unsigned int i = 0; i < xfrom.size(); i++)
         m_vecTransform.push_back(xfrom[i]);
-    }
 
     initializeFrames();
     doBaseCosseratInit();
