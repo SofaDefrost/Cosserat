@@ -77,8 +77,8 @@ namespace sofa::core::behavior
         helper::WriteAccessor<Data<VecCoord>> x = *this->getMstate()->write(core::VecCoordId::position());
         helper::WriteAccessor<Data<VecCoord>> xfree = *this->getMstate()->write(core::VecCoordId::freePosition());
         unsigned nbPoints = this->getTopology()->getNbPoints(); // do not take the last point because there is a bug
-
         sofa::type::vector<unsigned int> Indices;
+
         if (nbPoints > 0)
         {
             Indices.push_back(nbPoints - 1);
@@ -103,12 +103,12 @@ namespace sofa::core::behavior
             {
             case 'S':
             case 's':
-                printf("A point is created \n");
+                msg_info() << "A point is created ."  ;
                 addNewPointToState();
                 break;
             case 'L':
             case 'l':
-                printf("Remove point from state \n");
+                msg_info() <<("Remove point from state \n");
                 removeLastPointfromState();
                 break;
             }

@@ -20,7 +20,7 @@
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
 #pragma once
-#include <SofaBoundaryCondition/config.h>
+#include <Cosserat/config.h>
 
 #include <sofa/core/behavior/ForceField.h>
 
@@ -30,7 +30,7 @@ using sofa::type::Vec ;
 using sofa::type::Mat ;
 using sofa::type::vector;
 using sofa::core::MechanicalParams;
-using sofa::defaulttype::BaseMatrix;
+using sofa::linearalgebra::BaseMatrix;
 using sofa::core::behavior::ForceField ;
 using sofa::core::behavior::MultiMatrixAccessor ;
 
@@ -68,17 +68,15 @@ public:
 
     void addDForce(const core::MechanicalParams* mparams, DataVecDeriv& d_df , const DataVecDeriv& d_dx) override;
 
-    void addKToMatrix(sofa::defaulttype::BaseMatrix *, SReal, unsigned int &) override {}
+    void addKToMatrix(sofa::linearalgebra::BaseMatrix *, SReal, unsigned int &) override {}
 
-    void addBToMatrix(sofa::defaulttype::BaseMatrix * mat, SReal bFact, unsigned int& offset) override;
+    void addBToMatrix(sofa::linearalgebra::BaseMatrix * mat, SReal bFact, unsigned int& offset) override;
 
     void addKToMatrix(const core::MechanicalParams* mparams, const sofa::core::behavior::MultiMatrixAccessor* matrix ) override;
 
     SReal getPotentialEnergy(const core::MechanicalParams* params, const DataVecCoord& x) const override;
 
-
 };
-
 
 
 #if !defined(SOFA_COMPONENT_FORCEFIELD_UNIFORMVELOCITYDAMPINGFORCEFIELD_CPP)

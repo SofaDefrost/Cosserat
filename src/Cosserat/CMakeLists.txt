@@ -1,7 +1,7 @@
 project(Cosserat.src VERSION 21.06.99)
 
 set(HEADER_FILES
-    initCosserat.h
+    config.h
 
     mapping/BaseCosserat.h
     mapping/BaseCosserat.inl
@@ -9,18 +9,22 @@ set(HEADER_FILES
     mapping/DiscreteCosseratMapping.inl
     mapping/DiscretDynamicCosseratMapping.h
     mapping/DiscreteDynamicCosseratMapping.inl
-    mapping/ProjectionEngine.h
-    mapping/ProjectionEngine.inl
     mapping/DifferenceMultiMapping.h
     mapping/DifferenceMultiMapping.inl
     mapping/RigidDistanceMapping.h
     mapping/RigidDistanceMapping.inl
     mapping/LegendrePolynomialsMapping.h
     mapping/LegendrePolynomialsMapping.inl
+    
+    engine/ProjectionEngine.h
+    engine/ProjectionEngine.inl
+
 
 
     forcefield/BeamHookeLawForceField.h
     forcefield/BeamHookeLawForceField.inl
+    forcefield/BeamHookeLawForceFieldRigid.h
+    forcefield/BeamHookeLawForceFieldRigid.inl
     forcefield/CosseratInternalActuation.h
     forcefield/CosseratInternalActuation.inl
     forcefield/MyUniformVelocityDampingForceField.h
@@ -38,14 +42,16 @@ set(SOURCE_FILES
     initCosserat.cpp
 
     mapping/BaseCosserat.cpp
-    mapping/ProjectionEngine.cpp
-        mapping/DiscreteCosseratMapping.cpp
+    mapping/DiscreteCosseratMapping.cpp
     mapping/DiscreteDynamicCosseratMapping.cpp
     mapping/DifferenceMultiMapping.cpp
     mapping/RigidDistanceMapping.cpp
     mapping/LegendrePolynomialsMapping.cpp
 
+    engine/ProjectionEngine.cpp
+
     forcefield/BeamHookeLawForceField.cpp
+    forcefield/BeamHookeLawForceFieldRigid.cpp
     forcefield/CosseratInternalActuation.cpp
     forcefield/MyUniformVelocityDampingForceField.cpp
 
