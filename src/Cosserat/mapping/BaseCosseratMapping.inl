@@ -21,7 +21,7 @@
  ******************************************************************************/
 #pragma once
 
-#include <Cosserat/initCosserat.h>
+#include <Cosserat/config.h>
 #include <Cosserat/mapping/BaseCosseratMapping.h>
 
 #include <sofa/core/Multi2Mapping.inl>
