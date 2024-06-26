@@ -60,7 +60,7 @@ using sofa::helper::OptionsGroup;
  * Only bending and torsion strain / stress are considered here
 */
 template<typename DataTypes>
-class SOFA_COSSERAT_API BeamHookeLawForceField : public ForceField<DataTypes>
+class BeamHookeLawForceField : public ForceField<DataTypes>
 {
 public :
     SOFA_CLASS(SOFA_TEMPLATE(BeamHookeLawForceField, DataTypes), SOFA_TEMPLATE(ForceField, DataTypes));
@@ -162,8 +162,8 @@ private :
 };
 
 #if !defined(SOFA_COSSERAT_CPP_BeamHookeLawForceField)
-extern template class SOFA_COSSERAT_API BeamHookeLawForceField<defaulttype::Vec3Types>;
-extern template class SOFA_COSSERAT_API BeamHookeLawForceField<defaulttype::Vec6Types>;
+  extern template class SOFA_COSSERAT_API BeamHookeLawForceField<defaulttype::Vec3Types>;
+  extern template class SOFA_COSSERAT_API BeamHookeLawForceField<defaulttype::Vec6Types>;
 #endif
 
 } // forcefield

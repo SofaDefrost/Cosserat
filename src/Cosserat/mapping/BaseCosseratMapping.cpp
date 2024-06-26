@@ -21,9 +21,6 @@
  ******************************************************************************/
 #define SOFA_COSSERAT_CPP_BaseCosseratMapping
 #include <Cosserat/mapping/BaseCosseratMapping.inl>
-
-#include <sofa/core/ObjectFactory.h>
-#include <sofa/defaulttype/RigidTypes.h>
 #include <sofa/defaulttype/VecTypes.h>
 
 namespace Cosserat::mapping
