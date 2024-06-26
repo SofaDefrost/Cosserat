@@ -21,7 +21,7 @@
 ******************************************************************************/
 #pragma once
 #include <Cosserat/initCosserat.h>
-#include <Cosserat/mapping/BaseCosserat.h>
+#include <Cosserat/mapping/BaseCosseratMapping.h>
 
 #include <sofa/core/BaseMapping.h>
 #include <sofa/core/config.h>
@@ -41,16 +41,11 @@ using sofa::type::Vec6;
 using sofa::type::Quat;
 using std::get;
 using sofa::type::vector;
-using Cosserat::mapping::BaseCosserat;
+using Cosserat::mapping::BaseCosseratMapping;
 
 /*!
  * \class DifferenceMultiMapping
- * @brief Computes and map the length of the beams
- *
- * This is a component:
- * https://www.sofa-framework.org/community/doc/programming-with-sofa/create-your-component/
  */
-
 template <class TIn1, class TIn2, class TOut>
 class DifferenceMultiMapping : public sofa::core::Multi2Mapping<TIn1, TIn2, TOut>
 {

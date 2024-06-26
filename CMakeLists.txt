@@ -20,9 +20,11 @@ endif()
 set(SRC_ROOT_DIR src/${PROJECT_NAME})
 
 set(HEADER_FILES
-    ${SRC_ROOT_DIR}/initCosserat.h.in
-    ${SRC_ROOT_DIR}/mapping/BaseCosserat.h
-    ${SRC_ROOT_DIR}/mapping/BaseCosserat.inl
+    ${SRC_ROOT_DIR}/config.h.in
+    ${SRC_ROOT_DIR}/fwd.h
+    ${SRC_ROOT_DIR}/types.h
+    ${SRC_ROOT_DIR}/mapping/BaseCosseratMapping.h
+    ${SRC_ROOT_DIR}/mapping/BaseCosseratMapping.inl
     ${SRC_ROOT_DIR}/mapping/DiscreteCosseratMapping.h
     ${SRC_ROOT_DIR}/mapping/DiscreteCosseratMapping.inl
     ${SRC_ROOT_DIR}/mapping/DiscreteDynamicCosseratMapping.h
@@ -50,7 +52,7 @@ set(HEADER_FILES
     )
 set(SOURCE_FILES
     ${SRC_ROOT_DIR}/initCosserat.cpp
-    ${SRC_ROOT_DIR}/mapping/BaseCosserat.cpp
+    ${SRC_ROOT_DIR}/mapping/BaseCosseratMapping.cpp
     ${SRC_ROOT_DIR}/mapping/DiscreteCosseratMapping.cpp
     ${SRC_ROOT_DIR}/mapping/DiscreteDynamicCosseratMapping.cpp
     ${SRC_ROOT_DIR}/engine/ProjectionEngine.cpp

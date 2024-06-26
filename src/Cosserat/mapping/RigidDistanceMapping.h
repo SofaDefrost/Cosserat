@@ -21,7 +21,7 @@
 ******************************************************************************/
 #pragma once
 #include <Cosserat/initCosserat.h>
-#include <Cosserat/mapping/BaseCosserat.h>
+#include <Cosserat/mapping/BaseCosseratMapping.h>
 
 #include <sofa/core/BaseMapping.h>
 #include <sofa/core/config.h>
@@ -51,7 +51,7 @@ using sofa::type::Vec4f;
  * This is a component:
  * https://www.sofa-framework.org/community/doc/programming-with-sofa/create-your-component/
  */
-using Cosserat::mapping::BaseCosserat;
+using Cosserat::mapping::BaseCosseratMapping;
 //
 template <class TIn1, class TIn2, class TOut>
 class RigidDistanceMapping : public sofa::core::Multi2Mapping<TIn1, TIn2, TOut>

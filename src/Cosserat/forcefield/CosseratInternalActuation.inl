@@ -28,7 +28,7 @@
 *                                                                             *
 ******************************************************************************/
 #pragma once
-#include <Cosserat/initCosserat.h>
+#include <Cosserat/config.h>
 #include <Cosserat/forcefield/CosseratInternalActuation.h>
 
 #include <sofa/linearalgebra/FullVector.h>

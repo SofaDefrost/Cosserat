@@ -20,7 +20,7 @@
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
 #pragma once
-#include <Cosserat/initCosserat.h>
+#include <Cosserat/config.h>
 #include <Cosserat/forcefield/MyUniformVelocityDampingForceField.h>
 #include "MyUniformVelocityDampingForceField.h"
 #include <sofa/defaulttype/BaseMatrix.h>

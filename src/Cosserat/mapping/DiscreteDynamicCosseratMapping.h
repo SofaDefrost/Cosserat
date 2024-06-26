@@ -21,7 +21,7 @@
 ******************************************************************************/
 #pragma once
 #include <Cosserat/initCosserat.h>
-#include <Cosserat/mapping/BaseCosserat.h>
+#include <Cosserat/mapping/BaseCosseratMapping.h>
 
 #include <sofa/core/BaseMapping.h>
 #include <sofa/core/Multi2Mapping.h>
@@ -39,7 +39,7 @@ using sofa::type::Vec6;
 using std::get;
 using sofa::Data;
 using sofa::type::Mat;
-using Cosserat::mapping::BaseCosserat;
+using Cosserat::mapping::BaseCosseratMapping;
 
 /*!
  * \class DiscretDynamicCosseratMapping
@@ -51,12 +51,11 @@ using Cosserat::mapping::BaseCosserat;
 
 
 template <class TIn1, class TIn2, class TOut>
-class DiscreteDynamicCosseratMapping : public sofa::core::Multi2Mapping<TIn1, TIn2, TOut>,
-                                       BaseCosserat<TIn1, TIn2, TOut>
+class DiscreteDynamicCosseratMapping : public BaseCosseratMapping<TIn1, TIn2, TOut>
 {
 public:
     SOFA_CLASS(SOFA_TEMPLATE3(DiscreteDynamicCosseratMapping, TIn1,TIn2, TOut),
-               SOFA_TEMPLATE3(sofa::core::Multi2Mapping, TIn1, TIn2, TOut) );
+               SOFA_TEMPLATE3(Cosserat::mapping::BaseCosseratMapping, TIn1, TIn2, TOut) );
     typedef sofa::core::Multi2Mapping<TIn1, TIn2, TOut> Inherit;
 
     /// Input Model Type
@@ -108,11 +107,6 @@ public:
     typedef typename SolidTypes<Real>::Transform      Transform ;
 
 protected:
-    sofa::core::State<In1>* m_fromModel1;
-    sofa::core::State<In2>* m_fromModel2;
-    sofa::core::State<Out>* m_toModel;
-
-protected:
     /// Constructor
     DiscreteDynamicCosseratMapping() ;
     /// Destructor
@@ -131,31 +125,27 @@ protected:
     /// otherwise any access to the base::attribute would require
     /// the "this->" approach.
     ///
-    using BaseCosserat<TIn1, TIn2, TOut>::m_indicesVectors ;
-    using BaseCosserat<TIn1, TIn2, TOut>::d_curv_abs_section  ;
-    using BaseCosserat<TIn1, TIn2, TOut>::d_curv_abs_frames ;
-    using BaseCosserat<TIn1, TIn2, TOut>::m_nodesTangExpVectors;
-    using BaseCosserat<TIn1, TIn2, TOut>::m_nodesVelocityVectors;
-    using BaseCosserat<TIn1, TIn2, TOut>::m_framesExponentialSE3Vectors;
-    using BaseCosserat<TIn1, TIn2, TOut>::m_framesTangExpVectors ;
-    using BaseCosserat<TIn1, TIn2, TOut>::m_totalBeamForceVectors ;
-    using BaseCosserat<TIn1, TIn2, TOut>::m_nodesExponentialSE3Vectors ;
-    using BaseCosserat<TIn1, TIn2, TOut>::d_debug;
-    using BaseCosserat<TIn1, TIn2, TOut>::m_vecTransform ;
-    using BaseCosserat<TIn1, TIn2, TOut>::m_nodeAdjointVectors;
-    using BaseCosserat<TIn1, TIn2, TOut>::m_index_input;
-
+    using BaseCosseratMapping<TIn1, TIn2, TOut>::m_indicesVectors ;
+    using BaseCosseratMapping<TIn1, TIn2, TOut>::d_curv_abs_section  ;
+    using BaseCosseratMapping<TIn1, TIn2, TOut>::d_curv_abs_frames ;
+    using BaseCosseratMapping<TIn1, TIn2, TOut>::m_nodesTangExpVectors;
+    using BaseCosseratMapping<TIn1, TIn2, TOut>::m_nodesVelocityVectors;
+    using BaseCosseratMapping<TIn1, TIn2, TOut>::m_framesExponentialSE3Vectors;
+    using BaseCosseratMapping<TIn1, TIn2, TOut>::m_framesTangExpVectors ;
+    using BaseCosseratMapping<TIn1, TIn2, TOut>::m_totalBeamForceVectors ;
+    using BaseCosseratMapping<TIn1, TIn2, TOut>::m_nodesExponentialSE3Vectors ;
+    using BaseCosseratMapping<TIn1, TIn2, TOut>::d_debug;
+    using BaseCosseratMapping<TIn1, TIn2, TOut>::m_vecTransform ;
+    using BaseCosseratMapping<TIn1, TIn2, TOut>::m_nodeAdjointVectors;
+    using BaseCosseratMapping<TIn1, TIn2, TOut>::m_indexInput;
+    using BaseCosseratMapping<TIn1, TIn2, TOut>::m_toModel;
+    using BaseCosseratMapping<TIn1, TIn2, TOut>::m_fromModel1;
+    using BaseCosseratMapping<TIn1, TIn2, TOut>::m_fromModel2;
 
 public:
-
-
     /**********************SOFA METHODS**************************/
-    void init() override;
-    virtual void bwdInit() override;  // get the points
-    virtual void reset() override;
-    virtual void reinit() override;
+    void doBaseCosseratInit() final override;
     void draw(const sofa::core::visual::VisualParams* vparams) override;
-
     /**********************MAPPING METHODS**************************/
     void apply(
         const sofa::core::MechanicalParams* /* mparams */,

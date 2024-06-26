@@ -27,8 +27,7 @@
  * Contact information: https://project.inria.fr/softrobot/contact/            *
  *                                                                             *
  ******************************************************************************/
-#ifndef SOFA_COSSERAT_INIT_H
-#define SOFA_COSSERAT_INIT_H
+#pragma once
 
 #include <sofa/config.h>
 
@@ -45,17 +44,9 @@
   This is the plugin for the Discret Cosserat Plugin
 */
 
-namespace Cosserat {
-
-namespace type {
-//using Vec3 = sofa::defaulttype::Vec3;
-//using cosserat::type::SE3;
+namespace Cosserat
+{
+    SOFA_COSSERAT_API void init();
+    constexpr const char *MODULE_NAME = "@PROJECT_NAME@";
+    constexpr const char *MODULE_VERSION = "@PROJECT_VERSION@";
 }
-
-
-SOFA_COSSERAT_API void init();
-constexpr const char *MODULE_NAME = "@PROJECT_NAME@";
-constexpr const char *MODULE_VERSION = "@PROJECT_VERSION@";
-} // namespace Cosserat
-
-#endif /* SOFA_COSSERAT_INIT_H */

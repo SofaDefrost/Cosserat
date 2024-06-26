@@ -1,7 +1,7 @@
 project(Cosserat.src VERSION 21.06.99)
 
 set(HEADER_FILES
-    initCosserat.h
+    config.h
 
     mapping/BaseCosserat.h
     mapping/BaseCosserat.inl

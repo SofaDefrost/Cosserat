@@ -21,70 +21,57 @@
  ******************************************************************************/
 #pragma once
 #include <Cosserat/initCosserat.h>
+#include <Cosserat/types.h>
 
-#include <sofa/core/BaseMapping.h>
 #include <sofa/core/Multi2Mapping.h>
-#include <sofa/core/config.h>
-#include <sofa/core/objectmodel/BaseObject.h>
-#include <sofa/defaulttype/RigidTypes.h>
-#include <sofa/defaulttype/SolidTypes.h>
-#include <sofa/type/Vec.h>
 
-#include <cmath>
-#include <iostream>
+namespace Cosserat::mapping
+{
 
-#include <Eigen/Dense>
-#include <cmath>
-
+// Use a private namespace so we are not polluting the Cosserat::mapping.
+namespace
+{
 using namespace std;
 using namespace Eigen;
-
-#include <cmath>
-
-// TODO(dmarchal, 2024/06/07): This is polluating the namespace of
-// sofa::components
-//                             plugins should be in their own namespace like
-//                             eg: cosserat::component::mapping
-namespace Cosserat::mapping {
-
-// with a private namespace the used named are not polluating the whole
-// sofa::component::mapping ones.
-namespace {
-using sofa::core::objectmodel::BaseContext;
-using sofa::core::objectmodel::BaseObject;
 using sofa::defaulttype::SolidTypes;
-using sofa::type::Matrix3;
-using sofa::type::Matrix4;
+using sofa::type::Mat6x6;
+using sofa::type::Mat4x4;
+using sofa::type::Mat3x3;
+
 using std::get;
 using sofa::type::vector;
 using sofa::type::Vec3;
 using sofa::type::Vec6;
 using sofa::type::Mat;
 
-typedef typename Eigen::Matrix4d _SE3;
-} // namespace
+// TODO(dmarchal: 2024/06/12): please check the comment to confirme this is true
+using SE3 = sofa::type::Matrix4; ///< The "coordinate" in SE3
+using se3 = sofa::type::Matrix4; ///< The "speed" of change of SE3.
+using _se3 = Eigen::Matrix4d;
+using _SE3 = Eigen::Matrix4d;
 
+using Cosserat::type::Transform;
+using Cosserat::type::TangentTransform;
+using Cosserat::type::RotMat;
+
+
+}
+
+// TODO(dmarchal: 2024/10/07) Is the description valid ?
 /*!
- * \class BaseCosserat
+ * \class BaseCosseratMapping
  * @brief Computes and map the length of the beams
  *
- * This is a component:
- * https://www.sofa-framework.org/community/doc/programming-with-sofa/create-your-component/
  */
-
-// TODO(dmarchal: 2024/06/07) This component looks like a mapping but inherit
-// from BaseObject * can you clarify why is is not inhering from BaseMapping
 template <class TIn1, class TIn2, class TOut>
-class BaseCosserat : public virtual sofa::core::objectmodel::BaseObject {
+class BaseCosseratMapping : public sofa::core::Multi2Mapping<TIn1, TIn2, TOut>
+{
 public:
-    SOFA_CLASS(SOFA_TEMPLATE3(BaseCosserat, TIn1, TIn2, TOut), BaseObject);
-    typedef BaseObject Inherit;
+    SOFA_ABSTRACT_CLASS(SOFA_TEMPLATE3(BaseCosseratMapping, TIn1, TIn2, TOut),
+                        SOFA_TEMPLATE3(sofa::core::Multi2Mapping,TIn1, TIn2, TOut));
 
-    /// Input Model Type
     typedef TIn1 In1;
     typedef TIn2 In2;
-
-    /// Output Model Type
     typedef TOut Out;
 
     // TODO(dmarchal:2024/06/07) This very long list of public typedefs looks
@@ -92,71 +79,30 @@ public:
     // typedefs are public
     typedef typename In1::Coord Coord1;
     typedef typename In1::Deriv Deriv1;
-    typedef typename In1::VecCoord In1VecCoord;
-    typedef typename In1::VecDeriv In1VecDeriv;
-    [[maybe_unused]] typedef typename In1::MatrixDeriv In1MatrixDeriv;
-    typedef sofa::Data<In1VecCoord> In1DataVecCoord;
-    typedef sofa::Data<In1VecDeriv> In1DataVecDeriv;
 
-    typedef typename In2::Coord::value_type Real;
     typedef typename In2::Coord Coord2;
     typedef typename In2::Deriv Deriv2;
-    typedef typename In2::VecCoord In2VecCoord;
-    typedef typename In2::VecDeriv In2VecDeriv;
-    [[maybe_unused]] typedef typename In2::MatrixDeriv In2MatrixDeriv;
-    typedef sofa::Data<In2VecCoord> In2DataVecCoord;
-    typedef sofa::Data<In2VecDeriv> In2DataVecDeriv;
-    typedef Mat<6, 6, SReal> Mat6x6;
-    typedef Mat<4, 4, SReal> Mat4x4;
 
-    typedef typename Out::VecCoord OutVecCoord;
     typedef typename Out::Coord OutCoord;
     typedef typename Out::Deriv OutDeriv;
-    typedef typename Out::VecDeriv OutVecDeriv;
-    typedef typename Out::MatrixDeriv OutMatrixDeriv;
-    typedef sofa::Data<OutVecCoord> OutDataVecCoord;
-    typedef sofa::Data<OutVecDeriv> OutDataVecDeriv;
-    typedef sofa::Data<OutMatrixDeriv> OutDataMatrixDeriv;
-
-    typedef sofa::MultiLink<BaseCosserat<In1, In2, Out>, sofa::core::State<In1>,
-                            sofa::BaseLink::FLAG_STOREPATH | sofa::BaseLink::FLAG_STRONGLINK>
-        LinkFromModels1;
-    typedef sofa::MultiLink<BaseCosserat<In1, In2, Out>, sofa::core::State<In2>,
-                            sofa::BaseLink::FLAG_STOREPATH | sofa::BaseLink::FLAG_STRONGLINK>
-        LinkFromModels2;
-    [[maybe_unused]] typedef sofa::MultiLink<
-        BaseCosserat<In1, In2, Out>, sofa::core::State<Out>,
-        sofa::BaseLink::FLAG_STOREPATH | sofa::BaseLink::FLAG_STRONGLINK>
-        LinkToModels;
-
-    typedef typename SolidTypes<SReal>::Transform Transform;
-    typedef typename sofa::type::vector<SReal> List;
-
-    typedef typename sofa::type::Matrix4 se3;
-    typedef typename sofa::type::Matrix4 SE3;
-
-    typedef typename Eigen::Matrix4d _se3;
-    typedef typename sofa::type::Mat<6, 6, SReal> Tangent;
-    typedef typename Eigen::Matrix3d RotMat;
-    typedef typename Eigen::Matrix<SReal, 6, 1> Vector6d;
 
 public:
     // TODO(dmarchal: 2024/06/07): There is a lot of public attributes is this
     // really needed ?
 
     /*===========COSSERAT VECTORS ======================*/
-    unsigned int m_index_input;
-    OutVecCoord m_vecTransform;
+    unsigned int m_indexInput;
+    vector<OutCoord> m_vecTransform;
 
     vector<Transform> m_framesExponentialSE3Vectors;
     vector<Transform> m_nodesExponentialSE3Vectors;
-    vector<Matrix4> m_nodesLogarithmeSE3Vectors;
+    vector<Mat4x4> m_nodesLogarithmeSE3Vectors;
 
     // @todo comment or explain more vectors
     vector<unsigned int> m_indicesVectors;
     vector<unsigned int> m_indicesVectorsDraw;
 
-    vector<double> m_BeamLengthVectors;
+    vector<double> m_beamLengthVectors;
     vector<double> m_framesLengthVectors;
 
     vector<Vec6> m_nodesVelocityVectors;
@@ -167,8 +113,9 @@ public:
     vector<Mat6x6> m_nodeAdjointVectors;
 
     // TODO(dmarchal:2024/06/07): explain why these attributes are unused
-    // TODO : yadagolo: Need for the dynamic function, which is not working yet.
-    //  But the component is in this folder
+    // : yadagolo: Need for the dynamic function, which is not working yet. But the component is in this folder
+    // : dmarchal: don't add something that will be used "one day"
+    // : dmarchal: it look like as if you should be working in a branch for making new feature and merge it when it is ready.
     [[maybe_unused]] vector<Mat6x6> m_nodeAdjointEtaVectors;
     [[maybe_unused]] vector<Mat6x6> m_frameAdjointEtaVectors;
     [[maybe_unused]] vector<Mat6x6> m_node_coAdjointEtaVectors;
@@ -176,8 +123,8 @@ public:
 
 public:
     /********************** Inhertited from BaseObject   **************/
-    void init() override;
-    void draw(const sofa::core::visual::VisualParams *) override;
+    void init() final override;
+    virtual void doBaseCosseratInit() = 0;
 
     /************************* BaseCosserat **************************/
     // TODO(dmarchal:2024/06/07), so we have "initialize" and "init"
@@ -185,20 +132,19 @@ public:
     // roles is unclear and generates ambiguities
     // TODO @yadagolo: Yes, because the function is used by callback, when we
     // do dynamic meshing.
-    void initialize();
+    void initializeFrames();
 
     double computeTheta(const double &x, const Mat4x4 &gX);
     void printMatrix(const Mat6x6 R);
 
-    Matrix3 extractRotMatrix(const Transform &frame);
-    Tangent buildProjector(const Transform &T);
-    se3 buildXiHat(const Coord1 &strain_i);
-    Matrix3 getTildeMatrix(const Vec3 &u);
+    sofa::type::Mat3x3 extractRotMatrix(const Transform &frame);
+    TangentTransform buildProjector(const Transform &T);
+    Mat3x3 getTildeMatrix(const Vec3 &u);
 
-    void buildAdjoint(const Matrix3 &A, const Matrix3 &B, Mat6x6 &Adjoint);
-    void buildCoAdjoint(const Matrix3 &A, const Matrix3 &B, Mat6x6 &coAdjoint);
+    void buildAdjoint(const Mat3x3 &A, const Mat3x3 &B, Mat6x6 &Adjoint);
+    void buildCoAdjoint(const Mat3x3 &A, const Mat3x3 &B, Mat6x6 &coAdjoint);
 
-    Matrix4 convertTransformToMatrix4x4(const Transform &T);
+    Mat4x4 convertTransformToMatrix4x4(const Transform &T);
     Vec6 piecewiseLogmap(const _SE3 &g_x);
 
     // TODO(dmarchal: 2024/06/07), this looks like a very common utility
@@ -231,47 +177,49 @@ protected:
     sofa::Data<vector<double>> d_curv_abs_frames;
     sofa::Data<bool> d_debug;
 
-    /// Input Models container. New inputs are added through addInputModel(In* ).
-    sofa::core::State<In1> *m_fromModel1;
+    using Inherit1::fromModels1;
+    using Inherit1::fromModels2;
+    using Inherit1::toModels;
 
-    // TODO(dmarchal): why this maybe_unused on a data field ?
-    [[maybe_unused]] sofa::core::State<In2> *m_fromModel2;
-
-    sofa::core::State<Out> *m_toModel;
+    sofa::core::State<In1>* m_fromModel1;
+    sofa::core::State<In2>* m_fromModel2;
+    sofa::core::State<Out>* m_toModel;
 
 protected:
     /// Constructor
-    BaseCosserat();
+    BaseCosseratMapping();
+
     /// Destructor
-    ~BaseCosserat() override = default;
+    ~BaseCosseratMapping() override = default;
 
     void computeExponentialSE3(const double &x, const Coord1 &k,
                                Transform &Trans);
 
     // TODO(dmarchal: 2024/06/07):
-    //   - two naming convention
-    //   - unclear the difference between computeAdjoing and buildAdjoint ... is
-    //   there room for factoring things ?
-    void computeAdjoint(const Transform &frame, Mat6x6 &adjoint);
+    //   - clarify the difference between computeAdjoing and buildAdjoint ...
+    //   - clarify why we need Transform and Vec6 and TangentTransform & Mat6x6
+    void computeAdjoint(const Transform &frame, TangentTransform &adjoint);
     void computeAdjoint(const Vec6 &frame, Mat6x6 &adjoint);
 
     void computeCoAdjoint(const Transform &frame, Mat6x6 &coAdjoint);
 
-    void updateExponentialSE3(const In1VecCoord &inDeform);
-    void updateTangExpSE3(const In1VecCoord &inDeform);
+    void updateExponentialSE3(const vector<Coord1> &inDeform);
+    void updateTangExpSE3(const vector<Coord1> &inDeform);
+
     void computeTangExp(double &x, const Coord1 &k, Mat6x6 &TgX);
+    void computeTangExpImplementation(double &x, const Vec6 &k, Mat6x6 &TgX);
 
     [[maybe_unused]] Vec6
-    computeETA(const Vec6 &baseEta, const In1VecDeriv &k_dot, double abs_input);
-    Matrix4 computeLogarithm(const double &x, const Mat4x4 &gX);
+    computeETA(const Vec6 &baseEta, const vector<Deriv1> &k_dot, double abs_input);
+    Mat4x4 computeLogarithm(const double &x, const Mat4x4 &gX);
 };
 
-#if !defined(SOFA_COSSERAT_CPP_BaseCosserat)
+#if !defined(SOFA_COSSERAT_CPP_BaseCosseratMapping)
 extern template class SOFA_COSSERAT_API
-    BaseCosserat<sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types,
+BaseCosseratMapping<sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types,
                  sofa::defaulttype::Rigid3Types>;
 extern template class SOFA_COSSERAT_API
-    BaseCosserat<sofa::defaulttype::Vec6Types, sofa::defaulttype::Rigid3Types,
+BaseCosseratMapping<sofa::defaulttype::Vec6Types, sofa::defaulttype::Rigid3Types,
                  sofa::defaulttype::Rigid3Types>;
 #endif
 
