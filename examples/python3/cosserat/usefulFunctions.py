@@ -17,44 +17,180 @@ __date__ = "March 16 2021"
 import Sofa
 import numpy as np
 import math
-from splib3.numerics import Vec3, Quat
+from splib3.numerics import Quat
 
 # from stlib3.scene import MainScene
 
 lenSoftPart = 0.5
-rateLength = [1.2, 0.5, 0.7, 0.5, 0.7, 0.5, 0.7, 0.5, 0.7, 0.5, 0.7, 0.5, 0.7, 0.5, 0.7, 0.5, 0.7, 0.5,
-              0.7, 0.5, 0.7, 0.5, 0.7, 0.5, 0.7, 0.5, 0.7, 0.5, 0.7, 0.5, 0.7, 0.5, 0.7, 0.5, 0.7, 0.5,
-              0.7, 0.5, 0.7, 0.5, 0.45]
+rateLength = [
+    1.2,
+    0.5,
+    0.7,
+    0.5,
+    0.7,
+    0.5,
+    0.7,
+    0.5,
+    0.7,
+    0.5,
+    0.7,
+    0.5,
+    0.7,
+    0.5,
+    0.7,
+    0.5,
+    0.7,
+    0.5,
+    0.7,
+    0.5,
+    0.7,
+    0.5,
+    0.7,
+    0.5,
+    0.7,
+    0.5,
+    0.7,
+    0.5,
+    0.7,
+    0.5,
+    0.7,
+    0.5,
+    0.7,
+    0.5,
+    0.7,
+    0.5,
+    0.7,
+    0.5,
+    0.7,
+    0.5,
+    0.45,
+]
 
 draw_cylinder = 1
 add_collision_point = 1
 
-pluginList = ['Cosserat',
-              'Sofa.Component.AnimationLoop',
-              'Sofa.Component.LinearSolver.Iterative', 'Sofa.Component.LinearSolver.Direct', 'Sofa.Component.StateContainer',
-              'Sofa.Component.SolidMechanics.FEM.Elastic', 'Sofa.Component.SolidMechanics.Spring', 'Sofa.Component.MechanicalLoad', 'Sofa.Component.Mass',
-              'Sofa.Component.Topology.Container.Dynamic', 'Sofa.Component.Topology.Container.Grid',
-              'Sofa.Component.ODESolver.Backward',
-              'Sofa.Component.Mapping.Linear', 'Sofa.Component.Mapping.NonLinear', 'Sofa.Component.Topology.Mapping',
-              'Sofa.Component.Collision.Geometry', 'Sofa.Component.Collision.Detection.Algorithm','Sofa.Component.Collision.Detection.Intersection','Sofa.Component.Collision.Response.Contact',
-              'Sofa.Component.Constraint.Lagrangian.Correction','Sofa.Component.Constraint.Lagrangian.Solver',
-              'Sofa.Component.Engine.Select',
-              'Sofa.GL.Component.Rendering3D', 'Sofa.Component.Setting', 'Sofa.Component.SceneUtility', 'Sofa.Component.IO.Mesh', 'Sofa.Component.Visual'
-              ]
+pluginList = [
+    "Cosserat",
+    "Sofa.Component.AnimationLoop",
+    "Sofa.Component.LinearSolver.Iterative",
+    "Sofa.Component.LinearSolver.Direct",
+    "Sofa.Component.StateContainer",
+    "Sofa.Component.SolidMechanics.FEM.Elastic",
+    "Sofa.Component.SolidMechanics.Spring",
+    "Sofa.Component.MechanicalLoad",
+    "Sofa.Component.Mass",
+    "Sofa.Component.Topology.Container.Dynamic",
+    "Sofa.Component.Topology.Container.Grid",
+    "Sofa.Component.ODESolver.Backward",
+    "Sofa.Component.Mapping.Linear",
+    "Sofa.Component.Mapping.NonLinear",
+    "Sofa.Component.Topology.Mapping",
+    "Sofa.Component.Collision.Geometry",
+    "Sofa.Component.Collision.Detection.Algorithm",
+    "Sofa.Component.Collision.Detection.Intersection",
+    "Sofa.Component.Collision.Response.Contact",
+    "Sofa.Component.Constraint.Lagrangian.Correction",
+    "Sofa.Component.Constraint.Lagrangian.Solver",
+    "Sofa.Component.Engine.Select",
+    "Sofa.GL.Component.Rendering3D",
+    "Sofa.Component.Setting",
+    "Sofa.Component.SceneUtility",
+    "Sofa.Component.IO.Mesh",
+    "Sofa.Component.Visual",
+]
 
 
 PRig = 0.38  # poison ratio for the rigid part of the beam
 PSoft = 0.43  # poison ratio for the soft part of the beam
-poisonRatioList = [PSoft, PRig, PSoft, PRig, PSoft, PRig, PSoft, PRig, PSoft, PRig, PSoft, PRig, PSoft, PRig, PSoft,
-                   PRig, PSoft, PRig, PSoft, PRig, PSoft, PRig, PSoft, PRig, PSoft, PRig, PSoft, PRig, PSoft, PRig,
-                   PSoft, PRig, PSoft, PRig, PSoft, PRig, PSoft, PRig, PSoft, PRig, PSoft]
+poisonRatioList = [
+    PSoft,
+    PRig,
+    PSoft,
+    PRig,
+    PSoft,
+    PRig,
+    PSoft,
+    PRig,
+    PSoft,
+    PRig,
+    PSoft,
+    PRig,
+    PSoft,
+    PRig,
+    PSoft,
+    PRig,
+    PSoft,
+    PRig,
+    PSoft,
+    PRig,
+    PSoft,
+    PRig,
+    PSoft,
+    PRig,
+    PSoft,
+    PRig,
+    PSoft,
+    PRig,
+    PSoft,
+    PRig,
+    PSoft,
+    PRig,
+    PSoft,
+    PRig,
+    PSoft,
+    PRig,
+    PSoft,
+    PRig,
+    PSoft,
+    PRig,
+    PSoft,
+]
 # YRig = 215.e11
-YRig = 215.e9
+YRig = 215.0e9
 
-temp = [8.1e4, YRig, 3.1e4, YRig, 2.5e4, YRig, 2.3e4, YRig, 2.4e4, YRig, 2.3e4, YRig, 1.95e4, YRig,
-        1.93e4, YRig, 1.52e4, YRig, 1.03e4, YRig, 1.14e4, YRig, 1.07e4, YRig, 7.9e3, YRig, 7.3e3,
-        YRig, 6.0e3, YRig, 5.0e3, YRig, 2.975e3, YRig, 1.77e3, YRig, 1.615e3, YRig, 9.25e2, YRig,
-        9.25e2]
+temp = [
+    8.1e4,
+    YRig,
+    3.1e4,
+    YRig,
+    2.5e4,
+    YRig,
+    2.3e4,
+    YRig,
+    2.4e4,
+    YRig,
+    2.3e4,
+    YRig,
+    1.95e4,
+    YRig,
+    1.93e4,
+    YRig,
+    1.52e4,
+    YRig,
+    1.03e4,
+    YRig,
+    1.14e4,
+    YRig,
+    1.07e4,
+    YRig,
+    7.9e3,
+    YRig,
+    7.3e3,
+    YRig,
+    6.0e3,
+    YRig,
+    5.0e3,
+    YRig,
+    2.975e3,
+    YRig,
+    1.77e3,
+    YRig,
+    1.615e3,
+    YRig,
+    9.25e2,
+    YRig,
+    9.25e2,
+]
 
 youngModulusList = [x * 4 for x in temp]
 
@@ -69,12 +205,50 @@ adds = 1.4e4
 The first soft beam has no parameter, because it was not tested in the experimental part. But we set it to 0.36 like beam 1.
 The rigid part has no parameter, but we set it to 100, in order to simplify the code
 """
-rPlastic = 100.
-plasticityTab = [0.36, rPlastic, 0.36, rPlastic, 0.35, rPlastic, 0.41, rPlastic, 0.34, rPlastic, 0.42, rPlastic, 0.48,
-                 rPlastic, 0.45, rPlastic, 0.54, rPlastic, 0.17, rPlastic, 0.20, rPlastic, 0.2, rPlastic, 0.15,
-                 rPlastic,
-                 0.15, rPlastic, 0.12, rPlastic, 0.2, rPlastic, 0.3, rPlastic, 0.3, rPlastic, 0.3, rPlastic, 0.3,
-                 rPlastic, 0.3]
+rPlastic = 100.0
+plasticityTab = [
+    0.36,
+    rPlastic,
+    0.36,
+    rPlastic,
+    0.35,
+    rPlastic,
+    0.41,
+    rPlastic,
+    0.34,
+    rPlastic,
+    0.42,
+    rPlastic,
+    0.48,
+    rPlastic,
+    0.45,
+    rPlastic,
+    0.54,
+    rPlastic,
+    0.17,
+    rPlastic,
+    0.20,
+    rPlastic,
+    0.2,
+    rPlastic,
+    0.15,
+    rPlastic,
+    0.15,
+    rPlastic,
+    0.12,
+    rPlastic,
+    0.2,
+    rPlastic,
+    0.3,
+    rPlastic,
+    0.3,
+    rPlastic,
+    0.3,
+    rPlastic,
+    0.3,
+    rPlastic,
+    0.3,
+]
 
 
 def formated(value):
@@ -82,7 +256,7 @@ def formated(value):
 
 
 def buildEdges(cable3DPos):
-    """ This function is used to build edges required in the EdgeSetTopologyContainer component"""
+    """This function is used to build edges required in the EdgeSetTopologyContainer component"""
     points_size = len(cable3DPos)
     edgeList = []
     for i in range(0, points_size - 1):
@@ -96,12 +270,11 @@ class CosseratComponent(Sofa.Core.Controller):
         Sofa.Core.Controller.__init__(self, *args, **kwargs)
         self.rigidBaseNode = args[0]
         self.rateAngularDeformNode = args[1]
-        self.frameNode = args[0].getChild('MappedFrames')
-        self.cable3DPosNode = self.frameNode.getChild(
-            'CollisInstrumentCombined')
-        self.rigidBaseMO = self.rigidBaseNode.getChild('RigidBaseMO')
+        self.frameNode = args[0].getChild("MappedFrames")
+        self.cable3DPosNode = self.frameNode.getChild("CollisInstrumentCombined")
+        self.rigidBaseMO = self.rigidBaseNode.getChild("RigidBaseMO")
         self.dX = 0.0025
-        self.angularRate = 15.
+        self.angularRate = 15.0
         self.length = 12.95
         # Cosserat frames parameters
         self.nbFrames = 55
@@ -114,7 +287,7 @@ class CosseratComponent(Sofa.Core.Controller):
         self.nbSection = 22
         self.rateAngular = []
 
-        leng = 0.
+        leng = 0.0
         for i in range(len(rateLength)):
             leng = rateLength[i] + leng
         self.length = leng
@@ -124,25 +297,25 @@ class CosseratComponent(Sofa.Core.Controller):
         for i in range(len(rateLength)):
             temp += rateLength[i]
             self.curvInput.append(temp)
-            self.rateAngular.append([0, 0., 0.])
+            self.rateAngular.append([0, 0.0, 0.0])
         counter = 0
 
         for i in range(len(self.curvInput) - 1):
-            middle = (self.curvInput[i + 1] + self.curvInput[i]) / 2.
-            self.frames.append([self.curvInput[i], 0., 0., 0., 0., 0., 1.])
-            self.frames.append([middle, 0., 0., 0., 0., 0., 1.])
+            middle = (self.curvInput[i + 1] + self.curvInput[i]) / 2.0
+            self.frames.append([self.curvInput[i], 0.0, 0.0, 0.0, 0.0, 0.0, 1.0])
+            self.frames.append([middle, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0])
 
             self.curvOut.append(self.curvInput[i])
             self.curvOut.append(middle)
 
-            self.cable3DPos.append([self.curvInput[i], 0., 0.])
-            self.cable3DPos.append([middle, 0., 0.])
+            self.cable3DPos.append([self.curvInput[i], 0.0, 0.0])
+            self.cable3DPos.append([middle, 0.0, 0.0])
             counter += 2
 
         self.curvOut.append(self.length)
-        self.cable3DPos.append([self.length, 0., 0.])
+        self.cable3DPos.append([self.length, 0.0, 0.0])
         # print("self.cable3DPos: ", self.cable3DPos)
-        self.frames.append([self.length, 0., 0., 0., 0., 0., 1.])
+        self.frames.append([self.length, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0])
         counter += 1
         self.nbFrames = counter
         self.initGraph()
@@ -150,10 +323,10 @@ class CosseratComponent(Sofa.Core.Controller):
 
     def applyRotation(self, angle=None):
         if angle is None:
-            angle = [0., 0., 0.]
-        QInit = Quat.createFromEuler(angle, 'ryxz', inDegree=True)
+            angle = [0.0, 0.0, 0.0]
+        QInit = Quat.createFromEuler(angle, "ryxz", inDegree=True)
         QInit.normalize()
-        return QInit.rotate([self.dX, 0., 0.])
+        return QInit.rotate([self.dX, 0.0, 0.0])
 
     def computeCosseratParameters(self):
         points_size = len(self.cable3DPos)
@@ -162,20 +335,30 @@ class CosseratComponent(Sofa.Core.Controller):
             self.edgeList.append(i + 1)
 
     def createCylinderNode(self, length=0.5, abscissa=0.0, index=0):
-        translation = [abscissa, 0., 0.]
-        color = 'grey' if length == 0.5 else 'blue'
-        CylinderFEMNode = self.frameNode.addChild(
-            'CylinderFEMNode' + str(index))
-        CylinderFEMNode.addObject('CylinderGridTopology', name="grid", nx="5", ny="5", nz="8", length=length,
-                                  radius=0.25, axis="1 0 0")
-        CylinderFEMNode.addObject('MeshTopology', src="@grid")
+        translation = [abscissa, 0.0, 0.0]
+        color = "grey" if length == 0.5 else "blue"
+        CylinderFEMNode = self.frameNode.addChild("CylinderFEMNode" + str(index))
         CylinderFEMNode.addObject(
-            'MechanicalObject', name="cylinder", template="Vec3d", translation=translation)
-        CylinderFEMNode.addObject('SkinningMapping', nbRef='1')
-        Visu = CylinderFEMNode.addChild('Visu')
-        Visu.addObject('OglModel', name="Visual", color=color)
-        Visu.addObject('IdentityMapping',
-                       input="@../cylinder", output="@Visual")
+            "CylinderGridTopology",
+            name="grid",
+            nx="5",
+            ny="5",
+            nz="8",
+            length=length,
+            radius=0.25,
+            axis="1 0 0",
+        )
+        CylinderFEMNode.addObject("MeshTopology", src="@grid")
+        CylinderFEMNode.addObject(
+            "MechanicalObject",
+            name="cylinder",
+            template="Vec3d",
+            translation=translation,
+        )
+        CylinderFEMNode.addObject("SkinningMapping", nbRef="1")
+        Visu = CylinderFEMNode.addChild("Visu")
+        Visu.addObject("OglModel", name="Visual", color=color)
+        Visu.addObject("IdentityMapping", input="@../cylinder", output="@Visual")
 
     def initGraph(self):
         # @info compute cosserat parameters
@@ -184,12 +367,13 @@ class CosseratComponent(Sofa.Core.Controller):
         self.frameNode.mapping.curv_abs_output.value = self.curvOut
         self.frameNode.mapping.curv_abs_input.value = self.curvInput
         self.rateAngularDeformNode.rateAngularDeformMO.position.value = self.rateAngular
+        self.rateAngularDeformNode.beamHookeLaw.findData("length").value = rateLength
         self.rateAngularDeformNode.beamHookeLaw.findData(
-            'length').value = rateLength
+            "youngModululsList"
+        ).value = youngModulusList
         self.rateAngularDeformNode.beamHookeLaw.findData(
-            'youngModululsList').value = youngModulusList
-        self.rateAngularDeformNode.beamHookeLaw.findData(
-            'poissonRatioList').value = poisonRatioList
+            "poissonRatioList"
+        ).value = poisonRatioList
 
         if draw_cylinder == 1:
             # Draw the cylinder over the beam
@@ -236,12 +420,12 @@ class forceControl(Sofa.Core.Controller):
         Sofa.Core.Controller.__init__(self, *args, **kwargs)
 
         self.node = args[0]
-        self.refNode = self.node.getChild('PlaneRef')
-        self.cochleaNode = self.node.getChild('cochleaNode')
+        self.refNode = self.node.getChild("PlaneRef")
+        self.cochleaNode = self.node.getChild("cochleaNode")
 
         self.MecaObject = self.cochleaNode.dofs
         self.RefObject = self.refNode.Ref
-        self.colorMapNode = self.cochleaNode.getChild('ColorMap')
+        self.colorMapNode = self.cochleaNode.getChild("ColorMap")
         self.colorMap = self.colorMapNode.ColorMap
         self.DataDisplay = self.colorMapNode.DataDisplay
 
@@ -263,7 +447,7 @@ class forceControl(Sofa.Core.Controller):
         for i in range(nbNode):
             distX += [math.fabs(position[i][2] - posRef[i][2])]
             # print("> =========", forceX)
-            forceX += [math.fabs(0. * (position[i][2] - posRef[i][2]))]
+            forceX += [math.fabs(0.0 * (position[i][2] - posRef[i][2]))]
         self.colorMapNode.DataDisplay.pointData = forceX
 
 
@@ -294,8 +478,9 @@ class buildElasticityRateAngulare(Sofa.Core.Controller):
                 # print("=+++++> idx: {} and rate is : {}".format(idx,pos[self.insertionIndex]))
                 if abs(pos[self.insertionIndex]) > self.elsaticityRate:
                     # print("=+++++> idx: {} and rate is : {}".format(idx,pos[self.insertionIndex]))
-                    restPos[idx][self.insertionIndex] = pos[self.insertionIndex] - \
-                        self.elsaticityRate
+                    restPos[idx][self.insertionIndex] = (
+                        pos[self.insertionIndex] - self.elsaticityRate
+                    )
                     # print("The positions: {} restPos: {}".format(pos[self.insertionIndex], restPos[idx][self.insertionIndex]))
 
     """ ============================================================
@@ -308,20 +493,86 @@ class buildElasticityRateAngulare(Sofa.Core.Controller):
         with self.mechanicalObjectMO.rest_position.writeable() as restPos:
             for idx, pos in enumerate(positions):
                 if abs(pos[self.insertionIndex]) > plasticityTab[idx]:
-                    restPos[idx][self.insertionIndex] = pos[self.insertionIndex] - \
-                        plasticityTab[idx]
+                    restPos[idx][self.insertionIndex] = (
+                        pos[self.insertionIndex] - plasticityTab[idx]
+                    )
 
 
 # #######################
 # Function and class
 # #######################
+
+
+class CosseratGeometry:
+    def __init__(
+        self,
+        positionS,
+        curv_abs_inputS,
+        sectionLength,
+        framesF,
+        curv_abs_outputF,
+        cable_positionF,
+    ):
+        self.positionS = positionS
+        self.curv_abs_inputS = curv_abs_inputS
+        self.sectionLength = sectionLength
+        self.framesF = framesF
+        self.curv_abs_outputF = curv_abs_outputF
+        self.cable_positionF = cable_positionF
+
+
+def generate_cosserat_geometry(beamGeoParams):
+    x, y, z = beamGeoParams.init_pos
+    total_length = beamGeoParams.beamLength
+    nb_sections = beamGeoParams.nbSection
+    nb_frames = beamGeoParams.nbFrames
+
+    length_s = total_length / nb_sections
+
+    position_s = []
+    sectionLengthList = []
+    temp = x
+    curv_abs_input_s = [x]
+
+    for i in range(nb_sections):
+        position_s.append([0, 0, 0])
+        sectionLengthList.append((((i + 1) * length_s) - i * length_s))
+        temp += sectionLengthList[i]
+        curv_abs_input_s.append(temp)
+    curv_abs_input_s[nb_sections] = total_length + x
+
+    length_f = total_length / nb_frames
+    frames_f = []
+    curv_abs_output_f = []
+    cable_position_f = []
+
+    for i in range(nb_frames):
+        sol = i * length_f
+        frames_f.append([sol + x, y, z, 0, 0, 0, 1])
+        cable_position_f.append([sol + x, y, z])
+        curv_abs_output_f.append(sol + x)
+
+    frames_f.append([total_length + x, y, z, 0, 0, 0, 1])
+    cable_position_f.append([total_length + x, y, z])
+    curv_abs_output_f.append(total_length + x)
+
+    return CosseratGeometry(
+        position_s,
+        curv_abs_input_s,
+        sectionLengthList,
+        frames_f,
+        curv_abs_output_f,
+        cable_position_f,
+    )
+
+
 def BuildCosseratGeometry(config):
     # Define: the number of section, the total length and the length of each beam.
 
-    [x, y, z] = config['init_pos']
-    totalLength = config['tot_length']
-    nbSection = config['nbSectionS']
-    nbFrames = config['nbFramesF']
+    [x, y, z] = config["init_pos"]
+    totalLength = config["tot_length"]
+    nbSection = config["nbSectionS"]
+    nbFrames = config["nbFramesF"]
 
     lengthS = totalLength / nbSection
     # Define: the length of each beam in a list, the positions of each beam
@@ -354,7 +605,14 @@ def BuildCosseratGeometry(config):
     cable_positionF.append([totalLength + x, y, z])
     curv_abs_outputF.append(totalLength + x)
 
-    return [positionS, curv_abs_inputS, longeurS, framesF, curv_abs_outputF, cable_positionF]
+    return [
+        positionS,
+        curv_abs_inputS,
+        longeurS,
+        framesF,
+        curv_abs_outputF,
+        cable_positionF,
+    ]
 
 
 class MoveTargetProcess(Sofa.Core.Controller):
@@ -362,13 +620,17 @@ class MoveTargetProcess(Sofa.Core.Controller):
         Sofa.Core.Controller.__init__(self, *args, **kwargs)
         self.targetMO = args[0]
         self.targetIndex = 0
-        self.targetList = [[85.0, 0, 0.35857], [85.0, 0.5, 0.35857], [
-            86.0, 1.5, 0.35857], [87.0, 2.5, 0.35857]]
-        pos = self.targetMO.findData('effectorGoal').value
+        self.targetList = [
+            [85.0, 0, 0.35857],
+            [85.0, 0.5, 0.35857],
+            [86.0, 1.5, 0.35857],
+            [87.0, 2.5, 0.35857],
+        ]
+        pos = self.targetMO.findData("effectorGoal").value
         print("effectorGoal :", pos[0])
 
     def onKeypressedEvent(self, event):
-        key = event['key']
+        key = event["key"]
         if key == "+":  # +
             # with self.targetMO.findData('effectorGoal').writeable() as posR:
             #     print("effectorGoal :", posR)
@@ -410,13 +672,14 @@ class AddPointProcess(Sofa.Core.Controller):
         print("tip indice :", self.tipIndex)
 
     def onKeypressedEvent(self, event):
-        key = event['key']
+        key = event["key"]
         if key == "+":  # +
             with self.inputConstraintPointsMO.position.writeable() as posA:
                 print("0. List The position :", posA)
 
             self.inputConstraintPointsMO.position.value = np.array(
-                [[40, 0, 0], [45, 0, 0]])
+                [[40, 0, 0], [45, 0, 0]]
+            )
 
             with self.inputConstraintPointsMO.position.writeable() as posA:
                 print("1. List The position :", posA)
@@ -426,9 +689,8 @@ class AddPointProcess(Sofa.Core.Controller):
                 # print("1. List The position :", posA)
                 # posA.append(self.needleCollisionMO.position[self.tipIndex])
 
-            indice = self.diffMapping.findData('indices')
-            print("====> indices :",
-                  self.diffMapping.addPointProcess([40.0, 0., 0.]))
+            indice = self.diffMapping.findData("indices")
+            print("====> indices :", self.diffMapping.addPointProcess([40.0, 0.0, 0.0]))
 
         if key == "-":  # -
             with self.inputConstraintPointsMO.rest_position.writeable() as posA:
@@ -437,40 +699,52 @@ class AddPointProcess(Sofa.Core.Controller):
 
 
 def Cube(
-        name="Cube",
-        surfaceMeshFileName="mesh/cube.obj",
-        translation=None,
-        rotation=None,
-        uniformScale=1.,
-        totalMass=300.,
-        volume=20.,
-        inertiaMatrix=None,
-        color=None,
-        isAStaticObject=False, parent=None):
+    name="Cube",
+    surfaceMeshFileName="mesh/cube.obj",
+    translation=None,
+    rotation=None,
+    uniformScale=1.0,
+    totalMass=300.0,
+    volume=20.0,
+    inertiaMatrix=None,
+    color=None,
+    isAStaticObject=False,
+    parent=None,
+):
     if color is None:
-        color = [1., 1., 0.]
+        color = [1.0, 1.0, 0.0]
     if inertiaMatrix is None:
         inertiaMatrix = [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]
     if rotation is None:
-        rotation = [0., 0., 0.]
+        rotation = [0.0, 0.0, 0.0]
     if translation is None:
-        translation = [0., 0., 0.]
+        translation = [0.0, 0.0, 0.0]
     cubeNode = parent.addChild(name)
-    cubeNode.addObject('MechanicalObject', name="mstate", template="Rigid3",
-                       translation=translation, rotation=rotation)
-    cubeNode.addObject('UniformMass', name="mass", vertexMass=[totalMass, volume, inertiaMatrix[:]],
-                       showAxisSizeFactor='0.')
+    cubeNode.addObject(
+        "MechanicalObject",
+        name="mstate",
+        template="Rigid3",
+        translation=translation,
+        rotation=rotation,
+    )
+    cubeNode.addObject(
+        "UniformMass",
+        name="mass",
+        vertexMass=[totalMass, volume, inertiaMatrix[:]],
+        showAxisSizeFactor="0.",
+    )
     # cubeNode.addObject('UncoupledConstraintCorrection')
 
-    objectCollis = cubeNode.addChild('collision')
-    objectCollis.addObject('MeshObjLoader', name="loader",
-                           filename=surfaceMeshFileName, triangulate="true")
-    objectCollis.addObject('MeshTopology', src="@loader")
-    objectCollis.addObject('MechanicalObject')
-    objectCollis.addObject('TriangleCollisionModel')
-    objectCollis.addObject('LineCollisionModel')
-    objectCollis.addObject('PointCollisionModel')
-    objectCollis.addObject('RigidMapping')
+    objectCollis = cubeNode.addChild("collision")
+    objectCollis.addObject(
+        "MeshObjLoader", name="loader", filename=surfaceMeshFileName, triangulate="true"
+    )
+    objectCollis.addObject("MeshTopology", src="@loader")
+    objectCollis.addObject("MechanicalObject")
+    objectCollis.addObject("TriangleCollisionModel")
+    objectCollis.addObject("LineCollisionModel")
+    objectCollis.addObject("PointCollisionModel")
+    objectCollis.addObject("RigidMapping")
     return
 
     # visu = cubeNode.addChild('visualisation')

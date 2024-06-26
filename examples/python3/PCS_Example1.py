@@ -11,7 +11,6 @@ __date__ = "Jan, 17 2022"
 
 import Sofa
 from cosserat.cosseratObject import Cosserat
-from cosserat.nonLinearCosserat import NonLinearCosserat as nonCosserat
 from cosserat.usefulFunctions import buildEdges, pluginList, BuildCosseratGeometry
 from math import sqrt
 

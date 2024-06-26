@@ -210,7 +210,6 @@ void QPSlidingConstraint<DataTypes>::getConstraintResolution(const ConstraintPar
     ReadAccessor<Data<VecCoord>> positions = m_state->readPositions();
 
     for (size_t i = 0; i < positions.size(); i++){
-
         resTab[offset++] = new BilateralConstraintResolution();
         resTab[offset++] = new BilateralConstraintResolution();
         if(i == positions.size()-1){

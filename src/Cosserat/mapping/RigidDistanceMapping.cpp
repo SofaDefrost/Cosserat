@@ -20,18 +20,18 @@
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
 #define SOFA_COSSERAT_CPP_RigidDistanceMapping
-#include "RigidDistanceMapping.inl"
+#include <Cosserat/mapping/RigidDistanceMapping.inl>
 #include <sofa/defaulttype/VecTypes.h>
 #include <sofa/defaulttype/RigidTypes.h>
 #include <sofa/core/ObjectFactory.h>
 
-namespace sofa::component::mapping
+namespace Cosserat::mapping
 {
 
 using namespace sofa::defaulttype;
 
 // Register in the Factory
-int RigidDistanceMappingClass = core::RegisterObject("Set the positions and velocities of points attached to a rigid parent")
+int RigidDistanceMappingClass = sofa::core::RegisterObject("Set the positions and velocities of points attached to a rigid parent")
         .add< RigidDistanceMapping< sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types > >() ;
 
 

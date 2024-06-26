@@ -21,14 +21,16 @@ set(SRC_ROOT_DIR src/${PROJECT_NAME})
 
 set(HEADER_FILES
     ${SRC_ROOT_DIR}/config.h.in
-    ${SRC_ROOT_DIR}/mapping/BaseCosserat.h
-    ${SRC_ROOT_DIR}/mapping/BaseCosserat.inl
+    ${SRC_ROOT_DIR}/fwd.h
+    ${SRC_ROOT_DIR}/types.h
+    ${SRC_ROOT_DIR}/mapping/BaseCosseratMapping.h
+    ${SRC_ROOT_DIR}/mapping/BaseCosseratMapping.inl
     ${SRC_ROOT_DIR}/mapping/DiscreteCosseratMapping.h
     ${SRC_ROOT_DIR}/mapping/DiscreteCosseratMapping.inl
     ${SRC_ROOT_DIR}/mapping/DiscreteDynamicCosseratMapping.h
     ${SRC_ROOT_DIR}/mapping/DiscreteDynamicCosseratMapping.inl
-    ${SRC_ROOT_DIR}/mapping/ProjectionEngine.h
-    ${SRC_ROOT_DIR}/mapping/ProjectionEngine.inl
+    ${SRC_ROOT_DIR}/engine/ProjectionEngine.h
+    ${SRC_ROOT_DIR}/engine/ProjectionEngine.inl
     ${SRC_ROOT_DIR}/mapping/DifferenceMultiMapping.h
     ${SRC_ROOT_DIR}/mapping/DifferenceMultiMapping.inl
     ${SRC_ROOT_DIR}/mapping/RigidDistanceMapping.h
@@ -37,6 +39,8 @@ set(HEADER_FILES
     ${SRC_ROOT_DIR}/engine/PointsManager.inl
     ${SRC_ROOT_DIR}/forcefield/BeamHookeLawForceField.h
     ${SRC_ROOT_DIR}/forcefield/BeamHookeLawForceField.inl
+    ${SRC_ROOT_DIR}/forcefield/BeamHookeLawForceFieldRigid.h
+    ${SRC_ROOT_DIR}/forcefield/BeamHookeLawForceFieldRigid.inl
     ${SRC_ROOT_DIR}/forcefield/CosseratInternalActuation.h
     ${SRC_ROOT_DIR}/forcefield/CosseratInternalActuation.inl
     ${SRC_ROOT_DIR}/constraint/CosseratSlidingConstraint.h
@@ -48,14 +52,15 @@ set(HEADER_FILES
     )
 set(SOURCE_FILES
     ${SRC_ROOT_DIR}/initCosserat.cpp
-    ${SRC_ROOT_DIR}/mapping/BaseCosserat.cpp
+    ${SRC_ROOT_DIR}/mapping/BaseCosseratMapping.cpp
     ${SRC_ROOT_DIR}/mapping/DiscreteCosseratMapping.cpp
     ${SRC_ROOT_DIR}/mapping/DiscreteDynamicCosseratMapping.cpp
-    ${SRC_ROOT_DIR}/mapping/ProjectionEngine.cpp
+    ${SRC_ROOT_DIR}/engine/ProjectionEngine.cpp
     ${SRC_ROOT_DIR}/mapping/DifferenceMultiMapping.cpp
     ${SRC_ROOT_DIR}/mapping/RigidDistanceMapping.cpp
     ${SRC_ROOT_DIR}/engine/PointsManager.cpp
     ${SRC_ROOT_DIR}/forcefield/BeamHookeLawForceField.cpp
+    ${SRC_ROOT_DIR}/forcefield/BeamHookeLawForceFieldRigid.cpp
     ${SRC_ROOT_DIR}/forcefield/CosseratInternalActuation.cpp
     ${SRC_ROOT_DIR}/constraint/CosseratSlidingConstraint.cpp
     ${SRC_ROOT_DIR}/mapping/LegendrePolynomialsMapping.cpp
@@ -84,7 +89,7 @@ if(WIN32)
     add_definitions(-D_WINSOCKAPI_)
 endif()
 
-add_library(${PROJECT_NAME} SHARED ${HEADER_FILES} ${SOURCE_FILES} ${DOC_FILES} ${RESOURCE_FILES} )
+add_library(${PROJECT_NAME} SHARED ${HEADER_FILES} ${SOURCE_FILES} ${DOC_FILES} )
 target_link_libraries(${PROJECT_NAME}
     Sofa.Component.Constraint.Lagrangian.Model
     Sofa.Component.StateContainer

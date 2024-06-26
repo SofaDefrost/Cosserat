@@ -21,7 +21,8 @@
 ******************************************************************************/
 #define SOFA_COMPONENT_FORCEFIELD_UNIFORMVELOCITYDAMPINGFORCEFIELD_CPP
 
-#include "MyUniformVelocityDampingForceField.inl"
+#include <Cosserat/config.h>
+#include <Cosserat/forcefield/MyUniformVelocityDampingForceField.inl>
 #include <sofa/core/ObjectFactory.h>
 #include <sofa/defaulttype/VecTypes.h>
 #include <sofa/defaulttype/RigidTypes.h>

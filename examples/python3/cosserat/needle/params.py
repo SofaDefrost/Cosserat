@@ -41,21 +41,24 @@ class ContactParams:
     coneFactor: float = "0"
 
 
+def display():
+    print(f'''
+          # Geometry
+          {string.ascii_uppercase[:4]}
+          {string.ascii_uppercase[4:6]}
+          {string.ascii_uppercase[6:8]}
+          {string.ascii_uppercase[8:10]}
+          '''
+          )
+
+
 @dataclass
 class NeedleParameters:
     # Geometry: GeometryParams = GeometryParams()
     # Physics: PhysicsParams = PhysicsParams()
     # Fem: FemParams = FemParams()
     # contact: ContactParams = ContactParams()
-    def display():
-        print(f'''
-              # Geometry
-              {string.ascii_uppercase[:4]}
-              {string.ascii_uppercase[4:6]}
-              {string.ascii_uppercase[6:8]}
-              {string.ascii_uppercase[8:10]}
-              '''
-              )
+    pass
 
 @dataclass
 class ConstraintsParams:

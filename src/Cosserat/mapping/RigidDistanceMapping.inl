@@ -20,7 +20,8 @@
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
 #pragma once
-#include "RigidDistanceMapping.h"
+#include <Cosserat/config.h>
+#include <Cosserat/mapping/RigidDistanceMapping.h>
 
 #include <sofa/core/Multi2Mapping.inl>
 #include <sofa/core/visual/VisualParams.h>
@@ -34,14 +35,13 @@
 #include <string>
 
 
-namespace sofa::component::mapping
+namespace Cosserat::mapping
 {
-
-    using sofa::core::objectmodel::BaseContext ;
-    using sofa::helper::AdvancedTimer;
-    using sofa::helper::WriteAccessor;
-    using sofa::defaulttype::SolidTypes ;
-    using sofa::type::RGBAColor;
+using sofa::core::objectmodel::BaseContext ;
+using sofa::helper::AdvancedTimer;
+using sofa::helper::WriteAccessor;
+using sofa::defaulttype::SolidTypes ;
+using sofa::type::RGBAColor;
 
 template <class TIn1, class TIn2, class TOut>
 RigidDistanceMapping<TIn1, TIn2, TOut>::RigidDistanceMapping()
@@ -50,13 +50,13 @@ RigidDistanceMapping<TIn1, TIn2, TOut>::RigidDistanceMapping()
     , d_max(initData(&d_max, (Real)1.0e-2, "max", "the maximum of the deformation.\n"))
     , d_min(initData(&d_min, (Real)0.0, "min", "the minimum of the deformation.\n"))
     , d_radius(initData(&d_radius, (Real)3.0, "radius", "the axis in which we want to show the deformation.\n"))
-    , d_color(initData(&d_color, type::Vec4f (1, 0., 1., 0.8) ,"color", "The default beam color"))
+    , d_color(initData(&d_color, Vec4f (1, 0., 1., 0.8) ,"color", "The default beam color"))
     , d_index(initData(&d_index, "index", "if this parameter is false, you draw the beam with color "
-                                                          "according to the force apply to each beam"))
+                                          "according to the force apply to each beam"))
     , d_debug(initData(&d_debug, false, "debug", "show debug output.\n"))
     , m_toModel(NULL)
 {
-        d_debug.setValue(false);
+    d_debug.setValue(false);
 }
 
 
@@ -71,8 +71,8 @@ void RigidDistanceMapping<TIn1, TIn2, TOut>::init()
         return;
     }
 
-    const type::vector<unsigned int> &m1Indices = d_index1.getValue();
-    const type::vector<unsigned int> &m2Indices = d_index2.getValue();
+    const vector<unsigned int> &m1Indices = d_index1.getValue();
+    const vector<unsigned int> &m2Indices = d_index2.getValue();
 
     m_minInd = std::min(m1Indices.size(), m2Indices.size());
     if (m_minInd == 0) {
@@ -84,9 +84,10 @@ void RigidDistanceMapping<TIn1, TIn2, TOut>::init()
 
 template <class TIn1, class TIn2, class TOut>
 void RigidDistanceMapping<TIn1, TIn2, TOut>::apply(
-        const core::MechanicalParams* /* mparams */, const type::vector<OutDataVecCoord*>& dataVecOutPos,
-        const type::vector<const In1DataVecCoord*>& dataVecIn1Pos ,
-        const type::vector<const In2DataVecCoord*>& dataVecIn2Pos)
+    const sofa::core::MechanicalParams* /* mparams */,
+    const vector<OutDataVecCoord*>& dataVecOutPos,
+    const vector<const In1DataVecCoord*>& dataVecIn1Pos ,
+    const vector<const In2DataVecCoord*>& dataVecIn2Pos)
 {
 
     if(dataVecOutPos.empty() || dataVecIn1Pos.empty() || dataVecIn2Pos.empty())
@@ -107,7 +108,7 @@ void RigidDistanceMapping<TIn1, TIn2, TOut>::apply(
         int tm1 = m1Indices[pid];
         int tm2 = m2Indices[pid];
         Vec3 outCenter = in2[tm2].getCenter()-in1[tm1].getCenter();
-        type::Quat outOri = in2[tm2].getOrientation()* in1[tm1].getOrientation().inverse();
+        sofa::type::Quat outOri = in2[tm2].getOrientation()* in1[tm1].getOrientation().inverse();
 
         outOri.normalize();
         out[pid] = OutCoord(outCenter,outOri); // This difference is in the word space
@@ -124,9 +125,10 @@ void RigidDistanceMapping<TIn1, TIn2, TOut>::apply(
 
 template <class TIn1, class TIn2, class TOut>
 void RigidDistanceMapping<TIn1, TIn2, TOut>:: applyJ(
-        const core::MechanicalParams* /* mparams */, const type::vector< OutDataVecDeriv*>& dataVecOutVel,
-        const type::vector<const In1DataVecDeriv*>& dataVecIn1Vel,
-        const type::vector<const In2DataVecDeriv*>& dataVecIn2Vel) {
+    const sofa::core::MechanicalParams* /* mparams */,
+    const vector< OutDataVecDeriv*>& dataVecOutVel,
+    const vector<const In1DataVecDeriv*>& dataVecIn1Vel,
+    const vector<const In2DataVecDeriv*>& dataVecIn2Vel) {
 
     if(dataVecOutVel.empty() || dataVecIn1Vel.empty() ||dataVecIn2Vel.empty() )
         return;
@@ -152,9 +154,10 @@ void RigidDistanceMapping<TIn1, TIn2, TOut>:: applyJ(
 
 template <class TIn1, class TIn2, class TOut>
 void RigidDistanceMapping<TIn1, TIn2, TOut>:: applyJT(
-        const core::MechanicalParams* /*mparams*/, const type::vector< In1DataVecDeriv*>& dataVecOut1Force,
-        const type::vector< In2DataVecDeriv*>& dataVecOut2Force,
-        const type::vector<const OutDataVecDeriv*>& dataVecInForce)  {
+    const sofa::core::MechanicalParams* /*mparams*/,
+    const vector< In1DataVecDeriv*>& dataVecOut1Force,
+    const vector< In2DataVecDeriv*>& dataVecOut2Force,
+    const vector<const OutDataVecDeriv*>& dataVecInForce)  {
 
     if(dataVecOut1Force.empty() || dataVecInForce.empty() || dataVecOut2Force.empty())
         return;
@@ -182,9 +185,10 @@ void RigidDistanceMapping<TIn1, TIn2, TOut>:: applyJT(
 //___________________________________________________________________________
 template <class TIn1, class TIn2, class TOut>
 void RigidDistanceMapping<TIn1, TIn2, TOut>::applyJT(
-        const core::ConstraintParams*/*cparams*/ , const type::vector< In1DataMatrixDeriv*>&  dataMatOut1Const,
-        const type::vector< In2DataMatrixDeriv*>&  dataMatOut2Const ,
-        const type::vector<const OutDataMatrixDeriv*>& dataMatInConst)
+    const sofa::core::ConstraintParams*/*cparams*/ ,
+    const vector< In1DataMatrixDeriv*>&  dataMatOut1Const,
+    const vector< In2DataMatrixDeriv*>&  dataMatOut2Const ,
+    const vector<const OutDataMatrixDeriv*>& dataMatInConst)
 {
     if(dataMatOut1Const.empty() || dataMatOut2Const.empty() || dataMatInConst.empty() )
         return;
@@ -199,7 +203,7 @@ void RigidDistanceMapping<TIn1, TIn2, TOut>::applyJT(
 
     for (typename OutMatrixDeriv::RowConstIterator rowIt = in.begin(); rowIt != rowItEnd; ++rowIt) {
         typename OutMatrixDeriv::ColConstIterator colIt = rowIt.begin();
-//        typename OutMatrixDeriv::ColConstIterator colItEnd = rowIt.end();
+        //        typename OutMatrixDeriv::ColConstIterator colItEnd = rowIt.end();
 
 
         typename In1MatrixDeriv::RowIterator o1 = out1.writeLine(rowIt.index()); // we store the constraint number
