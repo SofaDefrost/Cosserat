@@ -29,7 +29,7 @@
  ******************************************************************************/
 #pragma once
 
-#include <Cosserat/initCosserat.h>
+#include <Cosserat/config.h>
 #include <sofa/type/fwd.h>
 namespace Cosserat
 {

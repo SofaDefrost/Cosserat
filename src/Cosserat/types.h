@@ -29,7 +29,7 @@
  ******************************************************************************/
 #pragma once
 
-#include <Cosserat/initCosserat.h>
+#include <Cosserat/config.h>
 #include <sofa/type/vector.h>
 #include <sofa/type/Mat.h>
 #include <sofa/defaulttype/SolidTypes.h>
