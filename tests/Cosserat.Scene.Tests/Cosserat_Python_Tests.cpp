@@ -51,8 +51,8 @@ static struct Cosserat_Scene_tests : public PythonTestExtractor
     Cosserat_Scene_tests()
     {
         std::string executable_directory = sofa::helper::Utils::getExecutableDirectory();
-        executable_directory = "./";
         addTestDirectory(executable_directory+"/Cosserat.Scene.Tests/Components", "Cosserat_Scene_");
+        addTestDirectory("./Cosserat.Scene.Tests/Components", "Cosserat_Scene_");
     }
 } python_tests;
 
