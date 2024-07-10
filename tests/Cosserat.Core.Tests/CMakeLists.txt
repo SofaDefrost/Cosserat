@@ -5,13 +5,11 @@ find_package(Sofa.Testing REQUIRED)
 
 enable_testing()
 
-set(HEADER_FILES
-        constraint/Constraint.h
-        )
+set(HEADER_FILES)
+
 set(SOURCE_FILES
         forcefield/BeamHookeLawForceFieldTest.cpp
     )
-
 
 add_executable(${PROJECT_NAME} ${SOURCE_FILES} ${HEADER_FILES})
 
