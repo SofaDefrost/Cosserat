@@ -30,7 +30,7 @@
 
 
 #include "CosseratActuatorConstraint.inl"
-
+#include <Cosserat/config.h>
 #include <sofa/core/ObjectFactory.h>
 
 namespace sofa::component::constraintset
