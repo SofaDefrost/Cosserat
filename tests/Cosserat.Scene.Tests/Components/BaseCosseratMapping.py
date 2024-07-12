@@ -1,7 +1,6 @@
 # coding: utf8
 
 import Sofa
-import Sofa.Testing
 import Sofa.Simulation
 import SofaRuntime
 import unittest

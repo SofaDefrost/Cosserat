@@ -19,6 +19,7 @@
 ******************************************************************************/
 #include <SofaPython3Testing/PythonTest.h>
 #include <sofa/helper/Utils.h>
+#include <sofa/helper/system/FileSystem.h>
 #include <SofaPython3Testing/PythonTestExtractor.h>
 #include "Cosserat_Python_Tests.h"
 
@@ -51,8 +52,11 @@ static struct Cosserat_Scene_tests : public PythonTestExtractor
     Cosserat_Scene_tests()
     {
         std::string executable_directory = sofa::helper::Utils::getExecutableDirectory();
-        addTestDirectory(executable_directory+"/Cosserat.Scene.Tests/Components", "Cosserat_Scene_");
-        addTestDirectory("./Cosserat.Scene.Tests/Components", "Cosserat_Scene_");
+        if(sofa::helper::system::FileSystem::exists("./Cosserat.Scene.Tests/Components")){
+            addTestDirectory("./Cosserat.Scene.Tests/Components", "Cosserat_Scene_");
+        }else{
+            addTestDirectory(executable_directory+"/Cosserat.Scene.Tests.d/Components", "Cosserat_Scene_");
+        }
     }
 } python_tests;
 
