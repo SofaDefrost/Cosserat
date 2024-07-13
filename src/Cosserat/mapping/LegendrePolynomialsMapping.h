@@ -32,13 +32,8 @@
 #include <Cosserat/config.h>
 #include <sofa/core/Mapping.h>
 
-namespace sofa::component::mapping {
-    using sofa::core::objectmodel::BaseContext;
-    using sofa::type::Matrix3;
-    using sofa::type::Matrix4;
-    using type::Vec3;
-    using type::Vec6;
-    using std::get;
+namespace sofa::component::mapping
+{
 
 /*!
  * \class LegendrePolynomialsMapping
