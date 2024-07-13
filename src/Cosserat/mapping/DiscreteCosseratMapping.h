@@ -95,7 +95,7 @@ public:
 
 public:
     //////////////////////////////////////////////////////////////////////
-    /// The following methods are inherited from BaseObject
+    /// The following methods are inherited from BaseCosseratMapping
     /// @{
     void doBaseCosseratInit() final override;
     void draw(const sofa::core::visual::VisualParams *vparams) override;

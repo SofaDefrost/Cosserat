@@ -2,9 +2,8 @@
 
 #include <Cosserat/config.h>
 #include <sofa/core/behavior/BaseController.h>
-#include <sofa/component/topology/container/dynamic/fwd.h>
 #include <sofa/core/topology/BaseTopology.h>
-
+#include <sofa/component/topology/container/dynamic/fwd.h>
 #include <sofa/core/behavior/MechanicalState.h>
 
 namespace cosserat::controller
@@ -28,6 +27,7 @@ public:
     sofa::Data<sofa::type::Vec4f> d_color;
     sofa::Data<std::string> d_beamPath;
 
+    // Inherited from BaseObject
     void init() override;
     void handleEvent(sofa::core::objectmodel::Event *event) override;
 

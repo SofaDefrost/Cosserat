@@ -57,6 +57,8 @@ using sofa::core::behavior::MultiMatrixAccessor ;
 
 using sofa::helper::OptionsGroup;
 
+// TODO(dmarchal: 2024-07-12) clarify why there is BeamHookeLawForceFieldRigid
+// and BeamHookelawForceField. A diff on the two files shows a huge amount of duplicated code.
 /**
  * This component is used to compute the Hooke's law on a beam computed on strain / stress
  * Only bending and torsion strain / stress are considered here
