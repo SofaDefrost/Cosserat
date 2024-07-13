@@ -41,6 +41,8 @@
 #include <sofa/helper/decompose.h>
 #include <sofa/core/MechanicalParams.h>
 #include <sofa/component/mapping/nonlinear/RigidMapping.h>
+#include <boost/math/special_functions/legendre.hpp>
+
 
 namespace sofa::component::mapping {
 

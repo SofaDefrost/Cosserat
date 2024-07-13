@@ -28,19 +28,11 @@
 *                                                                             *
 ******************************************************************************/
 #pragma once
+
 #include <Cosserat/config.h>
-
-#include <sofa/core/config.h>
-#include <sofa/defaulttype/SolidTypes.h>
-#include <sofa/defaulttype/RigidTypes.h>
 #include <sofa/core/Mapping.h>
-#include <sofa/helper/ColorMap.h>
-
-#include <boost/math/special_functions/legendre.hpp>
-
 
 namespace sofa::component::mapping {
-    using sofa::defaulttype::SolidTypes;
     using sofa::core::objectmodel::BaseContext;
     using sofa::type::Matrix3;
     using sofa::type::Matrix4;
