@@ -1,6 +1,32 @@
-//
-// Created by younes on 17/11/2021.
-//
+/******************************************************************************
+*       SOFA, Simulation Open-Framework Architecture                          *
+*                (c) 2006-2018 INRIA, USTL, UJF, CNRS, MGH                    *
+*                                                                             *
+* This library is free software; you can redistribute it and/or modify it     *
+* under the terms of the GNU Lesser General Public License as published by    *
+* the Free Software Foundation; either version 2.1 of the License, or (at     *
+* your option) any later version.                                             *
+*                                                                             *
+* This library is distributed in the hope that it will be useful, but WITHOUT *
+* ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or       *
+* FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License *
+* for more details.                                                           *
+*                                                                             *
+* You should have received a copy of the GNU Lesser General Public License    *
+* along with this library; if not, write to the Free Software Foundation,     *
+* Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA.          *
+*******************************************************************************
+*                           Plugin Cosserat    v1.0                           *
+*				                                                              *
+* This plugin is also distributed under the GNU LGPL (Lesser General          *
+* Public License) license with the same conditions than SOFA.                 *
+*                                                                             *
+* Contributors: Defrost team  (INRIA, University of Lille, CNRS,              *
+*               Ecole Centrale de Lille)                                      *
+*                                                                             *
+* Contact information: https://www.inria.fr/fr/defrost                        *
+*                                                                             *
+******************************************************************************/
 #pragma once
 #include <Cosserat/config.h>
 #include <Cosserat/mapping/BaseCosseratMapping.h>
@@ -29,15 +55,14 @@ namespace sofa::component::mapping {
  * \class LegendrePolynomialsMapping
  * @brief Computes and map the length of the beams
  *
- * This is a component:
- * https://www.sofa-framework.org/community/doc/programming-with-sofa/create-your-component/
  */
-
 template<class TIn, class TOut>
 class LegendrePolynomialsMapping : public core::Mapping<TIn, TOut>
 {
 public:
-    SOFA_CLASS(SOFA_TEMPLATE2(LegendrePolynomialsMapping,TIn,TOut), SOFA_TEMPLATE2(core::Mapping,TIn,TOut));
+    SOFA_CLASS(SOFA_TEMPLATE2(LegendrePolynomialsMapping,TIn,TOut),
+               SOFA_TEMPLATE2(core::Mapping,TIn,TOut));
+
     typedef core::Mapping<TIn, TOut> Inherit;
     typedef TIn In;
     typedef TOut Out;
@@ -85,7 +110,7 @@ public:
 };
 
 #if !defined(SOFA_COSSERAT_CPP_LegendrePolynomialsMapping)
-extern template class SOFA_SOFARIGID_API LegendrePolynomialsMapping< sofa::defaulttype::Vec3Types, sofa::defaulttype::Vec3Types >;
+extern template class SOFA_COSSERAT_API LegendrePolynomialsMapping< sofa::defaulttype::Vec3Types, sofa::defaulttype::Vec3Types >;
 #endif
 
 }
