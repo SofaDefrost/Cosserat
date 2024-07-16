@@ -87,6 +87,11 @@ def _add_cosserat_frame(
 
 
 def createScene(root_node):
+    root_node.addObject("RequiredPlugin", name='Sofa.Component.Mass')
+    root_node.addObject("RequiredPlugin", name='Sofa.Component.SolidMechanics.Spring')
+    root_node.addObject("RequiredPlugin", name='Sofa.Component.StateContainer')
+    root_node.addObject("RequiredPlugin", name='Sofa.Component.Visual')
+    
     root_node.addObject(
         "VisualStyle",
         displayFlags="showBehaviorModels showCollisionModels showMechanicalMappings",

@@ -14,6 +14,7 @@ from useful.utils import addEdgeCollision, addPointsCollision
 from useful.header import addHeader, addVisual, addSolverNode
 from useful.params import Parameters, BeamGeometryParameters
 from useful.geometry import CosseratGeometry, generate_edge_list
+from numpy import array
 
 
 class CosseratBase(Sofa.Prefab):
@@ -39,13 +40,13 @@ class CosseratBase(Sofa.Prefab):
             "name": "translation",
             "type": "Vec3d",
             "help": "Cosserat base Rotation",
-            "default": [0.0, 0.0, 0.0],
+            "default": array([0.0, 0.0, 0.0]),
         },
         {
             "name": "rotation",
             "type": "Vec3d",
             "help": "Cosserat base Rotation",
-            "default": [0.0, 0.0, 0.0],
+            "default": array([0.0, 0.0, 0.0]),
         },
         {  # @TODO: to be removed
             "name": "attachingToLink",
@@ -116,13 +117,8 @@ class CosseratBase(Sofa.Prefab):
 
     def _addSlidingPoints(self):
         slidingPoint = self.cosseratFrame.addChild("slidingPoint")
-        slidingPoint.addObject(
-            "MechanicalObject",
-            name="slidingPointMO",
-            position=self.frames3D,
-            showObject="0",
-            showIndices="0",
-        )
+        slidingPoint.addObject("MechanicalObject", name="slidingPointMO", position=self.frames3D, 
+                               showObject="0", showIndices="0")
         slidingPoint.addObject("IdentityMapping")
         return slidingPoint
 
@@ -142,8 +138,6 @@ class CosseratBase(Sofa.Prefab):
 
     def _addRigidBaseNode(self):
         rigidBaseNode = self.addChild("rigidBase")
-        trans = list(self.translation.value)
-        rot = list(self.rotation.value)
         # To be improved with classes in top
         positions = [[self.params.beamGeoParams.init_pos] + [0.0, 0.0, 0.0, 1.0]]
 
@@ -152,10 +146,7 @@ class CosseratBase(Sofa.Prefab):
             template="Rigid3d",
             name="RigidBaseMO",
             showObjectScale=0.2,
-            translation=trans,  # @Todo: To be removed
-            position=positions,
-            rotation=rot,  #  @Todo: To be removed
-            # showObject=int(self.showObject.value),
+            position=positions
         )
         rigidBaseNodeMo.showObject.setParent(self.showObject)
 
