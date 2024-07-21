@@ -24,7 +24,7 @@ cosserat_config = {
 
 # @dataclass
 class Cosserat(Sofa.Prefab):
-    """Cosserat beam prefab class. It is a prefab class that allows to create a Cosserat beam in Sofa.
+    """Cosserat beam prefab class. It is a prefab class that allows to create a Cosserat beam in SOFA.
     Parameters:
         -parent:        node where the ServoArm will be attached
          - translation the position in space of the structure
