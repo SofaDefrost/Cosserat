@@ -5,7 +5,6 @@
 #include "LegendrePolynomialsMapping.inl"
 
 #include <sofa/defaulttype/VecTypes.h>
-#include <sofa/defaulttype/RigidTypes.h>
 #include <sofa/core/ObjectFactory.h>
 
 namespace sofa::component::mapping

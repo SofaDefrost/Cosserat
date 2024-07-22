@@ -28,24 +28,12 @@
 *                                                                             *
 ******************************************************************************/
 #pragma once
-#include "LegendrePolynomialsMapping.h"
 
-#include <sofa/core/visual/VisualParams.h>
-#include <sofa/core/behavior/MechanicalState.h>
-#include <sofa/core/State.h>
-#include <sofa/defaulttype/VecTypes.h>
-#include <sofa/defaulttype/RigidTypes.h>
-#include <sofa/helper/io/XspLoader.h>
-#include <sofa/helper/io/SphereLoader.h>
-#include <sofa/helper/io/Mesh.h>
-#include <sofa/helper/decompose.h>
-#include <sofa/core/MechanicalParams.h>
-#include <sofa/component/mapping/nonlinear/RigidMapping.h>
+#include "LegendrePolynomialsMapping.h"
 #include <boost/math/special_functions/legendre.hpp>
 
-
-namespace sofa::component::mapping {
-
+namespace sofa::component::mapping
+{
     template <class TIn, class TOut>
     LegendrePolynomialsMapping<TIn, TOut>::LegendrePolynomialsMapping()
         : Inherit1()
