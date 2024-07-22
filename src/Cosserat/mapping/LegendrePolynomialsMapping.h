@@ -31,9 +31,13 @@
 
 #include <Cosserat/config.h>
 #include <sofa/core/Mapping.h>
+#include <sofa/core/trait/DataTypes.h>
 
 namespace sofa::component::mapping
 {
+    namespace{
+        using namespace sofa::core::trait;
+    }
 
 /*!
  * \class LegendrePolynomialsMapping
@@ -46,22 +50,6 @@ class LegendrePolynomialsMapping : public core::Mapping<TIn, TOut>
 public:
     SOFA_CLASS(SOFA_TEMPLATE2(LegendrePolynomialsMapping,TIn,TOut),
                SOFA_TEMPLATE2(core::Mapping,TIn,TOut));
-
-    typedef core::Mapping<TIn, TOut> Inherit;
-    typedef TIn In;
-    typedef TOut Out;
-    typedef Out OutDataTypes;
-    typedef typename Out::VecCoord VecCoord;
-    typedef typename Out::VecDeriv VecDeriv;
-    typedef typename Out::Coord Coord;
-    typedef typename Out::Deriv OutDeriv;
-    typedef typename Out::MatrixDeriv OutMatrixDeriv;
-    typedef typename In::Real InReal;
-    typedef typename In::Deriv InDeriv;
-    typedef typename In::VecCoord InVecCoord;
-    typedef typename In::VecDeriv InVecDeriv;
-    typedef typename In::MatrixDeriv InMatrixDeriv;
-    typedef typename Coord::value_type Real;
 
     Data<sofa::Index> index; ///< input DOF index
     Data<unsigned int> d_order; ///< input DOF index
@@ -81,13 +69,17 @@ public:
     void reinit() override;
     double legendrePoly(unsigned int n, const double x);
 
-    void apply(const core::MechanicalParams *mparams, Data<VecCoord>& out, const Data<InVecCoord>& in) override;
+    void apply(const core::MechanicalParams *mparams,
+               DataVecCoord_t<TOut>& out, const DataVecCoord_t<TIn>& in) override;
 
-    void applyJ(const core::MechanicalParams *mparams, Data<VecDeriv>& out, const Data<InVecDeriv>& in) override;
+    void applyJ(const core::MechanicalParams *mparams,
+                DataVecDeriv_t<TOut>& out, const DataVecDeriv_t<TIn>& in) override;
 
-    void applyJT(const core::MechanicalParams *mparams, Data<InVecDeriv>& out, const Data<VecDeriv>& in) override;
+    void applyJT(const core::MechanicalParams *mparams,
+                 DataVecDeriv_t<TOut>& out, const DataVecDeriv_t<TIn>& in) override;
 
-    void applyJT(const core::ConstraintParams *cparams, Data<InMatrixDeriv>& out, const Data<OutMatrixDeriv>& in) override;
+    void applyJT(const core::ConstraintParams *cparams,
+                 DataMatrixDeriv_t<TOut>& out, const DataMatrixDeriv_t<TIn>& in) override;
 
     void draw(const core::visual::VisualParams* vparams) override;
 
