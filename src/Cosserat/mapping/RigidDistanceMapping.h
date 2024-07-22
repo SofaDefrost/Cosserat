@@ -101,7 +101,6 @@ protected:
     Data<SReal>                          d_min ;
     Data<SReal>                          d_radius ;
     Data<sofa::type::RGBAColor>          d_color;
-    Data<vector<unsigned int> >   d_index;
     Data<bool>                          d_debug ;
 
     sofa::core::State<Out>* m_toModel;

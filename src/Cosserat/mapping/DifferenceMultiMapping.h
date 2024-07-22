@@ -89,10 +89,11 @@ public:
     //Input data
     sofa::Data<vector<Rigid>>                 d_direction;
     sofa::Data<vector<unsigned int>>          d_indices;
-    sofa::Data<double>                        d_radius;
-    sofa::Data<sofa::type::Vec4f>             d_color;
-    sofa::Data<bool>                          d_drawArrows;
+    sofa::Data<SReal>                         d_radius;
+    sofa::Data<sofa::type::RGBAColor>         d_color;
     sofa::Data<bool>                          d_lastPointIsFixed;
+
+    sofa::Data<bool>                          d_drawArrows;
 
 protected:   
     sofa::core::State<In1>* m_fromModel1;

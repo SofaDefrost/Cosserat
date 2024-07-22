@@ -40,8 +40,6 @@ RigidDistanceMapping<TIn1, TIn2, TOut>::RigidDistanceMapping()
     , d_min(initData(&d_min, (SReal)0.0, "min", "the minimum of the deformation"))
     , d_radius(initData(&d_radius, (SReal)3.0, "radius", "the axis in which we want to show the deformation"))
     , d_color(initData(&d_color, RGBAColor{1, 0., 1., 0.8} ,"color", "The default beam color"))
-    , d_index(initData(&d_index, "index", "if this parameter is false, you draw the beam with color "
-                                          "according to the force apply to each beam"))    
     , d_debug(initData(&d_debug, false, "debug", "show debug output."))
     , m_toModel(NULL)
 {
