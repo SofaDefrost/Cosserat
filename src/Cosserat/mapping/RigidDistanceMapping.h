@@ -97,10 +97,10 @@ public:
 protected:
     Data<vector<unsigned int> >   d_index1 ;
     Data<vector<unsigned int> >   d_index2 ;
-    Data<Real>                          d_max ;
-    Data<Real>                          d_min ;
-    Data<Real>                          d_radius ;
-    Data<Vec4f>                   d_color;
+    Data<SReal>                          d_max ;
+    Data<SReal>                          d_min ;
+    Data<SReal>                          d_radius ;
+    Data<sofa::type::RGBAColor>          d_color;
     Data<vector<unsigned int> >   d_index;
     Data<bool>                          d_debug ;
 
