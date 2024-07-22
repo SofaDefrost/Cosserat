@@ -81,8 +81,6 @@ public:
     void applyJT(const core::ConstraintParams *cparams,
                  DataMatrixDeriv_t<TOut>& out, const DataMatrixDeriv_t<TIn>& in) override;
 
-    void draw(const core::visual::VisualParams* vparams) override;
-
 };
 
 #if !defined(SOFA_COSSERAT_CPP_LegendrePolynomialsMapping)

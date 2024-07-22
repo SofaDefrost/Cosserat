@@ -145,7 +145,7 @@ protected:
 public:
     /**********************SOFA METHODS**************************/
     void doBaseCosseratInit() final override;
-    void draw(const sofa::core::visual::VisualParams* vparams) override;
+
     /**********************MAPPING METHODS**************************/
     void apply(
         const sofa::core::MechanicalParams* /* mparams */,

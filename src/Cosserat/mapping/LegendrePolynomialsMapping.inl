@@ -178,12 +178,4 @@ void LegendrePolynomialsMapping<TIn, TOut>::applyJT(const core::ConstraintParams
         }
 }
 
-
-template <class TIn, class TOut>
-void LegendrePolynomialsMapping<TIn, TOut>::draw(const core::visual::VisualParams* /*vparams*/)
-{
-    // draw cable
-
-}
-
 }

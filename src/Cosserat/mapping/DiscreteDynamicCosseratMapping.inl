@@ -500,11 +500,4 @@ void DiscreteDynamicCosseratMapping<TIn1, TIn2, TOut>::applyJT(
     dataMatOut2Const[0]->endEdit();
 }
 
-template <class TIn1, class TIn2, class TOut>
-void DiscreteDynamicCosseratMapping<TIn1, TIn2, TOut>::draw(const sofa::core::visual::VisualParams* vparams)
-{
-    if (!vparams->displayFlags().getShowMappings())
-        return;
-}
-
 } // namespace sofa::component::mapping
