@@ -23,12 +23,7 @@
 #include <Cosserat/config.h>
 #include <Cosserat/mapping/BaseCosseratMapping.h>
 
-#include <sofa/core/BaseMapping.h>
-#include <sofa/core/config.h>
 #include <sofa/core/Multi2Mapping.h>
-#include <sofa/defaulttype/SolidTypes.h>
-#include <sofa/defaulttype/RigidTypes.h>
-#include <sofa/helper/ColorMap.h>
 
 namespace Cosserat::mapping
 {

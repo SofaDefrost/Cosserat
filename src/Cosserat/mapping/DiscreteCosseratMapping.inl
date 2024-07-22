@@ -22,23 +22,14 @@
 #pragma once
 #include <Cosserat/mapping/DiscreteCosseratMapping.h>
 
-#include <sofa/core/Multi2Mapping.inl>
-#include <sofa/core/behavior/MechanicalState.h>
-#include <sofa/core/objectmodel/BaseContext.h>
 #include <sofa/core/visual/VisualParams.h>
 #include <sofa/gl/template.h>
-#include <sofa/helper/AdvancedTimer.h>
-#include <sofa/helper/logging/Message.h>
-#include <sofa/helper/visual/DrawTool.h>
-#include <sofa/type/Quat.h>
 
-#include <string>
-
-namespace Cosserat::mapping {
+namespace Cosserat::mapping
+{
 
 using sofa::core::objectmodel::BaseContext;
 using sofa::defaulttype::SolidTypes;
-using sofa::helper::AdvancedTimer;
 using sofa::helper::WriteAccessor;
 using sofa::type::RGBAColor;
 

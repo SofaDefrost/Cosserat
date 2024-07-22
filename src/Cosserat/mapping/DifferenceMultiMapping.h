@@ -21,18 +21,11 @@
 ******************************************************************************/
 #pragma once
 #include <Cosserat/config.h>
-#include <Cosserat/mapping/BaseCosseratMapping.h>
 
-#include <sofa/core/BaseMapping.h>
-#include <sofa/core/config.h>
 #include <sofa/core/Multi2Mapping.h>
-#include <sofa/defaulttype/SolidTypes.h>
-#include <sofa/defaulttype/RigidTypes.h>
-
 
 namespace Cosserat::mapping
 {
-using sofa::defaulttype::SolidTypes ;
 using sofa::core::objectmodel::BaseContext ;
 using sofa::type::Matrix3;
 using sofa::type::Matrix4;
@@ -41,7 +34,6 @@ using sofa::type::Vec6;
 using sofa::type::Quat;
 using std::get;
 using sofa::type::vector;
-using Cosserat::mapping::BaseCosseratMapping;
 
 /*!
  * \class DifferenceMultiMapping
@@ -91,8 +83,6 @@ public:
     typedef sofa::Data<OutVecCoord> OutDataVecCoord;
     typedef sofa::Data<OutVecDeriv> OutDataVecDeriv;
     typedef sofa::Data<OutMatrixDeriv> OutDataMatrixDeriv;
-
-    typedef typename SolidTypes<Real>::Transform      Transform ;
 
 public:
     /********************** The component Data **************************/
