@@ -20,6 +20,7 @@ import os
 from math import pi
 from useful.header import addHeader, addVisual, addSolverNode, Finger
 from controller import FingerController
+from numpy import array
 
 
 path = f'{os.path.dirname(os.path.abspath(__file__))}/../../examples/python3/actuators/mesh/'
@@ -109,11 +110,11 @@ def createScene(root_node):
     cosserat_beam = solver_node.addChild(CosseratBase(parent=solver_node, params=Params))
     cosserat_frames_node = cosserat_beam.cosseratFrame
 
-    # Finger state
+    # Finger node
     femFingerNode = root_node.addChild('femFingerNode')
     """ Add FEM finger to the scene"""
-    finger_node, fem_points_node = Finger(femFingerNode, name="Finger", rotation=[0.0, 180.0, 0.0],
-                                       translation=[-17.5, -12.5, 7.5], path=path)
+    finger_node, fem_points_node = Finger(femFingerNode, name="Finger", rotation=array([0.0, 180.0, 0.0]),
+                                       translation=array([-17.5, -12.5, 7.5]), path=path)
 
     #  This creates a new node in the scene. This node is appended to the finger's node.
     cable_state_node = cosserat_frames_node.addChild('cable_state_node')

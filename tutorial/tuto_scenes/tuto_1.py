@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+import Sofa
+
 stiffness_param = 1.0e10
 beam_radius = 1.0
 
@@ -29,22 +31,20 @@ def _add_rigid_base(p_node):
 
 def _add_cosserat_state(p_node, bending_states, list_sections_length, _radius=2.0):
     cosserat_coordinate_node = p_node.addChild("cosseratCoordinate")
-    print(f" ===> bendind state : {bending_states}")
     cosserat_coordinate_node.addObject(
         "MechanicalObject",
         template="Vec3d",
         name="cosserat_state",
         position=bending_states,
     )
-    testNode = cosserat_coordinate_node.addObject(
+    cosserat_coordinate_node.addObject(
         "BeamHookeLawForceField",
         crossSectionShape="circular",
         length=list_sections_length,
-        radius=_radius,
+        radius=2.0,
         youngModulus=1.0e4,
         poissonRatio=0.4,
     )
-    print(f" the dire of node is : {dir(testNode)}")
     return cosserat_coordinate_node
 
 
@@ -65,8 +65,8 @@ def _add_cosserat_frame(
         template="Rigid3d",
         name="FramesMO",
         position=framesF,
-        showIndices=0.0,
-        showObject=0,
+        showIndices=1,
+        showObject=1,
         showObjectScale=0.8,
     )
 
@@ -87,59 +87,34 @@ def _add_cosserat_frame(
 
 
 def createScene(root_node):
+    root_node.addObject("RequiredPlugin", name='Sofa.Component.Mass')
+    root_node.addObject("RequiredPlugin", name='Sofa.Component.SolidMechanics.Spring')
+    root_node.addObject("RequiredPlugin", name='Sofa.Component.StateContainer')
+    root_node.addObject("RequiredPlugin", name='Sofa.Component.Visual')
+    
     root_node.addObject(
         "VisualStyle",
         displayFlags="showBehaviorModels showCollisionModels showMechanicalMappings",
     )
     root_node.gravity = [0, 0.0, 0]
-    root_node.addObject(
-        "EulerImplicitSolver",
-        firstOrder="0",
-        rayleighStiffness="0.0",
-        rayleighMass="0.0",
-    )
-    root_node.addObject("SparseLDLSolver", name="solver")
-
-    # Add rigid base
+    #
     base_node = _add_rigid_base(root_node)
 
-    # build beam geometry
-    nb_sections = 6
-    beam_length = 30
-    length_s = beam_length / float(nb_sections)
-    bending_states = []
-    list_sections_length = []
-    temp = 0.0  # where to start the base position
-    section_curv_abs = [0.0]  # section/segment curve abscissa
+    #
+    cos_nul_state = [0.0, 0.1, 0.1]  # torsion, y_bending, z_bending
+    bending_states = [cos_nul_state, cos_nul_state, cos_nul_state]
+    list_sections_length = [10, 10, 10]  # SI units
 
-    for i in range(nb_sections):
-        bending_states.append([0, 0.0, 0.2])  # torsion, y_bending, z_bending
-        list_sections_length.append((((i + 1) * length_s) - i * length_s))
-        temp += list_sections_length[i]
-        section_curv_abs.append(temp)
-    bending_states[nb_sections - 1] = [0, 0.0, 0.2]
-
-    # call add cosserat state and force field
     bending_node = _add_cosserat_state(root_node, bending_states, list_sections_length)
 
-    # comment : ???
-    nb_frames = 32
-    length_f = beam_length / float(nb_frames)
-    cosserat_G_frames = []
-    frames_curv_abs = []
-    cable_position_f = []  # need sometimes for drawing segment
-    x, y, z = 0, 0, 0
-
-    for i in range(nb_frames):
-        sol = i * length_f
-        cosserat_G_frames.append([sol + x, y, z, 0, 0, 0, 1])
-        cable_position_f.append([sol + x, y, z])
-        frames_curv_abs.append(sol + x)
-
-    cosserat_G_frames.append([beam_length + x, y, z, 0, 0, 0, 1])
-    cable_position_f.append([beam_length + x, y, z])
-    frames_curv_abs.append(beam_length + x)
-
+    section_curv_abs = [0, 10, 20, 30]
+    frames_curv_abs = [0, 10, 20, 30]
+    cosserat_G_frames = [
+        [0.0, 0, 0, 0, 0, 0, 1],
+        [10.0, 0, 0, 0, 0, 0, 1],
+        [20.0, 0, 0, 0, 0, 0, 1],
+        [30.0, 0, 0, 0, 0, 0, 1],
+    ]
     _add_cosserat_frame(
         base_node,
         bending_node,
