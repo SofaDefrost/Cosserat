@@ -11,6 +11,7 @@ sofa_find_package(Sofa.GL REQUIRED)
 sofa_find_package(Sofa.Component.Topology.Container.Dynamic REQUIRED)
 
 sofa_find_package(STLIB QUIET)
+
 if(STLIB_FOUND)
     message("-- Found dependency : 'STLIB' plugin .")
 else()
@@ -67,6 +68,7 @@ set(SOURCE_FILES
     ${SRC_ROOT_DIR}/constraint/CosseratNeedleSlidingConstraint.cpp
     )
 
+
 sofa_find_package(SoftRobots QUIET)
 if(SoftRobots_FOUND)
     list(APPEND HEADER_FILES
@@ -83,11 +85,14 @@ if(SoftRobots_FOUND)
         )
 endif()
 
+
 file(GLOB_RECURSE RESOURCE_FILES  "*.md" "*.psl" "*.py" "*.pyscn" "*.py3scn" "*.scn" "*.ah")
+
 
 if(WIN32)
     add_definitions(-D_WINSOCKAPI_)
 endif()
+
 
 add_library(${PROJECT_NAME} SHARED ${HEADER_FILES} ${SOURCE_FILES} ${DOC_FILES} )
 target_link_libraries(${PROJECT_NAME}
@@ -98,6 +103,7 @@ target_link_libraries(${PROJECT_NAME}
     Sofa.Component.Topology.Container.Dynamic
 )
 
+
 if(Sofa.GL_FOUND)
     target_link_libraries(${PROJECT_NAME} Sofa.GL)
 endif()
@@ -107,7 +113,6 @@ if(SoftRobots_FOUND)
     message("-- Found dependency: 'SoftRobots' plugin.")
 endif()
 
-sofa_install_pythonscripts(PLUGIN_NAME ${PROJECT_NAME} PYTHONSCRIPTS_SOURCE_DIR "python")
 
 find_file(SofaPython3Tools NAMES "SofaPython3/lib/cmake/SofaPython3/SofaPython3Tools.cmake")
 if(SofaPython3Tools)
@@ -130,7 +135,6 @@ if(SofaPython3Tools OR SofaPython3_FOUND)
 endif()
 
 
-
 ## Install rules for the library and headers; CMake package configurations files
 sofa_create_package_with_targets(
     PACKAGE_NAME ${PROJECT_NAME}
@@ -149,6 +153,7 @@ cmake_dependent_option(COSSERAT_BUILD_TESTS "Compile the tests" ON "SOFA_BUILD_T
 if(COSSERAT_BUILD_TESTS)
     add_subdirectory(Tests)
 endif()
+
 
 # Config files and install rules for pythons scripts
 sofa_install_pythonscripts(PLUGIN_NAME ${PROJECT_NAME} PYTHONSCRIPTS_SOURCE_DIR "examples/python3/")
