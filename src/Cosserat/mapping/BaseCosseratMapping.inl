@@ -24,19 +24,13 @@
 #include <Cosserat/config.h>
 #include <Cosserat/mapping/BaseCosseratMapping.h>
 
+// BaseCosserat inherit from Multi2Mapping. To properly instanciate the templated types
+// in the current compilation unit it is need to have the definition (implementation) details
+// of the Multi2Mapping class.
 #include <sofa/core/Multi2Mapping.inl>
-#include <sofa/core/behavior/MechanicalState.h>
-#include <sofa/core/objectmodel/BaseContext.h>
-#include <sofa/core/visual/VisualParams.h>
-#include <sofa/helper/AdvancedTimer.h>
-#include <sofa/helper/logging/Message.h>
-#include <sofa/type/Quat.h>
-
-#include <string>
 
 // To go further =>
 // https://www.mathworks.com/matlabcentral/fileexchange/83038-sorosim/
-
 namespace Cosserat::mapping
 {
 

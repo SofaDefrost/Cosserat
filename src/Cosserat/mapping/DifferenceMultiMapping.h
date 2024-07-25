@@ -21,18 +21,11 @@
 ******************************************************************************/
 #pragma once
 #include <Cosserat/config.h>
-#include <Cosserat/mapping/BaseCosseratMapping.h>
 
-#include <sofa/core/BaseMapping.h>
-#include <sofa/core/config.h>
 #include <sofa/core/Multi2Mapping.h>
-#include <sofa/defaulttype/SolidTypes.h>
-#include <sofa/defaulttype/RigidTypes.h>
-
 
 namespace Cosserat::mapping
 {
-using sofa::defaulttype::SolidTypes ;
 using sofa::core::objectmodel::BaseContext ;
 using sofa::type::Matrix3;
 using sofa::type::Matrix4;
@@ -41,7 +34,6 @@ using sofa::type::Vec6;
 using sofa::type::Quat;
 using std::get;
 using sofa::type::vector;
-using Cosserat::mapping::BaseCosseratMapping;
 
 /*!
  * \class DifferenceMultiMapping
@@ -92,17 +84,16 @@ public:
     typedef sofa::Data<OutVecDeriv> OutDataVecDeriv;
     typedef sofa::Data<OutMatrixDeriv> OutDataMatrixDeriv;
 
-    typedef typename SolidTypes<Real>::Transform      Transform ;
-
 public:
     /********************** The component Data **************************/
     //Input data
     sofa::Data<vector<Rigid>>                 d_direction;
     sofa::Data<vector<unsigned int>>          d_indices;
-    sofa::Data<double>                        d_radius;
-    sofa::Data<sofa::type::Vec4f>             d_color;
-    sofa::Data<bool>                          d_drawArrows;
+    sofa::Data<SReal>                         d_radius;
+    sofa::Data<sofa::type::RGBAColor>         d_color;
     sofa::Data<bool>                          d_lastPointIsFixed;
+
+    sofa::Data<bool>                          d_drawArrows;
 
 protected:   
     sofa::core::State<In1>* m_fromModel1;

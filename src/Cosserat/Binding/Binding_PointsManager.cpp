@@ -24,7 +24,7 @@
 #include <pybind11/stl.h>
 #include <Cosserat/engine/PointsManager.h>
 
-typedef sofa::core::behavior::PointsManager PointsManager;
+typedef cosserat::controller::PointsManager PointsManager;
 
 namespace py {
 using namespace pybind11;
