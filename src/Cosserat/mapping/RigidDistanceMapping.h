@@ -23,12 +23,7 @@
 #include <Cosserat/config.h>
 #include <Cosserat/mapping/BaseCosseratMapping.h>
 
-#include <sofa/core/BaseMapping.h>
-#include <sofa/core/config.h>
 #include <sofa/core/Multi2Mapping.h>
-#include <sofa/defaulttype/SolidTypes.h>
-#include <sofa/defaulttype/RigidTypes.h>
-#include <sofa/helper/ColorMap.h>
 
 namespace Cosserat::mapping
 {
@@ -102,11 +97,10 @@ public:
 protected:
     Data<vector<unsigned int> >   d_index1 ;
     Data<vector<unsigned int> >   d_index2 ;
-    Data<Real>                          d_max ;
-    Data<Real>                          d_min ;
-    Data<Real>                          d_radius ;
-    Data<Vec4f>                   d_color;
-    Data<vector<unsigned int> >   d_index;
+    Data<SReal>                          d_max ;
+    Data<SReal>                          d_min ;
+    Data<SReal>                          d_radius ;
+    Data<sofa::type::RGBAColor>          d_color;
     Data<bool>                          d_debug ;
 
     sofa::core::State<Out>* m_toModel;

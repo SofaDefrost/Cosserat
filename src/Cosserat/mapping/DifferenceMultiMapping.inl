@@ -21,22 +21,11 @@
  ******************************************************************************/
 #pragma once
 #include <Cosserat/mapping/DifferenceMultiMapping.h>
-
-#include <sofa/core/Multi2Mapping.inl>
 #include <sofa/core/visual/VisualParams.h>
-#include <sofa/core/behavior/MechanicalState.h>
-#include <sofa/core/visual/VisualParams.h>
-#include <sofa/helper/AdvancedTimer.h>
-#include <sofa/core/objectmodel/BaseContext.h>
-#include <sofa/helper/logging/Message.h>
-#include <sofa/type/RGBAColor.h>
-
-#include <string>
 
 namespace Cosserat::mapping
 {
 using sofa::core::objectmodel::BaseContext;
-using sofa::helper::AdvancedTimer;
 using sofa::helper::WriteAccessor;
 using sofa::type::RGBAColor;
 
@@ -44,8 +33,8 @@ template <class TIn1, class TIn2, class TOut>
 DifferenceMultiMapping<TIn1, TIn2, TOut>::DifferenceMultiMapping()
     : d_direction(initData(&d_direction, "direction", "The list of directions of fix points .\n")),
     d_indices(initData(&d_indices, "indices", "Indices of fixe points of the cable")),
-    d_radius(initData(&d_radius, 2.0, "radius", "The size of the cable")),
-    d_color(initData(&d_color, sofa::type::Vec4f(1, 0, 0, 1), "color", "The color of the cable")),
+    d_radius(initData(&d_radius, (SReal)2.0, "radius", "The size of the cable")),
+    d_color(initData(&d_color, sofa::type::RGBAColor::red(), "color", "The color of the cable")),
     d_drawArrows(initData(&d_drawArrows, false, "drawArrows", "The color of the cable")),
     d_lastPointIsFixed(initData(&d_lastPointIsFixed, true, "lastPointIsFixed", "This select the last point as fixed of not,"
                                                                                "one.")),

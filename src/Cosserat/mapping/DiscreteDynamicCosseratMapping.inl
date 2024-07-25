@@ -21,23 +21,12 @@
 ******************************************************************************/
 #pragma once
 #include <Cosserat/mapping/DiscreteDynamicCosseratMapping.h>
-
-#include <sofa/core/Multi2Mapping.inl>
 #include <sofa/core/visual/VisualParams.h>
-#include <sofa/core/behavior/MechanicalState.h>
-#include <sofa/core/visual/VisualParams.h>
-#include <sofa/helper/AdvancedTimer.h>
-#include <sofa/core/objectmodel/BaseContext.h>
-#include <sofa/helper/logging/Message.h>
-#include <sofa/type/Quat.h>
-
-#include <string>
 
 
 namespace Cosserat::mapping
 {
 using sofa::core::objectmodel::BaseContext ;
-using sofa::helper::AdvancedTimer;
 using sofa::helper::WriteAccessor;
 
 
@@ -509,13 +498,6 @@ void DiscreteDynamicCosseratMapping<TIn1, TIn2, TOut>::applyJT(
     ////// END ARTICULATION SYSTEM MAPPING
     dataMatOut1Const[0]->endEdit();
     dataMatOut2Const[0]->endEdit();
-}
-
-template <class TIn1, class TIn2, class TOut>
-void DiscreteDynamicCosseratMapping<TIn1, TIn2, TOut>::draw(const sofa::core::visual::VisualParams* vparams)
-{
-    if (!vparams->displayFlags().getShowMappings())
-        return;
 }
 
 } // namespace sofa::component::mapping
