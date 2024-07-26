@@ -33,17 +33,17 @@ using namespace sofa::defaulttype;
 
 template <>
 void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>:: applyJ(
-    const sofa::core::MechanicalParams* /* mparams */, const vector< OutDataVecDeriv*>& dataVecOutVel,
-    const vector<const In1DataVecDeriv*>& dataVecIn1Vel,
-    const vector<const In2DataVecDeriv*>& dataVecIn2Vel) {
+    const sofa::core::MechanicalParams* /* mparams */, const vector< sofa::DataVecDeriv_t<Out>*>& dataVecOutVel,
+    const vector<const sofa::DataVecDeriv_t<In1>*>& dataVecIn1Vel,
+    const vector<const sofa::DataVecDeriv_t<In2>*>& dataVecIn2Vel) {
 
     if(dataVecOutVel.empty() || dataVecIn1Vel.empty() ||dataVecIn2Vel.empty() )
         return;
 
     msg_info() << " ########## ApplyJ R Function ########";
 
-    const In1VecDeriv& in1_vel = sofa::helper::getReadAccessor(*dataVecIn1Vel[0]);
-    const In2VecDeriv& in2_vel = sofa::helper::getReadAccessor(*dataVecIn2Vel[0]);
+    const sofa::VecDeriv_t<In1>& in1_vel = sofa::helper::getReadAccessor(*dataVecIn1Vel[0]);
+    const sofa::VecDeriv_t<In2>& in2_vel = sofa::helper::getReadAccessor(*dataVecIn2Vel[0]);
 
     auto out_vel = sofa::helper::getWriteOnlyAccessor(*dataVecOutVel[0]);
 
@@ -67,7 +67,7 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>:: applyJ(
         baseVelocity[u] = in2_vel[baseIndex][u];
 
     //Apply the local transform i.e. from SOFA's frame to Cosserat's frame
-    const In2VecCoord& xfrom2Data = sofa::helper::getReadAccessor(*m_fromModel2->read(sofa::core::ConstVecCoordId::position()));
+    const sofa::VecCoord_t<In2>& xfrom2Data = sofa::helper::getReadAccessor(*m_fromModel2->read(sofa::core::ConstVecCoordId::position()));
     Transform TInverse = Transform(xfrom2Data[baseIndex].getCenter(), xfrom2Data[baseIndex].getOrientation()).inversed();
     Mat6x6 P = this->buildProjector(TInverse);
     Vec6 baseLocalVelocity = P * baseVelocity; //This is the base velocity in Locale frame
@@ -90,7 +90,7 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>:: applyJ(
         m_nodesVelocityVectors.push_back(eta_node_i);
         msg_info() << "Node velocity : "<< i << " = " << eta_node_i;
     }
-    const OutVecCoord& out = sofa::helper::getReadAccessor(*m_toModel->read(sofa::core::ConstVecCoordId::position()));
+    const sofa::VecCoord_t<Out>& out = sofa::helper::getReadAccessor(*m_toModel->read(sofa::core::ConstVecCoordId::position()));
 
     auto sz = curv_abs_frames.size();
     out_vel.resize(sz);
@@ -112,23 +112,23 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>:: applyJ(
 
 template <>
 void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>:: applyJT(
-    const sofa::core::MechanicalParams* /*mparams*/, const vector< In1DataVecDeriv*>& dataVecOut1Force,
-    const vector< In2DataVecDeriv*>& dataVecOut2Force,
-    const vector<const OutDataVecDeriv*>& dataVecInForce)  {
+    const sofa::core::MechanicalParams* /*mparams*/, const vector< sofa::DataVecDeriv_t<In1>*>& dataVecOut1Force,
+    const vector< sofa::DataVecDeriv_t<In2>*>& dataVecOut2Force,
+    const vector<const sofa::DataVecDeriv_t<Out>*>& dataVecInForce)  {
 
     if(dataVecOut1Force.empty() || dataVecInForce.empty() || dataVecOut2Force.empty())
         return;
 
     msg_info() << " ########## ApplyJT force R Function ########";
-    const OutVecDeriv& in = dataVecInForce[0]->getValue();
+    const sofa::VecDeriv_t<Out>& in = dataVecInForce[0]->getValue();
 
-    In1VecDeriv out1 = sofa::helper::getWriteAccessor(*dataVecOut1Force[0]);
-    In2VecDeriv out2 = sofa::helper::getWriteAccessor(*dataVecOut2Force[0]);
+    sofa::VecDeriv_t<In1> out1 = sofa::helper::getWriteAccessor(*dataVecOut1Force[0]);
+    sofa::VecDeriv_t<In2> out2 = sofa::helper::getWriteAccessor(*dataVecOut2Force[0]);
     const auto baseIndex = d_baseIndex.getValue();
 
-    const OutVecCoord& frame = m_toModel->read(sofa::core::ConstVecCoordId::position())->getValue();
-    const In1DataVecCoord* x1fromData = m_fromModel1->read(sofa::core::ConstVecCoordId::position());
-    const In1VecCoord x1from = x1fromData->getValue();
+    const sofa::VecCoord_t<Out>& frame = m_toModel->read(sofa::core::ConstVecCoordId::position())->getValue();
+    const sofa::DataVecCoord_t<In1>* x1fromData = m_fromModel1->read(sofa::core::ConstVecCoordId::position());
+    const sofa::VecCoord_t<In1> x1from = x1fromData->getValue();
     vector<Vec6> local_F_Vec;  local_F_Vec.clear();
 
     out1.resize(x1from.size());
@@ -195,9 +195,9 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>:: applyJT(
 
 template <>
 void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>::applyJT(
-    const sofa::core::ConstraintParams*/*cparams*/ , const vector< In1DataMatrixDeriv*>&  dataMatOut1Const,
-    const vector< In2DataMatrixDeriv*>&  dataMatOut2Const ,
-    const vector<const OutDataMatrixDeriv*>& dataMatInConst)
+    const sofa::core::ConstraintParams*/*cparams*/ , const vector< sofa::DataMatrixDeriv_t<In1>*>&  dataMatOut1Const,
+    const vector< sofa::DataMatrixDeriv_t<In2>*>&  dataMatOut2Const ,
+    const vector<const sofa::DataMatrixDeriv_t<Out>*>& dataMatInConst)
 {
     if(dataMatOut1Const.empty() || dataMatOut2Const.empty() || dataMatInConst.empty() )
         return;
@@ -205,13 +205,13 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>::applyJT(
     msg_info() << " ########## ApplyJT constraint R Function ########";
 
     //We need only one input In model and input Root model (if present)
-    In1MatrixDeriv& out1 = sofa::helper::getWriteAccessor(*dataMatOut1Const[0]); // constraints on the strain space (reduced coordinate)
-    In2MatrixDeriv& out2 = sofa::helper::getWriteAccessor(*dataMatOut2Const[0]); // constraints on the reference frame (base frame)
-    const OutMatrixDeriv& in = dataMatInConst[0]->getValue(); // input constraints defined on the mapped frames
+    sofa::MatrixDeriv_t<In1>& out1 = sofa::helper::getWriteAccessor(*dataMatOut1Const[0]); // constraints on the strain space (reduced coordinate)
+    sofa::MatrixDeriv_t<In2>& out2 = sofa::helper::getWriteAccessor(*dataMatOut2Const[0]); // constraints on the reference frame (base frame)
+    const sofa::MatrixDeriv_t<Out>& in = dataMatInConst[0]->getValue(); // input constraints defined on the mapped frames
 
-    const OutVecCoord& frame = m_toModel->read(sofa::core::ConstVecCoordId::position())->getValue();
-    const In1DataVecCoord* x1fromData = m_fromModel1->read(sofa::core::ConstVecCoordId::position());
-    const In1VecCoord x1from = x1fromData->getValue();
+    const sofa::VecCoord_t<Out>& frame = m_toModel->read(sofa::core::ConstVecCoordId::position())->getValue();
+    const sofa::DataVecCoord_t<In1>* x1fromData = m_fromModel1->read(sofa::core::ConstVecCoordId::position());
+    const sofa::VecCoord_t<In1> x1from = x1fromData->getValue();
 
     TangentTransform matB_trans; matB_trans.clear();
     for(unsigned int k=0; k<3; k++) matB_trans[k][k] = 1.0;
@@ -219,10 +219,10 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>::applyJT(
     vector< std::tuple<int,Vec6> > NodesInvolved;
     vector< std::tuple<int,Vec6> > NodesInvolvedCompressed;
 
-    typename OutMatrixDeriv::RowConstIterator rowItEnd = in.end();
+    typename sofa::MatrixDeriv_t<Out>::RowConstIterator rowItEnd = in.end();
 
     bool doPrintLog = f_printLog.getValue();
-    for (typename OutMatrixDeriv::RowConstIterator rowIt = in.begin(); rowIt != rowItEnd; ++rowIt)
+    for (typename sofa::MatrixDeriv_t<Out>::RowConstIterator rowIt = in.begin(); rowIt != rowItEnd; ++rowIt)
     {
         msg_info_when(doPrintLog)
              <<"************* Apply JT (MatrixDeriv) iteration on line "
@@ -239,8 +239,8 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>::applyJT(
                 <<"no column for this constraint";
             continue;
         }
-        typename In1MatrixDeriv::RowIterator o1 = out1.writeLine(rowIt.index()); // we store the constraint number
-        typename In2MatrixDeriv::RowIterator o2 = out2.writeLine(rowIt.index());
+        typename sofa::MatrixDeriv_t<In1>::RowIterator o1 = out1.writeLine(rowIt.index()); // we store the constraint number
+        typename sofa::MatrixDeriv_t<In2>::RowIterator o2 = out2.writeLine(rowIt.index());
 
         NodesInvolved.clear();
         while (colIt != colItEnd)

@@ -74,19 +74,11 @@ public:
     typedef TIn2 In2;
     typedef TOut Out;
 
-    // TODO(dmarchal:2024/06/07) This very long list of public typedefs looks
-    // questionnable at least this has to be justified by comment on why these
-    // typedefs are public
-    typedef typename In1::Coord Coord1;
-    typedef typename In1::Deriv Deriv1;
+    using Coord1 = sofa::Coord_t<In1>;
+    using Deriv1 = sofa::Deriv_t<In1>;
 
-    typedef typename In2::Coord Coord2;
-    typedef typename In2::Deriv Deriv2;
+    using OutCoord = sofa::Coord_t<Out>;
 
-    typedef typename Out::Coord OutCoord;
-    typedef typename Out::Deriv OutDeriv;
-
-public:
     // TODO(dmarchal: 2024/06/07): There is a lot of public attributes is this
     // really needed ?
 
