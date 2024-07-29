@@ -141,7 +141,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::apply(
 
     Vec3 origin = frame.getOrigin();
     Quat orientation = frame.getOrientation();
-    out[i] = OutCoord(origin, orientation);
+    out[i] = sofa::Coord_t<Out>(origin, orientation);
   }
 
   // If the printLog attribute is checked then print distance between out
