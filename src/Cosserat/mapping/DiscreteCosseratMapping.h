@@ -56,28 +56,38 @@ public:
     typedef TIn2 In2;
     typedef TOut Out;
 
-    using typename Inherit1::In1VecCoord;
-    using typename Inherit1::In1VecDeriv;
-    using typename Inherit1::In1MatrixDeriv;
-    using typename Inherit1::In1DataVecCoord;
-    using typename Inherit1::In1DataVecDeriv;
-    using typename Inherit1::In1DataMatrixDeriv;
+    typedef In1 In1DataTypes;
+    typedef typename In1::Coord    In1Coord;
+    typedef typename In1::Deriv    In1Deriv;
+    typedef typename In1::VecCoord In1VecCoord;
+    typedef typename In1::VecDeriv In1VecDeriv;
 
-    using typename Inherit1::In2VecCoord;
-    using typename Inherit1::In2VecDeriv;
-    using typename Inherit1::In2MatrixDeriv;
-    using typename Inherit1::In2DataVecCoord;
-    using typename Inherit1::In2DataVecDeriv;
-    using typename Inherit1::In2DataMatrixDeriv;
+    typedef In2 In2DataTypes;
+    typedef typename In2::Coord    In2Coord;
+    typedef typename In2::Deriv    In2Deriv;
+    typedef typename In2::VecCoord In2VecCoord;
+    typedef typename In2::VecDeriv In2VecDeriv;
 
-    using typename Inherit1::OutCoord;
-    using typename Inherit1::OutDeriv;
-    using typename Inherit1::OutVecCoord;
-    using typename Inherit1::OutVecDeriv;
-    using typename Inherit1::OutMatrixDeriv;
-    using typename Inherit1::OutDataVecCoord;
-    using typename Inherit1::OutDataVecDeriv;
-    using typename Inherit1::OutDataMatrixDeriv;
+    typedef Out OutDataTypes;
+    typedef typename Out::Coord   OutCoord;
+    typedef typename Out::Deriv   OutDeriv;
+    typedef typename Out::VecCoord OutVecCoord;
+    typedef typename Out::VecDeriv OutVecDeriv;
+    typedef typename OutCoord::value_type Real;
+
+    typedef typename In1::MatrixDeriv In1MatrixDeriv;
+    typedef Data<In1VecCoord> In1DataVecCoord;
+    typedef Data<In1VecDeriv> In1DataVecDeriv;
+    typedef Data<In1MatrixDeriv> In1DataMatrixDeriv;
+    typedef typename In2::MatrixDeriv In2MatrixDeriv;
+    typedef Data<In2VecCoord> In2DataVecCoord;
+    typedef Data<In2VecDeriv> In2DataVecDeriv;
+    typedef Data<In2MatrixDeriv> In2DataMatrixDeriv;
+
+    typedef typename Out::MatrixDeriv OutMatrixDeriv;
+    typedef Data<OutVecCoord> OutDataVecCoord;
+    typedef Data<OutVecDeriv> OutDataVecDeriv;
+    typedef Data<OutMatrixDeriv> OutDataMatrixDeriv;
 
     //////////////////////////////////////////////////////////////////////
     /// @name Data Fields
