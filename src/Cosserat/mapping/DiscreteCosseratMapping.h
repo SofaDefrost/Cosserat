@@ -56,29 +56,6 @@ public:
     typedef TIn2 In2;
     typedef TOut Out;
 
-    using typename Inherit1::In1VecCoord;
-    using typename Inherit1::In1VecDeriv;
-    using typename Inherit1::In1MatrixDeriv;
-    using typename Inherit1::In1DataVecCoord;
-    using typename Inherit1::In1DataVecDeriv;
-    using typename Inherit1::In1DataMatrixDeriv;
-
-    using typename Inherit1::In2VecCoord;
-    using typename Inherit1::In2VecDeriv;
-    using typename Inherit1::In2MatrixDeriv;
-    using typename Inherit1::In2DataVecCoord;
-    using typename Inherit1::In2DataVecDeriv;
-    using typename Inherit1::In2DataMatrixDeriv;
-
-    using typename Inherit1::OutCoord;
-    using typename Inherit1::OutDeriv;
-    using typename Inherit1::OutVecCoord;
-    using typename Inherit1::OutVecDeriv;
-    using typename Inherit1::OutMatrixDeriv;
-    using typename Inherit1::OutDataVecCoord;
-    using typename Inherit1::OutDataVecDeriv;
-    using typename Inherit1::OutDataMatrixDeriv;
-
     //////////////////////////////////////////////////////////////////////
     /// @name Data Fields
     /// @{
@@ -106,20 +83,21 @@ public:
     //////////////////////////////////////////////////////////////////////
     /// The following method are inherited from MultiMapping
     /// @{
-    void apply(const sofa::core::MechanicalParams * /* mparams */,
-               const vector<OutDataVecCoord *> &dataVecOutPos,
-               const vector<const In1DataVecCoord *> &dataVecIn1Pos,
-               const vector<const In2DataVecCoord *> &dataVecIn2Pos) override;
+    auto apply(const sofa::core::MechanicalParams* /* mparams */,
+               const vector<sofa::DataVecCoord_t<Out>*>& dataVecOutPos,
+               const vector<const sofa::DataVecCoord_t<In1>*>& dataVecIn1Pos,
+               const vector<const sofa::DataVecCoord_t<In2>*>& dataVecIn2Pos) ->
+        void override;
 
     void applyJ(const sofa::core::MechanicalParams * /* mparams */,
-                const vector<OutDataVecDeriv *> &dataVecOutVel,
-                const vector<const In1DataVecDeriv *> &dataVecIn1Vel,
-                const vector<const In2DataVecDeriv *> &dataVecIn2Vel) override;
+                const vector<sofa::DataVecDeriv_t<Out> *> &dataVecOutVel,
+                const vector<const sofa::DataVecDeriv_t<In1> *> &dataVecIn1Vel,
+                const vector<const sofa::DataVecDeriv_t<In2> *> &dataVecIn2Vel) override;
 
     void applyJT(const sofa::core::MechanicalParams * /* mparams */,
-                 const vector<In1DataVecDeriv *> &dataVecOut1Force,
-                 const vector<In2DataVecDeriv *> &dataVecOut2RootForce,
-                 const vector<const OutDataVecDeriv *> &dataVecInForce) override;
+                 const vector<sofa::DataVecDeriv_t<In1> *> &dataVecOut1Force,
+                 const vector<sofa::DataVecDeriv_t<In2> *> &dataVecOut2RootForce,
+                 const vector<const sofa::DataVecDeriv_t<Out> *> &dataVecInForce) override;
 
     // TODO(dmarchal:2024/06/13): Override with an empty function is a rare code pattern
     // to make it clear this is the intented and not just an "I'm too lazy to implement it"
@@ -131,9 +109,9 @@ public:
     /// Support for constraints.
     void applyJT(
             const sofa::core::ConstraintParams *cparams,
-            const vector<In1DataMatrixDeriv *> &dataMatOut1Const,
-            const vector<In2DataMatrixDeriv *> &dataMatOut2Const,
-            const vector<const OutDataMatrixDeriv *> &dataMatInConst) override;
+            const vector<sofa::DataMatrixDeriv_t<In1> *> &dataMatOut1Const,
+            const vector<sofa::DataMatrixDeriv_t<In2> *> &dataMatOut2Const,
+            const vector<const sofa::DataMatrixDeriv_t<Out> *> &dataMatInConst) override;
     /// @}
     /////////////////////////////////////////////////////////////////////////////
 
