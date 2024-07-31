@@ -114,7 +114,7 @@ public:
  *
 */
 template< class DataTypes >
-class CosseratActuatorConstraint : public CableModel<DataTypes>
+class CosseratActuatorConstraint : public softrobots::constraint::CableModel<DataTypes>
 {
 public:
     SOFA_CLASS(SOFA_TEMPLATE(CosseratActuatorConstraint,DataTypes), SOFA_TEMPLATE(CableModel,DataTypes));

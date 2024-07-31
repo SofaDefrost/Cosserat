@@ -71,6 +71,8 @@ set(SOURCE_FILES
 
 sofa_find_package(SoftRobots QUIET)
 if(SoftRobots_FOUND)
+    message("-- Found dependency : 'SoftRobots' plugin .")
+
     list(APPEND HEADER_FILES
         ${SRC_ROOT_DIR}/constraint/CosseratActuatorConstraint.h
         ${SRC_ROOT_DIR}/constraint/CosseratActuatorConstraint.inl
@@ -83,6 +85,8 @@ if(SoftRobots_FOUND)
         
         ${SRC_ROOT_DIR}/constraint/QPSlidingConstraint.cpp
         )
+else()
+    message("-- SoftRobots dependency has not been found, some features like QPSlidingConstraint and CosseratActuatorConstraint will not be available. ")
 endif()
 
 
@@ -110,7 +114,6 @@ endif()
 
 if(SoftRobots_FOUND)
     target_link_libraries(${PROJECT_NAME} SoftRobots)
-    message("-- Found dependency: 'SoftRobots' plugin.")
 endif()
 
 
