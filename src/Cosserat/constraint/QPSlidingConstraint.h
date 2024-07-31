@@ -40,7 +40,6 @@
 namespace sofa::component::constraintset
 {
 
-using sofa::core::behavior::SoftRobotsConstraint ;
 using sofa::core::visual::VisualParams ;
 using sofa::core::objectmodel::Data ;
 using sofa::defaulttype::Vec3dTypes ;
@@ -78,7 +77,7 @@ protected:
  * This class contains common implementation of cable constraints
 */
 template< class DataTypes >
-class QPSlidingConstraint : public CableModel<DataTypes>
+class QPSlidingConstraint : public softrobots::constraint::CableModel<DataTypes>
 {
 public:
 
