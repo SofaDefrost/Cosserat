@@ -146,7 +146,9 @@ class CosseratBase(Sofa.Prefab):
             template="Rigid3d",
             name="RigidBaseMO",
             showObjectScale=0.2,
-            position=positions
+            position=positions,
+            translation=self.translation,
+            rotation=self.rotation
         )
         rigidBaseNodeMo.showObject.setParent(self.showObject)
 
@@ -226,8 +228,8 @@ class CosseratBase(Sofa.Prefab):
             template="Rigid3d",
             name="FramesMO",
             position=framesF,
-            showIndices=self.params.beamGeoParams.showFramesObject,
-            showObject=self.params.beamGeoParams.showFramesObject,
+            showIndices=self.params.beamGeoParams.show_frames_indices,
+            showObject=self.params.beamGeoParams.show_frames_object,
             showObjectScale=1.8,  # Todo: remove this hard code
         )
 

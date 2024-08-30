@@ -18,7 +18,8 @@ class BeamGeometryParameters:
     )  # The beam rigid base position as a list [x, y, z]
 
     """Parameters for the visualisation of the beam"""
-    showFramesObject: int = 1
+    show_frames_object: bool = True
+    show_frames_indices: bool = False
     showRigidBaseObject: int = 1
 
 
@@ -71,7 +72,7 @@ class VisualParameters:
 class ContactParameters:
     """Contact parameters"""
 
-    responseParams: str = "mu=0.8"
+    responseParams: str = "mu=0.0"
     response: str = "FrictionContactConstraint"
     alarmDistance: float = 0.05
     contactDistance: float = 0.01
