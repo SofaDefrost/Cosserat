@@ -162,7 +162,7 @@ protected:
     ////////////////////////////////////////////////////////////////////////////
     /// \brief internalInit
     using softrobots::constraint::SoftRobotsConstraint<DataTypes>::m_nbLines ;
-    using softrobots::constraint::SoftRobotsConstraint<DataTypes>::m_constraintIndex ;
+    using softrobots::constraint::SoftRobotsConstraint<DataTypes>::d_constraintIndex ;
 
     void internalInit();
 };

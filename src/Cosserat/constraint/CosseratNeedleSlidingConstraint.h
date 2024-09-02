@@ -136,7 +136,7 @@ namespace sofa::component::constraintset
         ////////////////////////////////////////////////////////////////////////////
         /// \brief internalInit
         unsigned m_nbLines ;
-        using Constraint<DataTypes>::m_constraintIndex ;
+        using Constraint<DataTypes>::d_constraintIndex ;
 
         void internalInit();
     };
