@@ -169,7 +169,7 @@ void CosseratActuatorConstraint<DataTypes>::getConstraintViolation(const Constra
 
 
     for (unsigned i=0;i<d_indices.getValue().size();i++) {
-        resV->set(m_constraintIndex.getValue(), dfree);
+        resV->set(d_constraintIndex.getValue(), dfree);
     }
 }
 

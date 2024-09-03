@@ -113,7 +113,7 @@ namespace sofa::component::constraintset
     SOFA_UNUSED(cParams);
     MatrixDeriv &matrix = *cMatrix.beginEdit();
     VecCoord positions = x.getValue();
-    m_constraintIndex.setValue(cIndex);
+    d_constraintIndex.setValue(cIndex);
 
     type::Vec<3, bool> use = d_useDirections.getValue();
 
@@ -131,7 +131,7 @@ namespace sofa::component::constraintset
       }
     }
     cMatrix.endEdit();
-    m_nbLines = cIndex - m_constraintIndex.getValue();
+    m_nbLines = cIndex - d_constraintIndex.getValue();
     
   }
 
