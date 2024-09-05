@@ -118,8 +118,8 @@ void QPSlidingConstraint<DataTypes>::buildConstraintMatrix(const ConstraintParam
     SOFA_UNUSED(cParams);
     MatrixDeriv& matrix = *cMatrix.beginEdit();
     VecCoord positions = x.getValue();
-    m_constraintIndex.setValue(cIndex);
-    const auto& constraintIndex = sofa::helper::getReadAccessor(m_constraintIndex);
+    d_constraintIndex.setValue(cIndex);
+    const auto& constraintIndex = sofa::helper::getReadAccessor(d_constraintIndex);
 
     for (unsigned int i=0; i<positions.size(); i++)
     {
@@ -156,7 +156,7 @@ void QPSlidingConstraint<DataTypes>::getConstraintViolation(const ConstraintPara
 
     SOFA_UNUSED(cParams);
     ReadAccessor<Data<VecCoord>> positions = m_state->readPositions();
-    const auto& constraintIndex = sofa::helper::getReadAccessor(m_constraintIndex);
+    const auto& constraintIndex = sofa::helper::getReadAccessor(d_constraintIndex);
 
     if(Jdx->size()==0){
         //std::cout << "Size JDX = "<< Jdx->size() << std::endl;
