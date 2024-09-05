@@ -67,8 +67,7 @@ namespace sofa::component::constraintset
 
   template <class DataTypes>
   CosseratNeedleSlidingConstraint<DataTypes>::~CosseratNeedleSlidingConstraint()
-  {
-  }
+  = default;
 
   template <class DataTypes>
   void CosseratNeedleSlidingConstraint<DataTypes>::init()
