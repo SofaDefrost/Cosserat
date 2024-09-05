@@ -104,8 +104,8 @@ void CosseratActuatorConstraint<DataTypes>::buildConstraintMatrix(const Constrai
 
     SOFA_UNUSED(cParams);
 
-    m_constraintIndex.setValue(cIndex);
-    const auto& constraintIndex = sofa::helper::getReadAccessor(m_constraintIndex);
+    d_constraintIndex.setValue(cIndex);
+    const auto& constraintIndex = sofa::helper::getReadAccessor(d_constraintIndex);
 
     MatrixDeriv& matrix = *cMatrix.beginEdit();
 
@@ -169,7 +169,7 @@ void CosseratActuatorConstraint<DataTypes>::getConstraintViolation(const Constra
 
 
     for (unsigned i=0;i<d_indices.getValue().size();i++) {
-        resV->set(m_constraintIndex.getValue(), dfree);
+        resV->set(d_constraintIndex.getValue(), dfree);
     }
 }
 
