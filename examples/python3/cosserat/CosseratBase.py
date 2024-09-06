@@ -58,7 +58,7 @@ class CosseratBase(Sofa.Prefab):
             "beam_params", Parameters()
         )  # Use the Parameters class with default values
 
-        beamPhysicsParams = self.params.beamPhysicsParams
+        beamPhysicsParams = self.params.beam_physics_params
         self.beam_mass = beamPhysicsParams.beam_mass  # self.cosseratGeometry['beamMass']
         self.use_inertia_params = beamPhysicsParams.useInertia  # False
         self.radius = beamPhysicsParams.beam_radius  # kwargs.get('radius')
@@ -71,7 +71,7 @@ class CosseratBase(Sofa.Prefab):
 
         self.rigidBaseNode = self._addRigidBaseNode()
 
-        cosserat_geometry = CosseratGeometry(self.params.beamGeoParams)
+        cosserat_geometry = CosseratGeometry(self.params.beam_geo_params)
         self.frames3D = cosserat_geometry.cable_positionF
 
         self.cosseratCoordinateNode = self._add_cosserat_coordinate(
@@ -151,14 +151,14 @@ class CosseratBase(Sofa.Prefab):
         """
         cosserat_coordinate_node.addObject(
             "BeamHookeLawForceField",
-            crossSectionShape=self.params.beamPhysicsParams.beam_shape,
+            crossSectionShape=self.params.beam_physics_params.beam_shape,
             length=section_lengths,
-            radius=self.params.beamPhysicsParams.beam_radius,
-            youngModulus=self.params.beamPhysicsParams.young_modulus,
-            poissonRatio=self.params.beamPhysicsParams.poisson_ratio,
-            rayleighStiffness=self.params.simuParams.rayleighStiffness,
-            lengthY=self.params.beamPhysicsParams.length_Y,
-            lengthZ=self.params.beamPhysicsParams.length_Z,
+            radius=self.params.beam_physics_params.beam_radius,
+            youngModulus=self.params.beam_physics_params.young_modulus,
+            poissonRatio=self.params.beam_physics_params.poisson_ratio,
+            rayleighStiffness=self.params.simu_params.rayleigh_stiffness,
+            lengthY=self.params.beam_physics_params.length_Y,
+            lengthZ=self.params.beam_physics_params.length_Z,
         )
 
     def _add_beam_hooke_law_with_inertia(self, cosserat_coordinate_node: None, section_lengths: List[float]) -> None:
@@ -169,23 +169,23 @@ class CosseratBase(Sofa.Prefab):
             cosserat_coordinate_node: The cosserat coordinate node to add the object to.
             section_lengths: Length of each section in the cosserat coordinate.
         """
-        GA = self.params.beamPhysicsParams.GA
-        GI = self.params.beamPhysicsParams.GI
-        EA = self.params.beamPhysicsParams.EA
-        EI = self.params.beamPhysicsParams.EI
+        GA = self.params.beam_physics_params.GA
+        GI = self.params.beam_physics_params.GI
+        EA = self.params.beam_physics_params.EA
+        EI = self.params.beam_physics_params.EI
         cosseratCoordinateNode.addObject(
             "BeamHookeLawForceField",
-            crossSectionShape=self.params.beamPhysicsParams.beam_shape,
+            crossSectionShape=self.params.beam_physics_params.beam_shape,
             length=section_lengths,
-            radius=self.params.beamPhysicsParams.beam_radius,
+            radius=self.params.beam_physics_params.beam_radius,
             useInertiaParams=True,
             GI=GI,
             GA=GA,
             EI=EI,
             EA=EA,
-            rayleighStiffness=self.params.simuParams.rayleighStiffness,
-            lengthY=self.params.beamPhysicsParams.length_Y,
-            lengthZ=self.params.beamPhysicsParams.length_Z,
+            rayleighStiffness=self.params.simu_params.rayleigh_stiffness,
+            lengthY=self.params.beam_physics_params.length_Y,
+            lengthZ=self.params.beam_physics_params.length_Z,
         )
 
     # TODO Rename this here and in `addCosseratCoordinate`
@@ -219,7 +219,7 @@ class CosseratBase(Sofa.Prefab):
         return cosseratInSofaFrameNode
 
 
-Params = Parameters(beamGeoParams=BeamGeometryParameters())
+Params = Parameters(beam_geo_params=BeamGeometryParameters())
 
 
 def createScene(rootNode):
