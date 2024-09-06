@@ -10,26 +10,13 @@ __copyright__ = "(c) 2021,Inria"
 __date__ = "October, 26 2021"
 
 import Sofa
-from useful.utils import addEdgeCollision, addPointsCollision
+from useful.utils import addEdgeCollision, addPointsCollision, _create_rigid_node
 from useful.header import addHeader, addVisual, addSolverNode
 from useful.params import Parameters, BeamGeometryParameters
 from useful.geometry import CosseratGeometry, generate_edge_list
 from numpy import array
 
 
-def _create_rigid_node(parent_node, name, translation, rotation,
-                       positions=[[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]]):
-    rigidBaseNode = parent_node.addChild(name)
-
-    rigidBaseNodeMo = rigidBaseNode.addObject(
-        "MechanicalObject",
-        template="Rigid3d",
-        name=name+"MO",
-        position=positions,
-        translation=translation,
-        rotation=rotation
-    )
-    return rigidBaseNode
 
 class CosseratBase(Sofa.Prefab):
     """
@@ -67,23 +54,15 @@ class CosseratBase(Sofa.Prefab):
     def __init__(self, *args, **kwargs):
         Sofa.Prefab.__init__(self, *args, **kwargs)
         self.params = kwargs.get(
-            "params", Parameters()
+            "beam_params", Parameters()
         )  # Use the Parameters class with default values
-        beamPhysicsParams = self.params.beamPhysicsParams
-        beamGeometryParams = self.params.beamGeoParams
 
+        beamPhysicsParams = self.params.beamPhysicsParams
         self.beamMass = beamPhysicsParams.beamMass  # self.cosseratGeometry['beamMass']
-        # Todo: add option in case None
-        self.parent = kwargs.get("parent")
         self.useInertiaParams = beamPhysicsParams.useInertia  # False
         self.radius = beamPhysicsParams.beamRadius  # kwargs.get('radius')
 
-        # @TODO: To be removed
-        if self.parent.hasObject("EulerImplicitSolver") is False:
-            print("The code does not have parent EulerImplicit")
-            self.solverNode = addSolverNode(self.parent)
-        else:
-            self.solverNode = self.parent
+        self.solverNode = kwargs.get("parent")
 
         if "inertialParams" in kwargs:
             self.useInertiaParams = True
@@ -91,7 +70,7 @@ class CosseratBase(Sofa.Prefab):
 
         self.rigidBaseNode = self._addRigidBaseNode()
 
-        cosserat_geometry = CosseratGeometry(beamGeometryParams)
+        cosserat_geometry = CosseratGeometry(self.params.beamGeoParams)
         self.frames3D = cosserat_geometry.cable_positionF
 
         self.cosseratCoordinateNode = self._addCosseratCoordinate(
@@ -123,15 +102,9 @@ class CosseratBase(Sofa.Prefab):
         return slidingPoint
 
     def _addSlidingPointsWithContainer(self):
-        slidingPoint = self.cosseratFrame.addChild("slidingPoint")
+        slidingPoint = self._addSlidingPoints()
         slidingPoint.addObject("PointSetTopologyContainer")
         slidingPoint.addObject("PointSetTopologyModifier")
-        slidingPoint.addObject(
-            "MechanicalObject",
-            name="slidingPointMO",
-            position=self.frames3D
-        )
-        slidingPoint.addObject("IdentityMapping")
         return slidingPoint
 
     def _addRigidBaseNode(self):
@@ -242,7 +215,7 @@ def createScene(rootNode):
     solverNode.addObject("GenericConstraintCorrection")
 
     # Create a
-    cosserat = solverNode.addChild(CosseratBase(parent=solverNode, params=Params))
+    cosserat = solverNode.addChild(CosseratBase(parent=solverNode, beam_params=Params))
     cosserat.rigidBaseNode.addObject(
             "RestShapeSpringsForceField",
             name="spring",
