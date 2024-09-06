@@ -13,9 +13,6 @@ class BeamGeometryParameters:
     nbSection: int = 5  # number of sections, sections along the beam length
     nbFrames: int = 30  # number of frames along the beam
     buildCollisionModel: int = 0
-    init_pos: List[float] = field(
-        default_factory=lambda: [0.0, 0.0, 0.0]
-    )  # The beam rigid base position as a list [x, y, z]
 
 #Todo: two objects from the same base class to define different instead of useInertia
 @dataclass

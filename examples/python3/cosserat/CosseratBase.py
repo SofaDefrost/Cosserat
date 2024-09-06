@@ -17,6 +17,20 @@ from useful.geometry import CosseratGeometry, generate_edge_list
 from numpy import array
 
 
+def _create_rigid_node(parent_node, name, translation, rotation,
+                       positions=[[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]]):
+    rigidBaseNode = parent_node.addChild(name)
+
+    rigidBaseNodeMo = rigidBaseNode.addObject(
+        "MechanicalObject",
+        template="Rigid3d",
+        name=name+"MO",
+        position=positions,
+        translation=translation,
+        rotation=rotation
+    )
+    return rigidBaseNode
+
 class CosseratBase(Sofa.Prefab):
     """
     CosseratBase model prefab class. It is a prefab class that allow to create a cosserat beam/rod in Sofa.
@@ -47,13 +61,6 @@ class CosseratBase(Sofa.Prefab):
             "type": "Vec3d",
             "help": "Cosserat base Rotation",
             "default": array([0.0, 0.0, 0.0]),
-        },
-        {  # @TODO: to be removed
-            "name": "attachingToLink",
-            "type": "string",
-            "help": "a rest shape force field will constraint the object "
-            "to follow arm position",
-            "default": "1",
         }
     ]
 
@@ -128,35 +135,10 @@ class CosseratBase(Sofa.Prefab):
         return slidingPoint
 
     def _addRigidBaseNode(self):
-        rigidBaseNode = self.addChild("rigidBase")
-        # To be improved with classes in top
-        positions = [[self.params.beamGeoParams.init_pos] + [0.0, 0.0, 0.0, 1.0]]
-
-        rigidBaseNodeMo = rigidBaseNode.addObject(
-            "MechanicalObject",
-            template="Rigid3d",
-            name="RigidBaseMO",
-            position=positions,
-            translation=self.translation,
-            rotation=self.rotation
-        )
-
-        # @TODO: remove this hard coded.
-        # one can choose to set this to false and directly attach the beam base
-        # to a control object in order to be able to drive it.
-        if int(self.attachingToLink.value):
-            print("Adding the rest shape to the base")
-            rigidBaseNode.addObject(
-                "RestShapeSpringsForceField",
-                name="spring",
-                stiffness=1e8,
-                angularStiffness=1.0e8,
-                external_points=0,
-                mstate="@RigidBaseMO",
-                points=0,
-                template="Rigid3d",
-            )
+        rigidBaseNode = _create_rigid_node(self, "RigidBase",
+                           self.translation, self.rotation)
         return rigidBaseNode
+
 
     def _addCosseratCoordinate(self, bendingStates, listOfSectionsLength):
         cosseratCoordinateNode = self.addChild("cosseratCoordinate")
@@ -236,7 +218,7 @@ class CosseratBase(Sofa.Prefab):
         return cosseratInSofaFrameNode
 
 
-Params = Parameters(beamGeoParams=BeamGeometryParameters(init_pos=[0, 0, 0]))
+Params = Parameters(beamGeoParams=BeamGeometryParameters())
 
 
 def createScene(rootNode):
@@ -261,6 +243,17 @@ def createScene(rootNode):
 
     # Create a
     cosserat = solverNode.addChild(CosseratBase(parent=solverNode, params=Params))
+    cosserat.rigidBaseNode.addObject(
+            "RestShapeSpringsForceField",
+            name="spring",
+            stiffness=1e8,
+            angularStiffness=1.0e8,
+            external_points=0,
+            # mstate="@RigidBaseMO",
+            points=0,
+            template="Rigid3d"
+        )
+
 
     # use this to add the collision if the beam will interact with another object
     cosserat.addCollisionModel()
