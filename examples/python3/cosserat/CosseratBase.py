@@ -54,13 +54,7 @@ class CosseratBase(Sofa.Prefab):
             "help": "a rest shape force field will constraint the object "
             "to follow arm position",
             "default": "1",
-        },
-        {
-            "name": "showObject",
-            "type": "string",
-            "help": " Draw object arrow ",
-            "default": "0",
-        },
+        }
     ]
 
     def __init__(self, *args, **kwargs):
@@ -117,8 +111,7 @@ class CosseratBase(Sofa.Prefab):
 
     def _addSlidingPoints(self):
         slidingPoint = self.cosseratFrame.addChild("slidingPoint")
-        slidingPoint.addObject("MechanicalObject", name="slidingPointMO", position=self.frames3D, 
-                               showObject="0", showIndices="0")
+        slidingPoint.addObject("MechanicalObject", name="slidingPointMO", position=self.frames3D)
         slidingPoint.addObject("IdentityMapping")
         return slidingPoint
 
@@ -129,9 +122,7 @@ class CosseratBase(Sofa.Prefab):
         slidingPoint.addObject(
             "MechanicalObject",
             name="slidingPointMO",
-            position=self.frames3D,
-            showObject="1",
-            showIndices="0",
+            position=self.frames3D
         )
         slidingPoint.addObject("IdentityMapping")
         return slidingPoint
@@ -145,12 +136,10 @@ class CosseratBase(Sofa.Prefab):
             "MechanicalObject",
             template="Rigid3d",
             name="RigidBaseMO",
-            showObjectScale=0.2,
             position=positions,
             translation=self.translation,
             rotation=self.rotation
         )
-        rigidBaseNodeMo.showObject.setParent(self.showObject)
 
         # @TODO: remove this hard coded.
         # one can choose to set this to false and directly attach the beam base
@@ -175,8 +164,7 @@ class CosseratBase(Sofa.Prefab):
             "MechanicalObject",
             template="Vec3d",
             name="cosseratCoordinateMO",
-            position=bendingStates,
-            showIndices=0,
+            position=bendingStates
         )
 
         if self.useInertiaParams is False:
@@ -227,10 +215,7 @@ class CosseratBase(Sofa.Prefab):
             "MechanicalObject",
             template="Rigid3d",
             name="FramesMO",
-            position=framesF,
-            showIndices=self.params.beamGeoParams.show_frames_indices,
-            showObject=self.params.beamGeoParams.show_frames_object,
-            showObjectScale=1.8,  # Todo: remove this hard code
+            position=framesF
         )
 
         cosseratInSofaFrameNode.addObject(

@@ -17,12 +17,6 @@ class BeamGeometryParameters:
         default_factory=lambda: [0.0, 0.0, 0.0]
     )  # The beam rigid base position as a list [x, y, z]
 
-    """Parameters for the visualisation of the beam"""
-    show_frames_object: bool = True
-    show_frames_indices: bool = False
-    showRigidBaseObject: int = 1
-
-
 #Todo: two objects from the same base class to define different instead of useInertia
 @dataclass
 class BeamPhysicsParameters:
