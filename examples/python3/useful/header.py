@@ -81,7 +81,7 @@ def addHeader(parentNode, multithreading=False, inverse=False, isConstrained=Fal
                                  multithreading=multithreading, printLog=1)
 
     if isContact:
-        contactHeader(parentNode, _contact_params=params.contactParams)
+        contactHeader(parentNode, _contact_params=params.contact_params)
 
 
 # components needed for contact modeling
