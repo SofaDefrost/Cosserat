@@ -20,8 +20,8 @@ class BeamPhysicsParameters:
     """Cosserat Beam Physics parameters"""
 
     """First set of parameters"""
-    youngModulus: float = 1.205e8
-    poissonRatio: float = 0.3
+    young_modulus: float = 1.205e8
+    poisson_ratio: float = 0.3
 
     """Second set of parameters"""
     useInertia: bool = False
@@ -31,11 +31,11 @@ class BeamPhysicsParameters:
     EA: float = 3.1416e4
 
     """Common parameters used in both cases"""
-    beamMass: float = 1.0
-    beamRadius: float = 0.02 / 2.0  # beam radius in m
-    beamLength: float = 1.0  # beam length in m along the X axis
+    beam_mass: float = 1.0
+    beam_radius: float = 0.02 / 2.0  # beam radius in m
+    beam_length: float = 1.0  # beam length in m along the X axis
     # Todo : add complex beam shape
-    beamShape: str = "circular"  # beam shape, circular or rectangular
+    beam_shape: str = "circular"  # beam shape, circular or rectangular
     """"If using rectangular beam shape"""
     length_Y: float = 0.1  # length of the beam in the Y direction
     length_Z: float = 0.1  # length of the beam in the Z direction
