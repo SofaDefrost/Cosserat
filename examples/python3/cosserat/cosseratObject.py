@@ -215,10 +215,14 @@ class Cosserat(Sofa.Prefab):
         rigidBaseNode = self.addChild("rigidBase")
 
         # trans = [t for t in self.translation.value]
-        trans = list(self.translation.value)
-        rot = list(self.rotation.value)
+        trans = self.translation.value
+        rot = self.rotation.value
+
+        for _pos in self.position.value:
+            print(f"  ====> {_pos}")
+
         # @todo converter
-        positions = [list(pos) for pos in self.position.value]
+        positions = [pos for pos in self.position.value]
 
         rigidBaseNode.addObject(
             "MechanicalObject",

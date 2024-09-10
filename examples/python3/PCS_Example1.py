@@ -52,19 +52,17 @@ class ForceController(Sofa.Core.Controller):
 
     def onAnimateEndEvent(self, event):
         if self.applyForce:
-            with self.forceNode.force.writeable() as force:
-                vec = [0., 0., 0., 0., (self.forceCoeff * 1.) /
-                       sqrt(2), (self.forceCoeff * 1.) / sqrt(2)]
-                for i, v in enumerate(vec):
-                    force[i] = v
+            with self.forceNode.forces.writeable() as force:
+                force[0] = [0., 0., 0., 0., self.forceCoeff/sqrt(2.), self.forceCoeff/sqrt(2.)]
+                
 
     def onKeypressedEvent(self, event):
         key = event['key']
         if key == "+":
-            self.forceCoeff += 1
+            self.forceCoeff += 0.1
             print(f' The new force coeff is : {self.forceCoeff}')
         elif key == "-":
-            self.forceCoeff -= 1
+            self.forceCoeff -= 0.1
             print(f' The new force coeff is : {self.forceCoeff}')
 
 
@@ -93,7 +91,7 @@ def createScene(rootNode):
     
     beamFrame = PCS_Cosserat.cosseratFrame
     constForce = beamFrame.addObject('ConstantForceField', name='constForce', showArrowSize=1.e-8,
-                                     indices=nonLinearConfig['nbFramesF'], force=F1)
+                                     indices=nonLinearConfig['nbFramesF'], forces=F1)
 
     solverNode.addObject(ForceController(
         parent=solverNode, cosseratFrames=beamFrame.FramesMO, forceNode=constForce))
