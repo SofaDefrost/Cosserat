@@ -48,6 +48,7 @@ using sofa::linearalgebra::BaseVector ;
 using sofa::core::ConstraintParams ;
 using sofa::helper::ReadAccessor ;
 using sofa::core::VecCoordId ;
+using softrobots::constraint::CableModel;
 
 using sofa::core::behavior::ConstraintResolution ;
 //using sofa::component::constraint::lagrangian::model::ConstraintResolution;
@@ -145,7 +146,7 @@ protected:
     /// Bring m_state in the current lookup context.
     /// otherwise any access to the base::attribute would require
     /// using the "this->" approach.
-    using SoftRobotsConstraint<DataTypes>::m_state ;
+    using softrobots::constraint::SoftRobotsConstraint<DataTypes>::m_state ;
     ////////////////////////// Inherited attributes ////////////////////////////
     /// https://gcc.gnu.org/onlinedocs/gcc/Name-lookup.html
     /// Bring inherited attributes and function in the current lookup context.
@@ -160,8 +161,8 @@ protected:
     using CableModel<DataTypes>::d_componentState ;
     ////////////////////////////////////////////////////////////////////////////
     /// \brief internalInit
-    using SoftRobotsConstraint<DataTypes>::m_nbLines ;
-    using SoftRobotsConstraint<DataTypes>::m_constraintIndex ;
+    using softrobots::constraint::SoftRobotsConstraint<DataTypes>::m_nbLines ;
+    using softrobots::constraint::SoftRobotsConstraint<DataTypes>::d_constraintIndex ;
 
     void internalInit();
 };

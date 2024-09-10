@@ -47,6 +47,7 @@ using sofa::core::ConstraintParams;
 using sofa::linearalgebra::BaseVector;
 using sofa::core::visual::VisualParams ;
 using sofa::core::behavior::ConstraintResolution;
+using softrobots::constraint::CableModel;
 
 
 class MyCableForceConstraintResolution : public ConstraintResolution
@@ -114,7 +115,7 @@ public:
  *
 */
 template< class DataTypes >
-class CosseratActuatorConstraint : public softrobots::constraint::CableModel<DataTypes>
+class CosseratActuatorConstraint : public CableModel<DataTypes>
 {
 public:
     SOFA_CLASS(SOFA_TEMPLATE(CosseratActuatorConstraint,DataTypes), SOFA_TEMPLATE(CableModel,DataTypes));
@@ -174,7 +175,7 @@ public:
     using CableModel<DataTypes>::d_displacement ;
     using CableModel<DataTypes>::d_componentState ;
     using CableModel<DataTypes>::m_nbLines ;
-    using CableModel<DataTypes>::m_constraintIndex ;
+    using CableModel<DataTypes>::d_constraintIndex ;
     using CableModel<DataTypes>::m_state ;
     using CableModel<DataTypes>::d_indices ;
     using CableModel<DataTypes>::d_pullPoint;
