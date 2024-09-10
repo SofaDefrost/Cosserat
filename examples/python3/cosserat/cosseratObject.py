@@ -140,7 +140,7 @@ class Cosserat(Sofa.Prefab):
         warnings.warn(
             "\n====> DEPRECATED: This prefab CosseratObject class will be removed in a future version. "
             "Use CosseratBase instead. For examples and tutorials, please refer to "
-            "the 'tutorial' folder located at /forder/forlde.\n"
+            "the 'tutorial' folder located at plugin.Cosserat/tutoria/tuto_scenes .\n"
         )
         print("========================> DEPRECATED<============================\n")
 
