@@ -1,5 +1,4 @@
 #
-from typing import List
 from useful.params import BeamGeometryParameters
 
 def calculate_beam_parameters(beamGeoParams):
@@ -65,7 +64,7 @@ def calculate_frame_parameters(beamGeoParams):
     return frames_f, curv_abs_output_f, cable_position_f
 
 
-def generate_edge_list(cable3DPos: List[List[float]]) -> list[list[int]]:
+def generate_edge_list(cable3DPos: list[list[float]]) -> list[list[int]]:
     """
     Generate an edge list required in the EdgeSetTopologyContainer component.
 
