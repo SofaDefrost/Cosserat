@@ -12,6 +12,8 @@ __date__ = "October, 26 2021"
 import Sofa
 from cosserat.usefulFunctions import buildEdges, pluginList, BuildCosseratGeometry
 from useful.utils import addEdgeCollision, addPointsCollision
+import warnings
+
 
 cosserat_config = {
     "init_pos": [0.0, 0.0, 0.0],
@@ -133,6 +135,17 @@ class Cosserat(Sofa.Prefab):
             "radius",
         )
 
+        print ('===============>DEPRECATED<============================\n')
+
+        warnings.warn(
+            "\n====> DEPRECATED: This prefab CosseratObject class will be removed in a future version. "
+            "Use CosseratBase instead. For examples and tutorials, please refer to "
+            "the 'tutorial' folder located at plugin.Cosserat/tutoria/tuto_scenes .\n"
+        )
+        print("========================> DEPRECATED<============================\n")
+
+        
+
         if self.parent.hasObject("EulerImplicitSolver") is False:
             print("The code does not have parent EulerImplicite")
             self.solverNode = self.addSolverNode()
@@ -215,10 +228,11 @@ class Cosserat(Sofa.Prefab):
         rigidBaseNode = self.addChild("rigidBase")
 
         # trans = [t for t in self.translation.value]
-        trans = list(self.translation.value)
-        rot = list(self.rotation.value)
+        trans = self.translation.value
+        rot = self.rotation.value
+
         # @todo converter
-        positions = [list(pos) for pos in self.position.value]
+        positions = [pos for pos in self.position.value]
 
         rigidBaseNode.addObject(
             "MechanicalObject",
@@ -382,7 +396,7 @@ def createScene(rootNode):
         name="constForce",
         showArrowSize=1.0e-2,
         indices=12,
-        force=[0.0, -100.0, 0.0, 0.0, 0.0, 0.0],
+        forces=[0.0, -100.0, 0.0, 0.0, 0.0, 0.0],
     )
 
     return rootNode

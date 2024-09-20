@@ -17,7 +17,7 @@ from stlib3.physics.constraints import FixedBox
 import os
 
 
-def addHeader(parentNode, multithreading=False, inverse=False, isConstrained=False, isContact=False):
+def addHeader(parentNode, multithreading=False, inverse=False, isConstrained=False, isContact=False, params=None):
     """
     Adds to rootNode the default headers for a simulation with contact. Also adds and returns three nodes:
         - Settings
@@ -68,7 +68,7 @@ def addHeader(parentNode, multithreading=False, inverse=False, isConstrained=Fal
 
     parentNode.addObject('VisualStyle', displayFlags='showVisualModels showBehaviorModels showCollisionModels '
                                                      'hideBoundingCollisionModels hideForceFields '
-                                                     'hideInteractionForceFields hideWireframe showMechanicalMappings')
+                                                     'showInteractionForceFields hideWireframe showMechanicalMappings')
     if isConstrained:
         parentNode.addObject('FreeMotionAnimationLoop', parallelCollisionDetectionAndFreeMotion=multithreading,
                              parallelODESolving=multithreading)
@@ -78,20 +78,26 @@ def addHeader(parentNode, multithreading=False, inverse=False, isConstrained=Fal
                                  multithreading=multithreading, epsilon=1)
         else:
             parentNode.addObject('GenericConstraintSolver', name='ConstraintSolver', tolerance=1e-8, maxIterations=100,
-                                 multithreading=multithreading)
+                                 multithreading=multithreading, printLog=1)
 
     if isContact:
-        contactHeader(parentNode)
+        contactHeader(parentNode, _contact_params=params.contactParams)
 
 
 # components needed for contact modeling
-def contactHeader(parentNode):
+def contactHeader(parentNode, _contact_params=None):
     parentNode.addObject('CollisionPipeline')
     parentNode.addObject("DefaultVisualManagerLoop")
-    parentNode.addObject('RuleBasedContactManager', responseParams='mu=0.8', response='FrictionContactConstraint')
     parentNode.addObject('BruteForceBroadPhase')
     parentNode.addObject('BVHNarrowPhase')
-    parentNode.addObject('LocalMinDistance', alarmDistance=0.05, contactDistance=0.01)
+    if not _contact_params == None:
+        parentNode.addObject('RuleBasedContactManager', responseParams=_contact_params.responseParams,
+                             response='FrictionContactConstraint')
+        parentNode.addObject('LocalMinDistance',  alarmDistance=_contact_params.alarmDistance,
+                             contactDistance=_contact_params.contactDistance)
+    else :
+        parentNode.addObject('RuleBasedContactManager', responseParams='mu=0.1', response='FrictionContactConstraint')
+        parentNode.addObject('LocalMinDistance',  alarmDistance=0.05, contactDistance=0.01)
 
 
 def addVisual(node):
@@ -105,7 +111,7 @@ def addVisual(node):
     """
     node.addObject('VisualStyle', displayFlags='showVisualModels showBehaviorModels hideCollisionModels '
                                                'hideBoundingCollisionModels hideForceFields '
-                                               'hideInteractionForceFields hideWireframe showMechanicalMappings')
+                                               'showInteractionForceFields hideWireframe showMechanicalMappings')
     return node
 
 
@@ -134,7 +140,7 @@ def addSolverNode(node, name='solverNode', template='CompressedRowSparseMatrixd'
     if iterative:
         solverNode.addObject('CGLinearSolver', name='Solver', template=template)
     else:
-        solverNode.addObject('SparseLDLSolver', name='Solver', template=template)
+        solverNode.addObject('SparseLDLSolver', name='Solver', template=template, printLog=True)
     if isConstrained:
         solverNode.addObject('GenericConstraintCorrection', linearSolver=solverNode.Solver.getLinkPath())
 

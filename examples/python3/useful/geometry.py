@@ -67,7 +67,7 @@ def calculate_frame_parameters(beamGeoParams):
     return frames_f, curv_abs_output_f, cable_position_f
 
 
-def generate_edge_list(cable3DPos: List[List[float]]) -> List[int]:
+def generate_edge_list(cable3DPos: List[List[float]]) -> list[list[int]]:
     """
     Generate an edge list required in the EdgeSetTopologyContainer component.
 
@@ -78,7 +78,11 @@ def generate_edge_list(cable3DPos: List[List[float]]) -> List[int]:
         List[int]: A list of indices forming edges in the EdgeSetTopologyContainer.
     """
     number_of_points = len(cable3DPos)
-    return [i for i in range(number_of_points - 1) for _ in range(2)]
+    edges = []
+    for i in range(number_of_points - 1):
+        edges.append([i,i+1])
+    return edges
+
 
 
 class CosseratGeometry:
