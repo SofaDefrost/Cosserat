@@ -111,7 +111,7 @@ def createScene(root_node):
     base_node = _add_rigid_base(root_node)
 
     # build beam geometry
-    nb_sections = 6
+    nb_sections = 42
     beam_length = 30
     length_s = beam_length / float(nb_sections)
     bending_states = []
@@ -130,7 +130,7 @@ def createScene(root_node):
     bending_node = _add_cosserat_state(root_node, bending_states, list_sections_length)
 
     # comment : ???
-    nb_frames = 32
+    nb_frames = 42
     length_f = beam_length / float(nb_frames)
     cosserat_G_frames = []
     frames_curv_abs = []

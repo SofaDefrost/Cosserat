@@ -90,14 +90,14 @@ def contactHeader(parentNode, _contact_params=None):
     parentNode.addObject("DefaultVisualManagerLoop")
     parentNode.addObject('BruteForceBroadPhase')
     parentNode.addObject('BVHNarrowPhase')
-    if not _contact_params == None:
+    if not _contact_params is None:
         parentNode.addObject('RuleBasedContactManager', responseParams=_contact_params.responseParams,
                              response='FrictionContactConstraint')
-        parentNode.addObject('LocalMinDistance',  alarmDistance=_contact_params.alarmDistance,
+        parentNode.addObject('LocalMinDistance', alarmDistance=_contact_params.alarmDistance,
                              contactDistance=_contact_params.contactDistance)
-    else :
+    else:
         parentNode.addObject('RuleBasedContactManager', responseParams='mu=0.1', response='FrictionContactConstraint')
-        parentNode.addObject('LocalMinDistance',  alarmDistance=0.05, contactDistance=0.01)
+        parentNode.addObject('LocalMinDistance', alarmDistance=0.05, contactDistance=0.01)
 
 
 def addVisual(node):
@@ -136,7 +136,7 @@ def addSolverNode(node, name='solverNode', template='CompressedRowSparseMatrixd'
     """
     solverNode = node.addChild(name)
     solverNode.addObject('EulerImplicitSolver', firstOrder=firstOrder, rayleighStiffness=rayleighStiffness,
-                         rayleighMass=rayleighMass)
+                         rayleighMass=rayleighMass, vdamping=0.001)
     if iterative:
         solverNode.addObject('CGLinearSolver', name='Solver', template=template)
     else:

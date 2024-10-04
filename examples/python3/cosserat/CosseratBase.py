@@ -160,8 +160,8 @@ class CosseratBase(Sofa.Prefab):
             rigidBaseNode.addObject(
                 "RestShapeSpringsForceField",
                 name="spring",
-                stiffness=1e8,
-                angularStiffness=1.0e8,
+                stiffness=1e12,
+                angularStiffness=1.0e12,
                 external_points=0,
                 mstate="@RigidBaseMO",
                 points=0,
@@ -180,6 +180,8 @@ class CosseratBase(Sofa.Prefab):
         )
 
         if self.useInertiaParams is False:
+
+            print(f' == Simu  Params : {dir(self.params.simuParams)}')
             cosseratCoordinateNode.addObject(
                 "BeamHookeLawForceField",
                 crossSectionShape=self.params.beamPhysicsParams.beamShape,
@@ -205,6 +207,7 @@ class CosseratBase(Sofa.Prefab):
         GI = self.params.beamPhysicsParams.GI
         EA = self.params.beamPhysicsParams.EA
         EI = self.params.beamPhysicsParams.EI
+        momQuad = self.params.beamPhysicsParams.MomQuad
         cosseratCoordinateNode.addObject(
             "BeamHookeLawForceField",
             crossSectionShape=self.params.beamPhysicsParams.beamShape,
@@ -215,7 +218,8 @@ class CosseratBase(Sofa.Prefab):
             GA=GA,
             EI=EI,
             EA=EA,
-            rayleighStiffness=self.rayleighStiffness.value,
+            MomQuad=momQuad,
+            rayleighStiffness=self.params.simuParams.rayleighStiffness,
             lengthY=self.params.beamPhysicsParams.length_Y,
             lengthZ=self.params.beamPhysicsParams.length_Z,
         )
@@ -230,7 +234,7 @@ class CosseratBase(Sofa.Prefab):
             position=framesF,
             showIndices=self.params.beamGeoParams.show_frames_indices,
             showObject=self.params.beamGeoParams.show_frames_object,
-            showObjectScale=1.8,  # Todo: remove this hard code
+            showObjectScale=0.01,  # Todo: remove this hard code
         )
 
         cosseratInSofaFrameNode.addObject(

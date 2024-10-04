@@ -38,6 +38,7 @@ class BeamPhysicsParameters:
     GA: float = 3.1416e4
     EI: float = 0.7854
     EA: float = 3.1416e4
+    MomQuad: float = 0.7854
 
     """Common parameters used in both cases"""
     beamMass: float = 1.0
