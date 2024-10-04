@@ -21,9 +21,9 @@ In contrast, many other models in continuum media mechanics tend to treat materi
 When modeling linear structures, this framework enables the creation of a structure closely resembling articulated solids, consisting of a series of rigid bodies whose relative positions are defined by their strain states. 
 Consequently, this model serves as a versatile tool for modeling and controlling a variety of systems, including concentric tube robots, continuum robots driven by cables, or pneumatic soft robots with constant cross-sections.
 
-Go into theorotical part of the plugin [Theory](docs/text/Theory.md)
+Go into theorotical part of the plugin [Theory](examples/python3/tutorial/Writerside/topics/Theory.mdexamples/python3/tutorial/Writerside/topics/Theory.md)
 
-Follow the tutorial : [cosserat_tutorial](docs/text/cosserat_tutorial.md)
+Follow the tutorial : [cosserat_tutorial](tutorial/text/cosserat_tutorial.md)
 ## Some use cases
 
 
@@ -40,7 +40,7 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor i
 
 | View 1                                                                                       | View 2                                                                                       | View 3                                                                                       |
 |----------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------|
-| ![333](docs/images/multiSectionWithColorMap1.png) | ![333](docs/images/multiSectionWithColorMap2.png) | ![333](docs/images/multiSectionWithColorMap3.png) |
+| ![333](tutorial/images/multiSectionWithColorMap1.png) | ![333](tutorial/images/multiSectionWithColorMap2.png) | ![333](tutorial/images/multiSectionWithColorMap3.png) |
 
 
 ## Utilizing the Discrete Cosserat Model for Cable Modeling in Deformable Robot Control:
@@ -48,19 +48,19 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor i
 
 | Direct simulation of a soft gripper                                                       | The study of the model convergence                                                            |
 |-------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|
-| ![400](docs/images/cosseratgripper_2.png) | ![400](../../../../Templater/images/tenCossseratSections.png.md) |
+| ![400](tutorial/images/cosseratgripper_2.png) | ![400](tutorial/images/tenCossseratSections.png) |
 
 
 ---
 
 <strong> Actuation </strong>
 
-| <img src="/docs/images/actuationConstraint_2.png" width="300" title="DCM Beam actuation using a given cable"> | <img src="docs/images/circleActuationConstraint.png" width="300" title="DCM Beam actuation using a given cable"> | <img src="/docs/images/actuationConstraint_1.png" width="300" title="DCM Beam actuation using a cable"> |
+| <img src="/tutorial/images/actuationConstraint_2.png" width="300" title="DCM Beam actuation using a given cable"> | <img src="tutorial/images/circleActuationConstraint.png" width="300" title="DCM Beam actuation using a given cable"> | <img src="/tutorial/images/actuationConstraint_1.png" width="300" title="DCM Beam actuation using a cable"> |
 |---------------------------------------------------------------------------------------------------------------|:----------------------------------------------------------------------------------------------------------------:|--------------------------------------------------------------------------------------------------------:|
 | DCM Beam actuation using a cable ```d =```                                                                    |                                    DCM Beam actuation using a cable ```d =```                                    |                                                                  Beam actuation using a cable ```d =``` |
 
 
-| <img src="/docs/images/example1.gif" width="300" title="PCS_Example1.py "> | <img src="./docs/images/example2.gif" widt="300" title="PCS_Example2.py"> | <img src="./docs/images/example2.gif" width="300" title="PCS_Example3.PCS"> |
+| <img src="/tutorial/images/example1.gif" width="300" title="PCS_Example1.py "> | <img src="./tutorial/images/example2.gif" widt="300" title="PCS_Example2.py"> | <img src="./tutorial/images/example2.gif" width="300" title="PCS_Example3.PCS"> |
 |----------------------------------------------------------------------------|:-------------------------------------------------------------------------:|----------------------------------------------------------------------------:|
 | DCM Beam actuation using a cable ```d =```                                 |                DCM Beam actuation using a cable ```d =```                 |                                      Beam actuation using a cable ```d =``` |
 
@@ -124,21 +124,21 @@ with a constant cross-section.
 
 | View 1                                                                                      | View 2                                                                                      | View 3                                                                                      |
 |---------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------|
-| <img src="/doc/images/multiSectionWithColorMap1.png" width="300" title="DCM as an implant"> | <img src="/doc/images/multiSectionWithColorMap2.png" width="300" title="DCM as an implant"> | <img src="/doc/images/multiSectionWithColorMap3.png" width="300" title="DCM as an implant"> |
+| <img src="/tutorial/images/multiSectionWithColorMap1.png" width="300" title="DCM as an implant"> | <img src="/tutorial/images/multiSectionWithColorMap2.png" width="300" title="DCM as an implant"> | <img src="/tutorial/images/multiSectionWithColorMap3.png" width="300" title="DCM as an implant"> |
 
 ### DCM for cable modeling to control deformable robots:
 | Direct simulation of a soft gripper                                                      | The study the model convergence |
 |------------------------------------------------------------------------------------------| --- |
-| <img src="/doc/images/cosseratgripper_2.png" width="400" title="DCM for cable modeling"> | <img src="/doc/images/tenCossseratSections.png" width="400" title="DCM for cable modeling ">|
+| <img src="/tutorial/images/cosseratgripper_2.png" width="400" title="DCM for cable modeling"> | <img src="/tutorial/images/tenCossseratSections.png" width="400" title="DCM for cable modeling ">|
 
 ### Some use cases
 
-| <img src="/doc/images/actuationConstraint_2.png" width="300" title="DCM Beam actuation using a given cable">     | <img src="doc/images/circleActuationConstraint.png" width="300" title="DCM Beam actuation using a given cable">           | <img src="/doc/images/actuationConstraint_1.png" width="300" title="DCM Beam actuation using a cable">  |
+| <img src="/tutorial/images/actuationConstraint_2.png" width="300" title="DCM Beam actuation using a given cable">     | <img src="tutorial/images/circleActuationConstraint.png" width="300" title="DCM Beam actuation using a given cable">           | <img src="/tutorial/images/actuationConstraint_1.png" width="300" title="DCM Beam actuation using a cable">  |
 | ------------- |:-------------:| -----:|
 | DCM Beam actuation using a cable ```d =``` | DCM Beam actuation using a cable ```d =```| Beam actuation using a cable ```d =```|
 
 
-| <img src="/doc/images/example1.gif" width="300" title="PCS_Example1.py ">     | <img src="./doc/images/example2.gif" widt="300" title="PCS_Example2.py">    | <img src="./doc/images/example2.gif" width="300" title="PCS_Example3.PCS">  |
+| <img src="/tutorial/images/example1.gif" width="300" title="PCS_Example1.py ">     | <img src="./tutorial/images/example2.gif" widt="300" title="PCS_Example2.py">    | <img src="./tutorial/images/example2.gif" width="300" title="PCS_Example3.PCS">  |
 | ------------- |:-------------:| -------------:|
 | DCM Beam actuation using a cable ```d =``` | DCM Beam actuation using a cable ```d =```| Beam actuation using a cable ```d =```|
 
