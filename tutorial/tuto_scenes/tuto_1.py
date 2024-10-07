@@ -1,18 +1,19 @@
 # -*- coding: utf-8 -*-
 
-import Sofa
 
-stiffness_param = 1.0e10
-beam_radius = 1.0
+stiffness_param: float = 1.0e10
+beam_radius: float = 1.0
 
 
-def _add_rigid_base(p_node):
+def _add_rigid_base(p_node, positions=None):
+    if positions is None:
+        positions = [0, 0, 0, 0, 0, 0, 1]
     rigid_base_node = p_node.addChild("rigid_base")
     rigid_base_node.addObject(
         "MechanicalObject",
         template="Rigid3d",
         name="cosserat_base_mo",
-        position="0 0 0  0 0 0. 1",
+        position=positions,
         showObject=1,
         showObjectScale="0.1",
     )
@@ -49,13 +50,13 @@ def _add_cosserat_state(p_node, bending_states, list_sections_length, _radius=2.
 
 
 def _add_cosserat_frame(
-    p_node,
-    _bending_node,
-    framesF,
-    _section_curv_abs,
-    _frame_curv_abs,
-    _radius,
-    _beam_mass=0.0,
+        p_node,
+        _bending_node,
+        framesF,
+        _section_curv_abs,
+        _frame_curv_abs,
+        _radius,
+        _beam_mass=0.0,
 ):
     cosserat_in_Sofa_frame_node = p_node.addChild("cosserat_in_Sofa_frame_node")
 
@@ -91,7 +92,7 @@ def createScene(root_node):
     root_node.addObject("RequiredPlugin", name='Sofa.Component.SolidMechanics.Spring')
     root_node.addObject("RequiredPlugin", name='Sofa.Component.StateContainer')
     root_node.addObject("RequiredPlugin", name='Sofa.Component.Visual')
-    
+
     root_node.addObject(
         "VisualStyle",
         displayFlags="showBehaviorModels showCollisionModels showMechanicalMappings",
