@@ -1,13 +1,14 @@
 #
 from useful.params import BeamGeometryParameters
 
+
 def calculate_beam_parameters(beamGeoParams):
     # Data validation checks for beamGeoParams attributes
-    if not all(hasattr(beamGeoParams, attr) for attr in ['beamLength', 'nbSection']):
-        raise ValueError("beamGeoParams must have, 'beamLength', and 'nbSection' attributes.")
+    if not all(hasattr(beamGeoParams, attr) for attr in ['beam_length', 'nb_section']):
+        raise ValueError("beamGeoParams must have, 'beam_length', and 'nb_section' attributes.")
 
-    total_length = beamGeoParams.beamLength
-    nb_sections = beamGeoParams.nbSection
+    total_length = beamGeoParams.beam_length
+    nb_sections = beamGeoParams.nb_section
 
     if not all(isinstance(val, (float)) for val in [total_length]):
         raise ValueError("init_pos and beamLength in beamGeoParams must be numeric values.")
@@ -33,11 +34,11 @@ def calculate_beam_parameters(beamGeoParams):
 
 def calculate_frame_parameters(beamGeoParams):
     # Data validation checks for beamGeoParams attributes
-    if not all(hasattr(beamGeoParams, attr) for attr in ['beamLength', 'nbFrames']):
+    if not all(hasattr(beamGeoParams, attr) for attr in ['beam_length', 'nb_frames']):
         raise ValueError("beamGeoParams must have 'beamLength', and 'nbFrames' attributes.")
 
-    total_length = beamGeoParams.beamLength
-    nb_frames = beamGeoParams.nbFrames
+    total_length = beamGeoParams.beam_length
+    nb_frames = beamGeoParams.nb_frames
 
     if not all(isinstance(val, (int, float)) for val in [total_length]):
         raise ValueError("init_pos and beamLength in beamGeoParams must be numeric values.")
@@ -57,7 +58,7 @@ def calculate_frame_parameters(beamGeoParams):
         cable_position_f.append([sol, 0, 0])
         curv_abs_output_f.append(sol)
 
-    frames_f.append([total_length , 0, 0, 0, 0, 0, 1])
+    frames_f.append([total_length, 0, 0, 0, 0, 0, 1])
     cable_position_f.append([total_length, 0, 0])
     curv_abs_output_f.append(total_length)
 
@@ -77,9 +78,8 @@ def generate_edge_list(cable3DPos: list[list[float]]) -> list[list[int]]:
     number_of_points = len(cable3DPos)
     edges = []
     for i in range(number_of_points - 1):
-        edges.append([i,i+1])
+        edges.append([i, i + 1])
     return edges
-
 
 
 class CosseratGeometry:
