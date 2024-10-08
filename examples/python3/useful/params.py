@@ -9,18 +9,18 @@ from typing import List, Literal
 class BeamGeometryParameters:
     """Cosserat Beam Geometry parameters"""
 
-    beamLength: float = 1.0  # beam length in m
-    nbSection: int = 5  # number of sections, sections along the beam length
-    nbFrames: int = 30  # number of frames along the beam
-    buildCollisionModel: int = 0
+    beam_length: float = 1.0  # beam length in m
+    nb_section: int = 5  # number of sections, sections along the beam length
+    nb_frames: int = 30  # number of frames along the beam
+    build_collision_model: int = 0
 
     def validate(self):
-        assert self.beamLength > 0, "Beam length must be positive"
-        assert self.nbSection > 0, "Number of sections must be positive"
-        assert self.nbFrames > 0, "Number of frames must be positive"
-        assert self.nbFrames >= self.nbSection, "Number of frames must be positive"
+        assert self.beam_length > 0, "Beam length must be positive"
+        assert self.nb_section > 0, "Number of sections must be positive"
+        assert self.nb_frames > 0, "Number of frames must be positive"
+        assert self.nb_frames >= self.nb_section, "Number of frames must be positive"
 
-
+@dataclass
 class BeamPhysicsBaseParameters:
     """Base class for Cosserat Beam Physics parameters"""
 
@@ -109,9 +109,6 @@ class ContactParameters:
 class Parameters:
     """Parameters for the Cosserat Beam"""
 
-    # beamPhysicsParams: BeamPhysicsParameters = field(
-    #     default_factory=BeamPhysicsParameters
-    # )
     beam_physics_params: BeamPhysicsBaseParameters = field(default_factory=BeamPhysicsParametersNoInertia)
     simu_params: SimulationParameters = field(
         default_factory=SimulationParameters
