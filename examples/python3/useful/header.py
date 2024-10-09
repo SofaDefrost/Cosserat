@@ -18,8 +18,8 @@ import os
 from useful.params import ContactParameters as DefaultContactParams
 
 
-def addHeader(parent_node, multithreading=False, inverse=False, is_constrained=False, is_contact=False, contact_params=None):
-   
+def addHeader(parent_node, multithreading=False, inverse=False, is_constrained=False, is_contact=False,
+              contact_params=None):
     """
     Adds default headers for a simulation with contact to the parent node.
     Also adds and returns three nodes: Settings, Modelling, Simulation.
@@ -34,7 +34,7 @@ def addHeader(parent_node, multithreading=False, inverse=False, is_constrained=F
 
     Returns:
         A tuple containing the settings, modelling, and simulation nodes.
-    """    
+    """
 
     settings = parent_node.addChild('Settings')
     settings.addObject('RequiredPlugin', pluginName=[
@@ -65,8 +65,8 @@ def addHeader(parent_node, multithreading=False, inverse=False, is_constrained=F
     settings.addObject('BackgroundSetting', color=[1, 1, 1, 1])
 
     parent_node.addObject('VisualStyle', displayFlags='showVisualModels showBehaviorModels showCollisionModels '
-                                                     'hideBoundingCollisionModels hideForceFields '
-                                                     'showInteractionForceFields hideWireframe showMechanicalMappings')
+                                                      'hideBoundingCollisionModels hideForceFields '
+                                                      'showInteractionForceFields hideWireframe showMechanicalMappings')
 
     if is_constrained:
         parent_node.addObject('FreeMotionAnimationLoop', parallelCollisionDetectionAndFreeMotion=multithreading,
@@ -85,7 +85,7 @@ def addHeader(parent_node, multithreading=False, inverse=False, is_constrained=F
 
 # components needed for contact modeling
 
-def contactHeader(parent_node, contact_params = DefaultContactParams):
+def contactHeader(parent_node, contact_params=DefaultContactParams):
     """
     Adds components for contact simulation to the parent node.
 
@@ -93,14 +93,16 @@ def contactHeader(parent_node, contact_params = DefaultContactParams):
         parent_node: The parent node to add the components to.
         contact_params: Optional contact parameters (default: None).
     """
-    
+
     parent_node.addObject('CollisionPipeline')
     parent_node.addObject("DefaultVisualManagerLoop")
     parent_node.addObject('BruteForceBroadPhase')
     parent_node.addObject('BVHNarrowPhase')
 
-    parent_node.addObject('RuleBasedContactManager', responseParams=contact_params.responseParams, response='FrictionContactConstraint')
-    parent_node.addObject('LocalMinDistance', alarmDistance=contact_params.alarmDistance, contactDistance=contact_params.contactDistance)
+    parent_node.addObject('RuleBasedContactManager', responseParams=contact_params.responseParams,
+                          response='FrictionContactConstraint')
+    parent_node.addObject('LocalMinDistance', alarmDistance=contact_params.alarmDistance,
+                          contactDistance=contact_params.contactDistance)
 
 
 def addVisual(node):
@@ -118,7 +120,8 @@ def addVisual(node):
     return node
 
 
-def addSolverNode(parent_node, name='solverNode', template='CompressedRowSparseMatrixd', rayleighMass=0., rayleighStiffness=0.,
+def addSolverNode(parent_node, name='solverNode', template='CompressedRowSparseMatrixd', rayleighMass=0.,
+                  rayleighStiffness=0.,
                   firstOrder=False,
                   iterative=False, isConstrained=False):
     """
@@ -139,7 +142,7 @@ def addSolverNode(parent_node, name='solverNode', template='CompressedRowSparseM
     """
     solver_node = parent_node.addChild(name)
     solver_node.addObject('EulerImplicitSolver', firstOrder=firstOrder, rayleighStiffness=rayleighStiffness,
-                         rayleighMass=rayleighMass)
+                          rayleighMass=rayleighMass)
     if iterative:
         solver_node.addObject('CGLinearSolver', name='Solver', template=template)
     else:
@@ -155,10 +158,10 @@ def addFEMObject(parent_node, path):
 
     # Load a VTK tetrahedral mesh and expose the resulting topology in the scene .
     loader = finger_solver.addObject('MeshVTKLoader', name='loader', filename=f'{path}finger.vtk',
-                                    translation="-17.5 -12.5 7.5",
-                                    rotation="0 180 0")
+                                     translation="-17.5 -12.5 7.5",
+                                     rotation="0 180 0")
     finger_solver.addObject('TetrahedronSetTopologyContainer', position=loader.position.getLinkPath(),
-                           tetras=loader.tetras.getLinkPath(), name='container')
+                            tetras=loader.tetras.getLinkPath(), name='container')
     # Create a MechanicalObject component to stores the DoFs of the model
     finger_solver.addObject('MechanicalObject', template='Vec3', name='dofs')
 
@@ -168,11 +171,11 @@ def addFEMObject(parent_node, path):
     # solved using the Finite Element Method on
     # tetrahedrons.
     finger_solver.addObject('TetrahedronFEMForceField', template='Vec3d', name='forceField', method='large',
-                           poissonRatio='0.45', youngModulus='500')
+                            poissonRatio='0.45', youngModulus='500')
 
     finger_solver.addObject('BoxROI', name='ROI1', box='-18 -15 -8 2 -3 8', drawBoxes='true')
     finger_solver.addObject('RestShapeSpringsForceField',
-                           points='@ROI1.indices', stiffness='1e12')
+                            points='@ROI1.indices', stiffness='1e12')
     ##########################################
     # Cable points                           #
     ##########################################
@@ -182,7 +185,7 @@ def addFEMObject(parent_node, path):
     FEMpos = [" 0.0 0 0 15 0 0 30 0 0 45 0 0 60 0 0 66 0 0 81 0.0 0.0"]
     fem_points = finger_solver.addChild('femPoints')
     fem_points.addObject('MechanicalObject', name="pointsInFEM", position=FEMpos, showObject="1",
-                        showIndices="1")
+                         showIndices="1")
     fem_points.addObject('BarycentricMapping')
 
 

@@ -20,6 +20,7 @@ class BeamGeometryParameters:
         assert self.nb_frames > 0, "Number of frames must be positive"
         assert self.nb_frames >= self.nb_section, "Number of frames must be positive"
 
+
 @dataclass
 class BeamPhysicsBaseParameters:
     """Base class for Cosserat Beam Physics parameters"""
@@ -36,7 +37,7 @@ class BeamPhysicsBaseParameters:
 
     def validate(self):
         assert self.young_modulus > 0, "Young's modulus must be positive"
-        assert self.poisson_ratio > 0 and self.poisson_ratio < 0.5, "Poisson's ratio must be between 0 and 0.5"
+        assert 0 < self.poisson_ratio < 0.5, "Poisson's ratio must be between 0 and 0.5"
         assert self.beam_mass > 0, "Beam mass must be positive"
         assert self.beam_radius > 0, "Beam radius must be positive"
         assert self.beam_length > 0, "Beam length must be positive"
