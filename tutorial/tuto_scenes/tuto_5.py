@@ -10,7 +10,7 @@ __copyright__ = "(c) 2021,Inria"
 __date__ = "October, 26 2021"
 
 from useful.header import addHeader, addSolverNode, addVisual
-from useful.params import BeamPhysicsParameters, BeamGeometryParameters, SimulationParameters
+from useful.params import BeamPhysicsParametersNoInertia , BeamGeometryParameters, SimulationParameters
 from useful.params import Parameters
 from cosserat.CosseratBase import CosseratBase
 from math import sqrt
@@ -27,7 +27,7 @@ path = f'{os.path.dirname(os.path.abspath(__file__))}/../../examples/python3/act
 
 geoParams = BeamGeometryParameters(init_pos=[0., 0., 0.], beamLength=81., showFramesObject=1,
                                    nbSection=12, nbFrames=32, buildCollisionModel=0)
-physicsParams = BeamPhysicsParameters(beamMass=1., youngModulus=5.e6, poissonRatio=0.4, beamRadius=0.5,
+physicsParams = BeamPhysicsParametersNoInertia(beamMass=1., youngModulus=5.e6, poissonRatio=0.4, beamRadius=0.5,
                                       beamLength=30)
 
 simuParams = SimulationParameters()
@@ -119,7 +119,7 @@ def createScene(root_node):
     #  This creates a new node in the scene. This node is appended to the finger's node.
     cable_state_node = cosserat_frames_node.addChild('cable_state_node')
 
-    # This creates a MechanicalObject, a componant holding the degree of freedom of our
+    # This creates a MechanicalObject, a componante holding the degree of freedom of our
     # mechanical modelling. In the case of a cable it is a set of positions specifying
     # the points where the cable is passing by.
     cable_state = cable_state_node.addObject('MechanicalObject', name="cablePos",

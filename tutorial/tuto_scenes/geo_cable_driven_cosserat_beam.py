@@ -45,10 +45,10 @@ class FingerController(Sofa.Core.Controller):
 
     def onKeypressedEvent(self, event):
         displacement = self.cable.CableConstraint.value[0]
-        if event["key"] == Key.plus:
+        if event["key"] == "+":
             displacement += 1.
 
-        elif event["key"] == Key.minus:
+        elif event["key"] == "-":
             displacement -= 1.
             if displacement < 0:
                 displacement = 0
@@ -68,7 +68,7 @@ def createScene(root_node):
         "RestShapeSpringsForceField",
         name="spring",
         stiffness=1e8,
-        angularStiffness=1.0e8 
+        angularStiffness=1.0e8,
         external_points=0,
         points=0,
         template="Rigid3d"
