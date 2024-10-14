@@ -53,7 +53,7 @@ class CosseratBase(Sofa.Prefab):
 
     def __init__(self, *args, **kwargs):
         Sofa.Prefab.__init__(self, *args, **kwargs)
-        self.params = kwargs.get("beam_params")  # Use the Parameters class with default values
+        self.params = kwargs.get("params")  # Use the Parameters class with default values
 
         self.beamPhysicsParams = self.params.beam_physics_params
         self.beam_mass = self.beamPhysicsParams.beam_mass  # self.cosseratGeometry['beamMass']
