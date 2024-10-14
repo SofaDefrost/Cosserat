@@ -9,8 +9,8 @@ __version__ = "1.0.0"
 __copyright__ = "(c) 2021,Inria"
 __date__ = "October, 26 2021"
 
-from useful.header import addHeader, addSolverNode, addVisual
-from useful.params import BeamPhysicsParametersNoInertia , BeamGeometryParameters, SimulationParameters
+from useful.header import addHeader, addSolverNode, Finger
+from useful.params import BeamPhysicsParametersNoInertia, BeamGeometryParameters, SimulationParameters
 from useful.params import Parameters
 from cosserat.CosseratBase import CosseratBase
 from math import sqrt
@@ -18,7 +18,6 @@ from splib3.numerics import Quat
 import Sofa
 import os
 from math import pi
-from useful.header import addHeader, addVisual, addSolverNode, Finger
 from controller import FingerController
 from numpy import array
 
