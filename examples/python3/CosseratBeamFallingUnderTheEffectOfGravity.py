@@ -69,8 +69,8 @@ inertialParams = {'GI': 1.5708, 'GA': 3.1416e4,
 
 isCollisionModel = 0
 
-Params = Parameters(beamGeoParams=BeamGeometryParameters(init_pos=[0, 0, 0], beamLength=length,
-                                    nbSection=5, nbFrames=30, buildCollisionModel=0))
+Params = Parameters(beam_geo_params=BeamGeometryParameters(init_pos=[0, 0, 0], beamLength=length,
+                                                           nbSection=5, nbFrames=30, buildCollisionModel=0))
 
 def createScene(rootNode):
     addHeader(rootNode)
