@@ -25,7 +25,8 @@ force_null = [0., 0., 0., 0., 0., 0.]  # N
 geoParams = BeamGeometryParameters(beam_length=30.,
                                    nb_section=_nb_section, nb_frames=_nb_section, build_collision_model=0)
 physicsParams = BeamPhysicsParametersNoInertia(beam_mass=1., young_modulus=1.0e4, poisson_ratio=0.38,
-                                               beam_radius=_beam_radius, beam_length=30)
+                                               beam_radius=_beam_radius, beam_length=_beam_length)
+
 simuParams = SimulationParameters()
 Params = Parameters(beam_geo_params=geoParams, beam_physics_params=physicsParams, simu_params=simuParams)
 
