@@ -153,8 +153,8 @@ def addSolverNode(parent_node, name='solverNode', template='CompressedRowSparseM
     return solver_node
 
 
-def addFEMObject(parent_node, path):
-    finger_solver = addSolverNode(parent_node)
+def addFEMObject(parent_node, path, name='FEMFinger'):
+    finger_solver = addSolverNode(parent_node, name=name)
 
     # Load a VTK tetrahedral mesh and expose the resulting topology in the scene .
     loader = finger_solver.addObject('MeshVTKLoader', name='loader', filename=f'{path}finger.vtk',
@@ -187,6 +187,8 @@ def addFEMObject(parent_node, path):
     fem_points.addObject('MechanicalObject', name="pointsInFEM", position=FEMpos, showObject="1",
                          showIndices="1")
     fem_points.addObject('BarycentricMapping')
+
+    return finger_solver, fem_points
 
 
 def addMappedPoints(parent_node, name="pointsInFEM", position=None, showObject="1",
