@@ -34,7 +34,7 @@ simuParams = SimulationParameters()
 Params = Parameters(beam_geo_params=geoParams, beam_physics_params=physicsParams, simu_params=simuParams)
 
 femPos = [[0.0, 0, 0], [15., 0, 0], [30., 0, 0], [45., 0, 0], [60., 0, 0], [66., 0, 0], [81., 0.0, 0.0]]
-
+is_constrained = False
 
 class ForceController(Sofa.Core.Controller):
     def __init__(self, *args, **kwargs):
@@ -101,9 +101,9 @@ class ForceController(Sofa.Core.Controller):
 
 def createScene(root_node):
     addHeader(root_node, is_constrained=True)
-    root_node.gravity = [0, 0., 0.]
+    root_node.gravity = [0, -9.81, 0.]
 
-    solver_node = addSolverNode(root_node, name="cable_node", isConstrained=True)
+    solver_node = addSolverNode(root_node, name="cable_node", isConstrained=is_constrained)
 
     # create cosserat Beam
     cosserat_beam = solver_node.addChild(CosseratBase(parent=solver_node, params=Params))
@@ -116,6 +116,8 @@ def createScene(root_node):
     #                                      translation=array([-17.5, -12.5, 7.5]), path=path)
 
     finger_node, fem_points_node = addFEMObject(root_node, path=path, name="Finger")
+
+    return root_node
 
     #  This creates a new node in the scene. This node is appended to the finger's node.
     cable_state_node = cosserat_frames_node.addChild('cable_state_node')
