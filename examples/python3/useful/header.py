@@ -146,7 +146,7 @@ def addSolverNode(parent_node, name='solverNode', template='CompressedRowSparseM
     if iterative:
         solver_node.addObject('CGLinearSolver', name='Solver', template=template)
     else:
-        solver_node.addObject('SparseLDLSolver', name='Solver', template=template, printLog=True)
+        solver_node.addObject('SparseLDLSolver', name='Solver', template=template, printLog=False)
     if isConstrained:
         solver_node.addObject('GenericConstraintCorrection', linearSolver=solver_node.Solver.getLinkPath())
 
