@@ -49,34 +49,7 @@ public:
     /// Output Model Type
     typedef TOut Out;
 
-    typedef typename In1::Coord       Coord1;
-    typedef typename In1::Deriv       Deriv1;
-    typedef typename In1::VecCoord    In1VecCoord;
-    typedef typename In1::VecDeriv    In1VecDeriv;
-    typedef typename In1::MatrixDeriv In1MatrixDeriv;
-    typedef Data<In1VecCoord>         In1DataVecCoord;
-    typedef Data<In1VecDeriv>         In1DataVecDeriv;
-    typedef Data<In1MatrixDeriv>      In1DataMatrixDeriv;
-    
-    typedef typename In2::Coord::value_type Real;
-    typedef typename In2::Coord             Coord2;
-    typedef typename In2::Deriv             Deriv2;
-    typedef typename In2::VecCoord          In2VecCoord;
-    typedef typename In2::VecDeriv          In2VecDeriv;
-    typedef typename In2::MatrixDeriv       In2MatrixDeriv;
-    typedef Data<In2VecCoord>               In2DataVecCoord;
-    typedef Data<In2VecDeriv>               In2DataVecDeriv;
-    typedef Data<In2MatrixDeriv>            In2DataMatrixDeriv;
-    typedef sofa::type::Mat<4,4,Real>       Mat4x4;
-
-    typedef typename Out::VecCoord OutVecCoord;
-    typedef typename Out::Coord OutCoord;
-    typedef typename Out::Deriv OutDeriv;
-    typedef typename Out::VecDeriv OutVecDeriv;
-    typedef typename Out::MatrixDeriv OutMatrixDeriv;
-    typedef Data<OutVecCoord> OutDataVecCoord;
-    typedef Data<OutVecDeriv> OutDataVecDeriv;
-    typedef Data<OutMatrixDeriv> OutDataMatrixDeriv;
+    using Real = sofa::Real_t<In2>;
 
     using Transform = sofa::type::Transform<Real>;
     using SpatialVector = sofa::type::SpatialVector<Real>;
@@ -107,22 +80,22 @@ public:
     /**********************MAPPING METHODS**************************/
     void apply(
         const sofa::core::MechanicalParams* /* mparams */,
-        const vector<OutDataVecCoord*>& dataVecOutPos,
-        const vector<const In1DataVecCoord*>& dataVecIn1Pos ,
-        const vector<const In2DataVecCoord*>& dataVecIn2Pos) override;
+        const vector<sofa::DataVecCoord_t<Out>*>& dataVecOutPos,
+        const vector<const sofa::DataVecCoord_t<In1>*>& dataVecIn1Pos ,
+        const vector<const sofa::DataVecCoord_t<In2>*>& dataVecIn2Pos) override;
 
     void applyJ(
         const sofa::core::MechanicalParams* /* mparams */,
-        const vector< OutDataVecDeriv*>& dataVecOutVel,
-        const vector<const In1DataVecDeriv*>& dataVecIn1Vel,
-        const vector<const In2DataVecDeriv*>& dataVecIn2Vel) override;
+        const vector< sofa::DataVecDeriv_t<Out>*>& dataVecOutVel,
+        const vector<const sofa::DataVecDeriv_t<In1>*>& dataVecIn1Vel,
+        const vector<const sofa::DataVecDeriv_t<In2>*>& dataVecIn2Vel) override;
 
     //ApplyJT Force
     void applyJT(
         const sofa::core::MechanicalParams* /* mparams */,
-        const vector< In1DataVecDeriv*>& dataVecOut1Force,
-        const vector< In2DataVecDeriv*>& dataVecOut2RootForce,
-        const vector<const OutDataVecDeriv*>& dataVecInForce) override;
+        const vector< sofa::DataVecDeriv_t<In1>*>& dataVecOut1Force,
+        const vector< sofa::DataVecDeriv_t<In2>*>& dataVecOut2RootForce,
+        const vector<const sofa::DataVecDeriv_t<Out>*>& dataVecInForce) override;
 
     void applyDJT(const sofa::core::MechanicalParams* /*mparams*/,
                   sofa::core::MultiVecDerivId /*inForce*/,
@@ -131,9 +104,9 @@ public:
     /// This method must be reimplemented by all mappings if they need to support constraints.
     void applyJT(
         const sofa::core::ConstraintParams*  cparams ,
-        const vector< In1DataMatrixDeriv*>& dataMatOut1Const  ,
-        const vector< In2DataMatrixDeriv*>&  dataMatOut2Const ,
-        const vector<const OutDataMatrixDeriv*>&  dataMatInConst) override;
+        const vector< sofa::DataMatrixDeriv_t<In1>*>& dataMatOut1Const  ,
+        const vector< sofa::DataMatrixDeriv_t<In2>*>&  dataMatOut2Const ,
+        const vector<const sofa::DataMatrixDeriv_t<Out>*>&  dataMatInConst) override;
 
 };
 
