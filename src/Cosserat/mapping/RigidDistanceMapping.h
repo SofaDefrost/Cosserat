@@ -65,8 +65,6 @@ protected:
 
     sofa::core::State<Out>* m_toModel;
 
-protected:
-
     RigidDistanceMapping();
     ~RigidDistanceMapping() override = default;
 
