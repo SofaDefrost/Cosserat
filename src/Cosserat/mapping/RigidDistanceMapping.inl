@@ -37,11 +37,8 @@ RigidDistanceMapping<TIn1, TIn2, TOut>::RigidDistanceMapping()
     , d_color(initData(&d_color, sofa::type::RGBAColor(1.f, 0.f, 1.f, 0.8f) ,"color", "The default beam color"))
     , d_index(initData(&d_index, "index", "if this parameter is false, you draw the beam with color "
                                           "according to the force apply to each beam"))
-    , d_debug(initData(&d_debug, false, "debug", "show debug output.\n"))
     , m_toModel(NULL)
-{
-    d_debug.setValue(false);
-}
+{}
 
 
 template <class TIn1, class TIn2, class TOut>
@@ -115,12 +112,6 @@ void RigidDistanceMapping<TIn1, TIn2, TOut>::apply(
         outOri.normalize();
 
         out[pid] = OutCoord(outCenter, outOri); // This difference is in the word space
-
-        if (d_debug.getValue()){
-            std::cout << " in1 :" << in1[tm1] << std::endl;
-            std::cout << " in2 :" << in2[tm2] << std::endl;
-            std::cout << " out :" << out[pid] << std::endl;
-        }
     }
 }
 
@@ -147,10 +138,6 @@ void RigidDistanceMapping<TIn1, TIn2, TOut>:: applyJ(
     {
         getVCenter(outVel[index]) = getVCenter(in2Vel[m2Indices[index]]) - getVCenter(in1Vel[m1Indices[index]]);
         getVOrientation(outVel[index]) =  getVOrientation(in2Vel[m2Indices[index]]) - getVOrientation(in1Vel[m1Indices[index]]) ;
-    }
-
-    if (d_debug.getValue()){
-        std::cout << " =====> outVel[m1Indices[index]] : " << outVel << std::endl;
     }
 }
 
@@ -227,15 +214,6 @@ void RigidDistanceMapping<TIn1, TIn2, TOut>::applyJT(
         Deriv2 direction2;
         In2::setDPos(direction2,getVCenter(valueConst_));
         In2::setDRot(direction2,getVOrientation(valueConst_));
-
-        if (d_debug.getValue()){
-            printf("1. ======================================================================================= \n");
-            std::cout << "Constraint " << rowIt.index() << " ==> childIndex: "<< childIndex << std::endl;
-            std::cout << "parentIndex1 " << parentIndex1 << " ==> parentIndex2 "<< parentIndex2 << std::endl;
-            std::cout << "valueConst_: "<< valueConst_ << std::endl;
-            std::cout << "direction1: " << direction1 << std::endl;
-            std::cout << "direction2: " << direction2 << std::endl;
-        }
 
         o1.addCol(parentIndex1, direction1);
         o2.addCol(parentIndex2, direction2);
