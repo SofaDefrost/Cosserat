@@ -21,38 +21,20 @@
 ******************************************************************************/
 #pragma once
 #include <Cosserat/config.h>
-#include <Cosserat/mapping/BaseCosseratMapping.h>
 
 #include <sofa/core/BaseMapping.h>
 #include <sofa/core/config.h>
 #include <sofa/core/Multi2Mapping.h>
-#include <sofa/defaulttype/SolidTypes.h>
 #include <sofa/defaulttype/RigidTypes.h>
-#include <sofa/helper/ColorMap.h>
+#include <sofa/type/Transform.h>
+
 
 namespace Cosserat::mapping
 {
-using sofa::defaulttype::SolidTypes ;
-using sofa::core::objectmodel::BaseContext ;
-using sofa::type::Matrix3;
-using sofa::type::Matrix4;
-using sofa::type::Vec3;
-using sofa::type::Vec6;
-using std::get;
 using sofa::type::vector;
 using sofa::Data;
-using sofa::type::Mat;
-using sofa::type::Vec4f;
 
-/*!
- * \class RigidDistanceMapping
- * @brief Computes and map the length of the beams
- *
- * This is a component:
- * https://www.sofa-framework.org/community/doc/programming-with-sofa/create-your-component/
- */
-using Cosserat::mapping::BaseCosseratMapping;
-//
+
 template <class TIn1, class TIn2, class TOut>
 class RigidDistanceMapping : public sofa::core::Multi2Mapping<TIn1, TIn2, TOut>
 {
@@ -85,7 +67,7 @@ public:
     typedef Data<In2VecCoord>               In2DataVecCoord;
     typedef Data<In2VecDeriv>               In2DataVecDeriv;
     typedef Data<In2MatrixDeriv>            In2DataMatrixDeriv;
-    typedef Mat<4,4,Real>             Mat4x4;
+    typedef sofa::type::Mat<4,4,Real>       Mat4x4;
 
     typedef typename Out::VecCoord OutVecCoord;
     typedef typename Out::Coord OutCoord;
@@ -96,26 +78,26 @@ public:
     typedef Data<OutVecDeriv> OutDataVecDeriv;
     typedef Data<OutMatrixDeriv> OutDataMatrixDeriv;
 
-    typedef typename SolidTypes<Real>::Transform      Transform ;
-    typedef typename SolidTypes< Real>::SpatialVector SpatialVector   ;
+    using Transform = sofa::type::Transform<Real>;
+    using SpatialVector = sofa::type::SpatialVector<Real>;
 
 protected:
-    Data<vector<unsigned int> >   d_index1 ;
-    Data<vector<unsigned int> >   d_index2 ;
-    Data<Real>                          d_max ;
-    Data<Real>                          d_min ;
-    Data<Real>                          d_radius ;
-    Data<Vec4f>                   d_color;
-    Data<vector<unsigned int> >   d_index;
-    Data<bool>                          d_debug ;
+    Data<vector<unsigned int> > d_index1;
+    Data<vector<unsigned int> > d_index2;
+    Data<Real> d_max;
+    Data<Real> d_min;
+    Data<Real> d_radius;
+    Data<sofa::type::RGBAColor> d_color;
+    Data<vector<unsigned int> > d_index;
+    Data<bool> d_debug;
 
     sofa::core::State<Out>* m_toModel;
 
 protected:
-    /// Constructor    
-    RigidDistanceMapping() ;
-    /// Destructor
-    ~RigidDistanceMapping()  override = default;
+
+    RigidDistanceMapping();
+    ~RigidDistanceMapping() override = default;
+
     sofa::Index  m_minInd{};
 public:
 
@@ -156,4 +138,8 @@ public:
 
 };
 
-} // namespace sofa::component::mapping
+#if !defined(SOFA_COSSERAT_CPP_RigidDistanceMapping)
+extern template class SOFA_COSSERAT_API RigidDistanceMapping< sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types >;
+#endif
+
+} // namespace Cosserat::mapping
