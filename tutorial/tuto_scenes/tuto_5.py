@@ -25,7 +25,7 @@ from numpy import array
 
 path = f'{os.path.dirname(os.path.abspath(__file__))}/../../examples/python3/actuators/mesh/'
 
-geoParams = BeamGeometryParameters(init_pos=[0., 0., 0.], beamLength=81., showFramesObject=1,
+geoParams = BeamGeometryParameters(init_pos=[0., 0., 0.], beamLength=81., show_frames_object=1,
                                    nbSection=12, nbFrames=32, buildCollisionModel=0)
 physicsParams = BeamPhysicsParameters(beamMass=1., youngModulus=5.e6, poissonRatio=0.4, beamRadius=0.5,
                                       beamLength=30)

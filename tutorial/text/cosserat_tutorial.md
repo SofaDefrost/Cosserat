@@ -169,7 +169,7 @@ def createScene(root_node):
 ---
 - Uses also python $dataclass$ 
 ```python 
-- geoParams = BeamGeometryParameters(init_pos=[0., 0., 0.], beamLength=30., showFramesObject=1,nbSection=6, nbFrames=12, buildCollisionModel=0)
+- geoParams = BeamGeometryParameters(init_pos=[0., 0., 0.], beamLength=30., show_frames_object=1,nbSection=6, nbFrames=12, buildCollisionModel=0)
 - physicsParams = BeamPhysicsParameters(beamMass=1., youngModulus=1.0e4, poissonRatio=0.38, beamRadius=1., beamLength=30)
 - simuParams = SimulationParameters()
 - Params = Parameters(beamGeoParams=geoParams, beamPhysicsParams=physicsParams, simuParams=simuParams)
