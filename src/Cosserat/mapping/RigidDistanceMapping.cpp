@@ -21,20 +21,17 @@
 ******************************************************************************/
 #define SOFA_COSSERAT_CPP_RigidDistanceMapping
 #include <Cosserat/mapping/RigidDistanceMapping.inl>
-#include <sofa/defaulttype/VecTypes.h>
 #include <sofa/defaulttype/RigidTypes.h>
 #include <sofa/core/ObjectFactory.h>
 
 namespace Cosserat::mapping
 {
 
-using namespace sofa::defaulttype;
-
 // Register in the Factory
-int RigidDistanceMappingClass = sofa::core::RegisterObject("Set the positions and velocities of points attached to a rigid parent")
+int RigidDistanceMappingClass = sofa::core::RegisterObject("Maps two rigid frames to a single rigid frame representing their differences")
         .add< RigidDistanceMapping< sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types > >() ;
 
 
 template class SOFA_COSSERAT_API RigidDistanceMapping< sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types >;
 
-} // namespace sofa.
+} // namespace Cosserat::mapping
