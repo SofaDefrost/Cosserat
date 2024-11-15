@@ -17,7 +17,9 @@ from stlib3.physics.constraints import FixedBox
 import os
 from useful.params import ContactParameters as DefaultContactParams
 
-
+def show_mecha_visual(node, show=True):
+    node.showObject = show
+    node.showIndices = show
 def addHeader(parent_node, multithreading=False, inverse=False, is_constrained=False, is_contact=False,
               contact_params=None):
     """
@@ -152,44 +154,44 @@ def addSolverNode(parent_node, name='solverNode', template='CompressedRowSparseM
 
     return solver_node
 
+def attach_mesh_with_springs(mesh_node, _box='-18 -15 -8 2 -3 8'):
+    mesh_node.addObject('BoxROI', name='ROI1', box=_box, drawBoxes='true')
+    mesh_node.addObject('RestShapeSpringsForceField',
+                          points='@ROI1.indices', stiffness='1e12')
 
-def addFEMObject(parent_node, path, name='FEMFinger'):
-    finger_solver = addSolverNode(parent_node, name=name)
+def attach_3d_points_to_meca_with_barycentric_mapping(parent_node, name='node_name',
+                                                      list_of_points=[" 0.0 0 0 15 0 0 30 0 0 45 0 0 60 0 0 66 0 0 81 0.0 0.0"]):
+    points_node = parent_node.addChild(name)
+    points_node.addObject('MechanicalObject', name=name+"_mo", position=list_of_points)
+    points_node.addObject('BarycentricMapping')
+    return points_node
+
+def add_finger_mesh_force_field_Object(parent_node, path):
+    parent_node.addObject('VisualStyle', displayFlags='showForceFields')
+    #finger_solver = addSolverNode(parent_node, name=name)
 
     # Load a VTK tetrahedral mesh and expose the resulting topology in the scene .
-    loader = finger_solver.addObject('MeshVTKLoader', name='loader', filename=f'{path}finger.vtk',
+    loader = parent_node.addObject('MeshVTKLoader', name='loader', filename=f'{path}finger.vtk',
                                      translation="-17.5 -12.5 7.5",
                                      rotation="0 180 0")
-    finger_solver.addObject('TetrahedronSetTopologyContainer', position=loader.position.getLinkPath(),
+    parent_node.addObject('TetrahedronSetTopologyContainer', position=loader.position.getLinkPath(),
                             tetras=loader.tetras.getLinkPath(), name='container')
     # Create a MechanicalObject component to stores the DoFs of the model
-    finger_solver.addObject('MechanicalObject', template='Vec3', name='dofs')
+    parent_node.addObject('MechanicalObject', template='Vec3', name='dofs')
 
     # Gives a mass to the model
-    finger_solver.addObject('UniformMass', totalMass='0.075')
+    parent_node.addObject('UniformMass', totalMass='1.75')
     # Add a TetrahedronFEMForceField component which implement an elastic material model
     # solved using the Finite Element Method on
     # tetrahedrons.
-    finger_solver.addObject('TetrahedronFEMForceField', template='Vec3d', name='forceField', method='large',
+    parent_node.addObject('TetrahedronFEMForceField', template='Vec3d', name='forceField', method='large',
                             poissonRatio='0.45', youngModulus='500')
+    attach_mesh_with_springs(parent_node)
 
-    finger_solver.addObject('BoxROI', name='ROI1', box='-18 -15 -8 2 -3 8', drawBoxes='true')
-    finger_solver.addObject('RestShapeSpringsForceField',
-                            points='@ROI1.indices', stiffness='1e12')
-    ##########################################
-    # Cable points                           #
-    ##########################################
     # Mapped points inside the finger volume, these points attached to the FE model
     # are constrained to slide on the cable.
-
-    FEMpos = [" 0.0 0 0 15 0 0 30 0 0 45 0 0 60 0 0 66 0 0 81 0.0 0.0"]
-    fem_points = finger_solver.addChild('femPoints')
-    fem_points.addObject('MechanicalObject', name="pointsInFEM", position=FEMpos, showObject="1",
-                         showIndices="1")
-    fem_points.addObject('BarycentricMapping')
-
-    return finger_solver, fem_points
-
+    points_node = attach_3d_points_to_meca_with_barycentric_mapping(parent_node)
+    return points_node
 
 def addMappedPoints(parent_node, name="pointsInFEM", position=None, showObject="1",
                     showIndices="1", femPos="0.0 0 0 15 0 0 30 0 0 45 0 0 60 0 0 66 0 0 81 0.0 0.0"):

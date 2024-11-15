@@ -9,7 +9,7 @@ __version__ = "1.0.0"
 __copyright__ = "(c) 2021,Inria"
 __date__ = "October, 26 2021"
 
-from useful.header import addHeader, addSolverNode, addFEMObject
+from useful.header import addHeader, addSolverNode, add_finger_mesh_force_field_Object, show_mecha_visual
 from useful.params import BeamPhysicsParametersNoInertia, BeamGeometryParameters, SimulationParameters
 from useful.params import Parameters
 from cosserat.CosseratBase import CosseratBase
@@ -19,6 +19,7 @@ import Sofa
 import os
 from math import pi
 from controller import FingerController
+from geo_cosserat_cable_driven_cosserat_beam import show_mecha_visual
 
 _beam_radius = 0.5
 _beam_length = 81.
@@ -100,8 +101,17 @@ class ForceController(Sofa.Core.Controller):
 
 
 def createScene(root_node):
-    addHeader(root_node, is_constrained=True)
+    addHeader(root_node, is_constrained=False)
     root_node.gravity = [0, -9.81, 0.]
+
+    # Add FEM finger node
+    finger_node = addSolverNode(root_node, name="finger_node")
+    # this function attach the geometry and force field to predefine solver node
+    # It also fixe finger regarding predefine box
+    attached_3d_points_fem_node = add_finger_mesh_force_field_Object(finger_node, path=path)
+    show_mecha_visual(attached_3d_points_fem_node, show=True)
+
+    return root_node
 
     solver_node = addSolverNode(root_node, name="cable_node", isConstrained=is_constrained)
 
@@ -110,12 +120,12 @@ def createScene(root_node):
     cosserat_frames_node = cosserat_beam.cosseratFrame
 
     # Finger node
-    femFingerNode = root_node.addChild('femFingerNode')
+    #femFingerNode = root_node.addChild('femFingerNode')
     """ Add FEM finger to the scene"""
     # finger_node, fem_points_node = Finger(femFingerNode, name="Finger", rotation=array([0.0, 180.0, 0.0]),
     #                                      translation=array([-17.5, -12.5, 7.5]), path=path)
 
-    finger_node, fem_points_node = addFEMObject(root_node, path=path, name="Finger")
+
 
     return root_node
 
