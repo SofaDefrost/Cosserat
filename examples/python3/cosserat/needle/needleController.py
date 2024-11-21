@@ -10,7 +10,7 @@ import numpy as np
 import Sofa
 import Cosserat
 from cosserat.needle.params import ConstraintsParams
-from cosserat.utils import computePositiveAlongXDistanceBetweenPoints, computeNegativeAlongXDistanceBetweenPoints
+from useful.utils import computePositiveAlongXDistanceBetweenPoints, computeNegativeAlongXDistanceBetweenPoints
 
 
 class Animation(Sofa.Core.Controller):
