@@ -36,6 +36,14 @@ struct BeamHookeLawForceFieldTest : public testing::NumericTest<> {
     typedef typename DataTypes::Coord Coord;
     typedef typename Coord::value_type Real;
 
+    BeamHookeLawForceFieldTest()
+    {
+        root = sofa::simpleapi::createRootNode(sofa::simulation::getSimulation(), "root");
+
+        createObject(root, "DefaultAnimationLoop");
+        createObject(root, "DefaultVisualManagerLoop");
+    }
+
 
 
     typedef sofa::component::forcefield::BeamHookeLawForceField<DataTypes> TheBeamHookeLawForceField;
@@ -109,6 +117,7 @@ protected:
 template<>
 void BeamHookeLawForceFieldTest<defaulttype::Vec3Types>::testFonctionnel() {
     EXPECT_MSG_NOEMIT(Error, Warning) ;
+    ASSERT_NE(root, nullptr);
     createObject(root, "MechanicalObject", {{"position", "-1 0 1  1 0 1  -1 0 -1  1 0 -1  0 0 1  0 0 -1  -1 0 0  1 0 0  0 0 0"}});
     createObject(root, "TriangleSetTopologyContainer", {{"triangles", "7 5 8  8 2 6  4 6 0  1 8 4  7 3 5  8 5 2  4 8 6  1 7 8"}});
 
@@ -118,7 +127,7 @@ void BeamHookeLawForceFieldTest<defaulttype::Vec3Types>::testFonctionnel() {
                                                           {"lengthY", "35e-5"},
                                                           {"lengthZ", "1374e-5"},
                                                           {"radius", "0.25"},
-                                                          {"varianteSections", "true"}}).get()
+                                                          {"variantSections", "true"}}).get()
     );
 
     EXPECT_NE(traction, nullptr);
@@ -161,7 +170,7 @@ void BeamHookeLawForceFieldTest<defaulttype::Vec3Types>::basicAttributesTest(){
     /// This list needs to be updated if you add an attribute.
     sofa::type::vector<std::string> attrnames = {
             "crossSectionShape","youngModulus","poissonRatio","length", "radius",
-            "innerRadius", "lengthY", "lengthZ", "varianteSections", "youngModululsList", "poissonRatioList"
+            "innerRadius", "lengthY", "lengthZ", "variantSections", "youngModulusList", "poissonRatioList"
     };
 
     for(auto& attrname : attrnames)
