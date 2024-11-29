@@ -2,7 +2,7 @@ import Sofa
 from useful.params import BeamPhysicsParameters, BeamGeometryParameters, SimulationParameters, Parameters
 
 geoParams = BeamGeometryParameters(init_pos=[0., 0., 0.], beamLength=30.0, nbSection=6, nbFrames=24,
-showFramesObject=1, buildCollisionModel=0)
+show_frames_object=1, buildCollisionModel=0)
 physicsParams = BeamPhysicsParameters(beamMass=1.0, youngModulus=1.0e4, poissonRatio=0.38,
 beamRadius=0.2, beamLength=30.0)
 simuParams = SimulationParameters()

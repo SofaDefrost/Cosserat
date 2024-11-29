@@ -18,7 +18,7 @@ from splib3.numerics import Quat
 import Sofa
 from math import pi
 
-geoParams = BeamGeometryParameters(init_pos=[0., 0., 0.], beamLength=30., showFramesObject=1,
+geoParams = BeamGeometryParameters(init_pos=[0., 0., 0.], beamLength=30., show_frames_object=1,
                                    nbSection=6, nbFrames=12, buildCollisionModel=0)
 physicsParams = BeamPhysicsParameters(beamMass=1., youngModulus=1.0e4, poissonRatio=0.38, beamRadius=0.5,
                                       beamLength=30)
