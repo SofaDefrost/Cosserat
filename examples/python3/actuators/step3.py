@@ -47,7 +47,7 @@ Comme tu l'aura compris notre prototype est composé d'une colonne centrale (fil
 """
 
 # @todo
-geoParams = BeamGeometryParameters(init_pos=[0., 0., 0.], beamLength=65.5, showFramesObject=1,
+geoParams = BeamGeometryParameters(init_pos=[0., 0., 0.], beamLength=65.5, show_frames_object=1,
                                    nbSection=5, nbFrames=26, buildCollisionModel=0)
 physicsParams = BeamPhysicsParameters(beamMass=5., youngModulus=1.0e8, poissonRatio=0.38, beamRadius=6.2e-1 / 2.,
                                       beamLength=65.5)

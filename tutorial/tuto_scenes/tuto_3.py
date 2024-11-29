@@ -19,7 +19,6 @@ physicsParams = BeamPhysicsParametersNoInertia(beam_mass=0.3, young_modulus=1.0e
                                                beam_length=30)
 Params = Parameters(beam_geo_params=geoParams, beam_physics_params=physicsParams)
 
-
 def createScene(root_node):
     addHeader(root_node)
     root_node.gravity = [0, -9.81, 0.]

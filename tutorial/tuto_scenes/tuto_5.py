@@ -26,16 +26,14 @@ _beam_length = 81.
 _nb_section = 32
 force_null = [0., 0., 0., 0., 0., 0.]  # N
 path = f'{os.path.dirname(os.path.abspath(__file__))}/../../examples/python3/actuators/mesh/'
-
 geoParams = BeamGeometryParameters(beam_length=_beam_length, nb_section=_nb_section, nb_frames=_nb_section)
 physicsParams = BeamPhysicsParametersNoInertia(beam_mass=1., young_modulus=5.e6, poisson_ratio=0.4,
                                                beam_radius=_beam_radius, beam_length=_beam_length)
-
 simuParams = SimulationParameters()
 Params = Parameters(beam_geo_params=geoParams, beam_physics_params=physicsParams, simu_params=simuParams)
-
 femPos = [[0.0, 0, 0], [15., 0, 0], [30., 0, 0], [45., 0, 0], [60., 0, 0], [66., 0, 0], [81., 0.0, 0.0]]
 is_constrained = False
+
 
 class ForceController(Sofa.Core.Controller):
     def __init__(self, *args, **kwargs):
