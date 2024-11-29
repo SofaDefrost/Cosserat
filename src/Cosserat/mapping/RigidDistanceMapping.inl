@@ -22,26 +22,19 @@
 #pragma once
 #include <Cosserat/config.h>
 #include <Cosserat/mapping/RigidDistanceMapping.h>
-
 #include <sofa/core/Multi2Mapping.inl>
-#include <sofa/core/visual/VisualParams.h>
-#include <sofa/core/behavior/MechanicalState.h>
-#include <sofa/core/visual/VisualParams.h>
-#include <sofa/helper/AdvancedTimer.h>
-#include <sofa/core/objectmodel/BaseContext.h>
-#include <sofa/helper/logging/Message.h>
-#include <sofa/type/Quat.h>
-
-#include <string>
-
 
 namespace Cosserat::mapping
 {
-using sofa::core::objectmodel::BaseContext ;
-using sofa::helper::AdvancedTimer;
-using sofa::helper::WriteAccessor;
-using sofa::defaulttype::SolidTypes ;
-using sofa::type::RGBAColor;
+
+using sofa::Coord_t;
+using sofa::Deriv_t;
+using sofa::VecCoord_t;
+using sofa::VecDeriv_t;
+using sofa::MatrixDeriv_t;
+using sofa::DataVecCoord_t;
+using sofa::DataVecDeriv_t;
+using sofa::DataMatrixDeriv_t;
 
 template <class TIn1, class TIn2, class TOut>
 RigidDistanceMapping<TIn1, TIn2, TOut>::RigidDistanceMapping()
@@ -50,34 +43,48 @@ RigidDistanceMapping<TIn1, TIn2, TOut>::RigidDistanceMapping()
     , d_max(initData(&d_max, (Real)1.0e-2, "max", "the maximum of the deformation.\n"))
     , d_min(initData(&d_min, (Real)0.0, "min", "the minimum of the deformation.\n"))
     , d_radius(initData(&d_radius, (Real)3.0, "radius", "the axis in which we want to show the deformation.\n"))
-    , d_color(initData(&d_color, Vec4f (1, 0., 1., 0.8) ,"color", "The default beam color"))
+    , d_color(initData(&d_color, sofa::type::RGBAColor(1.f, 0.f, 1.f, 0.8f) ,"color", "The default beam color"))
     , d_index(initData(&d_index, "index", "if this parameter is false, you draw the beam with color "
                                           "according to the force apply to each beam"))
-    , d_debug(initData(&d_debug, false, "debug", "show debug output.\n"))
     , m_toModel(NULL)
-{
-    d_debug.setValue(false);
-}
+{}
 
 
 template <class TIn1, class TIn2, class TOut>
 void RigidDistanceMapping<TIn1, TIn2, TOut>::init()
 {
-    Inherit1::init();
-
     if(this->getFromModels1().empty() || this->getFromModels2().empty() || this->getToModels().empty())
     {
         msg_error() << "Error while initializing ; input getFromModels1/getFromModels2/output not found" ;
         return;
     }
 
-    const vector<unsigned int> &m1Indices = d_index1.getValue();
-    const vector<unsigned int> &m2Indices = d_index2.getValue();
+    const sofa::type::vector<unsigned int> &m1Indices = d_index1.getValue();
+    const sofa::type::vector<unsigned int> &m2Indices = d_index2.getValue();
 
     m_minInd = std::min(m1Indices.size(), m2Indices.size());
-    if (m_minInd == 0) {
-        msg_info("") << " The size of the indices must not be equal to zero" ;
+    if (m_minInd == 0)
+    {
+        msg_error() << " The size of the indices must not be equal to zero" ;
+        this->d_componentState.setValue(sofa::core::objectmodel::ComponentState::Invalid);
         return;
+    }
+
+    if (this->getToModels().empty())
+    {
+        msg_error() << "Output of mapping is empty";
+        this->d_componentState.setValue(sofa::core::objectmodel::ComponentState::Invalid);
+        return;
+    }
+
+    m_toModel = this->getToModels()[0];
+    m_toModel->resize(m_minInd);
+
+    Inherit1::init();
+
+    if (this->d_componentState.getValue() != sofa::core::objectmodel::ComponentState::Invalid)
+    {
+        this->d_componentState.setValue(sofa::core::objectmodel::ComponentState::Valid);
     }
 }
 
@@ -85,9 +92,9 @@ void RigidDistanceMapping<TIn1, TIn2, TOut>::init()
 template <class TIn1, class TIn2, class TOut>
 void RigidDistanceMapping<TIn1, TIn2, TOut>::apply(
     const sofa::core::MechanicalParams* /* mparams */,
-    const vector<OutDataVecCoord*>& dataVecOutPos,
-    const vector<const In1DataVecCoord*>& dataVecIn1Pos ,
-    const vector<const In2DataVecCoord*>& dataVecIn2Pos)
+    const vector<DataVecCoord_t<Out>*>& dataVecOutPos,
+    const vector<const DataVecCoord_t<In1>*>& dataVecIn1Pos ,
+    const vector<const DataVecCoord_t<In2>*>& dataVecIn2Pos)
 {
 
     if(dataVecOutPos.empty() || dataVecIn1Pos.empty() || dataVecIn2Pos.empty())
@@ -95,59 +102,51 @@ void RigidDistanceMapping<TIn1, TIn2, TOut>::apply(
 
     ///Do Apply
     //We need only one input In model and input Root model (if present)
-    const In1VecCoord& in1 = dataVecIn1Pos[0]->getValue();
-    const In2VecCoord& in2 = dataVecIn2Pos[0]->getValue();
+    const VecCoord_t<In1>& in1 = dataVecIn1Pos[0]->getValue();
+    const VecCoord_t<In2>& in2 = dataVecIn2Pos[0]->getValue();
 
-    OutVecCoord& out = *dataVecOutPos[0]->beginEdit();
+    auto out = sofa::helper::getWriteOnlyAccessor(*dataVecOutPos[0]);
     out.resize(m_minInd);
 
-    auto &m1Indices = d_index1.getValue();
-    auto &m2Indices = d_index2.getValue();
+    const auto& m1Indices = d_index1.getValue();
+    const auto& m2Indices = d_index2.getValue();
 
-    for (sofa::Index pid=0; pid<m_minInd; pid++) {
-        int tm1 = m1Indices[pid];
-        int tm2 = m2Indices[pid];
-        Vec3 outCenter = in2[tm2].getCenter()-in1[tm1].getCenter();
+    for (sofa::Index pid = 0; pid < m_minInd; ++pid)
+    {
+        const int tm1 = m1Indices[pid];
+        const int tm2 = m2Indices[pid];
+        const auto outCenter = in2[tm2].getCenter() - in1[tm1].getCenter();
+
         sofa::type::Quat outOri = in2[tm2].getOrientation()* in1[tm1].getOrientation().inverse();
-
         outOri.normalize();
-        out[pid] = OutCoord(outCenter,outOri); // This difference is in the word space
-        if (d_debug.getValue()){
-            std::cout << " in1 :" << in1[tm1] << std::endl;
-            std::cout << " in2 :" << in2[tm2] << std::endl;
-            std::cout << " out :" << out[pid] << std::endl;
-        }
-    }
 
-    dataVecOutPos[0]->endEdit();
+        out[pid] = Coord_t<Out>(outCenter, outOri); // This difference is in the word space
+    }
 }
 
 
 template <class TIn1, class TIn2, class TOut>
 void RigidDistanceMapping<TIn1, TIn2, TOut>:: applyJ(
     const sofa::core::MechanicalParams* /* mparams */,
-    const vector< OutDataVecDeriv*>& dataVecOutVel,
-    const vector<const In1DataVecDeriv*>& dataVecIn1Vel,
-    const vector<const In2DataVecDeriv*>& dataVecIn2Vel) {
+    const vector< DataVecDeriv_t<Out>*>& dataVecOutVel,
+    const vector<const DataVecDeriv_t<In1>*>& dataVecIn1Vel,
+    const vector<const DataVecDeriv_t<In2>*>& dataVecIn2Vel) {
 
     if(dataVecOutVel.empty() || dataVecIn1Vel.empty() ||dataVecIn2Vel.empty() )
         return;
 
-    const In1VecDeriv& in1Vel = dataVecIn1Vel[0]->getValue();
-    const In2VecDeriv& in2Vel = dataVecIn2Vel[0]->getValue();
-    OutVecDeriv& outVel = *dataVecOutVel[0]->beginEdit();
+    const VecDeriv_t<In1>& in1Vel = dataVecIn1Vel[0]->getValue();
+    const VecDeriv_t<In2>& in2Vel = dataVecIn2Vel[0]->getValue();
 
+    auto outVel = sofa::helper::getWriteOnlyAccessor(*dataVecOutVel[0]);
 
     const auto &m1Indices = d_index1.getValue();
     const auto &m2Indices = d_index2.getValue();
 
-    for (sofa::Index index = 0; index < m_minInd; index++) {
+    for (sofa::Index index = 0; index < m_minInd; index++)
+    {
         getVCenter(outVel[index]) = getVCenter(in2Vel[m2Indices[index]]) - getVCenter(in1Vel[m1Indices[index]]);
         getVOrientation(outVel[index]) =  getVOrientation(in2Vel[m2Indices[index]]) - getVOrientation(in1Vel[m1Indices[index]]) ;
-    }
-    dataVecOutVel[0]->endEdit();
-    if (d_debug.getValue()){
-        std::cout << " =====> outVel[m1Indices[index]] : " << outVel << std::endl;
     }
 }
 
@@ -155,59 +154,59 @@ void RigidDistanceMapping<TIn1, TIn2, TOut>:: applyJ(
 template <class TIn1, class TIn2, class TOut>
 void RigidDistanceMapping<TIn1, TIn2, TOut>:: applyJT(
     const sofa::core::MechanicalParams* /*mparams*/,
-    const vector< In1DataVecDeriv*>& dataVecOut1Force,
-    const vector< In2DataVecDeriv*>& dataVecOut2Force,
-    const vector<const OutDataVecDeriv*>& dataVecInForce)  {
+    const vector< DataVecDeriv_t<In1>*>& dataVecOut1Force,
+    const vector< DataVecDeriv_t<In2>*>& dataVecOut2Force,
+    const vector<const DataVecDeriv_t<Out>*>& dataVecInForce)  {
 
     if(dataVecOut1Force.empty() || dataVecInForce.empty() || dataVecOut2Force.empty())
         return;
 
-    const OutVecDeriv& inForce = dataVecInForce[0]->getValue();
+    const VecDeriv_t<Out>& inForce = dataVecInForce[0]->getValue();
 
-    In1VecDeriv& out1Force = *dataVecOut1Force[0]->beginEdit();
-    In2VecDeriv& out2Force = *dataVecOut2Force[0]->beginEdit();
+    auto out1Force = sofa::helper::getWriteOnlyAccessor(*dataVecOut1Force[0]);
+    auto out2Force = sofa::helper::getWriteOnlyAccessor(*dataVecOut2Force[0]);
 
     //@todo implementation of force modification
     const auto &m1Indices = d_index1.getValue();
     const auto &m2Indices = d_index2.getValue();
 
-    for (sofa::Index index = 0; index < m_minInd; index++) {
+    for (sofa::Index index = 0; index < m_minInd; index++)
+    {
         getVCenter(     out1Force[m1Indices[index]]) -= getVCenter(     inForce[index]);
         getVOrientation(out1Force[m1Indices[index]]) -= getVOrientation(inForce[index]);
 
         getVCenter(     out2Force[m2Indices[index]]) += getVCenter(     inForce[index]);
         getVOrientation(out2Force[m2Indices[index]]) += getVOrientation(inForce[index]);
     }
-    dataVecOut1Force[0]->endEdit();
-    dataVecOut2Force[0]->endEdit();
 }
 
 //___________________________________________________________________________
 template <class TIn1, class TIn2, class TOut>
 void RigidDistanceMapping<TIn1, TIn2, TOut>::applyJT(
     const sofa::core::ConstraintParams*/*cparams*/ ,
-    const vector< In1DataMatrixDeriv*>&  dataMatOut1Const,
-    const vector< In2DataMatrixDeriv*>&  dataMatOut2Const ,
-    const vector<const OutDataMatrixDeriv*>& dataMatInConst)
+    const vector< DataMatrixDeriv_t<In1>*>&  dataMatOut1Const,
+    const vector< DataMatrixDeriv_t<In2>*>&  dataMatOut2Const ,
+    const vector<const DataMatrixDeriv_t<Out>*>& dataMatInConst)
 {
     if(dataMatOut1Const.empty() || dataMatOut2Const.empty() || dataMatInConst.empty() )
         return;
 
-    In1MatrixDeriv& out1 = *dataMatOut1Const[0]->beginEdit(); // constraints on the reference frame 1
-    In2MatrixDeriv& out2 = *dataMatOut2Const[0]->beginEdit(); // constraints on the reference frame 2
-    const OutMatrixDeriv& in = dataMatInConst[0]->getValue(); // input constraints defined on the mapped frames
+    auto out1 = sofa::helper::getWriteOnlyAccessor(*dataMatOut1Const[0]); // constraints on the reference frame 1
+    auto out2 = sofa::helper::getWriteOnlyAccessor(*dataMatOut2Const[0]); // constraints on the reference frame 2
+
+    const MatrixDeriv_t<Out>& in = dataMatInConst[0]->getValue(); // input constraints defined on the mapped frames
 
     const auto &m1Indices = d_index1.getValue();
     const auto &m2Indices = d_index2.getValue();
-    typename OutMatrixDeriv::RowConstIterator rowItEnd = in.end();
+    typename MatrixDeriv_t<Out>::RowConstIterator rowItEnd = in.end();
 
-    for (typename OutMatrixDeriv::RowConstIterator rowIt = in.begin(); rowIt != rowItEnd; ++rowIt) {
-        typename OutMatrixDeriv::ColConstIterator colIt = rowIt.begin();
-        //        typename OutMatrixDeriv::ColConstIterator colItEnd = rowIt.end();
+    for (typename MatrixDeriv_t<Out>::RowConstIterator rowIt = in.begin(); rowIt != rowItEnd; ++rowIt) {
+        typename MatrixDeriv_t<Out>::ColConstIterator colIt = rowIt.begin();
+        //        typename MatrixDeriv_t<Out>::ColConstIterator colItEnd = rowIt.end();
 
 
-        typename In1MatrixDeriv::RowIterator o1 = out1.writeLine(rowIt.index()); // we store the constraint number
-        typename In2MatrixDeriv::RowIterator o2 = out2.writeLine(rowIt.index());
+        auto o1 = out1->writeLine(rowIt.index()); // we store the constraint number
+        auto o2 = out2->writeLine(rowIt.index());
 
         int childIndex = colIt.index();
 
@@ -215,29 +214,18 @@ void RigidDistanceMapping<TIn1, TIn2, TOut>::applyJT(
         auto parentIndex1 = m1Indices[childIndex];
         auto parentIndex2 = m2Indices[childIndex];
 
-        const OutDeriv valueConst_ = colIt.val();
+        const Deriv_t<Out> valueConst_ = colIt.val();
 
         // Compute the mapped Constraint on the beam nodes
-        Deriv1 direction1;
+        Deriv_t<In1> direction1;
         In1::setDPos(direction1,-getVCenter(valueConst_));
         In1::setDRot(direction1,-getVOrientation(valueConst_));
-        Deriv2 direction2;
+        Deriv_t<In2> direction2;
         In2::setDPos(direction2,getVCenter(valueConst_));
         In2::setDRot(direction2,getVOrientation(valueConst_));
-
-        if (d_debug.getValue()){
-            printf("1. ======================================================================================= \n");
-            std::cout << "Constraint " << rowIt.index() << " ==> childIndex: "<< childIndex << std::endl;
-            std::cout << "parentIndex1 " << parentIndex1 << " ==> parentIndex2 "<< parentIndex2 << std::endl;
-            std::cout << "valueConst_: "<< valueConst_ << std::endl;
-            std::cout << "direction1: " << direction1 << std::endl;
-            std::cout << "direction2: " << direction2 << std::endl;
-        }
 
         o1.addCol(parentIndex1, direction1);
         o2.addCol(parentIndex2, direction2);
     }
-    dataMatOut1Const[0]->endEdit();
-    dataMatOut2Const[0]->endEdit();
 }
-} // namespace sofa::components::mapping
+} // namespace Cosserat::mapping
