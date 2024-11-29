@@ -89,6 +89,10 @@ void initExternalModule() {
 
 void registerObjects(sofa::core::ObjectFactory* factory)
 {
+#ifdef COSSERAT_USES_SOFTROBOTS
+  registerQPSlidingConstraint(factory);
+  registerCosseratActuatorConstraint(factory);
+#endif
   registerCosseratNeedleSlidingConstraint(factory);
   registerCosseratSlidingConstraint(factory);
   registerPointsManager(factory);
