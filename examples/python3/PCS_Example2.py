@@ -52,11 +52,11 @@ class ForceController(Sofa.Core.Controller):
             position = self.frames.position[self.size]  # get the last rigid of the cosserat frame
             orientation = Quat(position[3], position[4], position[5], position[6])  # get the orientation
             # Get the force direction in order to remain orthogonal to the last section of beam
-            with self.forceNode.force.writeable() as force:
+            with self.forceNode.forces.writeable() as force:
                 vec = orientation.rotate([0., self.forceCoeff, 0.])
                 # print(f' The new vec is : {vec}')
                 for count in range(3):
-                    force[count] = vec[count]
+                    force[0][count] = vec[count]
             if self.forceCoeff < 13.1e4:
                 self.forceCoeff += 100
             else:
@@ -88,15 +88,14 @@ def createScene(rootNode):
     solverNode.addObject('SparseLDLSolver', name='solver', template="CompressedRowSparseMatrixd")
 
     needCollisionModel = 0  # use this if the collision model if the beam will interact with another object
-    PCS_Cosserat = solverNode.addChild(
-        Cosserat(parent=solverNode, cosseratGeometry=nonLinearConfig, useCollisionModel=needCollisionModel,
-                 inertialParams=inertialParams, name="cosserat", radius=Rb, youngModulus=YM))
+    PCS_Cosserat = Cosserat(parent=solverNode, cosseratGeometry=nonLinearConfig, useCollisionModel=needCollisionModel,
+                 inertialParams=inertialParams, name="cosserat", radius=Rb, youngModulus=YM, showObject="1")
 
     beamFrame = PCS_Cosserat.cosseratFrame
 
     constForce = beamFrame.addObject('ConstantForceField', name='constForce', showArrowSize=0.0,
-                        indices=nonLinearConfig['nbFramesF'], force=F1)
+                        indices=nonLinearConfig['nbFramesF'], forces=F1)
 
-    solverNode.addObject(ForceController(parent=solverNode, cosseratFrames=beamFrame.FramesMO, forceNode=constForce))
+    solverNode.addObject(ForceController(parent=solverNode, name='forceController', cosseratFrames=beamFrame.FramesMO, forceNode=constForce))
 
     return rootNode

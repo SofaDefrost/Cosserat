@@ -124,7 +124,7 @@ def createScene(rootNode):
     cosseratNode = nonLinearCosserat.legendreControlPointsNode
    
     constForce = beamFrame.addObject('ConstantForceField', name='constForce', showArrowSize=1.e-9,
-                        indices=nonLinearConfig['nbFramesF'], force=F1)
+                        indices=nonLinearConfig['nbFramesF'], forces=F1)
 
     nonLinearCosserat = solverNode.addObject(
         ForceController(parent=solverNode, cosseratFrames=beamFrame.FramesMO, controller=controlMo))

@@ -52,10 +52,10 @@ class ForceController(Sofa.Core.Controller):
 
     def onAnimateEndEvent(self, event):
         if self.applyForce:
-            with self.forceNode.force.writeable() as force:
+            with self.forceNode.forces.writeable() as force:
                 vec = [0., 0., 0., 0., (self.forceCoeff * 1.) / sqrt(2), (self.forceCoeff * 1.) / sqrt(2)]
                 for i, v in enumerate(vec):
-                    force[i] = v
+                    force[0][i] = v
                 # print(f' The new force: {force}')
 
     def onKeypressedEvent(self, event):
@@ -85,18 +85,17 @@ def createScene(rootNode):
     solverNode.addObject('SparseLDLSolver', name='solver', template="CompressedRowSparseMatrixd")
 
     needCollisionModel = 0  # use this if the collision model if the beam will interact with another object
-    nonLinearCosserat = solverNode.addChild(
-        nonCosserat(parent=solverNode, cosseratGeometry=nonLinearConfig, inertialParams=inertialParams,
+    nonLinearCosserat = nonCosserat(parent=solverNode, cosseratGeometry=nonLinearConfig, inertialParams=inertialParams,
                     useCollisionModel=needCollisionModel, name="cosserat", radius=Rb, youngModulus=YM,
                     legendreControlPoints=initialStrain, poissonRatio=PR,order=LegendrePolyOrder,
                     rayleighStiffness=rayleighStiffness,
-                    activatedMMM=False))
+                    activatedMMM=False)
     cosseratNode = nonLinearCosserat.legendreControlPointsNode
 
     beamFrame = nonLinearCosserat.cosseratFrame
 
     constForce = beamFrame.addObject('ConstantForceField', name='constForce', showArrowSize=1.e-8,
-                        indices=nonLinearConfig['nbFramesF'], force=F1)
+                        indices=nonLinearConfig['nbFramesF'], forces=F1)
 
     nonLinearCosserat = solverNode.addObject(
         ForceController(parent=solverNode, cosseratFrames=beamFrame.FramesMO, forceNode=constForce))
