@@ -9,7 +9,7 @@ from cosserat.needle.params import NeedleParameters, GeometryParams, PhysicsPara
 from cosserat.usefulFunctions import pluginList
 from cosserat.createFemRegularGrid import createFemCubeWithParams
 from cosserat.cosseratObject import Cosserat
-from cosserat.utils import addConstraintPoint
+from useful.utils import addConstraintPoint
 import sys
 
 # params = NeedleParameters()
@@ -57,10 +57,9 @@ def createScene(rootNode):
     solverNode.addObject('SparseLDLSolver', name='solver', template="CompressedRowSparseMatrixd")
     solverNode.addObject('GenericConstraintCorrection')
 
-    needle = solverNode.addChild(
-        Cosserat(parent=solverNode, cosseratGeometry=needleGeometryConfig, radius=GeometryParams.radius,
-                 name="needle", youngModulus=PhysicsParams.youngModulus, poissonRatio=PhysicsParams.poissonRatio,
-                 rayleighStiffness=PhysicsParams.rayleighStiffness))
+    needle = Cosserat(parent=solverNode, cosseratGeometry=needleGeometryConfig, radius=GeometryParams.radius,
+        name="needle", youngModulus=PhysicsParams.youngModulus, poissonRatio=PhysicsParams.poissonRatio,
+        rayleighStiffness=PhysicsParams.rayleighStiffness)
     needleCollisionModel = needle.addPointCollisionModel("needleCollision")
 
     # These state is mapped on the needle and used to compute the distance between the needle and the
