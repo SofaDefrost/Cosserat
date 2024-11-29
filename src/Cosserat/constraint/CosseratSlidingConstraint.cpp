@@ -26,14 +26,20 @@
 #include <sofa/core/ObjectFactory.h>
 #include <sofa/component/statecontainer/MechanicalObject.h>
 
-namespace sofa::component::constraintset
+namespace Cosserat
 {
 
 using namespace sofa::defaulttype;
 using namespace sofa::helper;
 
-int CosseratSlidingConstraintClass = core::RegisterObject("TODO-CosseratSlidingConstraint")
-        .add< CosseratSlidingConstraint<Vec3Types> >(true);
+void registerCosseratSlidingConstraint(sofa::core::ObjectFactory* factory)
+{
+  factory->registerObjects(sofa::core::ObjectRegistrationData("TODO-CosseratSlidingConstraint")
+        .add< sofa::component::constraintset::CosseratSlidingConstraint<Vec3Types> >(true));
+}
 
-template class CosseratSlidingConstraint<Vec3dTypes>;
+}
+namespace sofa::component::constraintset
+{
+  template class CosseratSlidingConstraint<sofa::defaulttype::Vec3dTypes>;
 }

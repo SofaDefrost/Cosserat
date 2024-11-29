@@ -25,15 +25,17 @@
 #include <sofa/defaulttype/VecTypes.h>
 #include <sofa/core/ObjectFactory.h>
 
-namespace Cosserat::mapping
+namespace Cosserat
 {
 
 using namespace sofa::defaulttype;
 
 // Register in the Factory
-int DifferenceMultiMappingClass = sofa::core::RegisterObject("Set the positions and velocities of points attached to a rigid parent")
-        .add< DifferenceMultiMapping< sofa::defaulttype::Vec3Types, sofa::defaulttype::Vec3Types, sofa::defaulttype::Vec3Types > >() ;
-
+void registerDifferenceMultiMapping(sofa::core::ObjectFactory* factory)
+{
+  factory->registerObjects(sofa::core::ObjectRegistrationData("Set the positions and velocities of points attached to a rigid parent")
+        .add< mapping::DifferenceMultiMapping< sofa::defaulttype::Vec3Types, sofa::defaulttype::Vec3Types, sofa::defaulttype::Vec3Types > >()) ;
+}
 
 
 } // namespace sofa.

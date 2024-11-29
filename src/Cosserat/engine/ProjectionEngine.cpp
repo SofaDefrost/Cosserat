@@ -27,19 +27,26 @@
 #include <sofa/core/ObjectFactory.h>
 
 
-namespace sofa::component::constraintset
+namespace Cosserat
 {
 
 using namespace sofa::defaulttype;
 using namespace sofa::helper;
 
-int ProjectionEngineClass = core::RegisterObject("TODO-ProjectionEngine")
-        .add< ProjectionEngine<Vec3Types> >(true);
+void registerProjectionEngine(sofa::core::ObjectFactory *factory) {
+  factory->registerObjects(
+      sofa::core::ObjectRegistrationData("TODO-ProjectionEngine")
+          .add<sofa::component::constraintset::ProjectionEngine<Vec3Types>>(
+              true));
+}
 
-template class ProjectionEngine<Vec3dTypes>;
+}
 
+namespace sofa::component::constraintset
+{
+    template class ProjectionEngine<defaulttype::Vec3dTypes>;
+}
 
-} // namespace sofa::component::constraintset
 
 
 

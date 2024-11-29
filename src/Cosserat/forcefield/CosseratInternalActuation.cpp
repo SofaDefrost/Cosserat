@@ -31,7 +31,7 @@
 #include <Cosserat/forcefield/CosseratInternalActuation.inl>
 #include <sofa/core/ObjectFactory.h>
 
-namespace sofa::component::forcefield
+namespace Cosserat
 {
 ////////////////////////////////////////////    FACTORY    //////////////////////////////////////////////
 // Registering the component
@@ -40,18 +40,18 @@ namespace sofa::component::forcefield
 // 2-.add<>(true) : Set default template
 using namespace sofa::defaulttype;
 
-int CosseratInternalActuationClass = core::RegisterObject("This component is used to compute internal stress for torsion (along x) and bending (y and z)")
-        .add<CosseratInternalActuation<Vec3Types> >(true)
-
-        ;
+void registerCosseratInternalActuation(sofa::core::ObjectFactory *factory) {
+  factory->registerObjects(
+     sofa::core::ObjectRegistrationData(
+          "This component is used to compute internal stress for torsion (along x) and bending (y and z)")
+          .add<sofa::component::forcefield::CosseratInternalActuation<Vec3Types>>(true));
+}
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 
-// Force template specialization for the most common sofa floating point related type.
-// This goes with the extern template declaration in the .h. Declaring extern template
-// avoid the code generation of the template for each compilation unit.
-// see: http://www.stroustrup.com/C++11FAQ.html#extern-templates
+}
 
-template class CosseratInternalActuation<Vec3Types>;
-
-
+namespace sofa::component::forcefield
+{
+// Force template specialization for the most common sofa floating point related type. This goes with the extern template declaration in the .h. Declaring extern template avoid the code generation of the template for each compilation unit. see: http://www.stroustrup.com/C++11FAQ.html#extern-templates
+    template class CosseratInternalActuation<defaulttype::Vec3Types>;
 }

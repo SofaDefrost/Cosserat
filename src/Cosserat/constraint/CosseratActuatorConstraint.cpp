@@ -33,7 +33,8 @@
 #include <Cosserat/config.h>
 #include <sofa/core/ObjectFactory.h>
 
-namespace sofa::component::constraintset
+namespace Cosserat
+
 {
 
 //////////////////////////////////////CosseratActuatorConstraintConstraintResolution1Dof/////////////////////////////////////////////
@@ -47,8 +48,11 @@ using namespace sofa::core;
 // 1-RegisterObject("description") + .add<> : Register the component
 // 2-.add<>(true) : Set default template
 
-int CosseratActuatorConstraintClass = RegisterObject("Simulate cable actuation.")
-.add< CosseratActuatorConstraint<Vec3Types> >(true)
+void registerCosseratActuatorConstraint(sofa::core::ObjectFactory* factory)
+{
+      factory->registerObjects(sofa::core::ObjectRegistrationData("Simulate cable actuation.")
+            .add< sofa::component::constraintset::CosseratActuatorConstraint<Vec3Types> >(true));
+}
 
 ;
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
