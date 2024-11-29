@@ -52,11 +52,11 @@ class ForceController(Sofa.Core.Controller):
             position = self.frames.position[self.size]  # get the last rigid of the cosserat frame
             orientation = Quat(position[3], position[4], position[5], position[6])  # get the orientation
             # Get the force direction in order to remain orthogonal to the last section of beam
-            with self.forceNode.force.writeable() as force:
+            with self.forceNode.forces.writeable() as force:
                 vec = orientation.rotate([0., self.forceCoeff, 0.])
                 # print(f' The new vec is : {vec}')
                 for count in range(3):
-                    force[count] = vec[count]
+                    force[0][count] = vec[count]
             if self.forceCoeff < 13.1e4:
                 self.forceCoeff += 100
             else:
@@ -87,17 +87,16 @@ def createScene(rootNode):
     solverNode.addObject('SparseLDLSolver', name='solver', template="CompressedRowSparseMatrixd")
 
     needCollisionModel = 0  # use this if the collision model if the beam will interact with another object
-    nonLinearCosserat = solverNode.addChild(
-        nonCosserat(parent=solverNode, cosseratGeometry=nonLinearConfig, useCollisionModel=needCollisionModel,
+    nonLinearCosserat = nonCosserat(parent=solverNode, cosseratGeometry=nonLinearConfig, useCollisionModel=needCollisionModel,
                     name="cosserat", radius=Rb, youngModulus=YM, legendreControlPoints=initialStrain,
                     order=LegendrePolyOrder, inertialParams=inertialParams,
-                    activatedMMM=True))
+                    activatedMMM=True, showObject="1")
     cosseratNode = nonLinearCosserat.legendreControlPointsNode
    
     beamFrame = nonLinearCosserat.cosseratFrame
 
     constForce = beamFrame.addObject('ConstantForceField', name='constForce', showArrowSize=1.e-5,
-                                     indices=nonLinearConfig['nbFramesF'], force=F1)
+                                     indices=nonLinearConfig['nbFramesF'], forces=F1)
 
     nonLinearCosserat = solverNode.addObject(
         ForceController(parent=solverNode, cosseratFrames=beamFrame.FramesMO, forceNode=constForce))
