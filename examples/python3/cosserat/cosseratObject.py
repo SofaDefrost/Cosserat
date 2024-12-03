@@ -348,10 +348,7 @@ def createScene(rootNode):
     rootNode.addObject(
         "RequiredPlugin",
         name="plugins",
-        pluginName=[
-            pluginList,
-            ["SofaEngine", "SofaLoader", "SofaSimpleFem", "SofaExporter"],
-        ],
+        pluginName=pluginList,
     )
     rootNode.addObject(
         "VisualStyle",
@@ -376,13 +373,11 @@ def createScene(rootNode):
     )
     solverNode.addObject("GenericConstraintCorrection")
 
-    cosserat = solverNode.addChild(
-        Cosserat(
-            parent=solverNode,
-            cosseratGeometry=cosserat_config,
-            name="cosserat",
-            radius=0.15,
-        )
+    cosserat = Cosserat(
+        parent=solverNode,
+        cosseratGeometry=cosserat_config,
+        name="cosserat",
+        radius=0.15,
     )
 
     # use this to add the collision if the beam will interact with another object
