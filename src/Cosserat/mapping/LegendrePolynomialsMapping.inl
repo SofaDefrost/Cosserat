@@ -42,14 +42,12 @@ namespace sofa::component::mapping {
         m_matOfCoeffs.clear();
         auto curvAbs = d_vectorOfCurvilinearAbscissa.getValue();
         auto  sz = curvAbs.size();
-        // std::cout << " curvAbs :" << curvAbs << std::endl;
         for (unsigned int i = 1; i < sz; i++){
             type::vector<double> coeffsOf_i;
             coeffsOf_i.clear();
             for (unsigned int order = 0; order < d_order.getValue(); order++)
                 coeffsOf_i.push_back(legendrePoly(order, curvAbs[i]));
 
-            // std::cout << " = = = >coeffsOf_i: " << coeffsOf_i << std::endl;
             m_matOfCoeffs.push_back(coeffsOf_i);
         }
     }
@@ -58,10 +56,10 @@ namespace sofa::component::mapping {
     template <class TIn, class TOut>
     void LegendrePolynomialsMapping<TIn, TOut>::init()
     {
-        Inherit1::init();
-
         //Compute the coefficients for each curv_abs at all orders of the polynomials
         reinit();
+
+        Inherit1::init();
     }
 
 
@@ -73,16 +71,13 @@ namespace sofa::component::mapping {
         const auto sz = d_vectorOfCurvilinearAbscissa.getValue().size();
         out.resize(sz-1);
 
-        // std::cout<< "Apply :  in " << in[0] <<std::endl;
         for (unsigned int i = 0; i < sz-1; i++){
             type::Vec3 Xi ;
             for (unsigned int j = 0; j < in.size(); j++)
                 Xi += m_matOfCoeffs[i][j] * in[j];
 
-            // std::cout << "   Xi : "<< Xi << std::endl;
             out[i] = Xi;
         }
-        // std::cout<< " " << std::endl;
     }
 
     template <class TIn, class TOut>
