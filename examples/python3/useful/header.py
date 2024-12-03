@@ -233,9 +233,3 @@ def Finger(parentNode=None, name="Finger", rotation=None, translation=None, fixi
 
     finger.addChild(e_object)
     return finger, femPoints
-
-
-# Test
-def createScene(rootNode):
-    addHeader(rootNode)
-    addSolverNode(rootNode)
