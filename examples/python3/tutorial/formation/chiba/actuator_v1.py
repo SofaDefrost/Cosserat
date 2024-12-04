@@ -1,7 +1,6 @@
 import Sofa
 from fingerController import FingerController  # for keyboard controlling
 from loopstest_function_param3 import looptest  # algorithm for generating the fiber loops
-import gmsh
 
 from useful.header import addHeader, addSolverNode
 
@@ -73,7 +72,7 @@ def createScene(root_node):
                        showObject=True, showObjectScale=1)
     hitching.addObject('MeshTopology', name='lines',
                        lines=[[i, i + 1] for i in range(num_loops - 1)])
-    hitching.addObject("StiffSpringForceField", template="Vec3d", name="springs", showArrowSize=0.5, drawMode=1,
+    hitching.addObject("SpringForceField", template="Vec3d", name="springs", showArrowSize=0.5, drawMode=1,
                        stiffness=Ks, damping=Kd, indices1=[0, 1, 2, 3, 4, 5, 6], indices2=[1, 2, 3, 4, 5, 6, 7],
                        lengths=loop_distance)
     hitching.addObject('BarycentricMapping', name='mapping')

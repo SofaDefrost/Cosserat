@@ -11,7 +11,6 @@ __date__ = "Jan, 17 2022"
 
 import Sofa
 from cosserat.cosseratObject import Cosserat
-# from cosserat.nonLinearCosserat import NonLinearCosserat as nonCosserat
 from cosserat.usefulFunctions import buildEdges, pluginList, BuildCosseratGeometry
 from math import sqrt
 
@@ -19,7 +18,6 @@ from math import sqrt
 from splib3.numerics import Quat
 
 LegendrePolyOrder = 5
-# initialStrain = [[0., 0., 0], [0., 0., 0], [0., 0., 0]]
 initialStrain = [[0., 0., 0], [0., 0., 0],
                  [0., 0., 0], [0., 0., 0], [0., 0., 0]]
 YM = 4.015e8
@@ -52,11 +50,10 @@ class ForceController(Sofa.Core.Controller):
             orientation = Quat(
                 position[3], position[4], position[5], position[6])
             # Get the force direction in order to remain orthogonal to the last section of beam
-            with self.forceNode.force.writeable() as force:
+            with self.forceNode.forces.writeable() as force:
                 vec = orientation.rotate([0., self.forceCoeff, 0.])
-                # print(f' The new vec is : {vec}')
                 for count in range(3):
-                    force[count] = vec[count]
+                    force[0][count] = vec[count]
 
     def onKeypressedEvent(self, event):
         key = event['key']
@@ -91,12 +88,12 @@ def createScene(rootNode):
         Cosserat(parent=solverNode, cosseratGeometry=nonLinearConfig, useCollisionModel=needCollisionModel,
                  inertialParams=inertialParams, name="cosserat", radius=Rb, youngModulus=YM))
 
-    beamFrame = nonLinearCosserat.cosseratFrame
+    beamFrame = PCS_Cosserat.cosseratFrame
 
     constForce = beamFrame.addObject('ConstantForceField', name='constForce', showArrowSize=0.02,
-                                     indices=nonLinearConfig['nbFramesF'], force=F1)
+                                     indices=nonLinearConfig['nbFramesF'], forces=F1)
 
-    nonLinearCosserat = solverNode.addObject(
+    solverNode.addObject(
         ForceController(parent=solverNode, cosseratFrames=beamFrame.FramesMO, forceNode=constForce))
 
     # ----------------
