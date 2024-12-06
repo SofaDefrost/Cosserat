@@ -4,7 +4,7 @@
 Based on the work done with SofaPython. See POEMapping.py
 """
 
-from params import NeedleParameters
+from cosserat.needle.params import NeedleParameters, GeometryParams, PhysicsParams, FemParams, ContactParams
 from cosserat.usefulFunctions import pluginList
 from cosserat.createFemRegularGrid import createFemCubeWithParams
 from cosserat.cosseratObject import Cosserat
@@ -20,12 +20,9 @@ __version__ = "1.0.0"
 __copyright__ = "(c) 2021,Inria"
 __date__ = "March 8 2021"
 
-
-params = NeedleParameters()
-
-needleGeometryConfig = {'init_pos': [0., 0., 0.], 'tot_length': params.Geometry.totalLength,
-                        'nbSectionS': params.Geometry.nbSections, 'nbFramesF': params.Geometry.nbFrames,
-                        'buildCollisionModel': 1, 'beamMass': params.Physics.mass}
+needleGeometryConfig = {'init_pos': [0., 0., 0.], 'tot_length': GeometryParams.totalLength,
+                        'nbSectionS': GeometryParams.nbSections, 'nbFramesF': GeometryParams.nbFrames,
+                        'buildCollisionModel': 1, 'beamMass': PhysicsParams.mass}
 
 
 class Animation(Sofa.Core.Controller):
@@ -142,9 +139,9 @@ def createScene(rootNode):
         'RequiredPlugin', pluginName=pluginList, printLog='0')
 
     rootNode.addObject('VisualStyle', displayFlags='showVisualModels showBehaviorModels hideCollisionModels '
-                                                   'hideBoundingCollisionModels hireForceFields '
+                                                   'hideBoundingCollisionModels hideForceFields '
                                                    'hideInteractionForceFields hideWireframe showMechanicalMappings')
-    rootNode.addObject('DefaultPipeline')
+    rootNode.addObject('CollisionPipeline')
     rootNode.addObject("DefaultVisualManagerLoop")
     rootNode.addObject('RuleBasedContactManager',
                        responseParams='mu=0.1', response='FrictionContactConstraint')
@@ -152,8 +149,8 @@ def createScene(rootNode):
     rootNode.addObject('BVHNarrowPhase')
     # rootNode.addObject('LocalMinDistance', alarmDistance=1.0, contactDistance=0.01)
     rootNode.addObject('LocalMinDistance', name="Proximity", alarmDistance=0.5,
-                       contactDistance=params.contact.contactDistance,
-                       coneFactor=params.contact.coneFactor, angleCone=0.1)
+                       contactDistance=ContactParams.contactDistance,
+                       coneFactor=ContactParams.coneFactor, angleCone=0.1)
 
     rootNode.addObject('FreeMotionAnimationLoop')
     generic = rootNode.addObject('GenericConstraintSolver', tolerance="1e-20",
@@ -168,16 +165,15 @@ def createScene(rootNode):
     ###############
     solverNode = rootNode.addChild('solverNode')
     solverNode.addObject('EulerImplicitSolver',
-                         rayleighStiffness=params.Physics.rayleighStiffness)
+                         rayleighStiffness=PhysicsParams.rayleighStiffness)
     solverNode.addObject('SparseLDLSolver', name='solver',
                          template="CompressedRowSparseMatrixd")
     solverNode.addObject('GenericConstraintCorrection')
 
-    needle = solverNode.addChild(
-        Cosserat(parent=solverNode, cosseratGeometry=needleGeometryConfig, radius=params.Geometry.radius,
-                 name="needle", youngModulus=params.Physics.youngModulus, poissonRatio=params.Physics.poissonRatio,
-                 rayleighStiffness=params.Physics.rayleighStiffness))
-    needleCollisionModel = needle.addPointCollisionModel()
+    needle = Cosserat(parent=solverNode, cosseratGeometry=needleGeometryConfig, radius=GeometryParams.radius,
+                 name="needle", youngModulus=PhysicsParams.youngModulus, poissonRatio=PhysicsParams.poissonRatio,
+                 rayleighStiffness=PhysicsParams.rayleighStiffness)
+    needleCollisionModel = needle.addPointCollisionModel("needleCollision")
     slidingPoint = needle.addSlidingPoints()
 
     # Create FEM Node
@@ -186,7 +182,7 @@ def createScene(rootNode):
     # TODO: @Paul is in charge of creating this in python
     #
     femPos = []
-    cubeNode = createFemCubeWithParams(rootNode, params.FemParams)
+    cubeNode = createFemCubeWithParams(rootNode, FemParams)
     gelNode = cubeNode.getChild('gelNode')
     femPoints = gelNode.addChild('femPoints')
     inputFEMCable = femPoints.addObject(
@@ -204,7 +200,7 @@ def createScene(rootNode):
 
     conttactL = rootNode.addObject('ContactListener', name="contactListener",
                                    collisionModel1=cubeNode.gelNode.surfaceNode.surface.getLinkPath(),
-                                   collisionModel2=needleCollisionModel.pointColli.getLinkPath())
+                                   collisionModel2=needleCollisionModel.collisionStats.getLinkPath())
     rootNode.addObject(Animation(needle.rigidBaseNode.RigidBaseMO, needle.cosseratCoordinateNode.cosseratCoordinateMO,
                                  conttactL, generic, needleCollisionModel, inputFEMCable))
     mappedPointsNode.addObject(
