@@ -8,12 +8,19 @@
 #include <sofa/defaulttype/RigidTypes.h>
 #include <sofa/core/ObjectFactory.h>
 
+namespace Cosserat
+{
+using namespace sofa::defaulttype;
+
+// Register in the Factory
+void registerLegendrePolynomialsMapping(sofa::core::ObjectFactory* factory) {
+    factory->registerObjects(sofa::core::ObjectRegistrationData("Set the positions and velocities of points attached to a rigid parent")
+            .add<sofa::component::mapping::LegendrePolynomialsMapping<sofa::defaulttype::Vec3Types, sofa::defaulttype::Vec3Types>>());
+}
+
+} // namespace sofa::component::mapping
+
 namespace sofa::component::mapping
 {
-    using namespace defaulttype;
-
-    // Register in the Factory
-    int LegendrePolynomialsMappingClass = core::RegisterObject("Set the positions and velocities of points attached to a rigid parent")
-                                   .add< LegendrePolynomialsMapping< sofa::defaulttype::Vec3Types, sofa::defaulttype::Vec3Types > >() ;
     template class SOFA_COSSERAT_API LegendrePolynomialsMapping< sofa::defaulttype::Vec3Types, sofa::defaulttype::Vec3Types >;
-} // namespace sofa::component::mapping
+}

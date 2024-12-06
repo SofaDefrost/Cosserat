@@ -32,8 +32,7 @@
 
 
 
-namespace sofa::component::constraintset
-{
+namespace Cosserat {
 
 using sofa::defaulttype::Rigid3Types;
 using namespace sofa::helper;
@@ -45,10 +44,11 @@ using namespace sofa::core;
 // 1-RegisterObject("description") + .add<> : Register the component
 // 2-.add<>(true) : Set default template
 
-int CosseratNeedleSlidingConstraintClass = RegisterObject("Simulate sliding contraints for needle insertion.")
-.add< CosseratNeedleSlidingConstraint<sofa::defaulttype::Vec3Types> >(true)
-;
+void registerCosseratNeedleSlidingConstraint(
+    sofa::core::ObjectFactory *factory) {
+  factory->registerObjects(sofa::core::ObjectRegistrationData("Simulate sliding contraints for needle insertion.")
+          .add<sofa::component::constraintset::CosseratNeedleSlidingConstraint<sofa::defaulttype::Vec3Types>>(true));
+
+}
 
 } // namespace sofa
-
-

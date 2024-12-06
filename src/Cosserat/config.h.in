@@ -42,11 +42,15 @@
 
 /** \mainpage
   This is the plugin for the Discret Cosserat Plugin
-*/
+**/
+#cmakedefine COSSERAT_USES_SOFTROBOTS
 
 namespace Cosserat
 {
     SOFA_COSSERAT_API void init();
     constexpr const char *MODULE_NAME = "@PROJECT_NAME@";
     constexpr const char *MODULE_VERSION = "@PROJECT_VERSION@";
+
+
+
 }

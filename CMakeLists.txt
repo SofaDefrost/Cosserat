@@ -73,6 +73,7 @@ sofa_find_package(SoftRobots QUIET)
 if(SoftRobots_FOUND)
     message("-- Found dependency : 'SoftRobots' plugin .")
 
+    set(COSSERAT_USES_SOFTROBOTS ON)
     list(APPEND HEADER_FILES
         ${SRC_ROOT_DIR}/constraint/CosseratActuatorConstraint.h
         ${SRC_ROOT_DIR}/constraint/CosseratActuatorConstraint.inl
