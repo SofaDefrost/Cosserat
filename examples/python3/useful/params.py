@@ -1,7 +1,7 @@
 # @todo use this dataclass to create the cosserat object
 
 from dataclasses import dataclass, field
-from typing import List
+from typing import List, Literal
 
 
 # @TODO: Improve this function, remove hard coding.
@@ -9,54 +9,74 @@ from typing import List
 class BeamGeometryParameters:
     """Cosserat Beam Geometry parameters"""
 
-    beamLength: float = 1.0  # beam length in m
-    nbSection: int = 5  # number of sections, sections along the beam length
-    nbFrames: int = 30  # number of frames along the beam
-    buildCollisionModel: int = 0
-    init_pos: List[float] = field(
-        default_factory=lambda: [0.0, 0.0, 0.0]
-    )  # The beam rigid base position as a list [x, y, z]
+    beam_length: float = 1.0  # beam length in m
+    nb_section: int = 5  # number of sections, sections along the beam length
+    nb_frames: int = 30  # number of frames along the beam
+    build_collision_model: int = 0
 
-    """Parameters for the visualisation of the beam"""
-    show_frames_object: bool = True
-    show_frames_indices: bool = False
-    showRigidBaseObject: int = 1
+    def validate(self):
+        assert self.beam_length > 0, "Beam length must be positive"
+        assert self.nb_section > 0, "Number of sections must be positive"
+        assert self.nb_frames > 0, "Number of frames must be positive"
+        assert self.nb_frames >= self.nb_section, "Number of frames must be positive"
 
 
-#Todo: two objects from the same base class to define different instead of useInertia
 @dataclass
-class BeamPhysicsParameters:
-    """Cosserat Beam Physics parameters"""
+class BeamPhysicsBaseParameters:
+    """Base class for Cosserat Beam Physics parameters"""
 
-    """First set of parameters"""
-    youngModulus: float = 1.205e8
-    poissonRatio: float = 0.3
-
-    """Second set of parameters"""
+    young_modulus: float = 1.205e8
+    poisson_ratio: float = 0.3
+    beam_mass: float = 1.0
+    beam_radius: float = 0.01  # default radius of 0.02 / 2.0
+    beam_length: float = 1.0  # default length along the X axis
+    beam_shape: Literal['circular', 'rectangular'] = 'circular'
+    length_Y: float = 0.1  # length in Y direction for rectangular beam
+    length_Z: float = 0.1  # length in Z direction for rectangular beam
     useInertia: bool = False
+
+    def validate(self):
+        assert self.young_modulus > 0, "Young's modulus must be positive"
+        assert 0 < self.poisson_ratio < 0.5, "Poisson's ratio must be between 0 and 0.5"
+        assert self.beam_mass > 0, "Beam mass must be positive"
+        assert self.beam_radius > 0, "Beam radius must be positive"
+        assert self.beam_length > 0, "Beam length must be positive"
+
+
+@dataclass
+class BeamPhysicsParametersNoInertia(BeamPhysicsBaseParameters):
+    """Parameters for a Cosserat Beam without inertia"""
+    pass
+
+
+@dataclass
+class BeamPhysicsParametersWithInertia(BeamPhysicsBaseParameters):
+    """Parameters for a Cosserat Beam with inertia"""
+
     GI: float = 1.5708
     GA: float = 3.1416e4
     EI: float = 0.7854
     EA: float = 3.1416e4
 
-    """Common parameters used in both cases"""
-    beamMass: float = 1.0
-    beamRadius: float = 0.02 / 2.0  # beam radius in m
-    beamLength: float = 1.0  # beam length in m along the X axis
-    # Todo : add complex beam shape
-    beamShape: str = "circular"  # beam shape, circular or rectangular
-    """"If using rectangular beam shape"""
-    length_Y: float = 0.1  # length of the beam in the Y direction
-    length_Z: float = 0.1  # length of the beam in the Z direction
+    def validate(self):
+        super().validate()
+        assert self.GI > 0, "GI must be positive"
+        assert self.GA > 0, "GA must be positive"
+        assert self.EI > 0, "EI must be positive"
+        assert self.EA > 0, "EA must be positive"
 
 
 @dataclass
 class SimulationParameters:
     """Simulation parameters"""
 
-    rayleighStiffness: float = 0.2
-    rayleighMass: float = 0.1
+    rayleigh_stiffness: float = 0.2
+    rayleigh_mass: float = 0.1
     firstOrder: bool = False
+
+    def validate(self):
+        assert self.rayleigh_stiffness >= 0, "Rayleigh stiffness must be non-negative"
+        assert self.rayleigh_mass >= 0, "Rayleigh mass must be non-negative"
 
 
 @dataclass
@@ -64,8 +84,12 @@ class VisualParameters:
     """Visual parameters"""
 
     showObject: int = 1
-    showObjectScale: float = 1.0
-    showObjectColor: List[float] = field(default_factory=lambda: [1.0, 0.0, 0.0, 1.0])
+    show_object_scale: float = 1.0
+    show_object_color: List[float] = field(default_factory=lambda: [1.0, 0.0, 0.0, 1.0])
+
+    def validate(self):
+        assert len(self.show_object_color) == 4, "Color must have four components (RGBA)"
+        assert all(0.0 <= x <= 1.0 for x in self.show_object_color), "Color components must be in range [0, 1]"
 
 
 @dataclass
@@ -86,16 +110,21 @@ class ContactParameters:
 class Parameters:
     """Parameters for the Cosserat Beam"""
 
-    beamPhysicsParams: BeamPhysicsParameters = field(
-        default_factory=BeamPhysicsParameters
-    )
-    simuParams: SimulationParameters = field(
+    beam_physics_params: BeamPhysicsBaseParameters = field(default_factory=BeamPhysicsParametersNoInertia)
+    simu_params: SimulationParameters = field(
         default_factory=SimulationParameters
     )  # SimulationParameters()
-    contactParams: ContactParameters = field(
+    contact_params: ContactParameters = field(
         default_factory=ContactParameters
     )  # ContactParameters()
-    beamGeoParams: BeamGeometryParameters = field(
+    beam_geo_params: BeamGeometryParameters = field(
         default_factory=BeamGeometryParameters
     )
-    visualParams: VisualParameters = field(default_factory=VisualParameters)
+    visual_params: VisualParameters = field(default_factory=VisualParameters)
+
+    def validate(self):
+        self.beam_physics_params.validate()
+        self.simu_params.validate()
+        self.contact_params.validate()
+        self.beam_geo_params.validate()
+        self.visual_params.validate()
