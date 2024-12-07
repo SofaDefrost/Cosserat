@@ -69,7 +69,7 @@ def createScene(rootNode):
     rootNode.addObject('RequiredPlugin', name='plugins', pluginName=[pluginList])
     rootNode.addObject('VisualStyle', displayFlags='showVisualModels showBehaviorModels hideCollisionModels '
                                                    'hideBoundingCollisionModels hideForceFields '
-                                                   'hideInteractionForceFields hideWireframe')
+                                                   'hideInteractionForceFields hideWireframe showMechanicalMappings')
     rootNode.dt.value = 0.02
     rootNode.gravity.value = [0., 0., 0.]
     rootNode.addObject('BackgroundSetting', color='0 0.168627 0.211765')
