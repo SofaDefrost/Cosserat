@@ -158,8 +158,8 @@ def createScene(root_node):
     #                                             showObject=True)
     #
     # cosserat_frames.addObject('RestShapeSpringsForceField', name='spring', stiffness=1e8, angularStiffness=1e8,
-    #                           external_points=0, external_rest_shape=controller_state.getLinkPath(),
-    #                           points=geoParams.nbFrames, template="Rigid3d")
+    #                           externalIndices=0, external_rest_shape=controller_state.getLinkPath(),
+    #                           indices=geoParams.nbFrames, template="Rigid3d")
     #
     # solver_node.addObject(ForceController(forceNode=const_force_node, frame_node=cosserat_frames, force_type=3,
     #                                       tip_controller=controller_state))
