@@ -33,7 +33,7 @@ def createFemCube(parentNode):
     gelNode.addObject('TetrahedronFEMForceField', template='Vec3d', name='FEM', method='large',
                       poissonRatio='0.45', youngModulus='100')
     gelNode.addObject('BoxROI', name='ROI1', box='40 -17 -10 100 -14 10', drawBoxes='true')
-    gelNode.addObject('RestShapeSpringsForceField', points='@ROI1.indices', stiffness='1e12')
+    gelNode.addObject('RestShapeSpringsForceField', indices='@ROI1.indices', stiffness='1e12')
 
     surfaceNode = gelNode.addChild("surfaceNode")
     surfaceNode.addObject('TriangleSetTopologyContainer', name="surfContainer", src="@../../GelSurface/Container")
@@ -72,7 +72,7 @@ def createFemCubeWithParams(parentNode, geometry):
     gelNode.addObject('TetrahedronFEMForceField', template='Vec3d', name='FEM', method='large',
                       poissonRatio=geometry.poissonRatio, youngModulus=geometry.youngModulus)
     gelNode.addObject('BoxROI', name='ROI1', box=geometry.box, drawBoxes='true')
-    gelNode.addObject('RestShapeSpringsForceField', points='@ROI1.indices', stiffness='1e12')
+    gelNode.addObject('RestShapeSpringsForceField', indices='@ROI1.indices', stiffness='1e12')
 
     surfaceNode = gelNode.addChild("surfaceNode")
     surfaceNode.addObject('TriangleSetTopologyContainer', name="surfContainer",

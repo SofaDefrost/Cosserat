@@ -15,8 +15,8 @@ def _add_rigid_base(p_node):
                               position="0 0 0  0 0 0. 1",
                               showObject=1, showObjectScale='0.1')
     rigid_base_node.addObject('RestShapeSpringsForceField', name='spring', stiffness=stiffness_param,
-                              angularStiffness=stiffness_param, external_points="0", mstate="@cosserat_base_mo",
-                              points="0", template="Rigid3d", activeDirections=[0,1,1,1,1,1,1])
+                              angularStiffness=stiffness_param, externalIndices="0", mstate="@cosserat_base_mo",
+                              indices="0", template="Rigid3d", activeDirections=[0,1,1,1,1,1,1])
     return rigid_base_node
 
 

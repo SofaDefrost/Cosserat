@@ -109,7 +109,7 @@ def createScene(rootNode):
                                           position="0 0 0  0 0 0 1", translation="-40. 0. 0.", showObject='1',
                                           showObjectScale='5.')
     rigidBaseNode.addObject('RestShapeSpringsForceField', name='spring', stiffness="50000",
-                            angularStiffness="50000", external_points="0", mstate="@RigidBaseMO", points="0",
+                            angularStiffness="50000", externalIndices="0", mstate="@RigidBaseMO", indices="0",
                             template="Rigid3d")
 
     #############################################

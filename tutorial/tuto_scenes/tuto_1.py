@@ -21,9 +21,9 @@ def _add_rigid_base(p_node):
         name="spring",
         stiffness=stiffness_param,
         angularStiffness=stiffness_param,
-        external_points="0",
+        externalIndices="0",
         mstate="@cosserat_base_mo",
-        points="0",
+        indices="0",
         template="Rigid3d",
     )
     return rigid_base_node
