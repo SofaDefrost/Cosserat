@@ -41,7 +41,7 @@ namespace Cosserat
     {
         using SE3 =  sofa::type::Matrix4;
 
-        typedef typename sofa::defaulttype::SolidTypes<SReal>::Transform Transform;
+        typedef typename sofa::defaulttype::SolidTypes<SReal>::Transform Frame;
         typedef typename sofa::type::vector<SReal> List;
 
         typedef typename Eigen::Matrix3d RotMat;
