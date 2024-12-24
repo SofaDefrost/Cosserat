@@ -138,9 +138,9 @@ protected:
     using BaseCosseratMapping<TIn1, TIn2, TOut>::m_vecTransform ;
     using BaseCosseratMapping<TIn1, TIn2, TOut>::m_nodeAdjointVectors;
     using BaseCosseratMapping<TIn1, TIn2, TOut>::m_indexInput;
-    using BaseCosseratMapping<TIn1, TIn2, TOut>::m_toModel;
-    using BaseCosseratMapping<TIn1, TIn2, TOut>::m_fromModel1;
-    using BaseCosseratMapping<TIn1, TIn2, TOut>::m_fromModel2;
+    using BaseCosseratMapping<TIn1, TIn2, TOut>::m_global_frames;
+    using BaseCosseratMapping<TIn1, TIn2, TOut>::m_strain_state;
+    using BaseCosseratMapping<TIn1, TIn2, TOut>::m_rigid_base;
 
 public:
     /**********************SOFA METHODS**************************/

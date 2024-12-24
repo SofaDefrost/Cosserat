@@ -2,8 +2,6 @@ import Sofa
 from fingerController import FingerController #for keyboard controlling
 #from timerreset import FingerController   #Uncomment to perform timed measurements(increases of 5kPa every 2 seconds)
 from loopstest_function_param3 import looptest #algorithm for generating the fiber loops
-import gmsh
-
 
 
 def createScene(rootNode):
@@ -83,7 +81,7 @@ def createScene(rootNode):
         fiber.addObject('MeshTopology', name='lines', lines=[[i, i + 1] for i in range(loopnum)])
         
         #fiber.addObject("FixedConstraint", name="FixedConstragetLinkPathint", indices=[0])
-        fiber.addObject("StiffSpringForceField", template="Vec3d", name="springs", showArrowSize=0.5, drawMode=1,
+        fiber.addObject("SpringForceField", template="Vec3d", name="springs", showArrowSize=0.5, drawMode=1,
                         stiffness=Ks, damping=Kd, indices1=indices1, indices2=indices2, lengths=lengths)
 
         # Mapping 

@@ -17,7 +17,7 @@ def createScene(root):
     constraintPointsNode = needle.addChild("constraintPointsNode")
 
     slidingPoint = needle.addSlidingPoints()
-    pathToSlidingMo = slidingPoint.getLinkPath() + str("/slidingPointMO")
+    pathToSlidingMo = f"{slidingPoint.getLinkPath()}/slidingPointMO"
 
     print(f'------> The save path is : {pathToSlidingMo}')
 

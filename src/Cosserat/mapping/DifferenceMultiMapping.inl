@@ -560,7 +560,7 @@ void DifferenceMultiMapping<TIn1, TIn2, TOut>::applyJ(
     const In2VecDeriv &in2 = dataVecIn2Vel[0]->getValue();
     OutVecDeriv &outVel = *dataVecOutVel[0]->beginEdit();
 
-    // const OutVecCoord& out = m_toModel->read(core::ConstVecCoordId::position())->getValue();
+    // const OutVecCoord& out = m_global_frames->read(core::ConstVecCoordId::position())->getValue();
     size_t sz = m_constraints.size();
     outVel.resize(sz);
 

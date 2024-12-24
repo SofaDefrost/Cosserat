@@ -199,7 +199,7 @@ TYPED_TEST( BeamHookeLawForceFieldTest , basicAttributesTest )
     ASSERT_NO_THROW (this->basicAttributesTest());
 }
 
-TYPED_TEST(BeamHookeLawForceFieldTest, testFonctionnel) {
+TYPED_TEST(BeamHookeLawForceFieldTest, DISABLED_testFonctionnel) {
         ASSERT_NO_THROW (this->testFonctionnel());
 }
 

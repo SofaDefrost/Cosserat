@@ -51,10 +51,10 @@ namespace Cosserat::mapping
     template <class TIn, class TOut>
     void LegendrePolynomialsMapping<TIn, TOut>::init()
     {
-        Inherit1::init();
-
         //Compute the coefficients for each curv_abs at all orders of the polynomials
         reinit();
+
+        Inherit1::init();
     }
 
 
