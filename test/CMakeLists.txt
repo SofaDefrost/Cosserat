@@ -1,8 +1,5 @@
 cmake_minimum_required(VERSION 3.12)
-
-set(This Cosserat_test)
-
-project(${This} C CXX)
+project(Cosserat_core_test C CXX)
 
 #find_package(Cosserat REQUIRED)
 find_package(Sofa.Testing REQUIRED)
@@ -21,7 +18,7 @@ set(SOURCE_FILES
     )
 
 
-add_executable(${This} ${SOURCE_FILES} ${HEADER_FILES})
+add_executable(${PROJECT_NAME} ${SOURCE_FILES} ${HEADER_FILES})
 
 target_link_libraries(${PROJECT_NAME} 
         Sofa.Testing
@@ -39,4 +36,5 @@ add_test(
         COMMAND ${This}
 )
 
-#[[add_subdirectory(constraint)]]
+add_subdirectory(Cosserat.Core.Tests)
+add_subdirectory(Cosserat.Scene.Tests)

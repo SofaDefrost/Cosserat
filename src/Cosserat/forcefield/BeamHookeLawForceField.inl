@@ -29,9 +29,6 @@
 ******************************************************************************/
 #pragma once
 #include <Cosserat/forcefield/BeamHookeLawForceField.h>
-
-#include <sofa/linearalgebra/FullVector.h>
-#include <sofa/core/behavior/MechanicalState.h>
 #include <sofa/core/behavior/ForceField.inl>
 #include <sofa/helper/OptionsGroup.h> // ??
 
@@ -94,8 +91,8 @@ void BeamHookeLawForceField<DataTypes>::init()
 /*Cross-Section Properties Initialization: The reinit function begins by recalculating the properties
     related to the cross-section of the beams. It calculates the area moment of inertia (Iy and Iz),
     the polar moment of inertia (J), and the cross-sectional area (A).
-    These calculations depend on the chosen cross-section shape, either circular or rectangular. T
-    he formulas used for these calculations are based on standard equations for these properties.*/
+    These calculations depend on the chosen cross-section shape, either circular or rectangular.
+    The formulas used for these calculations are based on standard equations for these properties.*/
 template<typename DataTypes>
 void BeamHookeLawForceField<DataTypes>::reinit()
 {
@@ -205,8 +202,8 @@ void BeamHookeLawForceField<DataTypes>::addForce(const MechanicalParams* mparams
     }
     VecDeriv& f = *d_f.beginEdit();
     const VecCoord& x = d_x.getValue();
-    // get the rest position (for non straight shape)
-    const VecCoord& x0 = this->mstate->read(VecCoordId::restPosition())->getValue();
+    // get the rest position (for non-straight shape)
+    const VecCoord& x0 = this->mstate->read(core::vec_id::read_access::restPosition)->getValue();
 
     f.resize(x.size());
     unsigned int sz = d_length.getValue().size();
