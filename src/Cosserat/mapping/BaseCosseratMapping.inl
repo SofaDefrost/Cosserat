@@ -256,7 +256,7 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::updateExponentialSE3(
 
         msg_info()
                 << "_________________" << i << "_________________________" << msgendl
-                << "x :" << curv_abs_x << "; strain :" << strain_n << msgendl
+                << "x :" << sub_section_length << "; strain :" << strain_n << msgendl
                 << "m_framesExponentialSE3Vectors :" << g_X_frame_i;
     }
 
@@ -471,7 +471,7 @@ BaseCosseratMapping<TIn1, TIn2, TOut>::computeETA(const Vec6 &baseEta,
         _diff0 = curv_abs_input[m_indexInput - 1] - abs_input;
     }
 
-    Transform outTransform;
+    Frame outTransform;
     computeExponentialSE3(_diff0, x1[m_indexInput], outTransform);
 
     TangentTransform adjointMatrix;

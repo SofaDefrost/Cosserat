@@ -50,8 +50,8 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>:: applyJ(
     const auto baseIndex = d_baseIndex.getValue();
 
     // Curv abscissa of nodes and frames
-    auto curv_abs_section = sofa::helper::getReadAccessor(d_curv_abs_section);
-    auto curv_abs_frames = sofa::helper::getReadAccessor(d_curv_abs_frames);
+    const auto curv_abs_section = sofa::helper::getReadAccessor(d_curv_abs_section);
+    const auto curv_abs_frames = sofa::helper::getReadAccessor(d_curv_abs_frames);
 
     const auto inDeform = sofa::helper::getReadAccessor(*m_strain_state->read(sofa::core::ConstVecCoordId::position()));
 
@@ -68,7 +68,7 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>:: applyJ(
 
     //Apply the local transform i.e. from SOFA's frame to Cosserat's frame
     const sofa::VecCoord_t<In2>& xfrom2Data = sofa::helper::getReadAccessor(*m_rigid_base->read(sofa::core::ConstVecCoordId::position()));
-    Transform TInverse = Transform(xfrom2Data[baseIndex].getCenter(), xfrom2Data[baseIndex].getOrientation()).inversed();
+    Frame TInverse = Frame(xfrom2Data[baseIndex].getCenter(), xfrom2Data[baseIndex].getOrientation()).inversed();
     Mat6x6 P = this->buildProjector(TInverse);
     Vec6 baseLocalVelocity = P * baseVelocity; //This is the base velocity in Locale frame
     m_nodesVelocityVectors.push_back(baseLocalVelocity);
@@ -78,7 +78,7 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>:: applyJ(
     //Compute velocity at nodes
     for (unsigned int i = 1 ; i < curv_abs_section.size(); i++)
     {
-        Transform Trans = m_nodesExponentialSE3Vectors[i].inversed();
+        Frame Trans = m_nodesExponentialSE3Vectors[i].inversed();
         TangentTransform Adjoint;
         this->computeAdjoint(Trans, Adjoint);
 
@@ -95,13 +95,13 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>:: applyJ(
     auto sz = curv_abs_frames.size();
     out_vel.resize(sz);
     for (unsigned int i = 0 ; i < sz; i++) {
-        Transform Trans = m_framesExponentialSE3Vectors[i].inversed();
+        Frame Trans = m_framesExponentialSE3Vectors[i].inversed();
         TangentTransform Adjoint; Adjoint.clear();
         this->computeAdjoint(Trans, Adjoint);
         Vec6 frame_Xi_dot = in1_vel[m_indicesVectors[i]-1];
         Vec6 eta_frame_i = Adjoint * (m_nodesVelocityVectors[m_indicesVectors[i]-1] + m_framesTangExpVectors[i] * frame_Xi_dot ); // eta
 
-        auto T = Transform(out[i].getCenter(), out[i].getOrientation());
+        auto T = Frame(out[i].getCenter(), out[i].getOrientation());
         TangentTransform Proj = this->buildProjector(T);
 
         out_vel[i] = Proj * eta_frame_i;
@@ -140,7 +140,7 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>:: applyJT(
         Vec6 vec;
         for(unsigned j = 0; j < 6; j++) vec[j] = in[var][j];
         //Convert input from global frame(SOFA) to local frame
-        Transform _T = Transform(frame[var].getCenter(),frame[var].getOrientation());
+        Frame _T = Frame(frame[var].getCenter(),frame[var].getOrientation());
         Mat6x6 P_trans =(this->buildProjector(_T)); P_trans.transpose();
         Vec6 local_F = P_trans * vec;
         local_F_Vec.push_back(local_F);
@@ -172,10 +172,10 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>:: applyJT(
             //bring F_tot to the reference of the new beam
             this->computeCoAdjoint(m_nodesExponentialSE3Vectors[index],coAdjoint);  //m_nodesExponentialSE3Vectors computed in apply
             F_tot = coAdjoint * F_tot;
-            Mat6x6 temp = m_nodesTangExpVectors[index];
-            temp.transpose();
+            Mat6x6 temp_mat = m_nodesTangExpVectors[index];
+            temp_mat.transpose();
             //apply F_tot to the new beam
-            Vec6 temp_f = matB_trans * temp * F_tot;
+            const Vec6 temp_f = matB_trans * temp_mat * F_tot;
             out1[index-1] += temp_f;
         }
 
@@ -186,8 +186,8 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>:: applyJT(
         out1[m_indicesVectors[s]-1] += f;
     }
 
-    Transform frame0 = Transform(frame[0].getCenter(),frame[0].getOrientation());
-    Mat6x6 M = this->buildProjector(frame0);
+    const auto frame0 = Frame(frame[0].getCenter(),frame[0].getOrientation());
+    const Mat6x6 M = this->buildProjector(frame0);
     out2[baseIndex] += M * F_tot;
 
     msg_info()
@@ -223,10 +223,10 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>::applyJT(
     vector< std::tuple<int,Vec6> > NodesInvolved;
     vector< std::tuple<int,Vec6> > NodesInvolvedCompressed;
 
-    typename sofa::MatrixDeriv_t<Out>::RowConstIterator rowItEnd = in.end();
+    sofa::MatrixDeriv_t<Out>::RowConstIterator rowItEnd = in.end();
 
     bool doPrintLog = f_printLog.getValue();
-    for (typename sofa::MatrixDeriv_t<Out>::RowConstIterator rowIt = in.begin(); rowIt != rowItEnd; ++rowIt)
+    for (sofa::MatrixDeriv_t<Out>::RowConstIterator rowIt = in.begin(); rowIt != rowItEnd; ++rowIt)
     {
         msg_info_when(doPrintLog)
              <<"************* Apply JT (MatrixDeriv) iteration on line "
@@ -243,8 +243,8 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>::applyJT(
                 <<"no column for this constraint";
             continue;
         }
-        typename sofa::MatrixDeriv_t<In1>::RowIterator o1 = out1.writeLine(rowIt.index()); // we store the constraint number
-        typename sofa::MatrixDeriv_t<In2>::RowIterator o2 = out2.writeLine(rowIt.index());
+        sofa::MatrixDeriv_t<In1>::RowIterator o1 = out1.writeLine(rowIt.index()); // we store the constraint number
+        sofa::MatrixDeriv_t<In2>::RowIterator o2 = out2.writeLine(rowIt.index());
 
         NodesInvolved.clear();
         while (colIt != colItEnd)
@@ -257,7 +257,7 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>::applyJT(
 
             int indexBeam =  m_indicesVectors[childIndex];
 
-            Transform _T = Transform(frame[childIndex].getCenter(),frame[childIndex].getOrientation());
+            const auto _T = Frame(frame[childIndex].getCenter(),frame[childIndex].getOrientation());
             TangentTransform P_trans =(this->buildProjector(_T));
             P_trans.transpose();
 
@@ -340,9 +340,9 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>::applyJT(
             while(i>0)
             {
                 //cumulate on beam frame
-                Mat6x6 coAdjoint;
-                this->computeCoAdjoint(m_nodesExponentialSE3Vectors[i-1],coAdjoint);
-                CumulativeF = coAdjoint * CumulativeF;
+                Mat6x6 co_adjoint;
+                this->computeCoAdjoint(m_nodesExponentialSE3Vectors[i-1],co_adjoint);
+                CumulativeF = co_adjoint * CumulativeF;
                 // transfer to strain space (local coordinates)
                 Mat6x6 temp = m_nodesTangExpVectors[i-1];
                 temp.transpose();
@@ -352,8 +352,8 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>::applyJT(
                 i--;
             }
 
-            Transform frame0 = Transform(frame[0].getCenter(),frame[0].getOrientation());
-            Mat6x6 M = this->buildProjector(frame0);
+            const auto frame0 = Frame(frame[0].getCenter(),frame[0].getOrientation());
+            const Mat6x6 M = this->buildProjector(frame0);
 
             Vec6 base_force = M * CumulativeF;
             o2.addCol(baseIndex, base_force);
