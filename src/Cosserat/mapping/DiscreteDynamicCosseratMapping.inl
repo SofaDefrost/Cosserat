@@ -21,17 +21,10 @@
 ******************************************************************************/
 #pragma once
 #include <Cosserat/mapping/DiscreteDynamicCosseratMapping.h>
-
 #include <sofa/core/Multi2Mapping.inl>
 #include <sofa/core/visual/VisualParams.h>
-#include <sofa/core/behavior/MechanicalState.h>
-#include <sofa/core/visual/VisualParams.h>
 #include <sofa/helper/AdvancedTimer.h>
-#include <sofa/core/objectmodel/BaseContext.h>
-#include <sofa/helper/logging/Message.h>
 #include <sofa/type/Quat.h>
-
-#include <string>
 
 
 namespace Cosserat::mapping
@@ -43,7 +36,7 @@ using sofa::helper::WriteAccessor;
 
 template <class TIn1, class TIn2, class TOut>
 DiscreteDynamicCosseratMapping<TIn1, TIn2, TOut>::DiscreteDynamicCosseratMapping()
-{}
+= default;
 
 template <class TIn1, class TIn2, class TOut>
 void DiscreteDynamicCosseratMapping<TIn1, TIn2, TOut>::doBaseCosseratInit()
