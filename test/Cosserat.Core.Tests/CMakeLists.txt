@@ -1,17 +1,15 @@
 cmake_minimum_required(VERSION 3.12)
-project(Cosserat_test C CXX)
+project(Cosserat.Core.Tests C CXX)
 
-#find_package(Cosserat REQUIRED)
 find_package(Sofa.Testing REQUIRED)
 
 enable_testing()
 
 set(HEADER_FILES
-        Cosserat.Binding.Tests/constraint/Constraint.h
+        constraint/Constraint.h
         )
 set(SOURCE_FILES
-        Cosserat.Binding.Tests/constraint/ExampleTest.cpp
-        Cosserat.Binding.Tests/forcefield/BeamHookeLawForceFieldTest.cpp
+        forcefield/BeamHookeLawForceFieldTest.cpp
     )
 
 
@@ -32,6 +30,3 @@ add_test(
         NAME ${PROJECT_NAME}
         COMMAND ${PROJECT_NAME}
 )
-
-# add_subdirectory(Cosserat.Core.Tests) # add
-# add_subdirectory(Cosserat.Scene.Tests)
