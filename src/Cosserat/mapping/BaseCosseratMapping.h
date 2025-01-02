@@ -22,7 +22,6 @@
 #pragma once
 #include <Cosserat/config.h>
 #include <Cosserat/types.h>
-
 #include <sofa/core/Multi2Mapping.h>
 
 namespace Cosserat::mapping
@@ -44,7 +43,6 @@ using sofa::type::Vec3;
 using sofa::type::Vec6;
 using sofa::type::Mat;
 
-// TODO(dmarchal: 2024/06/12): please check the comment to confirme this is true
 using SE3 = sofa::type::Matrix4; ///< The "coordinate" in SE3
 using se3 = sofa::type::Matrix4; ///< The "speed" of change of SE3.
 using _se3 = Eigen::Matrix4d;
@@ -123,17 +121,21 @@ public:
     void update_geometry_info();
 
     double computeTheta(const double &x, const Mat4x4 &gX);
-    void printMatrix(const Mat6x6 R);
 
-    sofa::type::Mat3x3 extractRotMatrix(const Frame &frame);
-    TangentTransform buildProjector(const Frame &T);
-    Mat3x3 getTildeMatrix(const Vec3 &u);
+    static void printMatrix(const Mat6x6 R);
 
-    void buildAdjoint(const Mat3x3 &A, const Mat3x3 &B, Mat6x6 &Adjoint);
+    static sofa::type::Mat3x3 extractRotMatrix(const Frame &frame);
+
+    static TangentTransform buildProjector(const Frame &T);
+
+    static Mat3x3 getTildeMatrix(const Vec3 &u);
+
+    static void buildAdjoint(const Mat3x3 &A, const Mat3x3 &B, Mat6x6 &Adjoint);
     void buildCoAdjoint(const Mat3x3 &A, const Mat3x3 &B, Mat6x6 &coAdjoint);
 
-    Mat4x4 convertTransformToMatrix4x4(const Frame &T);
-    Vec6 piecewiseLogmap(const _SE3 &g_x);
+    static Mat4x4 convertTransformToMatrix4x4(const Frame &T);
+
+    static Vec6 piecewiseLogmap(const _SE3 &g_x);
 
     /*!
      * @brief Computes the rotation matrix around the X-axis
@@ -163,7 +165,7 @@ public:
     // TODO(dmarchal: 2024/06/07), this looks like a very common utility
     // function... it shouldn't be (re)implemented in a base classe. the type of
     // the data return should also be unified between rotationMatrixX, Y and Z
-    RotMat rotationMatrixZ(double angle) {
+    static RotMat rotationMatrixZ(const SReal angle) {
         RotMat rotation;
         rotation << cos(angle), -sin(angle), 0, sin(angle), cos(angle), 0, 0, 0, 1;
         return rotation;

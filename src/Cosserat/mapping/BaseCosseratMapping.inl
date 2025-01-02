@@ -23,19 +23,14 @@
 
 #include <Cosserat/config.h>
 #include <Cosserat/mapping/BaseCosseratMapping.h>
-
 #include <sofa/core/Multi2Mapping.inl>
-#include <sofa/core/behavior/MechanicalState.h>
 #include <sofa/core/objectmodel/BaseContext.h>
 #include <sofa/core/visual/VisualParams.h>
 #include <sofa/helper/AdvancedTimer.h>
 #include <sofa/helper/logging/Message.h>
 #include <sofa/type/Quat.h>
-
 #include <string>
 
-// To go further =>
-// https://www.mathworks.com/matlabcentral/fileexchange/83038-sorosim/
 
 namespace Cosserat::mapping
 {
@@ -47,13 +42,16 @@ using sofa::type::Quat;
 
 template <class TIn1, class TIn2, class TOut>
 BaseCosseratMapping<TIn1, TIn2, TOut>::BaseCosseratMapping()
-    // TODO(dmarchal: 2024/06/12): please add the help comments !
-    : d_curv_abs_section(initData(&d_curv_abs_section, "curv_abs_input",
+    : m_indexInput(0),
+    d_curv_abs_section(initData(&d_curv_abs_section, "curv_abs_input",
                                   " need to be com....")),
-      d_curv_abs_frames(initData(&d_curv_abs_frames, "curv_abs_output",
+    d_curv_abs_frames(initData(&d_curv_abs_frames, "curv_abs_output",
                                  " need to be com....")),
-      d_debug(initData(&d_debug, false, "debug", "printf for the debug")),
-      m_indexInput(0) {}
+    d_debug(initData(&d_debug, false, "debug", "printf for the debug")),
+    m_strain_state(nullptr),
+    m_rigid_base(nullptr),
+    m_global_frames(nullptr) {
+}
 
 
 template <class TIn1, class TIn2, class TOut>
@@ -163,7 +161,7 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::update_geometry_info()
             << "m_BeamLengthVectors : " << msgendl;
 }
 
-auto buildXiHat(const Vec3& strain_i) -> se3
+inline auto buildXiHat(const Vec3& strain_i) -> se3
 {
     se3 Xi_hat;
 
@@ -175,12 +173,12 @@ auto buildXiHat(const Vec3& strain_i) -> se3
     Xi_hat[2][0] = -Xi_hat(0, 2);
     Xi_hat[2][1] = -Xi_hat(1, 2);
 
-    //@TODO:  Why this , if q = 0 ????
+    //@TODO:  Why this, if q = 0 ????
     Xi_hat[0][3] = 1.0;
     return Xi_hat;
 }
 
-auto buildXiHat(const Vec6& strain_i) -> se3
+inline auto buildXiHat(const Vec6& strain_i) -> se3
 {
     se3 Xi = buildXiHat(Vec3(strain_i(0), strain_i(1), strain_i(2)));
 
@@ -198,22 +196,22 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::computeExponentialSE3(const double &
     const auto I4 = Mat4x4::Identity();
 
     // Get the angular part of the strain
-    Vec3 k = Vec3(strain_n(0), strain_n(1), strain_n(2));
-    SReal theta = k.norm();
+    const auto k = Vec3(strain_n(0), strain_n(1), strain_n(2));
+    const SReal theta = k.norm();
 
     SE3 _g_X;
-    se3 Xi_hat_n = buildXiHat(strain_n);
+    const se3 Xi_hat_n = buildXiHat(strain_n);
 
     //todo: change double to Real
-    if (theta <= std::numeric_limits<double>::epsilon())
+    if (theta <= std::numeric_limits<SReal>::epsilon())
     {
         _g_X = I4 + sub_section_length * Xi_hat_n;
     }
     else
     {
-        double scalar1 =
+        const SReal scalar1 =
                 (1.0 - std::cos(sub_section_length * theta)) / std::pow(theta, 2);
-        double scalar2 = (sub_section_length * theta - std::sin(sub_section_length * theta)) /
+        const SReal scalar2 = (sub_section_length * theta - std::sin(sub_section_length * theta)) /
                          std::pow(theta, 3);
         // Taylor expansion of exponential
         _g_X = I4 + sub_section_length * Xi_hat_n + scalar1 * Xi_hat_n * Xi_hat_n +
@@ -233,7 +231,7 @@ template <class TIn1, class TIn2, class TOut>
 void BaseCosseratMapping<TIn1, TIn2, TOut>::updateExponentialSE3(
         const vector<Coord1> &strain_state)
 {
-    auto curv_abs_frames = getReadAccessor(d_curv_abs_frames);
+    const auto curv_abs_frames = getReadAccessor(d_curv_abs_frames);
 
     m_framesExponentialSE3Vectors.clear();
     m_nodesExponentialSE3Vectors.clear();
@@ -403,33 +401,33 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::computeTangExp(double &curv_abs_n,
 }
 
 template <class TIn1, class TIn2, class TOut>
-void BaseCosseratMapping<TIn1, TIn2, TOut>::computeTangExpImplementation(double &curv_abs_n,
+void BaseCosseratMapping<TIn1, TIn2, TOut>::computeTangExpImplementation(SReal &curv_abs_n,
                                                                          const Vec6 &strain_i,
                                                                          Mat6x6 &TgX)
 {
-    SReal theta = Vec3(strain_i(0), strain_i(1), strain_i(2)).norm();
-    Mat3x3 tilde_k = getTildeMatrix(Vec3(strain_i(0), strain_i(1), strain_i(2)));
-    Mat3x3 tilde_q = getTildeMatrix(Vec3(strain_i(3), strain_i(4), strain_i(5)));
+    const SReal theta = Vec3(strain_i(0), strain_i(1), strain_i(2)).norm();
+    const Mat3x3 tilde_k = getTildeMatrix(Vec3(strain_i(0), strain_i(1), strain_i(2)));
+    const Mat3x3 tilde_q = getTildeMatrix(Vec3(strain_i(3), strain_i(4), strain_i(5)));
 
     Mat6x6 ad_Xi;
     buildAdjoint(tilde_k, tilde_q, ad_Xi);
 
     Mat6x6 Id6 = Mat6x6::Identity();
     if (theta <= std::numeric_limits<double>::epsilon()) {
-        double scalar0 = std::pow(curv_abs_n, 2) / 2.0;
+        const SReal scalar0 = std::pow(curv_abs_n, 2) / 2.0;
         TgX = curv_abs_n * Id6 + scalar0 * ad_Xi;
     } else {
-        double scalar1 = (4.0 - 4.0 * cos(curv_abs_n * theta) -
+        const SReal scalar1 = (4.0 - 4.0 * cos(curv_abs_n * theta) -
                           curv_abs_n * theta * sin(curv_abs_n * theta)) /
                          (2.0 * theta * theta);
-        double scalar2 = (4.0 * curv_abs_n * theta +
+        const SReal scalar2 = (4.0 * curv_abs_n * theta +
                           curv_abs_n * theta * cos(curv_abs_n * theta) -
                           5.0 * sin(curv_abs_n * theta)) /
                          (2.0 * theta * theta * theta);
-        double scalar3 = (2.0 - 2.0 * cos(curv_abs_n * theta) -
+        const SReal scalar3 = (2.0 - 2.0 * cos(curv_abs_n * theta) -
                           curv_abs_n * theta * sin(curv_abs_n * theta)) /
                          (2.0 * theta * theta * theta * theta);
-        double scalar4 = (2.0 * curv_abs_n * theta +
+        const SReal scalar4 = (2.0 * curv_abs_n * theta +
                           curv_abs_n * theta * cos(curv_abs_n * theta) -
                           3.0 * sin(curv_abs_n * theta)) /
                          (2.0 * theta * theta * theta * theta * theta);
@@ -448,7 +446,7 @@ BaseCosseratMapping<TIn1, TIn2, TOut>::computeETA(const Vec6 &baseEta,
 {
 
     // Get the positions from model 0. This function returns the position wrapped in a Data<>
-    auto d_x1 = m_strain_state->read(sofa::core::ConstVecCoordId::position());
+    auto d_x1 = m_strain_state->read(sofa::core::vec_id::write_access::position);
 
     // To access the actual content (in this case position) from a data, we have to use
     // a read accessor that insures the data is updated according to DDGNode state
@@ -458,8 +456,7 @@ BaseCosseratMapping<TIn1, TIn2, TOut>::computeETA(const Vec6 &baseEta,
     auto curv_abs_input = getReadAccessor(d_curv_abs_section);
 
     auto& kdot = k_dot[m_indexInput];
-    Vec6 Xi_dot {kdot[0], kdot[1], kdot[2],
-                 0,0,0};
+    const Vec6 Xi_dot {kdot[0], kdot[1], kdot[2], 0, 0, 0};
 
     // if m_indexInput is == 0
     double diff0 = abs_input;
@@ -513,7 +510,7 @@ Mat3x3 BaseCosseratMapping<TIn1, TIn2, TOut>::extractRotMatrix(const Frame &fram
     Quat q = frame.getOrientation();
 
     // TODO(dmarchal: 2024/06/07) The following code should probably become
-    // utility function building a 3x3 matix from a quaternion should probably
+    // utility function building a 3x3 matrix from a quaternion should probably
     // does not need this amount of code.
     SReal R[4][4];
     q.buildRotationMatrix(R);
