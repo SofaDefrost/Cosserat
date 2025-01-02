@@ -9,4 +9,3 @@ class ClassName {
 
 };
 
-#endif //SOFA_CLASSNAME_H
