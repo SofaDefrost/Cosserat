@@ -76,28 +76,11 @@ void SlidingForceConstraintResolution::resolution(int line, double **w,
 namespace Cosserat
 {
 
-////////////////////////////////////////////    FACTORY    //////////////////////////////////////////////
-// Registering the component
-// see: http://wiki.sofa-framework.org/wiki/ObjectFactory
-// 1-RegisterObject("description") + .add<> : Register the component
-// 2-.add<>(true) : Set default template
-
 void registerQPSlidingConstraint(sofa::core::ObjectFactory* factory)
 {
     factory->registerObjects(sofa::core::ObjectRegistrationData("Simulate cable actuation.")
     .add< sofa::component::constraintset::QPSlidingConstraint<sofa::defaulttype::Vec3Types> >(true));
 }
-
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-// Force template specialization for the most common sofa type.
-// This goes with the extern template declaration in the .h. Declaring extern template
-// avoid the code generation of the template for each compilation unit.
-// see: http://www.stroustrup.com/C++11FAQ.html#extern-templates
-//template class QPSlidingConstraint<sofa::defaulttype::Vec3Types>;
-
-
 } // namespace Cosserat
 
 

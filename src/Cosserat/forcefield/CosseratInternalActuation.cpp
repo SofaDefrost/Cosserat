@@ -33,11 +33,6 @@
 
 namespace Cosserat
 {
-////////////////////////////////////////////    FACTORY    //////////////////////////////////////////////
-// Registering the component
-// see: http://wiki.sofa-framework.org/wiki/ObjectFactory
-// 1-RegisterObject("description") + .add<> : Register the component
-// 2-.add<>(true) : Set default template
 using namespace sofa::defaulttype;
 
 void registerCosseratInternalActuation(sofa::core::ObjectFactory *factory) {
@@ -46,7 +41,6 @@ void registerCosseratInternalActuation(sofa::core::ObjectFactory *factory) {
           "This component is used to compute internal stress for torsion (along x) and bending (y and z)")
           .add<sofa::component::forcefield::CosseratInternalActuation<Vec3Types>>(true));
 }
-//////////////////////////////////////////////////////////////////////////////////////////////////////
 
 }
 
