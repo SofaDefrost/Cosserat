@@ -37,6 +37,25 @@ using sofa::helper::system::PluginManager;
 // "cosserat" or sofacosserat if you rename the plugin into SofaCosserat :)
 namespace Cosserat {
 
+
+#ifdef COSSERAT_USES_SOFTROBOTS
+extern void registerQPSlidingConstraint(sofa::core::ObjectFactory* factory);
+extern void registerCosseratActuatorConstraint(sofa::core::ObjectFactory* factory);
+#endif
+
+extern void registerCosseratNeedleSlidingConstraint(sofa::core::ObjectFactory* factory);
+extern void registerCosseratSlidingConstraint(sofa::core::ObjectFactory* factory);
+extern void registerPointsManager(sofa::core::ObjectFactory* factory);
+extern void registerProjectionEngine(sofa::core::ObjectFactory* factory);
+extern void registerBeamHookeLawForceField(sofa::core::ObjectFactory* factory);
+extern void registerBeamHookeLawForceFieldRigid(sofa::core::ObjectFactory* factory);
+extern void registerCosseratInternalActuation(sofa::core::ObjectFactory* factory);
+extern void registerDifferenceMultiMapping(sofa::core::ObjectFactory* factory);
+extern void registerDiscreteCosseratMapping(sofa::core::ObjectFactory* factory);
+extern void registerDiscretDynamicCosseratMapping(sofa::core::ObjectFactory* factory);
+extern void registerLegendrePolynomialsMapping(sofa::core::ObjectFactory* factory);
+extern void registerRigidDistanceMapping(sofa::core::ObjectFactory* factory);
+
 extern "C" {
 SOFA_COSSERAT_API void initExternalModule();
 SOFA_COSSERAT_API const char *getModuleLicense();
@@ -44,6 +63,7 @@ SOFA_COSSERAT_API const char *getModuleName();
 SOFA_COSSERAT_API const char *getModuleVersion();
 SOFA_COSSERAT_API const char *getModuleDescription();
 SOFA_COSSERAT_API const char *getModuleComponentList();
+SOFA_COSSERAT_API void registerObjects(sofa::core::ObjectFactory* factory);
 }
 
 // Here are just several convenient functions to help user to know what contains
@@ -51,11 +71,14 @@ SOFA_COSSERAT_API const char *getModuleComponentList();
 
 void initExternalModule() {
   static bool first = true;
-  if (first) {
+  if (first)
+  {
+    sofa::helper::system::PluginManager::getInstance().registerPlugin(MODULE_NAME);
     first = false;
   }
   // Automatically load the STLIB plugin if available.
-  if (!PluginManager::getInstance().findPlugin("STLIB").empty()) {
+  if (!PluginManager::getInstance().findPlugin("STLIB").empty())
+  {
     PluginManager::getInstance().loadPlugin("STLIB");
   }
 
@@ -63,6 +86,27 @@ void initExternalModule() {
   PythonEnvironment::addPythonModulePathsForPluginsByName("Cosserat");
 #endif
 }
+
+void registerObjects(sofa::core::ObjectFactory* factory)
+{
+#ifdef COSSERAT_USES_SOFTROBOTS
+  registerQPSlidingConstraint(factory);
+  registerCosseratActuatorConstraint(factory);
+#endif
+  registerCosseratNeedleSlidingConstraint(factory);
+  registerCosseratSlidingConstraint(factory);
+  registerPointsManager(factory);
+  registerProjectionEngine(factory);
+  registerBeamHookeLawForceField(factory);
+  registerBeamHookeLawForceFieldRigid(factory);
+  registerCosseratInternalActuation(factory);
+  registerDifferenceMultiMapping(factory);
+  registerDiscreteCosseratMapping(factory);
+  registerDiscretDynamicCosseratMapping(factory);
+  registerLegendrePolynomialsMapping(factory);
+  registerRigidDistanceMapping(factory);
+}
+
 const char *getModuleLicense() { return "LGPL"; }
 
 const char *getModuleName() { return Cosserat::MODULE_NAME; }

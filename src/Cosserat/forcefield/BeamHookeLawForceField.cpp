@@ -170,26 +170,23 @@ void BeamHookeLawForceField<defaulttype::Vec6Types>::addKToMatrix(const Mechanic
     }
 }
 
-////////////////////////////////////////////    FACTORY    //////////////////////////////////////////////
-// Registering the component
-// see: http://wiki.sofa-framework.org/wiki/ObjectFactory
-// 1-RegisterObject("description") + .add<> : Register the component
-// 2-.add<>(true) : Set default template
 using namespace sofa::defaulttype;
 
-int BeamHookeLawForceFieldClass = core::RegisterObject("This component is used to compute internal stress for torsion (along x) and bending (y and z)")
-                                      .add<BeamHookeLawForceField<Vec3Types> >(true)
-                                      .add<BeamHookeLawForceField<Vec6Types> >()
+template class SOFA_COSSERAT_API BeamHookeLawForceField<Vec3Types>;
+template class SOFA_COSSERAT_API BeamHookeLawForceField<Vec6Types>;
 
-    ;
-//////////////////////////////////////////////////////////////////////////////////////////////////////
+}
 
-// Force template specialization for the most common sofa floating point related type.
-// This goes with the extern template declaration in the .h. Declaring extern template
-// avoid the code generation of the template for each compilation unit.
-// see: http://www.stroustrup.com/C++11FAQ.html#extern-templates
+namespace Cosserat
+{
 
-template class BeamHookeLawForceField<Vec3Types>;
-template class BeamHookeLawForceField<Vec6Types>;
+void registerBeamHookeLawForceField(sofa::core::ObjectFactory* factory)
+{
+    factory->registerObjects(
+        sofa::core::ObjectRegistrationData(
+            "This component is used to compute internal stress for torsion (along x) and bending (y and z)")
+            .add<sofa::component::forcefield::BeamHookeLawForceField<sofa::defaulttype::Vec3Types>>(true)
+            .add<sofa::component::forcefield::BeamHookeLawForceField<sofa::defaulttype::Vec6Types>>());
+}
 
-} // forcefield
+}

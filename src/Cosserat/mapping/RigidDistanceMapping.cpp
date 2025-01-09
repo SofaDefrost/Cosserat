@@ -27,11 +27,17 @@
 namespace Cosserat::mapping
 {
 
-// Register in the Factory
-int RigidDistanceMappingClass = sofa::core::RegisterObject("Maps two rigid frames to a single rigid frame representing their differences")
-        .add< RigidDistanceMapping< sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types > >() ;
-
-
 template class SOFA_COSSERAT_API RigidDistanceMapping< sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types >;
 
 } // namespace Cosserat::mapping
+
+namespace Cosserat
+{
+
+// Register in the Factory
+void registerRigidDistanceMapping(sofa::core::ObjectFactory* factory)
+{
+  factory->registerObjects(sofa::core::ObjectRegistrationData("Maps two rigid frames to a single rigid frame representing their differences")
+                               .add< mapping::RigidDistanceMapping< sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types > >()) ;
+}
+}

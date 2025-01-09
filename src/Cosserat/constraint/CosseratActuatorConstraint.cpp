@@ -28,36 +28,22 @@
 *                                                                             *
 ******************************************************************************/
 
-
-#include "CosseratActuatorConstraint.inl"
+#include <Cosserat/constraint/CosseratActuatorConstraint.inl>
 #include <Cosserat/config.h>
 #include <sofa/core/ObjectFactory.h>
 
-namespace sofa::component::constraintset
+template class SOFA_COSSERAT_API sofa::component::constraintset::CosseratActuatorConstraint<sofa::defaulttype::Vec3Types>;
+
+namespace Cosserat
 {
 
-//////////////////////////////////////CosseratActuatorConstraintConstraintResolution1Dof/////////////////////////////////////////////
 using namespace sofa::defaulttype;
-using namespace sofa::helper;
-using namespace sofa::core;
 
-////////////////////////////////////////////    FACTORY    //////////////////////////////////////////////
-// Registering the component
-// see: http://wiki.sofa-framework.org/wiki/ObjectFactory
-// 1-RegisterObject("description") + .add<> : Register the component
-// 2-.add<>(true) : Set default template
-
-int CosseratActuatorConstraintClass = RegisterObject("Simulate cable actuation.")
-.add< CosseratActuatorConstraint<Vec3Types> >(true)
-
-;
-////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-// Force template specialization for the most common sofa type.
-// This goes with the extern template declaration in the .h. Declaring extern template
-// avoid the code generation of the template for each compilation unit.
-// see: http://www.stroustrup.com/C++11FAQ.html#extern-templates
-//template class CosseratActuatorConstraint<Vec3Types>;
+void registerCosseratActuatorConstraint(sofa::core::ObjectFactory* factory)
+{
+      factory->registerObjects(sofa::core::ObjectRegistrationData("Simulate cable actuation.")
+            .add< sofa::component::constraintset::CosseratActuatorConstraint<Vec3Types> >(true));
+}
 
 } // namespace sofa
 

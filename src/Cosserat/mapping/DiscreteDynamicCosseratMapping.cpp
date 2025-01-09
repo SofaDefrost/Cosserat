@@ -26,16 +26,16 @@
 #include <sofa/defaulttype/RigidTypes.h>
 #include <sofa/core/ObjectFactory.h>
 
-namespace Cosserat::mapping
+namespace Cosserat
 {
 
-using namespace sofa::defaulttype;
+template class SOFA_COSSERAT_API mapping::DiscreteDynamicCosseratMapping< sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types >;
 
 // Register in the Factory
-int DiscretDynamicCosseratMappingClass = sofa::core::RegisterObject("Set the positions and velocities of points attached to a rigid parent")
-        .add< DiscreteDynamicCosseratMapping< sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types > >() ;
+void registerDiscretDynamicCosseratMapping(sofa::core::ObjectFactory* factory)
+{
+  factory->registerObjects( sofa::core::ObjectRegistrationData("Set the positions and velocities of points attached to a rigid parent")
+          .add<mapping::DiscreteDynamicCosseratMapping<sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types>>());
+}
 
-
-template class SOFA_COSSERAT_API DiscreteDynamicCosseratMapping< sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types >;
-
-} // namespace sofa::component::mapping
+}
