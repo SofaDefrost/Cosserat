@@ -48,6 +48,5 @@ void registerCosseratInternalActuation(sofa::core::ObjectFactory *factory) {
 
 namespace sofa::component::forcefield
 {
-// Force template specialization for the most common sofa floating point related type. This goes with the extern template declaration in the .h. Declaring extern template avoid the code generation of the template for each compilation unit. see: http://www.stroustrup.com/C++11FAQ.html#extern-templates
     template class CosseratInternalActuation<defaulttype::Vec3Types>;
 }

@@ -40,9 +40,9 @@ using namespace sofa::core;
 
 void registerCosseratNeedleSlidingConstraint(
     sofa::core::ObjectFactory *factory) {
-  factory->registerObjects(sofa::core::ObjectRegistrationData("Simulate sliding contraints for needle insertion.")
+  factory->registerObjects(sofa::core::ObjectRegistrationData("Simulate sliding constraints for needle insertion.")
           .add<sofa::component::constraintset::CosseratNeedleSlidingConstraint<sofa::defaulttype::Vec3Types>>(true));
 
 }
 
-} // namespace sofa
+}
