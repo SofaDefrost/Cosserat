@@ -38,12 +38,6 @@ using sofa::defaulttype::Rigid3Types;
 using namespace sofa::helper;
 using namespace sofa::core;
 
-////////////////////////////////////////////    FACTORY    //////////////////////////////////////////////
-// Registering the component
-// see: http://wiki.sofa-framework.org/wiki/ObjectFactory
-// 1-RegisterObject("description") + .add<> : Register the component
-// 2-.add<>(true) : Set default template
-
 void registerCosseratNeedleSlidingConstraint(
     sofa::core::ObjectFactory *factory) {
   factory->registerObjects(sofa::core::ObjectRegistrationData("Simulate sliding contraints for needle insertion.")

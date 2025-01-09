@@ -174,14 +174,6 @@ template class BeamHookeLawForceField<Vec6Types>;
 
 namespace Cosserat
 {
-////////////////////////////////////////////    FACTORY    //////////////////////////////////////////////
-// Registering the component
-// see: http://wiki.sofa-framework.org/wiki/ObjectFactory
-// 1-RegisterObject("description") + .add<> : Register the component
-// 2-.add<>(true) : Set default template
-
-
-
 
 void registerBeamHookeLawForceField(sofa::core::ObjectFactory* factory)
 {
