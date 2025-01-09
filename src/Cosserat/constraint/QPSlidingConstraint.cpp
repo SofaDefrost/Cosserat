@@ -29,8 +29,7 @@
 #include <Cosserat/config.h>
 #include <sofa/core/ObjectFactory.h>
 #include <iostream>
-#include "QPSlidingConstraint.inl"
-
+#include <Cosserat/constraint/QPSlidingConstraint.inl>
 
 
 //#define SOFTROBOTS_CONSTRAINT_QPSLIDINGCONSTRAINT_NOEXTERN
@@ -79,7 +78,7 @@ void SlidingForceConstraintResolution::resolution(int line, double** w, double* 
         lambda[line] = m_imposedForce;
 }
 
-//template class QPSlidingConstraint<sofa::defaulttype::Vec3Types>;
+template class SOFA_COSSERAT_API QPSlidingConstraint<sofa::defaulttype::Vec3Types>;
 }
 
 namespace Cosserat

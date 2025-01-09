@@ -20,7 +20,7 @@
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
 #define SOFA_COSSERAT_CPP_DifferenceMultiMapping
-#include "DifferenceMultiMapping.inl"
+#include <Cosserat/mapping/DifferenceMultiMapping.inl>
 
 #include <sofa/defaulttype/VecTypes.h>
 #include <sofa/core/ObjectFactory.h>
@@ -30,6 +30,8 @@ namespace Cosserat
 
 using namespace sofa::defaulttype;
 
+template class SOFA_COSSERAT_API mapping::DifferenceMultiMapping< sofa::defaulttype::Vec3Types, sofa::defaulttype::Vec3Types, sofa::defaulttype::Vec3Types >;
+
 // Register in the Factory
 void registerDifferenceMultiMapping(sofa::core::ObjectFactory* factory)
 {
@@ -37,5 +39,4 @@ void registerDifferenceMultiMapping(sofa::core::ObjectFactory* factory)
         .add< mapping::DifferenceMultiMapping< sofa::defaulttype::Vec3Types, sofa::defaulttype::Vec3Types, sofa::defaulttype::Vec3Types > >()) ;
 }
 
-
-} // namespace sofa.
+} // namespace Cosserat

@@ -172,8 +172,8 @@ void BeamHookeLawForceField<defaulttype::Vec6Types>::addKToMatrix(const Mechanic
 
 using namespace sofa::defaulttype;
 
-template class BeamHookeLawForceField<Vec3Types>;
-template class BeamHookeLawForceField<Vec6Types>;
+template class SOFA_COSSERAT_API BeamHookeLawForceField<Vec3Types>;
+template class SOFA_COSSERAT_API BeamHookeLawForceField<Vec6Types>;
 
 }
 

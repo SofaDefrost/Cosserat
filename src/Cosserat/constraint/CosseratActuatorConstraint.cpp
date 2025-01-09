@@ -28,19 +28,16 @@
 *                                                                             *
 ******************************************************************************/
 
-
-#include "CosseratActuatorConstraint.inl"
+#include <Cosserat/constraint/CosseratActuatorConstraint.inl>
 #include <Cosserat/config.h>
 #include <sofa/core/ObjectFactory.h>
 
-namespace Cosserat
+template class SOFA_COSSERAT_API sofa::component::constraintset::CosseratActuatorConstraint<sofa::defaulttype::Vec3Types>;
 
+namespace Cosserat
 {
 
-//////////////////////////////////////CosseratActuatorConstraintConstraintResolution1Dof/////////////////////////////////////////////
 using namespace sofa::defaulttype;
-using namespace sofa::helper;
-using namespace sofa::core;
 
 void registerCosseratActuatorConstraint(sofa::core::ObjectFactory* factory)
 {

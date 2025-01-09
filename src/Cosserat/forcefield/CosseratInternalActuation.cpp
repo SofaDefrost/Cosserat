@@ -42,11 +42,10 @@ void registerCosseratInternalActuation(sofa::core::ObjectFactory *factory) {
           "This component is used to compute internal stress for torsion (along x) and bending (y and z)")
           .add<sofa::component::forcefield::CosseratInternalActuation<Vec3Types>>(true));
 }
-//////////////////////////////////////////////////////////////////////////////////////////////////////
 
 }
 
 namespace sofa::component::forcefield
 {
-    template class CosseratInternalActuation<defaulttype::Vec3Types>;
+    template class SOFA_COSSERAT_API CosseratInternalActuation<defaulttype::Vec3Types>;
 }
