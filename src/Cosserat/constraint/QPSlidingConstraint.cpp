@@ -35,40 +35,48 @@
 
 //#define SOFTROBOTS_CONSTRAINT_QPSLIDINGCONSTRAINT_NOEXTERN
 
-namespace sofa::component::constraintset {
+namespace sofa::component::constraintset
+{
 
 using sofa::defaulttype::Rigid3Types;
 using namespace sofa::helper;
 using namespace sofa::core;
 
-//--------------- Force constraint -------------
-SlidingForceConstraintResolution::SlidingForceConstraintResolution(
-    const double &imposedForce, const double &min, const double &max)
-    : ConstraintResolution(1), m_imposedForce(imposedForce),
-      m_minDisplacement(min), m_maxDisplacement(max) {}
 
-void SlidingForceConstraintResolution::init(int line, double **w,
-                                            double *lambda) {
-  SOFA_UNUSED(lambda);
-  m_wActuatorActuator = w[line][line];
+//--------------- Force constraint -------------
+SlidingForceConstraintResolution::SlidingForceConstraintResolution(const double &imposedForce, const double& min, const double& max)
+    : ConstraintResolution(1)
+    , m_imposedForce(imposedForce)
+    , m_minDisplacement(min)
+    , m_maxDisplacement(max)
+{ }
+
+
+void SlidingForceConstraintResolution::init(int line, double** w, double * lambda)
+{
+    SOFA_UNUSED(lambda);
+    m_wActuatorActuator = w[line][line];
 }
 
-void SlidingForceConstraintResolution::resolution(int line, double **w,
-                                                  double *d, double *lambda,
-                                                  double *dfree) {
-  SOFA_UNUSED(dfree);
-  SOFA_UNUSED(w);
+void SlidingForceConstraintResolution::resolution(int line, double** w, double* d, double* lambda, double* dfree)
+{
+    SOFA_UNUSED(dfree);
+    SOFA_UNUSED(w);
 
-  double displacement = m_wActuatorActuator * m_imposedForce + d[line];
+    double displacement = m_wActuatorActuator*m_imposedForce + d[line];
 
-  if (displacement < m_minDisplacement) {
-    displacement = m_minDisplacement;
-    lambda[line] -= (d[line] - displacement) / m_wActuatorActuator;
-  } else if (displacement > m_maxDisplacement) {
-    displacement = m_maxDisplacement;
-    lambda[line] -= (d[line] - displacement) / m_wActuatorActuator;
-  } else
-    lambda[line] = m_imposedForce;
+    if (displacement<m_minDisplacement)
+    {
+        displacement=m_minDisplacement;
+        lambda[line] -= (d[line]-displacement) / m_wActuatorActuator;
+    }
+    else if (displacement>m_maxDisplacement)
+    {
+        displacement=m_maxDisplacement;
+        lambda[line] -= (d[line]-displacement) / m_wActuatorActuator;
+    }
+    else
+        lambda[line] = m_imposedForce;
 }
 
 //template class QPSlidingConstraint<sofa::defaulttype::Vec3Types>;
