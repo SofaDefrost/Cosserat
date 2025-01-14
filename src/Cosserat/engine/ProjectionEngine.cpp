@@ -31,7 +31,6 @@ namespace Cosserat
 {
 
 using namespace sofa::defaulttype;
-using namespace sofa::helper;
 
 void registerProjectionEngine(sofa::core::ObjectFactory *factory) {
   factory->registerObjects(

@@ -29,75 +29,66 @@
 #include <Cosserat/config.h>
 #include <sofa/core/ObjectFactory.h>
 #include <iostream>
-#include "QPSlidingConstraint.inl"
-
+#include <Cosserat/constraint/QPSlidingConstraint.inl>
 
 
 //#define SOFTROBOTS_CONSTRAINT_QPSLIDINGCONSTRAINT_NOEXTERN
 
-namespace sofa::component::constraintset {
+namespace sofa::component::constraintset
+{
 
-using sofa::defaulttype::Rigid3Types;
-using namespace sofa::helper;
-using namespace sofa::core;
+  using sofa::defaulttype::Rigid3Types;
+  using namespace sofa::helper;
+  using namespace sofa::core;
 
-//--------------- Force constraint -------------
-SlidingForceConstraintResolution::SlidingForceConstraintResolution(
-    const double &imposedForce, const double &min, const double &max)
-    : ConstraintResolution(1), m_imposedForce(imposedForce),
-      m_minDisplacement(min), m_maxDisplacement(max) {}
 
-void SlidingForceConstraintResolution::init(int line, double **w,
-                                            double *lambda) {
-  SOFA_UNUSED(lambda);
-  m_wActuatorActuator = w[line][line];
-}
+  //--------------- Force constraint -------------
+  SlidingForceConstraintResolution::SlidingForceConstraintResolution(const double &imposedForce, const double& min, const double& max)
+      : ConstraintResolution(1)
+      , m_imposedForce(imposedForce)
+      , m_minDisplacement(min)
+      , m_maxDisplacement(max)
+  { }
 
-void SlidingForceConstraintResolution::resolution(int line, double **w,
-                                                  double *d, double *lambda,
-                                                  double *dfree) {
-  SOFA_UNUSED(dfree);
-  SOFA_UNUSED(w);
 
-  double displacement = m_wActuatorActuator * m_imposedForce + d[line];
+  void SlidingForceConstraintResolution::init(int line, double** w, double * lambda)
+  {
+    SOFA_UNUSED(lambda);
+    m_wActuatorActuator = w[line][line];
+  }
 
-  if (displacement < m_minDisplacement) {
-    displacement = m_minDisplacement;
-    lambda[line] -= (d[line] - displacement) / m_wActuatorActuator;
-  } else if (displacement > m_maxDisplacement) {
-    displacement = m_maxDisplacement;
-    lambda[line] -= (d[line] - displacement) / m_wActuatorActuator;
-  } else
-    lambda[line] = m_imposedForce;
-}
+  void SlidingForceConstraintResolution::resolution(int line, double** w, double* d, double* lambda, double* dfree)
+  {
+    SOFA_UNUSED(dfree);
+    SOFA_UNUSED(w);
 
+    double displacement = m_wActuatorActuator*m_imposedForce + d[line];
+
+    if (displacement<m_minDisplacement)
+    {
+      displacement=m_minDisplacement;
+      lambda[line] -= (d[line]-displacement) / m_wActuatorActuator;
+    }
+    else if (displacement>m_maxDisplacement)
+    {
+      displacement=m_maxDisplacement;
+      lambda[line] -= (d[line]-displacement) / m_wActuatorActuator;
+    }
+    else
+      lambda[line] = m_imposedForce;
+  }
+
+  template class SOFA_COSSERAT_API QPSlidingConstraint<sofa::defaulttype::Vec3Types>;
 }
 
 namespace Cosserat
 {
 
-////////////////////////////////////////////    FACTORY    //////////////////////////////////////////////
-// Registering the component
-// see: http://wiki.sofa-framework.org/wiki/ObjectFactory
-// 1-RegisterObject("description") + .add<> : Register the component
-// 2-.add<>(true) : Set default template
-
-void registerQPSlidingConstraint(sofa::core::ObjectFactory* factory)
-{
+  void registerQPSlidingConstraint(sofa::core::ObjectFactory* factory)
+  {
     factory->registerObjects(sofa::core::ObjectRegistrationData("Simulate cable actuation.")
     .add< sofa::component::constraintset::QPSlidingConstraint<sofa::defaulttype::Vec3Types> >(true));
-}
-
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-// Force template specialization for the most common sofa type.
-// This goes with the extern template declaration in the .h. Declaring extern template
-// avoid the code generation of the template for each compilation unit.
-// see: http://www.stroustrup.com/C++11FAQ.html#extern-templates
-//template class QPSlidingConstraint<sofa::defaulttype::Vec3Types>;
-
+  }
 
 } // namespace Cosserat
-
 

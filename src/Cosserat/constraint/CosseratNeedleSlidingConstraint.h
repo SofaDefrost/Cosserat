@@ -42,8 +42,6 @@ namespace sofa::component::constraintset
     using sofa::core::behavior::Constraint;
     using sofa::core::objectmodel::Data;
     using sofa::core::visual::VisualParams;
-    using sofa::defaulttype::Vec3dTypes;
-    using sofa::defaulttype::Vec3fTypes;
     using sofa::helper::ReadAccessor;
     using sofa::linearalgebra::BaseVector;
     using sofa::core::MultiVecDerivId ;

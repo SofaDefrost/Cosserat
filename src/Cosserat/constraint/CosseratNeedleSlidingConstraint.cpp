@@ -28,27 +28,18 @@
 #include<sofa/defaulttype/VecTypes.h>
 #include <Cosserat/config.h>
 #include <sofa/core/ObjectFactory.h>
-#include "CosseratNeedleSlidingConstraint.inl"
+#include <Cosserat/constraint/CosseratNeedleSlidingConstraint.inl>
 
+template class SOFA_COSSERAT_API sofa::component::constraintset::CosseratNeedleSlidingConstraint<sofa::defaulttype::Vec3Types>;
 
+namespace Cosserat
+{
 
-namespace Cosserat {
+    void registerCosseratNeedleSlidingConstraint(sofa::core::ObjectFactory *factory)
+    {
+        factory->registerObjects(sofa::core::ObjectRegistrationData("Simulate sliding constraints for needle insertion.")
+            .add<sofa::component::constraintset::CosseratNeedleSlidingConstraint<sofa::defaulttype::Vec3Types>>(true));
 
-using sofa::defaulttype::Rigid3Types;
-using namespace sofa::helper;
-using namespace sofa::core;
-
-////////////////////////////////////////////    FACTORY    //////////////////////////////////////////////
-// Registering the component
-// see: http://wiki.sofa-framework.org/wiki/ObjectFactory
-// 1-RegisterObject("description") + .add<> : Register the component
-// 2-.add<>(true) : Set default template
-
-void registerCosseratNeedleSlidingConstraint(
-    sofa::core::ObjectFactory *factory) {
-  factory->registerObjects(sofa::core::ObjectRegistrationData("Simulate sliding contraints for needle insertion.")
-          .add<sofa::component::constraintset::CosseratNeedleSlidingConstraint<sofa::defaulttype::Vec3Types>>(true));
+    }
 
 }
-
-} // namespace sofa

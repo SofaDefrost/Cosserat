@@ -33,8 +33,6 @@ using sofa::helper::system::PluginManager;
 #include <cstring>
 #include <string>
 
-// TODO(dmarchal: 2024/06/07) This is the wrong namespace, it should be
-// "cosserat" or sofacosserat if you rename the plugin into SofaCosserat :)
 namespace Cosserat {
 
 
@@ -89,6 +87,10 @@ void initExternalModule() {
 
 void registerObjects(sofa::core::ObjectFactory* factory)
 {
+
+#ifdef COSSERAT_USES_SOFTROBOTS
+  registerQPSlidingConstraint(factory);
+  registerCosseratActuatorConstraint(factory);
   registerCosseratNeedleSlidingConstraint(factory);
   registerCosseratSlidingConstraint(factory);
   registerPointsManager(factory);
@@ -101,6 +103,7 @@ void registerObjects(sofa::core::ObjectFactory* factory)
   registerDiscretDynamicCosseratMapping(factory);
   registerLegendrePolynomialsMapping(factory);
   registerRigidDistanceMapping(factory);
+#endif
 }
 
 const char *getModuleLicense() { return "LGPL"; }
