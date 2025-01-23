@@ -372,13 +372,13 @@ namespace Cosserat
 // Register in the Factory
 void registerDiscreteCosseratMapping(sofa::core::ObjectFactory* factory)
 {
-  factory->registerObjects(sofa::core::ObjectRegistrationData(
-  "This component facilitates the creation of Cosserat Cables in SOFA simulations. It takes two mechanical"
-  "objects as inputs: the rigid base of the beam (with 6 degrees of freedom) and the local coordinates of the beam. Using "
-    "these inputs, the component computes and outputs the mechanical positions of the beam in global coordinates. "
-    "Like any mapping, it updates the positions and velocities of the outputs based on the inputs. "
-    "Additionally, forces applied to the outputs are propagated back to the inputs, ensuring bidirectional coupling.")
-    .add< mapping::DiscreteCosseratMapping< sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types > >(true)
-    .add< mapping::DiscreteCosseratMapping< sofa::defaulttype::Vec6Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types > >());
+    factory->registerObjects(sofa::core::ObjectRegistrationData(
+        "This component facilitates the creation of Cosserat Cables in SOFA simulations. It takes two mechanical"
+        "objects as inputs: the rigid base of the beam (with 6 degrees of freedom) and the local coordinates of the beam. Using "
+        "these inputs, the component computes and outputs the mechanical positions of the beam in global coordinates. "
+        "Like any mapping, it updates the positions and velocities of the outputs based on the inputs. "
+        "Additionally, forces applied to the outputs are propagated back to the inputs, ensuring bidirectional coupling.")
+        .add< mapping::DiscreteCosseratMapping< sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types > >(true)
+        .add< mapping::DiscreteCosseratMapping< sofa::defaulttype::Vec6Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types > >());
 }
 }
