@@ -32,4 +32,4 @@ void registerPointsManager(sofa::core::ObjectFactory* factory)
                                   .add<sofa::core::behavior::PointsManager>());
 }
 
-} // namespace sofa
+}

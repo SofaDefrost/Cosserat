@@ -43,7 +43,7 @@ void registerProjectionEngine(sofa::core::ObjectFactory *factory) {
 
 namespace sofa::component::constraintset
 {
-    template class ProjectionEngine<defaulttype::Vec3dTypes>;
+    template class ProjectionEngine<defaulttype::Vec3Types>;
 }
 
 
