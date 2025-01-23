@@ -176,7 +176,6 @@ public:
     using CableModel<DataTypes>::d_componentState ;
     using CableModel<DataTypes>::m_nbLines ;
     using CableModel<DataTypes>::d_constraintIndex ;
-
     using CableModel<DataTypes>::m_state ;
     using CableModel<DataTypes>::d_indices ;
     using CableModel<DataTypes>::d_pullPoint;
