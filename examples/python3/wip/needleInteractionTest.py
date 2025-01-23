@@ -168,7 +168,7 @@ def createScene(rootNode):
     ###############
     solverNode = rootNode.addChild('solverNode')
     solverNode.addObject('EulerImplicitSolver',
-                         rayleighStiffness=params.Physics.rayleighStiffness)
+                         rayleighStiffness=params.Physics.rayleigh_stiffness)
     solverNode.addObject('SparseLDLSolver', name='solver',
                          template="CompressedRowSparseMatrixd")
     solverNode.addObject('GenericConstraintCorrection')
@@ -176,7 +176,7 @@ def createScene(rootNode):
     needle = solverNode.addChild(
         Cosserat(parent=solverNode, cosseratGeometry=needleGeometryConfig, radius=params.Geometry.radius,
                  name="needle", youngModulus=params.Physics.youngModulus, poissonRatio=params.Physics.poissonRatio,
-                 rayleighStiffness=params.Physics.rayleighStiffness))
+                 rayleighStiffness=params.Physics.rayleigh_stiffness))
     needleCollisionModel = needle.addPointCollisionModel()
     slidingPoint = needle.addSlidingPoints()
 
