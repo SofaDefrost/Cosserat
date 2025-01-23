@@ -156,7 +156,7 @@ protected:
     sofa::helper::ColorMap m_colorMap;
 protected:
     DiscreteCosseratMapping();
-    ~DiscreteCosseratMapping() override {}
+    ~DiscreteCosseratMapping() override = default;
 };
 
 #if !defined(SOFA_COSSERAT_CPP_DiscreteCosseratMapping)

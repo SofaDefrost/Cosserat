@@ -29,8 +29,7 @@
 #include <Cosserat/config.h>
 #include <sofa/core/ObjectFactory.h>
 #include <iostream>
-#include "QPSlidingConstraint.inl"
-
+#include <Cosserat/constraint/QPSlidingConstraint.inl>
 
 
 //#define SOFTROBOTS_CONSTRAINT_QPSLIDINGCONSTRAINT_NOEXTERN
@@ -79,26 +78,17 @@ void SlidingForceConstraintResolution::resolution(int line, double** w, double* 
         lambda[line] = m_imposedForce;
 }
 
+template class SOFA_COSSERAT_API QPSlidingConstraint<sofa::defaulttype::Vec3Types>;
+}
 
-////////////////////////////////////////////    FACTORY    //////////////////////////////////////////////
-// Registering the component
-// see: http://wiki.sofa-framework.org/wiki/ObjectFactory
-// 1-RegisterObject("description") + .add<> : Register the component
-// 2-.add<>(true) : Set default template
+namespace Cosserat
+{
 
-int QPSlidingConstraintClass = RegisterObject("Simulate cable actuation.")
-.add< QPSlidingConstraint<sofa::defaulttype::Vec3Types> >(true)
+void registerQPSlidingConstraint(sofa::core::ObjectFactory* factory)
+{
+    factory->registerObjects(sofa::core::ObjectRegistrationData("Simulate cable actuation.")
+    .add< sofa::component::constraintset::QPSlidingConstraint<sofa::defaulttype::Vec3Types> >(true));
+}
 
-;
-////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-// Force template specialization for the most common sofa type.
-// This goes with the extern template declaration in the .h. Declaring extern template
-// avoid the code generation of the template for each compilation unit.
-// see: http://www.stroustrup.com/C++11FAQ.html#extern-templates
-//template class QPSlidingConstraint<sofa::defaulttype::Vec3Types>;
-
-
-} // namespace sofa
-
+} // namespace Cosserat
 

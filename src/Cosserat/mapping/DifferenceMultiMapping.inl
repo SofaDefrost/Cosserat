@@ -24,8 +24,6 @@
 
 #include <sofa/core/Multi2Mapping.inl>
 #include <sofa/core/visual/VisualParams.h>
-#include <sofa/core/behavior/MechanicalState.h>
-#include <sofa/core/visual/VisualParams.h>
 #include <sofa/helper/AdvancedTimer.h>
 #include <sofa/core/objectmodel/BaseContext.h>
 #include <sofa/helper/logging/Message.h>
