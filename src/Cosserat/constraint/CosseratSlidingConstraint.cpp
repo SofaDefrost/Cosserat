@@ -21,17 +21,17 @@
 ******************************************************************************/
 #define SOFA_COSSERAT_CPP_CosseratSlidingConstraint
 #include <Cosserat/constraint/CosseratSlidingConstraint.inl>
-
-#include <sofa/defaulttype/VecTypes.h>
-#include <sofa/core/ObjectFactory.h>
-
 #include <sofa/defaulttype/VecTypes.h>
 #include <sofa/core/ObjectFactory.h>
 #include <sofa/component/statecontainer/MechanicalObject.h>
 
+namespace sofa::component::constraintset
+{
+    template class SOFA_COSSERAT_API CosseratSlidingConstraint<sofa::defaulttype::Vec3dTypes>;
+}
+
 namespace Cosserat
 {
-
     using namespace sofa::defaulttype;
     using namespace sofa::helper;
 
@@ -42,7 +42,4 @@ namespace Cosserat
     }
 
 }
-namespace sofa::component::constraintset
-{
-    template class CosseratSlidingConstraint<sofa::defaulttype::Vec3dTypes>;
-}
+
