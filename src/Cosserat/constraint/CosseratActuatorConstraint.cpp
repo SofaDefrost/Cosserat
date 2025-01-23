@@ -46,5 +46,5 @@ void registerCosseratActuatorConstraint(sofa::core::ObjectFactory* factory)
             .add< sofa::component::constraintset::CosseratActuatorConstraint<Vec3Types> >(true));
 }
 
-} // namespace sofa
+}
 
