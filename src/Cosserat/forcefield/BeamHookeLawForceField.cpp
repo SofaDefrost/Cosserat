@@ -32,13 +32,15 @@
 
 #include <sofa/core/ObjectFactory.h>
 
-namespace sofa::component::forcefield {
+namespace sofa::component::forcefield
+{
 
-template <> void BeamHookeLawForceField<defaulttype::Vec6Types>::reinit() {
+template <>
+void BeamHookeLawForceField<defaulttype::Vec6Types>::reinit()
+{
     // Precompute and store values
     Real Iy, Iz, J, A;
-    if (d_crossSectionShape.getValue().getSelectedItem() ==
-        "rectangular") // rectangular cross-section
+    if (d_crossSectionShape.getValue().getSelectedItem() == "rectangular") // rectangular cross-section
     {
         Real Ly = d_lengthY.getValue();
         Real Lz = d_lengthZ.getValue();
@@ -68,9 +70,9 @@ template <> void BeamHookeLawForceField<defaulttype::Vec6Types>::reinit() {
     }
     m_crossSectionArea = A;
 
-    if (d_useInertiaParams.getValue()) {
-        msg_info("BeamHookeLawForceField")
-            << "Pre-calculated inertia parameters are used for the computation of the stiffness matrix.";
+    if (d_useInertiaParams.getValue())
+   {
+        msg_info() << "Pre-calculated inertia parameters are used for the computation of the stiffness matrix.";
         m_K_section66[0][0] = d_GI.getValue();
         m_K_section66[1][1] = d_EIy.getValue();
         m_K_section66[2][2] = d_EIz.getValue();
@@ -105,8 +107,7 @@ void BeamHookeLawForceField<defaulttype::Vec6Types>::addForce(
 
     if (!this->getMState())
     {
-        msg_info()
-            << "No Mechanical State found, no force will be computed..." << "\n";
+        msg_info() << "No Mechanical State found, no force will be computed..." << "\n";
         compute_df = false;
         return;
     }
@@ -120,7 +121,7 @@ void BeamHookeLawForceField<defaulttype::Vec6Types>::addForce(
     unsigned int sz = d_length.getValue().size();
     if (x.size() != sz)
     {
-        msg_warning("BeamHookeLawForceField")
+        msg_warning()
             << " length : " << sz << "should have the same size as x... "
             << x.size() << "\n";
         compute_df = false;
