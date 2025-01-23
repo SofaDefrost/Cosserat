@@ -170,7 +170,7 @@ using namespace sofa::defaulttype;
 template class BeamHookeLawForceField<Vec3Types>;
 template class BeamHookeLawForceField<Vec6Types>;
 
-} // namespace sofa::component::forcefield
+} // namespace Cosserat::forcefield
 
 // namespace sofa
 namespace Cosserat
