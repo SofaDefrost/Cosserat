@@ -49,7 +49,7 @@ struct BeamHookeLawForceFieldTest : public testing::NumericTest<> {
     typedef sofa::component::forcefield::BeamHookeLawForceField<DataTypes> TheBeamHookeLawForceField;
 
     // Sets up the test fixture.
-    void SetUp() override {
+    void doSetUp() override {
         // initialization or some code to run before each test
         fprintf(stderr, "Starting up ! \n");
         sofa::simpleapi::importPlugin("Sofa.Component");
@@ -57,7 +57,7 @@ struct BeamHookeLawForceFieldTest : public testing::NumericTest<> {
     }
 
     // Tears down the test fixture.
-    void TearDown() override {
+    void doTearDown() override {
         // code to run after each test;
         // can be used instead of a destructor,
         // but exceptions can be handled in this function only
