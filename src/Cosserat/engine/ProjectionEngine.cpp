@@ -33,7 +33,7 @@ namespace Cosserat
 using namespace sofa::defaulttype;
 
 void registerProjectionEngine(sofa::core::ObjectFactory *factory) {
-  factory->registerObjects(
+    factory->registerObjects(
       sofa::core::ObjectRegistrationData("TODO-ProjectionEngine")
           .add<sofa::component::constraintset::ProjectionEngine<Vec3Types>>(
               true));
@@ -43,7 +43,7 @@ void registerProjectionEngine(sofa::core::ObjectFactory *factory) {
 
 namespace sofa::component::constraintset
 {
-    template class ProjectionEngine<defaulttype::Vec3Types>;
+    template class SOFA_COSSERAT_API ProjectionEngine<defaulttype::Vec3Types>;
 }
 
 
