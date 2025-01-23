@@ -91,6 +91,7 @@ void registerObjects(sofa::core::ObjectFactory* factory)
 #ifdef COSSERAT_USES_SOFTROBOTS
   registerQPSlidingConstraint(factory);
   registerCosseratActuatorConstraint(factory);
+#endif
   registerCosseratNeedleSlidingConstraint(factory);
   registerCosseratSlidingConstraint(factory);
   registerPointsManager(factory);
@@ -103,7 +104,6 @@ void registerObjects(sofa::core::ObjectFactory* factory)
   registerDiscretDynamicCosseratMapping(factory);
   registerLegendrePolynomialsMapping(factory);
   registerRigidDistanceMapping(factory);
-#endif
 }
 
 const char *getModuleLicense() { return "LGPL"; }
