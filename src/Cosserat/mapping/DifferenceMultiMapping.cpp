@@ -24,19 +24,25 @@
 
 #include <sofa/defaulttype/VecTypes.h>
 #include <sofa/core/ObjectFactory.h>
-
-namespace Cosserat
-{
-
 using namespace sofa::defaulttype;
+namespace Cosserat::mapping
+{
 
 template class SOFA_COSSERAT_API mapping::DifferenceMultiMapping< sofa::defaulttype::Vec3Types, sofa::defaulttype::Vec3Types, sofa::defaulttype::Vec3Types >;
 
+} // namespace Cosserat::mapping
+
+namespace Cosserat
+{
 // Register in the Factory
 void registerDifferenceMultiMapping(sofa::core::ObjectFactory* factory)
 {
-  factory->registerObjects(sofa::core::ObjectRegistrationData("Set the positions and velocities of points attached to a rigid parent")
-        .add< mapping::DifferenceMultiMapping< sofa::defaulttype::Vec3Types, sofa::defaulttype::Vec3Types, sofa::defaulttype::Vec3Types > >()) ;
+    factory->registerObjects(sofa::core::ObjectRegistrationData(
+      "he DifferenceMultiMapping class is a component used to enforce constraints between two sets of points. "
+      "Takes two sets of coordinates (x1 and x2) as input, then finds the closest points between these sets of coordinates. "
+      "Then compute the force to keep the points in a desired relationship to each other. Particularly useful for "
+      "scenarios like cable-structure interactions. ")
+        .add< mapping::DifferenceMultiMapping< Vec3Types, Vec3Types, Vec3Types > >()) ;
 }
 
-} // namespace Cosserat
+} // namespace sofa.

@@ -24,8 +24,6 @@
 
 #include <sofa/core/Multi2Mapping.inl>
 #include <sofa/core/visual/VisualParams.h>
-#include <sofa/core/behavior/MechanicalState.h>
-#include <sofa/core/visual/VisualParams.h>
 #include <sofa/helper/AdvancedTimer.h>
 #include <sofa/core/objectmodel/BaseContext.h>
 #include <sofa/helper/logging/Message.h>
@@ -562,7 +560,7 @@ void DifferenceMultiMapping<TIn1, TIn2, TOut>::applyJ(
     const In2VecDeriv &in2 = dataVecIn2Vel[0]->getValue();
     OutVecDeriv &outVel = *dataVecOutVel[0]->beginEdit();
 
-    // const OutVecCoord& out = m_toModel->read(core::ConstVecCoordId::position())->getValue();
+    // const OutVecCoord& out = m_global_frames->read(core::ConstVecCoordId::position())->getValue();
     size_t sz = m_constraints.size();
     outVel.resize(sz);
 

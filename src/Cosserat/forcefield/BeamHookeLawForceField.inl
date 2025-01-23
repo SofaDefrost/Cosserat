@@ -64,7 +64,7 @@ BeamHookeLawForceField<DataTypes>::BeamHookeLawForceField()
                                  "shape of the cross-section. Can be: circular (tube with external radius being radius and internal radius being innerRadius ) or rectangular (lengthY and lengthZ) . Default is circular" )),
     d_youngModulus( initData( &d_youngModulus, 1.0e9, "youngModulus", "Young Modulus describes the stiffness of the material")),
     d_poissonRatio( initData( &d_poissonRatio, 0.45, "poissonRatio", "poisson Ratio describes the compressibility of the material")),
-    d_length( initData( &d_length, "length", "length of each beam")),
+    d_length( initData( &d_length, "length", "The list of lengths of the different beam's sections.")),
     d_radius( initData( &d_radius, 1.0, "radius", "external radius of the cross section (if circular)")),
     d_innerRadius( initData( &d_innerRadius, 0.0, "innerRadius", "internal radius of the cross section (if circular)")),
     d_lengthY( initData( &d_lengthY, 1.0, "lengthY", "side length of the cross section along local y axis (if rectangular)")),
@@ -99,7 +99,7 @@ void BeamHookeLawForceField<DataTypes>::init()
 template<typename DataTypes>
 void BeamHookeLawForceField<DataTypes>::reinit()
 {
-    // Precompute and store values
+    // Precompute and store inertia values
     Real Iy, Iz, J, A;
     if ( d_crossSectionShape.getValue().getSelectedItem() == "rectangular")  //rectangular cross-section
     {
@@ -132,13 +132,14 @@ void BeamHookeLawForceField<DataTypes>::reinit()
     }
     m_crossSectionArea = A;
 
+    // if we are dealing with different physical properties : YM and PR
     if(!d_variantSections.getValue())
     {
         if(!d_useInertiaParams.getValue())
         {
             Real E = d_youngModulus.getValue();
             Real G = E/(2.0*(1.0+d_poissonRatio.getValue()));
-
+            // Inertial matrix
             m_K_section[0][0] = G*J;
             m_K_section[1][1] = E*Iy;
             m_K_section[2][2] = E*Iz;
@@ -160,20 +161,18 @@ void BeamHookeLawForceField<DataTypes>::reinit()
         msg_info("BeamHookeLawForceField")<< "Multi section beam are used for the simulation!";
         m_K_sectionList.clear();
 
-        const size_t szL  = d_length.getValue().size();
-
+        const auto szL  = d_length.getValue().size();
         if((szL != d_poissonRatioList.getValue().size())||(szL != d_youngModulusList.getValue().size())){
             msg_error("BeamHookeLawForceField")<< "Please the size of the data length, youngModulusList and "
                                                    "poissonRatioList should be the same !";
             return;
         }
 
-
         /*Stiffness Matrix Initialization: Next, the code initializes the stiffness matrix m_K_section
             based on the properties of the cross-section and the material's Young's modulus (E) and
             Poisson's ratio. The stiffness matrix is essential for computing forces and simulating beam
             behavior.*/
-        for(size_t k=0; k<szL; k++)
+        for(auto k=0; k<szL; k++)
         {
             Mat33 _m_K_section;
             Real E = d_youngModulusList.getValue()[k];
@@ -218,11 +217,13 @@ void BeamHookeLawForceField<DataTypes>::addForce(const MechanicalParams* mparams
     }
 
     if(!d_variantSections.getValue())
-        for (unsigned int i=0; i<x.size(); i++)
-            f[i] -= (m_K_section * (x[i] - x0[i])) * d_length.getValue()[i];
+      // @todo: use multithread
+      for (unsigned int i=0; i<x.size(); i++)
+        f[i] -= (m_K_section * (x[i] - x0[i])) * d_length.getValue()[i];
     else
-        for (unsigned int i=0; i<x.size(); i++)
-            f[i] -= (m_K_sectionList[i] * (x[i] - x0[i])) * d_length.getValue()[i];
+      // @todo: use multithread
+      for (unsigned int i=0; i<x.size(); i++)
+        f[i] -= (m_K_sectionList[i] * (x[i] - x0[i])) * d_length.getValue()[i];
     d_f.endEdit();
 
 }

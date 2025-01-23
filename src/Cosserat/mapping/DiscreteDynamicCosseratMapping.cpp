@@ -21,21 +21,23 @@
 ******************************************************************************/
 #define SOFA_COSSERAT_CPP_DiscreteDynamicCosseratMapping
 #include <Cosserat/mapping/DiscreteDynamicCosseratMapping.inl>
-
 #include <sofa/defaulttype/VecTypes.h>
 #include <sofa/defaulttype/RigidTypes.h>
 #include <sofa/core/ObjectFactory.h>
+using namespace sofa::defaulttype;
+namespace Cosserat::mapping
+{
+template class SOFA_COSSERAT_API DiscreteDynamicCosseratMapping< Vec3Types, Rigid3Types, Rigid3Types >;
+} // namespace sofa::component::mapping
 
 namespace Cosserat
 {
-
-template class SOFA_COSSERAT_API mapping::DiscreteDynamicCosseratMapping< sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types >;
-
 // Register in the Factory
 void registerDiscretDynamicCosseratMapping(sofa::core::ObjectFactory* factory)
 {
-  factory->registerObjects( sofa::core::ObjectRegistrationData("Set the positions and velocities of points attached to a rigid parent")
-          .add<mapping::DiscreteDynamicCosseratMapping<sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types>>());
+  factory->registerObjects( sofa::core::ObjectRegistrationData(
+  "This component is designed for dynamic simulations, in contrast to the DiscreteCosseratMapping "
+  "component, which is primarily used for quasi-static scenarios. ")
+  .add<mapping::DiscreteDynamicCosseratMapping<Vec3Types, Rigid3Types, Rigid3Types>>());
 }
-
 }

@@ -1,4 +1,3 @@
-
 /******************************************************************************
 *       SOFA, Simulation Open-Framework Architecture, version 1.0 RC 1        *
 *                (c) 2006-2011 MGH, INRIA, USTL, UJF, CNRS                    *
@@ -35,11 +34,11 @@ template class SOFA_COSSERAT_API sofa::component::constraintset::CosseratNeedleS
 namespace Cosserat
 {
 
-void registerCosseratNeedleSlidingConstraint(sofa::core::ObjectFactory *factory)
-{
-    factory->registerObjects(sofa::core::ObjectRegistrationData("Simulate sliding constraints for needle insertion.")
-        .add<sofa::component::constraintset::CosseratNeedleSlidingConstraint<sofa::defaulttype::Vec3Types>>(true));
+    void registerCosseratNeedleSlidingConstraint(sofa::core::ObjectFactory *factory)
+    {
+        factory->registerObjects(sofa::core::ObjectRegistrationData("Simulate sliding constraints for needle insertion.")
+            .add<sofa::component::constraintset::CosseratNeedleSlidingConstraint<sofa::defaulttype::Vec3Types>>(true));
 
-}
+    }
 
 }

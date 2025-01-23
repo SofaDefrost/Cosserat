@@ -92,4 +92,3 @@ void registerQPSlidingConstraint(sofa::core::ObjectFactory* factory)
 
 } // namespace Cosserat
 
-

@@ -32,6 +32,7 @@
 #include <Cosserat/config.h>
 #include <sofa/core/ObjectFactory.h>
 
+
 template class SOFA_COSSERAT_API sofa::component::constraintset::CosseratActuatorConstraint<sofa::defaulttype::Vec3Types>;
 
 namespace Cosserat
@@ -45,5 +46,5 @@ void registerCosseratActuatorConstraint(sofa::core::ObjectFactory* factory)
             .add< sofa::component::constraintset::CosseratActuatorConstraint<Vec3Types> >(true));
 }
 
-} // namespace sofa
+}
 

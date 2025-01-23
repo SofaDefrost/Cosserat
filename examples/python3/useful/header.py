@@ -15,29 +15,30 @@ __date__ = "july 2023"
 from stlib3.physics.deformable import ElasticMaterialObject
 from stlib3.physics.constraints import FixedBox
 import os
+from useful.params import ContactParameters as DefaultContactParams
 
-
-def addHeader(parentNode, multithreading=False, inverse=False, isConstrained=False, isContact=False, params=None):
+def show_mecha_visual(node, show=True):
+    node.showObject = show
+    node.showIndices = show
+def addHeader(parent_node, multithreading=False, inverse=False, is_constrained=False, is_contact=False,
+              contact_params=None):
     """
-    Adds to rootNode the default headers for a simulation with contact. Also adds and returns three nodes:
-        - Settings
-        - Modelling
-        - Simulation
+    Adds default headers for a simulation with contact to the parent node.
+    Also adds and returns three nodes: Settings, Modelling, Simulation.
 
     Args:
-        isContact:
-        inverse:
-        isConstrained:
-        parentNode:
-        multithreading:
-
-    Usage:
-        addHeader(rootNode)
+        parent_node: The parent node to add the headers to.
+        multithreading: Enables multithreading (optional, default: False).
+        inverse: Enables inverse kinematics (optional, default: False).
+        is_constrained: Enables constraints (optional, default: False).
+        is_contact: Enables contact simulation (optional, default: False).
+        contact_params: Parameters for contact simulation (optional).
 
     Returns:
-        the three SOFA nodes {settings, modelling, simulation}
+        A tuple containing the settings, modelling, and simulation nodes.
     """
-    settings = parentNode.addChild('Settings')
+
+    settings = parent_node.addChild('Settings')
     settings.addObject('RequiredPlugin', pluginName=[
         "Cosserat", "Sofa.Component.AnimationLoop",  # Needed to use components FreeMotionAnimationLoop
         "Sofa.Component.Collision.Detection.Algorithm",
@@ -64,40 +65,46 @@ def addHeader(parentNode, multithreading=False, inverse=False, isConstrained=Fal
     ])
 
     settings.addObject('BackgroundSetting', color=[1, 1, 1, 1])
-    # settings.addObject('AttachBodyButtonSetting', stiffness=1e6)
 
-    parentNode.addObject('VisualStyle', displayFlags='showVisualModels showBehaviorModels showCollisionModels '
-                                                     'hideBoundingCollisionModels hideForceFields '
-                                                     'showInteractionForceFields hideWireframe showMechanicalMappings')
-    if isConstrained:
-        parentNode.addObject('FreeMotionAnimationLoop', parallelCollisionDetectionAndFreeMotion=multithreading,
-                             parallelODESolving=multithreading)
+    parent_node.addObject('VisualStyle', displayFlags='showVisualModels showBehaviorModels showCollisionModels '
+                                                      'hideBoundingCollisionModels hideForceFields '
+                                                      'showInteractionForceFields hideWireframe showMechanicalMappings')
+
+    if is_constrained:
+        parent_node.addObject('FreeMotionAnimationLoop', parallelCollisionDetectionAndFreeMotion=multithreading,
+                              parallelODESolving=multithreading)
         if inverse:
             settings.addObject('RequiredPlugin', name="SoftRobots.Inverse")
-            parentNode.addObject('QPInverseProblemSolver', name='ConstraintSolver', tolerance=1e-8, maxIterations=100,
-                                 multithreading=multithreading, epsilon=1)
+            parent_node.addObject('QPInverseProblemSolver', name='ConstraintSolver', tolerance=1e-8, maxIterations=100,
+                                  multithreading=multithreading, epsilon=1)
         else:
-            parentNode.addObject('GenericConstraintSolver', name='ConstraintSolver', tolerance=1e-8, maxIterations=100,
-                                 multithreading=multithreading, printLog=1)
+            parent_node.addObject('GenericConstraintSolver', name='ConstraintSolver', tolerance=1e-8, maxIterations=100,
+                                  multithreading=multithreading)
 
-    if isContact:
-        contactHeader(parentNode, _contact_params=params.contactParams)
+    if is_contact:
+        contactHeader(parent_node, contact_params=contact_params.contact_params)
 
 
 # components needed for contact modeling
-def contactHeader(parentNode, _contact_params=None):
-    parentNode.addObject('CollisionPipeline')
-    parentNode.addObject("DefaultVisualManagerLoop")
-    parentNode.addObject('BruteForceBroadPhase')
-    parentNode.addObject('BVHNarrowPhase')
-    if not _contact_params == None:
-        parentNode.addObject('RuleBasedContactManager', responseParams=_contact_params.responseParams,
-                             response='FrictionContactConstraint')
-        parentNode.addObject('LocalMinDistance',  alarmDistance=_contact_params.alarmDistance,
-                             contactDistance=_contact_params.contactDistance)
-    else :
-        parentNode.addObject('RuleBasedContactManager', responseParams='mu=0.1', response='FrictionContactConstraint')
-        parentNode.addObject('LocalMinDistance',  alarmDistance=0.05, contactDistance=0.01)
+
+def contactHeader(parent_node, contact_params=DefaultContactParams):
+    """
+    Adds components for contact simulation to the parent node.
+
+    Args:
+        parent_node: The parent node to add the components to.
+        contact_params: Optional contact parameters (default: None).
+    """
+
+    parent_node.addObject('CollisionPipeline')
+    parent_node.addObject("DefaultVisualManagerLoop")
+    parent_node.addObject('BruteForceBroadPhase')
+    parent_node.addObject('BVHNarrowPhase')
+
+    parent_node.addObject('RuleBasedContactManager', responseParams=contact_params.responseParams,
+                          response='FrictionContactConstraint')
+    parent_node.addObject('LocalMinDistance', alarmDistance=contact_params.alarmDistance,
+                          contactDistance=contact_params.contactDistance)
 
 
 def addVisual(node):
@@ -115,7 +122,8 @@ def addVisual(node):
     return node
 
 
-def addSolverNode(node, name='solverNode', template='CompressedRowSparseMatrixd', rayleighMass=0., rayleighStiffness=0.,
+def addSolverNode(parent_node, name='solverNode', template='CompressedRowSparseMatrixd', rayleighMass=0.,
+                  rayleighStiffness=0.,
                   firstOrder=False,
                   iterative=False, isConstrained=False):
     """
@@ -124,7 +132,7 @@ def addSolverNode(node, name='solverNode', template='CompressedRowSparseMatrixd'
     Args:
         name:
         isConstrained:
-        node:
+        parent_node:
         template: for the LDLSolver
         rayleighMass:
         rayleighStiffness:
@@ -134,61 +142,63 @@ def addSolverNode(node, name='solverNode', template='CompressedRowSparseMatrixd'
     Usage:
         addSolversNode(node)
     """
-    solverNode = node.addChild(name)
-    solverNode.addObject('EulerImplicitSolver', firstOrder=firstOrder, rayleighStiffness=rayleighStiffness,
-                         rayleighMass=rayleighMass)
+    solver_node = parent_node.addChild(name)
+    solver_node.addObject('EulerImplicitSolver', firstOrder=firstOrder, rayleighStiffness=rayleighStiffness,
+                          rayleighMass=rayleighMass)
     if iterative:
-        solverNode.addObject('CGLinearSolver', name='Solver', template=template)
+        solver_node.addObject('CGLinearSolver', name='Solver', template=template)
     else:
-        solverNode.addObject('SparseLDLSolver', name='Solver', template=template, printLog=True)
+        solver_node.addObject('SparseLDLSolver', name='Solver', template=template, printLog=False)
     if isConstrained:
-        solverNode.addObject('GenericConstraintCorrection', linearSolver=solverNode.Solver.getLinkPath())
+        solver_node.addObject('GenericConstraintCorrection', linearSolver=solver_node.Solver.getLinkPath())
 
-    return solverNode
+    return solver_node
 
+def attach_mesh_with_springs(mesh_node, _box='-18 -15 -8 2 -3 8'):
+    mesh_node.addObject('BoxROI', name='ROI1', box=_box, drawBoxes='true')
+    mesh_node.addObject('RestShapeSpringsForceField',
+                          points='@ROI1.indices', stiffness='1e12')
 
-def addFEMObject(parentNode, path):
-    fingerSolver = addSolverNode(parentNode)
+def attach_3d_points_to_meca_with_barycentric_mapping(parent_node, name='node_name',
+                                                      list_of_points=[" 0.0 0 0 15 0 0 30 0 0 45 0 0 60 0 0 66 0 0 81 0.0 0.0"]):
+    points_node = parent_node.addChild(name)
+    points_node.addObject('MechanicalObject', name=name+"_mo", position=list_of_points)
+    points_node.addObject('BarycentricMapping')
+    return points_node
+
+def add_finger_mesh_force_field_Object(parent_node, path):
+    parent_node.addObject('VisualStyle', displayFlags='showForceFields')
+    #finger_solver = addSolverNode(parent_node, name=name)
 
     # Load a VTK tetrahedral mesh and expose the resulting topology in the scene .
-    loader = fingerSolver.addObject('MeshVTKLoader', name='loader', filename=f'{path}finger.vtk',
-                                    translation="-17.5 -12.5 7.5",
-                                    rotation="0 180 0")
-    fingerSolver.addObject('TetrahedronSetTopologyContainer', position=loader.position.getLinkPath(),
-                           tetras=loader.tetras.getLinkPath(), name='container')
+    loader = parent_node.addObject('MeshVTKLoader', name='loader', filename=f'{path}finger.vtk',
+                                     translation="-17.5 -12.5 7.5",
+                                     rotation="0 180 0")
+    parent_node.addObject('TetrahedronSetTopologyContainer', position=loader.position.getLinkPath(),
+                            tetras=loader.tetras.getLinkPath(), name='container')
     # Create a MechanicalObject component to stores the DoFs of the model
-    fingerSolver.addObject('MechanicalObject', template='Vec3', name='dofs')
+    parent_node.addObject('MechanicalObject', template='Vec3', name='dofs')
 
     # Gives a mass to the model
-    fingerSolver.addObject('UniformMass', totalMass='0.075')
+    parent_node.addObject('UniformMass', totalMass='1.75')
     # Add a TetrahedronFEMForceField component which implement an elastic material model
     # solved using the Finite Element Method on
     # tetrahedrons.
-    fingerSolver.addObject('TetrahedronFEMForceField', template='Vec3d', name='forceField', method='large',
-                           poissonRatio='0.45', youngModulus='500')
+    parent_node.addObject('TetrahedronFEMForceField', template='Vec3d', name='forceField', method='large',
+                            poissonRatio='0.45', youngModulus='500')
+    attach_mesh_with_springs(parent_node)
 
-    fingerSolver.addObject('BoxROI', name='ROI1', box='-18 -15 -8 2 -3 8', drawBoxes='true')
-    fingerSolver.addObject('RestShapeSpringsForceField',
-                           points='@ROI1.indices', stiffness='1e12')
-    ##########################################
-    # Cable points                           #
-    ##########################################
     # Mapped points inside the finger volume, these points attached to the FE model
     # are constrained to slide on the cable.
+    points_node = attach_3d_points_to_meca_with_barycentric_mapping(parent_node)
+    return points_node
 
-    FEMpos = [" 0.0 0 0 15 0 0 30 0 0 45 0 0 60 0 0 66 0 0 81 0.0 0.0"]
-    femPoints = fingerSolver.addChild('femPoints')
-    femPoints.addObject('MechanicalObject', name="pointsInFEM", position=FEMpos, showObject="1",
-                        showIndices="1")
-    femPoints.addObject('BarycentricMapping')
-
-
-def addMappedPoints(parentNode, name="pointsInFEM", position=None, showObject="1",
+def addMappedPoints(parent_node, name="pointsInFEM", position=None, showObject="1",
                     showIndices="1", femPos="0.0 0 0 15 0 0 30 0 0 45 0 0 60 0 0 66 0 0 81 0.0 0.0"):
     if position is None:
         position = femPos
 
-    femPoints = parentNode.addChild(name)
+    femPoints = parent_node.addChild(name)
     femPoints.addObject(
         'MechanicalObject',
         name=f'{name}Mo',
@@ -201,7 +211,7 @@ def addMappedPoints(parentNode, name="pointsInFEM", position=None, showObject="1
     return femPoints
 
 
-def Finger(parentNode=None, name="Finger", rotation=None, translation=None, fixingBox=None, path=None, femPos=None):
+def Finger(parent_node=None, name="Finger", rotation=None, translation=None, fixingBox=None, path=None, femPos=None):
     if fixingBox is None:
         fixingBox = [-18, -15, -8, 2, -3, 8]
     if rotation is None:
@@ -212,7 +222,7 @@ def Finger(parentNode=None, name="Finger", rotation=None, translation=None, fixi
         path = f'{os.path.dirname(os.path.abspath(__file__))}/'
 
     # TODO : add physical properties as the finger input
-    finger = parentNode.addChild(name)
+    finger = parent_node.addChild(name)
     e_object = ElasticMaterialObject(finger,
                                      volumeMeshFileName=f'{path}finger.vtk',
                                      poissonRatio=0.48,
@@ -233,3 +243,8 @@ def Finger(parentNode=None, name="Finger", rotation=None, translation=None, fixi
 
     finger.addChild(e_object)
     return finger, femPoints
+
+# Test
+def createScene(root_node):
+    addHeader(root_node)
+    addSolverNode(root_node)

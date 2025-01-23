@@ -39,11 +39,17 @@ using sofa::type::Quat;
 using sofa::Data;
 }
 
-// TODO(dmarchal: 2024/10/07) Is the description valid ? I don't think so.
 /*!
  * \class DiscreteCosseratMapping
- * @brief Computes and map the length of the beams
+ * @brief Base class for Cosserat rod mappings in SOFA framework
  *
+ * This class provides the foundation for implementing Cosserat rod mappings,
+ * which are used to map between different representations of a Cosserat rod's
+ * configuration and deformation.
+ *
+ * @tparam TIn1 The first input type for the mapping
+ * @tparam TIn2 The second input type for the mapping
+ * @tparam TOut The output type for the mapping
  */
 template <class TIn1, class TIn2, class TOut>
 class DiscreteCosseratMapping : public BaseCosseratMapping<TIn1, TIn2, TOut> {
@@ -141,16 +147,16 @@ protected:
     using BaseCosseratMapping<TIn1, TIn2, TOut>::m_indicesVectorsDraw;
     using BaseCosseratMapping<TIn1, TIn2, TOut>::computeTheta;
 
-    using BaseCosseratMapping<TIn1, TIn2, TOut>::m_toModel;
-    using BaseCosseratMapping<TIn1, TIn2, TOut>::m_fromModel1;
-    using BaseCosseratMapping<TIn1, TIn2, TOut>::m_fromModel2;
+    using BaseCosseratMapping<TIn1, TIn2, TOut>::m_global_frames;
+    using BaseCosseratMapping<TIn1, TIn2, TOut>::m_strain_state;
+    using BaseCosseratMapping<TIn1, TIn2, TOut>::m_rigid_base;
 
     //////////////////////////////////////////////////////////////////////////////
 
     sofa::helper::ColorMap m_colorMap;
 protected:
     DiscreteCosseratMapping();
-    ~DiscreteCosseratMapping() override {}
+    ~DiscreteCosseratMapping() override = default;
 };
 
 #if !defined(SOFA_COSSERAT_CPP_DiscreteCosseratMapping)

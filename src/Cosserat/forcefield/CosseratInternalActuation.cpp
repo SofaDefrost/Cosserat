@@ -34,8 +34,7 @@
 namespace Cosserat
 {
 
-using namespace sofa::defaulttype;
-
+    using namespace sofa::defaulttype;
 void registerCosseratInternalActuation(sofa::core::ObjectFactory *factory) {
   factory->registerObjects(
      sofa::core::ObjectRegistrationData(
@@ -44,8 +43,8 @@ void registerCosseratInternalActuation(sofa::core::ObjectFactory *factory) {
 }
 
 }
-
 namespace sofa::component::forcefield
 {
+    using namespace sofa::defaulttype;
     template class SOFA_COSSERAT_API CosseratInternalActuation<defaulttype::Vec3Types>;
 }
