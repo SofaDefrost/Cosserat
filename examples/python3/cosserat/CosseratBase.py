@@ -162,9 +162,9 @@ class CosseratBase(Sofa.Prefab):
                 name="spring",
                 stiffness=1e8,
                 angularStiffness=1.0e8,
-                external_points=0,
+                externalIndices=0,
                 mstate="@RigidBaseMO",
-                points=0,
+                indices=0,
                 template="Rigid3d",
             )
         return rigidBaseNode

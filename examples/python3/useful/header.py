@@ -169,7 +169,7 @@ def addFEMObject(parentNode, path):
 
     fingerSolver.addObject('BoxROI', name='ROI1', box='-18 -15 -8 2 -3 8', drawBoxes='true')
     fingerSolver.addObject('RestShapeSpringsForceField',
-                           points='@ROI1.indices', stiffness='1e12')
+                           indices='@ROI1.indices', stiffness='1e12')
     ##########################################
     # Cable points                           #
     ##########################################
