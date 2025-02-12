@@ -87,7 +87,7 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::init()
 
     // Get initial frame state
     auto xfromData =
-        m_global_frames->read(sofa::core::ConstVecCoordId::position());
+        m_global_frames->read(sofa::core::vec_id::read_access::position);
     const vector<OutCoord> xfrom = xfromData->getValue();
 
     m_vecTransform.clear();
@@ -448,7 +448,7 @@ BaseCosseratMapping<TIn1, TIn2, TOut>::computeETA(const Vec6 &baseEta,
 {
 
     // Get the positions from model 0. This function returns the position wrapped in a Data<>
-    auto d_x1 = m_strain_state->read(sofa::core::ConstVecCoordId::position());
+    auto d_x1 = m_strain_state->read(sofa::core::vec_id::read_access::position);
 
     // To access the actual content (in this case position) from a data, we have to use
     // a read accessor that insures the data is updated according to DDGNode state

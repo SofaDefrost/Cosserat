@@ -114,7 +114,7 @@ void MyUniformVelocityDampingForceField<DataTypes>::addKToMatrix(const core::Mec
     unsigned int offset = mref.offset;
 
     Real bFactor = (Real)sofa::core::mechanicalparams::bFactor(mparams);
-    const VecCoord& pos = this->mstate->read(core::ConstVecCoordId::position())->getValue();
+    const VecCoord& pos = this->mstate->read(core::vec_id::read_access::position)->getValue();
 
     //@todo is it really `offset + index` and not `offset + n`
 //    for (unsigned int n=0; n<d_indices.getValue().size(); n++){
