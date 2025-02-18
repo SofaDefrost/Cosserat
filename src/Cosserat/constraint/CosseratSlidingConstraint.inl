@@ -304,7 +304,7 @@ void CosseratSlidingConstraint<DataTypes>::draw(const core::visual::VisualParams
 template<class DataTypes>
 void CosseratSlidingConstraint<DataTypes>::drawLinesBetweenPoints(const core::visual::VisualParams* vparams)
 {
-    const VecCoord & positions  = this->mstate2->read(core::ConstVecCoordId::position())->getValue();
+    const VecCoord & positions  = this->mstate2->read(core::vec_id::read_access::position)->getValue();
     sofa::type::RGBAColor color;
     color = sofa::type::RGBAColor::magenta();
     std::vector<sofa::type::Vec3> vertices;

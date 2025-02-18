@@ -678,7 +678,7 @@ void DifferenceMultiMapping<TIn1, TIn2, TOut>::applyJT(
     In1MatrixDeriv &out1 = *dataMatOut1Const[0]->beginEdit(); // constraints on the FEM cable points
     In2MatrixDeriv &out2 = *dataMatOut2Const[0]->beginEdit(); // constraints on the frames cable points
     const OutMatrixDeriv &in = dataMatInConst[0]->getValue(); // input constraints defined on the mapped point
-    const In1DataVecCoord *x1fromData = m_fromModel1->read(sofa::core::ConstVecCoordId::position());
+    const In1DataVecCoord *x1fromData = m_fromModel1->read(sofa::core::vec_id::read_access::position);
     const In1VecCoord x1from = x1fromData->getValue();
 
     typename OutMatrixDeriv::RowConstIterator rowIt = in.begin();
@@ -807,7 +807,7 @@ void DifferenceMultiMapping<TIn1, TIn2, TOut>::draw(const sofa::core::visual::Vi
                 vparams->drawTool()->drawArrow(P1, P1 + z, radius_arrow, RGBAColor::blue());
             }
         }
-        const In1DataVecDeriv *xDestData = m_fromModel1->read(sofa::core::ConstVecCoordId::position());
+        const In1DataVecDeriv *xDestData = m_fromModel1->read(sofa::core::vec_id::read_access::position);
         const In1VecCoord &fromPos = xDestData[0].getValue();
         vparams->drawTool()->draw3DText_Indices(fromPos, 6, RGBAColor(0.0, 1.0, 0.0, 1.0));
     }
