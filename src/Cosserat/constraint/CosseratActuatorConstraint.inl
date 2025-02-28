@@ -167,9 +167,9 @@ void CosseratActuatorConstraint<DataTypes>::getConstraintViolation(const Constra
 
     Real dfree = Jdx->element(0) + d_cableInitialLength.getValue() - d_cableLength.getValue();
 
-
+    const auto & constraintIndex = d_constraintIndex.getValue();
     for (unsigned i=0;i<d_indices.getValue().size();i++) {
-        resV->set(d_constraintIndex.getValue(), dfree);
+        resV->set(constraintIndex, dfree);
     }
 }
 

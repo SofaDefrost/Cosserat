@@ -81,3 +81,18 @@ def computeNegativeAlongXDistanceBetweenPoints(constraintPointPos, slidingPointP
     else:
         # print("No constraint points yet")
         return 0
+
+
+def create_rigid_node(parent_node, name, translation, rotation,
+                      positions=[[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]]):
+    rigidBaseNode = parent_node.addChild(name)
+
+    rigidBaseNode.addObject(
+        "MechanicalObject",
+        template="Rigid3d",
+        name=name+"MO",
+        position=positions,
+        translation=translation,
+        rotation=rotation
+    )
+    return rigidBaseNode

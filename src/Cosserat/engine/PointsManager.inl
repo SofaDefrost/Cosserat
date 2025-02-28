@@ -42,10 +42,10 @@ namespace sofa::core::behavior
 
     void PointsManager::addNewPointToState()
     {
-        helper::WriteAccessor<Data<VecCoord>> x = *this->getMstate()->write(core::VecCoordId::position());
-        helper::WriteAccessor<Data<VecCoord>> xRest = *this->getMstate()->write(core::VecCoordId::restPosition());
-        helper::WriteAccessor<Data<VecCoord>> xfree = *this->getMstate()->write(core::VecCoordId::freePosition());
-        helper::WriteAccessor<Data<VecCoord>> xforce = *this->getMstate()->write(core::VecDerivId::force());
+        helper::WriteAccessor<Data<VecCoord>> x = *this->getMstate()->write(core::vec_id::write_access::position);
+        helper::WriteAccessor<Data<VecCoord>> xRest = *this->getMstate()->write(core::vec_id::write_access::restPosition);
+        helper::WriteAccessor<Data<VecCoord>> xfree = *this->getMstate()->write(core::vec_id::write_access::freePosition);
+        helper::WriteAccessor<Data<VecCoord>> xforce = *this->getMstate()->write(core::vec_id::write_access::force);
         const helper::ReadAccessor<Data<VecCoord>> &beam = m_beam->readPositions();
         unsigned nbPoints = this->getTopology()->getNbPoints(); // do not take the last point because there is a bug
 
@@ -74,8 +74,8 @@ namespace sofa::core::behavior
 
     void PointsManager::removeLastPointfromState()
     {
-        helper::WriteAccessor<Data<VecCoord>> x = *this->getMstate()->write(core::VecCoordId::position());
-        helper::WriteAccessor<Data<VecCoord>> xfree = *this->getMstate()->write(core::VecCoordId::freePosition());
+        helper::WriteAccessor<Data<VecCoord>> x = *this->getMstate()->write(core::vec_id::write_access::position);
+        helper::WriteAccessor<Data<VecCoord>> xfree = *this->getMstate()->write(core::vec_id::write_access::freePosition);
         unsigned nbPoints = this->getTopology()->getNbPoints(); // do not take the last point because there is a bug
         sofa::type::vector<unsigned int> Indices;
 

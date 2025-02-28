@@ -10,11 +10,12 @@ __copyright__ = "(c) 2021,Inria"
 __date__ = "October, 26 2021"
 
 import Sofa
-from useful.utils import addEdgeCollision, addPointsCollision
-from useful.header import addHeader, addVisual, addSolverNode
+from useful.utils import addEdgeCollision, addPointsCollision, create_rigid_node
+from useful.header import addHeader, addVisual
 from useful.params import Parameters, BeamGeometryParameters
 from useful.geometry import CosseratGeometry, generate_edge_list
 from numpy import array
+from typing import List
 
 
 class CosseratBase(Sofa.Prefab):
@@ -47,55 +48,36 @@ class CosseratBase(Sofa.Prefab):
             "type": "Vec3d",
             "help": "Cosserat base Rotation",
             "default": array([0.0, 0.0, 0.0]),
-        },
-        {  # @TODO: to be removed
-            "name": "attachingToLink",
-            "type": "string",
-            "help": "a rest shape force field will constraint the object "
-            "to follow arm position",
-            "default": "1",
-        },
-        {
-            "name": "showObject",
-            "type": "string",
-            "help": " Draw object arrow ",
-            "default": "0",
-        },
+        }
     ]
 
     def __init__(self, *args, **kwargs):
         Sofa.Prefab.__init__(self, *args, **kwargs)
-        self.params = kwargs.get(
-            "params", Parameters()
-        )  # Use the Parameters class with default values
-        beamPhysicsParams = self.params.beamPhysicsParams
-        beamGeometryParams = self.params.beamGeoParams
+        self.params = kwargs.get("params")  # Use the Parameters class with default values
 
-        self.beamMass = beamPhysicsParams.beamMass  # self.cosseratGeometry['beamMass']
-        # Todo: add option in case None
-        self.parent = kwargs.get("parent")
-        self.useInertiaParams = beamPhysicsParams.useInertia  # False
-        self.radius = beamPhysicsParams.beamRadius  # kwargs.get('radius')
+        self.beamPhysicsParams = self.params.beam_physics_params
+        self.beam_mass = self.beamPhysicsParams.beam_mass  # self.cosseratGeometry['beamMass']
+        self.use_inertia_params = self.beamPhysicsParams.useInertia  # False
+        self.radius = self.beamPhysicsParams.beam_radius  # kwargs.get('radius')
 
-        # @TODO: To be removed
-        if self.parent.hasObject("EulerImplicitSolver") is False:
-            print("The code does not have parent EulerImplicit")
-            self.solverNode = addSolverNode(self.parent)
-        else:
-            self.solverNode = self.parent
+        print(f' ====> The beam mass is : {self.beam_mass}')
+        print(f' ====> The beam radius is : {self.radius}')
+
+        self.solverNode = kwargs.get("parent")
 
         if "inertialParams" in kwargs:
-            self.useInertiaParams = True
+            self.use_inertia_params = True
             self.inertialParams = kwargs["inertialParams"]
 
         self.rigidBaseNode = self._addRigidBaseNode()
 
-        cosserat_geometry = CosseratGeometry(beamGeometryParams)
+        cosserat_geometry = CosseratGeometry(self.params.beam_geo_params)
         self.frames3D = cosserat_geometry.cable_positionF
 
-        self.cosseratCoordinateNode = self._addCosseratCoordinate(
+        self.cosseratCoordinateNode = self._add_cosserat_coordinate(
             cosserat_geometry.bendingState, cosserat_geometry.sectionsLengthList
         )
+
         self.cosseratFrame = self._addCosseratFrame(
             cosserat_geometry.framesF,
             cosserat_geometry.curv_abs_inputS,
@@ -117,108 +99,98 @@ class CosseratBase(Sofa.Prefab):
 
     def _addSlidingPoints(self):
         slidingPoint = self.cosseratFrame.addChild("slidingPoint")
-        slidingPoint.addObject("MechanicalObject", name="slidingPointMO", position=self.frames3D, 
-                               showObject="0", showIndices="0")
+        slidingPoint.addObject("MechanicalObject", name="slidingPointMO", position=self.frames3D)
         slidingPoint.addObject("IdentityMapping")
         return slidingPoint
 
     def _addSlidingPointsWithContainer(self):
-        slidingPoint = self.cosseratFrame.addChild("slidingPoint")
+        slidingPoint = self._addSlidingPoints()
         slidingPoint.addObject("PointSetTopologyContainer")
         slidingPoint.addObject("PointSetTopologyModifier")
-        slidingPoint.addObject(
-            "MechanicalObject",
-            name="slidingPointMO",
-            position=self.frames3D,
-            showObject="1",
-            showIndices="0",
-        )
-        slidingPoint.addObject("IdentityMapping")
         return slidingPoint
 
     def _addRigidBaseNode(self):
-        rigidBaseNode = self.addChild("rigidBase")
-        # To be improved with classes in top
-        positions = [[self.params.beamGeoParams.init_pos] + [0.0, 0.0, 0.0, 1.0]]
 
-        rigidBaseNodeMo = rigidBaseNode.addObject(
-            "MechanicalObject",
-            template="Rigid3d",
-            name="RigidBaseMO",
-            showObjectScale=0.2,
-            position=positions,
-            translation=self.translation,
-            rotation=self.rotation
-        )
-        rigidBaseNodeMo.showObject.setParent(self.showObject)
+        rigidBaseNode = create_rigid_node(self, "RigidBase",
+                                          self.translation, self.rotation)
 
-        # @TODO: remove this hard coded.
-        # one can choose to set this to false and directly attach the beam base
-        # to a control object in order to be able to drive it.
-        if int(self.attachingToLink.value):
-            print("Adding the rest shape to the base")
-            rigidBaseNode.addObject(
-                "RestShapeSpringsForceField",
-                name="spring",
-                stiffness=1e8,
-                angularStiffness=1.0e8,
-                externalIndices=0,
-                mstate="@RigidBaseMO",
-                indices=0,
-                template="Rigid3d",
-            )
         return rigidBaseNode
 
-    def _addCosseratCoordinate(self, bendingStates, listOfSectionsLength):
-        cosseratCoordinateNode = self.addChild("cosseratCoordinate")
-        cosseratCoordinateNode.addObject(
+    def _add_cosserat_coordinate(self, initial_curvature: List[float], section_lengths: List[float]):
+        """
+        Adds a cosserat coordinate node with a BeamHookeLawForceField object to the graph.
+
+        Args:
+            initial_curvature: Initial curvature of the cosserat coordinate.
+            section_lengths: Length of each section in the cosserat coordinate.
+
+        Returns:
+            The cosserat coordinate node added to the model.
+        """
+        cosserat_coordinate_node = self.addChild("cosseratCoordinate")
+        cosserat_coordinate_node.addObject(
             "MechanicalObject",
             template="Vec3d",
             name="cosseratCoordinateMO",
-            position=bendingStates,
-            showIndices=0,
+            position=initial_curvature
         )
 
-        if self.useInertiaParams is False:
-            cosseratCoordinateNode.addObject(
-                "BeamHookeLawForceField",
-                crossSectionShape=self.params.beamPhysicsParams.beamShape,
-                length=listOfSectionsLength,
-                radius=self.radius,
-                youngModulus=self.params.beamPhysicsParams.youngModulus,
-                poissonRatio=self.params.beamPhysicsParams.poissonRatio,
-                rayleighStiffness=self.params.simuParams.rayleighStiffness,
-                lengthY=self.params.beamPhysicsParams.length_Y,
-                lengthZ=self.params.beamPhysicsParams.length_Z,
-            )
+        if not self.use_inertia_params:
+            self._add_beam_hooke_law_without_inertia(cosserat_coordinate_node, section_lengths)
         else:
-            self._extracted_from_addCosseratCoordinate_15(
-                cosseratCoordinateNode, listOfSectionsLength
-            )
-        return cosseratCoordinateNode
+            self._add_beam_hooke_law_with_inertia(cosserat_coordinate_node, section_lengths)
 
-    # TODO Rename this here and in `addCosseratCoordinate`
-    def _extracted_from_addCosseratCoordinate_15(
-        self, cosseratCoordinateNode, listOfSectionsLength
-    ):
-        GA = self.params.beamPhysicsParams.GA
-        GI = self.params.beamPhysicsParams.GI
-        EA = self.params.beamPhysicsParams.EA
-        EI = self.params.beamPhysicsParams.EI
-        cosseratCoordinateNode.addObject(
+        return cosserat_coordinate_node
+
+    def _add_beam_hooke_law_without_inertia(self, cosserat_coordinate_node: None,
+                                            section_lengths: list[float]) -> None:
+        """
+        Adds a BeamHookeLawForceField object to the cosserat coordinate node without inertia parameters.
+
+        Args:
+            cosserat_coordinate_node: The cosserat coordinate node to add the object to.
+            section_lengths: Length of each section in the cosserat coordinate.
+        """
+        cosserat_coordinate_node.addObject(
             "BeamHookeLawForceField",
-            crossSectionShape=self.params.beamPhysicsParams.beamShape,
-            length=listOfSectionsLength,
-            radius=self.params.beamPhysicsParams.beamRadius,
+            crossSectionShape=self.params.beam_physics_params.beam_shape,
+            length=section_lengths,
+            radius=self.params.beam_physics_params.beam_radius,
+            youngModulus=self.params.beam_physics_params.young_modulus,
+            poissonRatio=self.params.beam_physics_params.poisson_ratio,
+            rayleighStiffness=self.params.simu_params.rayleigh_stiffness,
+            lengthY=self.params.beam_physics_params.length_Y,
+            lengthZ=self.params.beam_physics_params.length_Z,
+        )
+
+    def _add_beam_hooke_law_with_inertia(self, cosserat_coordinate_node, section_lengths: List[float]) -> None:
+        """
+        Adds a BeamHookeLawForceField object to the cosserat coordinate node with inertia parameters.
+
+        Args:
+            cosserat_coordinate_node: The cosserat coordinate node to add the object to.
+            section_lengths: Length of each section in the cosserat coordinate.
+        """
+        GA = self.params.beam_physics_params.GA
+        GI = self.params.beam_physics_params.GI
+        EA = self.params.beam_physics_params.EA
+        EI = self.params.beam_physics_params.EI
+        cosserat_coordinate_node.addObject(
+            "BeamHookeLawForceField",
+            crossSectionShape=self.params.beam_physics_params.beam_shape,
+            length=section_lengths,
+            radius=self.params.beam_physics_params.beam_radius,
             useInertiaParams=True,
             GI=GI,
             GA=GA,
             EI=EI,
             EA=EA,
-            rayleighStiffness=self.rayleighStiffness.value,
-            lengthY=self.params.beamPhysicsParams.length_Y,
-            lengthZ=self.params.beamPhysicsParams.length_Z,
+            rayleighStiffness=self.params.simu_params.rayleigh_stiffness,
+            lengthY=self.params.beam_physics_params.length_Y,
+            lengthZ=self.params.beam_physics_params.length_Z,
         )
+
+    # TODO Rename this here and in `addCosseratCoordinate`
 
     def _addCosseratFrame(self, framesF, curv_abs_inputS, curv_abs_outputF):
         cosseratInSofaFrameNode = self.rigidBaseNode.addChild("cosseratInSofaFrameNode")
@@ -227,14 +199,11 @@ class CosseratBase(Sofa.Prefab):
             "MechanicalObject",
             template="Rigid3d",
             name="FramesMO",
-            position=framesF,
-            showIndices=self.params.beamGeoParams.show_frames_indices,
-            showObject=self.params.beamGeoParams.show_frames_object,
-            showObjectScale=1.8,  # Todo: remove this hard code
+            position=framesF
         )
 
         cosseratInSofaFrameNode.addObject(
-            "UniformMass", totalMass=self.beamMass, showAxisSizeFactor="0"
+            "UniformMass", totalMass=self.beam_mass, showAxisSizeFactor="0"
         )
 
         cosseratInSofaFrameNode.addObject(
@@ -251,7 +220,7 @@ class CosseratBase(Sofa.Prefab):
         return cosseratInSofaFrameNode
 
 
-Params = Parameters(beamGeoParams=BeamGeometryParameters(init_pos=[0, 0, 0]))
+Params = Parameters(beam_geo_params=BeamGeometryParameters())
 
 
 def createScene(rootNode):
@@ -275,7 +244,17 @@ def createScene(rootNode):
     solverNode.addObject("GenericConstraintCorrection")
 
     # Create a
-    cosserat = solverNode.addChild(CosseratBase(parent=solverNode, params=Params))
+    cosserat = solverNode.addChild(CosseratBase(parent=solverNode, beam_params=Params))
+    cosserat.rigidBaseNode.addObject(
+        "RestShapeSpringsForceField",
+        name="spring",
+        stiffness=1e8,
+        angularStiffness=1.0e8,
+        externalIndices=0,
+        # mstate="@RigidBaseMO",
+        indices=0,
+        template="Rigid3d"
+    )
 
     # use this to add the collision if the beam will interact with another object
     cosserat.addCollisionModel()

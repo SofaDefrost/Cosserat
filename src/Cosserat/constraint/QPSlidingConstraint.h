@@ -42,8 +42,6 @@ namespace sofa::component::constraintset
 
 using sofa::core::visual::VisualParams ;
 using sofa::core::objectmodel::Data ;
-using sofa::defaulttype::Vec3dTypes ;
-using sofa::defaulttype::Vec3fTypes ;
 using sofa::linearalgebra::BaseVector ;
 using sofa::core::ConstraintParams ;
 using sofa::helper::ReadAccessor ;
@@ -162,7 +160,7 @@ protected:
     ////////////////////////////////////////////////////////////////////////////
     /// \brief internalInit
     using softrobots::constraint::SoftRobotsConstraint<DataTypes>::m_nbLines ;
-    using softrobots::constraint::SoftRobotsConstraint<DataTypes>::d_constraintIndex ;
+    using softrobots::constraint::SoftRobotsConstraint<DataTypes>::d_constraintIndex;
 
     void internalInit();
 };

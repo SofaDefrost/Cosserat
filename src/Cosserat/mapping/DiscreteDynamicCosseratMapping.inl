@@ -21,17 +21,10 @@
 ******************************************************************************/
 #pragma once
 #include <Cosserat/mapping/DiscreteDynamicCosseratMapping.h>
-
 #include <sofa/core/Multi2Mapping.inl>
 #include <sofa/core/visual/VisualParams.h>
-#include <sofa/core/behavior/MechanicalState.h>
-#include <sofa/core/visual/VisualParams.h>
 #include <sofa/helper/AdvancedTimer.h>
-#include <sofa/core/objectmodel/BaseContext.h>
-#include <sofa/helper/logging/Message.h>
 #include <sofa/type/Quat.h>
-
-#include <string>
 
 
 namespace Cosserat::mapping
@@ -43,7 +36,7 @@ using sofa::helper::WriteAccessor;
 
 template <class TIn1, class TIn2, class TOut>
 DiscreteDynamicCosseratMapping<TIn1, TIn2, TOut>::DiscreteDynamicCosseratMapping()
-{}
+= default;
 
 template <class TIn1, class TIn2, class TOut>
 void DiscreteDynamicCosseratMapping<TIn1, TIn2, TOut>::doBaseCosseratInit()
@@ -115,7 +108,8 @@ void DiscreteDynamicCosseratMapping<TIn1, TIn2, TOut>:: applyJ(
     m_frameJacobienDotVector.clear();
 
     // Compute the tangent Exponential SE3 vectors
-    const In1VecCoord& inDeform = m_fromModel1->read(sofa::core::ConstVecCoordId::position())->getValue();
+    const In1VecCoord& inDeform =
+        m_strain_state->read(sofa::core::vec_id::read_access::position)->getValue();
     this->updateTangExpSE3(inDeform);
 
     //Get base velocity as input this is also called eta
@@ -129,7 +123,8 @@ void DiscreteDynamicCosseratMapping<TIn1, TIn2, TOut>:: applyJ(
     for (size_t u=0;u<6;u++) {baseVelocity[u] = _baseVelocity[u];}
 
     //Apply the local transform i.e from SOFA frame to Frederico frame
-    const In2VecCoord& xfrom2Data = m_fromModel2->read(sofa::core::ConstVecCoordId::position())->getValue();
+    const In2VecCoord& xfrom2Data =
+        m_rigid_base->read(sofa::core::vec_id::read_access::position)->getValue();
     Transform Tinverse = Transform(xfrom2Data[0].getCenter(),xfrom2Data[0].getOrientation()).inversed();
     Mat6x6 P = this->buildProjector(Tinverse);
     m_nodeAdjointVectors.clear();
@@ -157,7 +152,8 @@ void DiscreteDynamicCosseratMapping<TIn1, TIn2, TOut>:: applyJ(
             std::cout<< "Node velocity : "<< i << " = " << temp<< std::endl;
     }
 
-    const OutVecCoord& out = m_toModel->read(sofa::core::ConstVecCoordId::position())->getValue();
+    const OutVecCoord& out =
+        m_global_frames->read(sofa::core::vec_id::read_access::position)->getValue();
     size_t sz =curv_abs_output.size();
     outVel.resize(sz);
     for (size_t i = 0 ; i < sz; i++)
@@ -255,8 +251,10 @@ void DiscreteDynamicCosseratMapping<TIn1, TIn2, TOut>:: applyJT(
     In2VecDeriv& out2 = *dataVecOut2Force[0]->beginEdit();
 
     //Maybe need, in case the apply funcion is not call this must be call before
-    const OutVecCoord& frame = m_toModel->read(sofa::core::ConstVecCoordId::position())->getValue();
-    const In1DataVecCoord* x1fromData = m_fromModel1->read(sofa::core::ConstVecCoordId::position());
+    const OutVecCoord& frame =
+        m_global_frames->read(sofa::core::vec_id::read_access::position)->getValue();
+    const In1DataVecCoord* x1fromData =
+        m_strain_state->read(sofa::core::vec_id::read_access::position);
     const In1VecCoord x1from = x1fromData->getValue();
     vector<Vec6> local_F_Vec ;   local_F_Vec.clear();
 
@@ -343,8 +341,10 @@ void DiscreteDynamicCosseratMapping<TIn1, TIn2, TOut>::applyJT(
     In2MatrixDeriv& out2 = *dataMatOut2Const[0]->beginEdit(); // constraints on the reference frame (base frame)
     const OutMatrixDeriv& in = dataMatInConst[0]->getValue(); // input constraints defined on the mapped frames
 
-    const OutVecCoord& frame = m_toModel->read(sofa::core::ConstVecCoordId::position())->getValue();
-    const In1DataVecCoord* x1fromData = m_fromModel1->read(sofa::core::ConstVecCoordId::position());
+    const OutVecCoord& frame =
+        m_global_frames->read(sofa::core::vec_id::read_access::position)->getValue();
+    const In1DataVecCoord* x1fromData =
+        m_strain_state->read(sofa::core::vec_id::read_access::position);
     const In1VecCoord x1from = x1fromData->getValue();
     sofa::helper::ReadAccessor<Data<bool>> debug = d_debug;
 

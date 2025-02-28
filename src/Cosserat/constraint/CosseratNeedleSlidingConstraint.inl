@@ -67,8 +67,7 @@ namespace sofa::component::constraintset
 
   template <class DataTypes>
   CosseratNeedleSlidingConstraint<DataTypes>::~CosseratNeedleSlidingConstraint()
-  {
-  }
+  = default;
 
   template <class DataTypes>
   void CosseratNeedleSlidingConstraint<DataTypes>::init()
@@ -151,7 +150,7 @@ namespace sofa::component::constraintset
     //ReadAccessor<Data<VecCoord>> positions = this->mstate->readPositions();
     const VecCoord positions = x.getValue();
     type::Vec<3, bool> use = d_useDirections.getValue();
-    const auto& constraintIndex = sofa::helper::getReadAccessor(d_constraintIndex);
+    const auto& constraintIndex = d_constraintIndex.getValue();
 
     for (unsigned int i = 0; i < positions.size(); i++)
     {

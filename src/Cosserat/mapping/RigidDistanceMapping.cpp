@@ -24,14 +24,24 @@
 #include <sofa/defaulttype/RigidTypes.h>
 #include <sofa/core/ObjectFactory.h>
 
+using namespace sofa::defaulttype;
 namespace Cosserat::mapping
+{
+template class SOFA_COSSERAT_API RigidDistanceMapping< Rigid3Types, Rigid3Types, Rigid3Types >;
+} // namespace Cosserat::mapping
+
+namespace Cosserat
 {
 
 // Register in the Factory
-int RigidDistanceMappingClass = sofa::core::RegisterObject("Maps two rigid frames to a single rigid frame representing their differences")
-        .add< RigidDistanceMapping< sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types > >() ;
-
-
-template class SOFA_COSSERAT_API RigidDistanceMapping< sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types >;
-
-} // namespace Cosserat::mapping
+void registerRigidDistanceMapping(sofa::core::ObjectFactory* factory)
+{
+  factory->registerObjects(sofa::core::ObjectRegistrationData(
+      "This is a mapping class that handles relationships between two input models (In1, In2) and an "
+      "output model (Out). It specifically computes and maintains the spatial relationships (both position and "
+      "orientation) between pairs of rigid bodies. It handles the mapping between the two input models and an the "
+      "output model, calculating relative transformations using quaternions and providing mechanisms for force "
+      "feedback and constraint handling. ")
+      .add< mapping::RigidDistanceMapping< Rigid3Types, Rigid3Types, Rigid3Types > >()) ;
+}
+}
