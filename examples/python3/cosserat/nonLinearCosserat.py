@@ -125,8 +125,8 @@ class NonLinearCosserat(Sofa.Prefab):
         # one can choose to set this to false and directly attach the beam base
         # to a control object in order to be able to drive it.
         if int(self.attachingToLink.value):
-            rigidBaseNode.addObject('RestShapeSpringsForceField', name='spring',
-                                    stiffness=1e14, angularStiffness=1.e14, externalIndices=0,
+            rigidBaseNode.addObject('FixedWeakConstraint', name='spring',
+                                    stiffness=1e14, angularStiffness=1.e14,
                                     mstate="@RigidBaseMO", indices=0, template="Rigid3d")
         return rigidBaseNode
 

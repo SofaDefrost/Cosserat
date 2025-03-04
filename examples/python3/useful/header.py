@@ -156,7 +156,7 @@ def addSolverNode(parent_node, name='solverNode', template='CompressedRowSparseM
 
 def attach_mesh_with_springs(mesh_node, _box='-18 -15 -8 2 -3 8'):
     mesh_node.addObject('BoxROI', name='ROI1', box=_box, drawBoxes='true')
-    mesh_node.addObject('RestShapeSpringsForceField',
+    mesh_node.addObject('FixedWeakConstraint',
                         indices='@ROI1.indices', stiffness='1e12')
 
 def attach_3d_points_to_meca_with_barycentric_mapping(parent_node, name='node_name',

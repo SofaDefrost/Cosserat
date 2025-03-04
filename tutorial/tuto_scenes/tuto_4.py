@@ -110,11 +110,10 @@ def createScene(root_node):
     # create cosserat Beam
     cosserat_beam = solver_node.addChild(CosseratBase(parent=solver_node, params=Params))
     cosserat_beam.rigidBaseNode.addObject(
-        "RestShapeSpringsForceField",
+        "FixedWeakConstraint",
         name="spring",
         stiffness=1e8,
         angularStiffness=1.0e8,
-        externalIndices=0,
         indices=0,
         template="Rigid3d"
     )

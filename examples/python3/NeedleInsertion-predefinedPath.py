@@ -118,8 +118,8 @@ def createScene(rootNode):
     rigidBaseNode = cableNode.addChild('rigidBase')
     RigidBaseMO = rigidBaseNode.addObject('MechanicalObject', template='Rigid3d', name="RigidBaseMO",
                                           position="0 0 0  0 0 0 1", showObject='1', showObjectScale='5.')
-    rigidBaseNode.addObject('RestShapeSpringsForceField', name='spring', stiffness="50000",
-                            angularStiffness="50000", externalIndices="0", mstate="@RigidBaseMO", indices="0",
+    rigidBaseNode.addObject('FixedWeakConstraint', name='spring', stiffness="50000",
+                            angularStiffness="50000", mstate="@RigidBaseMO", indices="0",
                             template="Rigid3d")
 
     ###############

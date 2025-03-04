@@ -28,11 +28,10 @@ def createScene(root_node):
     beam = solver_node.addChild(CosseratBase(parent=solver_node, params=Params))
     # Attach beam base using a spring force field
     beam.rigidBaseNode.addObject(
-            "RestShapeSpringsForceField",
+            "FixedWeakConstraint",
             name="spring",
             stiffness=1e8,
             angularStiffness=1.0e8,
-            externalIndices=0,
             indices=0,
             template="Rigid3d"
         )
