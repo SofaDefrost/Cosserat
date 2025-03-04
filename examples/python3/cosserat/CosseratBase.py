@@ -110,8 +110,10 @@ class CosseratBase(Sofa.Prefab):
         return slidingPoint
 
     def _addRigidBaseNode(self):
+
         rigidBaseNode = create_rigid_node(self, "RigidBase",
                                           self.translation, self.rotation)
+
         return rigidBaseNode
 
     def _add_cosserat_coordinate(self, initial_curvature: List[float], section_lengths: List[float]):
@@ -244,13 +246,12 @@ def createScene(rootNode):
     # Create a
     cosserat = solverNode.addChild(CosseratBase(parent=solverNode, beam_params=Params))
     cosserat.rigidBaseNode.addObject(
-        "RestShapeSpringsForceField",
+        "FixedWeakConstraint",
         name="spring",
         stiffness=1e8,
         angularStiffness=1.0e8,
-        external_points=0,
         # mstate="@RigidBaseMO",
-        points=0,
+        indices=0,
         template="Rigid3d"
     )
 

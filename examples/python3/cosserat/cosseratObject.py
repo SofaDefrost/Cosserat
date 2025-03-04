@@ -250,13 +250,12 @@ class Cosserat(Sofa.Prefab):
         if int(self.attachingToLink.value):
             print("Adding the rest shape to the base")
             rigidBaseNode.addObject(
-                "RestShapeSpringsForceField",
+                "FixedWeakConstraint",
                 name="spring",
                 stiffness=1e8,
                 angularStiffness=1.0e8,
-                external_points=0,
                 mstate="@RigidBaseMO",
-                points=0,
+                indices=0,
                 template="Rigid3d",
             )
         return rigidBaseNode
