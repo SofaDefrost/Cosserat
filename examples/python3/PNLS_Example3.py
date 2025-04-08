@@ -118,8 +118,8 @@ def createScene(rootNode):
                             showObjectScale=0.3, position=[length, 0, 0, 0, 0, 0, 1], showObject=True)
 
     beamFrame.addObject('RestShapeSpringsForceField', name='spring',
-                        stiffness=1e8, angularStiffness=1e8, external_points=0,
-                        external_rest_shape=controlMo.getLinkPath(), points=nbFrames, template="Rigid3d")
+                        stiffness=1e8, angularStiffness=1e8, externalIndices=0,
+                        external_rest_shape=controlMo.getLinkPath(), indices=nbFrames, template="Rigid3d")
 
     cosseratNode = nonLinearCosserat.legendreControlPointsNode
    

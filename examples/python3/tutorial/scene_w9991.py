@@ -14,9 +14,9 @@ def _add_rigid_base(p_node):
     rigid_base_node = p_node.addChild('rigid_base')
     rigid_base_node.addObject('MechanicalObject', template="Rigid3d", name="cosserat_base_mo",
     position="0 0 0 0 0 0. 1", showObject=1, showObjectScale="0.1")
-    rigid_base_node.addObject('RestShapeSpringsForceField', template="Rigid3d", name="spring",
+    rigid_base_node.addObject('FixedWeakConstraint', template="Rigid3d", name="spring",
     stiffness=stiffness_param, angularStiffness=stiffness_param,
-    mstate="@cosserat_base_mo", external_points="0", points="0")
+    mstate="@cosserat_base_mo", externalIndices="0", indices="0")
     return rigid_base_node
 
 

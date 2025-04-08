@@ -156,8 +156,8 @@ def addSolverNode(parent_node, name='solverNode', template='CompressedRowSparseM
 
 def attach_mesh_with_springs(mesh_node, _box='-18 -15 -8 2 -3 8'):
     mesh_node.addObject('BoxROI', name='ROI1', box=_box, drawBoxes='true')
-    mesh_node.addObject('RestShapeSpringsForceField',
-                          points='@ROI1.indices', stiffness='1e12')
+    mesh_node.addObject('FixedWeakConstraint',
+                        indices='@ROI1.indices', stiffness='1e12')
 
 def attach_3d_points_to_meca_with_barycentric_mapping(parent_node, name='node_name',
                                                       list_of_points=[" 0.0 0 0 15 0 0 30 0 0 45 0 0 60 0 0 66 0 0 81 0.0 0.0"]):
@@ -187,6 +187,7 @@ def add_finger_mesh_force_field_Object(parent_node, path):
     parent_node.addObject('TetrahedronFEMForceField', template='Vec3d', name='forceField', method='large',
                             poissonRatio='0.45', youngModulus='500')
     attach_mesh_with_springs(parent_node)
+
 
     # Mapped points inside the finger volume, these points attached to the FE model
     # are constrained to slide on the cable.

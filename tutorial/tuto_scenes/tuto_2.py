@@ -2,6 +2,7 @@
 
 from tuto_1 import _add_rigid_base, _add_cosserat_state, _add_cosserat_frame
 
+
 stiffness_param: float = 1.e10
 beam_radius: float = 1.
 

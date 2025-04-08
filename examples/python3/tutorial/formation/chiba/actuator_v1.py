@@ -31,7 +31,7 @@ def createScene(root_node):
     finger.addObject('BoxROI', name='boxROISubTopo', box=[23, -10, -8, 26, 10, 8], strict=False, drawBoxes=True)
     finger.addObject('BoxROI', name='boxROISubTopo2', box=[0, -10, -4, 28, 10, -2], strict=False, drawBoxes=True)
     finger.addObject('BoxROI', name='boxROI', box=[-2, -10, -20, 2, 10, 20], drawBoxes=True)
-    finger.addObject('RestShapeSpringsForceField', points='@boxROI.indices', stiffness=1e12, angularStiffness=1e12)
+    finger.addObject('FixedWeakConstraint', indices='@boxROI.indices', stiffness=1e12, angularStiffness=1e12)
     finger.addObject('LinearSolverConstraintCorrection')
     # Plastic Part
     modelSubTopo = finger.addChild('modelSubTopo')
