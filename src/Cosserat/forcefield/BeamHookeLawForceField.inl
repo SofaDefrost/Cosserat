@@ -190,6 +190,144 @@ void BeamHookeLawForceField<DataTypes>::reinit()
 }
 
 template<typename DataTypes>
+bool BeamHookeLawForceField<DataTypes>::validateInputData(const DataVecDeriv& d_f, 
+                                                          const DataVecCoord& d_x, 
+                                                          const DataVecCoord& d_x0) const
+{
+    if(!this->getMState()) {
+        msg_info("BeamHookeLawForceField") << "No Mechanical State found, no force will be computed..." << "\n";
+        return false;
+    }
+    
+    const VecCoord& x = d_x.getValue();
+    const VecCoord& x0 = d_x0.getValue();
+    
+    if (x.empty() || x0.empty()) {
+        msg_warning("BeamHookeLawForceField") << "Empty input vectors, no force will be computed" << "\n";
+        return false;
+    }
+    
+    if (x.size() != x0.size()) {
+        msg_warning("BeamHookeLawForceField") << "Position vector size (" << x.size() 
+                                             << ") doesn't match rest position size (" << x0.size() << ")" << "\n";
+        return false;
+    }
+    
+    unsigned int sz = d_length.getValue().size();
+    if(x.size() != sz) {
+        msg_warning("BeamHookeLawForceField") << "Length vector size (" << sz 
+                                             << ") should have the same size as position vector (" << x.size() << ")" << "\n";
+        return false;
+    }
+    
+    if (d_variantSections.getValue() && m_K_sectionList.size() != x.size()) {
+        msg_warning("BeamHookeLawForceField") << "Using variant sections but section list size (" << m_K_sectionList.size() 
+                                             << ") doesn't match position vector size (" << x.size() << ")" << "\n";
+        return false;
+    }
+    
+    return true;
+}
+
+template<typename DataTypes>
+void BeamHookeLawForceField<DataTypes>::addForceUniformSection(DataVecDeriv& d_f, 
+                                                              const DataVecCoord& d_x, 
+                                                              const DataVecCoord& d_x0,
+                                                              const type::vector<Real>& lengths)
+{
+    VecDeriv& f = *d_f.beginEdit();
+    const VecCoord& x = d_x.getValue();
+    const VecCoord& x0 = d_x0.getValue();
+    const size_t size = x.size();
+    
+    sofa::helper::ScopedAdvancedTimer timer("UniformSection");
+    
+    if (d_useMultiThreading.getValue() && size > 1) {
+        sofa::simulation::TaskScheduler::Task::Status status;
+        sofa::simulation::TaskScheduler& scheduler = *(sofa::simulation::TaskScheduler::getInstance());
+        
+        // Define a lambda for parallel execution
+        auto calcForce = [this, &f, &x, &x0, &lengths](size_t start, size_t end) {
+            for (size_t i = start; i < end; ++i) {
+                f[i] -= (m_K_section * (x[i] - x0[i])) * lengths[i];
+            }
+        };
+        
+        // Determine chunk size for parallel processing
+        const size_t chunk_size = std::max<size_t>(1, size / (scheduler.getThreadCount() * 2));
+        size_t start = 0;
+        
+        // Create and queue tasks for parallel execution
+        while (start < size) {
+            size_t end = std::min(start + chunk_size, size);
+            Task* task = new Task(std::bind(calcForce, start, end), &status);
+            scheduler.addTask(task);
+            start = end;
+        }
+        
+        // Wait for all tasks to complete
+        scheduler.workUntilDone(&status);
+    } 
+    else {
+        // Single-threaded fallback
+        for (size_t i = 0; i < size; ++i) {
+            f[i] -= (m_K_section * (x[i] - x0[i])) * lengths[i];
+        }
+    }
+    
+    d_f.endEdit();
+}
+
+template<typename DataTypes>
+void BeamHookeLawForceField<DataTypes>::addForceVariantSection(DataVecDeriv& d_f, 
+                                                              const DataVecCoord& d_x, 
+                                                              const DataVecCoord& d_x0,
+                                                              const type::vector<Real>& lengths)
+{
+    VecDeriv& f = *d_f.beginEdit();
+    const VecCoord& x = d_x.getValue();
+    const VecCoord& x0 = d_x0.getValue();
+    const size_t size = x.size();
+    
+    sofa::helper::ScopedAdvancedTimer timer("VariantSection");
+    
+    if (d_useMultiThreading.getValue() && size > 1) {
+        sofa::simulation::TaskScheduler::Task::Status status;
+        sofa::simulation::TaskScheduler& scheduler = *(sofa::simulation::TaskScheduler::getInstance());
+        
+        // Define a lambda for parallel execution
+        auto calcForce = [this, &f, &x, &x0, &lengths](size_t start, size_t end) {
+            for (size_t i = start; i < end; ++i) {
+                f[i] -= (m_K_sectionList[i] * (x[i] - x0[i])) * lengths[i];
+            }
+        };
+        
+        // Determine chunk size for parallel processing
+        const size_t chunk_size = std::max<size_t>(1, size / (scheduler.getThreadCount() * 2));
+        size_t start = 0;
+        
+        // Create and queue tasks for parallel execution
+        while (start < size) {
+            size_t end = std::min(start + chunk_size, size);
+            Task* task = new Task(std::bind(calcForce, start, end), &status);
+            scheduler.addTask(task);
+            start = end;
+        }
+        
+        // Wait for all tasks to complete
+        scheduler.workUntilDone(&status);
+    } 
+    else {
+        // Single-threaded fallback
+        for (size_t i = 0; i < size; ++i) {
+            f[i] -= (m_K_sectionList[i] * (x[i] - x0[i])) * lengths[i];
+        }
+    }
+    
+    d_f.endEdit();
+}
+
+template<typename DataTypes>
 void BeamHookeLawForceField<DataTypes>::addForce(const MechanicalParams* mparams,
                                                  DataVecDeriv& d_f,
                                                  const DataVecCoord& d_x,
@@ -197,35 +335,31 @@ void BeamHookeLawForceField<DataTypes>::addForce(const MechanicalParams* mparams
 {
     SOFA_UNUSED(d_v);
     SOFA_UNUSED(mparams);
-
-    if(!this->getMState()) {
-        msg_info("BeamHookeLawForceField") << "No Mechanical State found, no force will be computed..." << "\n";
-        compute_df=false;
-        return;
-    }
-    VecDeriv& f = *d_f.beginEdit();
-    const VecCoord& x = d_x.getValue();
-    // get the rest position (for non straight shape)
-    const VecCoord& x0 = this->mstate->read(sofa::core::vec_id::read_access::restPosition)->getValue();
-
-    f.resize(x.size());
-    unsigned int sz = d_length.getValue().size();
-    if(x.size()!= sz){
-        msg_warning("BeamHookeLawForceField")<<" length : "<< sz <<"should have the same size as x... "<< x.size() <<"\n";
+    
+    sofa::helper::ScopedAdvancedTimer timer("BeamHookeLawForceField::addForce");
+    
+    // Get rest position
+    const DataVecCoord& d_x0 = *this->mstate->read(sofa::core::vec_id::read_access::restPosition);
+    
+    // Validate input data
+    if (!validateInputData(d_f, d_x, d_x0)) {
         compute_df = false;
         return;
     }
-
-    if(!d_variantSections.getValue())
-      // @todo: use multithread
-      for (unsigned int i=0; i<x.size(); i++)
-        f[i] -= (m_K_section * (x[i] - x0[i])) * d_length.getValue()[i];
-    else
-      // @todo: use multithread
-      for (unsigned int i=0; i<x.size(); i++)
-        f[i] -= (m_K_sectionList[i] * (x[i] - x0[i])) * d_length.getValue()[i];
+    
+    // Prepare force vector
+    VecDeriv& f = *d_f.beginEdit();
+    f.resize(d_x.getValue().size());
     d_f.endEdit();
-
+    
+    const type::vector<Real>& lengths = d_length.getValue();
+    
+    // Call the appropriate specialized force calculation method
+    if (!d_variantSections.getValue()) {
+        addForceUniformSection(d_f, d_x, d_x0, lengths);
+    } else {
+        addForceVariantSection(d_f, d_x, d_x0, lengths);
+    }
 }
 
 template<typename DataTypes>
