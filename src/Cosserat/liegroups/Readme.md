@@ -123,3 +123,7 @@ make run_benchmarks
 ## Roadmap
 
 For future development plans, see the [Roadmap](/src/Cosserat/liegroups/tasks.md/feature-lieAgebra.md).
+
+This feature is inspire by the repo : https://github.com/artivis/manif and the devel branch.
+
+## Todo see : [Roadmap](/src/Cosserat/liegroups/tasks.md/feature-lieAgebra.md)

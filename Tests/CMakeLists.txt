@@ -31,3 +31,8 @@ if (UNIT_TEST)
     add_test(NAME ${PROJECT_NAME} COMMAND ${PROJECT_NAME})
 
 endif()
+
+# Add benchmarks subdirectory if benchmarks are enabled
+if(COSSERAT_BUILD_BENCHMARKS)
+    add_subdirectory(benchmarks)
+endif()
