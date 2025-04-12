@@ -204,7 +204,7 @@ void CosseratInternalActuation<DataTypes>::addForce(const MechanicalParams* mpar
     VecDeriv& f = *d_f.beginEdit();
     const VecCoord& x = d_x.getValue();
     // get the rest position (for non straight shape)
-    const VecCoord& x0 = this->mstate->read(VecCoordId::restPosition())->getValue();
+    const VecCoord& x0 = this->mstate->read(sofa::core::vec_id::read_access::restPosition)->getValue();
 
     f.resize(x.size());
     if(x.size()!=d_length.getValue().size()){
@@ -274,7 +274,7 @@ void CosseratInternalActuation<DataTypes>::addKToMatrix(const MechanicalParams* 
     unsigned int offset = mref.offset;
     Real kFact = (Real)mparams->kFactorIncludingRayleighDamping(this->rayleighStiffness.getValue());
 
-    const VecCoord& pos = this->mstate->read(core::ConstVecCoordId::position())->getValue();
+    const VecCoord& pos = this->mstate->read(core::vec_id::read_access::position)->getValue();
 
     for (unsigned int n=0; n<pos.size(); n++)
     {

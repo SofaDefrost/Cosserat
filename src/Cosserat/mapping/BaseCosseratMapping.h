@@ -50,18 +50,23 @@ using se3 = sofa::type::Matrix4; ///< The "speed" of change of SE3.
 using _se3 = Eigen::Matrix4d;
 using _SE3 = Eigen::Matrix4d;
 
-using Cosserat::type::Transform;
+using Cosserat::type::Frame;
 using Cosserat::type::TangentTransform;
 using Cosserat::type::RotMat;
 
 
 }
-
-// TODO(dmarchal: 2024/10/07) Is the description valid ?
 /*!
  * \class BaseCosseratMapping
- * @brief Computes and map the length of the beams
+ * @brief Base class for Cosserat rod mappings in SOFA framework
  *
+ * This class provides the foundation for implementing Cosserat rod mappings,
+ * which are used to map between different representations of a Cosserat rod's
+ * configuration and deformation.
+ *
+ * @tparam TIn1 The first input type for the mapping
+ * @tparam TIn2 The second input type for the mapping
+ * @tparam TOut The output type for the mapping
  */
 template <class TIn1, class TIn2, class TOut>
 class BaseCosseratMapping : public sofa::core::Multi2Mapping<TIn1, TIn2, TOut>
@@ -76,21 +81,16 @@ public:
 
     using Coord1 = sofa::Coord_t<In1>;
     using Deriv1 = sofa::Deriv_t<In1>;
-
     using OutCoord = sofa::Coord_t<Out>;
-
-    // TODO(dmarchal: 2024/06/07): There is a lot of public attributes is this
-    // really needed ?
 
     /*===========COSSERAT VECTORS ======================*/
     unsigned int m_indexInput;
     vector<OutCoord> m_vecTransform;
 
-    vector<Transform> m_framesExponentialSE3Vectors;
-    vector<Transform> m_nodesExponentialSE3Vectors;
-    vector<Mat4x4> m_nodesLogarithmeSE3Vectors;
+    vector<Frame> m_framesExponentialSE3Vectors;
+    vector<Frame> m_nodesExponentialSE3Vectors;
+    vector<Mat4x4> m_nodesLogarithmSE3Vectors;
 
-    // @todo comment or explain more vectors
     vector<unsigned int> m_indicesVectors;
     vector<unsigned int> m_indicesVectorsDraw;
 
@@ -118,36 +118,41 @@ public:
     void init() final override;
     virtual void doBaseCosseratInit() = 0;
 
-    /************************* BaseCosserat **************************/
-    // TODO(dmarchal:2024/06/07), so we have "initialize" and "init"
-    //  co-existances of both and their
-    // roles is unclear and generates ambiguities
-    // TODO @yadagolo: Yes, because the function is used by callback, when we
-    // do dynamic meshing.
-    void initializeFrames();
+    // This function is called by a callback function, which is not the case
+    // of the init function
+    void update_geometry_info();
 
     double computeTheta(const double &x, const Mat4x4 &gX);
     void printMatrix(const Mat6x6 R);
 
-    sofa::type::Mat3x3 extractRotMatrix(const Transform &frame);
-    TangentTransform buildProjector(const Transform &T);
+    sofa::type::Mat3x3 extractRotMatrix(const Frame &frame);
+    TangentTransform buildProjector(const Frame &T);
     Mat3x3 getTildeMatrix(const Vec3 &u);
 
     void buildAdjoint(const Mat3x3 &A, const Mat3x3 &B, Mat6x6 &Adjoint);
     void buildCoAdjoint(const Mat3x3 &A, const Mat3x3 &B, Mat6x6 &coAdjoint);
 
-    Mat4x4 convertTransformToMatrix4x4(const Transform &T);
+    Mat4x4 convertTransformToMatrix4x4(const Frame &T);
     Vec6 piecewiseLogmap(const _SE3 &g_x);
 
-    // TODO(dmarchal: 2024/06/07), this looks like a very common utility
-    // function... it shouldn't be (re)implemented in a base classe.
+    /*!
+     * @brief Computes the rotation matrix around the X-axis
+     *
+     * @param angle The rotation angle in radians
+     * @return RotMat A 3x3 rotation matrix representing the rotation around the X-axis
+     */
     RotMat rotationMatrixX(double angle) {
         Eigen::Matrix3d rotation;
         rotation << 1, 0, 0, 0, cos(angle), -sin(angle), 0, sin(angle), cos(angle);
         return rotation;
     }
 
-    // TODO(dmarchal: 2024/06/07), this looks like a very common utility
+    /*!
+     * @brief Computes the rotation matrix around the Y-axis
+     *
+     * @param angle The rotation angle in radians
+     * @return RotMat A 3x3 rotation matrix representing the rotation around the Y-axis
+     */
     // function... it shouldn't be (re)implemented in a base classe.
     RotMat rotationMatrixY(double angle) {
         Eigen::Matrix3d rotation;
@@ -173,9 +178,9 @@ protected:
     using Inherit1::fromModels2;
     using Inherit1::toModels;
 
-    sofa::core::State<In1>* m_fromModel1;
-    sofa::core::State<In2>* m_fromModel2;
-    sofa::core::State<Out>* m_toModel;
+    sofa::core::State<In1>*m_strain_state;
+    sofa::core::State<In2>*m_rigid_base;
+    sofa::core::State<Out>*m_global_frames;
 
 protected:
     /// Constructor
@@ -184,18 +189,18 @@ protected:
     /// Destructor
     ~BaseCosseratMapping() override = default;
 
-    void computeExponentialSE3(const double &x, const Coord1 &k,
-                               Transform &Trans);
+    void computeExponentialSE3(const double &sub_section_length,
+                               const Coord1 &k,Frame &frame_i);
 
     // TODO(dmarchal: 2024/06/07):
     //   - clarify the difference between computeAdjoing and buildAdjoint ...
     //   - clarify why we need Transform and Vec6 and TangentTransform & Mat6x6
-    void computeAdjoint(const Transform &frame, TangentTransform &adjoint);
+    void computeAdjoint(const Frame &frame, TangentTransform &adjoint);
     void computeAdjoint(const Vec6 &frame, Mat6x6 &adjoint);
 
-    void computeCoAdjoint(const Transform &frame, Mat6x6 &coAdjoint);
+    void computeCoAdjoint(const Frame &frame, Mat6x6 &coAdjoint);
 
-    void updateExponentialSE3(const vector<Coord1> &inDeform);
+    void updateExponentialSE3(const vector<Coord1> &strain_state);
     void updateTangExpSE3(const vector<Coord1> &inDeform);
 
     void computeTangExp(double &x, const Coord1 &k, Mat6x6 &TgX);

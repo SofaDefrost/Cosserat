@@ -119,7 +119,7 @@ void DrawTrianglesComponent::draw(const core::visual::VisualParams *vparams)
             return;
     m_tetraForceField->updateVonMisesStress = true;
 
-    const VecCoord &x = this->m_state->read(core::ConstVecCoordId::position())->getValue();
+    const VecCoord &x = this->m_state->read(core::vec_id::read_access::position)->getValue();
     helper::ReadAccessor<Data<helper::vector<Real>>> vM = m_tetraForceField->_vonMisesPerElement;
     helper::ReadAccessor<Data<helper::vector<Real>>> vMN = m_tetraForceField->_vonMisesPerNode;
     // helper::vector<double> & vMN = *d_maxVonMisesPerNode.beginEdit();

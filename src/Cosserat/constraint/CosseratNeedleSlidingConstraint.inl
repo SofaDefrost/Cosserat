@@ -150,7 +150,7 @@ namespace sofa::component::constraintset
     //ReadAccessor<Data<VecCoord>> positions = this->mstate->readPositions();
     const VecCoord positions = x.getValue();
     type::Vec<3, bool> use = d_useDirections.getValue();
-    auto& constraintIndex = d_constraintIndex.getValue();
+    const auto& constraintIndex = d_constraintIndex.getValue();
 
     for (unsigned int i = 0; i < positions.size(); i++)
     {
