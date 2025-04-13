@@ -40,6 +40,8 @@
 #include <sofa/core/behavior/ForceField.inl>
 #include <sofa/linearalgebra/BaseMatrix.h>
 #include <sofa/helper/OptionsGroup.h>
+#include <sofa/helper/ScopedAdvancedTimer.h>
+#include <sofa/simulation/TaskScheduler.h>
 
 namespace sofa::component::forcefield
 {
@@ -84,6 +86,9 @@ public :
     typedef typename CompressedRowSparseMatrix<Mat33>::RowBlockConstIterator _3_3_RowBlockConstIterator;
     typedef typename CompressedRowSparseMatrix<Mat33>::BlockConstAccessor _3_3_BlockConstAccessor;
     typedef typename CompressedRowSparseMatrix<Mat33>::BlockAccessor _3_3_BlockAccessor;
+
+    // Data type for parallel processing
+    typedef sofa::simulation::Task Task;
 
 
 public :
@@ -146,8 +151,45 @@ protected:
     Mat66 m_K_section66;
     type::vector<Mat33> m_K_sectionList;
 
+    /// Flag to enable/disable multithreading
+    Data<bool> d_useMultiThreading; 
+
     /// Cross-section area
     Real m_crossSectionArea;
+
+protected:
+    /**
+     * @brief Compute forces for uniform section beams (parallel version)
+     * This method handles the case when all beam sections have the same properties
+     * 
+     * @param f Output force vector to update
+     * @param x Current position
+     * @param x0 Rest position
+     * @param lengths Vector of beam segment lengths
+     */
+    void addForceUniformSection(DataVecDeriv& f, const DataVecCoord& x, const DataVecCoord& x0, const type::vector<Real>& lengths);
+
+    /**
+     * @brief Compute forces for variant section beams (parallel version)
+     * This method handles the case when beam sections have different properties
+     * 
+     * @param f Output force vector to update
+     * @param x Current position
+     * @param x0 Rest position
+     * @param lengths Vector of beam segment lengths
+     */
+    void addForceVariantSection(DataVecDeriv& f, const DataVecCoord& x, const DataVecCoord& x0, const type::vector<Real>& lengths);
+
+    /**
+     * @brief Validate input data before force computation
+     * 
+     * @param f Force vector
+     * @param x Position vector
+     * @param x0 Rest position vector
+     * @return true if validation passed
+     * @return false if validation failed
+     */
+    bool validateInputData(const DataVecDeriv& f, const DataVecCoord& x, const DataVecCoord& x0) const;
 
 private :
 
