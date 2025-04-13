@@ -33,35 +33,47 @@
 #include <sofa/linearalgebra/FullVector.h>
 #include <sofa/core/behavior/MechanicalState.h>
 #include <sofa/core/behavior/ForceField.inl>
-#include <sofa/helper/OptionsGroup.h> // ??
+#include <sofa/helper/OptionsGroup.h>
 
-using sofa::core::behavior::MechanicalState ;
-using sofa::core::objectmodel::BaseContext ;
-using sofa::helper::ReadAccessor ;
-using sofa::helper::WriteAccessor ;
-using sofa::core::VecCoordId;
-
+// Standard includes
 #include <iostream>
-using std::cout ;
-using std::endl ;
-
 #include <algorithm>
 #include <ctime>
+
+// Using declarations for common types
+using sofa::core::behavior::MechanicalState;
+using sofa::core::objectmodel::BaseContext;
+using sofa::helper::ReadAccessor;
+using sofa::helper::WriteAccessor;
+using sofa::core::VecCoordId;
+using std::cout;
+using std::endl;
 
 namespace sofa::component::forcefield
 {
 
-using sofa::core::behavior::MultiMatrixAccessor ;
-using sofa::core::behavior::BaseMechanicalState ;
-using sofa::helper::WriteAccessor ;
+using sofa::core::behavior::MultiMatrixAccessor;
+using sofa::core::behavior::BaseMechanicalState;
+using sofa::helper::WriteAccessor;
 
+/**
+ * @brief Implementation of all methods for the BeamHookeLawForceField class
+ * 
+ * This force field simulates the mechanical behavior of beam elements using Hooke's law.
+ * It supports both uniform sections (same properties throughout the beam) and variant sections
+ * (different properties for different segments).
+ */
+
+/******************************************************************************
+* CONSTRUCTORS / DESTRUCTORS                                                 *
+******************************************************************************/
 
 template<typename DataTypes>
 BeamHookeLawForceField<DataTypes>::BeamHookeLawForceField()
     : Inherit1(),
     d_crossSectionShape( initData(&d_crossSectionShape, {"circular","rectangular"},
-                                 "crossSectionShape",
-                                 "shape of the cross-section. Can be: circular (tube with external radius being radius and internal radius being innerRadius ) or rectangular (lengthY and lengthZ) . Default is circular" )),
+                               "crossSectionShape",
+                               "shape of the cross-section. Can be: circular (tube with external radius being radius and internal radius being innerRadius ) or rectangular (lengthY and lengthZ) . Default is circular" )),
     d_youngModulus( initData( &d_youngModulus, 1.0e9, "youngModulus", "Young Modulus describes the stiffness of the material")),
     d_poissonRatio( initData( &d_poissonRatio, 0.45, "poissonRatio", "poisson Ratio describes the compressibility of the material")),
     d_length( initData( &d_length, "length", "The list of lengths of the different beam's sections.")),
@@ -76,14 +88,25 @@ BeamHookeLawForceField<DataTypes>::BeamHookeLawForceField()
     d_GI(initData(&d_GI, "GI", "The inertia parameter, GI")),
     d_GA(initData(&d_GA, "GA", "The inertia parameter, GA")),
     d_EA(initData(&d_EA, "EA", "The inertia parameter, EA")),
-    d_EI(initData(&d_EI, "EI", "The inertia parameter, EI"))
+    d_EI(initData(&d_EI, "EI", "The inertia parameter, EI")),
+    d_useMultiThreading(initData(&d_useMultiThreading, false, "useMultiThreading", "Use multithreading for force computation"))
 {
-    compute_df=true;
+    compute_df = true;
 }
 
 template<typename DataTypes>
 BeamHookeLawForceField<DataTypes>::~BeamHookeLawForceField() = default;
 
+/******************************************************************************
+* INITIALIZATION METHODS                                                     *
+******************************************************************************/
+
+/**
+ * @brief Initialize the force field, setting up parameters and cross-section properties
+ * 
+ * This method is called during initialization to set up the force field.
+ * It delegates to reinit() to calculate cross-section properties.
+ */
 template<typename DataTypes>
 void BeamHookeLawForceField<DataTypes>::init()
 {
@@ -91,17 +114,19 @@ void BeamHookeLawForceField<DataTypes>::init()
     reinit();
 }
 
-/*Cross-Section Properties Initialization: The reinit function begins by recalculating the properties
-    related to the cross-section of the beams. It calculates the area moment of inertia (Iy and Iz),
-    the polar moment of inertia (J), and the cross-sectional area (A).
-    These calculations depend on the chosen cross-section shape, either circular or rectangular. T
-    he formulas used for these calculations are based on standard equations for these properties.*/
+/**
+ * @brief Reinitialize the force field, recalculating cross-section properties
+ * 
+ * This method calculates the moments of inertia and stiffness matrices
+ * based on the chosen cross-section shape and material properties.
+ * It supports both uniform sections and variant sections.
+ */
 template<typename DataTypes>
 void BeamHookeLawForceField<DataTypes>::reinit()
 {
     // Precompute and store inertia values
     Real Iy, Iz, J, A;
-    if ( d_crossSectionShape.getValue().getSelectedItem() == "rectangular")  //rectangular cross-section
+    if (d_crossSectionShape.getValue().getSelectedItem() == "rectangular")  // rectangular cross-section
     {
         Real Ly = d_lengthY.getValue();
         Real Lz = d_lengthZ.getValue();
@@ -115,9 +140,9 @@ void BeamHookeLawForceField<DataTypes>::reinit()
         A = Ly * Lz;
 
     }
-    else //circular cross-section
+    else // circular cross-section
     {
-        msg_info() << "Cross section shape." << d_crossSectionShape.getValue().getSelectedItem() ;
+        msg_info() << "Cross section shape." << d_crossSectionShape.getValue().getSelectedItem();
 
         Real r = d_radius.getValue();
         Real rInner = d_innerRadius.getValue();
@@ -127,74 +152,81 @@ void BeamHookeLawForceField<DataTypes>::reinit()
         Iy = M_PI * (r4 - rInner4) / 4.0;
         Iz = Iy;
         J = Iy + Iz;
-        A = M_PI * (r * r - rInner4);
+        A = M_PI * (r * r - rInner * rInner);
 
     }
     m_crossSectionArea = A;
 
-    // if we are dealing with different physical properties : YM and PR
-    if(!d_variantSections.getValue())
+    // if we are dealing with different physical properties: YM and PR
+    if (!d_variantSections.getValue())
     {
-        if(!d_useInertiaParams.getValue())
+        if (!d_useInertiaParams.getValue())
         {
             Real E = d_youngModulus.getValue();
-            Real G = E/(2.0*(1.0+d_poissonRatio.getValue()));
+            Real G = E / (2.0 * (1.0 + d_poissonRatio.getValue()));
             // Inertial matrix
-            m_K_section[0][0] = G*J;
-            m_K_section[1][1] = E*Iy;
-            m_K_section[2][2] = E*Iz;
+            m_K_section[0][0] = G * J;
+            m_K_section[1][1] = E * Iy;
+            m_K_section[2][2] = E * Iz;
         }
         else
         {
-            msg_info("BeamHookeLawForceField")<< "Pre-calculated inertia parameters are used for the computation "
-                                                  "of the stiffness matrix.";
+            msg_info("BeamHookeLawForceField") << "Pre-calculated inertia parameters are used for the computation "
+                                              "of the stiffness matrix.";
             m_K_section[0][0] = d_GI.getValue();
             m_K_section[1][1] = d_EI.getValue();
             m_K_section[2][2] = d_EI.getValue();
         }
 
-    }else {
-        /*If the d_variantSections flag is set to true, it implies that multi-section beams are used for
-            the simulation. In this case, the code calculates and initializes a list of stiffness matrices
-            (m_K_sectionList) for each section. The properties of each section, such as Young's modulus and
-            Poisson's ratio, are specified in the d_youngModulusList and d_poissonRatioList data.*/
-        msg_info("BeamHookeLawForceField")<< "Multi section beam are used for the simulation!";
+    }
+    else {
+        msg_info("BeamHookeLawForceField") << "Multi section beam are used for the simulation!";
         m_K_sectionList.clear();
 
-        const auto szL  = d_length.getValue().size();
-        if((szL != d_poissonRatioList.getValue().size())||(szL != d_youngModulusList.getValue().size())){
-            msg_error("BeamHookeLawForceField")<< "Please the size of the data length, youngModulusList and "
-                                                   "poissonRatioList should be the same !";
+        const auto szL = d_length.getValue().size();
+        if ((szL != d_poissonRatioList.getValue().size()) || (szL != d_youngModulusList.getValue().size())) {
+            msg_error("BeamHookeLawForceField") << "Please the size of the data length, youngModulusList and "
+                                               "poissonRatioList should be the same!";
             return;
         }
 
-        /*Stiffness Matrix Initialization: Next, the code initializes the stiffness matrix m_K_section
-            based on the properties of the cross-section and the material's Young's modulus (E) and
-            Poisson's ratio. The stiffness matrix is essential for computing forces and simulating beam
-            behavior.*/
-        for(auto k=0; k<szL; k++)
+        for (auto k = 0; k < szL; k++)
         {
             Mat33 _m_K_section;
             Real E = d_youngModulusList.getValue()[k];
-            Real G = E/(2.0*(1.0+d_poissonRatioList.getValue()[k]));
+            Real G = E / (2.0 * (1.0 + d_poissonRatioList.getValue()[k]));
 
-            _m_K_section[0][0] = G*J;
-            _m_K_section[1][1] = E*Iy;
-            _m_K_section[2][2] = E*Iz;
+            _m_K_section[0][0] = G * J;
+            _m_K_section[1][1] = E * Iy;
+            _m_K_section[2][2] = E * Iz;
             m_K_sectionList.push_back(_m_K_section);
         }
-        msg_info("BeamHookeLawForceField")<< "If you plan to use a multi section beam with (different "
-                                              "mechanical properties) and pre-calculated inertia parameters "
-                                              "(GI, GA, etc.), this is not yet supported.";
+        msg_info("BeamHookeLawForceField") << "If you plan to use a multi section beam with (different "
+                                          "mechanical properties) and pre-calculated inertia parameters "
+                                          "(GI, GA, etc.), this is not yet supported.";
     }
 }
 
+/**
+ * @brief Validates input data for force computation
+ * 
+ * Checks that the input data is valid for force computation, including:
+ * - The mechanical state exists
+ * - Position vectors are not empty and have matching sizes
+ * - The length vector has the correct size
+ * - For variant sections, the section list has the correct size
+ * 
+ * @param d_f Force vector
+ * @param d_x Position vector
+ * @param d_x0 Rest position vector
+ * @return true if data is valid, false otherwise
+ */
 template<typename DataTypes>
 bool BeamHookeLawForceField<DataTypes>::validateInputData(const DataVecDeriv& d_f, 
                                                           const DataVecCoord& d_x, 
                                                           const DataVecCoord& d_x0) const
 {
-    if(!this->getMState()) {
+    if (!this->getMState()) {
         msg_info("BeamHookeLawForceField") << "No Mechanical State found, no force will be computed..." << "\n";
         return false;
     }
@@ -214,7 +246,7 @@ bool BeamHookeLawForceField<DataTypes>::validateInputData(const DataVecDeriv& d_
     }
     
     unsigned int sz = d_length.getValue().size();
-    if(x.size() != sz) {
+    if (x.size() != sz) {
         msg_warning("BeamHookeLawForceField") << "Length vector size (" << sz 
                                              << ") should have the same size as position vector (" << x.size() << ")" << "\n";
         return false;
@@ -229,6 +261,21 @@ bool BeamHookeLawForceField<DataTypes>::validateInputData(const DataVecDeriv& d_
     return true;
 }
 
+/******************************************************************************
+* FORCE COMPUTATION METHODS                                                  *
+******************************************************************************/
+
+/**
+ * @brief Adds forces for uniform section beams
+ * 
+ * Computes and adds forces to the force vector for beams with uniform cross-section
+ * properties. Supports both single-threaded and multi-threaded computation.
+ * 
+ * @param d_f Force vector
+ * @param d_x Position vector
+ * @param d_x0 Rest position vector
+ * @param lengths Vector of beam section lengths
+ */
 template<typename DataTypes>
 void BeamHookeLawForceField<DataTypes>::addForceUniformSection(DataVecDeriv& d_f, 
                                                               const DataVecCoord& d_x, 
@@ -278,6 +325,17 @@ void BeamHookeLawForceField<DataTypes>::addForceUniformSection(DataVecDeriv& d_f
     d_f.endEdit();
 }
 
+/**
+ * @brief Adds forces for variant section beams
+ * 
+ * Computes and adds forces to the force vector for beams with varying cross-section
+ * properties. Supports both single-threaded and multi-threaded computation.
+ * 
+ * @param d_f Force vector
+ * @param d_x Position vector
+ * @param d_x0 Rest position vector
+ * @param lengths Vector of beam section lengths
+ */
 template<typename DataTypes>
 void BeamHookeLawForceField<DataTypes>::addForceVariantSection(DataVecDeriv& d_f, 
                                                               const DataVecCoord& d_x, 
@@ -327,6 +385,17 @@ void BeamHookeLawForceField<DataTypes>::addForceVariantSection(DataVecDeriv& d_f
     d_f.endEdit();
 }
 
+/**
+ * @brief Main method for force computation
+ * 
+ * This method dispatches the force computation to either addForceUniformSection or
+ * addForceVariantSection based on the beam configuration.
+ * 
+ * @param mparams Mechanical parameters
+ * @param d_f Force vector
+ * @param d_x Position vector
+ * @param d_v Velocity vector (unused)
+ */
 template<typename DataTypes>
 void BeamHookeLawForceField<DataTypes>::addForce(const MechanicalParams* mparams,
                                                  DataVecDeriv& d_f,
@@ -362,10 +431,20 @@ void BeamHookeLawForceField<DataTypes>::addForce(const MechanicalParams* mparams
     }
 }
 
+/**
+ * @brief Computes the product of the stiffness matrix and a displacement vector
+ * 
+ * This method is used for implicit integration schemes to compute the change in force
+ * due to a displacement.
+ * 
+ * @param mparams Mechanical parameters
+ * @param d_df Differential force vector
+ * @param d_dx Differential displacement vector
+ */
 template<typename DataTypes>
 void BeamHookeLawForceField<DataTypes>::addDForce(const MechanicalParams* mparams,
-                                                  DataVecDeriv&  d_df ,
-                                                  const DataVecDeriv&  d_dx)
+                                                  DataVecDeriv& d_df,
+                                                  const DataVecDeriv& d_dx)
 {
     if (!compute_df)
         return;
@@ -375,24 +454,31 @@ void BeamHookeLawForceField<DataTypes>::addDForce(const MechanicalParams* mparam
     Real kFactor = (Real)mparams->kFactorIncludingRayleighDamping(this->rayleighStiffness.getValue());
 
     df.resize(dx.size());
-    if(!d_variantSections.getValue())
-        for (unsigned int i=0; i<dx.size(); i++)
-            df[i] -= (m_K_section * dx[i])*kFactor* d_length.getValue()[i];
-    else
-        for (unsigned int i=0; i<dx.size(); i++)
-            df[i] -= (m_K_sectionList[i] * dx[i])*kFactor* d_length.getValue()[i];
+    if (!d_variantSections.getValue()) {
+        for (unsigned int i = 0; i < dx.size(); i++) {
+            df[i] -= (m_K_section * dx[i]) * kFactor * d_length.getValue()[i];
+        }
+    }
+    else {
+        for (unsigned int i = 0; i < dx.size(); i++) {
+            df[i] -= (m_K_sectionList[i] * dx[i]) * kFactor * d_length.getValue()[i];
+        }
+    }
 }
 
-template<typename DataTypes>
-double BeamHookeLawForceField<DataTypes>::getPotentialEnergy(const MechanicalParams* mparams,
-                                                             const DataVecCoord& d_x) const
-{
-    SOFA_UNUSED(mparams);
-    SOFA_UNUSED(d_x);
+/******************************************************************************
+* MATRIX COMPUTATION METHODS                                                 *
+******************************************************************************/
 
-    return 0.0;
-}
-
+/**
+ * @brief Adds the stiffness matrix contribution to the global matrix
+ * 
+ * This method is called during the assembly of the global stiffness matrix to add
+ * the contribution of this force field.
+ * 
+ * @param mparams Mechanical parameters
+ * @param matrix Multi-matrix accessor
+ */
 template<typename DataTypes>
 void BeamHookeLawForceField<DataTypes>::addKToMatrix(const MechanicalParams* mparams,
                                                      const MultiMatrixAccessor* matrix)
@@ -403,24 +489,60 @@ void BeamHookeLawForceField<DataTypes>::addKToMatrix(const MechanicalParams* mpa
     Real kFact = (Real)mparams->kFactorIncludingRayleighDamping(this->rayleighStiffness.getValue());
 
     const VecCoord& pos = this->mstate->read(core::vec_id::read_access::position)->getValue();
-    for (unsigned int n=0; n<pos.size(); n++)
+    for (unsigned int n = 0; n < pos.size(); n++)
     {
-        if(!d_variantSections.getValue())
-            for(unsigned int i = 0; i < 3; i++)
-                for (unsigned int j = 0; j< 3; j++)
-                    mat->add(offset + i + 3*n, offset + j + 3*n, -kFact * m_K_section[i][j]*d_length.getValue()[n]);
-        else
-            for(unsigned int i = 0; i < 3; i++)
-                for (unsigned int j = 0; j< 3; j++)
+        if (!d_variantSections.getValue()) {
+            for (unsigned int i = 0; i < 3; i++) {
+                for (unsigned int j = 0; j < 3; j++) {
+                    mat->add(offset + i + 3*n, offset + j + 3*n, -kFact * m_K_section[i][j] * d_length.getValue()[n]);
+                }
+            }
+        }
+        else {
+            for (unsigned int i = 0; i < 3; i++) {
+                for (unsigned int j = 0; j < 3; j++) {
                     mat->add(offset + i + 3*n, offset + j + 3*n, -kFact * m_K_sectionList[n][i][j] * d_length.getValue()[n]);
+                }
+            }
+        }
     }
 }
 
+/******************************************************************************
+* UTILITY METHODS                                                            *
+******************************************************************************/
 
+/**
+ * @brief Computes the potential energy of the beam
+ * 
+ * This method returns the strain energy stored in the beam due to deformation.
+ * Currently returns 0 as it is not implemented.
+ * 
+ * @param mparams Mechanical parameters
+ * @param d_x Position vector
+ * @return Potential energy
+ */
+template<typename DataTypes>
+double BeamHookeLawForceField<DataTypes>::getPotentialEnergy(const MechanicalParams* mparams,
+                                                             const DataVecCoord& d_x) const
+{
+    SOFA_UNUSED(mparams);
+    SOFA_UNUSED(d_x);
+
+    return 0.0;
+}
+
+/**
+ * @brief Returns the external radius of the beam
+ * 
+ * Utility method to access the beam's external radius.
+ * 
+ * @return The external radius of the beam
+ */
 template<typename DataTypes>
 typename BeamHookeLawForceField<DataTypes>::Real BeamHookeLawForceField<DataTypes>::getRadius()
 {
     return d_radius.getValue();
 }
 
-} // forcefield
+} // namespace sofa::component::forcefield
