@@ -1,0 +1,174 @@
+name: Documentation
+
+on:
+  push:
+    branches: [ main, master, develop ]
+    paths:
+      - 'docs/**'
+      - '**.md'
+      - 'src/Cosserat/**/*.h'
+      - 'src/Cosserat/**/*.inl'
+      - '.github/workflows/documentation.yml'
+  pull_request:
+    paths:
+      - 'docs/**'
+      - '**.md'
+      - 'src/Cosserat/**/*.h'
+      - 'src/Cosserat/**/*.inl'
+      - '.github/workflows/documentation.yml'
+  workflow_dispatch:  # Allow manual triggering
+
+jobs:
+  build-documentation:
+    name: Build and deploy documentation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Fetch all history for proper versioning
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install mkdocs mkdocs-material pymdown-extensions markdown-include
+
+      - name: Install Doxygen
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y doxygen graphviz
+
+      - name: Configure Doxygen
+        run: |
+          # Ensure Doxyfile exists or create one if needed
+          if [ ! -f "./docs/Writerside/Doxyfile" ]; then
+            mkdir -p ./docs/Writerside
+            doxygen -g ./docs/Writerside/Doxyfile
+            # Configure Doxyfile settings
+            sed -i 's/PROJECT_NAME           = "My Project"/PROJECT_NAME           = "Cosserat Plugin"/' ./docs/Writerside/Doxyfile
+            sed -i 's/OUTPUT_DIRECTORY       =/OUTPUT_DIRECTORY       = "..\/..\/build\/docs"/' ./docs/Writerside/Doxyfile
+            sed -i 's/INPUT                  =/INPUT                  = "..\/..\/src\/Cosserat"/' ./docs/Writerside/Doxyfile
+            sed -i 's/RECURSIVE              = NO/RECURSIVE              = YES/' ./docs/Writerside/Doxyfile
+            sed -i 's/GENERATE_HTML          = YES/GENERATE_HTML          = YES/' ./docs/Writerside/Doxyfile
+            sed -i 's/GENERATE_LATEX         = YES/GENERATE_LATEX         = NO/' ./docs/Writerside/Doxyfile
+            sed -i 's/USE_MDFILE_AS_MAINPAGE =/USE_MDFILE_AS_MAINPAGE = "..\/..\/docs\/index.md"/' ./docs/Writerside/Doxyfile
+          fi
+
+      - name: Generate API documentation with Doxygen
+        run: |
+          mkdir -p build/docs
+          cd docs/Writerside
+          doxygen
+
+      - name: Check for broken links
+        run: |
+          pip install linkchecker
+          cd build/docs/html
+          linkchecker --check-extern --recursive --no-status ./ || true
+          # Use '|| true' to prevent failure as we just want to report issues
+
+      - name: Setup MkDocs for tutorials and guides
+        run: |
+          # Create or update mkdocs.yml if needed
+          if [ ! -f "./mkdocs.yml" ]; then
+            cat > mkdocs.yml << EOF
+            site_name: Cosserat Plugin Documentation
+            site_description: Documentation for the Cosserat Plugin for SOFA Framework
+            site_author: SOFA Community
+            repo_url: https://github.com/SofaDefrost/plugin.Cosserat
+            theme:
+              name: material
+              palette:
+                primary: indigo
+                accent: indigo
+            markdown_extensions:
+              - pymdownx.arithmatex
+              - pymdownx.betterem
+              - pymdownx.caret
+              - pymdownx.critic
+              - pymdownx.details
+              - pymdownx.emoji
+              - pymdownx.highlight
+              - pymdownx.inlinehilite
+              - pymdownx.keys
+              - pymdownx.mark
+              - pymdownx.smartsymbols
+              - pymdownx.superfences
+              - pymdownx.tabbed
+              - pymdownx.tasklist
+              - pymdownx.tilde
+            nav:
+              - Home: index.md
+              - API Reference: 
+                - Lie Groups: src/Cosserat/liegroups/Readme.md
+                - Force Fields: src/Cosserat/forcefield/README.md
+                - Mappings: src/Cosserat/mapping/README.md
+                - Constraints: src/Cosserat/constraint/README.md
+                - Engines: src/Cosserat/engine/README.md
+              - Tutorials: tutorial/tuto_scenes/
+              - Examples: examples/
+              - Mathematics: docs/text/math_foundations.md
+            EOF
+          fi
+          
+          # Build MkDocs site for tutorials and guides
+          mkdocs build -d build/docs/mkdocs
+
+      - name: Combine documentation sites
+        run: |
+          mkdir -p build/docs/combined
+          cp -r build/docs/html/* build/docs/combined/
+          mkdir -p build/docs/combined/tutorials
+          cp -r build/docs/mkdocs/* build/docs/combined/guides/
+
+      - name: Deploy to GitHub Pages
+        if: github.event_name != 'pull_request'
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: build/docs/combined
+          branch: gh-pages
+          clean: true
+
+      - name: Create documentation artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: cosserat-documentation
+          path: build/docs/combined
+          
+  integrate-with-ci:
+    name: Integrate with CI build
+    needs: build-documentation
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/develop')
+    steps:
+      - name: Download documentation artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: cosserat-documentation
+          path: cosserat-documentation
+      
+      - name: Prepare documentation for plugin package
+        run: |
+          mkdir -p plugin-docs
+          cp -r cosserat-documentation/* plugin-docs/
+          tar -czvf cosserat-docs.tar.gz plugin-docs/
+          
+      - name: Upload documentation package
+        uses: actions/upload-artifact@v3
+        with:
+          name: cosserat-docs-package
+          path: cosserat-docs.tar.gz
+          
+      # This step could trigger or notify the main CI build that documentation is ready
+      - name: Notify main CI build
+        run: |
+          echo "Documentation build complete - artifact available for main CI build"
+          # In a real implementation, you might use GitHub API to notify the main CI workflow
+          # or have the main CI workflow check for and download this artifact
+
