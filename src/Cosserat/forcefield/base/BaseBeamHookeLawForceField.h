@@ -37,7 +37,7 @@
 #include <sofa/core/behavior/MultiMatrixAccessor.h>
 #include <sofa/simulation/TaskScheduler.h>
 
-namespace sofa::component::forcefield
+namespace sofa::component::forcefield 
 {
 
 /**
@@ -52,9 +52,9 @@ namespace sofa::component::forcefield
  * Poisson ratio) or from directly specified inertia parameters.
  */
 template<class DataTypes>
-class BaseBeamHookeLawForceField : public sofa::core::behavior::ForceField<DataTypes>
+class BaseBeamHookeLawForceField : public sofa::core::behavior::ForceField<DataTypes> 
 {
-public:
+ public:
     SOFA_CLASS(SOFA_TEMPLATE(BaseBeamHookeLawForceField, DataTypes), SOFA_TEMPLATE(sofa::core::behavior::ForceField, DataTypes));
     
     typedef sofa::core::behavior::ForceField<DataTypes> Inherit1;
@@ -80,7 +80,7 @@ public:
     typedef sofa::type::vector<Mat33> VecMat33;
     typedef sofa::type::vector<Mat66> VecMat66;
     
-protected:
+ protected:
     // Default constructor
     BaseBeamHookeLawForceField();
     

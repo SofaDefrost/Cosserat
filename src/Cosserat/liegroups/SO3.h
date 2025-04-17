@@ -19,6 +19,7 @@
 #ifndef SOFA_COMPONENT_COSSERAT_LIEGROUPS_SO3_H
 #define SOFA_COMPONENT_COSSERAT_LIEGROUPS_SO3_H
 
+#include "Types.h"
 #include "LieGroupBase.h"
 #include "LieGroupBase.inl"
 #include <Eigen/Geometry>
@@ -38,10 +39,9 @@ namespace sofa::component::cosserat::liegroups {
  * @tparam _Scalar The scalar type (must be a floating-point type)
  */
 template<typename _Scalar>
-class SO3 : public LieGroupBase<_Scalar, 3>,
-           public LieGroupOperations<SO3<_Scalar>> {
+class SO3 : public LieGroupBase<SO3<_Scalar>, _Scalar, 3, 3, 3> {
 public:
-    using Base = LieGroupBase<_Scalar, 3>;
+    using Base = LieGroupBase<SO3<_Scalar>, _Scalar, 3, 3, 3>;
     using Scalar = typename Base::Scalar;
     using Vector = typename Base::Vector;
     using Matrix = typename Base::Matrix;
@@ -79,14 +79,14 @@ public:
     /**
      * @brief Group composition (rotation composition)
      */
-    SO3 operator*(const SO3& other) const {
+    SO3 compose(const SO3& other) const noexcept {
         return SO3(m_quat * other.m_quat);
     }
 
     /**
      * @brief Inverse element (opposite rotation)
      */
-    SO3 inverse() const override {
+    SO3 computeInverse() const override {
         return SO3(m_quat.conjugate());
     }
 
@@ -94,7 +94,7 @@ public:
      * @brief Exponential map from Lie algebra to SO(3)
      * @param omega Angular velocity vector in ℝ³
      */
-    SO3 exp(const TangentVector& omega) const override {
+    static SO3 computeExp(const TangentVector& omega) noexcept {
         const Scalar theta = omega.norm();
         
         if (theta < Types<Scalar>::epsilon()) {
@@ -120,7 +120,7 @@ public:
      * @brief Logarithmic map from SO(3) to Lie algebra
      * @return Angular velocity vector in ℝ³
      */
-    TangentVector log() const override {
+    TangentVector computeLog() const override {
         // Extract angle-axis representation
         Eigen::AngleAxis<Scalar> aa(m_quat);
         const Scalar theta = aa.angle();
@@ -139,22 +139,22 @@ public:
      * @brief Adjoint representation
      * For SO(3), this is the rotation matrix itself
      */
-    AdjointMatrix adjoint() const override {
+    AdjointMatrix computeAdjoint() const noexcept override {
         return matrix();
     }
 
     /**
      * @brief Group action on a point (rotate the point)
      */
-    Vector act(const Vector& point) const override {
+    Vector computeAction(const Vector& point) const noexcept override {
         return m_quat * point;
     }
 
     /**
      * @brief Check if approximately equal to another rotation
      */
-    bool isApprox(const SO3& other, 
-                  const Scalar& eps = Types<Scalar>::epsilon()) const {
+    bool computeIsApprox(const SO3& other, 
+                  const Scalar& eps = Types<Scalar>::epsilon()) const noexcept override {
         // Handle antipodal representation of same rotation
         return m_quat.coeffs().isApprox(other.m_quat.coeffs(), eps) ||
                m_quat.coeffs().isApprox(-other.m_quat.coeffs(), eps);
@@ -163,21 +163,51 @@ public:
     /**
      * @brief Get the identity element
      */
-    static const SO3& identity() {
-        static const SO3 id;
-        return id;
+    static SO3 computeIdentity() noexcept {
+        return SO3();
     }
 
     /**
      * @brief Get the dimension of the Lie algebra (3 for SO(3))
      */
-    int algebraDimension() const override { return 3; }
+    static constexpr int algebraDimension() { return 3; }
 
     /**
      * @brief Get the dimension of the space the group acts on (3 for SO(3))
      */
-    int actionDimension() const override { return 3; }
+    static constexpr int actionDimension() { return 3; }
 
+    /**
+     * @brief Compute distance between two rotations using the geodesic metric
+     */
+    Scalar distance(const SO3& other) const noexcept override;
+
+    /**
+     * @brief Interpolate between two rotations using SLERP
+     */
+    SO3 interpolate(const SO3& other, const Scalar& t) const noexcept override;
+
+    /**
+     * @brief Baker-Campbell-Hausdorff formula for so(3)
+     */
+    static TangentVector BCH(const TangentVector& v,
+                           const TangentVector& w,
+                           int order = 2);
+
+    /**
+     * @brief Differential of the exponential map
+     */
+    static AdjointMatrix dexp(const TangentVector& v);
+
+    /**
+     * @brief Differential of the logarithm map
+     */
+    AdjointMatrix dlog() const override;
+
+    /**
+     * @brief Adjoint representation of Lie algebra element
+     */
+    static AdjointMatrix ad(const TangentVector& v);
     /**
      * @brief Get the rotation matrix representation
      */
@@ -202,7 +232,7 @@ public:
      * @param v Vector in ℝ³
      * @return 3x3 skew-symmetric matrix
      */
-    static Matrix hat(const Vector& v) {
+    static Matrix hat(const TangentVector& v) noexcept {
         Matrix Omega;
         Omega << 0, -v[2], v[1],
                 v[2], 0, -v[0],
@@ -215,8 +245,8 @@ public:
      * @param Omega 3x3 skew-symmetric matrix
      * @return Vector in ℝ³
      */
-    static Vector vee(const Matrix& Omega) {
-        return Vector(Omega(2,1), Omega(0,2), Omega(1,0));
+    static TangentVector vee(const Matrix& Omega) noexcept {
+        return TangentVector(Omega(2,1), Omega(0,2), Omega(1,0));
     }
 
 private:

@@ -42,7 +42,7 @@ class SO2 : public LieGroupBase<_Scalar, 2>,
            public LieGroupOperations<SO2<_Scalar>> {
 public:
     using Base = LieGroupBase<_Scalar, 2>;
-    using Scalar = typename Base::Scalar;
+    using Scalar = typename Types::Scalar;
     using Vector = typename Base::Vector;
     using Matrix = typename Base::Matrix;
     using TangentVector = typename Base::TangentVector;
