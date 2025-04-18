@@ -28,7 +28,7 @@
 *                                                                             *
 ******************************************************************************/
 #define SOFA_COSSERAT_CPP_BeamHookeLawForceField
-#include <Cosserat/forcefield/BeamHookeLawForceField.inl>
+#include <Cosserat/forcefield/standard/BeamHookeLawForceField.inl>
 #include <sofa/core/ObjectFactory.h>
 
 namespace sofa::component::forcefield

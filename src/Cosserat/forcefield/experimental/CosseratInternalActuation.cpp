@@ -28,7 +28,7 @@
 *                                                                             *
 ******************************************************************************/
 #define SOFA_COSSERAT_CPP_CosseratInternalActuation
-#include <Cosserat/forcefield/CosseratInternalActuation.inl>
+#include <Cosserat/forcefield/experimental/CosseratInternalActuation.inl>
 #include <sofa/core/ObjectFactory.h>
 
 namespace Cosserat

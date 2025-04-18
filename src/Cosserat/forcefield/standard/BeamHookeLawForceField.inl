@@ -28,7 +28,7 @@
 *                                                                             *
 ******************************************************************************/
 #pragma once
-#include <Cosserat/forcefield/BeamHookeLawForceField.h>
+#include <Cosserat/forcefield/standard/BeamHookeLawForceField.h>
 
 namespace sofa::component::forcefield
 {

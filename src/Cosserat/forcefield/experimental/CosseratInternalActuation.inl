@@ -29,7 +29,7 @@
 ******************************************************************************/
 #pragma once
 #include <Cosserat/config.h>
-#include <Cosserat/forcefield/CosseratInternalActuation.h>
+#include <Cosserat/forcefield/experimental/CosseratInternalActuation.h>
 
 #include <sofa/linearalgebra/FullVector.h>
 #include <sofa/core/behavior/ForceField.inl>

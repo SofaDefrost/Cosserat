@@ -28,14 +28,10 @@
 *                                                                             *
 ******************************************************************************/
 #pragma once
-#include <Cosserat/forcefield/BaseBeamHookeLawForceField.h>
-
-#include <sofa/linearalgebra/FullVector.h>
+#include <Cosserat/forcefield/base/BaseBeamHookeLawForceField.h>
 #include <sofa/core/behavior/MechanicalState.h>
 #include <sofa/core/behavior/ForceField.inl>
 #include <sofa/helper/OptionsGroup.h>
-
-// Standard includes
 #include <iostream>
 #include <algorithm>
 #include <ctime>
@@ -55,14 +51,41 @@ namespace sofa::component::forcefield
 using sofa::core::behavior::MultiMatrixAccessor;
 using sofa::core::behavior::BaseMechanicalState;
 using sofa::helper::WriteAccessor;
+
+template <class DataTypes>
+BaseBeamHookeLawForceField<DataTypes>::BaseBeamHookeLawForceField()
+    : Inherit1(),
+    d_crossSectionShape( initData(&d_crossSectionShape, {"circular","rectangular"},
+                                 "crossSectionShape",
+                                 "shape of the cross-section. Can be: circular (tube with external radius being radius and internal radius being innerRadius ) or rectangular (lengthY and lengthZ) . Default is circular" )),
+    d_youngModulus( initData( &d_youngModulus, 1.0e9, "youngModulus", "Young Modulus describes the stiffness of the material")),
+    d_poissonRatio( initData( &d_poissonRatio, 0.45, "poissonRatio", "poisson Ratio describes the compressibility of the material")),
+    d_length( initData( &d_length, "length", "The list of lengths of the different beam's sections.")),
+    d_radius( initData( &d_radius, 1.0, "radius", "external radius of the cross section (if circular)")),
+    d_innerRadius( initData( &d_innerRadius, 0.0, "innerRadius", "internal radius of the cross section (if circular)")),
+    d_lengthY( initData( &d_lengthY, 1.0, "lengthY", "side length of the cross section along local y axis (if rectangular)")),
+    d_lengthZ( initData( &d_lengthZ, 1.0, "lengthZ", "side length of the cross section along local z axis (if rectangular)")),
+    d_variantSections(initData(&d_variantSections, false, "variantSections", "In case we have variant beam sections this has to be set to true")),
+    d_youngModulusList(initData(&d_youngModulusList, "youngModulusList", "The list of Young modulus in case we have sections with variable physical properties")),
+    d_poissonRatioList(initData(&d_poissonRatioList, "poissonRatioList", "The list of poisson's ratio in case we have sections with variable physical properties")),
+    d_useInertiaParams(initData(&d_useInertiaParams, false, "useInertiaParams", "If the inertia parameters are given by the user, there is no longer any need to use @d_youngModulus and @d_poissonRatio.")),
+    d_GI(initData(&d_GI, "GI", "The inertia parameter, GI")),
+    d_GA(initData(&d_GA, "GA", "The inertia parameter, GA")),
+    d_EA(initData(&d_EA, "EA", "The inertia parameter, EA")),
+    d_EI(initData(&d_EI, "EI", "The inertia parameter, EI"))
+{
+    compute_df=true;
+}
+
+
 /**
  * @brief Get the current frame transformation for a specific cross-section
- * 
+ *
  * @param index Cross-section index
  * @return Rigid transformation (SE3) representing the cross-section frame
  */
-template<typename DataTypes>
-typename BaseBeamHookeLawForceField<DataTypes>::SE3Type 
+template <class DataTypes>
+typename BaseBeamHookeLawForceField<DataTypes>::Frame
 BaseBeamHookeLawForceField<DataTypes>::getFrame(size_t index) const
 {
     assert(index < m_currentFrames.size());
@@ -71,12 +94,12 @@ BaseBeamHookeLawForceField<DataTypes>::getFrame(size_t index) const
 
 /**
  * @brief Get the reference frame transformation for a specific cross-section
- * 
+ *
  * @param index Cross-section index
  * @return Rigid transformation (SE3) representing the reference cross-section frame
  */
 template<typename DataTypes>
-typename BaseBeamHookeLawForceField<DataTypes>::SE3Type 
+typename BaseBeamHookeLawForceField<DataTypes>::SE3Type
 BaseBeamHookeLawForceField<DataTypes>::getReferenceFrame(size_t index) const
 {
     assert(index < m_referenceFrames.size());
@@ -85,12 +108,12 @@ BaseBeamHookeLawForceField<DataTypes>::getReferenceFrame(size_t index) const
 
 /**
  * @brief Get the relative rotation between consecutive cross-sections
- * 
+ *
  * @param index Segment index (between cross-sections index and index+1)
  * @return Rotation (SO3) representing the relative orientation
  */
 template<typename DataTypes>
-typename BaseBeamHookeLawForceField<DataTypes>::SO3Type 
+typename BaseBeamHookeLawForceField<DataTypes>::SO3Type
 BaseBeamHookeLawForceField<DataTypes>::getRelativeRotation(size_t index) const
 {
     assert(index < m_relativeRotations.size());
@@ -101,10 +124,7 @@ BaseBeamHookeLawForceField<DataTypes>::getRelativeRotation(size_t index) const
  * (different properties for different segments).
  */
 
-/******************************************************************************
-* CONSTRUCTORS / DESTRUCTORS                                                 *
-******************************************************************************/
-ttemplate<typename DataTypes>
+template<typename DataTypes>
 void BaseBeamHookeLawForceField<DataTypes>::init()
 {
     Inherit1::init();
@@ -167,8 +187,6 @@ void BaseBeamHookeLawForceField<DataTypes>::init()
         }
     }
 }
-* INITIALIZATION METHODS                                                     *
-******************************************************************************/
 
 /**
  * @brief Initialize the force field, setting up parameters and cross-section properties

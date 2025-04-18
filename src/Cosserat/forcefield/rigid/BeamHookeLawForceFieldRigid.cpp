@@ -28,7 +28,7 @@
 *                                                                             *
 ******************************************************************************/
 #define SOFA_COSSERAT_BeamHookeLawForceFieldRigid_CPP
-#include <Cosserat/forcefield/BeamHookeLawForceFieldRigid.inl>
+#include <Cosserat/forcefield/rigid/BeamHookeLawForceFieldRigid.inl>
 
 #include <sofa/core/ObjectFactory.h>
 

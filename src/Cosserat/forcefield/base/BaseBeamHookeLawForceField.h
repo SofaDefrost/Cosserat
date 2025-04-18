@@ -57,7 +57,6 @@ class BaseBeamHookeLawForceField : public sofa::core::behavior::ForceField<DataT
  public:
     SOFA_CLASS(SOFA_TEMPLATE(BaseBeamHookeLawForceField, DataTypes), SOFA_TEMPLATE(sofa::core::behavior::ForceField, DataTypes));
     
-    typedef sofa::core::behavior::ForceField<DataTypes> Inherit1;
     typedef typename DataTypes::Real Real;
     typedef typename DataTypes::Coord Coord;
     typedef typename DataTypes::Deriv Deriv;
@@ -72,7 +71,8 @@ class BaseBeamHookeLawForceField : public sofa::core::behavior::ForceField<DataT
     typedef sofa::type::vector<Real> Vector;
     
     // For task scheduling in multi-threaded computation
-    typedef sofa::simulation::TaskScheduler::Task Task;
+
+    typedef sofa::simulation::Task Task;
     
     // Matrix types for stiffness representation
     typedef sofa::type::Mat<3, 3, Real> Mat33;
@@ -337,10 +337,11 @@ public:
     virtual Real getRadius();
 };
 
+/*
 #if !defined(SOFA_COMPONENT_FORCEFIELD_BASEBEAMHOOKELAWFORCEFIELD_CPP)
 extern template class SOFA_COSSERAT_API BaseBeamHookeLawForceField<defaulttype::Vec3Types>;
 extern template class SOFA_COSSERAT_API BaseBeamHookeLawForceField<defaulttype::Vec6Types>;
 #endif
-
+*/
 } // namespace sofa::component::forcefield
 

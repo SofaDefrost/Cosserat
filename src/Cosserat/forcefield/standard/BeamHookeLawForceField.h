@@ -29,7 +29,7 @@
 ******************************************************************************/
 #pragma once
 #include <Cosserat/config.h>
-#include <Cosserat/forcefield/BaseBeamHookeLawForceField.h>
+#include <Cosserat/forcefield/base/BaseBeamHookeLawForceField.h>
 
 #include <sofa/linearalgebra/CompressedRowSparseMatrix.h>
 #include <sofa/helper/ScopedAdvancedTimer.h>

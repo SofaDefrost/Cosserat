@@ -23,9 +23,6 @@
 
 namespace sofa::component::cosserat::liegroups {
 
-template<typename _Scalar>
-class SE3;
-
 /**
  * @brief Additional operators and utility functions for SE3
  */
@@ -86,7 +83,7 @@ SE3<_Scalar> interpolate(const SE3<_Scalar>& from,
     // Get the relative motion in the Lie algebra
     typename SE3<_Scalar>::TangentVector delta = rel.log();
     // Scale it by t and apply it to 'from'
-    return from * SE3<_Scalar>().exp(t * delta);
+    return from * SE3<_Scalar>::exp(t * delta);
 }
 
 /**
@@ -101,34 +98,7 @@ Eigen::Matrix<_Scalar, 4, 4> dualMatrix(const typename SE3<_Scalar>::TangentVect
     return xi_hat;
 }
 
-/**
- * @brief Specialization of the Baker-Campbell-Hausdorff formula for SE(3)
- * 
- * For SE(3), the BCH formula has a closed form up to second order:
- * BCH(X,Y) = X + Y + 1/2[X,Y] + higher order terms
- * where [X,Y] is the Lie bracket for se(3).
- */
-template<typename _Scalar>
-typename SE3<_Scalar>::TangentVector
-SE3<_Scalar>::BCH(const TangentVector& X, const TangentVector& Y) {
-    // Extract linear and angular components
-    const auto& v1 = X.template head<3>();
-    const auto& w1 = X.template tail<3>();
-    const auto& v2 = Y.template head<3>();
-    const auto& w2 = Y.template tail<3>();
-
-    // Compute Lie bracket components
-    const auto w1_cross_w2 = w1.cross(w2);            // Angular x Angular
-    const auto w1_cross_v2 = w1.cross(v2);            // Angular x Linear
-    const auto v1_cross_w2 = v1.cross(w2);            // Linear x Angular
-
-    // Combine terms for the BCH formula up to second order
-    TangentVector result;
-    result.template head<3>() = v1 + v2 + _Scalar(0.5) * (w1_cross_v2 - v1_cross_w2);
-    result.template tail<3>() = w1 + w2 + _Scalar(0.5) * w1_cross_w2;
-
-    return result;
-}
+// BCH implementation moved to header file
 
 } // namespace sofa::component::cosserat::liegroups
 

@@ -19,10 +19,16 @@
 #ifndef SOFA_COMPONENT_COSSERAT_LIEGROUPS_SE3_H
 #define SOFA_COMPONENT_COSSERAT_LIEGROUPS_SE3_H
 
-#include "LieGroupBase.h"
-#include "LieGroupBase.inl"
-#include "SO3.h"
-#include <Eigen/Geometry>
+#include <Eigen/Geometry>  // Include Eigen first
+#include "Types.h"        // Then our type system
+#include "LieGroupBase.h" // Then the base class interface
+#include "SO3.h"         // Then other dependencies
+#include "sofa/helper/system/console.h"
+
+// Forward declaration outside the namespace
+namespace sofa::component::cosserat::liegroups {
+template<typename Scalar> class SE3;
+}
 
 namespace sofa::component::cosserat::liegroups {
 
@@ -38,14 +44,17 @@ namespace sofa::component::cosserat::liegroups {
  * - The first three components represent the linear velocity
  * - The last three components represent the angular velocity
  * 
- * @tparam _Scalar The scalar type (must be a floating-point type)
- */
-template<typename _Scalar>
-class SE3 : public LieGroupBase<_Scalar, 6>,
-           public LieGroupOperations<SE3<_Scalar>> {
-public:
-    using Base = LieGroupBase<_Scalar, 6>;
-    using Scalar = typename Base::Scalar;
+ * @tparam Scalar The scalar type (must be a floating-point type)
+ * @tparam _Dim The dimension of the group representation, here 6
+*/
+static int Dim = 6;
+template<typename Scalar>
+class SE3 final : public LieGroupBase<SE3<Scalar>, Scalar, 6>
+{  // Use default values for _AlgebraDim and _ActionDim
+    static_assert(std::is_floating_point<Scalar>::value,
+                 "Scalar type must be a floating-point type");
+ public:
+    using Base = LieGroupBase<SE3<Scalar>, Scalar, 6>;  // Same here
     using Vector = typename Base::Vector;
     using Matrix = typename Base::Matrix;
     using TangentVector = typename Base::TangentVector;
@@ -85,7 +94,7 @@ public:
     /**
      * @brief Inverse element (inverse transformation)
      */
-    SE3 inverse() const override {
+    SE3 inverse() const {
         SO3<Scalar> inv_rot = m_rotation.inverse();
         return SE3(inv_rot, -(inv_rot.act(m_translation)));
     }
@@ -94,7 +103,7 @@ public:
      * @brief Exponential map from Lie algebra to SE(3)
      * @param twist Vector in ℝ⁶ representing (v, ω)
      */
-    SE3 exp(const TangentVector& twist) const override {
+    static SE3 exp(const TangentVector& twist) {
         Vector3 v = twist.template head<3>();
         Vector3 omega = twist.template tail<3>();
         const Scalar theta = omega.norm();
@@ -126,7 +135,7 @@ public:
      * @brief Logarithmic map from SE(3) to Lie algebra
      * @return Vector in ℝ⁶ representing (v, ω)
      */
-    TangentVector log() const override {
+    TangentVector log() const {
         // Extract rotation vector
         Vector3 omega = m_rotation.log();
         const Scalar theta = omega.norm();
@@ -153,7 +162,7 @@ public:
     /**
      * @brief Adjoint representation
      */
-    AdjointMatrix adjoint() const override {
+    AdjointMatrix adjoint() const {
         AdjointMatrix Ad = AdjointMatrix::Zero();
         Matrix3 R = m_rotation.matrix();
         Matrix3 t_hat = SO3<Scalar>::hat(m_translation);
@@ -178,7 +187,7 @@ public:
     /**
      * @brief Override of act for 6D vectors (acts on position part only)
      */
-    Vector act(const Vector& point) const override {
+    Vector act(const Vector& point) const {
         Vector3 pos = act(point.template head<3>());
         Vector result;
         result << pos, point.template tail<3>();
@@ -197,20 +206,19 @@ public:
     /**
      * @brief Get the identity element
      */
-    static const SE3& identity() {
-        static const SE3 id;
-        return id;
+    static SE3 Identity() noexcept {
+        return SE3();
     }
 
     /**
      * @brief Get the dimension of the Lie algebra (6 for SE(3))
      */
-    int algebraDimension() const override { return 6; }
+    int algebraDimension() const { return 6; }
 
     /**
      * @brief Get the dimension of the space the group acts on (3 for SE(3))
      */
-    int actionDimension() const override { return 3; }
+    int actionDimension() const { return 6; }
 
     /**
      * @brief Access the rotation component
@@ -234,13 +242,75 @@ public:
         return T;
     }
 
+    // Required methods to match base class interface
+    SE3 compose(const SE3& other) const noexcept {
+        return (*this) * other;
+    }
+
+    SE3 computeInverse() const {
+        return inverse();
+    }
+
+    static SE3 computeExp(const TangentVector& v) noexcept {
+        return exp(v);
+    }
+
+    TangentVector computeLog() const {
+        return log();
+    }
+
+    AdjointMatrix computeAdjoint() const noexcept {
+        return adjoint();
+    }
+
+    bool computeIsApprox(const SE3& other, const Scalar& eps) const noexcept {
+        return isApprox(other, eps);
+    }
+
+    static SE3 computeIdentity() noexcept {
+        return SE3();
+    }
+
+    typename Base::ActionVector computeAction(const typename Base::ActionVector& point) const noexcept {
+        return act(point);
+    }
+
+    /**
+     * @brief Baker-Campbell-Hausdorff formula for SE(3)
+     * 
+     * For SE(3), the BCH formula has a closed form up to second order:
+     * BCH(X,Y) = X + Y + 1/2[X,Y] + higher order terms
+     * where [X,Y] is the Lie bracket for se(3).
+     */
+    static TangentVector BCH(const TangentVector& X, const TangentVector& Y) {
+        // Extract linear and angular components
+        const auto& v1 = X.template head<3>();
+        const auto& w1 = X.template tail<3>();
+        const auto& v2 = Y.template head<3>();
+        const auto& w2 = Y.template tail<3>();
+
+        // Compute Lie bracket components
+        const auto w1_cross_w2 = w1.cross(w2); // Angular x Angular
+        const auto w1_cross_v2 = w1.cross(v2); // Angular x Linear
+        const auto v1_cross_w2 = v1.cross(w2); // Linear x Angular
+        // Combine terms for the BCH formula up to second order
+        TangentVector result;
+        result.template head<3>() = v1 + v2 + Scalar(0.5) * (w1_cross_v2 - v1_cross_w2);
+        result.template tail<3>() = w1 + w2 + Scalar(0.5) * w1_cross_w2;
+
+        return result;
+    }
+
 private:
     SO3<Scalar> m_rotation;     ///< Rotation component
     Vector3 m_translation;      ///< Translation component
-};
+};  // end of class SE3
 
 } // namespace sofa::component::cosserat::liegroups
 
+// First include the LieGroupBase implementation
+#include "LieGroupBase.inl"
+// Then include the implementation of this class
 #include "SE3.inl"
 
 #endif // SOFA_COMPONENT_COSSERAT_LIEGROUPS_SE3_H
