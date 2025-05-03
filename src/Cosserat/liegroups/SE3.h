@@ -19,11 +19,10 @@
 #ifndef SOFA_COMPONENT_COSSERAT_LIEGROUPS_SE3_H
 #define SOFA_COMPONENT_COSSERAT_LIEGROUPS_SE3_H
 
-#include <Eigen/Geometry>  // Include Eigen first
-#include "Types.h"        // Then our type system
-#include "LieGroupBase.h" // Then the base class interface
-#include "SO3.h"         // Then other dependencies
-#include "sofa/helper/system/console.h"
+#include <Eigen/Geometry.h>  // Include Eigen first
+#include <Cosserat/liegroups/Types.h>        // Then our type system
+#include <Cosserat/liegroups/LieGroupBase.h> // Then the base class interface
+#include <Cosserat/liegroups/SO3.h>         // Then other dependencies
 
 // Forward declaration outside the namespace
 namespace sofa::component::cosserat::liegroups {
@@ -308,9 +307,5 @@ private:
 
 } // namespace sofa::component::cosserat::liegroups
 
-// First include the LieGroupBase implementation
-#include "LieGroupBase.inl"
-// Then include the implementation of this class
-#include "SE3.inl"
 
 #endif // SOFA_COMPONENT_COSSERAT_LIEGROUPS_SE3_H

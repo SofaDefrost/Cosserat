@@ -271,6 +271,4 @@ private:
 
 } // namespace sofa::component::cosserat::liegroups
 
-#include "SGal3.inl"
-
 #endif // SOFA_COMPONENT_COSSERAT_LIEGROUPS_SGAL3_H

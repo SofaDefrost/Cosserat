@@ -1,13 +1,136 @@
-*.pyc
+  # Python
+*.py[cod]
+__pycache__/
+*.so
+.Python
 build/
+develop-eggs/
 dist/
-htmlcov/
-.ropeproject/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
 MANIFEST
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/
+.nox/
+.hypothesis/
+.ropeproject/
 control/_version.py
 __conda_*.txt
 record.txt
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+.env/
+virtualenv/
+examples/python3/venv/
+
+# Build artifacts and logs
+*.view
+*.log
 build.log
+cmake-build-*/
+CMakeFiles/
+CMakeScripts/
+CMakeCache.txt
+CTestTestfile.cmake
+cmake_install.cmake
+compile_commands.json
+
+# Documentation
+doc/_build/
+doc/generated/
+docs/_build/
+docs/generated/
+
+# Editor specific files
+## Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+TAGS
+
+## VS Code
+.vscode/
+.vs/
+*.code-workspace
+
+## JetBrains IDEs
+.idea/
+*.iml
+*.iws
+*.ipr
+*.iws
+out/
+.idea_modules/
+
+## Eclipse
+.project
+.classpath
+.settings/
+.pydevproject
+.cproject
+.buildpath
+
+# Jupyter Notebook
+.ipynb_checkpoints
+Untitled*.ipynb
+
+# macOS specific files
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# SOFA and project-specific files
+*.qglviewer.view
+*.sofa.view
+sonar-project.properties
+
+# Generated binaries, libraries and executables
+*.dll
+*.exe
+*.out
+*.app
+*.dylib
+*.a
+*.la
+*.lo
+*.o
+*.obj
+
+# Specific to Cosserat project
+#python/
+#scenes/
+
+*.pyc
+control/_version.py
 *.egg-info/
 .eggs/
 *.view
@@ -24,10 +147,3 @@ Untitled*.ipynb
 *.idea/
 # Files created by or for emacs (RMM, 29 Dec 2017)
 *~
-TAGS
-python/
-scenes/
-.DS_Store/
-.DS_Store
-.vscode/
-.vscode

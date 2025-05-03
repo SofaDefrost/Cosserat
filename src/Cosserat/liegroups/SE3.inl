@@ -19,7 +19,8 @@
 #ifndef SOFA_COMPONENT_COSSERAT_LIEGROUPS_SE3_INL
 #define SOFA_COMPONENT_COSSERAT_LIEGROUPS_SE3_INL
 
-#include "SE3.h"
+#include <Cosserat/liegroups/SE3.h>
+
 
 namespace sofa::component::cosserat::liegroups {
 

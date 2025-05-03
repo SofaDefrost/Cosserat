@@ -19,10 +19,10 @@
 #ifndef SOFA_COMPONENT_COSSERAT_LIEGROUPS_SE23_H
 #define SOFA_COMPONENT_COSSERAT_LIEGROUPS_SE23_H
 
-#include "LieGroupBase.h"
-#include "LieGroupBase.inl"
-#include "SE3.h"
-#include <Eigen/Geometry>
+#include <Cosserat/liegroups/LieGroupBase.h> // Then the base class interface
+#include <Cosserat/liegroups/LieGroupBase.inl> // Then the base class interface
+#include <Cosserat/liegroups/SE3.h> // Then the base class interface
+#include <Eigen/Geometry.h>
 
 namespace sofa::component::cosserat::liegroups {
 
@@ -251,7 +251,5 @@ private:
 };
 
 } // namespace sofa::component::cosserat::liegroups
-
-#include "SE23.inl"
 
 #endif // SOFA_COMPONENT_COSSERAT_LIEGROUPS_SE23_H
