@@ -19,7 +19,7 @@
 #ifndef SOFA_COMPONENT_COSSERAT_LIEGROUPS_SE3_H
 #define SOFA_COMPONENT_COSSERAT_LIEGROUPS_SE3_H
 
-#include <Eigen/Geometry.h>  // Include Eigen first
+#include <Eigen/Geometry>  // Include Eigen first
 #include <Cosserat/liegroups/Types.h>        // Then our type system
 #include <Cosserat/liegroups/LieGroupBase.h> // Then the base class interface
 #include <Cosserat/liegroups/SO3.h>         // Then other dependencies

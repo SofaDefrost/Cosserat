@@ -29,141 +29,155 @@
 ******************************************************************************/
 #define SOFA_COSSERAT_CPP_BeamHookeLawForceField
 #include <Cosserat/forcefield/standard/BeamHookeLawForceField.inl>
+
 #include <sofa/core/ObjectFactory.h>
 
 namespace sofa::component::forcefield
 {
 
-template<>
+template <>
+void BeamHookeLawForceField<defaulttype::Vec6Types>::reinit()
+{
+    // Precompute and store values
+    Real Iy, Iz, J, A;
+    if (d_crossSectionShape.getValue().getSelectedItem() == "rectangular") // rectangular cross-section
+    {
+        Real Ly = d_lengthY.getValue();
+        Real Lz = d_lengthZ.getValue();
+
+        const Real LyLzLzLz = Ly * Lz * Lz * Lz;
+        const Real LzLyLyLy = Lz * Ly * Ly * Ly;
+
+        Iy = LyLzLzLz / 12.0;
+        Iz = LzLyLyLy / 12.0;
+        J = Iy + Iz;
+        A = Ly * Lz;
+
+    } else // circular cross-section
+    {
+        msg_info() << "Cross section shape."
+                   << d_crossSectionShape.getValue().getSelectedItem();
+
+        Real r = d_radius.getValue();
+        Real rInner = d_innerRadius.getValue();
+        const Real r4 = r * r * r * r;
+        const Real rInner4 = rInner * rInner * rInner * rInner;
+
+        Iy = M_PI * (r4 - rInner4) / 4.0;
+        Iz = Iy;
+        J = Iy + Iz;
+        A = M_PI * (r * r - rInner4);
+    }
+    m_crossSectionArea = A;
+
+    if (d_useInertiaParams.getValue())
+   {
+        msg_info() << "Pre-calculated inertia parameters are used for the computation of the stiffness matrix.";
+        m_K_section66[0][0] = d_GI.getValue();
+        m_K_section66[1][1] = d_EIy.getValue();
+        m_K_section66[2][2] = d_EIz.getValue();
+        m_K_section66[3][3] = d_EA.getValue();
+        m_K_section66[4][4] = d_GA.getValue();
+        m_K_section66[5][5] = d_GA.getValue();
+    } else {
+        // Pour du vec 6, on a  _m_K =diag([G*J E*Iy E*Iz E*A G*As G*As]); % stifness matrix
+        Real E = d_youngModulus.getValue();
+        Real G = E / (2.0 * (1.0 + d_poissonRatio.getValue()));
+        // Translational Stiffness (X, Y, Z directions):
+        //  Gs * J(i): Shearing modulus times the second moment of the area (torsional stiffness). E * Js(i): Young's modulus times the second moment of the area (bending stiffness).
+        m_K_section66[0][0] = G * J;
+        m_K_section66[1][1] = E * Iy;
+        m_K_section66[2][2] = E * Iz;
+        // Rotational Stiffness (X, Y, Z directions):
+        // E * A: Young's modulus times the cross-sectional area (axial stiffness).
+        // Gs * A: Shearing modulus times the cross-sectional area (shearing stiffness).
+        m_K_section66[3][3] = E * A;
+        m_K_section66[4][4] = G * A;
+        m_K_section66[5][5] = G * A;
+    }
+}
+
+template <>
 void BeamHookeLawForceField<defaulttype::Vec6Types>::addForce(
-    const MechanicalParams* mparams,
-    DataVecDeriv& d_f,
-    const DataVecCoord& d_x,
-    const DataVecDeriv& d_v)
+    const MechanicalParams *mparams, DataVecDeriv &d_f, const DataVecCoord &d_x,
+    const DataVecDeriv &d_v)
 {
     SOFA_UNUSED(d_v);
     SOFA_UNUSED(mparams);
 
-    if (!this->m_initialized) {
-        msg_error() << "Force field not properly initialized";
+    if (!this->getMState())
+    {
+        msg_info() << "No Mechanical State found, no force will be computed..." << "\n";
+        compute_df = false;
         return;
     }
-
-    VecDeriv& f = *d_f.beginEdit();
-    const VecCoord& x = d_x.getValue();
-    const VecCoord& x0 = this->mstate->read(core::vec_id::read_access::restPosition)->getValue();
-    const vector<Real>& lengths = this->d_length.getValue();
+    VecDeriv &f = *d_f.beginEdit();
+    const VecCoord &x = d_x.getValue();
+    // get the rest position (for non straight shape)
+    const VecCoord &x0 =
+      this->mstate->read(sofa::core::vec_id::read_access::restPosition)->getValue();
 
     f.resize(x.size());
-
-    // Compute forces using LieGroups
-    for (size_t i = 0; i < x.size(); i++) {
-        // Convert current and rest positions to SE3 transformations
-        liegroups::SE3d T_current, T_rest;
-        
-        // Current configuration
-        T_current.translation() = Vec3d(x[i][0], x[i][1], x[i][2]);
-        liegroups::SO3d R_current = liegroups::SO3d::exp(Vec3d(x[i][3], x[i][4], x[i][5]));
-        T_current.rotation() = R_current.matrix();
-        
-        // Rest configuration
-        T_rest.translation() = Vec3d(x0[i][0], x0[i][1], x0[i][2]);
-        liegroups::SO3d R_rest = liegroups::SO3d::exp(Vec3d(x0[i][3], x0[i][4], x0[i][5]));
-        T_rest.rotation() = R_rest.matrix();
-        
-        // Compute relative transformation
-        liegroups::SE3d T_rel = T_current * T_rest.inverse();
-        
-        // Get twist coordinates and compute force
-        Deriv twist = T_rel.log();
-        f[i] = -(this->m_K_section66 * twist) * lengths[i];
+    unsigned int sz = d_length.getValue().size();
+    if (x.size() != sz)
+    {
+        msg_warning()
+            << " length : " << sz << "should have the same size as x... "
+            << x.size() << "\n";
+        compute_df = false;
+        return;
+    }
+    for (unsigned int i = 0; i < x.size(); i++)
+    {
+        f[i] -= (m_K_section66 * (x[i] - x0[i])) * d_length.getValue()[i];
     }
 
     d_f.endEdit();
 }
 
-template<>
+template <>
 void BeamHookeLawForceField<defaulttype::Vec6Types>::addDForce(
-    const MechanicalParams* mparams,
-    DataVecDeriv& d_df,
-    const DataVecDeriv& d_dx)
+    const MechanicalParams *mparams, DataVecDeriv &d_df,
+    const DataVecDeriv &d_dx)
 {
+    if (!compute_df)
+        return;
+
     WriteAccessor<DataVecDeriv> df = d_df;
     ReadAccessor<DataVecDeriv> dx = d_dx;
-    Real kFactor = (Real)mparams->kFactorIncludingRayleighDamping(this->rayleighStiffness.getValue());
-    const vector<Real>& lengths = this->d_length.getValue();
+    Real kFactor = (Real)mparams->kFactorIncludingRayleighDamping(
+      this->rayleighStiffness.getValue());
 
     df.resize(dx.size());
-    
-    // Linear approximation for small displacements
-    for (size_t i = 0; i < dx.size(); i++) {
-        df[i] = -(this->m_K_section66 * dx[i]) * kFactor * lengths[i];
+    for (unsigned int i = 0; i < dx.size(); i++)
+    {
+        df[i] -= (m_K_section66 * dx[i]) * kFactor * d_length.getValue()[i];
     }
 }
 
-template<>
+template <>
 void BeamHookeLawForceField<defaulttype::Vec6Types>::addKToMatrix(
-    const MechanicalParams* mparams,
-    const MultiMatrixAccessor* matrix)
+    const MechanicalParams *mparams, const MultiMatrixAccessor *matrix)
 {
     MultiMatrixAccessor::MatrixRef mref = matrix->getMatrix(this->mstate);
-    BaseMatrix* mat = mref.matrix;
+    BaseMatrix *mat = mref.matrix;
     unsigned int offset = mref.offset;
-    Real kFact = (Real)mparams->kFactorIncludingRayleighDamping(this->rayleighStiffness.getValue());
-    const vector<Real>& lengths = this->d_length.getValue();
+    Real kFact = (Real)mparams->kFactorIncludingRayleighDamping(
+      this->rayleighStiffness.getValue());
 
-    const VecCoord& pos = this->mstate->read(core::vec_id::read_access::position)->getValue();
-    
-    // Add stiffness contribution for each beam element
-    for (size_t n = 0; n < pos.size(); n++) {
-        for (unsigned int i = 0; i < 6; i++) {
-            for (unsigned int j = 0; j < 6; j++) {
+    const VecCoord &pos =
+      this->mstate->read(core::vec_id::read_access::restPosition)->getValue();
+    for (unsigned int n = 0; n < pos.size(); n++)
+    {
+        for (unsigned int i = 0; i < 6; i++)
+        {
+            for (unsigned int j = 0; j < 6; j++)
+            {
                 mat->add(offset + i + 6 * n, offset + j + 6 * n,
-                        -kFact * this->m_K_section66[i][j] * lengths[n]);
+                        -kFact * m_K_section66[i][j] * d_length.getValue()[n]);
             }
         }
     }
-}
-
-template<>
-double BeamHookeLawForceField<defaulttype::Vec6Types>::getPotentialEnergy(
-    const MechanicalParams* mparams,
-    const DataVecCoord& x) const
-{
-    SOFA_UNUSED(mparams);
-    
-    const VecCoord& pos = x.getValue();
-    const VecCoord& rest_pos = this->mstate->read(core::vec_id::read_access::restPosition)->getValue();
-    const vector<Real>& lengths = this->d_length.getValue();
-    
-    double energy = 0.0;
-    
-    // Compute potential energy using LieGroups
-    for (size_t i = 0; i < pos.size(); i++) {
-        // Convert configurations to SE3
-        liegroups::SE3d T_current, T_rest;
-        
-        // Current configuration
-        T_current.translation() = Vec3d(pos[i][0], pos[i][1], pos[i][2]);
-        liegroups::SO3d R_current = liegroups::SO3d::exp(Vec3d(pos[i][3], pos[i][4], pos[i][5]));
-        T_current.rotation() = R_current.matrix();
-        
-        // Rest configuration
-        T_rest.translation() = Vec3d(rest_pos[i][0], rest_pos[i][1], rest_pos[i][2]);
-        liegroups::SO3d R_rest = liegroups::SO3d::exp(Vec3d(rest_pos[i][3], rest_pos[i][4], rest_pos[i][5]));
-        T_rest.rotation() = R_rest.matrix();
-        
-        // Compute relative transformation
-        liegroups::SE3d T_rel = T_current * T_rest.inverse();
-        
-        // Get twist coordinates
-        Deriv twist = T_rel.log();
-        
-        // Compute energy contribution
-        energy += 0.5 * (twist * (this->m_K_section66 * twist)) * lengths[i];
-    }
-    
-    return energy;
 }
 
 using namespace sofa::defaulttype;
@@ -171,7 +185,7 @@ using namespace sofa::defaulttype;
 template class BeamHookeLawForceField<Vec3Types>;
 template class BeamHookeLawForceField<Vec6Types>;
 
-} // namespace sofa::component::forcefield
+}
 
 namespace Cosserat
 {
@@ -185,4 +199,4 @@ void registerBeamHookeLawForceField(sofa::core::ObjectFactory* factory)
             .add<sofa::component::forcefield::BeamHookeLawForceField<sofa::defaulttype::Vec6Types>>());
 }
 
-} // namespace Cosserat
+}

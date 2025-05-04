@@ -22,9 +22,6 @@
 #pragma once
 #include <Cosserat/config.h>
 #include <Cosserat/types.h>
-#include <Cosserat/liegroups/SO3.h>
-#include <Cosserat/liegroups/SE3.h>
-#include <Cosserat/liegroups/Utils.h>
 
 #include <sofa/core/Multi2Mapping.h>
 
@@ -47,13 +44,9 @@ using sofa::type::Vec3;
 using sofa::type::Vec6;
 using sofa::type::Mat;
 
-// Modern Lie group implementations
-using SO3d = Cosserat::SO3<double>;
-using SE3d = Cosserat::SE3<double>;
-
-// Legacy types for backward compatibility
-using SE3_Legacy = sofa::type::Matrix4; ///< Legacy Matrix4 representation
-using se3_Legacy = sofa::type::Matrix4; ///< Legacy Matrix4 representation
+// TODO(dmarchal: 2024/06/12): please check the comment to confirme this is true
+using SE3 = sofa::type::Matrix4; ///< The "coordinate" in SE3
+using se3 = sofa::type::Matrix4; ///< The "speed" of change of SE3.
 using _se3 = Eigen::Matrix4d;
 using _SE3 = Eigen::Matrix4d;
 
@@ -61,7 +54,7 @@ using Cosserat::type::Frame;
 using Cosserat::type::TangentTransform;
 using Cosserat::type::RotMat;
 
-}
+
 }
 /*!
  * \class BaseCosseratMapping
@@ -111,212 +104,74 @@ public:
 
     vector<Mat6x6> m_nodeAdjointVectors;
 
-    /**
-     * @brief Compute the adjoint representation for a transformation frame
-     * 
-     * The adjoint representation is used to transform twists between different
-     * coordinate frames. It is also used for updating velocities.
-     * 
-     * @param frame The transformation frame
-     * @param adjoint Output adjoint matrix as TangentTransform
-     */
-    /**
-     * @brief Compute the co-adjoint matrix of a transformation frame
-     * 
-     * The co-adjoint matrix is the transpose of the adjoint matrix, used
-     * to transform wrenches (force-torque pairs) between coordinate frames.
-     * 
-     * @param frame The transformation frame
-     * @param coAdjoint Output co-adjoint matrix
-     */
-    void computeCoAdjoint(const Frame &frame, Mat6x6 &coAdjoint);
+    // TODO(dmarchal:2024/06/07): explain why these attributes are unused
+    // : yadagolo: Need for the dynamic function, which is not working yet. But the component is in this folder
+    // : dmarchal: don't add something that will be used "one day"
+    // : dmarchal: it look like as if you should be working in a branch for making new feature and merge it when it is ready.
+    [[maybe_unused]] vector<Mat6x6> m_nodeAdjointEtaVectors;
+    [[maybe_unused]] vector<Mat6x6> m_frameAdjointEtaVectors;
+    [[maybe_unused]] vector<Mat6x6> m_node_coAdjointEtaVectors;
+    [[maybe_unused]] vector<Mat6x6> m_frame_coAdjointEtaVectors;
 
-    /**
-     * @brief Update exponential vectors for all frames and nodes
-     * 
-     * @param strain_state Vector of strain states
-     */
-    void updateExponentialSE3(const vector<Coord1> &strain_state);
-    
-    /**
-     * @brief Update tangent exponential vectors
-     * 
-     * @param inDeform Vector of deformations
-     */
-    void updateTangExpSE3(const vector<Coord1> &inDeform);
+public:
+    /********************** Inhertited from BaseObject   **************/
+    void init() final override;
+    virtual void doBaseCosseratInit() = 0;
 
-    /**
-     * @brief Compute tangent exponential map
-     * 
-     * @param x Parameter for tangent map
-     * @param k Strain vector
-     * @param TgX Output tangent matrix
-     */
-    void computeTangExp(double &x, const Coord1 &k, Mat6x6 &TgX);
-    
-    /**
-     * @brief Implementation of tangent exponential map
-     * 
-     * @param x Parameter for tangent map
-     * @param k Strain vector
-     * @param TgX Output tangent matrix
-     */
-    void computeTangExpImplementation(double &x, const Vec6 &k, Mat6x6 &TgX);
+    // This function is called by a callback function, which is not the case
+    // of the init function
+    void update_geometry_info();
 
-    /**
-     * @brief Compute eta vector for a given input
-     * 
-     * @param baseEta Base eta vector
-     * @param k_dot Vector of strain rates
-     * @param abs_input Position along the rod
-     * @return Vec6 Computed eta vector
-     */
-    [[maybe_unused]] Vec6
-    computeETA(const Vec6 &baseEta, const vector<Deriv1> &k_dot, double abs_input);
-    
-    /**
-     * @brief Compute logarithm map using SE3
-     * 
-     * @param x Scaling factor
-     * @param gX Transformation matrix
-     * @return Mat4x4 Logarithm of the transformation
-     */
-    Mat4x4 computeLogarithm(const double &x, const Mat4x4 &gX);
-    void computeAdjoint(const Vec6 &twist, Mat6x6 &adjoint);
-    
-    /**
-     * @brief Updates velocity state using Lie group operations
-     * 
-     * Implements proper velocity updates using adjoint transformations and
-     * the new Lie group functionality to propagate velocities along the beam.
-     * 
-     * @param k_dot Strain rates (angular and linear velocity derivatives)
-     * @param base_velocity Base node velocity in body coordinates
-     */
-    void updateVelocityState(const vector<Deriv1>& k_dot, const Vec6& base_velocity);
-    
-    /**
-     * @brief Transform velocity between different coordinate frames
-     * 
-     * Uses SE3 adjoint to transform a velocity twist from one frame to another.
-     * 
-     * @param source_frame Source coordinate frame
-     * @param source_velocity Velocity in source frame
-     * @param target_frame Target coordinate frame
-     * @param target_velocity Output: velocity expressed in target frame
-     */
-    void transformVelocity(
-        const Frame& source_frame,
-        const Vec6& source_velocity,
-        const Frame& target_frame,
-        Vec6& target_velocity);
-
-    /**
-     * @brief Compute the angle parameter for logarithm calculation
-     *
-     * @param x Scaling factor
-     * @param gX Transformation matrix
-     * @return double The angle parameter
-     */
     double computeTheta(const double &x, const Mat4x4 &gX);
+    void printMatrix(const Mat6x6 R);
 
-    /**
-     * @brief Extract rotation matrix from a Frame using SO3
-     * 
-     * @param frame The input Frame containing orientation as a quaternion
-     * @return Mat3x3 The 3x3 rotation matrix
-     */
-    Mat3x3 extractRotMatrix(const Frame &frame);
-
-    /**
-     * @brief Build a projector matrix from a Frame
-     *
-     * @param T The transformation frame
-     * @return TangentTransform The projector matrix
-     */
+    sofa::type::Mat3x3 extractRotMatrix(const Frame &frame);
     TangentTransform buildProjector(const Frame &T);
+    Mat3x3 getTildeMatrix(const Vec3 &u);
 
-    /**
-     * @brief Create a skew-symmetric matrix from a vector using SO3::hat
-     * 
-     * @param u The input 3D vector
-     * @return sofa::type::Matrix3 The skew-symmetric matrix
-     */
-    sofa::type::Matrix3 getTildeMatrix(const Vec3 &u);
-
-    /**
-     * @brief Print a matrix using modern logging
-     * 
-     * Uses SOFA's message system instead of printf for better integration
-     * with the logging framework.
-     * 
-     * @param matrix The 6x6 matrix to print
-     */
-    void printMatrix(const Mat6x6& matrix);
-    
-    /**
-     * @brief Convert a SOFA Frame to an SE3 transformation
-     * 
-     * @param frame The input SOFA Frame
-     * @return SE3d The SE3 transformation
-     */
-    SE3d frameToSE3(const Frame &frame);
-    
-    /**
-     * @brief Convert an SE3 transformation to a SOFA Frame
-     * 
-     * @param transform The input SE3 transformation
-     * @return Frame The SOFA Frame
-     */
-    Frame SE3ToFrame(const SE3d &transform);
+    void buildAdjoint(const Mat3x3 &A, const Mat3x3 &B, Mat6x6 &Adjoint);
+    void buildCoAdjoint(const Mat3x3 &A, const Mat3x3 &B, Mat6x6 &coAdjoint);
 
     Mat4x4 convertTransformToMatrix4x4(const Frame &T);
     Vec6 piecewiseLogmap(const _SE3 &g_x);
 
     /*!
-     * @brief Computes the rotation matrix around the X-axis using SO3
-     *
-     * Uses the Lie group SO3 implementation for better numerical stability
-     * and consistency with other transformations.
+     * @brief Computes the rotation matrix around the X-axis
      *
      * @param angle The rotation angle in radians
      * @return RotMat A 3x3 rotation matrix representing the rotation around the X-axis
      */
     RotMat rotationMatrixX(double angle) {
-        // Create rotation using the exponential map with axis (1,0,0)
-        Eigen::Vector3d axis = Eigen::Vector3d::UnitX();
-        return SO3d::exp(angle * axis).matrix();
+        Eigen::Matrix3d rotation;
+        rotation << 1, 0, 0, 0, cos(angle), -sin(angle), 0, sin(angle), cos(angle);
+        return rotation;
     }
 
     /*!
-     * @brief Computes the rotation matrix around the Y-axis using SO3
-     *
-     * Uses the Lie group SO3 implementation for better numerical stability
-     * and consistency with other transformations.
+     * @brief Computes the rotation matrix around the Y-axis
      *
      * @param angle The rotation angle in radians
      * @return RotMat A 3x3 rotation matrix representing the rotation around the Y-axis
      */
+    // function... it shouldn't be (re)implemented in a base classe.
     RotMat rotationMatrixY(double angle) {
-        // Create rotation using the exponential map with axis (0,1,0)
-        Eigen::Vector3d axis = Eigen::Vector3d::UnitY();
-        return SO3d::exp(angle * axis).matrix();
+        Eigen::Matrix3d rotation;
+        rotation << cos(angle), 0, sin(angle), 0, 1, 0, -sin(angle), 0, cos(angle);
+        return rotation;
     }
 
-    /*!
-     * @brief Computes the rotation matrix around the Z-axis using SO3
-     *
-     * Uses the Lie group SO3 implementation for better numerical stability
-     * and consistency with other transformations.
-     *
-     * @param angle The rotation angle in radians
-     * @return RotMat A 3x3 rotation matrix representing the rotation around the Z-axis
-     */
+    // TODO(dmarchal: 2024/06/07), this looks like a very common utility
+    // function... it shouldn't be (re)implemented in a base classe. the type of
+    // the data return should also be unified between rotationMatrixX, Y and Z
     RotMat rotationMatrixZ(double angle) {
-        // Create rotation using the exponential map with axis (0,0,1)
-        Eigen::Vector3d axis = Eigen::Vector3d::UnitZ();
-        return SO3d::exp(angle * axis).matrix();
+        RotMat rotation;
+        rotation << cos(angle), -sin(angle), 0, sin(angle), cos(angle), 0, 0, 0, 1;
+        return rotation;
     }
+
+protected:
+    sofa::Data<vector<double>> d_curv_abs_section;
+    sofa::Data<vector<double>> d_curv_abs_frames;
     sofa::Data<bool> d_debug;
 
     using Inherit1::fromModels1;
@@ -334,36 +189,14 @@ protected:
     /// Destructor
     ~BaseCosseratMapping() override = default;
 
-    /**
-     * @brief Computes the exponential map for SE(3) using Lie group theory
-     * 
-     * This function calculates the frame transformation resulting from applying
-     * the exponential map to a twist vector scaled by the section length.
-     * 
-     * @param sub_section_length The length of the beam section
-     * @param k The twist vector (angular and linear velocity)
-     * @param frame_i The resulting frame transformation
-     */
     void computeExponentialSE3(const double &sub_section_length,
-                               const Coord1 &k, Frame &frame_i);
+                               const Coord1 &k,Frame &frame_i);
 
-    /**
-     * @brief Computes the adjoint matrix of a transformation frame
-     * 
-     * The adjoint matrix is used to transform twists between different reference frames.
-     * 
-     * @param frame The transformation frame
-     * @param adjoint Output adjoint matrix
-     */
+    // TODO(dmarchal: 2024/06/07):
+    //   - clarify the difference between computeAdjoing and buildAdjoint ...
+    //   - clarify why we need Transform and Vec6 and TangentTransform & Mat6x6
     void computeAdjoint(const Frame &frame, TangentTransform &adjoint);
-    
-    /**
-     * @brief Computes the adjoint matrix from a 6D vector representation
-     * 
-     * @param twist The twist vector (angular and linear velocity)
-     * @param adjoint Output adjoint matrix
-     */
-    void computeAdjoint(const Vec6 &twist, Mat6x6 &adjoint);
+    void computeAdjoint(const Vec6 &frame, Mat6x6 &adjoint);
 
     void computeCoAdjoint(const Frame &frame, Mat6x6 &coAdjoint);
 

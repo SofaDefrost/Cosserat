@@ -29,66 +29,125 @@
 ******************************************************************************/
 #pragma once
 #include <Cosserat/config.h>
-#include <Cosserat/forcefield/base/BaseBeamHookeLawForceField.h>
 
+#include <sofa/type/Vec.h>
+#include <sofa/type/Mat.h>
+#include <sofa/core/behavior/MechanicalState.h>
+#include <sofa/core/objectmodel/Data.h>
+#include <sofa/core/MechanicalParams.h>
 #include <sofa/linearalgebra/CompressedRowSparseMatrix.h>
-#include <sofa/helper/ScopedAdvancedTimer.h>
+#include <sofa/core/behavior/MultiMatrixAccessor.h>
+#include <sofa/core/behavior/ForceField.inl>
+#include <sofa/linearalgebra/BaseMatrix.h>
+#include <sofa/helper/OptionsGroup.h>
 
 namespace sofa::component::forcefield
 {
 
-using sofa::type::Vec;
-using sofa::type::Mat;
+using sofa::type::Vec ;
+using sofa::type::Mat ;
 using sofa::type::vector;
 using sofa::core::MechanicalParams;
 using sofa::linearalgebra::BaseMatrix;
-using sofa::linearalgebra::CompressedRowSparseMatrix;
-using sofa::core::behavior::MultiMatrixAccessor;
+using sofa::core::behavior::ForceField ;
+using sofa::linearalgebra::CompressedRowSparseMatrix ;
+using sofa::core::behavior::MultiMatrixAccessor ;
+
+using sofa::helper::OptionsGroup;
+
 /**
  * This component is used to compute the Hooke's law on a beam computed on strain / stress
  * Only bending and torsion strain / stress are considered here
- * It derives from BaseBeamHookeLawForceField to utilize Lie Group operations
 */
 template<typename DataTypes>
-class BeamHookeLawForceField : public BaseBeamHookeLawForceField<DataTypes>
+class BeamHookeLawForceField : public ForceField<DataTypes>
 {
-public:
-    SOFA_CLASS(SOFA_TEMPLATE(BeamHookeLawForceField, DataTypes), SOFA_TEMPLATE(BaseBeamHookeLawForceField, DataTypes));
-    
-    typedef BaseBeamHookeLawForceField<DataTypes> Inherit1;
-    typedef typename DataTypes::Real Real;
+public :
+    SOFA_CLASS(SOFA_TEMPLATE(BeamHookeLawForceField, DataTypes), SOFA_TEMPLATE(ForceField, DataTypes));
+
+    typedef typename DataTypes::Real     Real;
     typedef typename DataTypes::VecCoord VecCoord;
     typedef typename DataTypes::VecDeriv VecDeriv;
-    typedef typename DataTypes::Coord Coord;
-    typedef typename DataTypes::Deriv Deriv;
-    
-    typedef Data<VecCoord> DataVecCoord;
-    typedef Data<VecDeriv> DataVecDeriv;
-    
-    typedef typename Inherit1::Vector Vector;
-    typedef typename Inherit1::Vector3 Vector3;
-    typedef typename Inherit1::SO3Type SO3Type;
-    
-    typedef CompressedRowSparseMatrix<Mat<3, 3, Real>> CSRMat33B66;
-    
-    typedef typename CompressedRowSparseMatrix<Mat<3, 3, Real>>::ColBlockConstIterator _3_3_ColBlockConstIterator;
-    typedef typename CompressedRowSparseMatrix<Mat<3, 3, Real>>::RowBlockConstIterator _3_3_RowBlockConstIterator;
-    typedef typename CompressedRowSparseMatrix<Mat<3, 3, Real>>::BlockConstAccessor _3_3_BlockConstAccessor;
-    typedef typename CompressedRowSparseMatrix<Mat<3, 3, Real>>::BlockAccessor _3_3_BlockAccessor;
+    typedef typename DataTypes::Coord    Coord;
+    typedef typename DataTypes::Deriv    Deriv;
+
+    typedef Data<VecCoord>    DataVecCoord;
+    typedef Data<VecDeriv>    DataVecDeriv;
+
+    typedef Vec<3, Real>                Vec3;
+    typedef Mat<3, 3, Real>             Mat33;
+    typedef Mat<6, 6, Real>             Mat66;
+
+    typedef CompressedRowSparseMatrix<Mat33> CSRMat33B66;
+
+    typedef typename CompressedRowSparseMatrix<Mat33>::ColBlockConstIterator _3_3_ColBlockConstIterator;
+    typedef typename CompressedRowSparseMatrix<Mat33>::RowBlockConstIterator _3_3_RowBlockConstIterator;
+    typedef typename CompressedRowSparseMatrix<Mat33>::BlockConstAccessor _3_3_BlockConstAccessor;
+    typedef typename CompressedRowSparseMatrix<Mat33>::BlockAccessor _3_3_BlockAccessor;
+
+
+public :
+    BeamHookeLawForceField();
+    virtual ~BeamHookeLawForceField();
+
+    ////////////////////////// Inherited from BaseObject /////////////////////////
+    void init() override;
+    void reinit() override;
+    ///////////////////////////////////////////////////////////////////////////
+
+    ////////////////////////// Inherited from ForceField /////////////////////////
+    void addForce(const MechanicalParams* mparams,
+                  DataVecDeriv& f ,
+                  const DataVecCoord& x ,
+                  const DataVecDeriv& v) override;
+
+    void addDForce(const MechanicalParams* mparams,
+                   DataVecDeriv&   df ,
+                   const DataVecDeriv&
+                       dx ) override;
+
+
+    void addKToMatrix(const MechanicalParams* mparams,
+                      const MultiMatrixAccessor* matrix) override;
+
+    double getPotentialEnergy(const MechanicalParams* mparams,
+                              const DataVecCoord& x) const override;
+    ////////////////////////////////////////////////////////////////////////////
+
+    Real getRadius();
 
 protected:
-    // Implementation of abstract methods from base class
-    Vector getPosition(const Coord& coord) const override;
-    SO3Type getRotation(const Coord& coord) const override;
-    Vector getForce(const Deriv& deriv) const override;
-    Vector getMoment(const Deriv& deriv) const override;
-    Deriv createDeriv(const Vector& force, const Vector& moment) const override;
+    Data<helper::OptionsGroup>   d_crossSectionShape;
+    Data<Real>                 d_youngModulus; /// youngModulus
+    Data<Real>                 d_poissonRatio; /// poissonRatio
+    Data<type::vector<Real>>   d_length ; /// length of each beam
 
-public:
-    BeamHookeLawForceField();
-    virtual ~BeamHookeLawForceField() = default;
-private:
-    // No additional member variables or methods as we use the ones from BaseBeamHookeLawForceField
+    /// Circular Cross Section
+    Data<Real>          d_radius;
+    Data<Real>          d_innerRadius;
+    /// Rectangular Cross Section
+    Data<Real>          d_lengthY;
+    Data<Real>          d_lengthZ;
+    //In case we have a beam with different properties per section
+    Data<bool>                  d_variantSections; /// bool to identify different beams sections
+    Data<type::vector<Real>>    d_youngModulusList; /// youngModulus
+    Data<type::vector<Real>>    d_poissonRatioList; /// poissonRatio
+    /// If the inertia parameters are given by the user, there is no longer any need to use YG.
+    Data<bool>  d_useInertiaParams;
+    Data<Real>  d_GI;
+    Data<Real>  d_GA;
+    Data<Real>  d_EA;
+    Data<Real>  d_EI;
+    Data<Real>  d_EIy;
+    Data<Real>  d_EIz;
+
+    bool compute_df;
+    Mat33 m_K_section;
+    Mat66 m_K_section66;
+    type::vector<Mat33> m_K_sectionList;
+
+    /// Cross-section area
+    Real m_crossSectionArea;
 
 private :
 
