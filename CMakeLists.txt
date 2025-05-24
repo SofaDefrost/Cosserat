@@ -81,6 +81,9 @@ set(HEADER_FILES
   ${SRC_ROOT_DIR}/mapping/LegendrePolynomialsMapping.inl
   ${SRC_ROOT_DIR}/constraint/CosseratNeedleSlidingConstraint.h
   ${SRC_ROOT_DIR}/constraint/CosseratNeedleSlidingConstraint.inl
+  # Lie-group controllers
+  ${SRC_ROOT_DIR}/controller/CosseratILQRController.h
+  ${SRC_ROOT_DIR}/controller/CosseratILQRController.inl
 )
 set(SOURCE_FILES
     ${SRC_ROOT_DIR}/initCosserat.cpp
@@ -102,6 +105,8 @@ set(SOURCE_FILES
     ${SRC_ROOT_DIR}/constraint/CosseratSlidingConstraint.cpp
     ${SRC_ROOT_DIR}/mapping/LegendrePolynomialsMapping.cpp
     ${SRC_ROOT_DIR}/constraint/CosseratNeedleSlidingConstraint.cpp
+    # Lie-group controllers
+    ${SRC_ROOT_DIR}/controller/CosseratILQRController.cpp
 )
 
 sofa_find_package(SoftRobots QUIET)
