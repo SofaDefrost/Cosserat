@@ -62,9 +62,22 @@ namespace sofa::component::cosserat::engine {
  * @endcode
  * accumulated over all interior nodes i ∈ {1, …, N−1}.
  *
- * @note addDForce and addKToMatrix implement the **linear** stiffness blocks.
- *       The angular (geometric + material) stiffness blocks are marked TODO
- *       and will be added once the linear path is validated.
+ * ## Tangent stiffness (addDForce)
+ *
+ * ### Linear material stiffness (per segment i):
+ * @code
+ *   K_world_i = R_i · K_L · R_i^T / h_i
+ *   df(x_i)     += +kF · K_world_i · (dx_{i+1} − dx_i)
+ *   df(x_{i+1}) += −kF · K_world_i · (dx_{i+1} − dx_i)
+ * @endcode
+ *
+ * ### Angular material stiffness (per interior node i), with
+ *   A = J_r^{-1}(−φ_i), B = J_r^{-1}(φ_i):
+ * @code
+ *   dτ(R_i)     += kF · [−(A·K_A·B/h̃_i)·dω_i + (A·K_A·A/h̃_i)·dω_{i−1}]
+ *   dτ(R_{i-1}) += kF · [+(B·K_A·B/h̃_i)·dω_i − (B·K_A·A/h̃_i)·dω_{i−1}]
+ * @endcode
+ * (material stiffness only; geometric stiffness terms from ∂J_r^{-1}/∂φ are TODO)
  */
 class PainlessBeamForceField : public sofa::core::behavior::BaseForceField {
    public:
@@ -77,19 +90,29 @@ class PainlessBeamForceField : public sofa::core::behavior::BaseForceField {
 
     // ── Stiffness parameters ───────────────────────────────────────────────────
     sofa::core::objectmodel::Data<double> d_EA;   ///< Axial stiffness  E·A
-    sofa::core::objectmodel::Data<double> d_GA;   ///< Shear stiffness  G·A  (both transverse directions)
+    sofa::core::objectmodel::Data<double> d_GA;   ///< Shear stiffness  G·A
     sofa::core::objectmodel::Data<double> d_GJ;   ///< Torsion stiffness G·J
-    sofa::core::objectmodel::Data<double> d_EIy;  ///< Bending stiffness E·Iy (y-axis)
-    sofa::core::objectmodel::Data<double> d_EIz;  ///< Bending stiffness E·Iz (z-axis)
+    sofa::core::objectmodel::Data<double> d_EIy;  ///< Bending stiffness E·Iy
+    sofa::core::objectmodel::Data<double> d_EIz;  ///< Bending stiffness E·Iz
 
     // ── Link to the mechanical state ───────────────────────────────────────────
     sofa::core::objectmodel::SingleLink<CosseratIntrinsicState> l_state;
 
-    // ── Read-only outputs (debugging / visualisation / post-processing) ────────
-    /// Elastic forces on N+1 position DOFs, expressed in world frame.
+    // ── Force/torque outputs ───────────────────────────────────────────────────
+    /// Elastic forces on N+1 position DOFs (world frame).
     sofa::core::objectmodel::Data<VecVec3d> d_nodalForces;
-    /// Elastic torques on N SO3 DOFs, expressed in the body frame of each segment.
+    /// Elastic torques on N SO3 DOFs (body frame).
     sofa::core::objectmodel::Data<VecVec3d> d_segmentTorques;
+
+    // ── Differential force inputs/outputs (for Python integration and addDForce)
+    /// INPUT  — position displacements Δx_i ∈ R³ for i = 0..N  (world frame).
+    sofa::core::objectmodel::Data<VecVec3d> d_dx_positions;
+    /// INPUT  — angular displacements Δω_i ∈ so(3) for i = 0..N-1 (body frame).
+    sofa::core::objectmodel::Data<VecVec3d> d_dx_angles;
+    /// OUTPUT — differential forces  df on N+1 position DOFs (world frame).
+    sofa::core::objectmodel::Data<VecVec3d> d_df_positions;
+    /// OUTPUT — differential torques dτ on N SO3 DOFs (body frame).
+    sofa::core::objectmodel::Data<VecVec3d> d_df_angles;
 
     // ─────────────────────────────────────────────────────────────────────────
     PainlessBeamForceField();
@@ -99,62 +122,55 @@ class PainlessBeamForceField : public sofa::core::behavior::BaseForceField {
     void reinit() override;
 
     // ── BaseForceField interface ───────────────────────────────────────────────
-
-    /**
-     * @brief Compute elastic forces and accumulate them.
-     *
-     * Results are written to d_nodalForces (world frame) and
-     * d_segmentTorques (body frame).  Full integration into the SOFA
-     * solver requires CosseratIntrinsicState to expose standard VecDeriv
-     * accessors; that step is tracked as a separate TODO.
-     */
     void addForce(const sofa::core::MechanicalParams* mparams,
                   sofa::core::MultiVecDerivId f,
                   sofa::core::ConstMultiVecCoordId x,
                   sofa::core::ConstMultiVecDerivId v) override;
 
-    /**
-     * @brief Compute differential elastic forces  df = −kFactor · K_lin · dx.
-     *
-     * Implements the **linear** stiffness contribution (stretch + shear).
-     * The angular (bending/torsion) stiffness differential is TODO.
-     */
     void addDForce(const sofa::core::MechanicalParams* mparams,
                    sofa::core::MultiVecDerivId df,
                    sofa::core::ConstMultiVecDerivId dx) override;
 
-    /**
-     * @brief Assemble the tangent stiffness into the global matrix.
-     *
-     * Adds the 3×3 linear stiffness blocks:
-     *   K_{ii}, K_{i+1,i+1}  += +R_i · K_L · R_i^T / h_i
-     *   K_{i,i+1}            += −R_i · K_L · R_i^T / h_i   (and transpose)
-     *
-     * The angular stiffness blocks are TODO.
-     */
     void addKToMatrix(const sofa::core::MechanicalParams* mparams,
                       const sofa::core::behavior::MultiMatrixAccessor* matrix) override;
 
     SReal getPotentialEnergy(const sofa::core::MechanicalParams* mparams,
                              sofa::core::ConstMultiVecCoordId x) const override;
 
-   private:
-    // ── Internal helpers ───────────────────────────────────────────────────────
-
-    /// Returns K_L = diag(EA, GA, GA) in the body frame.
-    Mat3x3d buildK_L() const;
-
-    /// Returns K_A = diag(GJ, EIy, EIz) in the body frame.
-    Mat3x3d buildK_A() const;
+    // ── Direct Python/C++ API ──────────────────────────────────────────────────
 
     /**
-     * @brief Core force/torque computation from current state.
+     * @brief Compute differential forces from explicit displacement vectors.
      *
-     * @param[out] f_nodes    Forces on N+1 position DOFs (world frame).
-     * @param[out] tau_segs   Torques on N SO3 DOFs (body frame).
-     * @return Elastic potential energy.
+     * Reads d_dx_positions and d_dx_angles, writes d_df_positions and
+     * d_df_angles.  Exposed to Python via the Cosserat pybind11 module so that
+     * a Python explicit-Euler integrator can call it directly.
+     *
+     * @param kFactor  Stiffness scale factor (1.0 for explicit Euler).
      */
-    double computeForcesAndTorques(VecVec3d& f_nodes, VecVec3d& tau_segs) const;
+    void computeDForcesFromData(double kFactor = 1.0);
+
+    /**
+     * @brief Core differential force computation (standalone, no Data I/O).
+     *
+     * @param dx_pos   Position displacements  Δx_i  (size N+1).
+     * @param dx_ang   Angular displacements   Δω_i  (size N, so3 body frame).
+     * @param kFactor  Stiffness scale factor.
+     * @param[out] df_pos  Differential forces  on N+1 nodes (world frame).
+     * @param[out] df_ang  Differential torques on N segments (body frame).
+     */
+    void computeDForces(const VecVec3d& dx_pos,
+                        const VecVec3d& dx_ang,
+                        double          kFactor,
+                        VecVec3d&       df_pos,
+                        VecVec3d&       df_ang) const;
+
+   private:
+    Mat3x3d buildK_L() const;
+    Mat3x3d buildK_A() const;
+
+    double computeForcesAndTorques(VecVec3d& f_nodes,
+                                   VecVec3d& tau_segs) const;
 };
 
 }  // namespace sofa::component::cosserat::engine

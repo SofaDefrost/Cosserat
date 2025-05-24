@@ -21,6 +21,7 @@
 #include <pybind11/pybind11.h>
 #include "Binding_PointsManager.h"
 #include "Binding_HookeSeratMapping.h"
+#include "Binding_CosseratIntrinsicState.h"
 
 
 namespace py { using namespace pybind11; }
@@ -32,6 +33,8 @@ PYBIND11_MODULE(Cosserat, m)
 {
     moduleAddPointsManager(m);
     moduleAddHookeSeratMapping(m);
+    moduleAddCosseratIntrinsicState(m);
+    moduleAddPainlessBeamForceField(m);
 }
 
 } // namespace sofapython3

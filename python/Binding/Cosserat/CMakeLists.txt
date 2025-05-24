@@ -4,11 +4,13 @@ set(SOURCE_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Module_Cosserat.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Binding_PointsManager.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Binding_HookeSeratMapping.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/Binding_CosseratIntrinsicState.cpp
 )
 
 set(HEADER_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Binding_PointsManager.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Binding_HookeSeratMapping.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/Binding_CosseratIntrinsicState.h
 )
 
 if (NOT TARGET SofaPython3::Plugin)
