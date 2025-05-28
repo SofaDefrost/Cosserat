@@ -158,6 +158,17 @@ if(COSSERAT_BUILD_TESTS)
     add_subdirectory(Tests)
 endif()
 
+# Benchmarks
+# Only build benchmarks if Google Benchmark is available
+find_package(benchmark QUIET)
+if(benchmark_FOUND)
+    message(STATUS "Google Benchmark found, enabling benchmark support")
+    cmake_dependent_option(COSSERAT_BUILD_BENCHMARKS "Compile the benchmarks" ON "COSSERAT_BUILD_TESTS" OFF)
+else()
+    message(STATUS "Google Benchmark not found, benchmarks will be disabled")
+    set(COSSERAT_BUILD_BENCHMARKS OFF CACHE BOOL "Compile the benchmarks" FORCE)
+endif()
+
 
 # Config files and install rules for pythons scripts
 sofa_install_pythonscripts(PLUGIN_NAME ${PROJECT_NAME} PYTHONSCRIPTS_SOURCE_DIR "examples/python3/")

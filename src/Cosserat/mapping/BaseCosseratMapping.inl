@@ -45,104 +45,349 @@ using sofa::type::Vec6;
 using sofa::type::Vec3;
 using sofa::type::Quat;
 
-template <class TIn1, class TIn2, class TOut>
-BaseCosseratMapping<TIn1, TIn2, TOut>::BaseCosseratMapping()
-    // TODO(dmarchal: 2024/06/12): please add the help comments !
-    : d_curv_abs_section(initData(&d_curv_abs_section, "curv_abs_input",
-                                  " need to be com....")),
-      d_curv_abs_frames(initData(&d_curv_abs_frames, "curv_abs_output",
-                                 " need to be com....")),
-      d_debug(initData(&d_debug, false, "debug", "printf for the debug")),
-      m_indexInput(0) {}
-
-
-template <class TIn1, class TIn2, class TOut>
-void BaseCosseratMapping<TIn1, TIn2, TOut>::init()
+/**
+ * @brief Compute logarithm using SE3's native implementation
+ * 
+ * @param x Scaling factor
+ * @param gX Transformation matrix
+ * @return Mat4x4 Logarithm of the transformation
+ */
+/**
+ * @brief Compute logarithm using SE3's native implementation
+ * 
+ * @param x Scaling factor
+ * @param gX Transformation matrix
+ * @return Mat4x4 Logarithm of the transformation
+ */
+n1, TIn2, TOut>::computeLogarithm(const double &x,
+                                                             const Mat4x4 &gX) -> Mat4x4
 {
-  m_strain_state = nullptr;
-  m_rigid_base = nullptr;
-  m_global_frames = nullptr;
-
-    if(fromModels1.empty())
-    {
-        msg_error() << "input1 not found" ;
-        return;
+    if (x <= std::numeric_limits<double>::epsilon()) {
+        return Mat4x4::Identity();
     }
 
-    if(fromModels2.empty())
-    {
-        msg_error() << "input2 not found" ;
-        return;
+    // Convert to Eigen format for SE3
+    Eigen::Matrix4d eigen_gX;
+    for (int i = 0; i < 4; ++i) {
+        for (int j = 0; j < 4; ++j) {
+            eigen_gX(i, j) = gX[i][j];
+        }
     }
-
-    if(toModels.empty())
-    {
-        msg_error() << "output missing" ;
-        return;
+    
+    // Create SE3 from matrix
+    SE3d transform(eigen_gX);
+    
+    // Compute logarithm in the Lie algebra
+    Eigen::Matrix<double, 6, 1> log_vector = transform.log();
+    
+    // Scale by x
+    log_vector *= x;
+    
+    // Convert back to SE3 and then to Matrix form
+    SE3d scaled_result = SE3d::exp(log_vector);
+    Eigen::Matrix4d eigen_result = scaled_result.matrix();
+    
+    // Convert back to SOFA Mat4x4
+    Mat4x4 result;
+    for (int i = 0; i < 4; ++i) {
+        for (int j = 0; j < 4; ++j) {
+            result[i][j] = eigen_result(i, j);
+        }
     }
-
-    m_strain_state = fromModels1[0];
-    m_rigid_base = fromModels2[0];
-    m_global_frames = toModels[0];
-
-    // Get initial frame state
-    auto xfromData =
-        m_global_frames->read(sofa::core::vec_id::read_access::position);
-    const vector<OutCoord> xfrom = xfromData->getValue();
-
-    m_vecTransform.clear();
-    for (unsigned int i = 0; i < xfrom.size(); i++)
-        m_vecTransform.push_back(xfrom[i]);
-
-    update_geometry_info();
-    doBaseCosseratInit();
-    Inherit1::init();
+    
+    return result;
+}
+ Eigen::Vector3d(strain_n[0], strain_n[1], strain_n[2]);
+        linear_velocity = Eigen::Vector3d(strain_n[3], strain_n[4], strain_n[5]);
+    }
+    
+    // Scale by section length
+    angular_velocity *= sub_section_length;
+    linear_velocity *= sub_section_length;
+    
+    // Create twist vector for Lie algebra
+    Eigen::Matrix<double, 6, 1> twist;
+    twist << angular_velocity, linear_velocity;
+    
+    // Use SE3 to compute exponential map
+    SE3d transform = SE3d::exp(twist);
+    
+    // Convert to Frame format
+    g_X_n = SE3ToFrame(transform);
+}
+    
+    return result;
 }
 
-//___________________________________________________________________________
+/**
+ * @brief Updates velocity state using Lie group operations
+ * 
+ * Implements proper velocity updates using adjoint transformations and the new 
+ * Lie group functionality to propagate velocities along the beam.
+ * 
+ * Mathematical background:
+ * For a serial kinematic chain with joint velocities k_dot, the body velocity
+ * at each link can be computed recursively using:
+ *   V_{i+1} = Ad_{g_{i,i+1}} * V_i + k_dot_i
+ * where Ad_{g_{i,i+1}} is the adjoint of the relative transformation from link i to i+1.
+ */
 template <class TIn1, class TIn2, class TOut>
-void BaseCosseratMapping<TIn1, TIn2, TOut>::update_geometry_info()
+void BaseCosseratMapping<TIn1, TIn2, TOut>::updateVelocityState(
+    const vector<Deriv1>& k_dot,
+    const Vec6& base_velocity)
 {
-    // For each frame in the global frame, find the segment of the beam to which
-    // it is attached. Here we only use the information from the curvilinear
-    // abscissa of each frame.
-    auto curv_abs_section = getReadAccessor(d_curv_abs_section);
-    auto curv_abs_frames = getReadAccessor(d_curv_abs_frames);
+    m_nodesVelocityVectors.clear();
+    m_nodeAdjointEtaVectors.clear();
+    m_frameAdjointEtaVectors.clear();
+    m_node_coAdjointEtaVectors.clear();
+    m_frame_coAdjointEtaVectors.clear();
 
-    msg_info()
-        << " curv_abs_section: " << curv_abs_section.size()
-        << "\ncurv_abs_frames: " << curv_abs_frames.size();
+    // First node velocity is the base velocity
+    m_nodesVelocityVectors.push_back(base_velocity);
 
-    m_indicesVectors.clear();
-    m_framesLengthVectors.clear();
-    m_beamLengthVectors.clear();
-    m_indicesVectorsDraw.clear(); // just for drawing
-
-    const auto sz = curv_abs_frames.size();
-    auto sectionIndex = 1;
-    /*
-     * This main loop iterates through the frames, comparing their curvilinear abscissa values with those of the beam sections:
-      If the frame's abscissa is less than the current section's, it assigns the current section index.
-      If they're equal, it assigns the current index and then increments it.
-      If the frame's abscissa is greater, it increments the index and then assigns it.
-     * */
-    for (auto i = 0; i < sz; ++i)
-    {
-        if (curv_abs_section[sectionIndex] > curv_abs_frames[i])
-        {
-            m_indicesVectors.emplace_back(sectionIndex);
-            m_indicesVectorsDraw.emplace_back(sectionIndex);
+    // Update velocities along the beam
+    for (size_t i = 0; i < k_dot.size(); ++i) {
+        // Store results in SOFA format
+        Vec6 sofa_velocity;
+        for (int j = 0; j < 6; ++j) {
+            sofa_velocity[j] = new_velocity(j);
         }
-        //@todo: I should change this with abs(val1-val2)>epsilon
-        else if (curv_abs_section[sectionIndex] == curv_abs_frames[i])
-        {
-            m_indicesVectors.emplace_back(sectionIndex);
-            sectionIndex++;
-            m_indicesVectorsDraw.emplace_back(sectionIndex);
+        m_nodesVelocityVectors.push_back(sofa_velocity);
+        
+        // Store adjoint matrices for later use
+        Mat6x6 sofa_adjoint;
+        Mat6x6 sofa_coadjoint;
+        for (int row = 0; row < 6; ++row) {
+            for (int col = 0; col < 6; ++col) {
+                sofa_adjoint[row][col] = adjoint(row, col);
+                sofa_coadjoint[row][col] = adjoint(col, row);  // Transpose for co-adjoint
+            }
         }
-        else {
-          sectionIndex++;
-            m_indicesVectors.emplace_back(sectionIndex);
+        
+        m_nodeAdjointEtaVectors.push_back(sofa_adjoint);
+        m_node_coAdjointEtaVectors.push_back(sofa_coadjoint);
+    }
+    
+    // Calculate frame velocities
+    for (size_t i = 0; i < m_indicesVectors.size(); ++i) {
+        size_t beam_index = m_indicesVectors[i] - 1;
+        if (beam_index < m_nodesVelocityVectors.size() - 1) {
+            // Interpolate velocities for frames between beam nodes
+            Vec6 node_velocity = m_nodesVelocityVectors[beam_index];
+            Vec6 frame_velocity;
+            
+            // Transform velocity from node to frame
+            transformVelocity(
+                m_nodesExponentialSE3Vectors[beam_index],
+                node_velocity,
+                m_framesExponentialSE3Vectors[i],
+                frame_velocity
+            );
+            
+            // Store frame velocity and adjoint
+            // Calculate and store adjoint matrices for frames
+            SE3d frame_transform = frameToSE3(m_framesExponentialSE3Vectors[i]);
+            Eigen::Matrix<double, 6, 6> frame_adjoint = frame_transform.adjoint();
+            
+            Mat6x6 sofa_frame_adjoint;
+            Mat6x6 sofa_frame_coadjoint;
+            for (int row = 0; row < 6; ++row) {
+                for (int col = 0; col < 6; ++col) {
+                    sofa_frame_adjoint[row][col] = frame_adjoint(row, col);
+                    sofa_frame_coadjoint[row][col] = frame_adjoint(col, row);
+                }
+            }
+            
+            m_frameAdjointEtaVectors.push_back(sofa_frame_adjoint);
+            m_frame_coAdjointEtaVectors.push_back(sofa_frame_coadjoint);
+        }
+    }
+}
+        Eigen::Matrix<double, 6, 1> new_velocity = adjoint * current_velocity + strain_velocity;
+        
+        // Store results in SOFA
+            Mat6x6 sofa_frame_coadjoint;
+            for (int row = 0; row < 6; ++row) {
+                for (int col = 0; col < 6; ++col) {
+                    sofa_frame_adjoint[row][col] = frame_adjoint(row, col);
+                    sofa_frame_coadjoint[row][col] = frame_adjoint(col, row);
+                }
+            }
+            
+            m_frameAdjointEtaVectors.push_back(sofa_frame_adjoint);
+            m_frame_coAdjointEtaVectors.push_back(sofa_frame_coadjoint);
+        }
+    }
+}
+
+/**
+ * @brief Transform velocity between different coordinate frames
+ * 
+ * Uses SE3 adjoint to transform a velocity twist from one frame to another.
+ * 
+ * Mathematical background:
+ * Given a twist V_a in frame A and a transformation g_ab from frame A to B,
+ * the twist V_b in frame B is given by:
+ *   V_b = Ad_{g_ab^{-1}} * V_a
+ */
+template <class TIn1, class TIn2, class TOut>
+void BaseCosseratMapping<TIn1, TIn2, TOut>::transformVelocity(
+    const Frame& source_frame,
+    const Vec6& source_velocity,
+    const Frame& target_frame,
+    Vec6& target_velocity)
+{
+    // Convert frames to SE3
+    SE3d source_transform = frameToSE3(source_frame);
+    SE3d target_transform = frameToSE3(target_frame);
+    
+    // Compute relative transformation
+    SE3d relative_transform = target_transform.inverse().compose(source_transform);
+    
+    // Get adjoint matrix
+/**
+ * @
+    Eigen::Matrix<double, 6, 1> twist;
+    twist << angular_velocity, linear_velocity;
+    
+    // Use SE3 Lie group to compute the exponential map
+    SE3d transform = SE3d::exp(twist);
+    
+    // Convert to Frame format for SOFA
+    g_X_n = SE3ToFrame(transform);
+}
+    // Copy to the SOFA Mat6x6 format
+    for (int i = 0; i < 6; ++i) {
+        for (int j = 0; j < 6; ++j) {
+            adjoint[i][j] = adjointMatrix(i, j);
+        }
+    }
+}
+
+/**
+ * @brief Compute the co-adjoint matrix of a transformation frame
+ * 
+ * The co-adjoint matrix is the transpose of the adjoint matrix and is used
+ * to transform wrenches (force-torque pairs) between different coordinate frames.
+ * 
+ * Mathematical background:
+ * The co-adjoint is a 6×6 matrix that can be written in block form as:
+ * 
+ * Ad_g^* = [ R^T   [t]^T R^T ]
+ *          [ 0     R^T      ]
+ * 
+ * where R is the rotation matrix, t is the translation vector, and [t] is the
+ * skew-symmetric matrix formed from t.
+ */
+template <class TIn1, class TIn2, class TOut>
+void BaseCosseratMapping<TIn1, TIn2, TOut>::computeCoAdjoint(const Frame &frame,
+                                                             Mat6x6 &co_adjoint) {
+    // Create an SE3 transformation from the Frame
+    Eigen::Quaterniond quat(
+        frame.getOrientation()[3],  // w
+        frame.getOrientation()[0],  // x
+        frame.getOrientation()[1],  // y
+        frame.getOrientation()[2]   // z
+    );
+    
+    Eigen::Vector3d trans(
+        frame.getCenter()[0],
+        frame.getCenter()[1], 
+        frame.getCenter()[2]
+    );
+    
+    SE3d transform(SO3d(quat), trans);
+    
+    // Get the co-adjoint matrix (transpose of adjoint)
+    Eigen::Matrix<double, 6, 6> coAdjointMatrix = transform.adjoint().transpose();
+    
+    // Copy to the SOFA Mat6x6 format
+    for (int i = 0; i < 6; ++i) {
+        for (int j = 0; j < 6; ++j) {
+            co_adjoint[i][j] = coAdjointMatrix(i, j);
+        }
+    }
+}
+
+/**
+ * @brief Compute the adjoint representation of a twist vector
+ * 
+ * This function computes the matrix representation of the adjoint action
+ * of a twist vector. This matrix can be used to compute the Lie bracket
+ * of two twist vectors.
+ * 
+ * Mathematical background:
+ * For a twist ξ = (ω, v), the adjoint representation ad_ξ is a 6×6 matrix
+ * that can be written in block form as:
+ * 
+ * ad_ξ = [ [ω]  0  ]
+ *        [ [v]  [ω] ]
+ * 
+ * where [ω] and [v] are the skew-symmetric matrices formed from ω and v.
+ */
+template <class TIn1, class TIn2, class TOut>
+void BaseCosseratMapping<TIn1, TIn2, TOut>::computeAdjoint(const Vec6 &twist,
+                                                           Mat6x6 &adjoint)
+{
+    // Extract angular and linear velocity components
+    Eigen::Vector3d omega(twist[0], twist[1], twist[2]);
+    Eigen::Vector3d v(twist[3], twist[4], twist[5]);
+    
+    // Create the skew-symmetric matrices
+    Eigen::Matrix3d omega_hat = SO3d::hat(omega);
+    Eigen::Matrix3d v_hat = SO3d::hat(v);
+    
+    // Build the adjoint matrix
+    Eigen::Matrix<double, 6, 6> ad;
+    ad.setZero();
+    
+    // Top-left block: [ω]
+    ad.block<3, 3>(0, 0) = omega_hat;
+    
+    // Bottom-left block: [v]
+    ad.block<3, 3>(3, 0) = v_hat;
+    
+    // Bottom-right block: [ω]
+    ad.block<3, 3>(3, 3) = omega_hat;
+    
+    // Copy to the SOFA Mat6x6 format
+    for (int i = 0; i < 6; ++i) {
+        for (int j = 0; j < 6; ++j) {
+            adjoint[i][j] = ad(i, j);
+        }
+    }
+}
+ angular and linear velocity are provided
+        angular_velocity = Eigen::Vector3d(strain_n[0], strain_n[1], strain_n[2]);
+        linear_velocity = Eigen::Vector3d(strain_n[3], strain_n[4], strain_n[5]);
+    }
+    
+    // Scale by section length
+    angular_velocity *= sub_section_length;
+    linear_velocity *= sub_section_length;
+    
+    // Create twist vector (6D) for the Lie algebra element
+    Eigen::Matrix<double, 6, 1> twist;
+    twist << angular_velocity, linear_velocity;
+    
+    // Use SE3 Lie group to compute the exponential map
+    SE3d transformation = SE3d::exp(twist);
+    
+    // Convert to Frame format for SOFA
+    Eigen::Quaterniond quaternion = transformation.rotation().quaternion();
+    Eigen::Vector3d translation = transformation.translation();
+    
+    // Update the output frame
+    g_X_n = Frame(
+        Vec3(translation[0], translation[1], translation[2]),
+        Quat<SReal>(quaternion.w(), quaternion.x(), quaternion.y(), quaternion.z())
+    );
+}
+    Vec3::Map(&(frame_i.getOrientation()[0])) = quaternion.coeffs();
+    for (auto i = 0; i < 3; i++) {
+        frame_i.getCenter()[i] = translation[i];
+    }
+}
             m_indicesVectorsDraw.emplace_back(sectionIndex);
         }
 
