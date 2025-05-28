@@ -9,15 +9,16 @@ __version__ = "1.0.0"
 __copyright__ = "(c) 2021,Inria"
 __date__ = "October, 26 2021"
 
-from useful.header import addHeader, addSolverNode
-from useful.params import Parameters
-from useful.params import BeamPhysicsParametersNoInertia, BeamGeometryParameters
 from cosserat.CosseratBase import CosseratBase
+from useful.header import addHeader, addSolverNode
+from useful.params import (BeamGeometryParameters,
+                           BeamPhysicsParametersNoInertia, Parameters)
 
 geoParams = BeamGeometryParameters(beam_length=30.,  nb_section=32, nb_frames=32, build_collision_model=0)
 physicsParams = BeamPhysicsParametersNoInertia(beam_mass=0.3, young_modulus=1.0e3, poisson_ratio=0.38, beam_radius=1.,
                                                beam_length=30)
 Params = Parameters(beam_geo_params=geoParams, beam_physics_params=physicsParams)
+
 
 def createScene(root_node):
     addHeader(root_node)

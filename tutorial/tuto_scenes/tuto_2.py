@@ -1,19 +1,19 @@
 # -*- coding: utf-8 -*-
-
-from tuto_1 import _add_rigid_base, _add_cosserat_state, _add_cosserat_frame
+from tuto_1 import _add_cosserat_frame, _add_cosserat_state, _add_rigid_base
 
 stiffness_param: float = 1.e10
 beam_radius: float = 1.
 
 
 def createScene(root_node):
-    root_node.addObject('RequiredPlugin', name='Sofa.Component.LinearSolver.Direct') # Needed to use components [SparseLDLSolver]  
-    root_node.addObject('RequiredPlugin', name='Sofa.Component.Mass') # Needed to use components [UniformMass]  
-    root_node.addObject('RequiredPlugin', name='Sofa.Component.ODESolver.Backward') # Needed to use components [EulerImplicitSolver]  
-    root_node.addObject('RequiredPlugin', name='Sofa.Component.SolidMechanics.Spring') # Needed to use components [RestShapeSpringsForceField]  
-    root_node.addObject('RequiredPlugin', name='Sofa.Component.StateContainer') # Needed to use components [MechanicalObject]  
-    root_node.addObject('RequiredPlugin', name='Sofa.Component.Visual') # Needed to use components [VisualStyle]  
-  
+    root_node.addObject('RequiredPlugin', name='Sofa.Component.LinearSolver.Direct') # Needed to use components [SparseLDLSolver]
+    root_node.addObject('RequiredPlugin', name='Sofa.Component.Mass') # Needed to use components [UniformMass]
+    root_node.addObject('RequiredPlugin', name='Sofa.Component.ODESolver.Backward') # Needed to use components [EulerImplicitSolver]
+    root_node.addObject('RequiredPlugin', name='Sofa.Component.SolidMechanics.Spring') # Needed to use components [RestShapeSpringsForceField]
+    root_node.addObject('RequiredPlugin', name='Sofa.Component.StateContainer') # Needed to use components [MechanicalObject]
+    root_node.addObject('RequiredPlugin', name='Sofa.Component.Visual') # Needed to use components [VisualStyle]
+    root_node.addObject("RequiredPlugin", name='Cosserat')
+
     root_node.addObject(
         "VisualStyle",
         displayFlags="showBehaviorModels showCollisionModels showMechanicalMappings",
