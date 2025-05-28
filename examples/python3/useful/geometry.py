@@ -26,6 +26,7 @@ from typing import Dict, List, Optional, Tuple, Union, cast
 
 import numpy as np
 from numpy.typing import NDArray
+
 from useful.params import BeamGeometryParameters
 
 
@@ -183,15 +184,188 @@ def generate_edge_list(cable3DPos: List[List[float]]) -> List[List[int]]:
 
     return edges
 
-# class CosseratGeometry:
-#     """
-#     A class that encapsulates the geometric aspects of a Cosserat beam.
-#
-#     This class handles:
-#     - Section discretization for physics modeling
-#     - Frame generation for visualization and interaction
-#     - Maintaining curvilinear abscissa values
-#     - Access to geometric properties and transformations
-#
-#     Attributes:
-#         bendingState: List of [kx, ky, kz] curvature
+class CosseratGeometry:
+    """
+    A class that encapsulates the geometric aspects of a Cosserat beam.
+
+    This class handles:
+    - Section discretization for physics modeling
+    - Frame generation for visualization and interaction
+    - Maintaining curvilinear abscissa values
+    - Access to geometric properties and transformations
+
+    Attributes:
+        bendingState: List of [kx, ky, kz] curvature vectors at each section
+        curv_abs_sections: List of curvilinear abscissa values at section nodes
+        section_lengths: List of section lengths
+        frames: List of [x, y, z, qx, qy, qz, qw] for each frame (position + quaternion)
+        curv_abs_frames: List of curvilinear abscissa values at frame positions
+        cable_positions: List of [x, y, z] positions for each frame
+        edge_list: List of index pairs [start_idx, end_idx] defining topology
+        params: The beam geometry parameters used to initialize this object
+    """
+
+    def __init__(self, params: BeamGeometryParameters):
+        """
+        Initialize the CosseratGeometry with beam geometry parameters.
+
+        Parameters:
+            params: Geometry parameters defining beam dimensions and discretization.
+        """
+        self.params = params
+        
+        # Calculate and store beam section parameters
+        self.bendingState, self.curv_abs_sections, self.section_lengths = calculate_beam_parameters(params)
+        
+        # Calculate and store frame parameters
+        self.frames, self.curv_abs_frames, self.cable_positions = calculate_frame_parameters(params)
+        
+        # Generate and store edge list for topology
+        self.edge_list = generate_edge_list(self.cable_positions)
+    
+    def get_beam_length(self) -> float:
+        """
+        Get the total length of the beam.
+
+        Returns:
+            The beam length in model units.
+        """
+        return self.params.beam_length
+    
+    def get_number_of_sections(self) -> int:
+        """
+        Get the number of sections used in beam discretization.
+
+        Returns:
+            The number of sections.
+        """
+        return self.params.nb_section
+    
+    def get_number_of_frames(self) -> int:
+        """
+        Get the number of frames used for visualization.
+
+        Returns:
+            The number of frames.
+        """
+        return self.params.nb_frames
+    
+    def get_bending_state(self) -> List[List[float]]:
+        """
+        Get the current bending state of the beam.
+
+        Returns:
+            List of [kx, ky, kz] curvature vectors for each section.
+        """
+        return self.bendingState
+    
+    def get_curvilinear_abscissa_sections(self) -> List[float]:
+        """
+        Get the curvilinear abscissa values at section nodes.
+
+        Returns:
+            List of curvilinear abscissa values.
+        """
+        return self.curv_abs_sections
+    
+    def get_section_lengths(self) -> List[float]:
+        """
+        Get the lengths of each section.
+
+        Returns:
+            List of section lengths.
+        """
+        return self.section_lengths
+    
+    def get_frames(self) -> List[List[float]]:
+        """
+        Get the frames (position + orientation) along the beam.
+
+        Returns:
+            List of [x, y, z, qx, qy, qz, qw] for each frame.
+        """
+        return self.frames
+    
+    def get_curvilinear_abscissa_frames(self) -> List[float]:
+        """
+        Get the curvilinear abscissa values at frame positions.
+
+        Returns:
+            List of curvilinear abscissa values.
+        """
+        return self.curv_abs_frames
+    
+    def get_cable_positions(self) -> List[List[float]]:
+        """
+        Get the cable positions for each frame.
+
+        Returns:
+            List of [x, y, z] positions.
+        """
+        return self.cable_positions
+    
+    def get_edge_list(self) -> List[List[int]]:
+        """
+        Get the edge list defining beam topology.
+
+        Returns:
+            List of index pairs [start_idx, end_idx] defining connectivity.
+        """
+        return self.edge_list
+    
+    def update_bending_state(self, new_bending_state: List[List[float]]) -> None:
+        """
+        Update the bending state of the beam.
+
+        Parameters:
+            new_bending_state: New list of [kx, ky, kz] curvature vectors.
+            
+        Raises:
+            ValueError: If the length of new_bending_state doesn't match the number of sections.
+        """
+        if len(new_bending_state) != self.params.nb_section:
+            raise ValueError(f"Expected {self.params.nb_section} bending state vectors, got {len(new_bending_state)}")
+        self.bendingState = new_bending_state
+    
+    def update_frames(self, new_frames: List[List[float]]) -> None:
+        """
+        Update the frames along the beam.
+
+        Parameters:
+            new_frames: New list of [x, y, z, qx, qy, qz, qw] for each frame.
+            
+        Raises:
+            ValueError: If the length of new_frames doesn't match the number of frames + 1.
+        """
+        expected_length = self.params.nb_frames + 1  # Account for the frame at the end
+        if len(new_frames) != expected_length:
+            raise ValueError(f"Expected {expected_length} frames, got {len(new_frames)}")
+        self.frames = new_frames
+        
+        # Also update cable positions based on the new frame positions
+        self.cable_positions = [[frame[0], frame[1], frame[2]] for frame in new_frames]
+        
+        # Re-generate edge list if cable positions changed
+        self.edge_list = generate_edge_list(self.cable_positions)
+    
+    def to_dict(self) -> Dict:
+        """
+        Convert the geometry data to a dictionary.
+
+        Useful for serialization or inspection.
+
+        Returns:
+            Dictionary containing all geometry data.
+        """
+        return {
+            "beam_length": self.params.beam_length,
+            "nb_section": self.params.nb_section,
+            "nb_frames": self.params.nb_frames,
+            "bendingState": self.bendingState,
+            "curv_abs_sections": self.curv_abs_sections,
+            "section_lengths": self.section_lengths,
+            "frames": self.frames,
+            "curv_abs_frames": self.curv_abs_frames,
+            "cable_positions": self.cable_positions,
+            "edge_list": self.edge_list
+        }
