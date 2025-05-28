@@ -12,8 +12,9 @@ def createScene(root_node):
     root_node.addObject('RequiredPlugin', name='Sofa.Component.ODESolver.Backward') # Needed to use components [EulerImplicitSolver]  
     root_node.addObject('RequiredPlugin', name='Sofa.Component.SolidMechanics.Spring') # Needed to use components [RestShapeSpringsForceField]  
     root_node.addObject('RequiredPlugin', name='Sofa.Component.StateContainer') # Needed to use components [MechanicalObject]  
-    root_node.addObject('RequiredPlugin', name='Sofa.Component.Visual') # Needed to use components [VisualStyle]  
-  
+    root_node.addObject('RequiredPlugin', name='Sofa.Component.Visual') # Needed to use components [VisualStyle]
+    root_node.addObject("RequiredPlugin", name='Cosserat')
+
     root_node.addObject(
         "VisualStyle",
         displayFlags="showBehaviorModels showCollisionModels showMechanicalMappings",

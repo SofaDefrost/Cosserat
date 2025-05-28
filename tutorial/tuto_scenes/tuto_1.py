@@ -92,6 +92,7 @@ def createScene(root_node):
     root_node.addObject("RequiredPlugin", name='Sofa.Component.SolidMechanics.Spring')
     root_node.addObject("RequiredPlugin", name='Sofa.Component.StateContainer')
     root_node.addObject("RequiredPlugin", name='Sofa.Component.Visual')
+    root_node.addObject("RequiredPlugin", name='Cosserat')
 
     root_node.addObject(
         "VisualStyle",
