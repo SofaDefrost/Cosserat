@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
 """
 Cosserat class in SofaPython3.
+
+This module provides a prefab class to create and manipulate Cosserat beam/rod models in SOFA.
+The CosseratBase class encapsulates the physics and geometry of a beam, handling
+the creation of frames, coordinates, and physical properties needed for simulation.
 """
 
 __authors__ = "adagolodjo"
@@ -14,25 +18,33 @@ from useful.utils import addEdgeCollision, addPointsCollision, create_rigid_node
 from useful.header import addHeader, addVisual
 from useful.params import Parameters, BeamGeometryParameters
 from useful.geometry import CosseratGeometry, generate_edge_list
-from numpy import array
-from typing import List
+from numpy import array, ndarray
+import logging
+from typing import List, Dict, Any, Optional, Union, Tuple
 
 
 class CosseratBase(Sofa.Prefab):
     """
-    CosseratBase model prefab class. It is a prefab class that allow to create a cosserat beam/rod in Sofa.
-           Structure:
-           Node : {
-                name : 'CosseratBase'
-                Node0 MechanicalObject :     // Rigid position of the base of the beam
-                Node1 MechanicalObject :    // Vec3d, cosserat local parameters composed of the twist and the bending along y and z
-                Node1 ForceField          // Base on Hook's law, it computed the force applied on the beam
-                (Node0-Node1)-child MechanicalObject     //  The child of the two precedent nodes, Rigid positions
-                Allow to compute the cosserat frame in the world frame (Sofa frame)
-                    Cosserat Mapping  //  it allow the transfer from the locial to the word frame
-            }
-            params
+    CosseratBase model prefab class that creates a cosserat beam/rod in SOFA.
 
+    This class creates a complete beam model with the following structure:
+        Node : {
+            name : 'CosseratBase'
+            Node0 MechanicalObject :     // Rigid position of the base of the beam
+            Node1 MechanicalObject :     // Vec3d, cosserat local parameters composed of the twist and the bending along y and z
+            Node1 ForceField :           // Based on Hooke's law, computes the forces applied on the beam
+            (Node0-Node1)-child MechanicalObject :  // Child of the two precedent nodes, Rigid positions
+                                                    // Allows computing the cosserat frame in the world frame (SOFA frame)
+            Cosserat Mapping :           // Allows the transfer from the local to the world frame
+        }
+
+    Parameters:
+        name (str): Node name for the CosseratBase prefab
+        translation (numpy.ndarray): 3D vector representing the initial position of the beam base
+        rotation (numpy.ndarray): 3D vector representing the initial orientation of the beam base
+        params (Parameters): Physics and geometry parameters for the beam
+        parent (Sofa.Node): Parent node in the SOFA scene graph
+        inertialParams (Dict[str, Any], optional): Custom inertia parameters if needed
     """
 
     prefabParameters = [
@@ -48,73 +60,151 @@ class CosseratBase(Sofa.Prefab):
             "type": "Vec3d",
             "help": "Cosserat base Rotation",
             "default": array([0.0, 0.0, 0.0]),
-        }
+        },
     ]
 
     def __init__(self, *args, **kwargs):
+        """
+        Initialize the CosseratBase prefab with the given parameters.
+
+        Args:
+            *args: Variable length argument list passed to the parent class
+            **kwargs: Arbitrary keyword arguments including:
+                - params (Parameters): Beam physics and geometry parameters
+                - parent (Sofa.Node): Parent node in the SOFA scene graph
+                - inertialParams (Dict[str, Any], optional): Custom inertia parameters
+        """
         Sofa.Prefab.__init__(self, *args, **kwargs)
-        self.params = kwargs.get("params")  # Use the Parameters class with default values
 
-        self.beamPhysicsParams = self.params.beam_physics_params
-        self.beam_mass = self.beamPhysicsParams.beam_mass  # self.cosseratGeometry['beamMass']
-        self.use_inertia_params = self.beamPhysicsParams.useInertia  # False
-        self.radius = self.beamPhysicsParams.beam_radius  # kwargs.get('radius')
+        # Parameter validation
+        if "params" not in kwargs:
+            raise ValueError("The 'params' parameter is required for CosseratBase")
+        if "parent" not in kwargs:
+            raise ValueError("The 'parent' parameter is required for CosseratBase")
 
-        print(f' ====> The beam mass is : {self.beam_mass}')
-        print(f' ====> The beam radius is : {self.radius}')
-
+        self.params = kwargs.get("params")
         self.solverNode = kwargs.get("parent")
 
+        # Extract physics parameters
+        self.beam_physics_params = self.params.beam_physics_params
+        self.beam_mass = self.beam_physics_params.beam_mass
+        self.use_inertia_params = self.beam_physics_params.useInertia
+        self.radius = self.beam_physics_params.beam_radius
+
+        # Log parameters instead of print
+        logging.info(f"The beam mass is: {self.beam_mass}")
+        logging.info(f"The beam radius is: {self.radius}")
+
+        # Override inertia params if provided
         if "inertialParams" in kwargs:
             self.use_inertia_params = True
-            self.inertialParams = kwargs["inertialParams"]
+            self.inertial_params = kwargs["inertialParams"]
 
-        self.rigidBaseNode = self._addRigidBaseNode()
+        # Create the beam structure
+        self.rigid_base_node = self._add_rigid_base_node()
 
         cosserat_geometry = CosseratGeometry(self.params.beam_geo_params)
         self.frames3D = cosserat_geometry.cable_positionF
 
-        self.cosseratCoordinateNode = self._add_cosserat_coordinate(
+        self.cosserat_coordinate_node = self._add_cosserat_coordinate(
             cosserat_geometry.bendingState, cosserat_geometry.sectionsLengthList
         )
 
-        self.cosseratFrame = self._addCosseratFrame(
+        self.cosserat_frame = self._add_cosserat_frame(
             cosserat_geometry.framesF,
             cosserat_geometry.curv_abs_inputS,
             cosserat_geometry.curv_abs_outputF,
         )
 
-    def init(self):
-        pass
+    def __repr__(self) -> str:
+        """
+        Return a string representation of the CosseratBase object.
 
-    def addCollisionModel(self):
-        tab_edges = generate_edge_list(self.frames3D)
-        return addEdgeCollision(self.cosseratFrame, self.frames3D, tab_edges)
-
-    def _addPointCollisionModel(self, nodeName="CollisionPoints"):
-        tab_edges = generate_edge_list(self.frames3D)
-        return addPointsCollision(
-            self.cosseratFrame, self.frames3D, tab_edges, nodeName
+        Returns:
+            str: A string representation including key properties
+        """
+        return (
+            f"CosseratBase(name='{self.name}', "
+            f"mass={self.beam_mass}, "
+            f"radius={self.radius}, "
+            f"use_inertia={self.use_inertia_params})"
         )
 
-    def _addSlidingPoints(self):
-        slidingPoint = self.cosseratFrame.addChild("slidingPoint")
-        slidingPoint.addObject("MechanicalObject", name="slidingPointMO", position=self.frames3D)
-        slidingPoint.addObject("IdentityMapping")
-        return slidingPoint
+    def add_collision_model(self) -> Sofa.Node:
+        """
+        Add an edge-based collision model to the cosserat beam.
 
-    def _addSlidingPointsWithContainer(self):
-        slidingPoint = self._addSlidingPoints()
-        slidingPoint.addObject("PointSetTopologyContainer")
-        slidingPoint.addObject("PointSetTopologyModifier")
-        return slidingPoint
+        Returns:
+            Sofa.Node: The created collision node
+        """
+        tab_edges = generate_edge_list(self.frames3D)
+        return addEdgeCollision(self.cosserat_frame, self.frames3D, tab_edges)
 
-    def _addRigidBaseNode(self):
-        rigidBaseNode = create_rigid_node(self, "RigidBase",
-                                          self.translation, self.rotation)
-        return rigidBaseNode
+    def _add_point_collision_model(
+        self, node_name: str = "CollisionPoints"
+    ) -> Sofa.Node:
+        """
+        Add a point-based collision model to the cosserat beam.
 
-    def _add_cosserat_coordinate(self, initial_curvature: List[float], section_lengths: List[float]):
+        Args:
+            node_name: Name of the collision node
+
+        Returns:
+            Sofa.Node: The created collision node
+        """
+        tab_edges = generate_edge_list(self.frames3D)
+        return addPointsCollision(
+            self.cosserat_frame, self.frames3D, tab_edges, node_name
+        )
+
+    def _add_sliding_points(self) -> Sofa.Node:
+        """
+        Add sliding points to the cosserat frame.
+
+        These points can be used for interaction or visualization.
+
+        Returns:
+            Sofa.Node: The created sliding point node
+        """
+        sliding_point = self.cosserat_frame.addChild("slidingPoint")
+        sliding_point.addObject(
+            "MechanicalObject", name="slidingPointMO", position=self.frames3D
+        )
+        sliding_point.addObject("IdentityMapping")
+        return sliding_point
+
+    def _add_sliding_points_with_container(self) -> Sofa.Node:
+        """
+        Add sliding points with topology container and modifier.
+
+        This extends the basic sliding points with topology objects that
+        allow modifying the point set during simulation.
+
+        Returns:
+            Sofa.Node: The created sliding point node with topology container
+        """
+        sliding_point = self._add_sliding_points()
+        sliding_point.addObject("PointSetTopologyContainer")
+        sliding_point.addObject("PointSetTopologyModifier")
+        return sliding_point
+
+    def _add_rigid_base_node(self) -> Sofa.Node:
+        """
+        Create a rigid node at the base of the beam.
+
+        This node defines the global position and orientation of the beam's base.
+
+        Returns:
+            Sofa.Node: The created rigid base node
+        """
+        rigid_base_node = create_rigid_node(
+            self, "RigidBase", self.translation, self.rotation
+        )
+        return rigid_base_node
+
+    def _add_cosserat_coordinate(
+        self, initial_curvature: List[float], section_lengths: List[float]
+    ):
         """
         Adds a cosserat coordinate node with a BeamHookeLawForceField object to the graph.
 
@@ -130,18 +220,23 @@ class CosseratBase(Sofa.Prefab):
             "MechanicalObject",
             template="Vec3d",
             name="cosseratCoordinateMO",
-            position=initial_curvature
+            position=initial_curvature,
         )
 
         if not self.use_inertia_params:
-            self._add_beam_hooke_law_without_inertia(cosserat_coordinate_node, section_lengths)
+            self._add_beam_hooke_law_without_inertia(
+                cosserat_coordinate_node, section_lengths
+            )
         else:
-            self._add_beam_hooke_law_with_inertia(cosserat_coordinate_node, section_lengths)
+            self._add_beam_hooke_law_with_inertia(
+                cosserat_coordinate_node, section_lengths
+            )
 
         return cosserat_coordinate_node
 
-    def _add_beam_hooke_law_without_inertia(self, cosserat_coordinate_node: None,
-                                            section_lengths: list[float]) -> None:
+    def _add_beam_hooke_law_without_inertia(
+        self, cosserat_coordinate_node: Sofa.Node, section_lengths: List[float]
+    ) -> None:
         """
         Adds a BeamHookeLawForceField object to the cosserat coordinate node without inertia parameters.
 
@@ -161,7 +256,9 @@ class CosseratBase(Sofa.Prefab):
             lengthZ=self.params.beam_physics_params.length_Z,
         )
 
-    def _add_beam_hooke_law_with_inertia(self, cosserat_coordinate_node, section_lengths: List[float]) -> None:
+    def _add_beam_hooke_law_with_inertia(
+        self, cosserat_coordinate_node: Sofa.Node, section_lengths: List[float]
+    ) -> None:
         """
         Adds a BeamHookeLawForceField object to the cosserat coordinate node with inertia parameters.
 
@@ -188,34 +285,55 @@ class CosseratBase(Sofa.Prefab):
             lengthZ=self.params.beam_physics_params.length_Z,
         )
 
-    # TODO Rename this here and in `addCosseratCoordinate`
+    def _add_cosserat_frame(
+        self,
+        frames_f: List,
+        curv_abs_input_s: List[float],
+        curv_abs_output_f: List[float],
+    ) -> Sofa.Node:
+        """
+        Create the node that represents the cosserat frames in the SOFA world frame.
 
-    def _addCosseratFrame(self, framesF, curv_abs_inputS, curv_abs_outputF):
-        cosseratInSofaFrameNode = self.rigidBaseNode.addChild("cosseratInSofaFrameNode")
-        self.cosseratCoordinateNode.addChild(cosseratInSofaFrameNode)
-        framesMO = cosseratInSofaFrameNode.addObject(
+        This method creates the mapping between local cosserat coordinates and
+        world frame rigid positions.
+
+        Args:
+            frames_f: List of frame positions
+            curv_abs_input_s: Curvilinear abscissa input values
+            curv_abs_output_f: Curvilinear abscissa output values
+
+        Returns:
+            Sofa.Node: The node containing the cosserat frames in SOFA world frame
+        """
+        cosserat_in_sofa_frame_node = self.rigid_base_node.addChild(
+            "cosseratInSofaFrameNode"
+        )
+        self.cosserat_coordinate_node.addChild(cosserat_in_sofa_frame_node)
+        frames_mo = cosserat_in_sofa_frame_node.addObject(
             "MechanicalObject",
             template="Rigid3d",
             name="FramesMO",
-            position=framesF
+            position=frames_f,
         )
 
-        cosseratInSofaFrameNode.addObject(
-            "UniformMass", totalMass=self.beam_mass, showAxisSizeFactor="0"
+        cosserat_in_sofa_frame_node.addObject(
+            "UniformMass",
+            totalMass=self.beam_mass,
+            showAxisSizeFactor="0",
         )
 
-        cosseratInSofaFrameNode.addObject(
+        cosserat_in_sofa_frame_node.addObject(
             "DiscreteCosseratMapping",
-            curv_abs_input=curv_abs_inputS,
-            curv_abs_output=curv_abs_outputF,
+            curv_abs_input=curv_abs_input_s,
+            curv_abs_output=curv_abs_output_f,
             name="cosseratMapping",
-            input1=self.cosseratCoordinateNode.cosseratCoordinateMO.getLinkPath(),
-            input2=self.rigidBaseNode.RigidBaseMO.getLinkPath(),
-            output=framesMO.getLinkPath(),
+            input1=self.cosserat_coordinate_node.cosseratCoordinateMO.getLinkPath(),
+            input2=self.rigid_base_node.RigidBaseMO.getLinkPath(),
+            output=frames_mo.getLinkPath(),
             debug=0,
             radius=self.radius,
         )
-        return cosseratInSofaFrameNode
+        return cosserat_in_sofa_frame_node
 
 
 Params = Parameters(beam_geo_params=BeamGeometryParameters())
@@ -241,9 +359,9 @@ def createScene(rootNode):
     )
     solverNode.addObject("GenericConstraintCorrection")
 
-    # Create a
-    cosserat = solverNode.addChild(CosseratBase(parent=solverNode, beam_params=Params))
-    cosserat.rigidBaseNode.addObject(
+    # Create a Cosserat beam
+    cosserat = solverNode.addChild(CosseratBase(parent=solverNode, params=Params))
+    cosserat.rigid_base_node.addObject(
         "RestShapeSpringsForceField",
         name="spring",
         stiffness=1e8,
@@ -251,14 +369,14 @@ def createScene(rootNode):
         external_points=0,
         # mstate="@RigidBaseMO",
         points=0,
-        template="Rigid3d"
+        template="Rigid3d",
     )
 
     # use this to add the collision if the beam will interact with another object
-    cosserat.addCollisionModel()
+    cosserat.add_collision_model()
 
     # Attach a force at the beam tip,
     # we can attach this force to a non-mechanical node to control the beam in order to be able to drive it.
-    cosserat.cosseratFrame
+    cosserat.cosserat_frame
 
     return rootNode
