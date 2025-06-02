@@ -13,14 +13,17 @@ __version__ = "1.0.0"
 __copyright__ = "(c) 2021,Inria"
 __date__ = "October, 26 2021"
 
-import Sofa
-from useful.utils import addEdgeCollision, addPointsCollision, create_rigid_node
-from useful.header import addHeader, addVisual
-from useful.params import Parameters, BeamGeometryParameters
-from useful.geometry import CosseratGeometry, generate_edge_list
-from numpy import array, ndarray
 import logging
-from typing import List, Dict, Any, Optional, Union, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
+
+import Sofa
+from numpy import array, ndarray
+
+from useful.geometry import CosseratGeometry, generate_edge_list
+from useful.header import addHeader, addVisual
+from useful.params import BeamGeometryParameters, Parameters
+from useful.utils import (addEdgeCollision, addPointsCollision,
+                          create_rigid_node)
 
 
 class CosseratBase(Sofa.Prefab):

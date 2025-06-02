@@ -7,7 +7,7 @@ find_package(Sofa.Config REQUIRED)
 sofa_find_package(Sofa.Component.Constraint.Lagrangian.Model REQUIRED)
 sofa_find_package(Sofa.Component.StateContainer REQUIRED)
 sofa_find_package(Sofa.Component.Mapping.NonLinear REQUIRED)
-sofa_find_package(Sofa.GL REQUIRED)
+sofa_find_package(Sofa.GL QUIET)
 sofa_find_package(Sofa.Component.Topology.Container.Dynamic REQUIRED)
 
 sofa_find_package(STLIB QUIET)
@@ -80,13 +80,13 @@ if(SoftRobots_FOUND)
     list(APPEND HEADER_FILES
         ${SRC_ROOT_DIR}/constraint/CosseratActuatorConstraint.h
         ${SRC_ROOT_DIR}/constraint/CosseratActuatorConstraint.inl
-        
+
         ${SRC_ROOT_DIR}/constraint/QPSlidingConstraint.h
         ${SRC_ROOT_DIR}/constraint/QPSlidingConstraint.inl
         )
     list(APPEND SOURCE_FILES
         ${SRC_ROOT_DIR}/constraint/CosseratActuatorConstraint.cpp
-        
+
         ${SRC_ROOT_DIR}/constraint/QPSlidingConstraint.cpp
         )
 else()
