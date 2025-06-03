@@ -3,10 +3,12 @@ project(CosseratBindings)
 set(SOURCE_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/Module_Cosserat.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Binding_PointsManager.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Binding_LieGroups.cpp
 )
 
 set(HEADER_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/Binding_PointsManager.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/Binding_LieGroups.h
 )
 
 if (NOT TARGET SofaPython3::Plugin)

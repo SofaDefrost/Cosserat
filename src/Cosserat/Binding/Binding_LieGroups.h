@@ -18,20 +18,39 @@
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
 
+#pragma once
+
 #include <pybind11/pybind11.h>
-#include "Binding_PointsManager.h"
-#include "Binding_LieGroups.h"
+#include <pybind11/eigen.h>
 
+namespace sofapython3 {
 
-namespace py { using namespace pybind11; }
+// Add SO2 class bindings to the module
+void moduleAddSO2(pybind11::module &m);
 
-namespace sofapython3
-{
+// Add SO3 class bindings to the module
+void moduleAddSO3(pybind11::module &m);
 
-PYBIND11_MODULE(Cosserat, m)
-{
-    moduleAddPointsManager(m);
-    moduleAddLieGroups(m);
-}
+// Add SE2 class bindings to the module
+void moduleAddSE2(pybind11::module &m);
+
+// Add SE3 class bindings to the module
+void moduleAddSE3(pybind11::module &m);
+
+// Add SGal3 class bindings to the module
+void moduleAddSGal3(pybind11::module &m);
+
+// Add SE23 class bindings to the module
+void moduleAddSE23(pybind11::module &m);
+
+// Add Bundle class bindings to the module
+void moduleAddBundle(pybind11::module &m);
+
+// Add Utility functions for Lie groups
+void moduleAddLieGroupUtils(pybind11::module &m);
+
+// Add all Lie group bindings to the module
+void moduleAddLieGroups(pybind11::module &m);
 
 } // namespace sofapython3
+
