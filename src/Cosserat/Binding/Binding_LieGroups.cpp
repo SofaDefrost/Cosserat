@@ -1,6 +1,6 @@
 /******************************************************************************
-*                 SOFA, Simulation Open-Framework Architecture                *
-*                    (c) 2021 INRIA, USTL, UJF, CNRS, MGH                     *
+*                 SOFA, Simulation Open-Framework Architecture                  *
+*                    (c) 2006 INRIA, USTL, UJF, CNRS, MGH                     *
 *                                                                             *
 * This program is free software; you can redistribute it and/or modify it     *
 * under the terms of the GNU Lesser General Public License as published by    *
@@ -13,412 +13,574 @@
 * for more details.                                                           *
 *                                                                             *
 * You should have received a copy of the GNU Lesser General Public License    *
-* along with this program. If not, see <http://www.gnu.org/licenses/>.        *
-*******************************************************************************
-* Contact information: contact@sofa-framework.org                             *
+* along with this program. If not, see <http://www.gnu.org/licenses/\>.        *
 ******************************************************************************/
 
-#include "Binding_LieGroups.h"
+
+#include <tuple>
+#include <type_traits>
+#include <array>
+#include <iostream>
+#include <random>
+#include <Cosserat/liegroups/Types.h>
+#include <Cosserat/liegroups/LieGroupBase.h>
+#include <Cosserat/liegroups/LieGroupBase.inl>
 #include <Cosserat/liegroups/SO2.h>
-#include <Cosserat/liegroups/SO3.h>
+#include <Cosserat/liegroups/RealSpace.h>
 #include <Cosserat/liegroups/SE2.h>
 #include <Cosserat/liegroups/SE3.h>
-#include <Cosserat/liegroups/SGal3.h>
-#include <Cosserat/liegroups/Bundle.h>
-#include <Cosserat/liegroups/Utils.h>
-#include <pybind11/eigen.h>
-#include <pybind11/operators.h>
-#include <pybind11/functional.h>
-#include <pybind11/stl.h>
 
-using namespace sofa::component::cosserat::liegroups;
 
-namespace py = pybind11;
+namespace sofa::component::cosserat::liegroups {
 
-namespace sofapython3 {
+namespace detail {
 
-template <typename T>
-void addCommonMethods(py::class_<T>& cls) {
-    cls.def("inverse", &T::computeInverse, "Returns the inverse element");
-    cls.def("log", &T::computeLog, "Returns the logarithm mapping to the Lie algebra");
-    cls.def("adjoint", &T::computeAdjoint, "Returns the adjoint representation");
-    cls.def("act", py::overload_cast<const typename T::Vector&>(&T::computeAction, py::const_), "Apply group action on a vector");
-    cls.def("matrix", &T::matrix, "Returns the matrix representation");
-    cls.def("__mul__", &T::compose, "Compose two group elements");
-    cls.def("isApprox", &T::computeIsApprox, "Check if approximately equal to another element",
-            py::arg("other"), py::arg("eps") = 1e-10);
-}
+// Helper to compute total dimension of all groups
+template<typename... Groups>
+struct TotalDimension;
 
-void moduleAddSO2(py::module& m) {
-    using Scalar = double; // Use double as the default scalar type
-    using SO2d = SO2<Scalar>;
-    using Vector = typename SO2d::Vector;
-    using TangentVector = typename SO2d::TangentVector;
+template<>
+struct TotalDimension<> {
+    static constexpr int value = 0;
+};
 
-    py::class_<SO2d> so2(m, "SO2", "Special Orthogonal group in 2D - rotations in the plane");
-    
-    // Constructors
-    so2.def(py::init<>(), "Default constructor - identity rotation");
-    so2.def(py::init<Scalar>(), "Construct from angle (in radians)", py::arg("angle"));
-    
-    // Static methods
-    so2.def_static("Identity", &SO2d::computeIdentity, "Returns the identity element");
-    so2.def_static("exp", &SO2d::computeExp, "Exponential map from Lie algebra", py::arg("algebra_element"));
-    
-    // Properties
-    so2.def_property_readonly("angle", &SO2d::angle, "The rotation angle in radians");
-    
-    // Common methods
-    addCommonMethods<SO2d>(so2);
-}
+template<typename Group, typename... Rest>
+struct TotalDimension<Group, Rest...> {
+    static constexpr int value = Group::Dim + TotalDimension<Rest...>::value;
+};
 
-void moduleAddSO3(py::module& m) {
-    using Scalar = double; // Use double as the default scalar type
-    using SO3d = SO3<Scalar>;
-    using Vector = typename SO3d::Vector;
-    using Matrix = typename SO3d::Matrix;
-    using TangentVector = typename SO3d::TangentVector;
-    using Quaternion = typename SO3d::Quaternion;
-    
-    py::class_<SO3d> so3(m, "SO3", "Special Orthogonal group in 3D - rotations in 3D space");
-    
-    // Constructors
-    so3.def(py::init<>(), "Default constructor - identity rotation");
-    so3.def(py::init<const Scalar&, const Vector&>(), "Construct from angle-axis representation",
-            py::arg("angle"), py::arg("axis"));
-    so3.def(py::init<const Quaternion&>(), "Construct from quaternion", py::arg("quat"));
-    so3.def(py::init<const Matrix&>(), "Construct from rotation matrix", py::arg("mat"));
-    
-    // Static methods
-    so3.def_static("Identity", &SO3d::computeIdentity, "Returns the identity element");
-    so3.def_static("exp", &SO3d::computeExp, "Exponential map from Lie algebra", py::arg("omega"));
-    so3.def_static("hat", &SO3d::hat, "Convert vector to skew-symmetric matrix", py::arg("v"));
-    so3.def_static("vee", &SO3d::vee, "Convert skew-symmetric matrix to vector", py::arg("Omega"));
-    
-    // Properties
-    so3.def_property_readonly("quaternion", &SO3d::quaternion, "The quaternion representation");
-    
-    // Common methods
-    addCommonMethods<SO3d>(so3);
-    
-    // Additional methods
-    so3.def("angleAxis", &SO3d::angleAxis, "Get the angle-axis representation");
-}
+// Helper to compute total action dimension
+template<typename... Groups>
+struct TotalActionDimension;
 
-void moduleAddSE2(py::module& m) {
-    using Scalar = double; // Use double as the default scalar type
-    using SE2d = SE2<Scalar>;
-    using SO2d = SO2<Scalar>;
-    using Vector = typename SE2d::Vector;
-    using Vector2 = typename SE2d::Vector2;
-    using TangentVector = typename SE2d::TangentVector;
-    
-    py::class_<SE2d> se2(m, "SE2", "Special Euclidean group in 2D - rigid transformations in the plane");
-    
-    // Constructors
-    se2.def(py::init<>(), "Default constructor - identity transformation");
-    se2.def(py::init<const SO2d&, const Vector2&>(), "Construct from rotation and translation",
-            py::arg("rotation"), py::arg("translation"));
-    se2.def(py::init<const Scalar&, const Vector2&>(), "Construct from angle and translation",
-            py::arg("angle"), py::arg("translation"));
-    
-    // Static methods
-    se2.def_static("Identity", &SE2d::identity, "Returns the identity element");
-    se2.def_static("exp", &SE2d::exp, "Exponential map from Lie algebra", py::arg("algebra_element"));
-    
-    // Properties
-    se2.def_property_readonly("rotation", &SE2d::rotation, "The rotation component");
-    se2.def_property_readonly("translation", &SE2d::translation, "The translation component");
-    
-    // Common methods
-    addCommonMethods<SE2d>(se2);
-}
+template<>
+struct TotalActionDimension<> {
+    static constexpr int value = 0;
+};
 
-void moduleAddSE3(py::module& m) {
-    using Scalar = double; // Use double as the default scalar type
-    using SE3d = SE3<Scalar>;
-    using SO3d = SO3<Scalar>;
-    using Vector = typename SE3d::Vector;
-    using Vector3 = typename SE3d::Vector3;
-    using Matrix4 = typename SE3d::Matrix4;
-    using TangentVector = typename SE3d::TangentVector;
-    
-    py::class_<SE3d> se3(m, "SE3", "Special Euclidean group in 3D - rigid transformations in 3D space");
-    
-    // Constructors
-    se3.def(py::init<>(), "Default constructor - identity transformation");
-    se3.def(py::init<const SO3d&, const Vector3&>(), "Construct from rotation and translation",
-            py::arg("rotation"), py::arg("translation"));
-    se3.def(py::init<const Matrix4&>(), "Construct from homogeneous transformation matrix",
-            py::arg("T"));
-    
-    // Static methods
-    se3.def_static("Identity", &SE3d::computeIdentity, "Returns the identity element");
-    se3.def_static("exp", &SE3d::computeExp, "Exponential map from Lie algebra", py::arg("twist"));
-    se3.def_static("BCH", &SE3d::BCH, "Baker-Campbell-Hausdorff formula for SE(3)",
-                   py::arg("X"), py::arg("Y"));
-    
-    // Properties
-    se3.def_property_readonly("rotation", py::overload_cast<>(&SE3d::rotation, py::const_), "The rotation component");
-    se3.def_property_readonly("translation", py::overload_cast<>(&SE3d::translation, py::const_), "The translation component");
-    
-    // Common methods
-    addCommonMethods<SE3d>(se3);
-}
+template<typename Group, typename... Rest>
+struct TotalActionDimension<Group, Rest...> {
+    // This assumes we know actionDimension at compile time
+    // For runtime computation, we'll use a different approach
+    static constexpr int value = -1; // Indicates runtime computation needed
+};
 
-void moduleAddSGal3(py::module& m) {
-    using Scalar = double; // Use double as the default scalar type
-    using SGal3d = SGal3<Scalar>;
-    using SE3d = SE3<Scalar>;
-    using SO3d = SO3<Scalar>;
-    using Vector = typename SGal3d::Vector;
-    using Vector3 = typename SGal3d::Vector3;
-    using Matrix = typename SGal3d::Matrix;
-    using TangentVector = typename SGal3d::TangentVector;
-    
-    py::class_<SGal3d> sgal3(m, "SGal3", "Special Galilean group in 3D - spacetime transformations including velocity");
-    
-    // Constructors
-    sgal3.def(py::init<>(), "Default constructor - identity transformation");
-    sgal3.def(py::init<const SE3d&, const Vector3&, Scalar>(), "Construct from SE3, velocity, and time",
-             py::arg("pose"), py::arg("velocity"), py::arg("time") = 0.0);
-    
-    // Factory functions
-    m.def("fromComponents", &fromComponents<Scalar>, 
-          "Create SGal3 transformation from position, rotation, velocity, and time",
-          py::arg("position"), py::arg("rotation"), py::arg("velocity"), py::arg("time") = 0.0);
-    
-    m.def("fromPositionEulerVelocityTime", &fromPositionEulerVelocityTime<Scalar>,
-          "Create SGal3 transformation from position, Euler angles (roll, pitch, yaw), velocity, and time",
-          py::arg("position"), py::arg("roll"), py::arg("pitch"), py::arg("yaw"), 
-          py::arg("velocity"), py::arg("time") = 0.0);
-    
-    m.def("toPositionEulerVelocityTime", &toPositionEulerVelocityTime<Scalar>,
-          "Convert SGal3 transformation to position, Euler angles, velocity, and time vector",
-          py::arg("transform"));
-    
-    m.def("interpolate", &interpolate<Scalar>,
-          "Interpolate between two Galilean transformations",
-          py::arg("from"), py::arg("to"), py::arg("t"));
-    
-    // Properties
-    sgal3.def_property_readonly("pose", py::overload_cast<>(&SGal3d::pose, py::const_), 
-                              "The SE3 component (pose)");
-    sgal3.def_property_readonly("velocity", py::overload_cast<>(&SGal3d::velocity, py::const_), 
-                              "The linear velocity component");
-    sgal3.def_property_readonly("time", &SGal3d::time, 
-                              "The time component");
-    
-    // Common methods
-    addCommonMethods<SGal3d>(sgal3);
-    
-    // Additional methods
-    sgal3.def("transform", &SGal3d::transform, 
-             "Transform a point-velocity-time tuple",
-             py::arg("point_vel_time"));
-    
-    // Static methods
-    sgal3.def_static("Identity", &SGal3d::Identity, "Returns the identity element");
-    sgal3.def_static("exp", &SGal3d::computeExp, "Exponential map from Lie algebra", 
-                    py::arg("algebra_element"));
-    sgal3.def_static("BCH", &SGal3d::BCH, "Baker-Campbell-Hausdorff formula for SGal3",
-                    py::arg("X"), py::arg("Y"));
-    
-    // Operators
-    sgal3.def("__truediv__", [](const SGal3d& g, const Vector& point_vel_time) {
-        return point_vel_time / g;
-    }, "Apply inverse transformation to a point-velocity-time tuple", 
-       py::arg("point_vel_time"));
-}
+// Helper to check if all types are LieGroupBase derivatives with same scalar type
+template<typename FirstScalar, typename... Groups>
+struct AllAreLieGroups;
 
-void moduleAddSE23(py::module& m) {
-    using Scalar = double; // Use double as the default scalar type
-    using SE23d = SE23<Scalar>;
-    using SE3d = SE3<Scalar>;
-    using SO3d = SO3<Scalar>;
-    using Vector = typename SE23d::Vector;
-    using Vector3 = typename SE23d::Vector3;
-    using TangentVector = typename SE23d::TangentVector;
-    
-    py::class_<SE23d> se23(m, "SE23", "Special Euclidean group in (2+1)D - rigid transformations with velocity");
-    
-    // Constructors
-    se23.def(py::init<>(), "Default constructor - identity transformation with zero velocity");
-    se23.def(py::init<const SE3d&, const Vector3&>(), "Construct from SE3 pose and velocity",
-             py::arg("pose"), py::arg("velocity"));
-    se23.def(py::init<const SO3d&, const Vector3&, const Vector3&>(), "Construct from rotation, position, and velocity",
-             py::arg("rotation"), py::arg("position"), py::arg("velocity"));
-    
-    // Factory functions
-    m.def("fromComponents", &fromComponents<Scalar>, 
-          "Create SE23 transformation from position, rotation, and velocity",
-          py::arg("position"), py::arg("rotation"), py::arg("velocity"));
-    
-    m.def("fromPositionEulerVelocity", &fromPositionEulerVelocity<Scalar>,
-          "Create SE23 transformation from position, Euler angles (roll, pitch, yaw), and velocity",
-          py::arg("position"), py::arg("roll"), py::arg("pitch"), py::arg("yaw"), 
-          py::arg("velocity"));
-    
-    m.def("toPositionEulerVelocity", &toPositionEulerVelocity<Scalar>,
-          "Convert SE23 transformation to position, Euler angles, and velocity vector",
-          py::arg("transform"));
-    
-    m.def("interpolate", &interpolate<Scalar>,
-          "Interpolate between two SE23 transformations",
-          py::arg("from"), py::arg("to"), py::arg("t"));
-    
-    // Properties
-    se23.def_property_readonly("pose", py::overload_cast<>(&SE23d::pose, py::const_), 
-                              "The SE3 component (pose)");
-    se23.def_property_readonly("velocity", py::overload_cast<>(&SE23d::velocity, py::const_), 
-                              "The linear velocity component");
-    
-    // Common methods
-    addCommonMethods<SE23d>(se23);
-    
-    // Transform a point-velocity pair
-    se23.def("transform", [](const SE23d& self, const Vector& point_vel) {
-        return self.act(point_vel);
-    }, "Transform a point-velocity pair", py::arg("point_vel"));
-    
-    // Static methods
-    se23.def_static("Identity", &SE23d::identity, "Returns the identity element");
-    se23.def_static("exp", &SE23d::exp, "Exponential map from Lie algebra", 
-                    py::arg("algebra_element"));
-    se23.def_static("BCH", &SE23d::BCH, "Baker-Campbell-Hausdorff formula for SE23",
-                    py::arg("X"), py::arg("Y"));
-    
-    // Operators
-    se23.def("__truediv__", [](const SE23d& g, const Vector& point_vel) {
-        return point_vel / g;
-    }, "Apply inverse transformation to a point-velocity pair", 
-       py::arg("point_vel"));
-}
+template<typename FirstScalar>
+struct AllAreLieGroups<FirstScalar> : std::true_type {};
 
-void moduleAddBundle(py::module& m) {
-    using Scalar = double; // Use double as the default scalar type
-    
-    // Specialization for SE3 + R3 (pose + velocity)
-    using SE3d = SE3<Scalar>;
-    using Vector3 = typename SE3d::Vector3;
-    using PoseVel = Bundle<SE3<Scalar>, Vector3>;
-    
-    py::class_<PoseVel> pose_vel(m, "PoseVel", "Bundle of SE3 pose and R3 velocity");
-    
-    // Constructors
-    pose_vel.def(py::init<>(), "Default constructor - identity transformation with zero velocity");
-    pose_vel.def(py::init<const SE3d&, const Vector3&>(), 
-                "Construct from SE3 pose and R3 velocity",
-                py::arg("pose"), py::arg("velocity"));
-    
-    // Access components
-    pose_vel.def("get_pose", &PoseVel::template get<0>, "Get the SE3 pose component");
-    pose_vel.def("get_velocity", &PoseVel::template get<1>, "Get the R3 velocity component");
-    
-    // Common methods
-    addCommonMethods<PoseVel>(pose_vel);
-    
-    // Specialization for SO3 + R3 (rotation + translation)
-    using SO3d = SO3<Scalar>;
-    using RotTrans = Bundle<SO3<Scalar>, Vector3>;
-    
-    py::class_<RotTrans> rot_trans(m, "RotTrans", "Bundle of SO3 rotation and R3 translation");
-    
-    // Constructors
-    rot_trans.def(py::init<>(), "Default constructor - identity rotation with zero translation");
-    rot_trans.def(py::init<const SO3d&, const Vector3&>(), 
-                "Construct from SO3 rotation and R3 translation",
-                py::arg("rotation"), py::arg("translation"));
-    
-    // Access components
-    rot_trans.def("get_rotation", &RotTrans::template get<0>, "Get the SO3 rotation component");
-    rot_trans.def("get_translation", &RotTrans::template get<1>, "Get the R3 translation component");
-    
-    // Common methods
-    addCommonMethods<RotTrans>(rot_trans);
-}
+template<typename FirstScalar, typename Group, typename... Rest>
+struct AllAreLieGroups<FirstScalar, Group, Rest...> {
+    static constexpr bool value = 
+        std::is_base_of_v<LieGroupBase<typename Group::Scalar, 
+                                     std::integral_constant<int, Group::Dim>, 
+                                     Group::Dim, Group::Dim>, Group> &&
+        std::is_same_v<FirstScalar, typename Group::Scalar> &&
+        AllAreLieGroups<FirstScalar, Rest...>::value;
+};
 
-void moduleAddLieGroupUtils(py::module& m) {
-    using LieUtils = Cosserat::LieGroupUtils<double>;
-    
-    // Angle utilities
-    m.def("normalize_angle", &LieUtils::normalizeAngle, 
-          "Normalize angle to [-π, π]", 
-          py::arg("angle"));
-    
-    m.def("angle_difference", &LieUtils::angleDifference, 
-          "Compute the difference between two angles with proper wrapping", 
-          py::arg("a"), py::arg("b"));
-    
-    m.def("angle_distance", &LieUtils::angleDistance, 
-          "Compute bi-invariant distance between two angles (as SO(2) elements)", 
-          py::arg("a"), py::arg("b"));
-    
-    m.def("is_angle_near_zero", &LieUtils::isAngleNearZero, 
-          "Check if an angle is near zero (within epsilon)", 
-          py::arg("angle"));
-    
-    m.def("are_angles_nearly_equal", &LieUtils::areAnglesNearlyEqual, 
-          "Check if two angles are nearly equal (within epsilon, considering wrapping)", 
-          py::arg("a"), py::arg("b"));
-    
-    // Interpolation utilities
-    m.def("lerp", &LieUtils::lerp, 
-          "Linear interpolation between two scalars", 
-          py::arg("a"), py::arg("b"), py::arg("t"));
-    
-    m.def("slerp_angle", &LieUtils::slerpAngle, 
-          "Spherical linear interpolation (SLERP) between two angles", 
-          py::arg("a"), py::arg("b"), py::arg("t"));
-    
-    // Numerical utilities
-    m.def("sinc", &LieUtils::sinc, 
-          "Compute sinc(x) = sin(x)/x with numerical stability for small x", 
-          py::arg("x"));
-    
-    m.def("one_minus_cos", &LieUtils::oneMinusCos, 
-          "Numerically stable computation of 1 - cos(x) for small x", 
-          py::arg("x"));
-    
-    // Vector utilities
-    m.def("safe_normalize", [](const Eigen::VectorXd& v) {
-        return LieUtils::safeNormalize(v);
-    }, "Safe vector normalization that handles near-zero vectors", 
-       py::arg("v"));
-    
-    m.def("project_vector", [](const Eigen::VectorXd& v, const Eigen::VectorXd& onto) {
-        return LieUtils::projectVector(v, onto);
-    }, "Project a vector onto another vector", 
-       py::arg("v"), py::arg("onto"));
-    
-    // SE(2) utilities
-    m.def("interpolate_se2_path", [](const Eigen::Vector3d& start, 
-                                   const Eigen::Vector3d& end, 
-                                   double t) {
-        return LieUtils::interpolateSE2Path(start, end, t);
-    }, "Path interpolation between two SE(2) elements represented as [angle, x, y]", 
-       py::arg("start"), py::arg("end"), py::arg("t"));
-    
-    // Constants
-    m.attr("epsilon") = LieUtils::epsilon;
-    m.attr("pi") = LieUtils::pi;
-    m.attr("two_pi") = LieUtils::two_pi;
-}
+// Compile-time offset computation
+template<int Index, typename... Groups>
+struct OffsetAt;
 
-void moduleAddLieGroups(py::module& m) {
-    // Create a submodule for Lie groups
-    py::module liegroups = m.def_submodule("LieGroups", "Lie group implementations");
+template<int Index>
+struct OffsetAt<Index> {
+    static constexpr int value = 0;
+};
+
+template<int Index, typename Group, typename... Rest>
+struct OffsetAt<Index, Group, Rest...> {
+    static constexpr int value = (Index == 0) ? 0 : 
+                                Group::Dim + OffsetAt<Index - 1, Rest...>::value;
+};
+
+// Runtime offset computation for action dimensions
+template<typename... Groups>
+class ActionOffsets {
+public:
+    explicit ActionOffsets(const std::tuple<Groups...>& groups) {
+        computeOffsets(groups, std::index_sequence_for<Groups...>());
+    }
     
-    // Add all Lie group classes to the submodule
-    moduleAddSO2(liegroups);
-    moduleAddSO3(liegroups);
-    moduleAddSE2(liegroups);
-    moduleAddSE3(liegroups);
-    moduleAddSGal3(liegroups);
-    moduleAddSE23(liegroups);
-    moduleAddBundle(liegroups);
-    moduleAddLieGroupUtils(liegroups);
-}
+    int operator[](std::size_t i) const { return offsets_[i]; }
+    int total() const { return total_; }
 
-} // namespace sofapython3
+private:
+    std::array<int, sizeof...(Groups)> offsets_;
+    int total_ = 0;
+    
+    template<std::size_t... Is>
+    void computeOffsets(const std::tuple<Groups...>& groups, std::index_sequence<Is...>) {
+        int offset = 0;
+        ((offsets_[Is] = offset, 
+          offset += std::get<Is>(groups).actionDimension()), ...);
+        total_ = offset;
+    }
+};
 
+} // namespace detail
+
+/**
+ * @brief Implementation of product manifold bundle of Lie groups
+ * 
+ * This class implements a Cartesian product of multiple Lie groups, allowing them to be
+ * treated as a single composite Lie group. The bundle maintains the product structure 
+ * while providing all necessary group operations.
+ * 
+ * Mathematical Background:
+ * For Lie groups G₁, G₂, ..., Gₙ, the product manifold G = G₁ × G₂ × ... × Gₙ
+ * is also a Lie group with:
+ * - Group operation: (g₁, g₂, ..., gₙ) * (h₁, h₂, ..., hₙ) = (g₁h₁, g₂h₂, ..., gₙhₙ)
+ * - Identity: (e₁, e₂, ..., eₙ) where eᵢ is identity of Gᵢ
+ * - Inverse: (g₁, g₂, ..., gₙ)⁻¹ = (g₁⁻¹, g₂⁻¹, ..., gₙ⁻¹)
+ * - Lie algebra: 𝔤 = 𝔤₁ ⊕ 𝔤₂ ⊕ ... ⊕ 𝔤ₙ (direct sum)
+ * - Adjoint: block diagonal with Adᵢ on diagonal blocks
+ * 
+ * Usage Examples:
+ * ```cpp
+ * // Rigid body pose with velocity
+ * using RigidBodyState = Bundle<SE3<double>, RealSpace<double, 6>>;
+ * 
+ * // 2D robot with multiple joints
+ * using Robot2D = Bundle<SE2<double>, SO2<double>, SO2<double>>;
+ * 
+ * // Create and manipulate
+ * auto state1 = RigidBodyState(SE3<double>::identity(), 
+ *                             RealSpace<double, 6>::zero());
+ * auto state2 = RigidBodyState(pose, velocity);
+ * auto combined = state1 * state2;
+ * ```
+ * 
+ * @tparam Groups The Lie groups to bundle together (must have same scalar type)
+ */
+template<typename... Groups>
+class Bundle : public LieGroupBase<typename std::tuple_element_t<0, std::tuple<Groups...>>::Scalar,
+                                std::integral_constant<int, detail::TotalDimension<Groups...>::value>,
+                                detail::TotalDimension<Groups...>::value,
+                                detail::TotalDimension<Groups...>::value> {
+    
+    // Compile-time validation
+    static_assert(sizeof...(Groups) > 0, "Bundle must contain at least one group");
+    
+    using FirstGroup = std::tuple_element_t<0, std::tuple<Groups...>>;
+    using FirstScalar = typename FirstGroup::Scalar;
+    
+    static_assert(detail::AllAreLieGroups<FirstScalar, Groups...>::value,
+                 "All template parameters must be Lie groups with the same scalar type");
+
+public:
+    using Base = LieGroupBase<FirstScalar,
+                            std::integral_constant<int, detail::TotalDimension<Groups...>::value>,
+                            detail::TotalDimension<Groups...>::value,
+                            detail::TotalDimension<Groups...>::value>;
+    using Scalar = typename Base::Scalar;
+    using Vector = typename Base::Vector;
+    using Matrix = typename Base::Matrix;
+    using TangentVector = typename Base::TangentVector;
+    using AdjointMatrix = typename Base::AdjointMatrix;
+    
+    static constexpr int Dim = Base::Dim;
+    static constexpr std::size_t NumGroups = sizeof...(Groups);
+    
+    using GroupTuple = std::tuple<Groups...>;
+    
+    // Compile-time offset table for algebra elements
+    template<std::size_t I>
+    static constexpr int AlgebraOffset = detail::OffsetAt<I, Groups...>::value;
+    
+    template<std::size_t I>
+    using GroupType = std::tuple_element_t<I, GroupTuple>;
+
+    // ========== Constructors ==========
+
+    /**
+     * @brief Default constructor creates identity bundle
+     */
+    Bundle() : m_groups(), m_action_offsets(m_groups) {}
+
+    /**
+     * @brief Construct from individual group elements
+     */
+    explicit Bundle(const Groups&... groups) 
+        : m_groups(groups...), m_action_offsets(m_groups) {}
+
+    /**
+     * @brief Construct from tuple of groups
+     */
+    explicit Bundle(const GroupTuple& groups) 
+        : m_groups(groups), m_action_offsets(m_groups) {}
+
+    /**
+     * @brief Construct from Lie algebra vector
+     */
+    explicit Bundle(const TangentVector& algebra_element) 
+        : Bundle() {
+        *this = exp(algebra_element);
+    }
+
+    /**
+     * @brief Copy constructor
+     */
+    Bundle(const Bundle& other) = default;
+
+    /**
+     * @brief Move constructor  
+     */
+    Bundle(Bundle&& other) noexcept = default;
+
+    /**
+     * @brief Copy assignment
+     */
+    Bundle& operator=(const Bundle& other) = default;
+
+    /**
+     * @brief Move assignment
+     */
+    Bundle& operator=(Bundle&& other) noexcept = default;
+
+    // ========== Group Operations ==========
+
+    /**
+     * @brief Group composition (component-wise)
+     * Implements: (g₁, ..., gₙ) * (h₁, ..., hₙ) = (g₁h₁, ..., gₙhₙ)
+     */
+    Bundle operator*(const Bundle& other) const {
+        return multiply_impl(other, std::index_sequence_for<Groups...>());
+    }
+
+    /**
+     * @brief In-place group composition
+     */
+    Bundle& operator*=(const Bundle& other) {
+        multiply_assign_impl(other, std::index_sequence_for<Groups...>());
+        return *this;
+    }
+
+    /**
+     * @brief Inverse element (component-wise)
+     * Implements: (g₁, ..., gₙ)⁻¹ = (g₁⁻¹, ..., gₙ⁻¹)
+     */
+    Bundle inverse() const override {
+        return inverse_impl(std::index_sequence_for<Groups...>());
+    }
+
+    // ========== Lie Algebra Operations ==========
+
+    /**
+     * @brief Exponential map from Lie algebra to bundle
+     * The Lie algebra of the product is the direct sum of individual algebras
+     */
+    Bundle exp(const TangentVector& algebra_element) const override {
+        validateAlgebraElement(algebra_element);
+        return exp_impl(algebra_element, std::index_sequence_for<Groups...>());
+    }
+
+    /**
+     * @brief Logarithmic map from bundle to Lie algebra
+     * Maps to the direct sum of individual Lie algebras
+     */
+    TangentVector log() const override {
+        return log_impl(std::index_sequence_for<Groups...>());
+    }
+
+    /**
+     * @brief Adjoint representation (block diagonal structure)
+     * Ad_{(g₁,...,gₙ)} = diag(Ad_{g₁}, ..., Ad_{gₙ})
+     */
+    AdjointMatrix adjoint() const override {
+        return adjoint_impl(std::index_sequence_for<Groups...>());
+    }
+
+    // ========== Group Actions ==========
+
+    /**
+     * @brief Group action on a point (component-wise on appropriate subspaces)
+     * Each group acts on its corresponding portion of the input vector
+     */
+    Vector act(const Vector& point) const override {
+        validateActionInput(point);
+        return act_impl(point, std::index_sequence_for<Groups...>());
+    }
+
+    /**
+     * @brief Batch group action on multiple points
+     */
+    template<int N>
+    Eigen::Matrix<Scalar, Eigen::Dynamic, N> act(
+        const Eigen::Matrix<Scalar, Eigen::Dynamic, N>& points) const {
+        
+        if (points.rows() != actionDimension()) {
+            throw std::invalid_argument("Point matrix has wrong dimension");
+        }
+        
+        Eigen::Matrix<Scalar, Eigen::Dynamic, N> result(actionDimension(), N);
+        
+        for (int i = 0; i < N; ++i) {
+            result.col(i) = act(points.col(i));
+        }
+        
+        return result;
+    }
+
+    // ========== Utility Functions ==========
+
+    /**
+     * @brief Check if approximately equal to another bundle
+     */
+    bool isApprox(const Bundle& other, 
+                  const Scalar& eps = Types<Scalar>::epsilon()) const {
+        return isApprox_impl(other, eps, std::index_sequence_for<Groups...>());
+    }
+
+    /**
+     * @brief Equality operator
+     */
+    bool operator==(const Bundle& other) const {
+        return isApprox(other);
+    }
+
+    /**
+     * @brief Inequality operator
+     */
+    bool operator!=(const Bundle& other) const {
+        return !(*this == other);
+    }
+
+    /**
+     * @brief Linear interpolation between two bundles (geodesic in product space)
+     * @param other Target bundle
+     * @param t Interpolation parameter [0,1]
+     */
+    Bundle interpolate(const Bundle& other, const Scalar& t) const {
+        if (t < 0 || t > 1) {
+            throw std::invalid_argument("Interpolation parameter must be in [0,1]");
+        }
+        
+        TangentVector delta = (inverse() * other).log();
+        return *this * exp(t * delta);
+    }
+
+    /**
+     * @brief Generate random bundle element
+     */
+    template<typename Generator>
+    static Bundle random(Generator& gen, const Scalar& scale = Scalar(1)) {
+        return random_impl(gen, scale, std::index_sequence_for<Groups...>());
+    }
+
+    // ========== Accessors ==========
+
+    /**
+     * @brief Get the identity element
+     */
+    static const Bundle& identity() {
+        static const Bundle id;
+        return id;
+    }
+
+    /**
+     * @brief Get the dimension of the Lie algebra
+     */
+    int algebraDimension() const override { return Dim; }
+
+    /**
+     * @brief Get the dimension of the space the group acts on (computed at runtime)
+     */
+    int actionDimension() const override {
+        return m_action_offsets.total();
+    }
+
+    /**
+     * @brief Access individual group elements (const)
+     */
+    template<std::size_t I>
+    const auto& get() const {
+        static_assert(I < NumGroups, "Index out of bounds");
+        return std::get<I>(m_groups);
+    }
+
+    /**
+     * @brief Access individual group elements (mutable)
+     */
+    template<std::size_t I>
+    auto& get() {
+        static_assert(I < NumGroups, "Index out of bounds");
+        // Need to recompute action offsets if groups are modified
+        auto& result = std::get<I>(m_groups);
+        // In practice, you might want to make this const and provide setters
+        return result;
+    }
+
+    /**
+     * @brief Set individual group element
+     */
+    template<std::size_t I>
+    void set(const GroupType<I>& group) {
+        std::get<I>(m_groups) = group;
+        m_action_offsets = detail::ActionOffsets<Groups...>(m_groups);
+    }
+
+    /**
+     * @brief Get the underlying tuple
+     */
+    const GroupTuple& groups() const { return m_groups; }
+
+    /**
+     * @brief Get algebra element for specific group
+     */
+    template<std::size_t I>
+    typename GroupType<I>::TangentVector getAlgebraElement() const {
+        return std::get<I>(m_groups).log();
+    }
+
+    /**
+     * @brief Set from algebra element for specific group  
+     */
+    template<std::size_t I>
+    void setFromAlgebra(const typename GroupType<I>::TangentVector& algebra) {
+        std::get<I>(m_groups) = GroupType<I>().exp(algebra);
+        m_action_offsets = detail::ActionOffsets<Groups...>(m_groups);
+    }
+
+    // ========== Stream Output ==========
+
+    /**
+     * @brief Output stream operator
+     */
+    friend std::ostream& operator<<(std::ostream& os, const Bundle& bundle) {
+        os << "Bundle<" << NumGroups << ">(";
+        bundle.print_impl(os, std::index_sequence_for<Groups...>());
+        os << ")";
+        return os;
+    }
+
+private:
+    GroupTuple m_groups;  ///< Tuple of group elements
+    detail::ActionOffsets<Groups...> m_action_offsets;  ///< Cached action dimension offsets
+
+    // ========== Implementation Helpers ==========
+
+    // Validation helpers
+    void validateAlgebraElement(const TangentVector& element) const {
+        if (element.size() != Dim) {
+            throw std::invalid_argument("Algebra element has wrong dimension");
+        }
+    }
+
+    void validateActionInput(const Vector& point) const {
+        if (point.size() != actionDimension()) {
+            throw std::invalid_argument("Action input has wrong dimension");
+        }
+    }
+
+    // Multiplication implementation
+    template<std::size_t... Is>
+    Bundle multiply_impl(const Bundle& other, std::index_sequence<Is...>) const {
+        return Bundle((std::get<Is>(m_groups) * std::get<Is>(other.m_groups))...);
+    }
+
+    template<std::size_t... Is>
+    void multiply_assign_impl(const Bundle& other, std::index_sequence<Is...>) {
+        ((std::get<Is>(m_groups) *= std::get<Is>(other.m_groups)), ...);
+    }
+
+    // Inverse implementation
+    template<std::size_t... Is>
+    Bundle inverse_impl(std::index_sequence<Is...>) const {
+        return Bundle((std::get<Is>(m_groups).inverse())...);
+    }
+
+    // Exponential map implementation
+    template<std::size_t... Is>
+    Bundle exp_impl(const TangentVector& algebra_element, std::index_sequence<Is...>) const {
+        return Bundle((GroupType<Is>().exp(
+            algebra_element.template segment<GroupType<Is>::Dim>(AlgebraOffset<Is>)
+        ))...);
+    }
+
+    // Logarithmic map implementation
+    template<std::size_t... Is>
+    TangentVector log_impl(std::index_sequence<Is...>) const {
+        TangentVector result;
+        ((result.template segment<GroupType<Is>::Dim>(AlgebraOffset<Is>) = 
+          std::get<Is>(m_groups).log()), ...);
+        return result;
+    }
+
+    // Adjoint implementation (block diagonal)
+    template<std::size_t... Is>
+    AdjointMatrix adjoint_impl(std::index_sequence<Is...>) const {
+        AdjointMatrix result = AdjointMatrix::Zero();
+        ((result.template block<GroupType<Is>::Dim, GroupType<Is>::Dim>
+          (AlgebraOffset<Is>, AlgebraOffset<Is>) = std::get<Is>(m_groups).adjoint()), ...);
+        return result;
+    }
+
+    // Group action implementation
+    template<std::size_t... Is>
+    Vector act_impl(const Vector& point, std::index_sequence<Is...>) const {
+        Vector result(actionDimension());
+        
+        // Apply each group's action to its corresponding subspace
+        ((applyGroupAction<Is>(result, point)), ...);
+        
+        return result;
+    }
+
+    template<std::size_t I>
+    void applyGroupAction(Vector& result, const Vector& point) const {
+        const auto& group = std::get<I>(m_groups);
+        int in_offset = m_action_offsets[I];
+        int out_offset = in_offset; // Same offset for output
+        int dim = group.actionDimension();
+        
+        auto input_segment = point.segment(in_offset, dim);
+        auto output_segment = result.segment(out_offset, dim);
+        output_segment = group.act(input_segment);
+    }
+
+    // Approximate equality implementation
+    template<std::size_t... Is>
+    bool isApprox_impl(const Bundle& other, const Scalar& eps, 
+                      std::index_sequence<Is...>) const {
+        return (std::get<Is>(m_groups).isApprox(std::get<Is>(other.m_groups), eps) && ...);
+    }
+
+    // Random generation implementation
+    template<typename Generator, std::size_t... Is>
+    static Bundle random_impl(Generator& gen, const Scalar& scale, 
+                             std::index_sequence<Is...>) {
+        return Bundle((GroupType<Is>::random(gen, scale))...);
+    }
+
+    // Stream output implementation
+    template<std::size_t... Is>
+    void print_impl(std::ostream& os, std::index_sequence<Is...>) const {
+        bool first = true;
+        ((os << (first ? (first = false, "") : ", ") << std::get<Is>(m_groups)), ...);
+    }
+};
+
+// ========== Type Aliases ==========
+
+// Common bundles for robotics applications
+template<typename Scalar>
+using SE3_Velocity = Bundle<SE3<Scalar>, RealSpace<Scalar, 6>>;
+
+template<typename Scalar>
+using SE2_Velocity = Bundle<SE2<Scalar>, RealSpace<Scalar, 3>>;
+
+template<typename Scalar, int N>
+using SE3_Joints = Bundle<SE3<Scalar>, RealSpace<Scalar, N>>;
+
+// Convenience aliases
+template<typename... Groups>
+using Bundlef = Bundle<Groups...>;
+
+template<typename... Groups>
+using Bundled = Bundle<Groups...>;
+
+} // namespace sofa::component::cosserat::liegroups

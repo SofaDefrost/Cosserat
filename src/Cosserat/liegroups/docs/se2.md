@@ -17,7 +17,7 @@
 ## Internal Representation
 
 The `SE2` class internally stores:
-- A rotation component as an SO(2) element
+- A rotation component as an `SO(2)` element
 - A translation component as a 2D vector
 
 This representation ensures proper handling of the group structure and efficient computation of group operations.

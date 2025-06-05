@@ -4,40 +4,40 @@ This document compares the various Lie group implementations in the Cosserat plu
 
 ## Feature Comparison
 
-| Feature | RealSpace | SO(2) | SO(3) | SE(2) | SE(3) | Sim(3) |
-|---------|-----------|-------|-------|-------|-------|--------|
-| **Dimension** | n (templated) | 1 | 3 | 3 | 6 | 7 |
-| **Represents** | Vectors | 2D rotation | 3D rotation | 2D rigid transform | 3D rigid transform | 3D similarity transform |
-| **Group operation** | Addition | Rotation composition | Rotation composition | Rigid motion composition | Rigid motion composition | Similarity composition |
-| **Internal representation** | Vector | Angle or complex | Quaternion | Angle + vector | Quaternion + vector | Quaternion + vector + scale |
-| **Has rotation component** | No | Yes | Yes | Yes | Yes | Yes |
-| **Has translation component** | Yes (represents position) | No | No | Yes | Yes | Yes |
-| **Has scale component** | No | No | No | No | No | Yes |
-| **Commutative** | Yes | Yes | No | No | No | No |
-| **Primary application** | Points, vectors | 2D rotations | 3D rotations | 2D mechanics | 3D mechanics | Computer vision |
+| Feature                       | RealSpace                 | SO(2)                | SO(3)                | SE(2)                    | SE(3)                    | Sim(3)                      |
+| ----------------------------- | ------------------------- | -------------------- | -------------------- | ------------------------ | ------------------------ | --------------------------- |
+| **Dimension**                 | n (templated)             | 1                    | 3                    | 3                        | 6                        | 7                           |
+| **Represents**                | Vectors                   | 2D rotation          | 3D rotation          | 2D rigid transform       | 3D rigid transform       | 3D similarity transform     |
+| **Group operation**           | Addition                  | Rotation composition | Rotation composition | Rigid motion composition | Rigid motion composition | Similarity composition      |
+| **Internal representation**   | Vector                    | Angle or complex     | Quaternion           | Angle + vector           | Quaternion + vector      | Quaternion + vector + scale |
+| **Has rotation component**    | No                        | Yes                  | Yes                  | Yes                      | Yes                      | Yes                         |
+| **Has translation component** | Yes (represents position) | No                   | No                   | Yes                      | Yes                      | Yes                         |
+| **Has scale component**       | No                        | No                   | No                   | No                       | No                       | Yes                         |
+| **Commutative**               | Yes                       | Yes                  | No                   | No                       | No                       | No                          |
+| **Primary application**       | Points, vectors           | 2D rotations         | 3D rotations         | 2D mechanics             | 3D mechanics             | Computer vision             |
 
 ## Lie Algebra Properties
 
-| Property | RealSpace | SO(2) | SO(3) | SE(2) | SE(3) | Sim(3) |
-|----------|-----------|-------|-------|-------|-------|--------|
-| **Algebra dimension** | n | 1 | 3 | 3 | 6 | 7 |
-| **Represents** | Vectors | Angular velocity | Angular velocity | Twist (ang.+lin. vel) | Twist | Twist + scaling |
-| **Exponential map complexity** | Trivial | Simple | Medium | Medium | Complex | Complex |
-| **Logarithmic map complexity** | Trivial | Simple | Medium | Medium | Complex | Complex |
-| **Primary application** | Velocity | Angular velocity | Angular velocity | 2D body velocity | 3D body velocity | Scale-velocity |
+| Property                       | RealSpace | SO(2)            | SO(3)            | SE(2)                 | SE(3)            | Sim(3)          |
+| ------------------------------ | --------- | ---------------- | ---------------- | --------------------- | ---------------- | --------------- |
+| **Algebra dimension**          | n         | 1                | 3                | 3                     | 6                | 7               |
+| **Represents**                 | Vectors   | Angular velocity | Angular velocity | Twist (ang.+lin. vel) | Twist            | Twist + scaling |
+| **Exponential map complexity** | Trivial   | Simple           | Medium           | Medium                | Complex          | Complex         |
+| **Logarithmic map complexity** | Trivial   | Simple           | Medium           | Medium                | Complex          | Complex         |
+| **Primary application**        | Velocity  | Angular velocity | Angular velocity | 2D body velocity      | 3D body velocity | Scale-velocity  |
 
 ## Performance Comparison
 
 The following table shows approximate relative performance for common operations (normalized to the fastest implementation, lower is better):
 
-| Operation | RealSpace | SO(2) | SO(3) | SE(2) | SE(3) | Sim(3) |
-|-----------|-----------|-------|-------|-------|-------|--------|
-| **Composition** | 1.0 | 1.2 | 2.5 | 3.0 | 5.0 | 5.5 |
-| **Inverse** | 1.0 | 1.1 | 2.0 | 2.2 | 3.5 | 4.0 |
-| **Log** | 1.0 | 2.0 | 4.0 | 5.0 | 10.0 | 12.0 |
-| **Exp** | 1.0 | 1.5 | 3.5 | 4.5 | 9.0 | 11.0 |
-| **Acting on point** | 1.0 | 1.2 | 1.8 | 2.0 | 2.2 | 2.5 |
-| **Memory footprint** | n | 1 | 4 | 3 | 7 | 8 |
+| Operation            | RealSpace | SO(2) | SO(3) | SE(2) | SE(3) | Sim(3) |
+| -------------------- | --------- | ----- | ----- | ----- | ----- | ------ |
+| **Composition**      | 1.0       | 1.2   | 2.5   | 3.0   | 5.0   | 5.5    |
+| **Inverse**          | 1.0       | 1.1   | 2.0   | 2.2   | 3.5   | 4.0    |
+| **Log**              | 1.0       | 2.0   | 4.0   | 5.0   | 10.0  | 12.0   |
+| **Exp**              | 1.0       | 1.5   | 3.5   | 4.5   | 9.0   | 11.0   |
+| **Acting on point**  | 1.0       | 1.2   | 1.8   | 2.0   | 2.2   | 2.5    |
+| **Memory footprint** | n         | 1     | 4     | 3     | 7     | 8      |
 
 Note: These numbers are approximate and can vary based on hardware, compiler optimizations, and the specific data being processed.
 
@@ -164,7 +164,7 @@ Cosserat::SE3<double> joint1_to_joint2 = getJoint2Transform();
 Cosserat::SE3<double> joint2_to_endEffector = getEndEffectorTransform();
 
 // Computing end effector position in base frame
-Cosserat::SE3<double> base_to_endEffector = 
+Cosserat::SE3<double> base_to_endEffector =
     base_to_joint1.compose(joint1_to_joint2.compose(joint2_to_endEffector));
 ```
 
@@ -206,20 +206,22 @@ When implementing Lie groups, several important trade-offs must be considered:
 
 ### Representation Choice
 
-| Representation | Advantages | Disadvantages |
-|----------------|------------|--------------|
+| Representation      | Advantages                                                                                              | Disadvantages                                                                                        |
+| ------------------- | ------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
 | **Rotation Matrix** | - Direct geometric interpretation<br>- Easy to visualize<br>- Simple composition (just matrix multiply) | - 9 parameters for 3 DOF rotation<br>- Numerical drift (losing orthogonality)<br>- More memory usage |
-| **Quaternion** | - Compact (4 parameters for 3 DOF)<br>- Numerically stable<br>- Efficient composition | - Less intuitive<br>- Double cover (q = -q)<br>- Requires normalization |
-| **Angle-Axis** | - Minimal representation for SO(3)<br>- Direct physical interpretation | - Singularity at zero angle<br>- Less efficient for composition |
-| **Euler Angles** | - Intuitive for humans<br>- Minimal representation | - Gimbal lock<br>- Order-dependent<br>- Poor computational properties |
+| **Quaternion**      | - Compact (4 parameters for 3 DOF)<br>- Numerically stable<br>- Efficient composition                   | - Less intuitive<br>- Double cover (q = -q)<br>- Requires normalization                              |
+| **Angle-Axis**      | - Minimal representation for SO(3)<br>- Direct physical interpretation                                  | - Singularity at zero angle<br>- Less efficient for composition                                      |
+| **Euler Angles**    | - Intuitive for humans<br>- Minimal representation                                                      | - Gimbal lock<br>- Order-dependent<br>- Poor computational properties                                |
 
 ### Storage vs. Computation
 
 1. **Storage Efficiency**:
+
    - Storing minimal representations (e.g., quaternion for SO(3)) saves memory
    - Particularly important for large datasets or memory-constrained environments
 
 2. **Computational Efficiency**:
+
    - Caching frequently accessed representations (matrices, quaternions)
    - Pre-computing components for frequent operations
 
@@ -230,6 +232,7 @@ When implementing Lie groups, several important trade-offs must be considered:
 ### Template Parameters
 
 1. **Scalar Type**:
+
    - `float`: Faster, less memory, but lower precision
    - `double`: Better precision, standard for most applications
    - `long double`: Highest precision, but slower and more memory-intensive
@@ -241,6 +244,7 @@ When implementing Lie groups, several important trade-offs must be considered:
 ### Inheritance vs. Composition
 
 1. **Inheritance Approach**:
+
    - Useful for algorithms generic across different Lie groups
    - Enables polymorphism for heterogeneous collections
    - May have virtual function call overhead
@@ -253,10 +257,12 @@ When implementing Lie groups, several important trade-offs must be considered:
 ### Optimization Considerations
 
 1. **Expression Templates**:
+
    - Can improve performance by avoiding temporary objects
    - Increases compile time and code complexity
 
 2. **SIMD Optimization**:
+
    - Significant performance improvements, especially for batch operations
    - May require platform-specific code or intrinsics
 
@@ -267,6 +273,7 @@ When implementing Lie groups, several important trade-offs must be considered:
 ### API Design
 
 1. **Method Naming**:
+
    - `compose()` vs. operator `*` for group operation
    - `inverse()` vs. operator `-` for inverse element
    - Consistency with mathematical notation vs. programming conventions
@@ -274,4 +281,3 @@ When implementing Lie groups, several important trade-offs must be considered:
 2. **Error Handling**:
    - Assertions vs. exceptions vs. error returns
    - Performance impact of error checking in critical paths
-

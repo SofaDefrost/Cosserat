@@ -7,7 +7,7 @@
 * the Free Software Foundation; either version 2.1 of the License, or (at     *
 * your option) any later version.                                             *
 *                                                                             *
-* This program is distributed in the hope that it will be useful, but WITHOUT *
+* iThis program is distributed in the hope that it will be useful, but WITHOUT *
 * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or       *
 * FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License *
 * for more details.                                                           *
@@ -16,11 +16,10 @@
 * along with this program. If not, see <http://www.gnu.org/licenses/\>.        *
 ******************************************************************************/
 
-#ifndef SOFA_COMPONENT_COSSERAT_LIEGROUPS_REALSPACE_H
-#define SOFA_COMPONENT_COSSERAT_LIEGROUPS_REALSPACE_H
+#pragma once
 
-#include "LieGroupBase.h"
-#include "LieGroupBase.inl"
+#include <Cosserat/liegroups/LieGroupBase.h>
+#include <Cosserat/liegroups/LieGroupBase.inl>
 
 namespace sofa::component::cosserat::liegroups {
 
@@ -38,10 +37,11 @@ namespace sofa::component::cosserat::liegroups {
  * @tparam _Dim The dimension of the space
  */
 template<typename _Scalar, int _Dim>
-class RealSpace : public LieGroupBase<_Scalar, _Dim>,
-                 public LieGroupOperations<RealSpace<_Scalar, _Dim>> {
+class RealSpace : public LieGroupBase<_Scalar, std::integral_constant<int, _Dim>, _Dim, _Dim>
+                 //,public LieGroupOperations<RealSpace<_Scalar, _Dim>> 
+                 {
 public:
-    using Base = LieGroupBase<_Scalar, _Dim>;
+    using Base = LieGroupBase<_Scalar, std::integral_constant<int, _Dim>, _Dim, _Dim>;
     using Scalar = typename Base::Scalar;
     using Vector = typename Base::Vector;
     using Matrix = typename Base::Matrix;
@@ -140,6 +140,3 @@ private:
 
 } // namespace sofa::component::cosserat::liegroups
 
-#include "RealSpace.inl"
-
-#endif // SOFA_COMPONENT_COSSERAT_LIEGROUPS_REALSPACE_H
