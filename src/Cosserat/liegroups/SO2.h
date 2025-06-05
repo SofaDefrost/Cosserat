@@ -40,20 +40,18 @@ namespace sofa::component::cosserat::liegroups {
  *
  * @tparam _Scalar The scalar type (must be a floating-point type)
  */
-template <typename _Scalar, int _Dim = 2>
-class SO2 : public LieGroupBase<_Scalar, std::integral_constant<int, _Dim>, _Dim, _Dim>{
+template <typename _Scalar>
+class SO2 : public LieGroupBase<SO2<_Scalar>, _Scalar, 2, 1, 2> {
 public:
-  using Types = Types<_Scalar>;
-  using Base = LieGroupBase<_Scalar, std::integral_constant<int, _Dim>, _Dim, _Dim>;
-  using Scalar = typename Types::Scalar;
-  using Vector = typename Types::Vector2;
-  using Matrix = typename Types::Matrix2;
-  using TangentVector = typename Types::TangentVector2;
-  using AdjointMatrix = typename Types::AdjointMatrix2;
+  using Base = LieGroupBase<SO2<_Scalar>, _Scalar, 2, 1, 2>;
+  using Scalar = typename Base::Scalar;
+  using Vector = typename Base::Vector;
+  using Matrix = typename Base::Matrix;
+  using TangentVector = typename Base::TangentVector;
+  using AdjointMatrix = typename Base::AdjointMatrix;
 
   static constexpr int Dim = 2;
-  using Complex =
-      typename Types::Vector2; // Represents complex number as 2D vector
+  using Complex = Eigen::Vector2<_Scalar>; // Represents complex number as 2D vector
 
   /**
    * @brief Default constructor creates identity rotation (angle = 0)
@@ -63,7 +61,7 @@ public:
   /**
    * @brief Construct from angle (in radians)
    */
-  explicit SO2(const Scalar &angle) : m_angle(Types::normalizeAngle(angle)) {
+  explicit SO2(const Scalar &angle) : m_angle(Types<_Scalar>::normalizeAngle(angle)) {
     updateComplex();
   }
 
@@ -109,7 +107,7 @@ public:
   /**
    * @brief Inverse element (opposite rotation)
    */
-  SO2 inverse() const override { return SO2(-m_angle); }
+  SO2 inverse() const { return SO2(-m_angle); }
 
   /**
    * @brief Exponential map (angle to rotation)
@@ -122,7 +120,7 @@ public:
   /**
    * @brief Logarithmic map (rotation to angle)
    */
-  TangentVector log() const override {
+  TangentVector log() const {
     TangentVector result;
     result[0] = m_angle;
     return result;
@@ -132,12 +130,12 @@ public:
    * @brief Adjoint representation
    * For SO(2), this is simply the identity matrix as the group is abelian
    */
-  AdjointMatrix adjoint() const override { return AdjointMatrix::Identity(); }
+  AdjointMatrix adjoint() const { return AdjointMatrix::Identity(); }
 
   /**
    * @brief Group action on a point (rotate the point)
    */
-  Vector act(const Vector &point) const override {
+  Vector act(const Vector &point) const {
     Vector result;
     result(0) = m_complex(0) * point(0) - m_complex(1) * point(1);
     result(1) = m_complex(1) * point(0) + m_complex(0) * point(1);
@@ -159,15 +157,15 @@ public:
   /**
    * @brief Check if approximately equal to another rotation
    */
-  bool isApprox(const SO2 &other, const Scalar &eps = Types::epsilon()) const {
-    return Types::isZero(Types::normalizeAngle(m_angle - other.m_angle), eps);
+  bool isApprox(const SO2 &other, const Scalar &eps = Types<_Scalar>::epsilon()) const {
+    return Types<_Scalar>::isZero(Types<_Scalar>::normalizeAngle(m_angle - other.m_angle), eps);
   }
 
   /**
    * @brief Check if this is approximately the identity element
    */
-  bool isIdentity(const Scalar &eps = Types::epsilon()) const {
-    return Types::isZero(m_angle, eps);
+  bool isIdentity(const Scalar &eps = Types<_Scalar>::epsilon()) const {
+    return Types<_Scalar>::isZero(m_angle, eps);
   }
 
   /**
@@ -181,7 +179,7 @@ public:
   static SO2 random() {
     static std::random_device rd;
     static std::mt19937 gen(rd());
-    std::uniform_real_distribution<Scalar> dis(-Types::pi(), Types::pi());
+    std::uniform_real_distribution<Scalar> dis(-Types<_Scalar>::pi(), Types<_Scalar>::pi());
     return SO2(dis(gen));
   }
 
@@ -204,13 +202,41 @@ public:
    * @brief Set the rotation angle in radians
    */
   void setAngle(const Scalar &angle) {
-    m_angle = Types::normalizeAngle(angle);
+    m_angle = Types<_Scalar>::normalizeAngle(angle);
     updateComplex();
   }
 
   // Required CRTP methods:
-  static SO2<Scalar> computeIdentity() noexcept;
-  SO2<Scalar> computeInverse() const;
+  static SO2<Scalar> computeIdentity() noexcept { return SO2(); }
+  SO2<Scalar> computeInverse() const { return inverse(); }
+  static SO2<Scalar> computeExp(const TangentVector& algebra_element) { return exp(algebra_element); }
+  TangentVector computeLog() const { return log(); }
+  AdjointMatrix computeAdjoint() const { return adjoint(); }
+  bool computeIsApprox(const SO2& other, const Scalar& eps) const { return isApprox(other, eps); }
+  typename Base::ActionVector computeAction(const typename Base::ActionVector& point) const { return act(point); }
+  
+  /**
+   * @brief Hat operator - maps ℝ¹ to 2×2 skew-symmetric matrix
+   * @param omega Single scalar (rotation rate)
+   * @return 2×2 skew-symmetric matrix
+   */
+  static Matrix hat(const TangentVector& omega) {
+    Matrix result = Matrix::Zero();
+    result(0, 1) = -omega[0];
+    result(1, 0) = omega[0];
+    return result;
+  }
+  
+  /**
+   * @brief Vee operator - inverse of hat, maps 2×2 skew-symmetric matrix to ℝ¹
+   * @param matrix 2×2 skew-symmetric matrix
+   * @return Single scalar
+   */
+  static TangentVector vee(const Matrix& matrix) {
+    TangentVector result;
+    result[0] = matrix(1, 0);
+    return result;
+  }
 
   /**
    * @brief Get the rotation matrix representation
@@ -235,7 +261,7 @@ public:
   SO2 slerp(const SO2 &other, const Scalar &t) const {
     // For SO(2), SLERP reduces to linear interpolation of angles
     // with proper handling of angle wrapping
-    Scalar angle_diff = Types::normalizeAngle(other.m_angle - m_angle);
+    Scalar angle_diff = Types<_Scalar>::normalizeAngle(other.m_angle - m_angle);
     return SO2(m_angle + t * angle_diff);
   }
 
@@ -260,7 +286,7 @@ public:
   std::string toString() const {
     std::ostringstream oss;
     oss << "SO2(angle=" << m_angle << " rad, "
-        << (m_angle * Scalar(180) / Types::pi()) << " deg)";
+        << (m_angle * Scalar(180) / Types<_Scalar>::pi()) << " deg)";
     return oss.str();
   }
 

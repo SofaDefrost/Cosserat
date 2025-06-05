@@ -77,6 +77,10 @@ public:
   /**
    * @brief Group composition (rotation composition)
    */
+  SO3 operator*(const SO3 &other) const noexcept {
+    return SO3(m_quat * other.m_quat);
+  }
+  
   SO3 compose(const SO3 &other) const noexcept {
     return SO3(m_quat * other.m_quat);
   }
@@ -84,12 +88,33 @@ public:
   /**
    * @brief Inverse element (opposite rotation)
    */
-  SO3 computeInverse() const override { return SO3(m_quat.conjugate()); }
+  SO3 inverse() const { return SO3(m_quat.conjugate()); }
+  
+  SO3 computeInverse() const { return SO3(m_quat.conjugate()); }
 
   /**
    * @brief Exponential map from Lie algebra to SO(3)
    * @param omega Angular velocity vector in ℝ³
    */
+  static SO3 exp(const TangentVector &omega) noexcept {
+    const Scalar theta = omega.norm();
+
+    if (theta < Types<Scalar>::epsilon()) {
+      // For small rotations, use first-order approximation
+      return SO3(Quaternion(Scalar(1), omega.x() * Scalar(0.5),
+                            omega.y() * Scalar(0.5), omega.z() * Scalar(0.5)));
+    }
+
+    // Use Rodrigues' formula
+    const Vector axis = omega / theta;
+    const Scalar half_theta = theta * Scalar(0.5);
+    const Scalar sin_half_theta = std::sin(half_theta);
+
+    return SO3(Quaternion(std::cos(half_theta), axis.x() * sin_half_theta,
+                          axis.y() * sin_half_theta,
+                          axis.z() * sin_half_theta));
+  }
+  
   static SO3 computeExp(const TangentVector &omega) noexcept {
     const Scalar theta = omega.norm();
 
@@ -113,7 +138,21 @@ public:
    * @brief Logarithmic map from SO(3) to Lie algebra
    * @return Angular velocity vector in ℝ³
    */
-  TangentVector computeLog() const override {
+  TangentVector log() const {
+    // Extract angle-axis representation
+    Eigen::AngleAxis<Scalar> aa(m_quat);
+    const Scalar theta = aa.angle();
+
+    if (theta < Types<Scalar>::epsilon()) {
+      // For small rotations, use first-order approximation
+      return Vector(m_quat.x() * Scalar(2), m_quat.y() * Scalar(2),
+                    m_quat.z() * Scalar(2));
+    }
+
+    return aa.axis() * theta;
+  }
+  
+  TangentVector computeLog() const {
     // Extract angle-axis representation
     Eigen::AngleAxis<Scalar> aa(m_quat);
     const Scalar theta = aa.angle();
@@ -131,21 +170,34 @@ public:
    * @brief Adjoint representation
    * For SO(3), this is the rotation matrix itself
    */
-  AdjointMatrix computeAdjoint() const noexcept override { return matrix(); }
+  AdjointMatrix adjoint() const noexcept { return matrix(); }
+  
+  AdjointMatrix computeAdjoint() const noexcept { return matrix(); }
 
   /**
    * @brief Group action on a point (rotate the point)
    */
-  Vector computeAction(const Vector &point) const noexcept override {
+  Vector act(const Vector &point) const noexcept {
+    return m_quat * point;
+  }
+  
+  Vector computeAction(const Vector &point) const noexcept {
     return m_quat * point;
   }
 
   /**
    * @brief Check if approximately equal to another rotation
    */
+  bool isApprox(const SO3 &other,
+                const Scalar &eps = Types<Scalar>::epsilon()) const noexcept {
+    // Handle antipodal representation of same rotation
+    return m_quat.coeffs().isApprox(other.m_quat.coeffs(), eps) ||
+           m_quat.coeffs().isApprox(-other.m_quat.coeffs(), eps);
+  }
+  
   bool computeIsApprox(
       const SO3 &other,
-      const Scalar &eps = Types<Scalar>::epsilon()) const noexcept override {
+      const Scalar &eps = Types<Scalar>::epsilon()) const noexcept {
     // Handle antipodal representation of same rotation
     return m_quat.coeffs().isApprox(other.m_quat.coeffs(), eps) ||
            m_quat.coeffs().isApprox(-other.m_quat.coeffs(), eps);
@@ -154,6 +206,8 @@ public:
   /**
    * @brief Get the identity element
    */
+  static SO3 identity() noexcept { return SO3(); }
+  
   static SO3 computeIdentity() noexcept { return SO3(); }
 
   /**
@@ -169,12 +223,12 @@ public:
   /**
    * @brief Compute distance between two rotations using the geodesic metric
    */
-  Scalar distance(const SO3 &other) const noexcept override;
+  Scalar distance(const SO3 &other) const noexcept;
 
   /**
    * @brief Interpolate between two rotations using SLERP
    */
-  SO3 interpolate(const SO3 &other, const Scalar &t) const noexcept override;
+  SO3 interpolate(const SO3 &other, const Scalar &t) const noexcept;
 
   /**
    * @brief Baker-Campbell-Hausdorff formula for so(3)
@@ -190,7 +244,7 @@ public:
   /**
    * @brief Differential of the logarithm map
    */
-  AdjointMatrix dlog() const override;
+  AdjointMatrix dlog() const;
 
   /**
    * @brief Adjoint representation of Lie algebra element

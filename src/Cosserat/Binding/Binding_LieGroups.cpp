@@ -584,3 +584,148 @@ template<typename... Groups>
 using Bundled = Bundle<Groups...>;
 
 } // namespace sofa::component::cosserat::liegroups
+
+// Python bindings implementation
+#include "Binding_LieGroups.h"
+#include <pybind11/pybind11.h>
+#include <pybind11/eigen.h>
+#include <pybind11/stl.h>
+#include <Cosserat/liegroups/SO2.h>
+#include <Cosserat/liegroups/SO3.h>
+#include <Cosserat/liegroups/SE2.h>
+#include <Cosserat/liegroups/SE3.h>
+#include <Cosserat/liegroups/SE3.inl>
+#include <Cosserat/liegroups/SGal3.h>
+#include <Cosserat/liegroups/SE23.h>
+
+namespace py = pybind11;
+using namespace sofa::component::cosserat::liegroups;
+
+namespace sofapython3 {
+
+void moduleAddSO2(py::module &m) {
+    // SO2 bindings
+    py::class_<SO2<double>>(m, "SO2")
+        .def(py::init<>())
+        .def(py::init<double>())
+        .def("__mul__", &SO2<double>::operator*)
+        .def("inverse", &SO2<double>::inverse)
+        .def("matrix", &SO2<double>::matrix)
+        .def("angle", &SO2<double>::angle)
+        .def("exp", &SO2<double>::exp)
+        .def("log", &SO2<double>::log)
+        .def("adjoint", &SO2<double>::adjoint)
+        .def("isApprox", &SO2<double>::isApprox)
+        .def_static("identity", &SO2<double>::identity)
+        .def_static("hat", &SO2<double>::hat)
+        .def("act", static_cast<typename SO2<double>::Vector(SO2<double>::*)(const typename SO2<double>::Vector&) const>(&SO2<double>::act));
+}
+
+void moduleAddSO3(py::module &m) {
+    // SO3 bindings
+    py::class_<SO3<double>>(m, "SO3")
+        .def(py::init<>())
+        .def(py::init<double, const Eigen::Vector3d&>())
+        .def(py::init<const Eigen::Quaterniond&>())
+        .def(py::init<const Eigen::Matrix3d&>())
+        .def("__mul__", &SO3<double>::operator*)
+        .def("inverse", &SO3<double>::inverse)
+        .def("matrix", &SO3<double>::matrix)
+        .def("quaternion", &SO3<double>::quaternion)
+        .def("exp", &SO3<double>::exp)
+        .def("log", &SO3<double>::log)
+        .def("adjoint", &SO3<double>::adjoint)
+        .def("isApprox", &SO3<double>::isApprox)
+        .def_static("identity", &SO3<double>::identity)
+        .def_static("hat", &SO3<double>::hat)
+        .def_static("vee", &SO3<double>::vee)
+        .def("act", static_cast<typename SO3<double>::Vector(SO3<double>::*)(const typename SO3<double>::Vector&) const>(&SO3<double>::computeAction));
+}
+
+void moduleAddSE2(py::module &m) {
+    // SE2 bindings  
+    py::class_<SE2<double>>(m, "SE2")
+        .def(py::init<>())
+        .def(py::init<const SO2<double>&, const Eigen::Vector2d&>())
+        .def("__mul__", &SE2<double>::operator*)
+        .def("inverse", &SE2<double>::inverse)
+        .def("matrix", &SE2<double>::matrix)
+        .def("rotation", static_cast<const SO2<double>&(SE2<double>::*)() const>(&SE2<double>::rotation))
+        .def("translation", static_cast<const typename SE2<double>::Vector2&(SE2<double>::*)() const>(&SE2<double>::translation))
+        .def("exp", &SE2<double>::exp)
+        .def("log", &SE2<double>::log)
+        .def("adjoint", &SE2<double>::adjoint)
+        .def("isApprox", &SE2<double>::isApprox)
+        .def_static("identity", &SE2<double>::identity)
+        .def("act", static_cast<typename SE2<double>::Vector2(SE2<double>::*)(const typename SE2<double>::Vector2&) const>(&SE2<double>::act));
+}
+
+void moduleAddSE3(py::module &m) {
+    // SE3 bindings with enhanced functionality
+    py::class_<SE3<double>>(m, "SE3")
+        .def(py::init<>())
+        .def(py::init<const SO3<double>&, const Eigen::Vector3d&>())
+        .def(py::init<const Eigen::Matrix4d&>())
+        .def("__mul__", &SE3<double>::operator*)
+        .def("inverse", &SE3<double>::inverse)
+        .def("matrix", &SE3<double>::matrix)
+        .def("rotation", static_cast<const SO3<double>&(SE3<double>::*)() const>(&SE3<double>::rotation))
+        .def("translation", static_cast<const typename SE3<double>::Vector3&(SE3<double>::*)() const>(&SE3<double>::translation))
+        .def("exp", &SE3<double>::exp)
+        .def("log", &SE3<double>::log)
+        .def("adjoint", &SE3<double>::adjoint)
+        .def("isApprox", &SE3<double>::isApprox)
+        .def_static("identity", &SE3<double>::Identity)
+        // Add the hat operator (maps 6D vector to 4x4 matrix)
+        .def_static("hat", [](const Eigen::Matrix<double, 6, 1>& xi) {
+            return dualMatrix<double>(xi);
+        }, "Map 6D vector to 4x4 matrix representation (hat operator)")
+        // Add co-adjoint (transpose of adjoint)
+        .def("co_adjoint", [](const SE3<double>& self) {
+            return self.adjoint().transpose();
+        }, "Co-adjoint representation (transpose of adjoint)")
+        .def("coadjoint", [](const SE3<double>& self) {
+            return self.adjoint().transpose();
+        }, "Co-adjoint representation (alias for co_adjoint)")
+        .def("act", static_cast<typename SE3<double>::Vector3(SE3<double>::*)(const typename SE3<double>::Vector3&) const>(&SE3<double>::act))
+        // Baker-Campbell-Hausdorff formula
+        .def_static("BCH", &SE3<double>::BCH, "Baker-Campbell-Hausdorff formula");
+}
+
+void moduleAddSGal3(py::module &m) {
+    // SGal3 bindings (placeholder for now)
+    // Implementation depends on the actual SGal3 class structure
+}
+
+void moduleAddSE23(py::module &m) {
+    // SE23 bindings (placeholder for now)
+    // Implementation depends on the actual SE23 class structure
+}
+
+void moduleAddBundle(py::module &m) {
+    // Bundle bindings (placeholder for now)
+    // This would require template instantiation for specific Bundle types
+    // For example: Bundle<SE3<double>, RealSpace<double, 6>>
+}
+
+void moduleAddLieGroupUtils(py::module &m) {
+    // Utility functions for interpolation, etc.
+    // Note: slerp function would need to be implemented in the Lie group classes
+    // m.def("slerp", [](const SO3<double>& a, const SO3<double>& b, double t) {
+    //     return a.interpolate(b, t);
+    // }, "Spherical linear interpolation for SO3");
+}
+
+void moduleAddLieGroups(py::module &m) {
+    // Add all Lie group bindings
+    moduleAddSO2(m);
+    moduleAddSO3(m);
+    moduleAddSE2(m);
+    moduleAddSE3(m);
+    moduleAddSGal3(m);
+    moduleAddSE23(m);
+    moduleAddBundle(m);
+    moduleAddLieGroupUtils(m);
+}
+
+} // namespace sofapython3

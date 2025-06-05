@@ -23,7 +23,7 @@
 #include <Cosserat/liegroups/LieGroupBase.h>   // Then the base class interface
 #include <Cosserat/liegroups/LieGroupBase.inl> // Then the base class interface
 #include <Cosserat/liegroups/SE3.h>            // Then the base class interface
-#include <eigen3/Eigen/Geometry.h>
+//#include <eigen3/Eigen/Geometry.h>
 
 namespace sofa::component::cosserat::liegroups {
 
@@ -43,11 +43,12 @@ namespace sofa::component::cosserat::liegroups {
  *
  * @tparam _Scalar The scalar type (must be a floating-point type)
  */
-template <typename _Scalar>
-class SE23 : public LieGroupBase<_Scalar, 9>,
-             public LieGroupOperations<SE23<_Scalar>> {
+template <typename _Scalar, int _Dim = 9>
+class SE23 : public LieGroupBase<_Scalar, std::integral_constant<int, _Dim>, 3, 3>
+             //,public LieGroupOperations<SE23<_Scalar>> 
+             {
 public:
-  using Base = LieGroupBase<_Scalar, 9>;
+  using Base = LieGroupBase<_Scalar, std::integral_constant<int, _Dim>, 3, 3>;
   using Scalar = typename Base::Scalar;
   using Vector = typename Base::Vector;
   using Matrix = typename Base::Matrix;

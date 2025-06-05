@@ -45,14 +45,13 @@ namespace sofa::component::cosserat::liegroups {
  * @tparam _Scalar The scalar type (must be a floating-point type)
  * @tparam _Dim The dimension of the ambient space (fixed at 3 for SE(2))
  */
-template <typename _Scalar, int _Dim = 3>
-class SE2 : public LieGroupBase<_Scalar, std::integral_constant<int, 3>, _Dim, _Dim> {
+template <typename _Scalar>
+class SE2 : public LieGroupBase<SE2<_Scalar>, _Scalar, 3, 3, 2> {
 public:
   // Type safety checks
   static_assert(std::is_floating_point_v<_Scalar>, "Scalar type must be floating point");
-  static_assert(_Dim == 3, "SE(2) requires ambient dimension of 3");
 
-  using Base = LieGroupBase<_Scalar, std::integral_constant<int, 3>, _Dim, _Dim>;
+  using Base = LieGroupBase<SE2<_Scalar>, _Scalar, 3, 3, 2>;
   using Scalar = typename Base::Scalar;
   using Vector = typename Base::Vector;
   using Matrix = typename Base::Matrix;
@@ -152,7 +151,7 @@ public:
    * @brief Inverse element (inverse transformation)
    * Implements: (R,t)⁻¹ = (R^T, -R^T t)
    */
-  SE2 inverse() const override {
+  SE2 inverse() const {
     SO2<Scalar> inv_rot = m_rotation.inverse();
     return SE2(inv_rot, -(inv_rot.act(m_translation)));
   }
@@ -167,7 +166,7 @@ public:
    * exp(ξ) = [exp_SO2(φ), V(φ)ρ; 0, 1]
    * where V(φ) = (sin φ / φ)I + ((1-cos φ)/φ²)K with K = [0 -1; 1 0]
    */
-  SE2 exp(const TangentVector& algebra_element) const override {
+  static SE2 exp(const TangentVector& algebra_element) {
     const Scalar& theta = algebra_element[2];
     const Vector2 rho(algebra_element[0], algebra_element[1]);
 
@@ -194,7 +193,7 @@ public:
    * @brief Logarithmic map from SE(2) to Lie algebra se(2)
    * @return Vector in ℝ³ representing (vx, vy, ω)
    */
-  TangentVector log() const override {
+  TangentVector log() const {
     const Scalar theta = m_rotation.angle();
     TangentVector result;
 
@@ -238,7 +237,7 @@ public:
    * @brief Adjoint representation Ad_g: se(2) → se(2)
    * For g = (R,t), Ad_g = [R, [t]×; 0, 1] where [t]× is the skew-symmetric matrix
    */
-  AdjointMatrix adjoint() const override {
+  AdjointMatrix adjoint() const {
     AdjointMatrix Ad = AdjointMatrix::Zero();
     
     // Rotation block (top-left 2x2)
@@ -268,7 +267,7 @@ public:
    * @brief Group action on a 3D vector (treats as homogeneous coordinates)
    * For [x, y, z]^T, applies SE(2) to [x, y] and preserves z
    */
-  Vector act(const Vector& point) const override {
+  Vector act(const Vector& point) const {
     Vector2 transformed = act(point.template head<2>());
     Vector result;
     result << transformed, point[2];
@@ -367,12 +366,12 @@ public:
   /**
    * @brief Get the dimension of the Lie algebra (3 for SE(2))
    */
-  int algebraDimension() const override { return DOF; }
+  static constexpr int algebraDimension() { return DOF; }
 
   /**
    * @brief Get the dimension of the space the group acts on (2 for SE(2))
    */
-  int actionDimension() const override { return ActionDim; }
+  static constexpr int actionDimension() { return ActionDim; }
 
   /**
    * @brief Access the rotation component
@@ -439,6 +438,15 @@ private:
 
   SO2<Scalar> m_rotation;    ///< Rotation component
   Vector2 m_translation;     ///< Translation component
+
+  // Required CRTP methods:
+  static SE2<Scalar> computeIdentity() noexcept { return SE2(); }
+  SE2<Scalar> computeInverse() const { return inverse(); }
+  static SE2<Scalar> computeExp(const TangentVector& algebra_element) { return exp(algebra_element); }
+  TangentVector computeLog() const { return log(); }
+  AdjointMatrix computeAdjoint() const { return adjoint(); }
+  bool computeIsApprox(const SE2& other, const Scalar& eps) const { return isApprox(other, eps); }
+  typename Base::ActionVector computeAction(const typename Base::ActionVector& point) const { return act(point); }
 };
 
 // ========== Type Aliases ==========
