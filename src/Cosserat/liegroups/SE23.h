@@ -23,7 +23,7 @@
 #include <Cosserat/liegroups/LieGroupBase.h>   // Then the base class interface
 #include <Cosserat/liegroups/LieGroupBase.inl> // Then the base class interface
 #include <Cosserat/liegroups/SE3.h>            // Then the base class interface
-#include <Eigen/Geometry.h>
+#include <eigen3/Eigen/Geometry.h>
 
 namespace sofa::component::cosserat::liegroups {
 

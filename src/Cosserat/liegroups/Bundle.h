@@ -18,13 +18,13 @@
 
 #pragma once
 
-#include "LieGroupBase.h"
-#include "LieGroupBase.inl"
-#include "Types.h"
-#include "SE3.h"
-#include "RealSpace.h"
-#include <SE2.h>
-#include "SO2.h"
+#include <Cosserat/liegroups/Types.h>
+#include <Cosserat/liegroups/LieGroupBase.h>
+#include <Cosserat/liegroups/LieGroupBase.inl>
+#include <Cosserat/liegroups/SE3.h>
+#include <Cosserat/liegroups/RealSpace.h>
+#include <Cosserat/liegroups/SE2.h>
+#include <Cosserat/liegroups/SO2.h>
 #include <tuple>
 #include <type_traits>
 #include <array>

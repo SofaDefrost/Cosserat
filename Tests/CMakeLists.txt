@@ -54,6 +54,26 @@ if (INTEGRATION_TEST)
     add_test(NAME ${PROJECT_NAME}_integration COMMAND ${PROJECT_NAME}_integration)
 endif()
 
+# Add Python binding tests if Python is available
+find_package(Python3 COMPONENTS Interpreter)
+if(Python3_FOUND AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/unit/test_cosserat_bindings.py")
+    # Add Python test
+    add_test(
+        NAME CosseratPythonBindings
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/unit/test_cosserat_bindings.py
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    )
+
+    # Set environment for Python tests
+    set_tests_properties(CosseratPythonBindings PROPERTIES
+        ENVIRONMENT "PYTHONPATH=${CMAKE_BINARY_DIR}/lib/python3/site-packages:$ENV{PYTHONPATH}"
+    )
+
+    message(STATUS "Added Python binding tests")
+else()
+    message(STATUS "Python interpreter not found or test file missing - Python tests disabled")
+endif()
+
 # Add benchmarks subdirectory if benchmarks are enabled
 if(COSSERAT_BUILD_BENCHMARKS)
     # Create benchmarks CMakeLists.txt if it doesn't exist
