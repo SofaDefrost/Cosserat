@@ -1,5 +1,26 @@
 # -*- coding: utf-8 -*-
+"""
+Tutorial 02: Cosserat Beam with Forces
+=====================================
 
+This tutorial builds on Tutorial 01 by adding:
+- Gravity forces
+- Applied forces at the beam tip
+- Mass distribution
+- Solver configuration for dynamic simulation
+
+Key improvements over manual approach:
+- CosseratGeometry handles all geometry calculations
+- Easy to modify beam parameters
+- Clean, readable code structure
+"""
+
+import sys
+import os
+# Add the python package to the path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'python'))
+
+from cosserat import BeamGeometryParameters, CosseratGeometry
 from tutorial_01_basic_beam import _add_rigid_base, _add_cosserat_state, _add_cosserat_frame
 
 stiffness_param: float = 1.e10
@@ -7,19 +28,23 @@ beam_radius: float = 1.
 
 
 def createScene(root_node):
-    root_node.addObject('RequiredPlugin', name='Sofa.Component.LinearSolver.Direct') # Needed to use components [SparseLDLSolver]  
-    root_node.addObject('RequiredPlugin', name='Sofa.Component.Mass') # Needed to use components [UniformMass]  
-    root_node.addObject('RequiredPlugin', name='Sofa.Component.ODESolver.Backward') # Needed to use components [EulerImplicitSolver]  
-    root_node.addObject('RequiredPlugin', name='Sofa.Component.SolidMechanics.Spring') # Needed to use components [RestShapeSpringsForceField]  
-    root_node.addObject('RequiredPlugin', name='Sofa.Component.StateContainer') # Needed to use components [MechanicalObject]  
-    root_node.addObject('RequiredPlugin', name='Sofa.Component.Visual') # Needed to use components [VisualStyle]
+    """Create a Cosserat beam scene with forces and dynamics."""
+    # Load required plugins
+    root_node.addObject('RequiredPlugin', name='Sofa.Component.LinearSolver.Direct')
+    root_node.addObject('RequiredPlugin', name='Sofa.Component.Mass')
+    root_node.addObject('RequiredPlugin', name='Sofa.Component.ODESolver.Backward')
+    root_node.addObject('RequiredPlugin', name='Sofa.Component.SolidMechanics.Spring')
+    root_node.addObject('RequiredPlugin', name='Sofa.Component.SolidMechanics.FEM.Elastic')
+    root_node.addObject('RequiredPlugin', name='Sofa.Component.StateContainer')
+    root_node.addObject('RequiredPlugin', name='Sofa.Component.Visual')
     root_node.addObject("RequiredPlugin", name='Cosserat')
 
+    # Configure scene with dynamics
     root_node.addObject(
         "VisualStyle",
         displayFlags="showBehaviorModels showCollisionModels showMechanicalMappings",
     )
-    root_node.gravity = [0, 0.0, 0]
+    root_node.gravity = [0, -9.81, 0]  # Add gravity!
     root_node.addObject(
         "EulerImplicitSolver",
         firstOrder="0",
@@ -28,53 +53,55 @@ def createScene(root_node):
     )
     root_node.addObject("SparseLDLSolver", name="solver")
 
-    # Add rigid base
+    # === NEW APPROACH: Use CosseratGeometry with more sections for smoother dynamics ===
+    beam_geometry_params = BeamGeometryParameters(
+        beam_length=30.0,   # Same beam length
+        nb_section=6,       # 6 sections for good physics resolution
+        nb_frames=32        # 32 frames for smooth visualization
+    )
+    
+    # Create geometry object
+    beam_geometry = CosseratGeometry(beam_geometry_params)
+    
+    print(f"🚀 Created dynamic beam with:")
+    print(f"   - Length: {beam_geometry.get_beam_length()}")
+    print(f"   - Sections: {beam_geometry.get_number_of_sections()}")
+    print(f"   - Frames: {beam_geometry.get_number_of_frames()}")
+    print(f"   - Mass will be distributed across frames")
+
+    # Create rigid base
     base_node = _add_rigid_base(root_node)
 
-    # build beam geometry
-    nb_sections = 6
-    beam_length = 30
-    length_s = beam_length / float(nb_sections)
-    bending_states = []
-    list_sections_length = []
-    temp = 0.0  # where to start the base position
-    section_curv_abs = [0.0]  # section/segment curve abscissa
+    # Create bending states with a curve (last section has more bending)
+    custom_bending_states = []
+    for i in range(beam_geometry.get_number_of_sections()):
+        if i == beam_geometry.get_number_of_sections() - 1:
+            # Last section has more bending
+            custom_bending_states.append([0, 0.0, 0.2])
+        else:
+            # Other sections have slight bending
+            custom_bending_states.append([0, 0.0, 0.1])
+    
+    # Create cosserat state using geometry
+    bending_node = _add_cosserat_state(root_node, beam_geometry, custom_bending_states)
 
-    for i in range(nb_sections):
-        bending_states.append([0, 0.0, 0.2])  # torsion, y_bending, z_bending
-        list_sections_length.append((((i + 1) * length_s) - i * length_s))
-        temp += list_sections_length[i]
-        section_curv_abs.append(temp)
-    bending_states[nb_sections - 1] = [0, 0.0, 0.2]
-
-    # call add cosserat state and force field
-    bending_node = _add_cosserat_state(root_node, bending_states, list_sections_length)
-
-    # comment : ???
-    nb_frames = 32
-    length_f = beam_length / float(nb_frames)
-    cosserat_G_frames = []
-    frames_curv_abs = []
-    cable_position_f = []  # need sometimes for drawing segment
-    x, y, z = 0, 0, 0
-
-    for i in range(nb_frames):
-        sol = i * length_f
-        cosserat_G_frames.append([sol + x, y, z, 0, 0, 0, 1])
-        cable_position_f.append([sol + x, y, z])
-        frames_curv_abs.append(sol + x)
-
-    cosserat_G_frames.append([beam_length + x, y, z, 0, 0, 0, 1])
-    cable_position_f.append([beam_length + x, y, z])
-    frames_curv_abs.append(beam_length + x)
-
-    _add_cosserat_frame(
-        base_node,
-        bending_node,
-        cosserat_G_frames,
-        section_curv_abs,
-        frames_curv_abs,
-        beam_radius,
+    # Create cosserat frame with mass (important for dynamics!)
+    frame_node = _add_cosserat_frame(base_node, bending_node, beam_geometry, beam_mass=5.0)
+    
+    # === ADD FORCES ===
+    # Add a force at the tip of the beam
+    tip_frame_index = beam_geometry.get_number_of_frames()  # Last frame
+    applied_force = [-10.0, 0.0, 0.0, 0, 0, 0]  # Force in -X direction
+    
+    frame_node.addObject(
+        'ConstantForceField', 
+        name='tipForce',
+        indices=[tip_frame_index],
+        forces=[applied_force],
+        showArrowSize=1e-1,
+        arrowSizeCoeff=1e-3
     )
+    
+    print(f"💪 Applied force {applied_force[:3]} at frame {tip_frame_index}")
 
     return root_node
