@@ -19,10 +19,10 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import Sofa
 from numpy import array, ndarray
 
-from useful.geometry import CosseratGeometry, generate_edge_list
-from useful.header import addHeader, addVisual
-from useful.params import BeamGeometryParameters, Parameters
-from useful.utils import (addEdgeCollision, addPointsCollision,
+from .geometry import CosseratGeometry, generate_edge_list
+from .header import addHeader, addVisual
+from .params import BeamGeometryParameters, Parameters
+from .utils import (addEdgeCollision, addPointsCollision,
                           create_rigid_node)
 
 

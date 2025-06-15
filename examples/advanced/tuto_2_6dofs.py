@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
-from useful.header import addHeader, addSolverNode, addVisual
+import sys
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'python'))
+from cosserat import addHeader, addVisual
+from cosserat.header import addSolverNode
 
 stiffness_param = 1.e10
 beam_radius = 1.

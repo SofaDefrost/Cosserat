@@ -27,7 +27,7 @@ from typing import Dict, List, Optional, Tuple, Union, cast
 import numpy as np
 from numpy.typing import NDArray
 
-from useful.params import BeamGeometryParameters
+from .params import BeamGeometryParameters
 
 
 def calculate_beam_parameters(beamGeoParams: BeamGeometryParameters) -> Tuple[List[List[float]], List[float], List[float]]:
@@ -369,3 +369,29 @@ class CosseratGeometry:
             "cable_positions": self.cable_positions,
             "edge_list": self.edge_list
         }
+    
+    # Compatibility properties for backward compatibility with existing code
+    @property
+    def cable_positionF(self) -> List[List[float]]:
+        """Backward compatibility property for cable_positions."""
+        return self.cable_positions
+    
+    @property
+    def sectionsLengthList(self) -> List[float]:
+        """Backward compatibility property for section_lengths."""
+        return self.section_lengths
+    
+    @property
+    def framesF(self) -> List[List[float]]:
+        """Backward compatibility property for frames."""
+        return self.frames
+    
+    @property
+    def curv_abs_inputS(self) -> List[float]:
+        """Backward compatibility property for curv_abs_sections."""
+        return self.curv_abs_sections
+    
+    @property
+    def curv_abs_outputF(self) -> List[float]:
+        """Backward compatibility property for curv_abs_frames."""
+        return self.curv_abs_frames
