@@ -395,3 +395,153 @@ class CosseratGeometry:
     def curv_abs_outputF(self) -> List[float]:
         """Backward compatibility property for curv_abs_frames."""
         return self.curv_abs_frames
+    
+    # === NEW ADVANCED FEATURES ===
+    
+    def create_curved_beam(self, curvature_function=None, amplitude=1.0):
+        """Create a curved beam by applying a curvature function.
+        
+        Parameters:
+            curvature_function: Function that takes position (0-1) and returns curvature [kx, ky, kz]
+                              If None, creates a simple sinusoidal curve
+            amplitude: Scaling factor for the curvature
+        
+        Returns:
+            Updated bending states for curved beam
+        """
+        if curvature_function is None:
+            # Default: sinusoidal curve in Y direction
+            def curvature_function(s):
+                return [0.0, amplitude * np.sin(np.pi * s), 0.0]
+        
+        new_bending_states = []
+        for i in range(len(self.bendingState)):
+            # Normalize position along beam (0 to 1)
+            s = i / (len(self.bendingState) - 1) if len(self.bendingState) > 1 else 0
+            curvature = curvature_function(s)
+            new_bending_states.append(curvature)
+        
+        self.bendingState = new_bending_states
+        return new_bending_states
+    
+    def create_helical_beam(self, pitch=1.0, radius=0.5, turns=2.0):
+        """Create a helical (spring-like) beam.
+        
+        Parameters:
+            pitch: Distance between turns along the beam axis
+            radius: Radius of the helix
+            turns: Number of complete turns
+        
+        Returns:
+            Updated bending states for helical beam
+        """
+        new_bending_states = []
+        for i in range(len(self.bendingState)):
+            # Normalized position (0 to 1)
+            s = i / (len(self.bendingState) - 1) if len(self.bendingState) > 1 else 0
+            
+            # Helix parameters
+            angle = 2 * np.pi * turns * s
+            curvature_y = radius * np.cos(angle)
+            curvature_z = radius * np.sin(angle)
+            
+            new_bending_states.append([0.0, curvature_y, curvature_z])
+        
+        self.bendingState = new_bending_states
+        return new_bending_states
+    
+    def create_custom_shape(self, control_points):
+        """Create a beam following custom control points using spline interpolation.
+        
+        Parameters:
+            control_points: List of [x, y, z] points defining the desired beam shape
+        
+        Returns:
+            Updated frames following the control points
+        """
+        if len(control_points) < 2:
+            raise ValueError("Need at least 2 control points")
+        
+        # Simple linear interpolation between control points
+        new_frames = []
+        new_cable_positions = []
+        
+        for i in range(len(self.frames)):
+            # Normalized position (0 to 1)
+            t = i / (len(self.frames) - 1) if len(self.frames) > 1 else 0
+            
+            # Find which segment we're in
+            segment_length = 1.0 / (len(control_points) - 1)
+            segment_index = min(int(t / segment_length), len(control_points) - 2)
+            local_t = (t - segment_index * segment_length) / segment_length
+            
+            # Linear interpolation between control points
+            p1 = control_points[segment_index]
+            p2 = control_points[segment_index + 1]
+            
+            pos = [
+                p1[0] + local_t * (p2[0] - p1[0]),
+                p1[1] + local_t * (p2[1] - p1[1]),
+                p1[2] + local_t * (p2[2] - p1[2])
+            ]
+            
+            # Keep original orientation for now
+            new_frames.append([pos[0], pos[1], pos[2], 0, 0, 0, 1])
+            new_cable_positions.append(pos)
+        
+        self.frames = new_frames
+        self.cable_positions = new_cable_positions
+        self.edge_list = generate_edge_list(self.cable_positions)
+        
+        return new_frames
+    
+    def apply_twist(self, total_twist_radians=np.pi):
+        """Apply a twist along the beam length.
+        
+        Parameters:
+            total_twist_radians: Total twist from base to tip in radians
+        
+        Returns:
+            Updated bending states with twist
+        """
+        new_bending_states = []
+        for i in range(len(self.bendingState)):
+            # Current bending state
+            current_state = self.bendingState[i].copy()
+            
+            # Add twist component (first component is torsion)
+            twist_per_section = total_twist_radians / len(self.bendingState)
+            current_state[0] = twist_per_section
+            
+            new_bending_states.append(current_state)
+        
+        self.bendingState = new_bending_states
+        return new_bending_states
+    
+    def get_beam_statistics(self):
+        """Get comprehensive statistics about the beam geometry.
+        
+        Returns:
+            Dictionary with various beam measurements and properties
+        """
+        total_length = sum(self.section_lengths)
+        avg_section_length = total_length / len(self.section_lengths)
+        
+        # Calculate total curvature
+        total_curvature = 0
+        for state in self.bendingState:
+            # Euclidean norm of bending vector (ignoring torsion)
+            curvature_magnitude = np.sqrt(state[1]**2 + state[2]**2)
+            total_curvature += curvature_magnitude
+        
+        return {
+            'total_length': total_length,
+            'average_section_length': avg_section_length,
+            'min_section_length': min(self.section_lengths),
+            'max_section_length': max(self.section_lengths),
+            'total_curvature': total_curvature,
+            'average_curvature': total_curvature / len(self.bendingState),
+            'number_of_sections': len(self.bendingState),
+            'number_of_frames': len(self.frames),
+            'frame_spacing': total_length / (len(self.frames) - 1) if len(self.frames) > 1 else 0
+        }
