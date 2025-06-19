@@ -12,10 +12,13 @@ __version__ = "1.0.0"
 __copyright__ = "(c) 2020,Inria"
 __date__ = "july 2023"
 
-from stlib3.physics.deformable import ElasticMaterialObject
-from stlib3.physics.constraints import FixedBox
 import os
-from useful.params import ContactParameters as DefaultContactParams
+
+from stlib3.physics.constraints import FixedBox
+from stlib3.physics.deformable import ElasticMaterialObject
+
+from .params import ContactParameters as DefaultContactParams
+
 
 def show_mecha_visual(node, show=True):
     node.showObject = show

@@ -2,9 +2,9 @@
 Cosserat Beam Parameters Module
 ===============================
 
-This module defines parameter classes for configuring Cosserat beam simulations. 
-Cosserat beam theory is an extension of classical beam theory that accounts for 
-micro-rotations and is particularly useful for modeling slender structures with 
+This module defines parameter classes for configuring Cosserat beam simulations.
+Cosserat beam theory is an extension of classical beam theory that accounts for
+micro-rotations and is particularly useful for modeling slender structures with
 complex behaviors such as medical instruments, cables, and soft robotics components.
 
 The parameters are organized into several dataclasses:
@@ -28,7 +28,7 @@ BeamGeometryParameters:
 
 BeamPhysicsBaseParameters:
 - young_modulus = 1.205e8 Pa: Approximates the elasticity of a moderately stiff plastic
-- poisson_ratio = 0.3: Typical value for many common materials
+- poisson_ratio = 0.4: Typical value for many common materials
 - beam_mass = 1.0 kg: Unit mass for simple scaling
 - beam_radius = 0.01m: 1cm radius, appropriate for visualization at meter scale
 - beam_shape = 'circular': Most common and computationally efficient cross-section
@@ -125,13 +125,15 @@ params_with_contact = Parameters(
 # @todo use this dataclass to create the cosserat object
 
 from dataclasses import dataclass, field
-from typing import List, Literal, Optional, Union, Type, cast
-# 
+from typing import List, Literal, Optional, Type, Union, cast
+
+
+#
 @dataclass(frozen=True)
 class BeamGeometryParameters:
     """
     Cosserat Beam Geometry parameters.
-    
+
     Parameters:
         beam_length: Length of the beam in meters.
         nb_section: Number of sections along the beam length.
@@ -154,7 +156,7 @@ class BeamGeometryParameters:
             raise ValueError(f"Number of frames must be positive, got {self.nb_frames}")
         if self.nb_frames < self.nb_section:
             raise ValueError(f"Number of frames ({self.nb_frames}) must be greater than or equal to number of sections ({self.nb_section})")
-            
+
     def __str__(self) -> str:
         """Return a string representation of the beam geometry parameters."""
         return (f"BeamGeometryParameters(length={self.beam_length}m, "
@@ -164,7 +166,7 @@ class BeamGeometryParameters:
 class BeamPhysicsBaseParameters:
     """
     Base class for Cosserat Beam Physics parameters.
-    
+
     Parameters:
         young_modulus: Young's modulus of the beam material (Pa).
         poisson_ratio: Poisson's ratio of the beam material (dimensionless).
@@ -202,7 +204,7 @@ class BeamPhysicsBaseParameters:
             raise ValueError(f"Beam shape must be either 'circular' or 'rectangular', got '{self.beam_shape}'")
         if self.beam_shape == 'rectangular' and (self.length_Y <= 0 or self.length_Z <= 0):
             raise ValueError(f"For rectangular beam, length_Y and length_Z must be positive, got {self.length_Y} and {self.length_Z}")
-            
+
     @property
     def cross_sectional_area(self) -> float:
         """Calculate the cross-sectional area of the beam."""
@@ -211,7 +213,7 @@ class BeamPhysicsBaseParameters:
             return math.pi * self.beam_radius ** 2
         else:  # rectangular
             return self.length_Y * self.length_Z
-            
+
     @property
     def moment_of_inertia(self) -> float:
         """Calculate the moment of inertia of the beam cross-section."""
@@ -220,12 +222,12 @@ class BeamPhysicsBaseParameters:
             return (math.pi * self.beam_radius ** 4) / 4
         else:  # rectangular
             return (self.length_Y * self.length_Z ** 3) / 12
-            
+
     @property
     def shear_modulus(self) -> float:
         """Calculate the shear modulus based on Young's modulus and Poisson's ratio."""
         return self.young_modulus / (2 * (1 + self.poisson_ratio))
-        
+
     def __str__(self) -> str:
         """Return a string representation of the beam physics parameters."""
         return (f"BeamPhysicsParameters(E={self.young_modulus:.2e}Pa, v={self.poisson_ratio}, "
@@ -235,7 +237,7 @@ class BeamPhysicsBaseParameters:
 class BeamPhysicsParametersNoInertia(BeamPhysicsBaseParameters):
     """
     Parameters for a Cosserat Beam without inertia.
-    
+
     This class inherits all parameters from BeamPhysicsBaseParameters
     and sets useInertia to False by default.
     """
@@ -245,13 +247,13 @@ class BeamPhysicsParametersNoInertia(BeamPhysicsBaseParameters):
 class BeamPhysicsParametersWithInertia(BeamPhysicsBaseParameters):
     """
     Parameters for a Cosserat Beam with inertia.
-    
+
     Parameters:
         GI: Torsional rigidity (N·m²).
         GA: Shear stiffness (N).
         EI: Bending stiffness (N·m²).
         EA: Axial stiffness (N).
-    
+
     This class inherits all parameters from BeamPhysicsBaseParameters
     and additionally includes inertia-related parameters.
     """
@@ -272,7 +274,7 @@ class BeamPhysicsParametersWithInertia(BeamPhysicsBaseParameters):
             raise ValueError(f"EI (bending stiffness) must be positive, got {self.EI}")
         if self.EA <= 0:
             raise ValueError(f"EA (axial stiffness) must be positive, got {self.EA}")
-            
+
     def __str__(self) -> str:
         """Return a string representation of the beam physics parameters with inertia."""
         base_str = super().__str__()
@@ -282,7 +284,7 @@ class BeamPhysicsParametersWithInertia(BeamPhysicsBaseParameters):
 class SimulationParameters:
     """
     Simulation parameters for the Cosserat Beam simulation.
-    
+
     Parameters:
         rayleigh_stiffness: Rayleigh damping coefficient for stiffness.
         rayleigh_mass: Rayleigh damping coefficient for mass.
@@ -298,7 +300,7 @@ class SimulationParameters:
             raise ValueError(f"Rayleigh stiffness must be non-negative, got {self.rayleigh_stiffness}")
         if self.rayleigh_mass < 0:
             raise ValueError(f"Rayleigh mass must be non-negative, got {self.rayleigh_mass}")
-            
+
     def __str__(self) -> str:
         """Return a string representation of the simulation parameters."""
         return (f"SimulationParameters(rayleigh_stiffness={self.rayleigh_stiffness}, "
@@ -308,13 +310,13 @@ class SimulationParameters:
 class VisualParameters:
     """
     Visual parameters for the Cosserat Beam visualization.
-    
+
     Parameters:
         showObject: Flag to determine if object should be shown (0: no, 1: yes).
         show_object_scale: Scale factor for visualization.
         show_object_color: RGBA color for visualization (values between 0.0 and 1.0).
     """
-    
+
     showObject: int = 1
     show_object_scale: float = 1.0
     show_object_color: List[float] = field(default_factory=lambda: [1.0, 0.0, 0.0, 1.0])
@@ -326,7 +328,7 @@ class VisualParameters:
             raise ValueError(f"Color components must be in range [0, 1], got {self.show_object_color}")
         if self.show_object_scale <= 0:
             raise ValueError(f"Show object scale must be positive, got {self.show_object_scale}")
-    
+
     def __str__(self) -> str:
         """Return a string representation of the visual parameters."""
         return (f"VisualParameters(showObject={self.showObject}, scale={self.show_object_scale}, "
@@ -337,7 +339,7 @@ class VisualParameters:
 class ContactParameters:
     """
     Contact parameters for the Cosserat Beam simulation.
-    
+
     Parameters:
         responseParams: Parameters for the contact response (e.g., "mu=0.0" for friction coefficient).
         response: Type of contact constraint to use.
@@ -371,7 +373,7 @@ class ContactParameters:
             raise ValueError(f"Maximum iterations must be positive, got {self.maxIterations}")
         if self.epsilon <= 0:
             raise ValueError(f"Epsilon must be positive, got {self.epsilon}")
-    
+
     def __str__(self) -> str:
         """Return a string representation of the contact parameters."""
         return (f"ContactParameters(response={self.response}, responseParams={self.responseParams}, "
@@ -382,10 +384,10 @@ class ContactParameters:
 class Parameters:
     """
     Comprehensive parameters for the Cosserat Beam simulation.
-    
+
     This class aggregates all parameter sets needed for a complete Cosserat Beam
     simulation, providing a single entry point for configuration and validation.
-    
+
     Parameters:
         beam_physics_params: Physics parameters for the beam material properties,
             including Young's modulus, Poisson's ratio, mass, and cross-section properties.
@@ -414,13 +416,13 @@ class Parameters:
     def validate(self) -> None:
         """
         Validate all parameter sets in this parameters object.
-        
+
         This method calls the validate method on each constituent parameter object.
         If any validation fails, a ValueError will be raised with appropriate message.
-        
+
         Returns:
             None
-            
+
         Raises:
             ValueError: If any parameter validation fails.
         """
@@ -429,7 +431,7 @@ class Parameters:
         self.contact_params.validate()
         self.beam_geo_params.validate()
         self.visual_params.validate()
-        
+
     def __str__(self) -> str:
         """Return a comprehensive string representation of all parameters."""
         return (f"Parameters(\n"

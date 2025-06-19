@@ -13,12 +13,14 @@ Key concepts:
 - Clean, reusable beam creation functions
 """
 
-import sys
 import os
+import sys
+
 # Add the python package to the path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'python'))
 
-from cosserat import BeamGeometryParameters, CosseratGeometry
+from cosserat import (BeamGeometryParameters, BeamPhysicsBaseParameters,
+                      CosseratGeometry)
 
 # Global parameters
 stiffness_param: float = 1.0e10
@@ -54,10 +56,10 @@ def _add_rigid_base(p_node, positions=None):
 def _add_cosserat_state(p_node, geometry: CosseratGeometry, custom_bending_states=None):
     """Create the cosserat coordinate node using CosseratGeometry."""
     cosserat_coordinate_node = p_node.addChild("cosseratCoordinate")
-    
+
     # Use geometry data or custom bending states
     bending_states = custom_bending_states if custom_bending_states else geometry.bendingState
-    
+
     cosserat_coordinate_node.addObject(
         "MechanicalObject",
         template="Vec3d",
@@ -115,13 +117,14 @@ def createScene(root_node):
     root_node.addObject("RequiredPlugin", name='Sofa.Component.Visual')
     root_node.addObject("RequiredPlugin", name='Cosserat')
 
+
     # Configure scene
     root_node.addObject(
         "VisualStyle",
         displayFlags="showBehaviorModels showCollisionModels showMechanicalMappings",
     )
     root_node.gravity = [0, 0.0, 0]
-    
+
     # === NEW APPROACH: Use CosseratGeometry ===
     # Define beam geometry parameters
     beam_geometry_params = BeamGeometryParameters(
@@ -129,26 +132,26 @@ def createScene(root_node):
         nb_section=3,      # Number of sections for physics
         nb_frames=4        # Number of frames for visualization
     )
-    
+
     # Create geometry object - this automatically calculates all the geometry!
     beam_geometry = CosseratGeometry(beam_geometry_params)
-    
+
     print(f"✨ Created beam with:")
     print(f"   - Length: {beam_geometry.get_beam_length()}")
     print(f"   - Sections: {beam_geometry.get_number_of_sections()}")
     print(f"   - Frames: {beam_geometry.get_number_of_frames()}")
     print(f"   - Section lengths: {beam_geometry.section_lengths}")
-    
+
     # Create rigid base
     base_node = _add_rigid_base(root_node)
 
     # Custom bending states for this tutorial (slight bend)
     custom_bending_states = [
         [0.0, 0.1, 0.1],  # Section 1: slight bend in y and z
-        [0.0, 0.1, 0.1],  # Section 2: slight bend in y and z  
+        [0.0, 0.1, 0.1],  # Section 2: slight bend in y and z
         [0.0, 0.1, 0.1]   # Section 3: slight bend in y and z
     ]
-    
+
     # Create cosserat state using the geometry object
     bending_node = _add_cosserat_state(root_node, beam_geometry, custom_bending_states)
 
