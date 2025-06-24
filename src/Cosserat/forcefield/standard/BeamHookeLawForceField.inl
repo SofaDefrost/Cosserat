@@ -213,6 +213,7 @@ template <typename DataTypes> void BeamHookeLawForceField<DataTypes>::reinit() {
   }
 }
 
+
 template <typename DataTypes>
 void BeamHookeLawForceField<DataTypes>::addForce(
     const MechanicalParams *mparams, DataVecDeriv &d_f, const DataVecCoord &d_x,

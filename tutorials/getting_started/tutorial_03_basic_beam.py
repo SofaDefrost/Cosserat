@@ -1,105 +1,153 @@
 # -*- coding: utf-8 -*-
 """
-Tutorial 03: Interactive Cosserat Beam
+Tutorial 02: Cosserat Beam with Forces
 =====================================
 
-This tutorial demonstrates how to use the CosseratBase prefab class for creating
-an interactive Cosserat beam with collision detection and springs.
+This tutorial builds on Tutorial 01 by adding:
+- Gravity forces
+- Applied forces at the beam tip
+- Mass distribution
+- Solver configuration for dynamic simulation
 
-Key concepts:
-- CosseratBase: High-level prefab class for complete beam setup
-- BeamPhysicsParameters: Defines material properties
-- Parameters: Combines geometry and physics parameters
-- Interactive simulation with forces
-
-This shows the highest-level API - CosseratBase handles everything automatically!
+Key improvements over manual approach:
+- CosseratGeometry handles all geometry calculations
+- Easy to modify beam parameters
+- Clean, readable code structure
 """
 
-__authors__ = "adagolodjo"
-__contact__ = "adagolodjo@protonmail.com"
-__version__ = "1.0.0"
-__copyright__ = "(c) 2021,Inria"
-__date__ = "October, 26 2021"
-
-import sys
 import os
+import sys
+
 # Add the python package to the path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'python'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "python"))
 
-from cosserat import addHeader, addSolverNode, Parameters
-from cosserat import BeamPhysicsParameters, BeamGeometryParameters
-from cosserat import CosseratBase
+from cosserat import BeamGeometryParameters, CosseratGeometry
 
-# Define beam geometry using the new clean approach
-geoParams = BeamGeometryParameters(
-    beam_length=30.0,
-    nb_section=32,
-    nb_frames=32,
-    build_collision_model=0
-)
+from tutorial_00_basic_beam import (_add_cosserat_frame, _add_cosserat_state,
+                                    _add_rigid_base, add_mini_header)
 
-# Define physics parameters 
-physicsParams = BeamPhysicsParameters(
-    beam_mass=0.3,
-    young_modulus=1.0e3,
-    poisson_ratio=0.38,
-    beam_radius=1.0,
-    beam_length=30.0
-)
-
-# Combine parameters
-Params = Parameters(beam_geo_params=geoParams, beam_physics_params=physicsParams)
-
-print(f"🎮 Setting up interactive beam with:")
-print(f"   - Length: {geoParams.beam_length}")
-print(f"   - Sections: {geoParams.nb_section}")
-print(f"   - Young's modulus: {physicsParams.young_modulus}")
-print(f"   - Mass: {physicsParams.beam_mass}")
+v_damping_param: float = 8.e-1  # Damping parameter for dynamics
 
 def createScene(root_node):
-    """Create an interactive Cosserat beam scene using CosseratBase prefab."""
-    # Setup scene with solver
-    addHeader(root_node)
-    root_node.gravity = [0, -9.81, 0.]
-    solver_node = addSolverNode(root_node, name="solver_node")
+    """Create a Cosserat beam scene with forces and dynamics."""
+    # Configure scene with time integration
+    add_mini_header(root_node)
 
-    print(f"🎯 Creating CosseratBase with {Params.beam_geo_params.nb_section} sections...")
-    
-    # === HIGHEST LEVEL API: CosseratBase handles everything! ===
-    # The CosseratBase prefab automatically:
-    # - Creates the rigid base
-    # - Sets up cosserat coordinates
-    # - Creates frames and mappings
-    # - Handles all the geometry calculations
-    beam = solver_node.addChild(CosseratBase(parent=solver_node, params=Params))
-    
-    # Access the rigid base node and add a spring force field for attachment
-    # Note: rigid_base_node is the property name in the new structure
-    beam.rigid_base_node.addObject(
-        "RestShapeSpringsForceField",
-        name="spring",
-        stiffness=1e8,
-        angularStiffness=1.0e8,
-        external_points=0,
-        points=0,
-        template="Rigid3d"
+    # Add gravity
+    root_node.gravity = [0, -9.81, 0]  # Add gravity!
+
+    # Configure time integration and solver
+    solver_node = root_node.addChild("solver_1")
+
+    solver_node.addObject(
+        "EulerImplicitSolver",
+        firstOrder="0",
+        rayleighStiffness="0.0",
+        rayleighMass="0.0",
+        vdamping=v_damping_param,  # Damping parameter for dynamics
     )
-    
-    # Optional: Add a force at the tip for interactivity
-    tip_force = [-5.0, 0.0, 0.0, 0, 0, 0]  # Gentle force in -X direction
-    last_frame = Params.beam_geo_params.nb_frames
-    
-    beam.cosserat_frame.addObject(
-        'ConstantForceField',
-        name='interactiveForce', 
-        indices=[last_frame],
-        forces=[tip_force],
-        showArrowSize=0.1
+    solver_node.addObject("SparseLDLSolver", name="solver")
+
+    # === NEW APPROACH: Use CosseratGeometry with more sections for smoother dynamics ===
+    beam_geometry_params = BeamGeometryParameters(
+        beam_length=30.0,  # Same beam length
+        nb_section=30,  # 30 sections for good physics resolution
+        nb_frames=30,  # 30 frames for smooth visualization
     )
-    
-    print(f"✨ CosseratBase beam created successfully!")
-    print(f"   - Base spring stiffness: 1e8")
-    print(f"   - Applied tip force: {tip_force[:3]}")
-    print(f"   - Interactive simulation ready")
+
+    # Create geometry object
+    beam_geometry = CosseratGeometry(beam_geometry_params)
+
+    print(f"🚀 Created dynamic beam with:")
+    print(f"   - Length: {beam_geometry.get_beam_length()}")
+    print(f"   - Sections: {beam_geometry.get_number_of_sections()}")
+    print(f"   - Frames: {beam_geometry.get_number_of_frames()}")
+    print(f"   - Mass will be distributed across frames")
+
+    # Create rigid base
+    base_node = _add_rigid_base(solver_node)
+
+    # Create bending states with a curve (last section has more bending)
+    custom_bending_states = []
+    for i in range(beam_geometry.get_number_of_sections()):
+        custom_bending_states.append([0, 0.0, 0.0])
+
+    # Create cosserat state using geometry
+    bending_node = _add_cosserat_state(solver_node, beam_geometry, node_name="cosserat_states",
+                                       custom_bending_states=custom_bending_states)
+
+    # Create cosserat frame with mass (important for dynamics!)
+    frame_node = _add_cosserat_frame(
+        base_node, bending_node, beam_geometry, beam_mass=5.0
+    )
+
+
+    # # -------------------------------------------------
+    # # === ADD SECOND BEAM WITH DIFFERENT PARAMETERS===
+    # # -------------------------------------------------
+
+    # Configure time integration and solver
+    solver_node2 = root_node.addChild("solver_2")
+
+    solver_node2.addObject(
+        "EulerImplicitSolver",
+        firstOrder="0",
+        rayleighStiffness="0.0",
+        rayleighMass="0.0",
+        name="euler_solver2",
+        vdamping=v_damping_param
+    )
+    solver_node2.addObject("SparseLDLSolver", name="solver2")
+
+    # # Define second beam geometry parameters
+    beam_geometry_params2 = BeamGeometryParameters(
+        beam_length=30.0,  # Same beam length
+        nb_section=3,  # 30 sections for good physics resolution
+        nb_frames=30,  # 30 frames for smooth visualization
+    )
+
+    # # Create second geometry object
+    beam_geometry2 = CosseratGeometry(beam_geometry_params2)
+    print(f"🚀 Created second dynamic beam with:")
+    print(f"   - Length: {beam_geometry2.get_beam_length()}")
+    print(f"   - Sections: {beam_geometry2.get_number_of_sections()}")
+    print(f"   - Frames: {beam_geometry2.get_number_of_frames()}")
+    print(f"   - Mass will be distributed across frames")
+
+    # # Create rigid base for second beam
+    base_node2 = _add_rigid_base(solver_node2, node_name="rigid_base2")
+
+    # # Create cosserat state for the second beam
+    # # -------------------------------------------------
+    custom_bending_states2 = []
+    for i in range(beam_geometry2.get_number_of_sections()):
+        custom_bending_states.append([0, 0.0, 0.0])
+
+    bending_node2 = _add_cosserat_state(
+        solver_node2, beam_geometry2, node_name="cosserat_states2",
+        custom_bending_states=custom_bending_states2
+    )
+
+    # # Create cosserat frame for the second beam
+    _add_cosserat_frame(
+        base_node2, bending_node2, beam_geometry2, node_name="cosserat_in_Sofa_frame_node2",
+        beam_mass=5.0
+    )
+
+
+    # # === ADD FORCES ===
+    # # Add a force at the tip of the beam
+    # tip_frame_index = beam_geometry.get_number_of_frames()  # Last frame
+    # applied_force = [-10.0, 0.0, 0.0, 0, 0, 0]  # Force in -X direction
+    #
+    # frame_node.addObject(
+    #     "ConstantForceField",
+    #     name="tipForce",
+    #     indices=[tip_frame_index],
+    #     forces=[applied_force],
+    #     showArrowSize=1,
+    # )
+    #
+    # print(f"💪 Applied force {applied_force[:3]} at frame {tip_frame_index}")
 
     return root_node

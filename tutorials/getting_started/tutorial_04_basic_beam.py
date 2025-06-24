@@ -18,6 +18,8 @@ Key improvements over manual approach:
 import os
 import sys
 
+from examples.advanced.tuto_4 import force_null
+
 # Add the python package to the path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "python"))
 
@@ -25,6 +27,7 @@ from cosserat import BeamGeometryParameters, CosseratGeometry
 
 from tutorial_00_basic_beam import (_add_cosserat_frame, _add_cosserat_state,
                                     _add_rigid_base, add_mini_header)
+from force_controller import ForceController
 
 v_damping_param: float = 8.e-1  # Damping parameter for dynamics
 
@@ -51,8 +54,8 @@ def createScene(root_node):
     # === NEW APPROACH: Use CosseratGeometry with more sections for smoother dynamics ===
     beam_geometry_params = BeamGeometryParameters(
         beam_length=30.0,  # Same beam length
-        nb_section=3,  # 30 sections for good physics resolution
-        nb_frames=12,  # 30 frames for smooth visualization
+        nb_section=30,  # 30 sections for good physics resolution
+        nb_frames=30,  # 30 frames for smooth visualization
     )
 
     # Create geometry object
@@ -81,5 +84,20 @@ def createScene(root_node):
         base_node, bending_node, beam_geometry, beam_mass=5.0
     )
 
+
+    # === ADD FORCES ===
+    # Add a force at the tip of the beam
+    # this constance force is used only in the case we are doing force_type 1 or 2
+    force_null = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]  # No force initially
+
+    const_force_node = frame_node.addObject('ConstantForceField', name='constForce', showArrowSize=1.e-8,
+                                                 indices=beam_geometry.nb_frames, forces=force_null)
+
+    # The effector is used only when force_type is 3
+    # create a rigid body to control the end effector of the beam
+    tip_controller = root_node.addChild('tip_controller')
+    controller_state = tip_controller.addObject('MechanicalObject', template='Rigid3d', name="controlEndEffector",
+                                                showObjectScale=0.3, position=[beam_geometry.beam_length, 0, 0, 0, 0, 0, 1],
+                                                showObject=True)
 
     return root_node
