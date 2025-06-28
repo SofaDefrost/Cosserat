@@ -174,16 +174,17 @@ The DCM implementation in SOFA uses a Piece-wise Constant Strain (PCS) approach:
 
 **DCM Advantages**:
 
-- Efficient for slender structures
-- Natural handling of large rotations
-- Reduced coordinates (fewer variables)
+- **Efficient for slender structures**: Ideal for simulating catheters, cables, or flexible robot arms where the length is much greater than the cross-section.
+- **Natural handling of large rotations**: Accurately models twisting and bending without the complexities of FEM.
+- **Reduced coordinates**: Fewer variables lead to faster simulations compared to a full 3D FEM model of the same object.
 
 **FEM Advantages**:
 
-- Versatility with different geometries
-- Customizable material laws
-- Easy boundary condition definition
-- Flexible for complex structures
+- **Versatility with different geometries**: Can model any 3D shape, from simple blocks to complex organs.
+- **Customizable material laws**: Easily supports a wide range of material behaviors.
+- **Flexible for complex structures**: Well-suited for objects where all dimensions are significant (e.g., a soft gripper pad).
+
+**Example**: Imagine modeling a soft robotic tentacle. You would use **DCM** for the long, flexible arm itself, but you might use **FEM** for a bulky, soft gripper attached to its end.
 
 ---
 

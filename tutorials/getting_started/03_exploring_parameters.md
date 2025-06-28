@@ -32,6 +32,8 @@ beam_geometry_params = BeamGeometryParameters(
 
 ## Let's show that this is not only a matter of visualisation
 
+The number of sections is not just about making the beam look smoother. It has a direct impact on the accuracy of the physics simulation. Each section has its own set of physical properties, and the interactions between these sections determine the overall behavior of the beam. A higher number of sections allows for a more detailed and accurate representation of the beam's deformation, but it also increases the computational cost. It's a trade-off between accuracy and performance.
+
 ```python
 beam_geometry_params = BeamGeometryParameters(
         beam_length=30.0,  # Same beam length

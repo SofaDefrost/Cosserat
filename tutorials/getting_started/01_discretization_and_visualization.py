@@ -22,7 +22,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'python')
 from cosserat import (BeamGeometryParameters, BeamPhysicsBaseParameters,
                       CosseratGeometry)
 
-from tutorial_00_basic_beam import (_add_cosserat_frame, _add_cosserat_state,
+from _00_introduction_and_setup import (_add_cosserat_frame, _add_cosserat_state,
                                     _add_rigid_base, add_mini_header)
 
 def createScene(root_node):
@@ -79,6 +79,9 @@ def createScene(root_node):
     )
 
     # Create second geometry object
+    # Note: We use more frames (12) than sections (3). This is a common
+    # practice to get a smooth visual representation of the beam while
+    # keeping the physics simulation efficient with fewer sections.
     beam_geometry2 = CosseratGeometry(beam_geometry_params2)
     print("✨ Created second beam with:")
     print(f"   - Length: {beam_geometry2.get_beam_length()}")

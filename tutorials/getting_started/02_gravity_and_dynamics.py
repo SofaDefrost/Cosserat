@@ -23,10 +23,10 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "python")
 
 from cosserat import BeamGeometryParameters, CosseratGeometry
 
-from tutorial_00_basic_beam import (_add_cosserat_frame, _add_cosserat_state,
+from _00_introduction_and_setup import (_add_cosserat_frame, _add_cosserat_state,
                                     _add_rigid_base, add_mini_header)
 
-v_damping_param: float = 8.e-1  # Damping parameter for dynamics
+v_damping_param: float =  8.e-1  # Damping parameter for dynamics
 
 def createScene(root_node):
     """Create a Cosserat beam scene with forces and dynamics."""
@@ -68,15 +68,18 @@ def createScene(root_node):
     base_node = _add_rigid_base(solver_node)
 
     # Create bending states with a curve (last section has more bending)
+    # We start with a slightly bent beam to better visualize the effect of gravity.
     custom_bending_states = []
     for i in range(beam_geometry.get_number_of_sections()):
-        custom_bending_states.append([0, 0.0, 0.0])
+        custom_bending_states.append([0, 0.0, 0.1])
 
     # Create cosserat state using geometry
     bending_node = _add_cosserat_state(solver_node, beam_geometry, node_name="cosserat_states",
                                        custom_bending_states=custom_bending_states)
 
     # Create cosserat frame with mass (important for dynamics!)
+    # The mass is distributed uniformly along the beam. Without mass, the beam
+    # would not be affected by gravity.
     frame_node = _add_cosserat_frame(
         base_node, bending_node, beam_geometry, beam_mass=5.0
     )

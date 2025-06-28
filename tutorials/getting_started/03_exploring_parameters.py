@@ -18,16 +18,13 @@ Key improvements over manual approach:
 import os
 import sys
 
-from examples.advanced.tuto_4 import force_null
-
 # Add the python package to the path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "python"))
 
 from cosserat import BeamGeometryParameters, CosseratGeometry
 
-from tutorial_00_basic_beam import (_add_cosserat_frame, _add_cosserat_state,
+from _00_introduction_and_setup import (_add_cosserat_frame, _add_cosserat_state,
                                     _add_rigid_base, add_mini_header)
-from force_controller import ForceController
 
 v_damping_param: float = 8.e-1  # Damping parameter for dynamics
 
@@ -85,19 +82,75 @@ def createScene(root_node):
     )
 
 
-    # === ADD FORCES ===
-    # Add a force at the tip of the beam
-    # this constance force is used only in the case we are doing force_type 1 or 2
-    force_null = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]  # No force initially
+    # # -------------------------------------------------
+    # # === ADD SECOND BEAM WITH DIFFERENT PARAMETERS===
+    # # -------------------------------------------------
 
-    const_force_node = frame_node.addObject('ConstantForceField', name='constForce', showArrowSize=1.e-8,
-                                                 indices=beam_geometry.nb_frames, forces=force_null)
+    # Configure time integration and solver
+    solver_node2 = root_node.addChild("solver_2")
 
-    # The effector is used only when force_type is 3
-    # create a rigid body to control the end effector of the beam
-    tip_controller = root_node.addChild('tip_controller')
-    controller_state = tip_controller.addObject('MechanicalObject', template='Rigid3d', name="controlEndEffector",
-                                                showObjectScale=0.3, position=[beam_geometry.beam_length, 0, 0, 0, 0, 0, 1],
-                                                showObject=True)
+    solver_node2.addObject(
+        "EulerImplicitSolver",
+        firstOrder="0",
+        rayleighStiffness="0.0",
+        rayleighMass="0.0",
+        name="euler_solver2",
+        vdamping=v_damping_param
+    )
+    solver_node2.addObject("SparseLDLSolver", name="solver2")
+
+    # # Define second beam geometry parameters
+    beam_geometry_params2 = BeamGeometryParameters(
+        beam_length=30.0,  # Same beam length
+        nb_section=15,  # 30 sections for good physics resolution
+        nb_frames=15,  # 3 frames for smooth visualization
+    )
+
+    # # Create second geometry object
+    # This beam has fewer sections (15) than the first one (30).
+    # This will make the simulation faster, but less accurate.
+    # It's a trade-off between performance and physical fidelity.
+    beam_geometry2 = CosseratGeometry(beam_geometry_params2)
+    print(f"🚀 Created second dynamic beam with:")
+    print(f"   - Length: {beam_geometry2.get_beam_length()}")
+    print(f"   - Sections: {beam_geometry2.get_number_of_sections()}")
+    print(f"   - Frames: {beam_geometry2.get_number_of_frames()}")
+    print(f"   - Mass will be distributed across frames")
+
+    # # Create rigid base for second beam
+    base_node2 = _add_rigid_base(solver_node2, node_name="rigid_base2")
+
+    # # Create cosserat state for the second beam
+    # # -------------------------------------------------
+    custom_bending_states2 = []
+    for i in range(beam_geometry2.get_number_of_sections()):
+        custom_bending_states.append([0, 0.0, 0.0])
+
+    bending_node2 = _add_cosserat_state(
+        solver_node2, beam_geometry2, node_name="cosserat_states2",
+        custom_bending_states=custom_bending_states2
+    )
+
+    # # Create cosserat frame for the second beam
+    _add_cosserat_frame(
+        base_node2, bending_node2, beam_geometry2, node_name="cosserat_in_Sofa_frame_node2",
+        beam_mass=5.0
+    )
+
+
+    # # === ADD FORCES ===
+    # # Add a force at the tip of the beam
+    # tip_frame_index = beam_geometry.get_number_of_frames()  # Last frame
+    # applied_force = [-10.0, 0.0, 0.0, 0, 0, 0]  # Force in -X direction
+    #
+    # frame_node.addObject(
+    #     "ConstantForceField",
+    #     name="tipForce",
+    #     indices=[tip_frame_index],
+    #     forces=[applied_force],
+    #     showArrowSize=1,
+    # )
+    #
+    # print(f"💪 Applied force {applied_force[:3]} at frame {tip_frame_index}")
 
     return root_node

@@ -84,6 +84,29 @@ Now, we'll dive into the essential part – configuring the Cosserat plugin with
 - The notion of mapping: here **DiscreteCosseratMapping**
 - Functions: **apply, applyJ**, **applyJT** for forces and **ApplyJ^T** for constraints
 
+### Scene Graph Structure
+
+The SOFA scene is organized in a tree-like structure called the scene graph. Here's how the nodes in our tutorial are organized:
+
+```
+root_node
+├── rigid_base
+│   ├── cosserat_base_mo (MechanicalObject)
+│   └── spring (RestShapeSpringsForceField)
+├── cosserat_coordinates
+│   ├── cosserat_state (MechanicalObject)
+│   └── BeamHookeLawForceField
+└── cosserat_in_Sofa_frame_node
+    ├── FramesMO (MechanicalObject)
+    ├── UniformMass
+    └── DiscreteCosseratMapping
+```
+
+- **root_node**: The root of our scene.
+- **rigid_base**: A node that holds the fixed base of the beam.
+- **cosserat_coordinates**: This node contains the state of the beam in terms of curvature.
+- **cosserat_in_Sofa_frame_node**: This node represents the beam in the 3D world, with the frames (visual representation) of the beam.
+
 ---
 
 #### Start with the base
@@ -92,6 +115,6 @@ Now, we'll dive into the essential part – configuring the Cosserat plugin with
 
 ---
 
-[[./tutorial_00_basic_beam.py]]
+[[./01_discretization_and_visualization.py]]
 
 ---

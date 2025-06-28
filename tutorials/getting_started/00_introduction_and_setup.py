@@ -154,6 +154,10 @@ def createScene(root_node):
     base_node = _add_rigid_base(root_node, node_name="rigid_base")
 
     # Custom bending states for this tutorial (slight bend)
+    # Each vector [κ₁, κ₂, κ₃] represents the material curvature at each section.
+    # Here, we apply a small constant curvature in the z-direction (κ₃ = 0.1)
+    # to give the beam a slight initial bend. This helps visualize the
+    # beam's orientation and response to forces.
     custom_bending_states = [
         [0.0, 0.0, 0.1],  # Section 1: slight bend in y and z
         [0.0, 0.0, 0.1],  # Section 2: slight bend in y and z
