@@ -19,10 +19,10 @@
 #pragma once
 
 #include <random>
-#include <Cosserat/liegroups/LieGroupBase.h>
-#include <Cosserat/liegroups/LieGroupBase.inl>
-#include <Cosserat/liegroups/SO2.h>
-#include <Cosserat/liegroups/Types.h>
+#include "LieGroupBase.h"
+#include "LieGroupBase.inl"
+#include "SO2.h"
+#include "Types.h"
 
 namespace sofa::component::cosserat::liegroups {
 

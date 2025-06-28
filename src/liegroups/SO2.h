@@ -20,9 +20,9 @@
 // #define SOFA_COMPONENT_COSSERAT_LIEGROUPS_SO2_H
 #pragma once
 
-#include <Cosserat/liegroups/Types.h>          // Then our type system
-#include <Cosserat/liegroups/LieGroupBase.h>   // Then the base class interface
-#include <Cosserat/liegroups/LieGroupBase.inl> // Then the base class interface
+#include "LieGroupBase.h"   // Then the base class interface
+#include "LieGroupBase.inl" // Then the base class interface
+#include "Types.h"          // Then our type system
 #include <eigen3/Eigen/Geometry>
 
 namespace sofa::component::cosserat::liegroups {
@@ -51,7 +51,8 @@ public:
   using AdjointMatrix = typename Base::AdjointMatrix;
 
   static constexpr int Dim = 2;
-  using Complex = Eigen::Vector2<_Scalar>; // Represents complex number as 2D vector
+  using Complex =
+      Eigen::Vector2<_Scalar>; // Represents complex number as 2D vector
 
   /**
    * @brief Default constructor creates identity rotation (angle = 0)
@@ -61,7 +62,8 @@ public:
   /**
    * @brief Construct from angle (in radians)
    */
-  explicit SO2(const Scalar &angle) : m_angle(Types<_Scalar>::normalizeAngle(angle)) {
+  explicit SO2(const Scalar &angle)
+      : m_angle(Types<_Scalar>::normalizeAngle(angle)) {
     updateComplex();
   }
 
@@ -157,8 +159,10 @@ public:
   /**
    * @brief Check if approximately equal to another rotation
    */
-  bool isApprox(const SO2 &other, const Scalar &eps = Types<_Scalar>::epsilon()) const {
-    return Types<_Scalar>::isZero(Types<_Scalar>::normalizeAngle(m_angle - other.m_angle), eps);
+  bool isApprox(const SO2 &other,
+                const Scalar &eps = Types<_Scalar>::epsilon()) const {
+    return Types<_Scalar>::isZero(
+        Types<_Scalar>::normalizeAngle(m_angle - other.m_angle), eps);
   }
 
   /**
@@ -179,7 +183,8 @@ public:
   static SO2 random() {
     static std::random_device rd;
     static std::mt19937 gen(rd());
-    std::uniform_real_distribution<Scalar> dis(-Types<_Scalar>::pi(), Types<_Scalar>::pi());
+    std::uniform_real_distribution<Scalar> dis(-Types<_Scalar>::pi(),
+                                               Types<_Scalar>::pi());
     return SO2(dis(gen));
   }
 
@@ -209,30 +214,37 @@ public:
   // Required CRTP methods:
   static SO2<Scalar> computeIdentity() noexcept { return SO2(); }
   SO2<Scalar> computeInverse() const { return inverse(); }
-  static SO2<Scalar> computeExp(const TangentVector& algebra_element) { return exp(algebra_element); }
+  static SO2<Scalar> computeExp(const TangentVector &algebra_element) {
+    return exp(algebra_element);
+  }
   TangentVector computeLog() const { return log(); }
   AdjointMatrix computeAdjoint() const { return adjoint(); }
-  bool computeIsApprox(const SO2& other, const Scalar& eps) const { return isApprox(other, eps); }
-  typename Base::ActionVector computeAction(const typename Base::ActionVector& point) const { return act(point); }
-  
+  bool computeIsApprox(const SO2 &other, const Scalar &eps) const {
+    return isApprox(other, eps);
+  }
+  typename Base::ActionVector
+  computeAction(const typename Base::ActionVector &point) const {
+    return act(point);
+  }
+
   /**
    * @brief Hat operator - maps ℝ¹ to 2×2 skew-symmetric matrix
    * @param omega Single scalar (rotation rate)
    * @return 2×2 skew-symmetric matrix
    */
-  static Matrix hat(const TangentVector& omega) {
+  static Matrix hat(const TangentVector &omega) {
     Matrix result = Matrix::Zero();
     result(0, 1) = -omega[0];
     result(1, 0) = omega[0];
     return result;
   }
-  
+
   /**
    * @brief Vee operator - inverse of hat, maps 2×2 skew-symmetric matrix to ℝ¹
    * @param matrix 2×2 skew-symmetric matrix
    * @return Single scalar
    */
-  static TangentVector vee(const Matrix& matrix) {
+  static TangentVector vee(const Matrix &matrix) {
     TangentVector result;
     result[0] = matrix(1, 0);
     return result;

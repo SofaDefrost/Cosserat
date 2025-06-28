@@ -6,7 +6,7 @@
 #include <limits>
 #include <type_traits>
 
-namespace Cosserat {
+namespace sofa::component::cosserat::liegroups {
 
 /**
  * Utility functions for Lie groups.
@@ -146,7 +146,7 @@ struct LieGroupUtils {
     }
 };
 
-} // namespace Cosserat
+} // namespace sofa::component::cosserat::liegroups
 
 #endif // COSSERAT_LIEGROUPS_UTILS_H
 

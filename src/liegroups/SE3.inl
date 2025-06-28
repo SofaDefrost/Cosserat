@@ -20,7 +20,7 @@
 // #define SOFA_COMPONENT_COSSERAT_LIEGROUPS_SE3_INL
 #pragma once
 
-#include <Cosserat/liegroups/SE3.h>
+#include "SE3.h"
 
 namespace sofa::component::cosserat::liegroups {
 

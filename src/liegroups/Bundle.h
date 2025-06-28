@@ -18,19 +18,19 @@
 
 #pragma once
 
-#include <Cosserat/liegroups/Types.h>
-#include <Cosserat/liegroups/LieGroupBase.h>
-#include <Cosserat/liegroups/LieGroupBase.inl>
-#include <Cosserat/liegroups/SE3.h>
-#include <Cosserat/liegroups/RealSpace.h>
-#include <Cosserat/liegroups/SE2.h>
-#include <Cosserat/liegroups/SO2.h>
+#include "Types.h"
+#include "LieGroupBase.h"
+#include "LieGroupBase.inl"
+#include "SE3.h"
+#include "RealSpace.h"
+#include "SE2.h"
+#include "SO2.h"
 #include <tuple>
 #include <type_traits>
 #include <array>
 #include <iostream>
 #include <random>
-#include <RealSpace.h>
+// RealSpace.h is already included above
 
 namespace sofa::component::cosserat::liegroups {
 
@@ -525,7 +525,7 @@ private:
     Vector act_impl(const Vector& point, std::index_sequence<Is...>) const {
         Vector result(actionDimension());
         
-    gv    // Apply each group's action to its corresponding subspace
+        // Apply each group's action to its corresponding subspace
         ((applyGroupAction<Is>(result, point)), ...);
         
         return result;

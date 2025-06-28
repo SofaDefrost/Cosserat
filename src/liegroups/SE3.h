@@ -20,9 +20,9 @@
 // #define SOFA_COMPONENT_COSSERAT_LIEGROUPS_SE3_H
 #pragma once
 
-#include <Cosserat/liegroups/LieGroupBase.h> // Then the base class interface
-#include <Cosserat/liegroups/SO3.h>          // Then other dependencies
-#include <Cosserat/liegroups/Types.h>        // Then our type system
+#include "LieGroupBase.h" // Then the base class interface
+#include "SO3.h"          // Then other dependencies
+#include "Types.h"        // Then our type system
 #include <Eigen/Geometry>                    // Include Eigen first
 
 // Forward declaration outside the namespace

@@ -18,9 +18,9 @@
 
 #pragma once
 
-#include <Cosserat/liegroups/LieGroupBase.h>
-#include <Cosserat/liegroups/LieGroupBase.inl>
-
+#include "LieGroupBase.h"
+#include "LieGroupBase.inl"
+#include "Types.h"
 namespace sofa::component::cosserat::liegroups {
 
 /**

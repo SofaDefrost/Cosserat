@@ -19,8 +19,27 @@ else()
 endif()
 
 set(SRC_ROOT_DIR src/${PROJECT_NAME})
+set(SRC_ROOT_LIE_GROUPE src/liegroups)
 
 set(HEADER_FILES
+  # Lie group implementations
+  ${SRC_ROOT_LIE_GROUPE}/Types.h
+  ${SRC_ROOT_LIE_GROUPE}/LieGroupBase.h
+  ${SRC_ROOT_LIE_GROUPE}/LieGroupBase.inl
+  ${SRC_ROOT_LIE_GROUPE}/RealSpace.h
+  ${SRC_ROOT_LIE_GROUPE}/SO2.h
+  ${SRC_ROOT_LIE_GROUPE}/SE2.h
+  ${SRC_ROOT_LIE_GROUPE}/SO3.h
+  ${SRC_ROOT_LIE_GROUPE}/SO3.inl
+  ${SRC_ROOT_LIE_GROUPE}/SE3.h
+  ${SRC_ROOT_LIE_GROUPE}/SE3.inl
+  ${SRC_ROOT_LIE_GROUPE}/SE23.h
+  ${SRC_ROOT_LIE_GROUPE}/SE23.inl
+  ${SRC_ROOT_LIE_GROUPE}/SGal3.h
+  ${SRC_ROOT_LIE_GROUPE}/SGal3.inl
+  ${SRC_ROOT_LIE_GROUPE}/Bundle.h
+  ${SRC_ROOT_LIE_GROUPE}/Utils.h
+
     ${SRC_ROOT_DIR}/config.h.in
     ${SRC_ROOT_DIR}/fwd.h
     ${SRC_ROOT_DIR}/types.h
@@ -159,6 +178,7 @@ sofa_create_package_with_targets(
 cmake_dependent_option(COSSERAT_BUILD_TESTS "Compile the tests" ON "SOFA_BUILD_TESTS OR NOT DEFINED SOFA_BUILD_TESTS" OFF)
 if(COSSERAT_BUILD_TESTS)
     add_subdirectory(Tests)
+    add_subdirectory(src/liegroups/Tests)
 endif()
 
 # Benchmarks
