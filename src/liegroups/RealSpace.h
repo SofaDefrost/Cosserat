@@ -37,7 +37,7 @@ namespace sofa::component::cosserat::liegroups {
  * @tparam _Dim The dimension of the space
  */
 template<typename _Scalar, int _Dim>
-class RealSpace : public LieGroupBase<_Scalar, std::integral_constant<int, _Dim>, _Dim, _Dim>
+class RealSpace : public LieGroupBase<RealSpace<_Scalar, _Dim>, _Scalar, _Dim, _Dim, _Dim>
                  //,public LieGroupOperations<RealSpace<_Scalar, _Dim>> 
                  {
 public:
@@ -63,80 +63,84 @@ public:
     /**
      * @brief Group composition (vector addition)
      */
-    RealSpace operator*(const RealSpace& other) const {
-        return RealSpace(m_data + other.m_data);
-    }
-
-    /**
-     * @brief Inverse element (negation)
-     */
-    RealSpace inverse() const override {
+    // Implementations of LieGroupBase pure virtual methods
+    RealSpace computeInverse() const {
         return RealSpace(-m_data);
     }
 
-    /**
-     * @brief Exponential map (identity map for ℝ(n))
-     */
-    RealSpace exp(const TangentVector& algebra_element) const override {
+    static RealSpace computeExp(const TangentVector& algebra_element) {
         return RealSpace(algebra_element);
     }
 
-    /**
-     * @brief Logarithmic map (identity map for ℝ(n))
-     */
-    TangentVector log() const override {
+    TangentVector computeLog() const {
         return m_data;
     }
 
-    /**
-     * @brief Adjoint representation (identity matrix for ℝ(n))
-     */
-    AdjointMatrix adjoint() const override {
+    AdjointMatrix computeAdjoint() const {
         return AdjointMatrix::Identity();
     }
 
-    /**
-     * @brief Group action on a point (translation)
-     */
-    Vector act(const Vector& point) const override {
+    Vector computeAction(const Vector& point) const {
         return point + m_data;
     }
 
-    /**
-     * @brief Check if approximately equal to another element
-     */
-    bool isApprox(const RealSpace& other, 
+    bool computeIsApprox(const RealSpace& other, 
                   const Scalar& eps = Types<Scalar>::epsilon()) const {
         return m_data.isApprox(other.m_data, eps);
     }
 
-    /**
-     * @brief Get the identity element (zero vector)
-     */
-    static const RealSpace& identity() {
-        static const RealSpace id;
-        return id;
+    static RealSpace computeIdentity() {
+        return RealSpace(Vector::Zero());
     }
 
-    /**
-     * @brief Get the dimension of the Lie algebra
-     */
-    int algebraDimension() const override { return Dim; }
+    static Matrix computeHat(const TangentVector& v) {
+        Matrix result = Matrix::Zero();
+        for (int i = 0; i < Dim; ++i) {
+            result(i, i) = v(i);
+        }
+        return result;
+    }
 
-    /**
-     * @brief Get the dimension of the space the group acts on
-     */
-    int actionDimension() const override { return Dim; }
+    static TangentVector computeVee(const Matrix& X) {
+        TangentVector result;
+        for (int i = 0; i < Dim; ++i) {
+            result(i) = X(i, i);
+        }
+        return result;
+    }
 
-    /**
-     * @brief Access the underlying data
-     */
-    const Vector& data() const { return m_data; }
-    Vector& data() { return m_data; }
+    static AdjointMatrix computeAd(const TangentVector& v) {
+        return AdjointMatrix::Zero(); // Adjoint for R^n is zero matrix
+    }
+
+    template <typename Generator>
+    static RealSpace computeRandom(Generator& gen) {
+        return RealSpace(Types<Scalar>::template randomVector<Dim>(gen));
+    }
+
+    std::ostream& print(std::ostream& os) const {
+        os << m_data.transpose();
+        return os;
+    }
+
+    static constexpr std::string_view getTypeName() {
+        return "RealSpace";
+    }
+
+    bool computeIsValid() const {
+        return m_data.allFinite(); // Check if all elements are finite
+    }
+
+    void computeNormalize() {
+        // No normalization needed for RealSpace
+    }
+
+    Scalar squaredDistance(const RealSpace& other) const {
+        return (m_data - other.m_data).squaredNorm();
+    }
 
 private:
     Vector m_data;  ///< The underlying vector data
 };
 
 } // namespace sofa::component::cosserat::liegroups
-

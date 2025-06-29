@@ -44,7 +44,7 @@ namespace sofa::component::cosserat::liegroups {
  * @tparam _Scalar The scalar type (must be a floating-point type)
  */
 template <typename _Scalar, int _Dim = 9>
-class SE23 : public LieGroupBase<_Scalar, std::integral_constant<int, _Dim>, 3, 3>
+class SE23 : public LieGroupBase<SE23<_Scalar, _Dim>, _Scalar, 9, 9, 6>
              //,public LieGroupOperations<SE23<_Scalar>> 
              {
 public:
@@ -78,27 +78,53 @@ public:
        const Vector3 &velocity)
       : m_pose(rotation, position), m_velocity(velocity) {}
 
-  /**
-   * @brief Group composition (extended pose composition)
-   */
-  SE23 operator*(const SE23 &other) const {
-    return SE23(m_pose * other.m_pose,
-                m_velocity + m_pose.rotation().act(other.m_velocity));
-  }
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
 
   /**
-   * @brief Inverse element
+   * @brief Access the pose component
    */
-  SE23 inverse() const override {
-    SE3<Scalar> inv_pose = m_pose.inverse();
-    return SE23(inv_pose, -inv_pose.rotation().act(m_velocity));
-  }
+  const SE3<Scalar> &pose() const { return m_pose; }
+  SE3<Scalar> &pose() { return m_pose; }
 
   /**
-   * @brief Exponential map from Lie algebra to SE_2(3)
-   * @param algebra_element Vector in ℝ⁹ representing (v, ω, a)
+   * @brief Access the velocity component
    */
-  SE23 exp(const TangentVector &algebra_element) const override {
+  const Vector3 &velocity() const { return m_velocity; }
+  Vector3 &velocity() { return m_velocity; }
+
+  /**
+   * @brief Get the extended homogeneous transformation matrix
+   */
+  Eigen::Matrix<Scalar, 5, 5> extendedMatrix() const {
+    Eigen::Matrix<Scalar, 5, 5> T = Eigen::Matrix<Scalar, 5, 5>::Identity();
+    T.template block<4, 4>(0, 0) = m_pose.matrix();
+    T.template block<3, 1>(0, 4) = m_velocity;
+    return T;
+  }
+
+  // Required CRTP methods:
+  static SE23<Scalar> computeIdentity() noexcept { return SE23(); }
+  SE23<Scalar> computeInverse() const {
+    SE3<Scalar> inv_pose = m_pose.computeInverse();
+    return SE23(inv_pose, -(inv_pose.rotation().computeAction(m_velocity)));
+  }
+  static SE23<Scalar> computeExp(const TangentVector &algebra_element) {
     Vector3 v = algebra_element.template segment<3>(0); // Linear velocity
     Vector3 w = algebra_element.template segment<3>(3); // Angular velocity
     Vector3 a = algebra_element.template segment<3>(6); // Linear acceleration
@@ -106,7 +132,7 @@ public:
     // First compute the SE(3) part using (v, w)
     typename SE3<Scalar>::TangentVector se3_element;
     se3_element << v, w;
-    SE3<Scalar> pose = SE3<Scalar>().exp(se3_element);
+    SE3<Scalar> pose = SE3<Scalar>::computeExp(se3_element);
 
     // Compute the velocity part
     // For small rotations or zero angular velocity
@@ -125,14 +151,9 @@ public:
 
     return SE23(pose, J * a / theta);
   }
-
-  /**
-   * @brief Logarithmic map from SE_2(3) to Lie algebra
-   * @return Vector in ℝ⁹ representing (v, ω, a)
-   */
-  TangentVector log() const override {
+  TangentVector computeLog() const {
     // First get the SE(3) part
-    typename SE3<Scalar>::TangentVector se3_part = m_pose.log();
+    typename SE3<Scalar>::TangentVector se3_part = m_pose.computeLog();
     Vector3 v = se3_part.template head<3>();
     Vector3 w = se3_part.template tail<3>();
 
@@ -158,11 +179,7 @@ public:
     result << v, w, J_inv * m_velocity * theta;
     return result;
   }
-
-  /**
-   * @brief Adjoint representation
-   */
-  AdjointMatrix adjoint() const override {
+  AdjointMatrix computeAdjoint() const {
     AdjointMatrix Ad = AdjointMatrix::Zero();
     Matrix3 R = m_pose.rotation().matrix();
     Matrix3 p_hat = SO3<Scalar>::hat(m_pose.translation());
@@ -181,71 +198,69 @@ public:
 
     return Ad;
   }
-
-  /**
-   * @brief Group action on a point and its velocity
-   */
-  Vector act(const Vector &point_vel) const override {
+  bool computeIsApprox(const SE23 &other,
+                       const Scalar &eps = Types<Scalar>::epsilon()) const {
+    return m_pose.computeIsApprox(other.m_pose, eps) &&
+           m_velocity.isApprox(other.m_velocity, eps);
+  }
+  typename Base::ActionVector computeAction(const typename Base::ActionVector &point_vel) const {
     Vector3 point = point_vel.template head<3>();
     Vector3 vel = point_vel.template segment<3>(3);
 
     // Transform position and combine velocities
-    Vector3 transformed_point = m_pose.act(point);
-    Vector3 transformed_vel = m_pose.rotation().act(vel) + m_velocity;
+    Vector3 transformed_point = m_pose.computeAction(point);
+    Vector3 transformed_vel = m_pose.rotation().computeAction(vel) + m_velocity;
 
-    Vector result;
-    result.resize(9);
-    result << transformed_point, transformed_vel, point_vel.template tail<3>();
+    typename Base::ActionVector result;
+    result.resize(6);
+    result << transformed_point, transformed_vel;
     return result;
   }
 
-  /**
-   * @brief Check if approximately equal to another element
-   */
-  bool isApprox(const SE23 &other,
-                const Scalar &eps = Types<Scalar>::epsilon()) const {
-    return m_pose.isApprox(other.m_pose, eps) &&
-           m_velocity.isApprox(other.m_velocity, eps);
+  static Matrix hat(const TangentVector &v) {
+    // For SE_2(3), the hat operator maps a 9D vector to a 5x5 matrix
+    // This is a placeholder, actual implementation depends on the specific representation
+    Matrix result = Matrix::Zero();
+    // ... implement hat operator for SE_2(3)
+    return result;
   }
 
-  /**
-   * @brief Get the identity element
-   */
-  static const SE23 &identity() {
-    static const SE23 id;
-    return id;
+  static TangentVector vee(const Matrix &X) {
+    // For SE_2(3), the vee operator maps a 5x5 matrix to a 9D vector
+    // This is a placeholder, actual implementation depends on the specific representation
+    TangentVector result = TangentVector::Zero();
+    // ... implement vee operator for SE_2(3)
+    return result;
   }
 
-  /**
-   * @brief Get the dimension of the Lie algebra (9 for SE_2(3))
-   */
-  int algebraDimension() const override { return 9; }
+  static AdjointMatrix computeAd(const TangentVector &v) {
+    // For SE_2(3), the adjoint operator maps a 9D vector to a 9x9 matrix
+    // This is a placeholder, actual implementation depends on the specific representation
+    AdjointMatrix result = AdjointMatrix::Zero();
+    // ... implement adjoint operator for SE_2(3)
+    return result;
+  }
 
-  /**
-   * @brief Get the dimension of the space the group acts on (6 for SE_2(3))
-   */
-  int actionDimension() const override { return 6; }
+  template <typename Generator>
+  static SE23<Scalar> computeRandom(Generator &gen) {
+    return SE23(SE3<Scalar>::computeRandom(gen), Types<Scalar>::template randomVector<3>(gen));
+  }
 
-  /**
-   * @brief Access the pose component
-   */
-  const SE3<Scalar> &pose() const { return m_pose; }
-  SE3<Scalar> &pose() { return m_pose; }
+  std::ostream &print(std::ostream &os) const {
+    os << "SE23(pose=" << m_pose << ", velocity=" << m_velocity.transpose() << ")";
+    return os;
+  }
 
-  /**
-   * @brief Access the velocity component
-   */
-  const Vector3 &velocity() const { return m_velocity; }
-  Vector3 &velocity() { return m_velocity; }
+  static constexpr std::string_view getTypeName() {
+    return "SE23";
+  }
 
-  /**
-   * @brief Get the extended homogeneous transformation matrix
-   */
-  Eigen::Matrix<Scalar, 5, 5> matrix() const {
-    Eigen::Matrix<Scalar, 5, 5> T = Eigen::Matrix<Scalar, 5, 5>::Identity();
-    T.template block<4, 4>(0, 0) = m_pose.matrix();
-    T.template block<3, 1>(0, 4) = m_velocity;
-    return T;
+  bool computeIsValid() const {
+    return m_pose.computeIsValid() && m_velocity.allFinite();
+  }
+
+  void computeNormalize() {
+    m_pose.computeNormalize();
   }
 
 private:

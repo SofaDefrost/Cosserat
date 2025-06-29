@@ -78,27 +78,7 @@ toPositionEulerVelocityTime(const SGal3<_Scalar> &transform) {
   return result;
 }
 
-/**
- * @brief Interpolate between two Galilean transformations
- *
- * This implementation uses the exponential map to perform proper interpolation
- * in the Lie algebra space, including velocity and time interpolation.
- *
- * @param from Starting Galilean transformation
- * @param to Ending Galilean transformation
- * @param t Interpolation parameter in [0,1]
- * @return Interpolated Galilean transformation
- */
-template <typename _Scalar>
-SGal3<_Scalar> interpolate(const SGal3<_Scalar> &from, const SGal3<_Scalar> &to,
-                           const _Scalar &t) {
-  // Convert 'to' relative to 'from'
-  SGal3<_Scalar> rel = from.inverse() * to;
-  // Get the relative motion in the Lie algebra
-  typename SGal3<_Scalar>::TangentVector delta = rel.log();
-  // Scale it by t and apply it to 'from'
-  return from * SGal3<_Scalar>().exp(t * delta);
-}
+
 
 /**
  * @brief Dual vector operator for sgal(3)
@@ -116,7 +96,7 @@ dualMatrix(const typename SGal3<_Scalar>::TangentVector &xi) {
   const _Scalar &tau = xi[9];                   // Time rate
 
   // Fill the matrix blocks
-  xi_hat.template block<3, 3>(0, 0) = SO3<_Scalar>::hat(w);
+  xi_hat.template block<3, 3>(0, 0) = SO3<_Scalar>::computeHat(w);
   xi_hat.template block<3, 1>(0, 3) = v;
   xi_hat.template block<3, 1>(0, 4) = beta;
   xi_hat(4, 5) = tau;

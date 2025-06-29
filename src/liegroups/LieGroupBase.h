@@ -21,6 +21,7 @@
 #include "Types.h"
 #include <concepts>
 #include <memory>
+#include <iostream>
 #include <stdexcept>
 #include <type_traits>
 
@@ -78,8 +79,6 @@ template <typename Derived, FloatingPoint _Scalar, int _Dim,
   requires(_Dim > 0 && _AlgebraDim > 0 && _ActionDim > 0)
 class LieGroupBase {
 public:
- static_assert(std::is_floating_point<_Scalar>::value,
-                 "Scalar type must be a floating-point type");
   // Type aliases for scalar and types 
   using Scalar = _Scalar;
   using Types = Types<Scalar>;
@@ -120,7 +119,6 @@ public:
   LieGroupBase(LieGroupBase &&) noexcept = default;
   LieGroupBase &operator=(const LieGroupBase &) = default;
   LieGroupBase &operator=(LieGroupBase &&) noexcept = default;
-  virtual ~LieGroupBase() = default;
 
   /**
    * @brief Access to the derived object (const version)
@@ -225,19 +223,7 @@ public:
     return derived().computeIsApprox(other, eps);
   }
 
-  /**
-   * @brief Equality comparison operator
-   */
-  [[nodiscard]] bool operator==(const Derived &other) const noexcept {
-    return isApprox(other);
-  }
-
-  /**
-   * @brief Inequality comparison operator
-   */
-  [[nodiscard]] bool operator!=(const Derived &other) const noexcept {
-    return !(*this == other);
-  }
+  
 
   /**
    * @brief Get the identity element of the group

@@ -13,21 +13,18 @@
  * for more details.                                                           *
  *                                                                             *
  * You should have received a copy of the GNU Lesser General Public License    *
- * along with this program. If not, see <http://www.gnu.org/licenses/\>. *
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.        *
  ******************************************************************************/
 
-// #ifndef SOFA_COMPONENT_COSSERAT_LIEGROUPS_SE3_H
-// #define SOFA_COMPONENT_COSSERAT_LIEGROUPS_SE3_H
-#pragma once
+#include <sofa/testing/BaseTest.h>
+#include <Cosserat/liegroups/LieGroupBase.h>
 
-#include "LieGroupBase.h" // Then the base class interface
-#include "SO3.h"          // Then other dependencies
-#include "Types.h"        // Then our type system
-#include <Eigen/Geometry>                    // Include Eigen first
+namespace sofa::component::cosserat::liegroups::testing {
 
-// Forward declaration outside the namespace
-namespace sofa::component::cosserat::liegroups {
-template <typename Scalar> class SE3;
-}
+using namespace sofa::testing;
 
-namespace sofa::component::cosserat::liegroups {
+// LieGroupBase is an abstract base class, so it cannot be directly instantiated or tested.
+// Tests for LieGroupBase functionalities should be performed through its concrete derived classes.
+// This file serves as a placeholder.
+
+} // namespace sofa::component::cosserat::liegroups::testing

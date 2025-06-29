@@ -75,6 +75,8 @@ struct Types {
     return Scalar(100) * epsilon();
   }
 
+  static constexpr Scalar SMALL_ANGLE_THRESHOLD = Scalar(1e-4);
+
   /**
    * @brief Check if a value is effectively zero
    */

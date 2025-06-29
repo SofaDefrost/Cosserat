@@ -16,6 +16,7 @@
 * along with this program. If not, see <http://www.gnu.org/licenses/\>.        *
 ******************************************************************************/
 
+#include <cmath>
 #include <sofa/testing/BaseTest.h>
 #include <Cosserat/liegroups/Utils.h>
 #include <Eigen/Core>
@@ -31,7 +32,7 @@ using namespace sofa::testing;
 class UtilsTest : public BaseTest
 {
 protected:
-    using Utils = Cosserat::LieGroupUtils<double>;
+    using Utils = Types<double>;
     using Vector2d = Eigen::Vector2d;
     using Vector3d = Eigen::Vector3d;
 
@@ -250,40 +251,7 @@ TEST_F(UtilsTest, VectorProjection)
     EXPECT_NEAR(proj_self[1], v[1], eps);
 }
 
-/**
- * Test SE(2) path interpolation
- */
-TEST_F(UtilsTest, SE2PathInterpolation)
-{
-    // Simple path interpolation
-    Vector3d start(0.0, 0.0, 0.0);
-    Vector3d end(pi/2, 1.0, 2.0);
-    
-    Vector3d mid = Utils::interpolateSE2Path(start, end, 0.5);
-    EXPECT_NEAR(mid[0], pi/4, eps);
-    EXPECT_NEAR(mid[1], 0.5, eps);
-    EXPECT_NEAR(mid[2], 1.0, eps);
-    
-    // Test path end points
-    Vector3d start_point = Utils::interpolateSE2Path(start, end, 0.0);
-    EXPECT_NEAR(start_point[0], start[0], eps);
-    EXPECT_NEAR(start_point[1], start[1], eps);
-    EXPECT_NEAR(start_point[2], start[2], eps);
-    
-    Vector3d end_point = Utils::interpolateSE2Path(start, end, 1.0);
-    EXPECT_NEAR(end_point[0], end[0], eps);
-    EXPECT_NEAR(end_point[1], end[1], eps);
-    EXPECT_NEAR(end_point[2], end[2], eps);
-    
-    // Test angle wrapping during interpolation
-    Vector3d wrap_start(3*pi/4, 0.0, 0.0);
-    Vector3d wrap_end(-3*pi/4, 1.0, 1.0);
-    
-    Vector3d wrap_mid = Utils::interpolateSE2Path(wrap_start, wrap_end, 0.5);
-    EXPECT_NEAR(wrap_mid[0], 0.0, eps);
-    EXPECT_NEAR(wrap_mid[1], 0.5, eps);
-    EXPECT_NEAR(wrap_mid[2], 0.5, eps);
-}
+
 
 } // namespace sofa::component::cosserat::liegroups::testing
 

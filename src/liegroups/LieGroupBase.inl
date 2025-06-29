@@ -6,7 +6,7 @@
 #include "Types.h"
 #include <algorithm>
 #include <cmath>
-#include <numbers>
+
 
 namespace sofa::component::cosserat::liegroups {
 
@@ -162,7 +162,7 @@ LieGroupBase<Derived, _Scalar, _Dim, _AlgebraDim, _ActionDim>::BCH(
   const Scalar w_norm = w.norm();
   const Scalar max_norm = std::max(v_norm, w_norm);
 
-  if (max_norm > std::numbers::pi_v<Scalar> / Scalar(2)) {
+  if (max_norm > M_PI / Scalar(2)) {
     throw NumericalInstabilityException(
         "BCH series may not converge for large inputs");
   }
@@ -233,7 +233,7 @@ LieGroupBase<Derived, _Scalar, _Dim, _AlgebraDim, _ActionDim>::dexp(
   Matrix result = Matrix::Identity();
 
   // Series coefficients for improved numerical stability
-  if (theta < Scalar(1e-4)) {
+  if (theta < Types::SMALL_ANGLE_THRESHOLD) {
     // Use Taylor series for small angles
     result += ad_v * Scalar(0.5);
     result += ad_v * ad_v * Scalar(1.0 / 12.0);
@@ -277,7 +277,7 @@ LieGroupBase<Derived, _Scalar, _Dim, _AlgebraDim, _ActionDim>::dexpInv(
 
   Matrix result = Matrix::Identity();
 
-  if (theta < Scalar(1e-4)) {
+  if (theta < Types::SMALL_ANGLE_THRESHOLD) {
     // Taylor series for small angles
     result -= ad_v * Scalar(0.5);
     result += ad_v * ad_v * Scalar(1.0 / 12.0);
@@ -321,7 +321,7 @@ LieGroupBase<Derived, _Scalar, _Dim, _AlgebraDim, _ActionDim>::dlog() const {
   const Matrix ad_v = Derived::ad(v);
   Matrix result = Matrix::Identity();
 
-  if (theta < Scalar(1e-4)) {
+  if (theta < Types::SMALL_ANGLE_THRESHOLD) {
     // Taylor series for small angles
     result -= ad_v * Scalar(0.5);
     result += ad_v * ad_v * Scalar(1.0 / 12.0);
@@ -369,7 +369,7 @@ LieGroupBase<Derived, _Scalar, _Dim, _AlgebraDim, _ActionDim>::actionJacobian(
 
   // Numerical differentiation with adaptive step size
   const Scalar base_eps = std::sqrt(Types::epsilon());
-  const Scalar point_scale = std::max(Scalar(1), point.norm());
+  const Scalar point_scale = std::max(Scalar(1.0), point.norm());
   const Scalar eps = base_eps * point_scale;
 
   Matrix J = Matrix::Zero();

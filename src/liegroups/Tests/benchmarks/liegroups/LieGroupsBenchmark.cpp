@@ -1,3 +1,4 @@
+#include <cmath>
 #include <benchmark/benchmark.h>
 #include <Cosserat/liegroups/RealSpace.h>
 #include <Cosserat/liegroups/SO2.h>

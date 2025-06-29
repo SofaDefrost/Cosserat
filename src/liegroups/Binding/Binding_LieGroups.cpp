@@ -16,13 +16,13 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/\>. *
  ******************************************************************************/
 
-#include "../../liegroups/LieGroupBase.h"
-#include "../../liegroups/LieGroupBase.inl"
-#include "../../liegroups/RealSpace.h"
-#include "../../liegroups/SE2.h"
-#include "../../liegroups/SE3.h"
-#include "../../liegroups/SO2.h"
-#include "../../liegroups/Types.h"
+#include "../LieGroupBase.h"
+#include "../LieGroupBase.inl"
+#include "../RealSpace.h"
+#include "../SE2.h"
+#include "../SE3.h"
+#include "../SO2.h"
+#include "../Types.h"
 #include <array>
 #include <iostream>
 #include <random>

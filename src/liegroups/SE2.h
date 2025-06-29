@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <cmath>
 #include <random>
 #include "LieGroupBase.h"
 #include "LieGroupBase.inl"
@@ -47,9 +48,6 @@ namespace sofa::component::cosserat::liegroups {
  */
 template <typename _Scalar>
 class SE2 : public LieGroupBase<SE2<_Scalar>, _Scalar, 3, 3, 2> {
-public:
-  // Type safety checks
-  static_assert(std::is_floating_point_v<_Scalar>, "Scalar type must be floating point");
 
   using Base = LieGroupBase<SE2<_Scalar>, _Scalar, 3, 3, 2>;
   using Scalar = typename Base::Scalar;
@@ -129,32 +127,9 @@ public:
 
   // ========== Group Operations ==========
 
-  /**
-   * @brief Group composition (rigid transformation composition)
-   * Implements: this * other = (R₁R₂, R₁t₂ + t₁)
-   */
-  SE2 operator*(const SE2& other) const {
-    return SE2(m_rotation * other.m_rotation,
-               m_translation + m_rotation.act(other.m_translation));
-  }
+  
 
-  /**
-   * @brief In-place composition
-   */
-  SE2& operator*=(const SE2& other) {
-    m_translation += m_rotation.act(other.m_translation);
-    m_rotation *= other.m_rotation;
-    return *this;
-  }
-
-  /**
-   * @brief Inverse element (inverse transformation)
-   * Implements: (R,t)⁻¹ = (R^T, -R^T t)
-   */
-  SE2 inverse() const {
-    SO2<Scalar> inv_rot = m_rotation.inverse();
-    return SE2(inv_rot, -(inv_rot.act(m_translation)));
-  }
+  
 
   // ========== Lie Algebra Operations ==========
 
@@ -166,182 +141,33 @@ public:
    * exp(ξ) = [exp_SO2(φ), V(φ)ρ; 0, 1]
    * where V(φ) = (sin φ / φ)I + ((1-cos φ)/φ²)K with K = [0 -1; 1 0]
    */
-  static SE2 exp(const TangentVector& algebra_element) {
-    const Scalar& theta = algebra_element[2];
-    const Vector2 rho(algebra_element[0], algebra_element[1]);
-
-    // Handle small angle case for numerical stability
-    if (std::abs(theta) < Types<Scalar>::epsilon()) {
-      return SE2(SO2<Scalar>(theta), rho);
-    }
-
-    // Compute V matrix for translation component
-    const Scalar sin_theta = std::sin(theta);
-    const Scalar cos_theta = std::cos(theta);
-    const Scalar theta_inv = Scalar(1) / theta;
-    const Scalar sin_over_theta = sin_theta * theta_inv;
-    const Scalar one_minus_cos_over_theta = (Scalar(1) - cos_theta) * theta_inv;
-
-    Matrix2 V;
-    V << sin_over_theta, -one_minus_cos_over_theta,
-         one_minus_cos_over_theta, sin_over_theta;
-
-    return SE2(SO2<Scalar>(theta), V * rho);
-  }
+  
 
   /**
    * @brief Logarithmic map from SE(2) to Lie algebra se(2)
    * @return Vector in ℝ³ representing (vx, vy, ω)
    */
-  TangentVector log() const {
-    const Scalar theta = m_rotation.angle();
-    TangentVector result;
+  
 
-    // Handle small angle case
-    if (std::abs(theta) < Types<Scalar>::epsilon()) {
-      result << m_translation, theta;
-      return result;
-    }
-
-    // Check for singularity (θ = ±π)
-    const Scalar abs_theta = std::abs(theta);
-    if (abs_theta > M_PI - Types<Scalar>::epsilon()) {
-      // Near ±π, use series expansion for numerical stability
-      const Scalar theta_sq = theta * theta;
-      const Scalar coeff = Scalar(1) - theta_sq / Scalar(12); // First correction term
-      Matrix2 V_inv = coeff * Matrix2::Identity();
-      V_inv(0, 1) = -theta / Scalar(2);
-      V_inv(1, 0) = theta / Scalar(2);
-      
-      Vector2 rho = V_inv * m_translation;
-      result << rho, theta;
-      return result;
-    }
-
-    // General case
-    const Scalar sin_theta = std::sin(theta);
-    const Scalar cos_theta = std::cos(theta);
-    const Scalar half_theta = theta * Scalar(0.5);
-    const Scalar cot_half = cos_theta / sin_theta; // cot(θ/2) = cos(θ)/sin(θ) for θ ≠ 0
-
-    Matrix2 V_inv;
-    V_inv << half_theta * cot_half, -half_theta,
-             half_theta, half_theta * cot_half;
-
-    Vector2 rho = V_inv * m_translation;
-    result << rho, theta;
-    return result;
-  }
-
-  /**
-   * @brief Adjoint representation Ad_g: se(2) → se(2)
-   * For g = (R,t), Ad_g = [R, [t]×; 0, 1] where [t]× is the skew-symmetric matrix
-   */
-  AdjointMatrix adjoint() const {
-    AdjointMatrix Ad = AdjointMatrix::Zero();
-    
-    // Rotation block (top-left 2x2)
-    Ad.template block<2, 2>(0, 0) = m_rotation.matrix();
-    
-    // Translation coupling (top-right 2x1)
-    Ad(0, 2) = -m_translation.y();
-    Ad(1, 2) = m_translation.x();
-    
-    // Bottom row for angular component
-    Ad(2, 2) = Scalar(1);
-    
-    return Ad;
-  }
+  
 
   // ========== Group Actions ==========
 
-  /**
-   * @brief Group action on a 2D point
-   * Implements: g · p = Rp + t
-   */
-  Vector2 act(const Vector2& point) const {
-    return m_rotation.act(point) + m_translation;
-  }
-
-  /**
-   * @brief Group action on a 3D vector (treats as homogeneous coordinates)
-   * For [x, y, z]^T, applies SE(2) to [x, y] and preserves z
-   */
-  Vector act(const Vector& point) const {
-    Vector2 transformed = act(point.template head<2>());
-    Vector result;
-    result << transformed, point[2];
-    return result;
-  }
-
-  /**
-   * @brief Batch action on multiple points
-   */
-  template<int N>
-  Eigen::Matrix<Scalar, 2, N> act(const Eigen::Matrix<Scalar, 2, N>& points) const {
-    return m_rotation.matrix() * points + m_translation.replicate(1, N);
-  }
+  
 
   // ========== Utility Functions ==========
 
-  /**
-   * @brief Check if approximately equal to another element
-   */
-  bool isApprox(const SE2& other, const Scalar& eps = Types<Scalar>::epsilon()) const {
-    return m_rotation.isApprox(other.m_rotation, eps) &&
-           m_translation.isApprox(other.m_translation, eps);
-  }
+  
 
-  /**
-   * @brief Equality operator
-   */
-  bool operator==(const SE2& other) const {
-    return isApprox(other);
-  }
+  
 
-  /**
-   * @brief Inequality operator
-   */
-  bool operator!=(const SE2& other) const {
-    return !(*this == other);
-  }
+  
 
-  /**
-   * @brief Linear interpolation between two SE(2) elements
-   * @param other Target transformation
-   * @param t Interpolation parameter [0,1]
-   */
-  SE2 interpolate(const SE2& other, const Scalar& t) const {
-    // Interpolate in Lie algebra for geodesic interpolation
-    TangentVector delta = (inverse() * other).log();
-    return *this * exp(t * delta);
-  }
-
-  /**
-   * @brief Generate random SE(2) element
-   * @param gen Random number generator
-   * @param translation_scale Scale for translation component
-   */
-  template<typename Generator>
-  static SE2 random(Generator& gen, const Scalar& translation_scale = Scalar(1)) {
-    std::uniform_real_distribution<Scalar> angle_dist(-M_PI, M_PI);
-    std::normal_distribution<Scalar> trans_dist(0, translation_scale);
-    
-    Scalar angle = angle_dist(gen);
-    Vector2 translation(trans_dist(gen), trans_dist(gen));
-    
-    return SE2(angle, translation);
-  }
+  
 
   // ========== Static Members ==========
 
-  /**
-   * @brief Get the identity element
-   */
-  static const SE2& identity() {
-    static const SE2 id;
-    return id;
-  }
+  
 
   /**
    * @brief Create SE(2) element from translation only
@@ -363,15 +189,7 @@ public:
 
   // ========== Accessors ==========
 
-  /**
-   * @brief Get the dimension of the Lie algebra (3 for SE(2))
-   */
-  static constexpr int algebraDimension() { return DOF; }
-
-  /**
-   * @brief Get the dimension of the space the group acts on (2 for SE(2))
-   */
-  static constexpr int actionDimension() { return ActionDim; }
+  
 
   /**
    * @brief Access the rotation component
@@ -404,19 +222,12 @@ public:
    * @brief Get the inverse transformation matrix
    */
   Matrix3 inverseMatrix() const {
-    return inverse().matrix();
-  }
+    return computeInverse().matrix();
+  };
 
   // ========== Stream Operators ==========
 
-  /**
-   * @brief Output stream operator
-   */
-  friend std::ostream& operator<<(std::ostream& os, const SE2& se2) {
-    os << "SE2(angle=" << se2.angle() 
-       << ", translation=(" << se2.m_translation.transpose() << "))";
-    return os;
-  }
+  
 
 private:
   /**
@@ -441,12 +252,150 @@ private:
 
   // Required CRTP methods:
   static SE2<Scalar> computeIdentity() noexcept { return SE2(); }
-  SE2<Scalar> computeInverse() const { return inverse(); }
-  static SE2<Scalar> computeExp(const TangentVector& algebra_element) { return exp(algebra_element); }
-  TangentVector computeLog() const { return log(); }
-  AdjointMatrix computeAdjoint() const { return adjoint(); }
-  bool computeIsApprox(const SE2& other, const Scalar& eps) const { return isApprox(other, eps); }
-  typename Base::ActionVector computeAction(const typename Base::ActionVector& point) const { return act(point); }
+  SE2<Scalar> computeInverse() const {
+    SO2<Scalar> inv_rot = m_rotation.computeInverse();
+    return SE2(inv_rot, -(inv_rot.computeAction(m_translation)));
+  }
+  static SE2<Scalar> computeExp(const TangentVector& algebra_element) {
+    const Scalar& theta = algebra_element[2];
+    const Vector2 rho(algebra_element[0], algebra_element[1]);
+
+    // Handle small angle case for numerical stability
+    if (std::abs(theta) < Types<Scalar>::epsilon()) {
+      return SE2(SO2<Scalar>(theta), rho);
+    }
+
+    // Compute V matrix for translation component
+    const Scalar sin_theta = std::sin(theta);
+    const Scalar cos_theta = std::cos(theta);
+    const Scalar theta_inv = Scalar(1.0) / theta;
+    const Scalar sin_over_theta = sin_theta * theta_inv;
+    const Scalar one_minus_cos_over_theta = (Scalar(1.0) - cos_theta) * theta_inv;
+
+    Matrix2 V;
+    V << sin_over_theta, -one_minus_cos_over_theta,
+         one_minus_cos_over_theta, sin_over_theta;
+
+    return SE2(SO2<Scalar>(theta), V * rho);
+  }
+  TangentVector computeLog() const {
+    const Scalar theta = m_rotation.angle();
+    TangentVector result;
+
+    // Handle small angle case
+    if (std::abs(theta) < Types<Scalar>::epsilon()) {
+      result << m_translation, theta;
+      return result;
+    }
+
+    // Check for singularity (θ = ±π)
+    const Scalar abs_theta = std::abs(theta);
+    if (abs_theta > M_PI - Types<Scalar>::epsilon()) {
+      // Near ±π, use series expansion for numerical stability
+      const Scalar theta_sq = theta * theta;
+      const Scalar coeff = Scalar(1.0) - theta_sq / Scalar(12.0); // First correction term
+      Matrix2 V_inv = coeff * Matrix2::Identity();
+      V_inv(0, 1) = -theta / Scalar(2.0);
+      V_inv(1, 0) = theta / Scalar(2.0);
+      
+      Vector2 rho = V_inv * m_translation;
+      result << rho, theta;
+      return result;
+    }
+
+    // General case
+    const Scalar sin_theta = std::sin(theta);
+    const Scalar cos_theta = std::cos(theta);
+    const Scalar half_theta = theta * Scalar(0.5);
+    const Scalar cot_half = cos_theta / sin_theta; // cot(θ/2) = cos(θ)/sin(θ) for θ ≠ 0
+
+    Matrix2 V_inv;
+    V_inv << half_theta * cot_half, -half_theta,
+             half_theta, half_theta * cot_half;
+
+    Vector2 rho = V_inv * m_translation;
+    result << rho, theta;
+    return result;
+  }
+  AdjointMatrix computeAdjoint() const {
+    AdjointMatrix Ad = AdjointMatrix::Zero();
+    
+    // Rotation block (top-left 2x2)
+    Ad.template block<2, 2>(0, 0) = m_rotation.matrix();
+    
+    // Translation coupling (top-right 2x1)
+    Ad(0, 2) = -m_translation.y();
+    Ad(1, 2) = m_translation.x();
+    
+    // Bottom row for angular component
+    Ad(2, 2) = Scalar(1.0);
+    
+    return Ad;
+  }
+  bool computeIsApprox(const SE2& other, const Scalar& eps) const {
+    return m_rotation.computeIsApprox(other.m_rotation, eps) &&
+           m_translation.isApprox(other.m_translation, eps);
+  }
+  typename Base::ActionVector computeAction(const typename Base::ActionVector& point) const {
+    return m_rotation.computeAction(point.template head<2>()) + m_translation;
+  }
+
+  static Matrix hat(const TangentVector& v) {
+    Matrix R = Matrix::Zero();
+    R(0, 2) = v(0);
+    R(1, 2) = v(1);
+    R(0, 1) = -v(2);
+    R(1, 0) = v(2);
+    return R;
+  }
+
+  static TangentVector vee(const Matrix& X) {
+    TangentVector v;
+    v(0) = X(0, 2);
+    v(1) = X(1, 2);
+    v(2) = X(1, 0);
+    return v;
+  }
+
+  static AdjointMatrix computeAd(const TangentVector& v) {
+    AdjointMatrix Ad = AdjointMatrix::Zero();
+    Ad(0, 0) = 1.0;
+    Ad(1, 1) = 1.0;
+    Ad(2, 2) = 1.0;
+    Ad(0, 2) = -v(1);
+    Ad(1, 2) = v(0);
+    return Ad;
+  }
+
+  template<typename Generator>
+  static SE2<Scalar> computeRandom(Generator& gen) {
+    std::uniform_real_distribution<Scalar> angle_dist(-M_PI, M_PI);
+    std::normal_distribution<Scalar> trans_dist(0, Scalar(1.0));
+    
+    Scalar angle = angle_dist(gen);
+    Vector2 translation(trans_dist(gen), trans_dist(gen));
+    
+    return SE2(angle, translation);
+  }
+
+  std::ostream& print(std::ostream& os) const {
+    os << "SE2(angle=" << m_rotation.angle() 
+       << ", translation=(" << m_translation.transpose() << "))";
+    return os;
+  }
+
+  static constexpr std::string_view getTypeName() {
+    return "SE2";
+  }
+
+  bool computeIsValid() const {
+    return m_rotation.computeIsValid() && m_translation.allFinite();
+  }
+
+  void computeNormalize() {
+    m_rotation.computeNormalize();
+  }
+
 };
 
 // ========== Type Aliases ==========

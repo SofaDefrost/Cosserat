@@ -19,7 +19,7 @@
 ******************************************************************************/
 
 #include <pybind11/pybind11.h>
-#include "Binding_PointsManager.h"
+#include "Binding_LieGroups.h"
 
 
 namespace py { using namespace pybind11; }
@@ -30,6 +30,7 @@ namespace sofapython3
 PYBIND11_MODULE(Cosserat, m)
 {
     moduleAddPointsManager(m);
+    moduleAddLieGroups(m);
 }
 
 } // namespace sofapython3

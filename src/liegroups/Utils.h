@@ -1,7 +1,8 @@
 #ifndef COSSERAT_LIEGROUPS_UTILS_H
 #define COSSERAT_LIEGROUPS_UTILS_H
 
-#include <Eigen/Core>
+#include <cmath>
+#include <eigen3/Eigen/Dense>
 #include <cmath>
 #include <limits>
 #include <type_traits>

@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.12)
 project(Cosserat VERSION 21.12.0)
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 include(cmake/environment.cmake)
 
@@ -158,6 +160,7 @@ if(SofaPython3Tools OR SofaPython3_FOUND)
     #         TARGET_DIRECTORY cosserat
     # )
     add_subdirectory(${SRC_ROOT_DIR}/Binding)
+    add_subdirectory(${SRC_ROOT_LIE_GROUPE}/Binding)
 endif()
 
 

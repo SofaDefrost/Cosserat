@@ -7,6 +7,13 @@ project(Cosserat_liegroups_tests)
 set(LIEGROUPS_TEST_FILES
     liegroups/SO2Test.cpp
     liegroups/UtilsTest.cpp
+    liegroups/LieGroupBaseTest.cpp
+    liegroups/TypesTest.cpp
+    liegroups/RealSpaceTest.cpp
+    liegroups/SE2Test.cpp
+    liegroups/SE23Test.cpp
+    liegroups/SO3Test.cpp
+    liegroups/SGal3Test.cpp
 )
 
 # If unit tests are enabled
@@ -28,7 +35,7 @@ if(UNIT_TEST)
     )
     
     # Add test
-    add_test(NAME ${PROJECT_NAME} COMMAND ${PROJECT_NAME})
+    add_test(NAME liegroups_tests COMMAND ${PROJECT_NAME})
 endif()
 
 # Add benchmarks if enabled

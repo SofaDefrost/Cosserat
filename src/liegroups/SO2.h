@@ -20,6 +20,7 @@
 // #define SOFA_COMPONENT_COSSERAT_LIEGROUPS_SO2_H
 #pragma once
 
+#include <cmath>
 #include "LieGroupBase.h"   // Then the base class interface
 #include "LieGroupBase.inl" // Then the base class interface
 #include "Types.h"          // Then our type system
@@ -73,132 +74,6 @@ public:
   SO2(const SO2 &other) : m_angle(other.m_angle), m_complex(other.m_complex) {}
 
   /**
-   * @brief Assignment operator
-   */
-  SO2 &operator=(const SO2 &other) {
-    if (this != &other) {
-      m_angle = other.m_angle;
-      m_complex = other.m_complex;
-    }
-    return *this;
-  }
-
-  /**
-   * @brief Group composition (rotation composition)
-   */
-  SO2 operator*(const SO2 &other) const {
-    // Complex multiplication: (a + bi)(c + di) = (ac - bd) + (ad + bc)i
-    Scalar real_part =
-        m_complex(0) * other.m_complex(0) - m_complex(1) * other.m_complex(1);
-    Scalar imag_part =
-        m_complex(0) * other.m_complex(1) + m_complex(1) * other.m_complex(0);
-
-    // Convert back to angle using atan2
-    Scalar result_angle = std::atan2(imag_part, real_part);
-    return SO2(result_angle);
-  }
-
-  /**
-   * @brief In-place composition
-   */
-  SO2 &operator*=(const SO2 &other) {
-    *this = *this * other;
-    return *this;
-  }
-
-  /**
-   * @brief Inverse element (opposite rotation)
-   */
-  SO2 inverse() const { return SO2(-m_angle); }
-
-  /**
-   * @brief Exponential map (angle to rotation)
-   * For SO(2), this is just the angle itself as rotation
-   */
-  static SO2 exp(const TangentVector &algebra_element) {
-    return SO2(algebra_element[0]);
-  }
-
-  /**
-   * @brief Logarithmic map (rotation to angle)
-   */
-  TangentVector log() const {
-    TangentVector result;
-    result[0] = m_angle;
-    return result;
-  }
-
-  /**
-   * @brief Adjoint representation
-   * For SO(2), this is simply the identity matrix as the group is abelian
-   */
-  AdjointMatrix adjoint() const { return AdjointMatrix::Identity(); }
-
-  /**
-   * @brief Group action on a point (rotate the point)
-   */
-  Vector act(const Vector &point) const {
-    Vector result;
-    result(0) = m_complex(0) * point(0) - m_complex(1) * point(1);
-    result(1) = m_complex(1) * point(0) + m_complex(0) * point(1);
-    return result;
-  }
-
-  /**
-   * @brief Left Jacobian matrix for exponential coordinates
-   * For SO(2), this is simply the identity matrix
-   */
-  AdjointMatrix leftJacobian() const { return AdjointMatrix::Identity(); }
-
-  /**
-   * @brief Right Jacobian matrix for exponential coordinates
-   * For SO(2), this is simply the identity matrix
-   */
-  AdjointMatrix rightJacobian() const { return AdjointMatrix::Identity(); }
-
-  /**
-   * @brief Check if approximately equal to another rotation
-   */
-  bool isApprox(const SO2 &other,
-                const Scalar &eps = Types<_Scalar>::epsilon()) const {
-    return Types<_Scalar>::isZero(
-        Types<_Scalar>::normalizeAngle(m_angle - other.m_angle), eps);
-  }
-
-  /**
-   * @brief Check if this is approximately the identity element
-   */
-  bool isIdentity(const Scalar &eps = Types<_Scalar>::epsilon()) const {
-    return Types<_Scalar>::isZero(m_angle, eps);
-  }
-
-  /**
-   * @brief Get the identity element (zero rotation)
-   */
-  static SO2 identity() { return SO2(); }
-
-  /**
-   * @brief Generate a random rotation
-   */
-  static SO2 random() {
-    static std::random_device rd;
-    static std::mt19937 gen(rd());
-    std::uniform_real_distribution<Scalar> dis(-Types<_Scalar>::pi(),
-                                               Types<_Scalar>::pi());
-    return SO2(dis(gen));
-  }
-
-  /**
-   * @brief Get the dimension of the Lie algebra (1 for SO(2))
-   */
-  static constexpr int algebraDimension() { return 1; }
-
-  /**
-   * @brief Get the dimension of the space the group acts on (2 for SO(2))
-   */
-  static constexpr int actionDimension() { return 2; }
-
-  /**
    * @brief Get the rotation angle in radians
    */
   Scalar angle() const { return m_angle; }
@@ -212,19 +87,59 @@ public:
   }
 
   // Required CRTP methods:
-  static SO2<Scalar> computeIdentity() noexcept { return SO2(); }
-  SO2<Scalar> computeInverse() const { return inverse(); }
+  static SO2<Scalar> computeIdentity() noexcept { return SO2(Scalar(0)); }
+  SO2<Scalar> computeInverse() const { return SO2(-m_angle); }
   static SO2<Scalar> computeExp(const TangentVector &algebra_element) {
-    return exp(algebra_element);
+    return SO2(algebra_element[0]);
   }
-  TangentVector computeLog() const { return log(); }
-  AdjointMatrix computeAdjoint() const { return adjoint(); }
+  TangentVector computeLog() const {
+    TangentVector result;
+    result[0] = m_angle;
+    return result;
+  }
+  AdjointMatrix computeAdjoint() const { return AdjointMatrix::Identity(); }
   bool computeIsApprox(const SO2 &other, const Scalar &eps) const {
-    return isApprox(other, eps);
+    return Types<_Scalar>::isZero(
+        Types<_Scalar>::normalizeAngle(m_angle - other.m_angle), eps);
   }
   typename Base::ActionVector
   computeAction(const typename Base::ActionVector &point) const {
-    return act(point);
+    typename Base::ActionVector result;
+    result(0) = m_complex(0) * point(0) - m_complex(1) * point(1);
+    result(1) = m_complex(1) * point(0) + m_complex(0) * point(1);
+    return result;
+  }
+
+  static AdjointMatrix computeAd(const TangentVector &v) {
+    return AdjointMatrix::Zero(); // Adjoint for SO(2) is zero matrix
+  }
+
+  template <typename Generator>
+  static SO2<Scalar> computeRandom(Generator &gen) {
+    std::uniform_real_distribution<Scalar> dis(-M_PI,
+                                               M_PI);
+    return SO2(dis(gen));
+  }
+
+  std::ostream &print(std::ostream &os) const {
+    os << "SO2(angle=" << m_angle << " rad, "
+       << (m_angle * Scalar(180) / M_PI) << " deg)";
+    return os;
+  }
+
+  static constexpr std::string_view getTypeName() {
+    return "SO2";
+  }
+
+  bool computeIsValid() const {
+    // Check if angle is finite and complex representation is consistent
+    return std::isfinite(m_angle) && m_complex.allFinite();
+  }
+
+  void computeNormalize() {
+    // Re-normalize angle and complex representation
+    m_angle = Types<_Scalar>::normalizeAngle(m_angle);
+    updateComplex();
   }
 
   /**
@@ -265,19 +180,6 @@ public:
   const Complex &complex() const { return m_complex; }
 
   /**
-   * @brief Interpolate between two rotations using SLERP
-   * @param other Target rotation
-   * @param t Interpolation parameter [0,1]
-   * @return Interpolated rotation
-   */
-  SO2 slerp(const SO2 &other, const Scalar &t) const {
-    // For SO(2), SLERP reduces to linear interpolation of angles
-    // with proper handling of angle wrapping
-    Scalar angle_diff = Types<_Scalar>::normalizeAngle(other.m_angle - m_angle);
-    return SO2(m_angle + t * angle_diff);
-  }
-
-  /**
    * @brief Get a unit vector in the direction of the rotation
    */
   Vector direction() const { return m_complex; }
@@ -290,23 +192,6 @@ public:
     result(0) = -m_complex(1); // -sin θ
     result(1) = m_complex(0);  //  cos θ
     return result;
-  }
-
-  /**
-   * @brief Convert to string representation
-   */
-  std::string toString() const {
-    std::ostringstream oss;
-    oss << "SO2(angle=" << m_angle << " rad, "
-        << (m_angle * Scalar(180) / Types<_Scalar>::pi()) << " deg)";
-    return oss.str();
-  }
-
-  /**
-   * @brief Stream output operator
-   */
-  friend std::ostream &operator<<(std::ostream &os, const SO2 &rotation) {
-    return os << rotation.toString();
   }
 
 private:

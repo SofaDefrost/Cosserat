@@ -41,7 +41,7 @@ SO3<_Scalar>::distance(const SO3 &other) const noexcept {
  * two rotations. The parameter t is clamped to [0,1].
  */
 template <typename _Scalar>
-SO3<_Scalar> SO3<_Scalar>::interpolate(const SO3 &other,
+SO3<_Scalar> SO3<_Scalar>::computeInterpolate(const SO3 &other,
                                        const Scalar &t) const noexcept {
   // Clamp t to [0,1] for safety
   const Scalar t_clamped = std::max(Scalar(0), std::min(Scalar(1), t));
@@ -76,7 +76,7 @@ SO3<_Scalar>::BCH(const TangentVector &v, const TangentVector &w, int order) {
     if (order >= 3) {
       // Third-order term using stored [v,w]
       result +=
-          (vee(Vhat * hat(vw)) - vee(What * hat(vw))) * Scalar(1.0 / 12.0);
+          (Derived::computeVee(Vhat * Derived::computeHat(vw)) - Derived::computeVee(What * Derived::computeHat(vw))) * Scalar(1.0 / 12.0);
     }
   }
 
@@ -96,7 +96,7 @@ typename SO3<_Scalar>::AdjointMatrix
 SO3<_Scalar>::dexp(const TangentVector &v) {
   const Scalar theta = v.norm();
 
-  if (theta < Types<Scalar>::epsilon()) {
+  if (theta < Types<Scalar>::SMALL_ANGLE_THRESHOLD) {
     return Matrix::Identity() + hat(v) * Scalar(0.5);
   }
 
@@ -118,7 +118,7 @@ typename SO3<_Scalar>::AdjointMatrix SO3<_Scalar>::dlog() const {
   const TangentVector omega = computeLog();
   const Scalar theta = omega.norm();
 
-  if (theta < Types<Scalar>::epsilon()) {
+  if (theta < Types<Scalar>::SMALL_ANGLE_THRESHOLD) {
     return Matrix::Identity() - hat(omega) * Scalar(0.5);
   }
 
@@ -138,7 +138,7 @@ typename SO3<_Scalar>::AdjointMatrix SO3<_Scalar>::dlog() const {
  * ad(v)w = [v,w] = hat(v)w
  */
 template <typename _Scalar>
-typename SO3<_Scalar>::AdjointMatrix SO3<_Scalar>::ad(const TangentVector &v) {
+typename SO3<_Scalar>::AdjointMatrix SO3<_Scalar>::computeAd(const TangentVector &v) {
   // For SO(3), ad(v) is just the hat map
   return hat(v);
 }

@@ -1,12 +1,12 @@
-project(CosseratBindings)
+project(LieGroupsBindings)
 
 set(SOURCE_FILES
-    ${CMAKE_CURRENT_SOURCE_DIR}/Module_Cosserat.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/Binding_PointsManager.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Module_LieGroups.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Binding_LieGroups.cpp
 )
 
 set(HEADER_FILES
-    ${CMAKE_CURRENT_SOURCE_DIR}/Binding_PointsManager.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/Binding_LieGroups.h
 )
 
 if (NOT TARGET SofaPython3::Plugin)
@@ -18,11 +18,12 @@ sofa_find_package(Sofa.GL QUIET)
 SP3_add_python_module(
     TARGET       ${PROJECT_NAME}
     PACKAGE      Binding
-    MODULE       Cosserat
+    MODULE       LieGroupe
     DESTINATION  /
     SOURCES      ${SOURCE_FILES}
     HEADERS      ${HEADER_FILES}
-    DEPENDS      SofaPython3::Plugin SofaPython3::Bindings.Sofa Sofa.GL Cosserat
+    DEPENDS      SofaPython3::Plugin SofaPython3::Bindings.Sofa Sofa.GL
+    LieGroupe
 )
 
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_20)
