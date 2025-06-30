@@ -1,3 +1,5 @@
+// This file contains the pybind11 bindings for the Lie groups, exposing C++ Lie group functionalities to Python.
+
 /******************************************************************************
  *                 SOFA, Simulation Open-Framework Architecture * (c) 2006
  *INRIA, USTL, UJF, CNRS, MGH                     *
@@ -16,6 +18,12 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/\>. *
  ******************************************************************************/
 
+#include <array>
+#include <iostream>
+#include <random>
+#include <tuple>
+#include <type_traits>
+
 #include "../LieGroupBase.h"
 #include "../LieGroupBase.inl"
 #include "../RealSpace.h"
@@ -23,11 +31,34 @@
 #include "../SE3.h"
 #include "../SO2.h"
 #include "../Types.h"
-#include <array>
-#include <iostream>
-#include <random>
-#include <tuple>
+#include "../../liegroups/SGal3.h"
+#include "../../liegroups/SO3.h"
+#include "Binding_LieGroups.h"
+#include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
+
+
+// Add proper namespace for std classes
+#include <memory>
+#include <functional>
 #include <type_traits>
+#include <iterator>
+
+// Fix namespace issues with a wrapper to provide std namespace prefixes
+// This needs to be done before any pybind11 includes
+namespace std {
+    using ::std::allocator;
+    using ::std::forward_iterator_tag;
+    using ::std::pointer_traits;
+    using ::std::__remove_cv_t;
+    using ::std::__rebind_pointer_t;
+    using ::std::__conditional_t;
+    using ::std::is_same;
+    using ::std::is_pointer;
+    using ::std::__forward_list_node;
+    using ::std::__begin_node_of;
+    using ::std::__forward_begin_node;
+}
 
 namespace sofa::component::cosserat::liegroups {
 
@@ -261,7 +292,7 @@ public:
    * @brief Inverse element (component-wise)
    * Implements: (g₁, ..., gₙ)⁻¹ = (g₁⁻¹, ..., gₙ⁻¹)
    */
-  Bundle inverse() const override {
+  Bundle inverse() const {
     return inverse_impl(std::index_sequence_for<Groups...>());
   }
 
@@ -271,7 +302,7 @@ public:
    * @brief Exponential map from Lie algebra to bundle
    * The Lie algebra of the product is the direct sum of individual algebras
    */
-  Bundle exp(const TangentVector &algebra_element) const override {
+  Bundle exp(const TangentVector &algebra_element) const {
     validateAlgebraElement(algebra_element);
     return exp_impl(algebra_element, std::index_sequence_for<Groups...>());
   }
@@ -280,7 +311,7 @@ public:
    * @brief Logarithmic map from bundle to Lie algebra
    * Maps to the direct sum of individual Lie algebras
    */
-  TangentVector log() const override {
+  TangentVector log() const {
     return log_impl(std::index_sequence_for<Groups...>());
   }
 
@@ -288,7 +319,7 @@ public:
    * @brief Adjoint representation (block diagonal structure)
    * Ad_{(g₁,...,gₙ)} = diag(Ad_{g₁}, ..., Ad_{gₙ})
    */
-  AdjointMatrix adjoint() const override {
+  AdjointMatrix adjoint() const {
     return adjoint_impl(std::index_sequence_for<Groups...>());
   }
 
@@ -298,7 +329,7 @@ public:
    * @brief Group action on a point (component-wise on appropriate subspaces)
    * Each group acts on its corresponding portion of the input vector
    */
-  Vector act(const Vector &point) const override {
+  Vector act(const Vector &point) const  {
     validateActionInput(point);
     return act_impl(point, std::index_sequence_for<Groups...>());
   }
@@ -378,13 +409,13 @@ public:
   /**
    * @brief Get the dimension of the Lie algebra
    */
-  int algebraDimension() const override { return Dim; }
+  int algebraDimension() const { return Dim; }
 
   /**
    * @brief Get the dimension of the space the group acts on (computed at
    * runtime)
    */
-  int actionDimension() const override { return m_action_offsets.total(); }
+  int actionDimension() const { return m_action_offsets.total(); }
 
   /**
    * @brief Access individual group elements (const)

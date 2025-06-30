@@ -27,7 +27,9 @@ namespace sofa::component::cosserat::liegroups::testing {
 using namespace sofa::testing;
 
 /**
- * Test suite for SO2 Lie group
+ * @brief Test suite for SO2 Lie group.
+ * This test fixture provides common types and a small epsilon for floating-point comparisons.
+ * @tparam T The type of SO2 to test (e.g., SO2<double>).
  */
 template <typename T>
 class SO2Test : public BaseTest
@@ -43,13 +45,25 @@ protected:
     const Scalar eps = 1e-9;
     static constexpr Scalar M_PI_VAL = 3.14159265358979323846;
 
+    /**
+     * @brief Set up method for the test fixture.
+     * Called before each test.
+     */
     void SetUp() override {}
+    /**
+     * @brief Tear down method for the test fixture.
+     * Called after each test.
+     */
     void TearDown() override {}
 };
 
 using SO2Types = ::testing::Types<SO2<double>>;
 TYPED_TEST_SUITE(SO2Test, SO2Types);
 
+/**
+ * @brief Tests the constructors of the SO2 class.
+ * Verifies that SO2 objects can be constructed from default and angle representations.
+ */
 TYPED_TEST(SO2Test, Constructors)
 {
     using SO2 = typename TestFixture::SO2;
@@ -62,6 +76,10 @@ TYPED_TEST(SO2Test, Constructors)
     EXPECT_NEAR(g2.angle(), Scalar(TestFixture::M_PI_VAL/2.0), this->eps);
 }
 
+/**
+ * @brief Tests the identity element of the SO2 group.
+ * Verifies that the `identity()` method returns an angle of 0.
+ */
 TYPED_TEST(SO2Test, Identity)
 {
     using SO2 = typename TestFixture::SO2;
@@ -71,6 +89,10 @@ TYPED_TEST(SO2Test, Identity)
     EXPECT_NEAR(identity.angle(), 0.0, this->eps);
 }
 
+/**
+ * @brief Tests the inverse operation of the SO2 group.
+ * Verifies that composing an SO2 element with its inverse results in the identity element.
+ */
 TYPED_TEST(SO2Test, Inverse)
 {
     using SO2 = typename TestFixture::SO2;
@@ -83,6 +105,10 @@ TYPED_TEST(SO2Test, Inverse)
     EXPECT_TRUE(composed.computeIdentity().computeIsApprox(composed, this->eps));
 }
 
+/**
+ * @brief Tests the exponential and logarithmic maps of the SO2 group.
+ * Verifies that applying `exp` to a Lie algebra element and then `log` to the resulting group element returns the original Lie algebra element.
+ */
 TYPED_TEST(SO2Test, ExpLog)
 {
     using SO2 = typename TestFixture::SO2;
@@ -97,6 +123,10 @@ TYPED_TEST(SO2Test, ExpLog)
     EXPECT_NEAR(log_g[0], omega[0], this->eps);
 }
 
+/**
+ * @brief Tests the group action of SO2 on a 2D point.
+ * Verifies that a point is correctly rotated by an SO2 element.
+ */
 TYPED_TEST(SO2Test, Action)
 {
     using SO2 = typename TestFixture::SO2;
@@ -112,6 +142,10 @@ TYPED_TEST(SO2Test, Action)
     EXPECT_NEAR(transformed_point[1], 1.0, this->eps);
 }
 
+/**
+ * @brief Tests the approximate equality comparison for SO2 elements.
+ * Verifies that two SO2 elements are considered approximately equal within a given tolerance.
+ */
 TYPED_TEST(SO2Test, IsApprox)
 {
     using SO2 = typename TestFixture::SO2;
@@ -125,6 +159,10 @@ TYPED_TEST(SO2Test, IsApprox)
     EXPECT_FALSE(g1.computeIsApprox(g3, this->eps));
 }
 
+/**
+ * @brief Tests the hat and vee operators for SO2.
+ * Verifies that applying the hat operator and then the vee operator returns the original Lie algebra element.
+ */
 TYPED_TEST(SO2Test, HatVee)
 {
     using SO2 = typename TestFixture::SO2;
@@ -140,12 +178,16 @@ TYPED_TEST(SO2Test, HatVee)
     EXPECT_NEAR(vee_hat_omega[0], omega[0], this->eps);
 }
 
+/**
+ * @brief Tests the adjoint representation of the SO2 group.
+ * Verifies that the adjoint matrix is identity for SO2 and zero for the Lie algebra element.
+ */
 TYPED_TEST(SO2Test, Adjoint)
 {
     using SO2 = typename TestFixture::SO2;
     using Scalar = typename TestFixture::Scalar;
     using TangentVector = typename TestFixture::TangentVector;
-    using AdjointMatrix = typename SO2::AdjointMatrix;
+    using AdjointMatrix = typename TestFixture::AdjointMatrix;
 
     SO2 g(Scalar(TestFixture::M_PI_VAL/4.0));
     TangentVector omega;
@@ -158,6 +200,10 @@ TYPED_TEST(SO2Test, Adjoint)
     EXPECT_TRUE(ad_omega.isApprox(AdjointMatrix::Zero(), this->eps));
 }
 
+/**
+ * @brief Tests the random element generation for SO2.
+ * Verifies that a randomly generated SO2 element is valid.
+ */
 TYPED_TEST(SO2Test, Random)
 {
     using SO2 = typename TestFixture::SO2;
@@ -166,6 +212,10 @@ TYPED_TEST(SO2Test, Random)
     EXPECT_TRUE(r.computeIsValid());
 }
 
+/**
+ * @brief Tests the stream output operator for SO2.
+ * Verifies that the `print` method produces non-empty output.
+ */
 TYPED_TEST(SO2Test, Print)
 {
     using SO2 = typename TestFixture::SO2;
@@ -177,6 +227,10 @@ TYPED_TEST(SO2Test, Print)
     EXPECT_FALSE(ss.str().empty());
 }
 
+/**
+ * @brief Tests the validity check for SO2 elements.
+ * Verifies that a valid SO2 element is correctly identified as valid.
+ */
 TYPED_TEST(SO2Test, IsValid)
 {
     using SO2 = typename TestFixture::SO2;
@@ -186,6 +240,10 @@ TYPED_TEST(SO2Test, IsValid)
     EXPECT_TRUE(g.computeIsValid());
 }
 
+/**
+ * @brief Tests the normalization of SO2 elements.
+ * Verifies that an angle outside the [-π, π] range is correctly normalized after calling `computeNormalize()`.
+ */
 TYPED_TEST(SO2Test, Normalize)
 {
     using SO2 = typename TestFixture::SO2;

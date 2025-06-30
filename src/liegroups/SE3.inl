@@ -1,3 +1,6 @@
+// This file contains additional operators and utility functions for the SE3
+// (Special Euclidean group in 3D) class.
+
 /******************************************************************************
  *                 SOFA, Simulation Open-Framework Architecture * (c) 2006
  *INRIA, USTL, UJF, CNRS, MGH                     *

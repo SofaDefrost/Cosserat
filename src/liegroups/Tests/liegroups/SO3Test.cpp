@@ -28,7 +28,9 @@ namespace sofa::component::cosserat::liegroups::testing {
 using namespace sofa::testing;
 
 /**
- * Test suite for SO3 Lie group
+ * @brief Test suite for SO3 Lie group.
+ * This test fixture provides common types and a small epsilon for floating-point comparisons.
+ * @tparam T The type of SO3 to test (e.g., SO3<double>).
  */
 template <typename T>
 class SO3Test : public BaseTest
@@ -44,13 +46,25 @@ protected:
 
     const Scalar eps = 1e-9;
 
+    /**
+     * @brief Set up method for the test fixture.
+     * Called before each test.
+     */
     void SetUp() override {}
+    /**
+     * @brief Tear down method for the test fixture.
+     * Called after each test.
+     */
     void TearDown() override {}
 };
 
 using SO3Types = ::testing::Types<SO3<double>>;
 TYPED_TEST_SUITE(SO3Test, SO3Types);
 
+/**
+ * @brief Tests the constructors of the SO3 class.
+ * Verifies that SO3 objects can be constructed from default, angle-axis, quaternion, and matrix representations.
+ */
 TYPED_TEST(SO3Test, Constructors)
 {
     using SO3 = typename TestFixture::SO3;
@@ -73,6 +87,10 @@ TYPED_TEST(SO3Test, Constructors)
     EXPECT_TRUE(g4.computeIsValid());
 }
 
+/**
+ * @brief Tests the identity element of the SO3 group.
+ * Verifies that the `identity()` method returns a quaternion that is approximately the identity quaternion.
+ */
 TYPED_TEST(SO3Test, Identity)
 {
     using SO3 = typename TestFixture::SO3;
@@ -83,6 +101,10 @@ TYPED_TEST(SO3Test, Identity)
     EXPECT_TRUE(identity.quaternion().isApprox(Quaternion::Identity(), this->eps));
 }
 
+/**
+ * @brief Tests the inverse operation of the SO3 group.
+ * Verifies that composing an SO3 element with its inverse results in the identity element.
+ */
 TYPED_TEST(SO3Test, Inverse)
 {
     using SO3 = typename TestFixture::SO3;
@@ -96,6 +118,10 @@ TYPED_TEST(SO3Test, Inverse)
     EXPECT_TRUE(composed.computeIdentity().computeIsApprox(composed, this->eps));
 }
 
+/**
+ * @brief Tests the exponential and logarithmic maps of the SO3 group.
+ * Verifies that applying `exp` to a Lie algebra element and then `log` to the resulting group element returns the original Lie algebra element.
+ */
 TYPED_TEST(SO3Test, ExpLog)
 {
     using SO3 = typename TestFixture::SO3;
@@ -110,6 +136,10 @@ TYPED_TEST(SO3Test, ExpLog)
     EXPECT_TRUE(log_g.isApprox(omega, this->eps));
 }
 
+/**
+ * @brief Tests the group action of SO3 on a 3D point.
+ * Verifies that a point is correctly rotated by an SO3 element.
+ */
 TYPED_TEST(SO3Test, Action)
 {
     using SO3 = typename TestFixture::SO3;
@@ -125,6 +155,10 @@ TYPED_TEST(SO3Test, Action)
     EXPECT_NEAR(transformed_point[2], 0.0, this->eps);
 }
 
+/**
+ * @brief Tests the approximate equality comparison for SO3 elements.
+ * Verifies that two SO3 elements are considered approximately equal within a given tolerance.
+ */
 TYPED_TEST(SO3Test, IsApprox)
 {
     using SO3 = typename TestFixture::SO3;
@@ -139,6 +173,10 @@ TYPED_TEST(SO3Test, IsApprox)
     EXPECT_FALSE(g1.computeIsApprox(g3, this->eps));
 }
 
+/**
+ * @brief Tests the hat and vee operators for SO3.
+ * Verifies that applying the hat operator and then the vee operator returns the original Lie algebra element.
+ */
 TYPED_TEST(SO3Test, HatVee)
 {
     using SO3 = typename TestFixture::SO3;
@@ -154,6 +192,10 @@ TYPED_TEST(SO3Test, HatVee)
     EXPECT_TRUE(vee_hat_omega.isApprox(omega, this->eps));
 }
 
+/**
+ * @brief Tests the adjoint representation of the SO3 group.
+ * Verifies that the adjoint matrix is not zero for a non-identity rotation.
+ */
 TYPED_TEST(SO3Test, Adjoint)
 {
     using SO3 = typename TestFixture::SO3;
@@ -172,6 +214,10 @@ TYPED_TEST(SO3Test, Adjoint)
     EXPECT_FALSE(ad_omega.isZero(this->eps));
 }
 
+/**
+ * @brief Tests the random element generation for SO3.
+ * Verifies that a randomly generated SO3 element is valid.
+ */
 TYPED_TEST(SO3Test, Random)
 {
     using SO3 = typename TestFixture::SO3;
@@ -180,6 +226,10 @@ TYPED_TEST(SO3Test, Random)
     EXPECT_TRUE(r.computeIsValid());
 }
 
+/**
+ * @brief Tests the stream output operator for SO3.
+ * Verifies that the `print` method produces non-empty output.
+ */
 TYPED_TEST(SO3Test, Print)
 {
     using SO3 = typename TestFixture::SO3;
@@ -192,6 +242,10 @@ TYPED_TEST(SO3Test, Print)
     EXPECT_FALSE(ss.str().empty());
 }
 
+/**
+ * @brief Tests the validity check for SO3 elements.
+ * Verifies that a valid SO3 element is correctly identified as valid.
+ */
 TYPED_TEST(SO3Test, IsValid)
 {
     using SO3 = typename TestFixture::SO3;
@@ -202,6 +256,10 @@ TYPED_TEST(SO3Test, IsValid)
     EXPECT_TRUE(g.computeIsValid());
 }
 
+/**
+ * @brief Tests the normalization of SO3 elements.
+ * Verifies that a non-normalized quaternion is correctly normalized after calling `computeNormalize()`.
+ */
 TYPED_TEST(SO3Test, Normalize)
 {
     using SO3 = typename TestFixture::SO3;

@@ -1,3 +1,6 @@
+// This file contains a forward declaration for the SE3 (Special Euclidean group
+// in 3D) class.
+
 /******************************************************************************
  *                 SOFA, Simulation Open-Framework Architecture * (c) 2006
  *INRIA, USTL, UJF, CNRS, MGH                     *
@@ -23,7 +26,7 @@
 #include "LieGroupBase.h" // Then the base class interface
 #include "SO3.h"          // Then other dependencies
 #include "Types.h"        // Then our type system
-#include <Eigen/Geometry>                    // Include Eigen first
+#include <Eigen/Geometry> // Include Eigen first
 
 // Forward declaration outside the namespace
 namespace sofa::component::cosserat::liegroups {

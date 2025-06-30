@@ -1,3 +1,5 @@
+// This file defines the main pybind11 module for the Cosserat plugin, including bindings for Lie groups and PointsManager.
+
 /******************************************************************************
 *                 SOFA, Simulation Open-Framework Architecture                *
 *                    (c) 2021 INRIA, USTL, UJF, CNRS, MGH                     *
@@ -18,6 +20,26 @@
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
 
+#include <memory>
+#include <functional>
+#include <type_traits>
+#include <iterator>
+
+// Fix namespace issues with a wrapper to provide std namespace prefixes
+namespace std {
+    using ::std::allocator;
+    using ::std::forward_iterator_tag;
+    using ::std::pointer_traits;
+    using ::std::__remove_cv_t;
+    using ::std::__rebind_pointer_t;
+    using ::std::__conditional_t;
+    using ::std::is_same;
+    using ::std::is_pointer;
+    using ::std::__forward_list_node;
+    using ::std::__begin_node_of;
+    using ::std::__forward_begin_node;
+}
+
 #include <pybind11/pybind11.h>
 #include "Binding_LieGroups.h"
 
@@ -29,7 +51,7 @@ namespace sofapython3
 
 PYBIND11_MODULE(Cosserat, m)
 {
-    moduleAddPointsManager(m);
+    // Only add Lie groups related functionality
     moduleAddLieGroups(m);
 }
 

@@ -16,17 +16,19 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.        *
  ******************************************************************************/
 
-#include <sofa/testing/BaseTest.h>
-#include <Cosserat/liegroups/SE23.h>
-#include <Eigen/Core>
-#include <Eigen/Geometry>
+// #include <sofa/testing/BaseTest.h>
+// #include <Cosserat/liegroups/SE23.h>
+// #include <Eigen/Core>
+// #include <Eigen/Geometry>
 
 namespace sofa::component::cosserat::liegroups::testing {
 
 using namespace sofa::testing;
 
 /**
- * Test suite for SE23 Lie group
+ * @brief Test suite for SE23 Lie group.
+ * This test fixture provides common types and a small epsilon for floating-point comparisons.
+ * @tparam T The type of SE23 to test (e.g., SE23<double>).
  */
 template <typename T>
 class SE23Test : public BaseTest
@@ -39,13 +41,25 @@ protected:
 
     const Scalar eps = 1e-9;
 
+    /**
+     * @brief Set up method for the test fixture.
+     * Called before each test.
+     */
     void SetUp() override {}
+    /**
+     * @brief Tear down method for the test fixture.
+     * Called after each test.
+     */
     void TearDown() override {}
 };
 
 using SE23Types = ::testing::Types<SE23<double>>;
 TYPED_TEST_SUITE(SE23Test, SE23Types);
 
+/**
+ * @brief Tests the constructors of the SE23 class.
+ * Verifies that SE23 objects can be constructed from default, and pose and velocity representations.
+ */
 TYPED_TEST(SE23Test, Constructors)
 {
     using SE23 = typename TestFixture::SE23;
@@ -62,6 +76,10 @@ TYPED_TEST(SE23Test, Constructors)
     EXPECT_TRUE(g2.velocity().isApprox(vel, this->eps));
 }
 
+/**
+ * @brief Tests the identity element of the SE23 group.
+ * Verifies that the `computeIdentity()` method returns an SE23 element with identity pose and zero velocity.
+ */
 TYPED_TEST(SE23Test, Identity)
 {
     using SE23 = typename TestFixture::SE23;
@@ -73,6 +91,10 @@ TYPED_TEST(SE23Test, Identity)
     EXPECT_TRUE(identity.velocity().isApprox(Vector3::Zero(), this->eps));
 }
 
+/**
+ * @brief Tests the inverse operation of the SE23 group.
+ * Verifies that composing an SE23 element with its inverse results in the identity element.
+ */
 TYPED_TEST(SE23Test, Inverse)
 {
     using SE23 = typename TestFixture::SE23;
@@ -88,6 +110,10 @@ TYPED_TEST(SE23Test, Inverse)
     EXPECT_TRUE(composed.computeIdentity().computeIsApprox(composed, this->eps));
 }
 
+/**
+ * @brief Tests the exponential and logarithmic maps of the SE23 group.
+ * Verifies that applying `computeExp` to a Lie algebra element and then `computeLog` to the resulting group element returns the original Lie algebra element.
+ */
 TYPED_TEST(SE23Test, ExpLog)
 {
     using SE23 = typename TestFixture::SE23;
@@ -100,6 +126,10 @@ TYPED_TEST(SE23Test, ExpLog)
     EXPECT_TRUE(log_g.isApprox(twist, this->eps));
 }
 
+/**
+ * @brief Tests the group action of SE23 on a point-velocity pair.
+ * Verifies that a point-velocity pair is correctly transformed by an SE23 element.
+ */
 TYPED_TEST(SE23Test, Action)
 {
     using SE23 = typename TestFixture::SE23;
@@ -118,6 +148,10 @@ TYPED_TEST(SE23Test, Action)
     EXPECT_TRUE(transformed_point_vel.allFinite());
 }
 
+/**
+ * @brief Tests the approximate equality comparison for SE23 elements.
+ * Verifies that two SE23 elements are considered approximately equal within a given tolerance.
+ */
 TYPED_TEST(SE23Test, IsApprox)
 {
     using SE23 = typename TestFixture::SE23;
@@ -135,6 +169,10 @@ TYPED_TEST(SE23Test, IsApprox)
     EXPECT_TRUE(g1.computeIsApprox(g2, this->eps));
 }
 
+/**
+ * @brief Tests the random element generation for SE23.
+ * Verifies that a randomly generated SE23 element is valid.
+ */
 TYPED_TEST(SE23Test, Random)
 {
     using SE23 = typename TestFixture::SE23;
@@ -143,6 +181,10 @@ TYPED_TEST(SE23Test, Random)
     EXPECT_TRUE(r.computeIsValid());
 }
 
+/**
+ * @brief Tests the stream output operator for SE23.
+ * Verifies that the `print` method produces non-empty output.
+ */
 TYPED_TEST(SE23Test, Print)
 {
     using SE23 = typename TestFixture::SE23;
@@ -157,6 +199,10 @@ TYPED_TEST(SE23Test, Print)
     EXPECT_FALSE(ss.str().empty());
 }
 
+/**
+ * @brief Tests the validity check for SE23 elements.
+ * Verifies that a valid SE23 element is correctly identified as valid.
+ */
 TYPED_TEST(SE23Test, IsValid)
 {
     using SE23 = typename TestFixture::SE23;
@@ -169,6 +215,10 @@ TYPED_TEST(SE23Test, IsValid)
     EXPECT_TRUE(g.computeIsValid());
 }
 
+/**
+ * @brief Tests the normalization of SE23 elements.
+ * Verifies that the pose component is normalized after calling `computeNormalize()`.
+ */
 TYPED_TEST(SE23Test, Normalize)
 {
     using SE23 = typename TestFixture::SE23;

@@ -28,7 +28,9 @@ namespace sofa::component::cosserat::liegroups::testing {
 using namespace sofa::testing;
 
 /**
- * Test suite for SE2 Lie group
+ * @brief Test suite for SE2 Lie group.
+ * This test fixture provides common types and a small epsilon for floating-point comparisons.
+ * @tparam T The type of SE2 to test (e.g., SE2<double>).
  */
 template <typename T>
 class SE2Test : public BaseTest
@@ -41,13 +43,25 @@ protected:
 
     const Scalar eps = 1e-9;
 
+    /**
+     * @brief Set up method for the test fixture.
+     * Called before each test.
+     */
     void SetUp() override {}
+    /**
+     * @brief Tear down method for the test fixture.
+     * Called after each test.
+     */
     void TearDown() override {}
 };
 
 using SE2Types = ::testing::Types<SE2<double>>;
 TYPED_TEST_SUITE(SE2Test, SE2Types);
 
+/**
+ * @brief Tests the constructors of the SE2 class.
+ * Verifies that SE2 objects can be constructed from default, rotation and translation, and angle and translation representations.
+ */
 TYPED_TEST(SE2Test, Constructors)
 {
     using SE2 = typename TestFixture::SE2;
@@ -64,6 +78,10 @@ TYPED_TEST(SE2Test, Constructors)
     EXPECT_TRUE(g2.translation().isApprox(trans, this->eps));
 }
 
+/**
+ * @brief Tests the identity element of the SE2 group.
+ * Verifies that the `computeIdentity()` method returns an SE2 element with identity rotation and zero translation.
+ */
 TYPED_TEST(SE2Test, Identity)
 {
     using SE2 = typename TestFixture::SE2;
@@ -75,6 +93,10 @@ TYPED_TEST(SE2Test, Identity)
     EXPECT_TRUE(identity.translation().isApprox(Vector2::Zero(), this->eps));
 }
 
+/**
+ * @brief Tests the inverse operation of the SE2 group.
+ * Verifies that composing an SE2 element with its inverse results in the identity element.
+ */
 TYPED_TEST(SE2Test, Inverse)
 {
     using SE2 = typename TestFixture::SE2;
@@ -90,6 +112,10 @@ TYPED_TEST(SE2Test, Inverse)
     EXPECT_TRUE(composed.computeIdentity().computeIsApprox(composed, this->eps));
 }
 
+/**
+ * @brief Tests the exponential and logarithmic maps of the SE2 group.
+ * Verifies that applying `computeExp` to a Lie algebra element and then `computeLog` to the resulting group element returns the original Lie algebra element.
+ */
 TYPED_TEST(SE2Test, ExpLog)
 {
     using SE2 = typename TestFixture::SE2;
@@ -104,6 +130,10 @@ TYPED_TEST(SE2Test, ExpLog)
     EXPECT_TRUE(log_g.isApprox(twist, this->eps));
 }
 
+/**
+ * @brief Tests the group action of SE2 on a 2D point.
+ * Verifies that a point is correctly transformed by an SE2 element (rotation and translation).
+ */
 TYPED_TEST(SE2Test, Action)
 {
     using SE2 = typename TestFixture::SE2;
@@ -124,6 +154,10 @@ TYPED_TEST(SE2Test, Action)
     EXPECT_NEAR(transformed_point[1], 5.0, this->eps);
 }
 
+/**
+ * @brief Tests the approximate equality comparison for SE2 elements.
+ * Verifies that two SE2 elements are considered approximately equal within a given tolerance.
+ */
 TYPED_TEST(SE2Test, IsApprox)
 {
     using SE2 = typename TestFixture::SE2;
@@ -144,6 +178,10 @@ TYPED_TEST(SE2Test, IsApprox)
     EXPECT_FALSE(g1.computeIsApprox(g3, this->eps));
 }
 
+/**
+ * @brief Tests the hat and vee operators for SE2.
+ * Verifies that applying the hat operator and then the vee operator returns the original Lie algebra element.
+ */
 TYPED_TEST(SE2Test, HatVee)
 {
     using SE2 = typename TestFixture::SE2;
@@ -159,6 +197,10 @@ TYPED_TEST(SE2Test, HatVee)
     EXPECT_TRUE(vee_hat_twist.isApprox(twist, this->eps));
 }
 
+/**
+ * @brief Tests the adjoint representation of the SE2 group.
+ * Verifies that the adjoint matrix is not zero for a non-identity transformation.
+ */
 TYPED_TEST(SE2Test, Adjoint)
 {
     using SE2 = typename TestFixture::SE2;
@@ -183,6 +225,10 @@ TYPED_TEST(SE2Test, Adjoint)
     EXPECT_FALSE(ad_twist.isZero(this->eps));
 }
 
+/**
+ * @brief Tests the random element generation for SE2.
+ * Verifies that a randomly generated SE2 element is valid.
+ */
 TYPED_TEST(SE2Test, Random)
 {
     using SE2 = typename TestFixture::SE2;
@@ -191,6 +237,10 @@ TYPED_TEST(SE2Test, Random)
     EXPECT_TRUE(r.computeIsValid());
 }
 
+/**
+ * @brief Tests the stream output operator for SE2.
+ * Verifies that the `print` method produces non-empty output.
+ */
 TYPED_TEST(SE2Test, Print)
 {
     using SE2 = typename TestFixture::SE2;
@@ -203,6 +253,10 @@ TYPED_TEST(SE2Test, Print)
     EXPECT_FALSE(ss.str().empty());
 }
 
+/**
+ * @brief Tests the validity check for SE2 elements.
+ * Verifies that a valid SE2 element is correctly identified as valid.
+ */
 TYPED_TEST(SE2Test, IsValid)
 {
     using SE2 = typename TestFixture::SE2;
@@ -216,6 +270,10 @@ TYPED_TEST(SE2Test, IsValid)
     // This would require modifying SO2 to allow invalid states for testing
 }
 
+/**
+ * @brief Tests the normalization of SE2 elements.
+ * Verifies that the rotation component is normalized after calling `computeNormalize()`.
+ */
 TYPED_TEST(SE2Test, Normalize)
 {
     using SE2 = typename TestFixture::SE2;

@@ -1,3 +1,6 @@
+// This file defines the base class template for all Lie group implementations,
+// using the Curiously Recurring Template Pattern (CRTP).
+
 /******************************************************************************
  *                 SOFA, Simulation Open-Framework Architecture * (c) 2006
  *INRIA, USTL, UJF, CNRS, MGH                     *
@@ -16,12 +19,16 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.        *
  ******************************************************************************/
 
-#pragma once 
+#pragma once
 
+#include <memory>
+#include <type_traits>
+#include <array>
+#include <tuple>
+#include <random>
+#include <iostream>
 #include "Types.h"
 #include <concepts>
-#include <memory>
-#include <iostream>
 #include <stdexcept>
 #include <type_traits>
 
@@ -79,7 +86,7 @@ template <typename Derived, FloatingPoint _Scalar, int _Dim,
   requires(_Dim > 0 && _AlgebraDim > 0 && _ActionDim > 0)
 class LieGroupBase {
 public:
-  // Type aliases for scalar and types 
+  // Type aliases for scalar and types
   using Scalar = _Scalar;
   using Types = Types<Scalar>;
 
@@ -222,8 +229,6 @@ public:
            const Scalar &eps = Types::epsilon()) const noexcept {
     return derived().computeIsApprox(other, eps);
   }
-
-  
 
   /**
    * @brief Get the identity element of the group

@@ -27,7 +27,8 @@ namespace sofa::component::cosserat::liegroups::testing {
 using namespace sofa::testing;
 
 /**
- * Test suite for Lie group utilities
+ * @brief Test suite for Lie group utilities.
+ * Inherits from BaseTest to leverage SOFA's testing framework.
  */
 class UtilsTest : public BaseTest
 {
@@ -39,12 +40,21 @@ protected:
     const double pi = M_PI;
     const double eps = 1e-10;
 
+    /**
+     * @brief Set up method for the test fixture.
+     * Called before each test.
+     */
     void SetUp() override {}
+    /**
+     * @brief Tear down method for the test fixture.
+     * Called after each test.
+     */
     void TearDown() override {}
 };
 
 /**
- * Test angle normalization
+ * @brief Tests the angle normalization function.
+ * Verifies that angles are correctly normalized to the range [-π, π].
  */
 TEST_F(UtilsTest, AngleNormalization)
 {
@@ -68,7 +78,8 @@ TEST_F(UtilsTest, AngleNormalization)
 }
 
 /**
- * Test sinc function with numerical stability
+ * @brief Tests the sinc function for numerical stability.
+ * Verifies correct behavior for non-zero, small, and negative values.
  */
 TEST_F(UtilsTest, Sinc)
 {
@@ -87,7 +98,8 @@ TEST_F(UtilsTest, Sinc)
 }
 
 /**
- * Test oneMinusCos function with numerical stability
+ * @brief Tests the oneMinusCos function for numerical stability.
+ * Verifies correct behavior for non-zero, small, and negative values.
  */
 TEST_F(UtilsTest, OneMinusCos)
 {
@@ -107,7 +119,8 @@ TEST_F(UtilsTest, OneMinusCos)
 }
 
 /**
- * Test angle difference calculation
+ * @brief Tests the angle difference calculation.
+ * Verifies correct differences, including cases with angle wrapping.
  */
 TEST_F(UtilsTest, AngleDifference)
 {
@@ -125,7 +138,8 @@ TEST_F(UtilsTest, AngleDifference)
 }
 
 /**
- * Test angle distance calculation
+ * @brief Tests the angle distance calculation.
+ * Verifies correct distances, including cases with angle wrapping.
  */
 TEST_F(UtilsTest, AngleDistance)
 {
@@ -143,7 +157,8 @@ TEST_F(UtilsTest, AngleDistance)
 }
 
 /**
- * Test linear interpolation
+ * @brief Tests linear interpolation.
+ * Verifies correct interpolation and extrapolation behavior.
  */
 TEST_F(UtilsTest, LinearInterpolation)
 {
@@ -159,7 +174,8 @@ TEST_F(UtilsTest, LinearInterpolation)
 }
 
 /**
- * Test spherical linear interpolation for angles
+ * @brief Tests spherical linear interpolation (SLERP) for angles.
+ * Verifies correct interpolation, including cases with angle wrapping.
  */
 TEST_F(UtilsTest, SlerpAngle)
 {
@@ -177,7 +193,8 @@ TEST_F(UtilsTest, SlerpAngle)
 }
 
 /**
- * Test near-zero detection for angles
+ * @brief Tests near-zero detection for angles.
+ * Verifies that angles very close to zero are correctly identified.
  */
 TEST_F(UtilsTest, NearZeroAngle)
 {
@@ -190,7 +207,8 @@ TEST_F(UtilsTest, NearZeroAngle)
 }
 
 /**
- * Test nearly equal detection for angles
+ * @brief Tests nearly equal detection for angles.
+ * Verifies that angles that are approximately equal (considering wrapping) are correctly identified.
  */
 TEST_F(UtilsTest, NearlyEqualAngles)
 {
@@ -204,7 +222,8 @@ TEST_F(UtilsTest, NearlyEqualAngles)
 }
 
 /**
- * Test safe vector normalization
+ * @brief Tests safe vector normalization.
+ * Verifies that non-zero, zero, and near-zero vectors are normalized correctly.
  */
 TEST_F(UtilsTest, SafeNormalize)
 {
@@ -229,7 +248,8 @@ TEST_F(UtilsTest, SafeNormalize)
 }
 
 /**
- * Test vector projection
+ * @brief Tests vector projection.
+ * Verifies correct projection onto various vectors, including zero vectors.
  */
 TEST_F(UtilsTest, VectorProjection)
 {
@@ -254,4 +274,3 @@ TEST_F(UtilsTest, VectorProjection)
 
 
 } // namespace sofa::component::cosserat::liegroups::testing
-

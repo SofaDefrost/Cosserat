@@ -20,20 +20,19 @@ set(LIEGROUPS_TEST_FILES
 if(UNIT_TEST)
     # Create test executable
     add_executable(${PROJECT_NAME} ${LIEGROUPS_TEST_FILES})
-    
+
     # Link against required libraries
-    target_link_libraries(${PROJECT_NAME} 
-        Cosserat
-        gtest 
+    target_link_libraries(${PROJECT_NAME}
+        gtest
         gtest_main
         SofaGTestMain
     )
-    
+
     # Include directories
     target_include_directories(${PROJECT_NAME} PRIVATE
         ${CMAKE_SOURCE_DIR}/src
     )
-    
+
     # Add test
     add_test(NAME liegroups_tests COMMAND ${PROJECT_NAME})
 endif()

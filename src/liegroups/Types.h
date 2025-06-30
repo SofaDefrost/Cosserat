@@ -1,20 +1,22 @@
+// This file provides fundamental type definitions and utility functions for Lie
+// group operations, primarily using Eigen for linear algebra.
+
 // #ifndef SOFA_COMPONENT_COSSERAT_LIEGROUPS_TYPES_H
 // #define SOFA_COMPONENT_COSSERAT_LIEGROUPS_TYPES_H
 #pragma once
 
-#include <random>
-#include <eigen3/Eigen/Dense>
-#include <eigen3/Eigen/Geometry>
 #include <cmath>
 #include <concepts>
+#include <eigen3/Eigen/Dense>
+#include <eigen3/Eigen/Geometry>
 #include <limits>
+#include <random>
 #include <type_traits>
 
 namespace sofa::component::cosserat::liegroups {
 
 // Helper type for compile-time integer constants (for template parameters)
-template <int N>
-using IntConst = std::integral_constant<int, N>;
+template <int N> using IntConst = std::integral_constant<int, N>;
 
 /**
  * @brief Type definitions and utilities for Lie group implementations
@@ -78,7 +80,12 @@ struct Types {
   static constexpr Scalar SMALL_ANGLE_THRESHOLD = Scalar(1e-4);
 
   /**
-   * @brief Check if a value is effectively zero
+   * @brief Check if a value is effectively zero within a given tolerance.
+   * @param value The scalar value to check.
+   * @param tol The tolerance for considering a value as zero. Defaults to
+   * `tolerance()`.
+   * @return True if the absolute value of `value` is less than or equal to
+   * `tol`, false otherwise.
    */
   static constexpr bool isZero(const Scalar &value,
                                const Scalar &tol = tolerance()) noexcept {
@@ -86,7 +93,14 @@ struct Types {
   }
 
   /**
-   * @brief Check if two values are approximately equal
+   * @brief Check if two scalar values are approximately equal within a given
+   * tolerance.
+   * @param a The first scalar value.
+   * @param b The second scalar value.
+   * @param tol The tolerance for considering values as approximately equal.
+   * Defaults to `tolerance()`.
+   * @return True if the absolute difference between `a` and `b` is less than or
+   * equal to `tol`, false otherwise.
    */
   static constexpr bool isApprox(const Scalar &a, const Scalar &b,
                                  const Scalar &tol = tolerance()) noexcept {
@@ -94,7 +108,10 @@ struct Types {
   }
 
   /**
-   * @brief Compute cos(x)/x with numerical stability for small x
+   * @brief Computes cos(x)/x with numerical stability for small x.
+   * Uses a Taylor expansion for x near zero to avoid division by zero.
+   * @param x The input value.
+   * @return The value of cos(x)/x.
    */
   static Scalar cosc(const Scalar &x) noexcept {
     if (isZero(x)) {
@@ -104,7 +121,10 @@ struct Types {
   }
 
   /**
-   * @brief Compute sin(x)/x with numerical stability for small x
+   * @brief Computes sin(x)/x with numerical stability for small x.
+   * Uses a Taylor expansion for x near zero to avoid division by zero.
+   * @param x The input value.
+   * @return The value of sin(x)/x.
    */
   static Scalar sinc(const Scalar &x) noexcept {
     if (isZero(x)) {
@@ -114,7 +134,10 @@ struct Types {
   }
 
   /**
-   * @brief Compute (1 - cos(x))/x^2 with numerical stability for small x
+   * @brief Computes (1 - cos(x))/x^2 with numerical stability for small x.
+   * Uses a Taylor expansion for x near zero to avoid division by zero.
+   * @param x The input value.
+   * @return The value of (1 - cos(x))/x^2.
    */
   static Scalar sinc2(const Scalar &x) noexcept {
     if (isZero(x)) {
@@ -125,21 +148,31 @@ struct Types {
   }
 
   /**
-   * @brief Compute atan2 with better numerical properties
+   * @brief Computes the arc tangent of y/x, using the signs of both arguments
+   * to determine the correct quadrant.
+   * @param y The y-coordinate.
+   * @param x The x-coordinate.
+   * @return The angle in radians between the positive x-axis and the point (x,
+   * y).
    */
   static Scalar atan2(const Scalar &y, const Scalar &x) noexcept {
     return std::atan2(y, x);
   }
 
   /**
-   * @brief Safe square root that handles negative inputs gracefully
+   * @brief Computes the safe square root of a non-negative number.
+   * Handles negative inputs gracefully by returning 0 for negative values.
+   * @param x The input value.
+   * @return The square root of x, or 0 if x is negative.
    */
   static Scalar safeSqrt(const Scalar &x) noexcept {
     return std::sqrt(std::max(Scalar(0), x));
   }
 
   /**
-   * @brief Normalize angle to [-pi, pi]
+   * @brief Normalizes an angle to the range [-pi, pi].
+   * @param angle The angle to normalize in radians.
+   * @return The normalized angle in radians.
    */
   static Scalar normalizeAngle(const Scalar &angle) noexcept {
     Scalar result = std::fmod(angle + Scalar(M_PI), Scalar(2 * M_PI));
@@ -150,7 +183,11 @@ struct Types {
   }
 
   /**
-   * @brief Clamp value between min and max
+   * @brief Clamps a value between a minimum and maximum value.
+   * @param value The value to clamp.
+   * @param min_val The minimum allowed value.
+   * @param max_val The maximum allowed value.
+   * @return The clamped value.
    */
   static constexpr Scalar clamp(const Scalar &value, const Scalar &min_val,
                                 const Scalar &max_val) noexcept {
@@ -158,7 +195,11 @@ struct Types {
   }
 
   /**
-   * @brief Linear interpolation
+   * @brief Performs linear interpolation between two scalar values.
+   * @param a The start value.
+   * @param b The end value.
+   * @param t The interpolation parameter (typically between 0 and 1).
+   * @return The interpolated value.
    */
   static constexpr Scalar lerp(const Scalar &a, const Scalar &b,
                                const Scalar &t) noexcept {
@@ -166,7 +207,13 @@ struct Types {
   }
 
   /**
-   * @brief Check if a matrix is approximately skew-symmetric
+   * @brief Checks if a square matrix is approximately skew-symmetric.
+   * A matrix A is skew-symmetric if A = -A^T.
+   * @tparam N The dimension of the square matrix.
+   * @param mat The matrix to check.
+   * @param tol The tolerance for approximation. Defaults to `tolerance()`.
+   * @return True if the matrix is approximately skew-symmetric, false
+   * otherwise.
    */
   template <int N>
   static bool isSkewSymmetric(const Matrix<N, N> &mat,
@@ -176,17 +223,26 @@ struct Types {
   }
 
   /**
-   * @brief Check if a matrix is approximately symmetric
+   * @brief Checks if a square matrix is approximately symmetric.
+   * A matrix A is symmetric if A = A^T.
+   * @tparam N The dimension of the square matrix.
+   * @param mat The matrix to check.
+   * @param tol The tolerance for approximation. Defaults to `tolerance()`.
+   * @return True if the matrix is approximately symmetric, false otherwise.
    */
   template <int N>
   static bool isSymmetric(const Matrix<N, N> &mat,
                           const Scalar &tol = tolerance()) noexcept {
-    const auto diff = mat - mat.transpose();
-    return diff.cwiseAbs().maxCoeff() <= tol;
+    return (mat - mat.transpose()).cwiseAbs().maxCoeff() <= tol;
   }
 
   /**
-   * @brief Check if a matrix is approximately orthogonal
+   * @brief Checks if a square matrix is approximately orthogonal.
+   * A matrix A is orthogonal if A * A^T = I (identity matrix).
+   * @tparam N The dimension of the square matrix.
+   * @param mat The matrix to check.
+   * @param tol The tolerance for approximation. Defaults to `tolerance()`.
+   * @return True if the matrix is approximately orthogonal, false otherwise.
    */
   template <int N>
   static bool isOrthogonal(const Matrix<N, N> &mat,
@@ -197,7 +253,11 @@ struct Types {
   }
 
   /**
-   * @brief Extract the skew-symmetric part of a matrix
+   * @brief Extracts the skew-symmetric part of a square matrix.
+   * The skew-symmetric part of A is (A - A^T) / 2.
+   * @tparam N The dimension of the square matrix.
+   * @param mat The input matrix.
+   * @return The skew-symmetric part of the matrix.
    */
   template <int N>
   static Matrix<N, N> skewPart(const Matrix<N, N> &mat) noexcept {
@@ -205,7 +265,11 @@ struct Types {
   }
 
   /**
-   * @brief Extract the symmetric part of a matrix
+   * @brief Extracts the symmetric part of a square matrix.
+   * The symmetric part of A is (A + A^T) / 2.
+   * @tparam N The dimension of the square matrix.
+   * @param mat The input matrix.
+   * @return The symmetric part of the matrix.
    */
   template <int N>
   static Matrix<N, N> symmetricPart(const Matrix<N, N> &mat) noexcept {
@@ -213,7 +277,11 @@ struct Types {
   }
 
   /**
-   * @brief Create a 3x3 skew-symmetric matrix from a 3D vector
+   * @brief Creates a 3x3 skew-symmetric matrix from a 3D vector.
+   * This is often used to represent the cross product as a matrix
+   * multiplication.
+   * @param v The 3D vector.
+   * @return The 3x3 skew-symmetric matrix.
    */
   static Matrix3 skew3(const Vector3 &v) noexcept {
     Matrix3 result;
@@ -223,14 +291,20 @@ struct Types {
   }
 
   /**
-   * @brief Extract 3D vector from a 3x3 skew-symmetric matrix
+   * @brief Extracts the 3D vector from a 3x3 skew-symmetric matrix.
+   * This is the inverse operation of `skew3`.
+   * @param mat The 3x3 skew-symmetric matrix.
+   * @return The 3D vector.
    */
   static Vector3 unskew3(const Matrix3 &mat) noexcept {
     return Vector3(mat(2, 1), mat(0, 2), mat(1, 0));
   }
 
   /**
-   * @brief Generate a random scalar in [0, 1]
+   * @brief Generates a random scalar value within the range [0, 1].
+   * @tparam Generator The type of the random number generator.
+   * @param gen The random number generator.
+   * @return A random scalar value.
    */
   template <typename Generator>
   static Scalar randomScalar(Generator &gen) noexcept {
@@ -239,7 +313,11 @@ struct Types {
   }
 
   /**
-   * @brief Generate a random vector with components in [-1, 1]
+   * @brief Generates a random vector with components in the range [-1, 1].
+   * @tparam N The dimension of the vector.
+   * @tparam Generator The type of the random number generator.
+   * @param gen The random number generator.
+   * @return A random vector.
    */
   template <int N, typename Generator>
   static Vector<N> randomVector(Generator &gen) noexcept {
@@ -252,7 +330,11 @@ struct Types {
   }
 
   /**
-   * @brief Generate a random unit vector
+   * @brief Generates a random unit vector (a vector with a norm of 1).
+   * @tparam N The dimension of the vector.
+   * @tparam Generator The type of the random number generator.
+   * @param gen The random number generator.
+   * @return A random unit vector.
    */
   template <int N, typename Generator>
   static Vector<N> randomUnitVector(Generator &gen) noexcept {

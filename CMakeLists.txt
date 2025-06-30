@@ -90,7 +90,8 @@ set(SOURCE_FILES
     ${SRC_ROOT_DIR}/constraint/CosseratSlidingConstraint.cpp
     ${SRC_ROOT_DIR}/mapping/LegendrePolynomialsMapping.cpp
     ${SRC_ROOT_DIR}/constraint/CosseratNeedleSlidingConstraint.cpp
-    )
+
+        )
 
 
 sofa_find_package(SoftRobots QUIET)
@@ -160,7 +161,8 @@ if(SofaPython3Tools OR SofaPython3_FOUND)
     #         TARGET_DIRECTORY cosserat
     # )
     add_subdirectory(${SRC_ROOT_DIR}/Binding)
-    add_subdirectory(${SRC_ROOT_LIE_GROUPE}/Binding)
+    # Temporarily disable liegroups bindings due to C++ compatibility issues
+    # add_subdirectory(${SRC_ROOT_LIE_GROUPE}/Binding)
 endif()
 
 
@@ -181,6 +183,7 @@ sofa_create_package_with_targets(
 cmake_dependent_option(COSSERAT_BUILD_TESTS "Compile the tests" ON "SOFA_BUILD_TESTS OR NOT DEFINED SOFA_BUILD_TESTS" OFF)
 if(COSSERAT_BUILD_TESTS)
     add_subdirectory(Tests)
+    # Tests for liegroups are in their own directory
     add_subdirectory(src/liegroups/Tests)
 endif()
 

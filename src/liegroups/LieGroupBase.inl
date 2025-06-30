@@ -1,3 +1,7 @@
+// This file provides improved implementations for common Lie group operations,
+// such as distance, interpolation, and BCH formula, with better numerical
+// stability.
+
 // #ifndef SOFA_COMPONENT_COSSERAT_LIEGROUPS_LIEGROUPBASE_INL
 // #define SOFA_COMPONENT_COSSERAT_LIEGROUPS_LIEGROUPBASE_INL
 #pragma once
@@ -6,7 +10,6 @@
 #include "Types.h"
 #include <algorithm>
 #include <cmath>
-
 
 namespace sofa::component::cosserat::liegroups {
 
@@ -17,8 +20,20 @@ namespace sofa::component::cosserat::liegroups {
  * with better numerical stability and error handling.
  */
 
-// Improved implementation of distance using the logarithm with better error
-// handling
+/**
+ * @brief Computes the geodesic distance between two Lie group elements.
+ * This implementation uses the logarithm of the relative transformation to find
+ * the distance in the Lie algebra, which corresponds to the geodesic distance
+ * on the manifold. It includes robust error handling and fallbacks for
+ * numerical stability.
+ * @tparam Derived The derived class implementing the specific Lie group.
+ * @tparam _Scalar The scalar type used for computations.
+ * @tparam _Dim The dimension of the group representation.
+ * @tparam _AlgebraDim The dimension of the Lie algebra.
+ * @tparam _ActionDim The dimension of vectors the group acts on.
+ * @param other The other Lie group element to compute the distance to.
+ * @return A scalar representing the geodesic distance between the two elements.
+ */
 template <typename Derived, FloatingPoint _Scalar, int _Dim, int _AlgebraDim,
           int _ActionDim>
   requires(_Dim > 0 && _AlgebraDim > 0 && _ActionDim > 0)
@@ -47,7 +62,19 @@ LieGroupBase<Derived, _Scalar, _Dim, _AlgebraDim, _ActionDim>::distance(
   }
 }
 
-// Improved squared distance implementation for better performance
+/**
+ * @brief Computes the squared geodesic distance between two Lie group elements.
+ * This is often more efficient than `distance()` when only comparison of
+ * distances is needed, as it avoids the square root operation. It uses the
+ * squared norm of the logarithm of the relative transformation.
+ * @tparam Derived The derived class implementing the specific Lie group.
+ * @tparam _Scalar The scalar type used for computations.
+ * @tparam _Dim The dimension of the group representation.
+ * @tparam _AlgebraDim The dimension of the Lie algebra.
+ * @tparam _ActionDim The dimension of vectors the group acts on.
+ * @param other The other Lie group element to compute the squared distance to.
+ * @return A scalar representing the squared geodesic distance.
+ */
 template <typename Derived, FloatingPoint _Scalar, int _Dim, int _AlgebraDim,
           int _ActionDim>
   requires(_Dim > 0 && _AlgebraDim > 0 && _ActionDim > 0)
@@ -72,8 +99,22 @@ LieGroupBase<Derived, _Scalar, _Dim, _AlgebraDim, _ActionDim>::squaredDistance(
   }
 }
 
-// Improved implementation of interpolation using exp/log with better numerical
-// properties
+/**
+ * @brief Interpolates between two Lie group elements using the exponential and
+ * logarithm maps. This method performs geodesic interpolation on the manifold,
+ * ensuring the interpolated path stays within the group structure. It clamps
+ * the interpolation parameter `t` to the range [0, 1] and includes error
+ * handling.
+ * @tparam Derived The derived class implementing the specific Lie group.
+ * @tparam _Scalar The scalar type used for computations.
+ * @tparam _Dim The dimension of the group representation.
+ * @tparam _AlgebraDim The dimension of the Lie algebra.
+ * @tparam _ActionDim The dimension of vectors the group acts on.
+ * @param other The target Lie group element to interpolate towards.
+ * @param t The interpolation parameter, typically between 0 (returns `this`)
+ * and 1 (returns `other`).
+ * @return The interpolated Lie group element.
+ */
 template <typename Derived, FloatingPoint _Scalar, int _Dim, int _AlgebraDim,
           int _ActionDim>
   requires(_Dim > 0 && _AlgebraDim > 0 && _ActionDim > 0)
@@ -100,7 +141,22 @@ LieGroupBase<Derived, _Scalar, _Dim, _AlgebraDim, _ActionDim>::interpolate(
   }
 }
 
-// Improved spherical linear interpolation
+/**
+ * @brief Performs spherical linear interpolation (SLERP) between two Lie group
+ * elements. This method is particularly useful for rotations and aims to
+ * provide a smooth, constant-velocity interpolation along the shortest path on
+ * the manifold. It includes numerical stability checks and falls back to linear
+ * interpolation if elements are too close or other issues arise.
+ * @tparam Derived The derived class implementing the specific Lie group.
+ * @tparam _Scalar The scalar type used for computations.
+ * @tparam _Dim The dimension of the group representation.
+ * @tparam _AlgebraDim The dimension of the Lie algebra.
+ * @tparam _ActionDim The dimension of vectors the group acts on.
+ * @param other The target Lie group element for interpolation.
+ * @param t The interpolation parameter, typically between 0 (returns `this`)
+ * and 1 (returns `other`).
+ * @return The interpolated Lie group element.
+ */
 template <typename Derived, FloatingPoint _Scalar, int _Dim, int _AlgebraDim,
           int _ActionDim>
   requires(_Dim > 0 && _AlgebraDim > 0 && _ActionDim > 0)
@@ -145,7 +201,24 @@ LieGroupBase<Derived, _Scalar, _Dim, _AlgebraDim, _ActionDim>::slerp(
   }
 }
 
-// Improved BCH implementation with higher order terms and better convergence
+/**
+ * @brief Computes the Baker-Campbell-Hausdorff (BCH) formula for Lie algebra
+ * elements. The BCH formula provides a way to express the logarithm of the
+ * product of exponentials of two Lie algebra elements. This implementation
+ * supports up to fifth-order approximation and includes a convergence check.
+ * @tparam Derived The derived class implementing the specific Lie group.
+ * @tparam _Scalar The scalar type used for computations.
+ * @tparam _Dim The dimension of the group representation.
+ * @tparam _AlgebraDim The dimension of the Lie algebra.
+ * @tparam _ActionDim The dimension of vectors the group acts on.
+ * @param v The first tangent vector (Lie algebra element).
+ * @param w The second tangent vector (Lie algebra element).
+ * @param order The order of approximation to use (1 to 5). Higher orders
+ * provide more accuracy but are computationally more expensive.
+ * @return The tangent vector approximating log(exp(v)*exp(w)).
+ * @throws NumericalInstabilityException if the inputs are too large for the
+ * series to converge reliably.
+ */
 template <typename Derived, FloatingPoint _Scalar, int _Dim, int _AlgebraDim,
           int _ActionDim>
   requires(_Dim > 0 && _AlgebraDim > 0 && _ActionDim > 0)
@@ -207,7 +280,22 @@ LieGroupBase<Derived, _Scalar, _Dim, _AlgebraDim, _ActionDim>::BCH(
   return result;
 }
 
-// Improved differential of exponential with better series convergence
+/**
+ * @brief Computes the differential of the exponential map (dexp).
+ * This function calculates the Jacobian of the exponential map, which is
+ * crucial for relating velocities in the Lie algebra to velocities on the Lie
+ * group. It uses Taylor series expansion for small input values for numerical
+ * stability and a closed-form expression for larger values.
+ * @tparam Derived The derived class implementing the specific Lie group.
+ * @tparam _Scalar The scalar type used for computations.
+ * @tparam _Dim The dimension of the group representation.
+ * @tparam _AlgebraDim The dimension of the Lie algebra.
+ * @tparam _ActionDim The dimension of vectors the group acts on.
+ * @param v The tangent vector (Lie algebra element) at which to compute the
+ * differential.
+ * @return The adjoint matrix representing the differential of the exponential
+ * map at `v`.
+ */
 template <typename Derived, FloatingPoint _Scalar, int _Dim, int _AlgebraDim,
           int _ActionDim>
   requires(_Dim > 0 && _AlgebraDim > 0 && _ActionDim > 0)
@@ -253,7 +341,22 @@ LieGroupBase<Derived, _Scalar, _Dim, _AlgebraDim, _ActionDim>::dexp(
   return result;
 }
 
-// New implementation for inverse differential of exponential
+/**
+ * @brief Computes the inverse of the differential of the exponential map
+ * (dexpInv). This function calculates the inverse Jacobian of the exponential
+ * map, useful for mapping velocities on the Lie group back to the Lie algebra.
+ * It employs Taylor series expansion for small input values and a closed-form
+ * expression for larger values to ensure numerical stability.
+ * @tparam Derived The derived class implementing the specific Lie group.
+ * @tparam _Scalar The scalar type used for computations.
+ * @tparam _Dim The dimension of the group representation.
+ * @tparam _AlgebraDim The dimension of the Lie algebra.
+ * @tparam _ActionDim The dimension of vectors the group acts on.
+ * @param v The tangent vector (Lie algebra element) at which to compute the
+ * inverse differential.
+ * @return The adjoint matrix representing the inverse differential of the
+ * exponential map at `v`.
+ */
 template <typename Derived, FloatingPoint _Scalar, int _Dim, int _AlgebraDim,
           int _ActionDim>
   requires(_Dim > 0 && _AlgebraDim > 0 && _ActionDim > 0)
@@ -297,7 +400,20 @@ LieGroupBase<Derived, _Scalar, _Dim, _AlgebraDim, _ActionDim>::dexpInv(
   return result;
 }
 
-// Improved implementation for differential of logarithm
+/**
+ * @brief Computes the differential of the logarithm map (dlog).
+ * This function calculates the Jacobian of the logarithm map, which is
+ * essential for mapping velocities on the Lie group to velocities in the Lie
+ * algebra. It uses Taylor series expansion for small input values and a
+ * closed-form expression for larger values to ensure numerical stability.
+ * @tparam Derived The derived class implementing the specific Lie group.
+ * @tparam _Scalar The scalar type used for computations.
+ * @tparam _Dim The dimension of the group representation.
+ * @tparam _AlgebraDim The dimension of the Lie algebra.
+ * @tparam _ActionDim The dimension of vectors the group acts on.
+ * @return The adjoint matrix representing the differential of the logarithm map
+ * at the current Lie group element.
+ */
 template <typename Derived, FloatingPoint _Scalar, int _Dim, int _AlgebraDim,
           int _ActionDim>
   requires(_Dim > 0 && _AlgebraDim > 0 && _ActionDim > 0)
@@ -341,8 +457,22 @@ LieGroupBase<Derived, _Scalar, _Dim, _AlgebraDim, _ActionDim>::dlog() const {
   return result;
 }
 
-// Improved implementation of action Jacobian with analytical derivatives when
-// possible
+/**
+ * @brief Computes the action Jacobian, which describes how a point transforms
+ * under the action of the Lie group with respect to changes in the Lie algebra.
+ * This implementation first attempts to use an analytical method provided by
+ * the derived class (if available) for better performance and accuracy. If no
+ * analytical method is provided or it fails, it falls back to numerical
+ * differentiation using central differences.
+ * @tparam Derived The derived class implementing the specific Lie group.
+ * @tparam _Scalar The scalar type used for computations.
+ * @tparam _Dim The dimension of the group representation.
+ * @tparam _AlgebraDim The dimension of the Lie algebra.
+ * @tparam _ActionDim The dimension of vectors the group acts on.
+ * @param point The point in the action space at which to compute the Jacobian.
+ * @return The Jacobian matrix, mapping Lie algebra velocities to velocities in
+ * the action space.
+ */
 template <typename Derived, FloatingPoint _Scalar, int _Dim, int _AlgebraDim,
           int _ActionDim>
   requires(_Dim > 0 && _AlgebraDim > 0 && _ActionDim > 0)
@@ -393,7 +523,18 @@ LieGroupBase<Derived, _Scalar, _Dim, _AlgebraDim, _ActionDim>::actionJacobian(
   return J;
 }
 
-// Improved hat operator with better error checking
+/**
+ * @brief Computes the hat operator, which maps a Lie algebra vector to its
+ * matrix representation. This is a static assertion that ensures the derived
+ * class provides its own implementation of `computeHat`.
+ * @tparam Derived The derived class implementing the specific Lie group.
+ * @tparam _Scalar The scalar type used for computations.
+ * @tparam _Dim The dimension of the group representation.
+ * @tparam _AlgebraDim The dimension of the Lie algebra.
+ * @tparam _ActionDim The dimension of vectors the group acts on.
+ * @param v The tangent vector (Lie algebra element).
+ * @return The matrix representation of the Lie algebra element.
+ */
 template <typename Derived, FloatingPoint _Scalar, int _Dim, int _AlgebraDim,
           int _ActionDim>
   requires(_Dim > 0 && _AlgebraDim > 0 && _ActionDim > 0)
@@ -407,7 +548,19 @@ LieGroupBase<Derived, _Scalar, _Dim, _AlgebraDim, _ActionDim>::hat(
   return Derived::computeHat(v);
 }
 
-// Improved vee operator with better error checking
+/**
+ * @brief Computes the vee operator, which maps a Lie algebra matrix
+ * representation back to its vector form. This is the inverse operation of the
+ * hat operator. A static assertion ensures the derived class provides its own
+ * `computeVee` implementation.
+ * @tparam Derived The derived class implementing the specific Lie group.
+ * @tparam _Scalar The scalar type used for computations.
+ * @tparam _Dim The dimension of the group representation.
+ * @tparam _AlgebraDim The dimension of the Lie algebra.
+ * @tparam _ActionDim The dimension of vectors the group acts on.
+ * @param X The matrix representation in the Lie algebra.
+ * @return The vector representation of the Lie algebra element.
+ */
 template <typename Derived, FloatingPoint _Scalar, int _Dim, int _AlgebraDim,
           int _ActionDim>
   requires(_Dim > 0 && _AlgebraDim > 0 && _ActionDim > 0)
@@ -421,7 +574,20 @@ LieGroupBase<Derived, _Scalar, _Dim, _AlgebraDim, _ActionDim>::vee(
   return Derived::computeVee(X);
 }
 
-// Improved adjoint representation computation
+/**
+ * @brief Computes the adjoint representation of a Lie algebra element.
+ * The adjoint action describes how Lie algebra elements transform under
+ * conjugation by Lie group elements. This implementation checks if the derived
+ * class provides an optimized `computeAd` method; otherwise, it uses a default
+ * implementation for matrix Lie groups.
+ * @tparam Derived The derived class implementing the specific Lie group.
+ * @tparam _Scalar The scalar type used for computations.
+ * @tparam _Dim The dimension of the group representation.
+ * @tparam _AlgebraDim The dimension of the Lie algebra.
+ * @tparam _ActionDim The dimension of vectors the group acts on.
+ * @param v The element of the Lie algebra in vector form.
+ * @return The adjoint matrix representing the adjoint action.
+ */
 template <typename Derived, FloatingPoint _Scalar, int _Dim, int _AlgebraDim,
           int _ActionDim>
   requires(_Dim > 0 && _AlgebraDim > 0 && _ActionDim > 0)
@@ -459,7 +625,18 @@ LieGroupBase<Derived, _Scalar, _Dim, _AlgebraDim, _ActionDim>::ad(
   }
 }
 
-// Implementation of matrix logarithm for debugging/analysis
+/**
+ * @brief Computes the matrix logarithm of the current Lie group element.
+ * This function provides the matrix representation of the Lie algebra element
+ * that, when exponentiated, yields the current Lie group element. It is
+ * primarily used for debugging and analysis purposes.
+ * @tparam Derived The derived class implementing the specific Lie group.
+ * @tparam _Scalar The scalar type used for computations.
+ * @tparam _Dim The dimension of the group representation.
+ * @tparam _AlgebraDim The dimension of the Lie algebra.
+ * @tparam _ActionDim The dimension of vectors the group acts on.
+ * @return The matrix representation of the Lie algebra element.
+ */
 template <typename Derived, FloatingPoint _Scalar, int _Dim, int _AlgebraDim,
           int _ActionDim>
   requires(_Dim > 0 && _AlgebraDim > 0 && _ActionDim > 0)

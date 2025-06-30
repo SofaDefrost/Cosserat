@@ -1,3 +1,6 @@
+// This file contains the implementation details for the SGal3 (Special Galilean
+// group in 3D) class.
+
 /******************************************************************************
  *                 SOFA, Simulation Open-Framework Architecture * (c) 2006
  *INRIA, USTL, UJF, CNRS, MGH                     *
@@ -77,8 +80,6 @@ toPositionEulerVelocityTime(const SGal3<_Scalar> &transform) {
   result[9] = transform.time();
   return result;
 }
-
-
 
 /**
  * @brief Dual vector operator for sgal(3)

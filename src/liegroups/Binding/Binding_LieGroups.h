@@ -20,6 +20,13 @@
 
 #pragma once
 
+#include <memory>
+#include <type_traits>
+#include <array>
+#include <tuple>
+#include <random>
+#include <iostream>
+
 #include <pybind11/pybind11.h>
 #include <pybind11/eigen.h>
 

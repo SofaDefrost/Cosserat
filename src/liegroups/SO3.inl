@@ -1,3 +1,6 @@
+// This file contains the implementation details for the SO3 (Special Orthogonal
+// group in 3D) class.
+
 /******************************************************************************
  *                 SOFA, Simulation Open-Framework Architecture * (c) 2006
  *INRIA, USTL, UJF, CNRS, MGH                     *
@@ -21,10 +24,12 @@
 namespace sofa::component::cosserat::liegroups {
 
 /**
- * @brief Compute the geodesic distance between two rotations
- *
+ * @brief Computes the geodesic distance between two rotations.
  * Uses the fact that the geodesic distance between two rotations is
  * twice the magnitude of the rotation angle of their difference.
+ * @tparam _Scalar The scalar type.
+ * @param other The other SO3 rotation.
+ * @return The geodesic distance.
  */
 template <typename _Scalar>
 typename SO3<_Scalar>::Scalar
@@ -35,14 +40,17 @@ SO3<_Scalar>::distance(const SO3 &other) const noexcept {
 }
 
 /**
- * @brief Spherical linear interpolation between two rotations
- *
+ * @brief Performs spherical linear interpolation between two rotations.
  * Uses quaternion SLERP which gives the geodesic path between
  * two rotations. The parameter t is clamped to [0,1].
+ * @tparam _Scalar The scalar type.
+ * @param other The target SO3 rotation.
+ * @param t The interpolation parameter (between 0 and 1).
+ * @return The interpolated SO3 rotation.
  */
 template <typename _Scalar>
 SO3<_Scalar> SO3<_Scalar>::computeInterpolate(const SO3 &other,
-                                       const Scalar &t) const noexcept {
+                                              const Scalar &t) const noexcept {
   // Clamp t to [0,1] for safety
   const Scalar t_clamped = std::max(Scalar(0), std::min(Scalar(1), t));
   // Use quaternion SLERP for optimal interpolation
@@ -50,12 +58,13 @@ SO3<_Scalar> SO3<_Scalar>::computeInterpolate(const SO3 &other,
 }
 
 /**
- * @brief Baker-Campbell-Hausdorff formula for SO(3)
- *
- * Computes log(exp(v)exp(w)) up to the specified order:
- * - Order 1: v + w
- * - Order 2: v + w + 1/2[v,w]
- * - Order 3: v + w + 1/2[v,w] + 1/12([v,[v,w]] - [w,[v,w]])
+ * @brief Implements the Baker-Campbell-Hausdorff formula for SO(3).
+ * Computes log(exp(v)exp(w)) up to the specified order.
+ * @tparam _Scalar The scalar type.
+ * @param v The first tangent vector.
+ * @param w The second tangent vector.
+ * @param order The order of approximation (e.g., 1, 2, 3).
+ * @return The resulting tangent vector.
  */
 template <typename _Scalar>
 typename SO3<_Scalar>::TangentVector
@@ -75,8 +84,9 @@ SO3<_Scalar>::BCH(const TangentVector &v, const TangentVector &w, int order) {
 
     if (order >= 3) {
       // Third-order term using stored [v,w]
-      result +=
-          (Derived::computeVee(Vhat * Derived::computeHat(vw)) - Derived::computeVee(What * Derived::computeHat(vw))) * Scalar(1.0 / 12.0);
+      result += (Derived::computeVee(Vhat * Derived::computeHat(vw)) -
+                 Derived::computeVee(What * Derived::computeHat(vw))) *
+                Scalar(1.0 / 12.0);
     }
   }
 
@@ -84,12 +94,12 @@ SO3<_Scalar>::BCH(const TangentVector &v, const TangentVector &w, int order) {
 }
 
 /**
- * @brief Differential of the exponential map
- *
- * For small angles, uses a Taylor expansion.
- * For larger angles, uses the closed-form expression:
- * dexp(v) = I + (1-cos(θ))/θ² hat(v) + (θ-sin(θ))/θ³ hat(v)²
- * where θ = ‖v‖
+ * @brief Computes the differential of the exponential map.
+ * For small angles, uses a Taylor expansion. For larger angles, uses the
+ * closed-form expression.
+ * @tparam _Scalar The scalar type.
+ * @param v The tangent vector.
+ * @return The matrix representing the differential of exp at v.
  */
 template <typename _Scalar>
 typename SO3<_Scalar>::AdjointMatrix
@@ -108,10 +118,11 @@ SO3<_Scalar>::dexp(const TangentVector &v) {
 }
 
 /**
- * @brief Differential of the logarithm map
- *
- * For small angles, uses a Taylor expansion.
- * For larger angles, uses the closed-form expression.
+ * @brief Computes the differential of the logarithm map.
+ * For small angles, uses a Taylor expansion. For larger angles, uses the
+ * closed-form expression.
+ * @tparam _Scalar The scalar type.
+ * @return The matrix representing the differential of log at the current point.
  */
 template <typename _Scalar>
 typename SO3<_Scalar>::AdjointMatrix SO3<_Scalar>::dlog() const {
@@ -132,13 +143,15 @@ typename SO3<_Scalar>::AdjointMatrix SO3<_Scalar>::dlog() const {
 }
 
 /**
- * @brief Adjoint representation of the Lie algebra
- *
- * For SO(3), this is equivalent to the hat map:
- * ad(v)w = [v,w] = hat(v)w
+ * @brief Computes the adjoint representation of the Lie algebra element.
+ * For SO(3), this is equivalent to the hat map: ad(v)w = [v,w] = hat(v)w.
+ * @tparam _Scalar The scalar type.
+ * @param v The tangent vector.
+ * @return The adjoint matrix.
  */
 template <typename _Scalar>
-typename SO3<_Scalar>::AdjointMatrix SO3<_Scalar>::computeAd(const TangentVector &v) {
+typename SO3<_Scalar>::AdjointMatrix
+SO3<_Scalar>::computeAd(const TangentVector &v) {
   // For SO(3), ad(v) is just the hat map
   return hat(v);
 }

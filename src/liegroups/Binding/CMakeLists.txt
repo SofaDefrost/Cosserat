@@ -1,8 +1,10 @@
+# This CMakeLists.txt defines how the Python bindings for the Lie groups are built.
+
 project(LieGroupsBindings)
 
 set(SOURCE_FILES
-  ${CMAKE_CURRENT_SOURCE_DIR}/Module_LieGroups.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/Binding_LieGroups.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Module_LieGroupe.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Binding_LieGroups.cpp
 )
 
 set(HEADER_FILES
@@ -18,12 +20,11 @@ sofa_find_package(Sofa.GL QUIET)
 SP3_add_python_module(
     TARGET       ${PROJECT_NAME}
     PACKAGE      Binding
-    MODULE       LieGroupe
+    MODULE       Cosserat
     DESTINATION  /
     SOURCES      ${SOURCE_FILES}
     HEADERS      ${HEADER_FILES}
-    DEPENDS      SofaPython3::Plugin SofaPython3::Bindings.Sofa Sofa.GL
-    LieGroupe
+    DEPENDS      SofaPython3::Plugin SofaPython3::Bindings.Sofa Sofa.GL Cosserat
 )
 
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_20)
