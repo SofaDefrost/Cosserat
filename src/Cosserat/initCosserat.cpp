@@ -97,7 +97,7 @@ void registerObjects(sofa::core::ObjectFactory* factory)
   registerPointsManager(factory);
   registerProjectionEngine(factory);
   registerBeamHookeLawForceField(factory);
-  registerBeamHookeLawForceFieldRigid(factory);
+  //registerBeamHookeLawForceFieldRigid(factory);
   registerCosseratInternalActuation(factory);
   registerDifferenceMultiMapping(factory);
   registerDiscreteCosseratMapping(factory);
