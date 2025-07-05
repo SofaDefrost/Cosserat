@@ -6,4 +6,3 @@ namespace sofa::component::forcefield {
 	template class SOFA_COSSERAT_API BaseBeamForceField<defaulttype::Vec6Types>;
 
 } // namespace sofa::component::forcefield
-
