@@ -57,32 +57,6 @@ using sofa::helper::WriteAccessor;
 template <typename DataTypes>
 BeamHookeLawForceField<DataTypes>::BeamHookeLawForceField()
     : Inherit1(),
-      d_crossSectionShape(initData(
-          &d_crossSectionShape, {"circular", "rectangular"},
-          "crossSectionShape",
-          "shape of the cross-section. Can be: circular (tube with external "
-          "radius being radius and internal radius being innerRadius ) or "
-          "rectangular (lengthY and lengthZ) . Default is circular")),
-      d_youngModulus(
-          initData(&d_youngModulus, 1.0e9, "youngModulus",
-                   "Young Modulus describes the stiffness of the material")),
-      d_poissonRatio(initData(
-          &d_poissonRatio, 0.45, "poissonRatio",
-          "poisson Ratio describes the compressibility of the material")),
-      d_length(
-          initData(&d_length, "length",
-                   "The list of lengths of the different beam's sections.")),
-      d_radius(initData(&d_radius, 1.0, "radius",
-                        "external radius of the cross section (if circular)")),
-      d_innerRadius(
-          initData(&d_innerRadius, 0.0, "innerRadius",
-                   "internal radius of the cross section (if circular)")),
-      d_lengthY(initData(&d_lengthY, 1.0, "lengthY",
-                         "side length of the cross section along local y axis "
-                         "(if rectangular)")),
-      d_lengthZ(initData(&d_lengthZ, 1.0, "lengthZ",
-                         "side length of the cross section along local z axis "
-                         "(if rectangular)")),
       d_variantSections(initData(
           &d_variantSections, false, "variantSections",
           "In case we have variant beam sections this has to be set to true")),
@@ -110,7 +84,6 @@ BeamHookeLawForceField<DataTypes>::~BeamHookeLawForceField() = default;
 
 template <typename DataTypes> void BeamHookeLawForceField<DataTypes>::init() {
   Inherit1::init();
-  reinit();
 }
 
 /*Cross-Section Properties Initialization: The reinit function begins by
@@ -121,48 +94,16 @@ template <typename DataTypes> void BeamHookeLawForceField<DataTypes>::init() {
    used for these calculations are based on standard equations for these
    properties.*/
 template <typename DataTypes> void BeamHookeLawForceField<DataTypes>::reinit() {
-  // Precompute and store inertia values
-  Real Iy, Iz, J, A;
-  if (d_crossSectionShape.getValue().getSelectedItem() ==
-      "rectangular") // rectangular cross-section
-  {
-    Real Ly = d_lengthY.getValue();
-    Real Lz = d_lengthZ.getValue();
-
-    const Real LyLzLzLz = Ly * Lz * Lz * Lz;
-    const Real LzLyLyLy = Lz * Ly * Ly * Ly;
-
-    Iy = LyLzLzLz / 12.0;
-    Iz = LzLyLyLy / 12.0;
-    J = Iy + Iz;
-    A = Ly * Lz;
-
-  } else // circular cross-section
-  {
-    msg_info() << "Cross section shape."
-               << d_crossSectionShape.getValue().getSelectedItem();
-
-    Real r = d_radius.getValue();
-    Real rInner = d_innerRadius.getValue();
-    const Real r4 = r * r * r * r;
-    const Real rInner4 = rInner * rInner * rInner * rInner;
-
-    Iy = M_PI * (r4 - rInner4) / 4.0;
-    Iz = Iy;
-    J = Iy + Iz;
-    A = M_PI * (r * r - rInner4);
-  }
-  m_crossSectionArea = A;
-
+  Inherit1::reinit();
   // if we are dealing with different physical properties : YM and PR
   if (!d_variantSections.getValue()) {
     if (!d_useInertiaParams.getValue()) {
-      Real E = d_youngModulus.getValue();
-      Real G = E / (2.0 * (1.0 + d_poissonRatio.getValue()));
+      Real E = this->d_youngModulus.getValue();
+      Real G = E / (2.0 * (1.0 + this->d_poissonRatio.getValue()));
       // Inertial matrix
-      m_K_section[0][0] = G * J;
-      m_K_section[1][1] = E * Iy;
-      m_K_section[2][2] = E * Iz;
+      m_K_section[0][0] = G * this->J;
+      m_K_section[1][1] = E * this->Iy;
+      m_K_section[2][2] = E * this->Iz;
     } else {
       msg_info("BeamHookeLawForceField")
           << "Pre-calculated inertia parameters are used for the computation "
@@ -183,7 +124,7 @@ template <typename DataTypes> void BeamHookeLawForceField<DataTypes>::reinit() {
         << "Multi section beam are used for the simulation!";
     m_K_sectionList.clear();
 
-    const auto szL = d_length.getValue().size();
+    const auto szL = this->d_length.getValue().size();
     if ((szL != d_poissonRatioList.getValue().size()) ||
         (szL != d_youngModulusList.getValue().size())) {
       msg_error("BeamHookeLawForceField")
@@ -196,14 +137,14 @@ template <typename DataTypes> void BeamHookeLawForceField<DataTypes>::reinit() {
        matrix m_K_section based on the properties of the cross-section and the
        material's Young's modulus (E) and Poisson's ratio. The stiffness matrix
        is essential for computing forces and simulating beam behavior.*/
-    for (auto k = 0; k < szL; k++) {
+    for (size_t k = 0; k < szL; k++) {
       Mat33 _m_K_section;
       Real E = d_youngModulusList.getValue()[k];
       Real G = E / (2.0 * (1.0 + d_poissonRatioList.getValue()[k]));
 
-      _m_K_section[0][0] = G * J;
-      _m_K_section[1][1] = E * Iy;
-      _m_K_section[2][2] = E * Iz;
+      _m_K_section[0][0] = G * this->J;
+      _m_K_section[1][1] = E * this->Iy;
+      _m_K_section[2][2] = E * this->Iz;
       m_K_sectionList.push_back(_m_K_section);
     }
     msg_info("BeamHookeLawForceField")
@@ -235,7 +176,7 @@ void BeamHookeLawForceField<DataTypes>::addForce(
           ->getValue();
 
   f.resize(x.size());
-  unsigned int sz = d_length.getValue().size();
+  unsigned int sz = this->d_length.getValue().size();
   if (x.size() != sz) {
     msg_warning("BeamHookeLawForceField")
         << " length : " << sz << "should have the same size as x... "
@@ -247,11 +188,13 @@ void BeamHookeLawForceField<DataTypes>::addForce(
   if (!d_variantSections.getValue())
     // @todo: use multithread
     for (unsigned int i = 0; i < x.size(); i++)
-      f[i] -= (m_K_section * (x[i] - x0[i])) * d_length.getValue()[i];
+      // Using the correct matrix type for the datatype
+      // For Vec3Types, m_K_section should be Mat33
+      f[i] -= (m_K_section * (x[i] - x0[i])) * this->d_length.getValue()[i];
   else
     // @todo: use multithread
     for (unsigned int i = 0; i < x.size(); i++)
-      f[i] -= (m_K_sectionList[i] * (x[i] - x0[i])) * d_length.getValue()[i];
+      f[i] -= (m_K_sectionList[i] * (x[i] - x0[i])) * this->d_length.getValue()[i];
   d_f.endEdit();
 }
 
@@ -270,20 +213,51 @@ void BeamHookeLawForceField<DataTypes>::addDForce(
   df.resize(dx.size());
   if (!d_variantSections.getValue())
     for (unsigned int i = 0; i < dx.size(); i++)
-      df[i] -= (m_K_section * dx[i]) * kFactor * d_length.getValue()[i];
+      df[i] -= (m_K_section * dx[i]) * kFactor * this->d_length.getValue()[i];
   else
     for (unsigned int i = 0; i < dx.size(); i++)
-      df[i] -= (m_K_sectionList[i] * dx[i]) * kFactor * d_length.getValue()[i];
+      df[i] -= (m_K_sectionList[i] * dx[i]) * kFactor * this->d_length.getValue()[i];
 }
 
-template <typename DataTypes>
+	template <typename DataTypes>
 double BeamHookeLawForceField<DataTypes>::getPotentialEnergy(
-    const MechanicalParams *mparams, const DataVecCoord &d_x) const {
-  SOFA_UNUSED(mparams);
-  SOFA_UNUSED(d_x);
+	const MechanicalParams* mparams, const DataVecCoord& d_x) const
+{
+	SOFA_UNUSED(mparams);
+	if (!this->getMState())
+		return 0.0;
 
-  return 0.0;
+	const VecCoord& x = d_x.getValue();
+	const VecCoord& x0 = this->mstate->read(sofa::core::vec_id::read_access::restPosition)->getValue();
+
+	double energy = 0.0;
+
+	if (!d_variantSections.getValue())
+	{
+		for (unsigned int i = 0; i < x.size(); i++)
+		{
+			const auto& K = m_K_section;
+			const auto& strain = x[i] - x0[i];
+			// Calcul correct : 0.5 * strain^T * K * strain
+			// Utilisation du produit scalaire si disponible
+			energy += 0.5 * dot(strain, K * strain) * this->d_length.getValue()[i];
+		}
+	}
+	else
+	{
+		for (unsigned int i = 0; i < x.size(); i++)
+		{
+			const auto& K = m_K_sectionList[i];
+			const auto& strain = x[i] - x0[i];
+
+			// Utilisation du produit scalaire si disponible
+			energy += 0.5 * dot(strain, K * strain) * this->d_length.getValue()[i];
+		}
+	}
+
+	return energy;
 }
+
 
 template <typename DataTypes>
 void BeamHookeLawForceField<DataTypes>::addKToMatrix(
@@ -301,19 +275,19 @@ void BeamHookeLawForceField<DataTypes>::addKToMatrix(
       for (unsigned int i = 0; i < 3; i++)
         for (unsigned int j = 0; j < 3; j++)
           mat->add(offset + i + 3 * n, offset + j + 3 * n,
-                   -kFact * m_K_section[i][j] * d_length.getValue()[n]);
+                   -kFact * m_K_section[i][j] * this->d_length.getValue()[n]);
     else
       for (unsigned int i = 0; i < 3; i++)
         for (unsigned int j = 0; j < 3; j++)
           mat->add(offset + i + 3 * n, offset + j + 3 * n,
-                   -kFact * m_K_sectionList[n][i][j] * d_length.getValue()[n]);
+                   -kFact * m_K_sectionList[n][i][j] * this->d_length.getValue()[n]);
   }
 }
 
 template <typename DataTypes>
 typename BeamHookeLawForceField<DataTypes>::Real
 BeamHookeLawForceField<DataTypes>::getRadius() {
-  return d_radius.getValue();
+  return this->d_radius.getValue();
 }
 
 } // namespace sofa::component::forcefield
