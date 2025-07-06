@@ -18,16 +18,19 @@ Key improvements over manual approach:
 import os
 import sys
 
-from examples.advanced.tuto_4 import force_null
+_beam_radius = 0.5
+_beam_length = 30.
+_nb_section = 32
+force_null = [0., 0., 0., 0., 0., 0.]  # N
 
 # Add the python package to the path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "python"))
 
-from cosserat import BeamGeometryParameters, CosseratGeometry
+from python.cosserat import BeamGeometryParameters, CosseratGeometry
 
-from _00_introduction_and_setup import (_add_cosserat_frame, _add_cosserat_state,
-                                    _add_rigid_base, add_mini_header)
 from force_controller import ForceController
+from introduction_and_setup import (_add_cosserat_frame, _add_cosserat_state,
+                                    _add_rigid_base, add_mini_header)
 
 v_damping_param: float = 8.e-1  # Damping parameter for dynamics
 

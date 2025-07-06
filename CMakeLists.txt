@@ -63,9 +63,11 @@ set(HEADER_FILES
     ${SRC_ROOT_DIR}/forcefield/standard/BaseBeamForceField.inl
     ${SRC_ROOT_DIR}/forcefield/standard/BeamHookeLawForceField.h
     ${SRC_ROOT_DIR}/forcefield/standard/BeamHookeLawForceField.inl
-    #${SRC_ROOT_DIR}/forcefield/rigid/BeamHookeLawForceFieldRigid.h
-   # ${SRC_ROOT_DIR}/forcefield/rigid/BeamHookeLawForceFieldRigid.inl
-    # ${SRC_ROOT_DIR}/forcefield/experimental/CosseratInternalActuation.h
+    ${SRC_ROOT_DIR}/forcefield/base/HookeSeratBaseForceField.h
+    ${SRC_ROOT_DIR}/forcefield/base/HookeSeratBaseForceField.inl
+        ${SRC_ROOT_DIR}/forcefield/standard/HookeSeratPCSForceField.h
+        ${SRC_ROOT_DIR}/forcefield/standard/HookeSeratPCSForceField.inl
+        # ${SRC_ROOT_DIR}/forcefield/experimental/CosseratInternalActuation.h
     # ${SRC_ROOT_DIR}/forcefield/experimental/CosseratInternalActuation.inl
     ${SRC_ROOT_DIR}/constraint/CosseratSlidingConstraint.h
     ${SRC_ROOT_DIR}/constraint/CosseratSlidingConstraint.inl
@@ -85,7 +87,8 @@ set(SOURCE_FILES
     ${SRC_ROOT_DIR}/engine/PointsManager.cpp
     ${SRC_ROOT_DIR}/forcefield/standard/BaseBeamForceField.cpp
     ${SRC_ROOT_DIR}/forcefield/standard/BeamHookeLawForceField.cpp
-    # ${SRC_ROOT_DIR}/forcefield/rigid/BeamHookeLawForceFieldRigid.cpp
+    ${SRC_ROOT_DIR}/forcefield/base/HookeSeratBaseForceField.cpp
+    ${SRC_ROOT_DIR}/forcefield/standard/HookeSeratPCSForceField.cpp
     ${SRC_ROOT_DIR}/forcefield/experimental/CosseratInternalActuation.cpp
     ${SRC_ROOT_DIR}/constraint/CosseratSlidingConstraint.cpp
     ${SRC_ROOT_DIR}/mapping/LegendrePolynomialsMapping.cpp

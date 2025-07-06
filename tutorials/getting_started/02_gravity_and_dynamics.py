@@ -21,9 +21,9 @@ import sys
 # Add the python package to the path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "python"))
 
-from cosserat import BeamGeometryParameters, CosseratGeometry
+from python.cosserat import BeamGeometryParameters, CosseratGeometry
 
-from _00_introduction_and_setup import (_add_cosserat_frame, _add_cosserat_state,
+from introduction_and_setup import (_add_cosserat_frame, _add_cosserat_state,
                                     _add_rigid_base, add_mini_header)
 
 v_damping_param: float =  8.e-1  # Damping parameter for dynamics

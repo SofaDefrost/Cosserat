@@ -34,7 +34,8 @@ namespace sofa::component::forcefield {
 
 	/**
 	 * This component is used to compute the Hooke's law on a beam computed on strain / stress
-	 * Only bending and torsion strain / stress are considered here
+	 * Only bending and torsion strain / stress are considered here for Vec3Types
+	 * Full 6DOF strain/stress for Vec6Types
 	 */
 	template<typename DataTypes>
 	class BeamHookeLawForceField : public BaseBeamForceField<DataTypes> {
@@ -92,9 +93,14 @@ namespace sofa::component::forcefield {
 		Data<Real> d_EIz;
 
 		bool compute_df;
+
+		// The stiffness matrix for the beam section
 		Mat33 m_K_section;
-		Mat66 m_K_section66;
 		type::vector<Mat33> m_K_sectionList;
+
+		// The stiffness matrix for the beam section in 6x6 format
+		Mat66 m_K_section66;
+		type::vector<Mat66> m_k_section66List;
 
 	private:
 		////////////////////////// Inherited attributes ////////////////////////////
@@ -107,9 +113,20 @@ namespace sofa::component::forcefield {
 		////////////////////////////////////////////////////////////////////////////
 	};
 
+	// Explicit declaration of this spécialisation
+	template<> void BeamHookeLawForceField<sofa::defaulttype::Vec6Types>::reinit();
+	template<> void BeamHookeLawForceField<sofa::defaulttype::Vec6Types>::addForce(
+		const MechanicalParams *mparams, DataVecDeriv &f, const DataVecCoord &x, const DataVecDeriv &v);
+	template<> void BeamHookeLawForceField<sofa::defaulttype::Vec6Types>::addDForce(
+		const MechanicalParams *mparams, DataVecDeriv &df, const DataVecDeriv &dx);
+	template<> void BeamHookeLawForceField<sofa::defaulttype::Vec6Types>::addKToMatrix(
+		const MechanicalParams *mparams, const MultiMatrixAccessor *matrix);
+	template<> double BeamHookeLawForceField<sofa::defaulttype::Vec6Types>::getPotentialEnergy(
+		const MechanicalParams *mparams, const DataVecCoord &x) const;
+
 #if !defined(SOFA_COSSERAT_CPP_BeamHookeLawForceField)
 	extern template class SOFA_COSSERAT_API BeamHookeLawForceField<defaulttype::Vec3Types>;
-	// extern template class SOFA_COSSERAT_API BeamHookeLawForceField<defaulttype::Vec6Types>;
+	extern template class SOFA_COSSERAT_API BeamHookeLawForceField<defaulttype::Vec6Types>;
 #endif
 
 } // namespace sofa::component::forcefield
