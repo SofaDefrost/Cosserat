@@ -3,12 +3,10 @@ project(CosseratBindings)
 set(SOURCE_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/Module_Cosserat.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Binding_PointsManager.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/Binding_LieGroups.cpp
 )
 
 set(HEADER_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/Binding_PointsManager.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/Binding_LieGroups.h
 )
 
 if (NOT TARGET SofaPython3::Plugin)
@@ -25,6 +23,9 @@ SP3_add_python_module(
     SOURCES      ${SOURCE_FILES}
     HEADERS      ${HEADER_FILES}
     DEPENDS      SofaPython3::Plugin SofaPython3::Bindings.Sofa Sofa.GL Cosserat
-
 )
+
+target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_20)
+
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/src)
 message("-- SofaPython3 binding for the Cosserat plugin will be created.")
