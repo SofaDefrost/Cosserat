@@ -167,6 +167,19 @@ class SE2 : public LieGroupBase<SE2<_Scalar>, _Scalar, 3, 3, 2> {
     return *this;
   }
 
+  /**
+   * @brief Interpolates between this and another SE(2) element.
+   * Uses SLERP for the rotation and LERP for the translation.
+   * @param other The target SE(2) element.
+   * @param t The interpolation parameter [0, 1].
+   * @return The interpolated SE(2) element.
+   */
+  SE2 interpolate(const SE2 &other, const Scalar &t) const {
+    const SO2<Scalar> interp_rot = m_rotation.interpolate(other.m_rotation, t);
+    const Vector2 interp_trans = m_translation + t * (other.m_translation - m_translation);
+    return SE2(interp_rot, interp_trans);
+  }
+
   // ========== Lie Algebra Operations ==========
 
   /**

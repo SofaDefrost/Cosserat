@@ -41,8 +41,12 @@ inline typename LieGroupBase<Derived, _Scalar, _Dim, _AlgebraDim,
                              _ActionDim>::Scalar
 LieGroupBase<Derived, _Scalar, _Dim, _AlgebraDim, _ActionDim>::distance(
     const Derived &other) const noexcept {
+        // Check for numerical issues first
+        if (!derived().isValid() || !other.isValid()) {
+            return std::numeric_limits<Scalar>::quiet_NaN();
+          }
   try {
-    // Improved implementation: use relative transformation
+    // Use relative transformation
     // This uses g^(-1)*h which maps to the tangent space at identity
     const Derived rel = derived().inverse().compose(other);
     const TangentVector tangent = rel.log();

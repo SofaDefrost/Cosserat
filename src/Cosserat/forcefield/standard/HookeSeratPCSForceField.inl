@@ -28,12 +28,11 @@
  *                                                                             *
  ******************************************************************************/
 #pragma once
-#include <Cosserat/forcefield/standard/HookeSeratPCSForceField.h>
 
+#include "Cosserat/types.h"
+#include <Cosserat/forcefield/standard/HookeSeratPCSForceField.h>
+#include <Cosserat/forcefield/base/HookeSeratBaseForceField.h>
 #include <sofa/core/behavior/ForceField.inl>
-#include <sofa/core/behavior/MechanicalState.h>
-#include <sofa/helper/OptionsGroup.h> // ??
-#include <sofa/linearalgebra/FullVector.h>
 
 using sofa::core::VecCoordId;
 using sofa::core::behavior::MechanicalState;
@@ -98,15 +97,15 @@ namespace sofa::component::forcefield {
 				Real E = this->d_youngModulus.getValue();
 				Real G = E / (2.0 * (1.0 + this->d_poissonRatio.getValue()));
 				// Inertial matrix
-				m_K_section[0][0] = G * this->J;
-				m_K_section[1][1] = E * this->Iy;
-				m_K_section[2][2] = E * this->Iz;
+				m_K_section(0, 0) = G * this->J;
+				m_K_section(1, 1) = E * this->Iy;
+				m_K_section(2, 2) = E * this->Iz;
 			} else {
 				msg_info("HookeSeratPCSForceField") << "Pre-calculated inertia parameters are used for the computation "
 													  "of the stiffness matrix.";
-				m_K_section[0][0] = d_GI.getValue();
-				m_K_section[1][1] = d_EI.getValue();
-				m_K_section[2][2] = d_EI.getValue();
+				m_K_section(0, 0) = d_GI.getValue();
+				m_K_section(1, 1) = d_EI.getValue();
+				m_K_section(2, 2) = d_EI.getValue();
 			}
 
 		} else {
@@ -131,13 +130,13 @@ namespace sofa::component::forcefield {
 			   material's Young's modulus (E) and Poisson's ratio. The stiffness matrix
 			   is essential for computing forces and simulating beam behavior.*/
 			for (size_t k = 0; k < szL; k++) {
-				Mat33 _m_K_section;
+				Matrix3 _m_K_section;
 				Real E = d_youngModulusList.getValue()[k];
 				Real G = E / (2.0 * (1.0 + d_poissonRatioList.getValue()[k]));
 
-				_m_K_section[0][0] = G * this->J;
-				_m_K_section[1][1] = E * this->Iy;
-				_m_K_section[2][2] = E * this->Iz;
+				_m_K_section(0, 0) = G * this->J;
+				_m_K_section(1, 1) = E * this->Iy;
+				_m_K_section(2, 2) = E * this->Iz;
 				m_K_sectionList.push_back(_m_K_section);
 			}
 			msg_info("HookeSeratPCSForceField") << "If you plan to use a multi section beam with (different "
@@ -173,15 +172,35 @@ namespace sofa::component::forcefield {
 		}
 
 		if (!d_variantSections.getValue())
+			{
 			// @todo: use multithread
-			for (unsigned int i = 0; i < x.size(); i++)
-				// Using the correct matrix type for the datatype
-				// For Vec3Types, m_K_section should be Mat33
-				f[i] -= (m_K_section * (x[i] - x0[i])) * this->d_length.getValue()[i];
-		else
+				for (unsigned int i = 0; i < x.size(); i++) {
+					// Using the correct matrix type for the datatype
+					// For Vec3Types, m_K_section should be Mat33
+					Vector3 current_strain = Vector3::Map(x[i].data());
+					Vector3 rest_strain = Vector3::Map(x0[i].data());
+					Vector3 strain = current_strain - rest_strain;
+					Vector3 _f = (m_K_section * strain) * this->d_length.getValue()[i];
+
+					for (unsigned int j = 0; j < 3; j++)
+						f[i][j] -= _f[j];
+				}
+	}
+		else {
 			// @todo: use multithread
-			for (unsigned int i = 0; i < x.size(); i++)
-				f[i] -= (m_K_sectionList[i] * (x[i] - x0[i])) * this->d_length.getValue()[i];
+			Vector3 current_strain, rest_strain, strain, _f;
+
+			for (unsigned int i = 0; i < x.size(); i++) {
+				current_strain = Vector3::Map(x[i].data());
+				rest_strain = Vector3::Map(x0[i].data());
+				strain = current_strain - rest_strain;
+				_f = (m_K_sectionList[i] * strain) * this->d_length.getValue()[i];
+				for (int j = 0; j < 3; j++)
+					f[i][j] -= _f[j];
+			}
+
+		}
+
 		d_f.endEdit();
 	}
 
@@ -194,14 +213,26 @@ namespace sofa::component::forcefield {
 		WriteAccessor<DataVecDeriv> df = d_df;
 		ReadAccessor<DataVecDeriv> dx = d_dx;
 		Real kFactor = (Real) mparams->kFactorIncludingRayleighDamping(this->rayleighStiffness.getValue());
-
+		Vector3 d_strain, _df;
 		df.resize(dx.size());
-		if (!d_variantSections.getValue())
-			for (unsigned int i = 0; i < dx.size(); i++)
-				df[i] -= (m_K_section * dx[i]) * kFactor * this->d_length.getValue()[i];
+		if (!d_variantSections.getValue()) {
+
+			for (unsigned int i = 0; i < dx.size(); i++) {
+				d_strain = Vector3::Map(dx[i].data());
+				_df = (m_K_section * d_strain) * this->d_length.getValue()[i];
+				for (unsigned int j = 0; j < 3; j++)
+					df[i][j] -= _df[j];
+			}
+		}
+
 		else
-			for (unsigned int i = 0; i < dx.size(); i++)
-				df[i] -= (m_K_sectionList[i] * dx[i]) * kFactor * this->d_length.getValue()[i];
+			for (unsigned int i = 0; i < dx.size(); i++) {
+				d_strain = Vector3::Map(dx[i].data());
+				_df = (m_K_sectionList[i] * d_strain) * this->d_length.getValue()[i];
+				for (unsigned int j = 0; j < 3; j++)
+					df[i][j] -= _df[j];
+			}
+
 	}
 
 	template<typename DataTypes>
@@ -218,19 +249,18 @@ namespace sofa::component::forcefield {
 
 		if (!d_variantSections.getValue()) {
 			for (unsigned int i = 0; i < x.size(); i++) {
-				const auto &K = m_K_section;
-				const auto &strain = x[i] - x0[i];
+				Vector3 strain = Vector3::Map(x[i].data()) - Vector3::Map(x0[i].data());
 				// Calcul correct : 0.5 * strain^T * K * strain
 				// Utilisation du produit scalaire si disponible
-				energy += 0.5 * dot(strain, K * strain) * this->d_length.getValue()[i];
+				energy += 0.5 * strain.dot(m_K_section * strain) * this->d_length.getValue()[i];
 			}
 		} else {
 			for (unsigned int i = 0; i < x.size(); i++) {
 				const auto &K = m_K_sectionList[i];
-				const auto &strain = x[i] - x0[i];
+				const Vector3 strain = Vector3::Map(x[i].data()) - Vector3::Map(x0[i].data());
 
 				// Utilisation du produit scalaire si disponible
-				energy += 0.5 * dot(strain, K * strain) * this->d_length.getValue()[i];
+				energy += 0.5 * strain.dot(K * strain) * this->d_length.getValue()[i];
 			}
 		}
 
@@ -252,12 +282,12 @@ namespace sofa::component::forcefield {
 				for (unsigned int i = 0; i < 3; i++)
 					for (unsigned int j = 0; j < 3; j++)
 						mat->add(offset + i + 3 * n, offset + j + 3 * n,
-								 -kFact * m_K_section[i][j] * this->d_length.getValue()[n]);
+								 -kFact * m_K_section(i, j) * this->d_length.getValue()[n]);
 			else
 				for (unsigned int i = 0; i < 3; i++)
 					for (unsigned int j = 0; j < 3; j++)
 						mat->add(offset + i + 3 * n, offset + j + 3 * n,
-								 -kFact * m_K_sectionList[n][i][j] * this->d_length.getValue()[n]);
+								 -kFact * m_K_sectionList[n](i, j) * this->d_length.getValue()[n]);
 		}
 	}
 

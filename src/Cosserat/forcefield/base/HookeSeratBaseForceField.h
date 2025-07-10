@@ -9,8 +9,7 @@
 #include <sofa/helper/OptionsGroup.h>
 #include <sofa/linearalgebra/CompressedRowSparseMatrix.h>
 
-// Include the liegroups Types.h for Matrix3
-#include "../../../liegroups/Types.h"
+#include <liegroups/Types.h>
 
 namespace sofa::component::forcefield {
 
@@ -23,9 +22,6 @@ namespace sofa::component::forcefield {
 	using sofa::type::Mat;
 	using sofa::type::Vec;
 	using sofa::type::vector;
-
-	// Using types from liegroups
-	using sofa::component::cosserat::liegroups::Typesd;
 
 	/**
 	 * @brief Base class for beam force field implementations
@@ -41,20 +37,33 @@ namespace sofa::component::forcefield {
 		SOFA_CLASS(SOFA_TEMPLATE(HookeSeratBaseForceField, DataTypes), SOFA_TEMPLATE(ForceField, DataTypes));
 
 		// Type definitions
-		typedef typename DataTypes::Real Real;
-		typedef typename DataTypes::VecCoord VecCoord;
-		typedef typename DataTypes::VecDeriv VecDeriv;
-		typedef typename DataTypes::Coord Coord;
-		typedef typename DataTypes::Deriv Deriv;
+		using Real = typename DataTypes::Real;
+		using VecCoord = typename DataTypes::VecCoord;
+		using VecDeriv = typename DataTypes::VecDeriv;
+		using Coord = typename DataTypes::Coord;
+		using Deriv = typename DataTypes::Deriv;
 
-		typedef Data<VecCoord> DataVecCoord;
-		typedef Data<VecDeriv> DataVecDeriv;
+		using DataVecCoord = Data<VecCoord>;
+		using DataVecDeriv = Data<VecDeriv>;
 
-		typedef Vec<3, Real> Vec3;
-		typedef Mat<3, 3, Real> Mat33;
-		typedef Mat<6, 6, Real> Mat66;
-		// Use Matrix3 from liegroups Types
-		typedef Typesd::Matrix3 Matrix3;
+		// Encapsulate Lie group types
+		struct LieTypes {
+			using Types = sofa::component::cosserat::liegroups::Types<double>;
+			using Vector2 = typename Types::Vector2;
+			using Vector3 = typename Types::Vector3;
+			using Vector4 = typename Types::Vector4;
+			using Vector6 = typename Types::Vector6;
+			using Matrix3 = typename Types::Matrix3;
+			using Matrix6 = typename Types::Matrix6;
+
+		};
+
+		using Vector2 = typename LieTypes::Vector2;
+		using Vector3 = typename LieTypes::Vector3;
+		using Vector4 = typename LieTypes::Vector4;
+		using Vector6 = typename LieTypes::Vector6;
+		using Matrix3 = typename LieTypes::Matrix3;
+		using Matrix6 = typename LieTypes::Matrix6;
 
 		/**
 		 * @brief Enumeration for cross-section shapes
@@ -127,6 +136,15 @@ namespace sofa::component::forcefield {
 		 */
 		bool isValidConfiguration() const;
 		///////////////////////////////////////////////////////////////////////////
+
+		// Convert Coord to Vector6 type
+		Vector6 convert_to_local_type(const Coord & x) const {
+			Vector6 _x;
+			for (unsigned int i = 0; i < 6; i++) {
+				_x(i) = x[i];
+			}
+			return _x;
+		}
 
 	protected:
 		using ForceField<DataTypes>::mstate;
@@ -221,7 +239,7 @@ namespace sofa::component::forcefield {
 ////////////////////////// External template declarations ////////////////////
 #if !defined(SOFA_COSSERAT_CPP_HookeSeratBaseForceField)
 	extern template class SOFA_COSSERAT_API HookeSeratBaseForceField<defaulttype::Vec3Types>;
-// extern template class SOFA_COSSERAT_API HookeSeratBaseForceField<defaulttype::Vec6Types>;
+	extern template class SOFA_COSSERAT_API HookeSeratBaseForceField<defaulttype::Vec6Types>;
 #endif
 
 } // namespace sofa::component::forcefield

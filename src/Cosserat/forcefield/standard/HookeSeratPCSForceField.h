@@ -29,6 +29,7 @@
  ******************************************************************************/
 #pragma once
 #include <Cosserat/forcefield/base/HookeSeratBaseForceField.h>
+#include "Cosserat/types.h"
 
 namespace sofa::component::forcefield {
 
@@ -39,21 +40,23 @@ namespace sofa::component::forcefield {
 	 */
 	template<typename DataTypes>
 	class HookeSeratPCSForceField : public HookeSeratBaseForceField<DataTypes> {
+	//using Inherit1 = HookeSeratBaseForceField<DataTypes>;
+
 	public:
 		SOFA_CLASS(SOFA_TEMPLATE(HookeSeratPCSForceField, DataTypes), SOFA_TEMPLATE(HookeSeratBaseForceField, DataTypes));
 
-		typedef typename DataTypes::Real Real;
-		typedef typename DataTypes::VecCoord VecCoord;
-		typedef typename DataTypes::VecDeriv VecDeriv;
-		typedef typename DataTypes::Coord Coord;
-		typedef typename DataTypes::Deriv Deriv;
+		using Real = typename Inherit1::Real;
+		using VecCoord = typename Inherit1::VecCoord;
+		using VecDeriv = typename Inherit1::VecDeriv;
+		using Coord = typename Inherit1::Coord;
+		using Deriv = typename Inherit1::Deriv;
 
-		typedef Data<VecCoord> DataVecCoord;
-		typedef Data<VecDeriv> DataVecDeriv;
+		using DataVecCoord = typename Inherit1::DataVecCoord;
+		using DataVecDeriv = typename Inherit1::DataVecDeriv;
 
-		typedef Vec<3, Real> Vec3;
-		typedef Mat<3, 3, Real> Mat33;
-		typedef Mat<6, 6, Real> Mat66;
+		using Matrix3 = typename Inherit1::Matrix3;
+		using Matrix6 = typename Inherit1::Matrix6;
+		using Vector3 = typename  HookeSeratBaseForceField<DataTypes>::Vector3;
 
 	public:
 		HookeSeratPCSForceField();
@@ -95,12 +98,14 @@ namespace sofa::component::forcefield {
 		bool compute_df;
 
 		// The stiffness matrix for the beam section
-		Mat33 m_K_section;
-		type::vector<Mat33> m_K_sectionList;
+		Matrix3 m_K_section;
+		type::vector<Matrix3> m_K_sectionList;
 
 		// The stiffness matrix for the beam section in 6x6 format
-		Mat66 m_K_section66;
-		type::vector<Mat66> m_k_section66List;
+		Matrix6 m_K_section66;
+		type::vector<Matrix6> m_k_section66List;
+
+
 
 	private:
 		////////////////////////// Inherited attributes ////////////////////////////

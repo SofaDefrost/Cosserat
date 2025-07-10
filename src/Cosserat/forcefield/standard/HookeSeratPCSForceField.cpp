@@ -28,10 +28,10 @@
  *                                                                             *
  ******************************************************************************/
 #define SOFA_COSSERAT_CPP_HookeSeratPCSForceField
+#include "Cosserat/types.h"
 
 #include <Cosserat/forcefield/standard/HookeSeratPCSForceField.h>
 #include <Cosserat/forcefield/standard/HookeSeratPCSForceField.inl>
-
 #include <sofa/core/ObjectFactory.h>
 
 using namespace sofa::defaulttype;
@@ -47,12 +47,12 @@ namespace sofa::component::forcefield {
 		Inherit1::reinit();
 		if (d_useInertiaParams.getValue()) {
 			msg_info() << "Pre-calculated inertia parameters are used for the computation of the stiffness matrix.";
-			m_K_section66[0][0] = d_GI.getValue();
-			m_K_section66[1][1] = d_EIy.getValue();
-			m_K_section66[2][2] = d_EIz.getValue();
-			m_K_section66[3][3] = d_EA.getValue();
-			m_K_section66[4][4] = d_GA.getValue();
-			m_K_section66[5][5] = d_GA.getValue();
+			m_K_section66(0, 0) = d_GI.getValue();
+			m_K_section66(1, 1) = d_EIy.getValue();
+			m_K_section66(2, 2) = d_EIz.getValue();
+			m_K_section66(3, 3) = d_EA.getValue();
+			m_K_section66(4, 4) = d_GA.getValue();
+			m_K_section66(5, 5) = d_GA.getValue();
 		} else {
 			// Pour du vec 6, on a  _m_K =diag([G*J E*Iy E*Iz E*A G*As G*As]); % stifness matrix
 			Real E = this->d_youngModulus.getValue();
@@ -60,17 +60,19 @@ namespace sofa::component::forcefield {
 			// Translational Stiffness (X, Y, Z directions):
 			//  Gs * J(i): Shearing modulus times the second moment of the area (torsional stiffness). E * Js(i):
 			//  Young's modulus times the second moment of the area (bending stiffness).
-			m_K_section66[0][0] = G * this->J;
-			m_K_section66[1][1] = E * this->Iy;
-			m_K_section66[2][2] = E * this->Iz;
+			m_K_section66(0, 0) = G * this->J;
+			m_K_section66(1, 1) = E * this->Iy;
+			m_K_section66(2, 2) = E * this->Iz;
 			// Rotational Stiffness (X, Y, Z directions):
 			// E * A: Young's modulus times the cross-sectional area (axial stiffness).
 			// Gs * A: Shearing modulus times the cross-sectional area (shearing stiffness).
-			m_K_section66[3][3] = E * this->m_crossSectionArea;
-			m_K_section66[4][4] = G * this->m_crossSectionArea;
-			m_K_section66[5][5] = G * this->m_crossSectionArea;
+			m_K_section66(3, 3) = E * this->m_crossSectionArea;
+			m_K_section66(4, 4) = G * this->m_crossSectionArea;
+			m_K_section66(5, 5) = G * this->m_crossSectionArea;
 		}
 	}
+
+
 
 	template<>
 	void HookeSeratPCSForceField<defaulttype::Vec6Types>::addForce(const MechanicalParams *mparams, DataVecDeriv &d_f,
@@ -88,15 +90,23 @@ namespace sofa::component::forcefield {
 		// get the rest position (for non straight shape)
 		const VecCoord &x0 = this->mstate->read(sofa::core::vec_id::read_access::restPosition)->getValue();
 
+		// Resize the force vector to match the size of x
 		f.resize(x.size());
+
 		unsigned int sz = this->d_length.getValue().size();
 		if (x.size() != sz) {
 			msg_warning() << " length : " << sz << "should have the same size as x... " << x.size() << "\n";
 			compute_df = false;
 			return;
 		}
+
 		for (unsigned int i = 0; i < x.size(); i++) {
-			f[i] -= (m_K_section66 * (x[i] - x0[i])) * this->d_length.getValue()[i];
+
+			Vector6 strain = Vector6::Map(x[i].data()) - Vector6::Map(x0[i].data());
+			Vector6 _f = (m_K_section66 * strain) * this->d_length.getValue()[i];
+
+			for (unsigned int j = 0; j < 6; j++)
+				f[i][j] -= _f[j];
 		}
 
 		d_f.endEdit();
@@ -115,7 +125,12 @@ namespace sofa::component::forcefield {
 
 		df.resize(dx.size());
 		for (unsigned int i = 0; i < dx.size(); i++) {
-			df[i] -= (m_K_section66 * dx[i]) * kFactor * this->d_length.getValue()[i];
+			Vector6 d_strain = Vector6::Map(dx[i].data());
+			auto _df = (m_K_section66 * d_strain) * kFactor * this->d_length.getValue()[i];
+
+			for (unsigned int j = 0; j < 6; j++)
+				df[i][j] -= _df[j];
+
 		}
 	}
 
@@ -134,7 +149,7 @@ namespace sofa::component::forcefield {
 			for (unsigned int i = 0; i < VEC_SIZE; i++) {
 				for (unsigned int j = 0; j < VEC_SIZE; j++) {
 					mat->add(offset + i + VEC_SIZE * n, offset + j + VEC_SIZE * n,
-							 -kFact * m_K_section66[i][j] * this->d_length.getValue()[n]);
+							 -kFact * m_K_section66(i, j) * this->d_length.getValue()[n]);
 				}
 			}
 		}
@@ -152,9 +167,9 @@ namespace sofa::component::forcefield {
 
 		double energy = 0.0;
 		for (unsigned int i = 0; i < x.size(); i++) {
-			const auto &K = m_K_section66;
-			const auto &strain = x[i] - x0[i];
-			energy += 0.5 * (strain * (K * strain)) * this->d_length.getValue()[i];
+			auto strain = Vector6::Map(x[i].data())- Vector6::Map(x0[i].data());
+
+			energy += 0.5 * strain.dot(m_K_section66 * strain)  * this->d_length.getValue()[i];
 		}
 		return energy;
 	}
