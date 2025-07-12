@@ -27,10 +27,17 @@ class SE3 : public LieGroupBase<SE3<_Scalar>, _Scalar, 4, 6, 3> {
 public:
     using Base = LieGroupBase<SE3<_Scalar>, _Scalar, 4, 6, 3>;
     using Scalar = typename Base::Scalar;
-    using Matrix4 = typename Base::Matrix;
+	using Vector4 = typename Base::Vector;
+
     using TangentVector = typename Base::TangentVector;
+	using ActionVector = typename Base::ActionVector;
+	using AlgebraVector = typename Base::AlgebraVector;
+
+	using Matrix4 = typename Base::Matrix;
     using AdjointMatrix = typename Base::AdjointMatrix;
-    using ActionVector = typename Base::ActionVector;
+	using JacobianMatrix = typename Base::JacobianMatrix;
+	using AlgebraMatrix = typename Base::AlgebraMatrix;
+
 
     using SO3Type = SO3<Scalar>;
     using Vector3 = typename SO3Type::Vector;

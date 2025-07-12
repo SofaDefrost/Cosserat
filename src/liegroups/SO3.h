@@ -43,8 +43,8 @@ public:
   using Scalar = typename Base::Scalar;
   using Vector = typename Base::Vector;
   using Matrix = typename Base::Matrix;
-  using TangentVector = typename Base::TangentVector;
-  using AdjointMatrix = typename Base::AdjointMatrix;
+  using TangentVector3 = typename Base::TangentVector;
+  using AdjointMatrix3 = typename Base::AdjointMatrix;
 
   using Quaternion = Eigen::Quaternion<Scalar>;
   static constexpr int Dim = Base::Dim;
