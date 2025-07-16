@@ -47,6 +47,10 @@ set(HEADER_FILES
     ${SRC_ROOT_DIR}/types.h
     ${SRC_ROOT_DIR}/mapping/BaseCosseratMapping.h
     ${SRC_ROOT_DIR}/mapping/BaseCosseratMapping.inl
+    ${SRC_ROOT_DIR}/mapping/HookeSeratBaseMapping.h
+    ${SRC_ROOT_DIR}/mapping/HookeSeratBaseMapping.inl
+    ${SRC_ROOT_DIR}/mapping/HookeSeratDiscretMapping.h
+    ${SRC_ROOT_DIR}/mapping/HookeSeratDiscretMapping.inl
     ${SRC_ROOT_DIR}/mapping/DiscreteCosseratMapping.h
     ${SRC_ROOT_DIR}/mapping/DiscreteCosseratMapping.inl
     ${SRC_ROOT_DIR}/mapping/DiscreteDynamicCosseratMapping.h
@@ -79,6 +83,8 @@ set(HEADER_FILES
 set(SOURCE_FILES
     ${SRC_ROOT_DIR}/initCosserat.cpp
     ${SRC_ROOT_DIR}/mapping/BaseCosseratMapping.cpp
+    ${SRC_ROOT_DIR}/mapping/HookeSeratBaseMapping.cpp
+    ${SRC_ROOT_DIR}/mapping/HookeSeratDiscretMapping.cpp
     ${SRC_ROOT_DIR}/mapping/DiscreteCosseratMapping.cpp
     ${SRC_ROOT_DIR}/mapping/DiscreteDynamicCosseratMapping.cpp
     ${SRC_ROOT_DIR}/engine/ProjectionEngine.cpp

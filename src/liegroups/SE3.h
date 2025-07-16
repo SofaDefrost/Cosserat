@@ -31,7 +31,6 @@ public:
 
     using TangentVector = typename Base::TangentVector;
 	using ActionVector = typename Base::ActionVector;
-	using AlgebraVector = typename Base::AlgebraVector;
 
 	using Matrix4 = typename Base::Matrix;
     using AdjointMatrix = typename Base::AdjointMatrix;
