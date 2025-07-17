@@ -182,6 +182,13 @@ namespace sofa::component::forcefield {
 			// @todo: use multithread
 			for (unsigned int i = 0; i < x.size(); i++)
 				f[i] -= (m_K_sectionList[i] * (x[i] - x0[i])) * this->d_length.getValue()[i];
+		
+		// Debug output if needed
+		if (this->f_printLog.getValue()) {
+			displayForces(d_f, "addForce - computed forces");
+			displaySectionMatrix(m_K_section, "addForce - K section matrix");
+		}
+		
 		d_f.endEdit();
 	}
 
@@ -202,6 +209,11 @@ namespace sofa::component::forcefield {
 		else
 			for (unsigned int i = 0; i < dx.size(); i++)
 				df[i] -= (m_K_sectionList[i] * dx[i]) * kFactor * this->d_length.getValue()[i];
+		
+		// Debug output if needed
+		if (this->f_printLog.getValue()) {
+			displayDForces(d_df, "addDForce - computed differential forces");
+		}
 	}
 
 	template<typename DataTypes>
@@ -259,11 +271,53 @@ namespace sofa::component::forcefield {
 						mat->add(offset + i + 3 * n, offset + j + 3 * n,
 								 -kFact * m_K_sectionList[n][i][j] * this->d_length.getValue()[n]);
 		}
+		
+		// Debug output if needed
+		if (this->f_printLog.getValue()) {
+			displayKMatrix(matrix, "addKToMatrix - global K matrix");
+		}
 	}
 
 	template<typename DataTypes>
 	typename BeamHookeLawForceField<DataTypes>::Real BeamHookeLawForceField<DataTypes>::getRadius() {
 		return this->d_radius.getValue();
+	}
+
+	template<typename DataTypes>
+	void BeamHookeLawForceField<DataTypes>::displayForces(const DataVecDeriv &forces, const std::string &label) {
+		msg_info() << label;
+		for (size_t i = 0; i < forces.size(); ++i) {
+			msg_info() << "Force at " << i << ": " << forces[i];
+		}
+	}
+
+	template<typename DataTypes>
+	void BeamHookeLawForceField<DataTypes>::displayDForces(const DataVecDeriv &dForces, const std::string &label) {
+		msg_info() << label;
+		for (size_t i = 0; i < dForces.size(); ++i) {
+			msg_info() << "Differential Force at " << i << ": " << dForces[i];
+		}
+	}
+
+	template<typename DataTypes>
+	void BeamHookeLawForceField<DataTypes>::displayKMatrix(const MultiMatrixAccessor *matrix, const std::string &label) {
+		msg_info() << label;
+		MultiMatrixAccessor::MatrixRef mref = matrix->getMatrix(this->mstate);
+		BaseMatrix *mat = mref.matrix;
+		// Display matrix information - exact method depends on BaseMatrix implementation
+		msg_info() << "Matrix size: " << mat->rows() << "x" << mat->cols();
+	}
+
+	template<typename DataTypes>
+	void BeamHookeLawForceField<DataTypes>::displaySectionMatrix(const Mat33 &matrix, const std::string &label) {
+		msg_info() << label;
+		msg_info() << "Matrix contents:";
+		for (int i = 0; i < 3; ++i) {
+			for (int j = 0; j < 3; ++j) {
+				msg_info() << matrix[i][j] << " ";
+			}
+			msg_info() << "\n";
+		}
 	}
 
 } // namespace sofa::component::forcefield

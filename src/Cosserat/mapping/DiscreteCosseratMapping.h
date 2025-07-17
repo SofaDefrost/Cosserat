@@ -120,6 +120,14 @@ namespace Cosserat::mapping {
 		void computeBBox(const sofa::core::ExecParams *params, bool onlyVisible) override;
 		void computeLogarithm(const double &x, const Mat4x4 &gX, Mat4x4 &log_gX);
 
+		// Debugging functions
+		void displayOutputFrames(const sofa::VecCoord_t<Out> &frames, const std::string &label="output - frames");
+		void displayInputVelocities(const sofa::VecDeriv_t<In1> &in1Vel, const sofa::VecDeriv_t<In2> &in2Vel, const std::string &label="input - velocities");
+		void displayOutputVelocities(const sofa::VecDeriv_t<Out> &outVel, const std::string &label="output - velocities");
+		void displayInputForces(const sofa::VecDeriv_t<In1> &in1Force, const sofa::VecDeriv_t<In2> &in2Force, const std::string &label="input - forces");
+		void displayOutputForces(const sofa::VecDeriv_t<Out> &outForce, const std::string &label="output - forces");
+		void displayTransformMatrices(const std::string &label="transform - matrices");
+
 	protected:
 		////////////////////////// Inherited attributes ////////////////////////////
 		/// https://gcc.gnu.org/onlinedocs/gcc/Name-lookup.html

@@ -201,6 +201,12 @@ namespace sofa::component::forcefield {
 
 		}
 
+		// Debug output if needed
+		if (this->f_printLog.getValue()) {
+			displayForces(d_f, "addForce - computed forces");
+			displaySectionMatrix(m_K_section, "addForce - K section matrix");
+		}
+
 		d_f.endEdit();
 	}
 
@@ -230,9 +236,13 @@ namespace sofa::component::forcefield {
 				d_strain = Vector3::Map(dx[i].data());
 				_df = (m_K_sectionList[i] * d_strain) * this->d_length.getValue()[i];
 				for (unsigned int j = 0; j < 3; j++)
-					df[i][j] -= _df[j];
+				df[i][j] -= _df[j];
 			}
 
+		// Debug output if needed
+		if (this->f_printLog.getValue()) {
+			displayDForces(d_df, "addDForce - computed differential forces");
+		}
 	}
 
 	template<typename DataTypes>
@@ -289,11 +299,54 @@ namespace sofa::component::forcefield {
 						mat->add(offset + i + 3 * n, offset + j + 3 * n,
 								 -kFact * m_K_sectionList[n](i, j) * this->d_length.getValue()[n]);
 		}
+		
+		// Debug output if needed
+		if (this->f_printLog.getValue()) {
+			displayKMatrix(matrix, "addKToMatrix - global K matrix");
+		}
 	}
 
 	template<typename DataTypes>
 	typename HookeSeratPCSForceField<DataTypes>::Real HookeSeratPCSForceField<DataTypes>::getRadius() {
 		return this->d_radius.getValue();
-	}
+template<typename DataTypes>
+void HookeSeratPCSForceFieldcDataTypese::displayForces(const DataVecDeriv forces, const std::string label) {
+    msg_info() cc label;
+    for (size_t i = 0; i c forces.size(); ++i) {
+        msg_info() cc "Force at " cc i cc ": " cc forces[i];
+    }
+}
+
+templatectypename DataTypese
+void HookeSeratPCSForceFieldcDataTypese::displayDForces(const DataVecDeriv dForces, const std::string label) {
+    msg_info() cc label;
+    for (size_t i = 0; i c dForces.size(); ++i) {
+        msg_info() cc "Differential Force at " cc i cc ": " cc dForces[i];
+    }
+}
+
+templatectypename DataTypese
+void HookeSeratPCSForceFieldcDataTypese::displayKMatrix(const MultiMatrixAccessor *matrix, const std::string label) {
+    msg_info() cc label;
+    MultiMatrixAccessor::MatrixRef mref = matrix-egetMatrix(this-emstate);
+    BaseMatrix *mat = mref.matrix;
+    mat-edisplay(std::cout); // Assume some display capability
+}
+    for (size_t i = 0; i < forces.size(); ++i) {
+        msg_info() << "Force at " << i << ": " << forces[i];
+    }
+}
+
+template<typename DataTypes>
+void HookeSeratPCSForceField<DataTypes>::displaySectionMatrix(const Matrix3 &matrix, const std::string &label) {
+    msg_info() << label;
+    msg_info() << "Matrix contents:";
+    for (int i = 0; i < 3; ++i) {
+        for (int j = 0; j < 3; ++j) {
+            msg_info() << matrix(i, j) << " ";
+        }
+        msg_info() << "\n";
+    }
+}
 
 } // namespace sofa::component::forcefield

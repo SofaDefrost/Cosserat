@@ -145,6 +145,12 @@ namespace Cosserat::mapping {
 			msg_info() << tmp.str();
 		}
 
+		// Debug output if needed
+		if (this->f_printLog.getValue()) {
+			displayOutputFrames(out, "apply - computed output frames");
+			displayTransformMatrices("apply - transformation matrices");
+		}
+
 		// TODO(dmarchal:2024/06/13): This looks a suspicious design pattern,
 		// elaborate more on the purpose of m_indexInput and how to use it.
 		m_indexInput = 0;
@@ -268,6 +274,13 @@ namespace Cosserat::mapping {
 			if (d_debug.getValue())
 				std::cout << "Frame velocity : " << i << " = " << eta_frame_i << std::endl;
 		}
+		
+		// Debug output if needed
+		if (this->f_printLog.getValue()) {
+			displayInputVelocities(in1_vel, in2_vel, "applyJ - input velocities");
+			displayOutputVelocities(out_vel, "applyJ - computed output velocities");
+		}
+		
 		dataVecOutVel[0]->endEdit();
 		m_indexInput = 0;
 	}
@@ -369,6 +382,12 @@ namespace Cosserat::mapping {
 		if (d_debug.getValue()) {
 			std::cout << "Node forces " << out1 << std::endl;
 			std::cout << "base Force: " << out2[baseIndex] << std::endl;
+		}
+
+		// Debug output if needed
+		if (this->f_printLog.getValue()) {
+			displayOutputForces(in, "applyJT - input forces");
+			displayInputForces(out1, out2, "applyJT - computed input forces");
 		}
 
 		dataVecOut1Force[0]->endEdit();
@@ -622,11 +641,81 @@ namespace Cosserat::mapping {
 				vparams->drawTool()->drawLine(positions[i], positions[i + 1], color);
 			}
 		}
-		glLineWidth(1);
-		if (!vparams->displayFlags().getShowMappings())
-			if (!d_debug.getValue())
-				return;
-		glEnd();
+	glLineWidth(1);
+	if (!vparams->displayFlags().getShowMappings())
+		if (!d_debug.getValue())
+			return;
+	
+	// Debug output if needed
+	if (this->f_printLog.getValue()) {
+		displayOutputFrames(xData, "draw - rendering frames");
+	}
+	
+	glEnd();
+}
+
+	template<class TIn1, class TIn2, class TOut>
+	void DiscreteCosseratMapping<TIn1, TIn2, TOut>::displayOutputFrames(const sofa::VecCoord_t<Out> &frames, const std::string &label) {
+		std::cout << label << std::endl;
+		for (size_t i = 0; i < frames.size(); ++i) {
+			std::cout << "Frame " << i << ": position=" << frames[i].getCenter() 
+					  << ", orientation=" << frames[i].getOrientation() << std::endl;
+		}
+	}
+
+	template<class TIn1, class TIn2, class TOut>
+	void DiscreteCosseratMapping<TIn1, TIn2, TOut>::displayInputVelocities(const sofa::VecDeriv_t<In1> &in1Vel, const sofa::VecDeriv_t<In2> &in2Vel, const std::string &label) {
+		std::cout << label << std::endl;
+		std::cout << "Input 1 velocities:" << std::endl;
+		for (size_t i = 0; i < in1Vel.size(); ++i) {
+			std::cout << "  Vel1[" << i << "]: " << in1Vel[i] << std::endl;
+		}
+		std::cout << "Input 2 velocities:" << std::endl;
+		for (size_t i = 0; i < in2Vel.size(); ++i) {
+			std::cout << "  Vel2[" << i << "]: " << in2Vel[i] << std::endl;
+		}
+	}
+
+	template<class TIn1, class TIn2, class TOut>
+	void DiscreteCosseratMapping<TIn1, TIn2, TOut>::displayOutputVelocities(const sofa::VecDeriv_t<Out> &outVel, const std::string &label) {
+		std::cout << label << std::endl;
+		for (size_t i = 0; i < outVel.size(); ++i) {
+			std::cout << "Output velocity[" << i << "]: " << outVel[i] << std::endl;
+		}
+	}
+
+	template<class TIn1, class TIn2, class TOut>
+	void DiscreteCosseratMapping<TIn1, TIn2, TOut>::displayInputForces(const sofa::VecDeriv_t<In1> &in1Force, const sofa::VecDeriv_t<In2> &in2Force, const std::string &label) {
+		std::cout << label << std::endl;
+		std::cout << "Input 1 forces:" << std::endl;
+		for (size_t i = 0; i < in1Force.size(); ++i) {
+			std::cout << "  Force1[" << i << "]: " << in1Force[i] << std::endl;
+		}
+		std::cout << "Input 2 forces:" << std::endl;
+		for (size_t i = 0; i < in2Force.size(); ++i) {
+			std::cout << "  Force2[" << i << "]: " << in2Force[i] << std::endl;
+		}
+	}
+
+	template<class TIn1, class TIn2, class TOut>
+	void DiscreteCosseratMapping<TIn1, TIn2, TOut>::displayOutputForces(const sofa::VecDeriv_t<Out> &outForce, const std::string &label) {
+		std::cout << label << std::endl;
+		for (size_t i = 0; i < outForce.size(); ++i) {
+			std::cout << "Output force[" << i << "]: " << outForce[i] << std::endl;
+		}
+	}
+
+	template<class TIn1, class TIn2, class TOut>
+	void DiscreteCosseratMapping<TIn1, TIn2, TOut>::displayTransformMatrices(const std::string &label) {
+		std::cout << label << std::endl;
+		std::cout << "Frames exponential SE3 matrices (size: " << m_framesExponentialSE3Vectors.size() << "):" << std::endl;
+		for (size_t i = 0; i < m_framesExponentialSE3Vectors.size(); ++i) {
+			std::cout << "  Frame[" << i << "]: " << m_framesExponentialSE3Vectors[i] << std::endl;
+		}
+		std::cout << "Nodes exponential SE3 matrices (size: " << m_nodesExponentialSE3Vectors.size() << "):" << std::endl;
+		for (size_t i = 0; i < m_nodesExponentialSE3Vectors.size(); ++i) {
+			std::cout << "  Node[" << i << "]: " << m_nodesExponentialSE3Vectors[i] << std::endl;
+		}
 	}
 
 } // namespace Cosserat::mapping

@@ -78,6 +78,12 @@ namespace sofa::component::forcefield {
 
 		Real getRadius();
 
+		// Debugging functions
+		void displayForces(const DataVecDeriv &forces, const std::string &label="force - output");
+		void displayDForces(const DataVecDeriv &dForces, const std::string &label="dForce - output");
+		void displayKMatrix(const MultiMatrixAccessor *matrix, const std::string &label="KMatrix - output");
+		void displaySectionMatrix(const Mat33 &matrix, const std::string &label="_m_K_section - output");
+
 	protected:
 		// In case we have a beam with different properties per section
 		Data<bool> d_variantSections; /// bool to identify different beams sections

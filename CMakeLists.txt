@@ -160,6 +160,7 @@ else()
     # try again with the find_package mechanism
     find_package(SofaPython3 QUIET)
 endif()
+
 if(SofaPython3Tools OR SofaPython3_FOUND)
     if(NOT SP3_PYTHON_PACKAGES_DIRECTORY)
         set(SP3_PYTHON_PACKAGES_DIRECTORY "python3/site-packages")
@@ -169,9 +170,7 @@ if(SofaPython3Tools OR SofaPython3_FOUND)
     #         SOURCE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/python3/cosserat
     #         TARGET_DIRECTORY cosserat
     # )
-    add_subdirectory(${SRC_ROOT_DIR}/Binding)
-    # Temporarily disable liegroups bindings due to C++ compatibility issues
-    # add_subdirectory(${SRC_ROOT_LIE_GROUPE}/Binding)
+    # add_subdirectory(python/Binding)
 endif()
 
 
