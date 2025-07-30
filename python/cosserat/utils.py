@@ -390,3 +390,5 @@ def create_rigid_node(parent_node: Sofa.Core.Node,
     )
 
     return rigidBaseNode
+
+

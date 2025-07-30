@@ -1,28 +1,27 @@
-project(Bindings.Module.Cosserat VERSION 21.12.0)
+project(Cosserat.Python VERSION 21.12.0)
 
 set(SOURCE_FILES
-    ${CMAKE_CURRENT_SOURCE_DIR}/Module_Cosserat.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/Binding_PointsManager.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/Module_Cosserat.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/Binding_PointsManager.cpp
 )
 
 set(HEADER_FILES
-    ${CMAKE_CURRENT_SOURCE_DIR}/Binding_PointsManager.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/Binding_PointsManager.h
 )
 
 if (NOT TARGET SofaPython3::Plugin)
     find_package(SofaPython3 REQUIRED COMPONENTS Plugin Bindings.Sofa)
 endif()
-
-sofa_find_package(Sofa.GL QUIET)
-
+message("t===> " ${SOURCE_FILES}, " <===", )
+message("t===> " ${HEADER_FILES}, " <===", )
 SP3_add_python_module(
     TARGET       ${PROJECT_NAME}
-    PACKAGE      Bindings.Module.Cosserat
+    PACKAGE      Cosserat.Python
     MODULE       Cosserat
     DESTINATION  Sofa
     SOURCES      ${SOURCE_FILES}
     HEADERS      ${HEADER_FILES}
-    DEPENDS      SofaPython3::Plugin SofaPython3::Bindings.Sofa Cosserat
+    DEPENDS      Cosserat SofaPython3::Plugin SofaPython3::Bindings.Sofa.Core
 )
 
 #target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_20)

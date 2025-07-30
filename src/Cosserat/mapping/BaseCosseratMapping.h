@@ -46,6 +46,7 @@ using sofa::type::Mat;
 
 // TODO(dmarchal: 2024/06/12): please check the comment to confirme this is true
 using SE3 = sofa::type::Matrix4; ///< The "coordinate" in SE3
+	// @todo : se3 is equal Vec6.
 using se3 = sofa::type::Matrix4; ///< The "speed" of change of SE3.
 using _se3 = Eigen::Matrix4d;
 using _SE3 = Eigen::Matrix4d;
@@ -84,25 +85,25 @@ public:
     using OutCoord = sofa::Coord_t<Out>;
 
     /*===========COSSERAT VECTORS ======================*/
-    unsigned int m_indexInput;
-    vector<OutCoord> m_vecTransform;
+    unsigned int m_index_input;
+    vector<OutCoord> m_vec_transform;
 
-    vector<Frame> m_framesExponentialSE3Vectors;
-    vector<Frame> m_nodesExponentialSE3Vectors;
-    vector<Mat4x4> m_nodesLogarithmSE3Vectors;
+    vector<Frame> m_frames_exponential_se3_vectors;
+    vector<Frame> m_nodes_exponential_se3_vectors;
+    vector<Mat4x4> m_nodes_logarithm_se3_vectors;
 
-    vector<unsigned int> m_indicesVectors;
-    vector<unsigned int> m_indicesVectorsDraw;
+    vector<unsigned int> m_indices_vectors;
+    vector<unsigned int> m_indices_vectors_draw;
 
-    vector<double> m_beamLengthVectors;
-    vector<double> m_framesLengthVectors;
+    vector<double> m_beam_length_vectors;
+    vector<double> m_frames_length_vectors;
 
-    vector<Vec6> m_nodesVelocityVectors;
-    vector<Mat6x6> m_nodesTangExpVectors;
-    vector<Mat6x6> m_framesTangExpVectors;
-    vector<Vec6> m_totalBeamForceVectors;
+    vector<Vec6> m_nodes_velocity_vectors;
+    vector<Mat6x6> m_nodes_tang_exp_vectors;
+    vector<Mat6x6> m_frames_tang_exp_vectors;
+    vector<Vec6> m_total_beam_force_vectors;
 
-    vector<Mat6x6> m_nodeAdjointVectors;
+    vector<Mat6x6> m_node_adjoint_vectors;
 
     // TODO(dmarchal:2024/06/07): explain why these attributes are unused
     // : yadagolo: Need for the dynamic function, which is not working yet. But the component is in this folder
@@ -125,8 +126,8 @@ public:
     double computeTheta(const double &x, const Mat4x4 &gX);
     void printMatrix(const Mat6x6 R);
 
-    sofa::type::Mat3x3 extractRotMatrix(const Frame &frame);
-    TangentTransform buildProjector(const Frame &T);
+    static Mat3x3 extractRotMatrix(const Frame &frame);
+    static TangentTransform buildProjector(const Frame &T);
     Mat3x3 getTildeMatrix(const Vec3 &u);
 
     void buildAdjoint(const Mat3x3 &A, const Mat3x3 &B, Mat6x6 &Adjoint);
@@ -141,8 +142,8 @@ public:
      * @param angle The rotation angle in radians
      * @return RotMat A 3x3 rotation matrix representing the rotation around the X-axis
      */
-    RotMat rotationMatrixX(double angle) {
-        Eigen::Matrix3d rotation;
+    static RotMat rotationMatrixX(double angle) {
+        Matrix3d rotation;
         rotation << 1, 0, 0, 0, cos(angle), -sin(angle), 0, sin(angle), cos(angle);
         return rotation;
     }
@@ -154,8 +155,8 @@ public:
      * @return RotMat A 3x3 rotation matrix representing the rotation around the Y-axis
      */
     // function... it shouldn't be (re)implemented in a base classe.
-    RotMat rotationMatrixY(double angle) {
-        Eigen::Matrix3d rotation;
+    static RotMat rotationMatrixY(const double angle) {
+        Matrix3d rotation;
         rotation << cos(angle), 0, sin(angle), 0, 1, 0, -sin(angle), 0, cos(angle);
         return rotation;
     }

@@ -45,16 +45,16 @@ set(HEADER_FILES
     ${SRC_ROOT_DIR}/config.h.in
     ${SRC_ROOT_DIR}/fwd.h
     ${SRC_ROOT_DIR}/types.h
-    ${SRC_ROOT_DIR}/mapping/BaseCosseratMapping.h
-    ${SRC_ROOT_DIR}/mapping/BaseCosseratMapping.inl
     ${SRC_ROOT_DIR}/mapping/HookeSeratBaseMapping.h
     ${SRC_ROOT_DIR}/mapping/HookeSeratBaseMapping.inl
     ${SRC_ROOT_DIR}/mapping/HookeSeratDiscretMapping.h
     ${SRC_ROOT_DIR}/mapping/HookeSeratDiscretMapping.inl
+    ${SRC_ROOT_DIR}/mapping/BaseCosseratMapping.h
+    ${SRC_ROOT_DIR}/mapping/BaseCosseratMapping.inl
     ${SRC_ROOT_DIR}/mapping/DiscreteCosseratMapping.h
     ${SRC_ROOT_DIR}/mapping/DiscreteCosseratMapping.inl
-    ${SRC_ROOT_DIR}/mapping/DiscreteDynamicCosseratMapping.h
-    ${SRC_ROOT_DIR}/mapping/DiscreteDynamicCosseratMapping.inl
+    # ${SRC_ROOT_DIR}/mapping/DiscreteDynamicCosseratMapping.h
+    # ${SRC_ROOT_DIR}/mapping/DiscreteDynamicCosseratMapping.inl
     ${SRC_ROOT_DIR}/engine/ProjectionEngine.h
     ${SRC_ROOT_DIR}/engine/ProjectionEngine.inl
     ${SRC_ROOT_DIR}/mapping/DifferenceMultiMapping.h
@@ -71,7 +71,7 @@ set(HEADER_FILES
     ${SRC_ROOT_DIR}/forcefield/base/HookeSeratBaseForceField.inl
     ${SRC_ROOT_DIR}/forcefield/standard/HookeSeratPCSForceField.h
     ${SRC_ROOT_DIR}/forcefield/standard/HookeSeratPCSForceField.inl
-        # ${SRC_ROOT_DIR}/forcefield/experimental/CosseratInternalActuation.h
+    # ${SRC_ROOT_DIR}/forcefield/experimental/CosseratInternalActuation.h
     # ${SRC_ROOT_DIR}/forcefield/experimental/CosseratInternalActuation.inl
     ${SRC_ROOT_DIR}/constraint/CosseratSlidingConstraint.h
     ${SRC_ROOT_DIR}/constraint/CosseratSlidingConstraint.inl
@@ -86,7 +86,7 @@ set(SOURCE_FILES
     ${SRC_ROOT_DIR}/mapping/HookeSeratBaseMapping.cpp
     ${SRC_ROOT_DIR}/mapping/HookeSeratDiscretMapping.cpp
     ${SRC_ROOT_DIR}/mapping/DiscreteCosseratMapping.cpp
-    ${SRC_ROOT_DIR}/mapping/DiscreteDynamicCosseratMapping.cpp
+    # ${SRC_ROOT_DIR}/mapping/DiscreteDynamicCosseratMapping.cpp
     ${SRC_ROOT_DIR}/engine/ProjectionEngine.cpp
     ${SRC_ROOT_DIR}/mapping/DifferenceMultiMapping.cpp
     ${SRC_ROOT_DIR}/mapping/RigidDistanceMapping.cpp
@@ -99,8 +99,7 @@ set(SOURCE_FILES
     ${SRC_ROOT_DIR}/constraint/CosseratSlidingConstraint.cpp
     ${SRC_ROOT_DIR}/mapping/LegendrePolynomialsMapping.cpp
     ${SRC_ROOT_DIR}/constraint/CosseratNeedleSlidingConstraint.cpp
-
-        )
+)
 
 
 sofa_find_package(SoftRobots QUIET)
@@ -151,28 +150,10 @@ if(SoftRobots_FOUND)
     target_link_libraries(${PROJECT_NAME} SoftRobots)
 endif()
 
-
-find_file(SofaPython3Tools NAMES "SofaPython3/lib/cmake/SofaPython3/SofaPython3Tools.cmake")
-if(SofaPython3Tools)
-    message("-- Found SofaPython3Tools.")
-    include(${SofaPython3Tools})
-else()
-    # try again with the find_package mechanism
-    find_package(SofaPython3 QUIET)
+find_package(SofaPython3 REQUIRED)
+if (SofaPython3_FOUND)
+    add_subdirectory(python/Binding)
 endif()
-
-if(SofaPython3Tools OR SofaPython3_FOUND)
-    if(NOT SP3_PYTHON_PACKAGES_DIRECTORY)
-        set(SP3_PYTHON_PACKAGES_DIRECTORY "python3/site-packages")
-    endif()
-    message("-- Python3 packages will be installed in ${SP3_PYTHON_PACKAGES_DIRECTORY}.")
-    # SP3_add_python_package(
-    #         SOURCE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/python3/cosserat
-    #         TARGET_DIRECTORY cosserat
-    # )
-    # add_subdirectory(python/Binding)
-endif()
-
 
 ## Install rules for the library and headers; CMake package configurations files
 sofa_create_package_with_targets(

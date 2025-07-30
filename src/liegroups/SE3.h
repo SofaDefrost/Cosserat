@@ -48,6 +48,8 @@ public:
     SE3() : m_rotation(), m_translation(Vector3::Zero()) {}
     SE3(const SO3Type &rotation, const Vector3 &translation)
         : m_rotation(rotation), m_translation(translation) {}
+	SE3(const Quaternion &quat, const Vector3 &translation)
+		: m_rotation(quat.toRotationMatrix()), m_translation(translation) {}
     explicit SE3(const Matrix4 &matrix)
         : m_rotation(matrix.template block<3, 3>(0, 0)),
           m_translation(matrix.template block<3, 1>(0, 3)) {}
@@ -70,9 +72,41 @@ public:
         return m_rotation.act(point) + m_translation;
     }
 
+	/**
+   * @brief Exponential map from se(3) to SE(3) using Cosserat-style approach.
+   *
+   * For ξ = [ρ, φ]ᵀ ∈ se(3) where ρ ∈ ℝ³ (translation) and φ ∈ ℝ³ (rotation):
+   *
+   * Small case (‖φ‖ ≈ 0):
+   *   T = I₄ + s·ξ̂
+   *
+   * General case:
+   *   T = I₄ + s·ξ̂ + α·ξ̂² + β·ξ̂³
+   *   where α = (1-cos(s‖φ‖))/‖φ‖², β = (s‖φ‖-sin(s‖φ‖))/‖φ‖³
+   *
+   * @param strain 6D strain vector [ρ, φ]ᵀ (linear and angular strain rates).
+   * @param length Arc length parameter for integration.
+   * @return The corresponding SE3 element.
+   */
+	static SE3 expCosserat(const TangentVector& strain, const Scalar& length) noexcept {
+    	// Extract translation and rotation parts
+    	const Vector3 rho = strain.template tail<3>();      // Linear strain (translation rate)
+    	const Vector3 phi = strain.template head<3>();      // Angular strain (rotation rate)
+
+    	const Scalar phi_norm = phi.norm();
+
+    	// Handle small rotation case
+    	if (phi_norm <= std::numeric_limits<Scalar>::epsilon()) {
+    		return expCosseratSmall(rho, phi, length);
+    	}
+
+    	return expCosseratGeneral(rho, phi, phi_norm, length);
+    }
+
     static SE3 computeExp(const TangentVector &xi) {
-        const Vector3 rho = xi.template head<3>();
-        const Vector3 phi = xi.template tail<3>();
+        const Vector3 rho = xi.template tail<3>();
+        const Vector3 phi = xi.template head<3>();
+    	std::cout << "SE3::computeExp rho: " << rho << ", phi: " << phi << std::endl;
 
         const Scalar angle = phi.norm();
         const SO3Type R = SO3Type::exp(phi);
@@ -177,9 +211,113 @@ public:
         return T;
     }
 
+	/**
+  * @brief Extract position and orientation as separate components.
+  * @param position Output position vector.
+  * @param orientation Output quaternion.
+  */
+	void getPositionAndOrientation(Vector3& position, Quaternion& orientation) const {
+    	position = m_translation;
+    	orientation = m_rotation.quaternion();
+    }
+
+    /**
+     * @brief Print the SE3 element to an output stream.
+     * This method is required by the LieGroupBase CRTP interface.
+     * @param os Output stream to write to.
+     * @return Reference to the output stream.
+     */
+    std::ostream &print(std::ostream &os) const {
+        os << "SE3(R=" << m_rotation << ", t=[" << m_translation[0] << ", " 
+           << m_translation[1] << ", " << m_translation[2] << "])";
+        return os;
+    }
+
 private:
     SO3Type m_rotation;
     Vector3 m_translation;
+	/**
+	 * @brief Small angle approximation for SE(3) exponential.
+	 */
+	static SE3 expCosseratSmall(const Vector3& rho, const Vector3& phi, const Scalar& length) noexcept {
+		// For small rotations: T ≈ I + length * ξ̂
+		// Build the se(3) matrix ξ̂
+		// ξ̂ = [φ×  ρ]  where φ× is the skew-symmetric matrix of φ
+		Matrix4 xi_hat = buildXiHat(rho,phi);
+
+		Matrix4 g_x = Matrix4::Identity() + length * xi_hat;
+
+		// Small angle quaternion: q ≈ (1, 0.5 * rotation_vec)
+		//const Vector3 half_rotation = rotation_vec * 0.5;
+		//Quaternion rotation(1.0, half_rotation.x(), half_rotation.y(), half_rotation.z());
+		//rotation.normalize();
+
+		return SE3(g_x);
+	}
+	/**
+	 * @brief General case for SE(3) exponential with Cosserat-style approach.
+	 */
+	/**
+	   * @brief General case SE(3) exponential using 3rd-order Taylor expansion.
+	   */
+	static SE3 expCosseratGeneral(const Vector3& rho, const Vector3& phi,
+								 const Scalar& phi_norm, const Scalar& length) noexcept {
+		const Scalar s_phi_norm = length * phi_norm;
+		const Scalar phi_norm2 = phi_norm * phi_norm;
+		const Scalar phi_norm3 = phi_norm2 * phi_norm;
+
+		// Cosserat coefficients
+		const Scalar cos_s_phi = std::cos(s_phi_norm);
+		const Scalar sin_s_phi = std::sin(s_phi_norm);
+
+		const Scalar alpha = (1.0 - cos_s_phi) / phi_norm2;
+		const Scalar beta = (s_phi_norm - sin_s_phi) / phi_norm3;
+
+		// Build se(3) matrix ξ̂
+		const Matrix4 xi_hat = buildXiHat(rho, phi);
+
+		// Compute powers: ξ̂², ξ̂³
+		const Matrix4 xi_hat2 = xi_hat * xi_hat;
+		const Matrix4 xi_hat3 = xi_hat2 * xi_hat;
+
+		// Taylor expansion: T = I + s·ξ̂ + α·ξ̂² + β·ξ̂³
+		const Matrix4 g_x = Matrix4::Identity() +
+						 length * xi_hat +
+						 alpha * xi_hat2 +
+						 beta * xi_hat3;
+
+		return SE3(g_x);
+	}
+
+	/**
+   * @brief Build the se(3) matrix representation ξ̂ ∈ ℝ⁴ˣ⁴.
+   *
+   * ξ̂ = [φ×  ρ]  where φ× is the skew-symmetric matrix of φ
+   *     [0   0]
+   *
+   * @param rho Translation part (3D).
+   * @param phi Rotation part (3D).
+   * @return 4x4 se(3) matrix.
+   */
+	static Matrix4 buildXiHat(const Vector3& rho, const Vector3& phi) noexcept {
+		Matrix4 xi_hat = Matrix4::Zero();
+
+		// Top-left 3x3: skew-symmetric matrix [φ]×
+		xi_hat(0, 1) = -phi.z();
+		xi_hat(0, 2) =  phi.y();
+		xi_hat(1, 0) =  phi.z();
+		xi_hat(1, 2) = -phi.x();
+		xi_hat(2, 0) = -phi.y();
+		xi_hat(2, 1) =  phi.x();
+
+		// Top-right 3x1: translation part
+		xi_hat(0, 3) =  1.0 + rho.x();
+		xi_hat(1, 3) =  rho.y();
+		xi_hat(2, 3) =  rho.z();
+
+		// The bottom row is already zero
+		return xi_hat;
+	}
 };
 
 // ========== Type Aliases ==========

@@ -48,7 +48,9 @@ namespace sofa::component::forcefield {
 		computeCrossSectionProperties();
 
 		if (f_printLog.getValue()) {
+			msg_info("HookeSeratBaseForceField") << "  ----------------------------------" ;
 			printDebugInfo();
+			msg_info("HookeSeratBaseForceField") << "  ----------------------------------" ;
 		}
 	}
 
@@ -228,6 +230,7 @@ void HookeSeratBaseForceField<DataTypes>::computeCircularProperties() {
 
 	template<typename DataTypes>
 	void HookeSeratBaseForceField<DataTypes>::printDebugInfo() const {
+		msg_info("HookeSeratBaseForceField") << "  ----------------------------------" ;
 		msg_info("HookeSeratBaseForceField") << "Cross-section properties:";
 		msg_info("HookeSeratBaseForceField") << "  Shape: " << d_crossSectionShape.getValue().getSelectedItem();
 		msg_info("HookeSeratBaseForceField") << "  Area: " << m_crossSectionArea;
@@ -237,6 +240,7 @@ void HookeSeratBaseForceField<DataTypes>::computeCircularProperties() {
 		msg_info("HookeSeratBaseForceField") << "  E (Young): " << d_youngModulus.getValue();
 		msg_info("HookeSeratBaseForceField") << "  ν (Poisson): " << d_poissonRatio.getValue();
 		msg_info("HookeSeratBaseForceField") << "  G (Shear): " << getShearModulus();
+		msg_info("HookeSeratBaseForceField") << "  ----------------------------------" ;
 	}
 
 } // namespace sofa::component::forcefield

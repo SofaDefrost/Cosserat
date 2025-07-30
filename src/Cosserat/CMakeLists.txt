@@ -7,27 +7,6 @@ set(HEADER_FILES
     fwd.h
     types.h
     initCosserat.cpp
-    # Lie group implementations
-    # liegroups/Types.h
-    # liegroups/LieGroupBase.h
-    # liegroups/LieGroupBase.inl
-    # liegroups/RealSpace.h
-    # liegroups/RealSpace.inl
-    # liegroups/SO2.h
-    # liegroups/SO2.inl
-    # liegroups/SE2.h
-    # liegroups/SE2.inl
-    # liegroups/SO3.h
-    # liegroups/SO3.inl
-    # liegroups/SE3.h
-    # liegroups/SE3.inl
-    # liegroups/SE23.h
-    # liegroups/SE23.inl
-    # liegroups/SGal3.h
-    # liegroups/SGal3.inl
-    # liegroups/Bundle.h
-    # liegroups/Bundle.inl
-    # Existing components
     engine/GeometricStiffnessEngine.h
     engine/GeometricStiffnessEngine.inl
     forcefield/BeamHookeLawForceField.h

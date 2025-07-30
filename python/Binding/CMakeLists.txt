@@ -1,5 +1,5 @@
 add_subdirectory(Cosserat)
-# add_subdirectory(LieGroup)
+add_subdirectory(LieGroups)
 #
 # project(CoBindings)
 #

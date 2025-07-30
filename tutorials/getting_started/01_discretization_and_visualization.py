@@ -9,7 +9,7 @@ geometry parameters.
 
 Key concepts:
 - BeamGeometryParameters: Defines beam dimensions and discretization
-- CosseratGeometry: Automatically calculates beam geometry
+- CosseratGeometry: Automatically calculates beam geometry needed for simulation : curve abscissa, section lengths, etc.
 - Clean, reusable beam creation functions
 """
 

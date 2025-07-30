@@ -107,54 +107,26 @@ public:
    */
   SO3 computeInverse() const { return SO3(m_quat.conjugate()); }
 
-  /**
-   * @brief Exponential map from Lie algebra so(3) to SO(3).
-   * @param omega Angular velocity vector in ℝ³.
-   * @return The corresponding SO3 element.
-   */
-  static SO3 exp(const TangentVector &omega) noexcept {
-    const Scalar theta = omega.norm();
+public:
+	/**
+	 * @brief Exponential map from Lie algebra so(3) to SO(3).
+	 * @param omega Angular velocity vector in ℝ³.
+	 * @return The corresponding SO3 element.
+	 */
+	static SO3 exp(const TangentVector &omega) noexcept {
+		return expImpl(omega);
+	}
 
-    if (theta < Types<Scalar>::epsilon()) {
-      // For small rotations, use first-order approximation
-      return SO3(Quaternion(Scalar(1), omega.x() * Scalar(0.5),
-                            omega.y() * Scalar(0.5), omega.z() * Scalar(0.5)));
-    }
+	/**
+	 * @brief Computes the exponential map from Lie algebra so(3) to SO(3).
+	 * This is a CRTP-required method.
+	 * @param omega Angular velocity vector in ℝ³.
+	 * @return The corresponding SO3 element.
+	 */
+	static SO3 computeExp(const TangentVector &omega) noexcept {
+		return expImpl(omega);
+	}
 
-    // Use Rodrigues\' formula
-    const Vector axis = omega / theta;
-    const Scalar half_theta = theta * Scalar(0.5);
-    const Scalar sin_half_theta = std::sin(half_theta);
-
-    return SO3(Quaternion(std::cos(half_theta), axis.x() * sin_half_theta,
-                          axis.y() * sin_half_theta,
-                          axis.z() * sin_half_theta));
-  }
-
-  /**
-   * @brief Computes the exponential map from Lie algebra so(3) to SO(3).
-   * This is a CRTP-required method.
-   * @param omega Angular velocity vector in ℝ³.
-   * @return The corresponding SO3 element.
-   */
-  static SO3 computeExp(const TangentVector &omega) noexcept {
-    const Scalar theta = omega.norm();
-
-    if (theta < Types<Scalar>::epsilon()) {
-      // For small rotations, use first-order approximation
-      return SO3(Quaternion(Scalar(1), omega.x() * Scalar(0.5),
-                            omega.y() * Scalar(0.5), omega.z() * Scalar(0.5)));
-    }
-
-    // Use Rodrigues\' formula
-    const Vector axis = omega / theta;
-    const Scalar half_theta = theta * Scalar(0.5);
-    const Scalar sin_half_theta = std::sin(half_theta);
-
-    return SO3(Quaternion(std::cos(half_theta), axis.x() * sin_half_theta,
-                          axis.y() * sin_half_theta,
-                          axis.z() * sin_half_theta));
-  }
 
   /**
    * @brief Logarithmic map from SO(3) to Lie algebra so(3).
@@ -342,6 +314,25 @@ public:
     return Eigen::AngleAxis<Scalar>(m_quat);
   }
 
+	/**
+ * @brief Builds the antisymmetric matrix [v]× from a 3D vector.
+ * [v]× = [ 0   -v.z   v.y ]
+ *        [ v.z   0   -v.x ]
+ *        [-v.y  v.x    0  ]
+ * @param v Input 3D vector.
+ * @return 3x3 antisymmetric matrix.
+ */
+	static Matrix buildAntisymmetric(const TangentVector &v) noexcept {
+  	Matrix result = Matrix::Zero();
+  	result(0, 1) = -v.z();
+  	result(0, 2) =  v.y();
+  	result(1, 0) =  v.z();
+  	result(1, 2) = -v.x();
+  	result(2, 0) = -v.y();
+  	result(2, 1) =  v.x();
+  	return result;
+  }
+
   /**
    * @brief Convert vector to skew-symmetric matrix (hat operator).
    * @param v Vector in ℝ³.
@@ -362,8 +353,260 @@ public:
     return TangentVector(Omega(2, 1), Omega(0, 2), Omega(1, 0));
   }
 
+  /**
+   * @brief Print the SO3 element to an output stream.
+   * This method is required by the LieGroupBase CRTP interface.
+   * @param os Output stream to write to.
+   * @return Reference to the output stream.
+   */
+  std::ostream &print(std::ostream &os) const {
+    os << "SO3(quat=[" << m_quat.w() << ", " << m_quat.x() << ", " 
+       << m_quat.y() << ", " << m_quat.z() << "])";
+    return os;
+  }
+	/**
+ * @brief Exponential map using Cosserat-style Taylor expansion.
+ * This method uses a 3rd-order Taylor expansion similar to Cosserat rod theory.
+ * @param strain Angular strain rate vector in ℝ³.
+ * @param length Integration length parameter.
+ * @return The corresponding SO3 element.
+ */
+static SO3 expCosserat(const TangentVector &strain, const Scalar &length) noexcept {
+  const TangentVector omega = strain * length;  // Total rotation vector
+  const Scalar theta = strain.norm();
+
+  if (theta <= Types<Scalar>::epsilon()) {
+    // First-order approximation: R ≈ I + length * [strain]×
+    const TangentVector scaled_strain = strain * length;
+    return SO3(Quaternion(Scalar(1),
+                          scaled_strain.x() * Scalar(0.5),
+                          scaled_strain.y() * Scalar(0.5),
+                          scaled_strain.z() * Scalar(0.5)));
+  }
+
+  // Cosserat-style coefficients
+  const Scalar s_theta = length * theta;
+  const Scalar theta2 = theta * theta;
+  const Scalar theta3 = theta2 * theta;
+
+  const Scalar scalar1 = (Scalar(1) - std::cos(s_theta)) / theta2;
+  const Scalar scalar2 = (s_theta - std::sin(s_theta)) / theta3;
+
+  // Build antisymmetric matrix [strain]×
+  Matrix strain_hat = hat(strain);
+
+  // Compute strain_hat²
+  Matrix strain_hat2 = strain_hat * strain_hat;
+
+  // Compute strain_hat³
+  Matrix strain_hat3 = strain_hat2 * strain_hat;
+
+  // Taylor expansion: R = I + length*[strain]× + scalar1*[strain]×² + scalar2*[strain]×³
+  Matrix rotation_matrix = Matrix::Identity() +
+                           length * strain_hat +
+                           scalar1 * strain_hat2 +
+                           scalar2 * strain_hat3;
+
+  // Convert rotation matrix to quaternion
+  return SO3(matrixToQuaternion(rotation_matrix));
+}
+
+/**
+ * @brief Exponential map using standard Rodrigues formula (for comparison).
+ * @param omega Angular velocity vector in ℝ³.
+ * @return The corresponding SO3 element.
+ */
+static SO3 expRodrigues(const TangentVector &omega) noexcept {
+  const Scalar theta = omega.norm();
+
+  if (theta < Types<Scalar>::epsilon()) {
+    return SO3(Quaternion(Scalar(1), omega.x() * Scalar(0.5),
+                          omega.y() * Scalar(0.5), omega.z() * Scalar(0.5)));
+  }
+
+  const Vector axis = omega / theta;
+  const Scalar half_theta = theta * Scalar(0.5);
+  const Scalar sin_half_theta = std::sin(half_theta);
+
+  return SO3(Quaternion(std::cos(half_theta), axis.x() * sin_half_theta,
+                        axis.y() * sin_half_theta, axis.z() * sin_half_theta));
+}
+
 private:
+/**
+ * @brief Convert a 3x3 rotation matrix to quaternion.
+ * @param R 3x3 rotation matrix.
+ * @return Corresponding quaternion.
+ */
+static Quaternion matrixToQuaternion(const Matrix &R) noexcept {
+  // Shepperd's method for robust matrix to quaternion conversion
+  const Scalar trace = R.trace();
+  Scalar w, x, y, z;
+
+  if (trace > Scalar(0)) {
+    const Scalar s = std::sqrt(trace + Scalar(1)) * Scalar(2); // s = 4 * w
+    w = Scalar(0.25) * s;
+    x = (R(2, 1) - R(1, 2)) / s;
+    y = (R(0, 2) - R(2, 0)) / s;
+    z = (R(1, 0) - R(0, 1)) / s;
+  } else if (R(0, 0) > R(1, 1) && R(0, 0) > R(2, 2)) {
+    const Scalar s = std::sqrt(Scalar(1) + R(0, 0) - R(1, 1) - R(2, 2)) * Scalar(2); // s = 4 * x
+    w = (R(2, 1) - R(1, 2)) / s;
+    x = Scalar(0.25) * s;
+    y = (R(0, 1) + R(1, 0)) / s;
+    z = (R(0, 2) + R(2, 0)) / s;
+  } else if (R(1, 1) > R(2, 2)) {
+    const Scalar s = std::sqrt(Scalar(1) + R(1, 1) - R(0, 0) - R(2, 2)) * Scalar(2); // s = 4 * y
+    w = (R(0, 2) - R(2, 0)) / s;
+    x = (R(0, 1) + R(1, 0)) / s;
+    y = Scalar(0.25) * s;
+    z = (R(1, 2) + R(2, 1)) / s;
+  } else {
+    const Scalar s = std::sqrt(Scalar(1) + R(2, 2) - R(0, 0) - R(1, 1)) * Scalar(2); // s = 4 * z
+    w = (R(1, 0) - R(0, 1)) / s;
+    x = (R(0, 2) + R(2, 0)) / s;
+    y = (R(1, 2) + R(2, 1)) / s;
+    z = Scalar(0.25) * s;
+  }
+
+  return Quaternion(w, x, y, z);
+}
+/**
+ * @brief Exponential map using Cosserat-style Taylor expansion (complete implementation).
+ * This method uses a 3rd-order Taylor expansion following Cosserat rod theory approach.
+ * For small angles: R ≈ I + s[k]× 
+ * For general case: R = I + s[k]× + α[k]×² + β[k]×³
+ * where α = (1-cos(s‖k‖))/‖k‖², β = (s‖k‖-sin(s‖k‖))/‖k‖³
+ * 
+ * @param strain Angular strain rate vector in ℝ³ (curvature vector).
+ * @param length Arc length parameter for integration.
+ * @return The corresponding SO3 element.
+ */
+// static SO3 expCosserat(const TangentVector &strain, const Scalar &length) noexcept {
+//   const Scalar strain_norm = strain.norm();
+//
+//   // Handle near-zero strain case with first-order approximation
+//   if (strain_norm <= Types<Scalar>::epsilon()) {
+//     // R ≈ I + length * [strain]×
+//     // For quaternion: q ≈ (1, 0.5 * length * strain)
+//     const TangentVector half_rotation = strain * (length * Scalar(0.5));
+//     const Scalar norm_check = half_rotation.norm();
+//
+//     // Ensure quaternion normalization for very small rotations
+//     if (norm_check < Scalar(0.5)) {
+//       return SO3(Quaternion(Scalar(1), half_rotation.x(), half_rotation.y(), half_rotation.z()).normalized());
+//     } else {
+//       // Fallback to exact computation if rotation isn't that small
+//       return expCosseratExact(strain, length);
+//     }
+//   }
+//
+//  return expCosseratExact(strain, length);
+//}
+
+private:
+/**
+ * @brief Exact Cosserat exponential computation using 3rd-order Taylor expansion.
+ * @param strain Angular strain rate vector.
+ * @param length Arc length parameter.
+ * @return The corresponding SO3 element.
+ */
+static SO3 expCosseratExact(const TangentVector &strain, const Scalar &length) noexcept {
+  const Scalar strain_norm = strain.norm();
+  const Scalar s_norm = length * strain_norm;  // Total rotation angle
+  
+  // Compute Taylor expansion coefficients
+  const Scalar strain_norm2 = strain_norm * strain_norm;
+  const Scalar strain_norm3 = strain_norm2 * strain_norm;
+  
+  // Cosserat coefficients:
+  // α = (1 - cos(s‖k‖)) / ‖k‖²
+  // β = (s‖k‖ - sin(s‖k‖)) / ‖k‖³
+  const Scalar cos_s_norm = std::cos(s_norm);
+  const Scalar sin_s_norm = std::sin(s_norm);
+  
+  const Scalar alpha = (Scalar(1) - cos_s_norm) / strain_norm2;
+  const Scalar beta = (s_norm - sin_s_norm) / strain_norm3;
+  
+  // Build the antisymmetric matrix [strain]×
+  const Matrix strain_cross = buildAntisymmetric(strain);
+  
+  // Compute powers of the antisymmetric matrix
+  const Matrix strain_cross2 = strain_cross * strain_cross;
+  const Matrix strain_cross3 = strain_cross2 * strain_cross;
+  
+  // Taylor expansion: R = I + s[k]× + α[k]×² + β[k]×³
+  const Matrix rotation_matrix = Matrix::Identity() + 
+                                 length * strain_cross + 
+                                 alpha * strain_cross2 + 
+                                 beta * strain_cross3;
+  
+  // Convert rotation matrix to quaternion
+  return SO3(matrixToQuaternion(rotation_matrix));
+}
+
+
+
+
+public:
+/**
+ * @brief Utility method: Cosserat exponential with combined omega parameter.
+ * This provides the same interface as the original Rodrigues method.
+ * @param omega Total rotation vector (strain * length).
+ * @return The corresponding SO3 element.
+ */
+static SO3 expCosseratFromOmega(const TangentVector &omega) noexcept {
+  // Assume unit length for direct omega input
+  return expCosserat(omega, Scalar(1));
+}
+
+/**
+ * @brief Standard exponential map using optimized Rodrigues formula.
+ * @param omega Angular velocity vector in ℝ³.
+ * @return The corresponding SO3 element.
+ */
+static SO3 exp_(const TangentVector &omega) noexcept {
+  const Scalar theta = omega.norm();
+
+  if (theta < Types<Scalar>::epsilon()) {
+    const TangentVector half_omega = omega * Scalar(0.5);
+    return SO3(Quaternion(Scalar(1), half_omega.x(), half_omega.y(), half_omega.z()).normalized());
+  }
+
+  const TangentVector axis = omega / theta;
+  const Scalar half_theta = theta * Scalar(0.5);
+  const Scalar sin_half_theta = std::sin(half_theta);
+  const Scalar cos_half_theta = std::cos(half_theta);
+
+  return SO3(Quaternion(cos_half_theta, 
+                        axis.x() * sin_half_theta,
+                        axis.y() * sin_half_theta, 
+                        axis.z() * sin_half_theta));
+}
   Quaternion m_quat; ///< Unit quaternion representing the rotation
+	/**
+	 * @brief Internal implementation of the exponential map.
+	 * @param omega Angular velocity vector in ℝ³.
+	 * @return The corresponding SO3 element.
+	 */
+	static SO3 expImpl(const TangentVector &omega) noexcept {
+		const Scalar theta = omega.norm();
+
+		if (theta < Types<Scalar>::epsilon()) {
+			// For small rotations, use first-order approximation
+			return SO3(Quaternion(Scalar(1), omega.x() * Scalar(0.5),
+								  omega.y() * Scalar(0.5), omega.z() * Scalar(0.5)));
+		}
+
+		// Use Rodrigues' formula
+		const Vector axis = omega / theta;
+		const Scalar half_theta = theta * Scalar(0.5);
+		const Scalar sin_half_theta = std::sin(half_theta);
+
+		return SO3(Quaternion(std::cos(half_theta), axis.x() * sin_half_theta,
+							  axis.y() * sin_half_theta,
+							  axis.z() * sin_half_theta));
+	}
 };
 
 } // namespace sofa::component::cosserat::liegroups

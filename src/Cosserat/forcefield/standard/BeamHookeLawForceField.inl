@@ -71,7 +71,8 @@ namespace sofa::component::forcefield {
 		d_GA(initData(&d_GA, "GA", "The inertia parameter, GA")),
 		d_EA(initData(&d_EA, "EA", "The inertia parameter, EA")),
 		d_EI(initData(&d_EI, "EI", "The inertia parameter, EI")) {
-		compute_df = true;
+		compute_df = false;
+		f_printLog.setValue(true);
 	}
 
 	template<typename DataTypes>
@@ -182,13 +183,13 @@ namespace sofa::component::forcefield {
 			// @todo: use multithread
 			for (unsigned int i = 0; i < x.size(); i++)
 				f[i] -= (m_K_sectionList[i] * (x[i] - x0[i])) * this->d_length.getValue()[i];
-		
+
 		// Debug output if needed
 		if (this->f_printLog.getValue()) {
-			displayForces(d_f, "addForce - computed forces");
+			displayForces(f, "addForce - computed forces");
 			displaySectionMatrix(m_K_section, "addForce - K section matrix");
 		}
-		
+
 		d_f.endEdit();
 	}
 
@@ -209,10 +210,11 @@ namespace sofa::component::forcefield {
 		else
 			for (unsigned int i = 0; i < dx.size(); i++)
 				df[i] -= (m_K_sectionList[i] * dx[i]) * kFactor * this->d_length.getValue()[i];
-		
+
+
 		// Debug output if needed
 		if (this->f_printLog.getValue()) {
-			displayDForces(d_df, "addDForce - computed differential forces");
+			displayDForces(df, "addDForce - computed differential forces");
 		}
 	}
 
@@ -236,6 +238,7 @@ namespace sofa::component::forcefield {
 				// Utilisation du produit scalaire si disponible
 				energy += 0.5 * dot(strain, K * strain) * this->d_length.getValue()[i];
 			}
+			msg_info() << "BeamHookeLawForceField - Potential energy computed for a single section beam." << energy;
 		} else {
 			for (unsigned int i = 0; i < x.size(); i++) {
 				const auto &K = m_K_sectionList[i];
@@ -271,7 +274,7 @@ namespace sofa::component::forcefield {
 						mat->add(offset + i + 3 * n, offset + j + 3 * n,
 								 -kFact * m_K_sectionList[n][i][j] * this->d_length.getValue()[n]);
 		}
-		
+
 		// Debug output if needed
 		if (this->f_printLog.getValue()) {
 			displayKMatrix(matrix, "addKToMatrix - global K matrix");
@@ -284,7 +287,7 @@ namespace sofa::component::forcefield {
 	}
 
 	template<typename DataTypes>
-	void BeamHookeLawForceField<DataTypes>::displayForces(const DataVecDeriv &forces, const std::string &label) {
+	void BeamHookeLawForceField<DataTypes>::displayForces(const VecDeriv &forces, const std::string &label) {
 		msg_info() << label;
 		for (size_t i = 0; i < forces.size(); ++i) {
 			msg_info() << "Force at " << i << ": " << forces[i];
@@ -292,7 +295,7 @@ namespace sofa::component::forcefield {
 	}
 
 	template<typename DataTypes>
-	void BeamHookeLawForceField<DataTypes>::displayDForces(const DataVecDeriv &dForces, const std::string &label) {
+	void BeamHookeLawForceField<DataTypes>::displayDForces(const VecDeriv &dForces, const std::string &label) {
 		msg_info() << label;
 		for (size_t i = 0; i < dForces.size(); ++i) {
 			msg_info() << "Differential Force at " << i << ": " << dForces[i];
@@ -300,7 +303,8 @@ namespace sofa::component::forcefield {
 	}
 
 	template<typename DataTypes>
-	void BeamHookeLawForceField<DataTypes>::displayKMatrix(const MultiMatrixAccessor *matrix, const std::string &label) {
+	void BeamHookeLawForceField<DataTypes>::displayKMatrix(const MultiMatrixAccessor *matrix,
+														   const std::string &label) {
 		msg_info() << label;
 		MultiMatrixAccessor::MatrixRef mref = matrix->getMatrix(this->mstate);
 		BaseMatrix *mat = mref.matrix;

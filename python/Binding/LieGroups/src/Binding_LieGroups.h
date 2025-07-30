@@ -1,6 +1,6 @@
 /******************************************************************************
- *       SOFA, Simulation Open-Framework Architecture, development version     *
- *                (c) 2006-2019 INRIA, USTL, UJF, CNRS, MGH                    *
+ *                 SOFA, Simulation Open-Framework Architecture                *
+ *                    (c) 2021 INRIA, USTL, UJF, CNRS, MGH                     *
  *                                                                             *
  * This program is free software; you can redistribute it and/or modify it     *
  * under the terms of the GNU Lesser General Public License as published by    *
@@ -15,18 +15,40 @@
  * You should have received a copy of the GNU Lesser General Public License    *
  * along with this program. If not, see <http://www.gnu.org/licenses/>.        *
  *******************************************************************************
- * Authors: The SOFA Team and external contributors (see Authors.txt)          *
- *                                                                             *
  * Contact information: contact@sofa-framework.org                             *
  ******************************************************************************/
-#define SOFA_COSSERAT_CPP_HookeSeratBaseMapping
-#include <Cosserat/mapping/HookeSeratBaseMapping.inl>
-#include <sofa/defaulttype/VecTypes.h>
 
-namespace Cosserat::mapping {
-	template class SOFA_COSSERAT_API HookeSeratBaseMapping<sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types,
-														   sofa::defaulttype::Rigid3Types>;
-	// template class SOFA_COSSERAT_API HookeSeratBaseMapping<sofa::defaulttype::Vec6Types, sofa::defaulttype::Rigid3Types,
-	// 													   sofa::defaulttype::Rigid3Types>;
+#pragma once
 
-} // namespace Cosserat::mapping
+#include <pybind11/pybind11.h>
+
+namespace sofapython3 {
+
+	// Add SO2 class bindings to the module
+	void moduleAddSO2(pybind11::module &m);
+
+	// Add SO3 class bindings to the module
+	void moduleAddSO3(pybind11::module &m);
+
+	// Add SE2 class bindings to the module
+	void moduleAddSE2(pybind11::module &m);
+
+	// Add SE3 class bindings to the module
+	void moduleAddSE3(pybind11::module &m);
+
+	// Add SGal3 class bindings to the module
+	void moduleAddSGal3(pybind11::module &m);
+
+	// Add SE23 class bindings to the module
+	void moduleAddSE23(pybind11::module &m);
+
+	// Add Bundle class bindings to the module
+	void moduleAddBundle(pybind11::module &m);
+
+	// Add Utility functions for Lie groups
+	void moduleAddLieGroupUtils(pybind11::module &m);
+
+	// Add all Lie group bindings to the module
+	void moduleAddLieGroups(pybind11::module &m);
+
+} // namespace sofapython3

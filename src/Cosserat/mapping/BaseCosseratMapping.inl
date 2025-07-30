@@ -53,7 +53,7 @@ BaseCosseratMapping<TIn1, TIn2, TOut>::BaseCosseratMapping()
       d_curv_abs_frames(initData(&d_curv_abs_frames, "curv_abs_output",
                                  " need to be com....")),
       d_debug(initData(&d_debug, false, "debug", "printf for the debug")),
-      m_indexInput(0) {}
+      m_index_input(0) {}
 
 
 template <class TIn1, class TIn2, class TOut>
@@ -90,9 +90,9 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::init()
         m_global_frames->read(sofa::core::vec_id::read_access::position);
     const vector<OutCoord> xfrom = xfromData->getValue();
 
-    m_vecTransform.clear();
+    m_vec_transform.clear();
     for (unsigned int i = 0; i < xfrom.size(); i++)
-        m_vecTransform.push_back(xfrom[i]);
+        m_vec_transform.push_back(xfrom[i]);
 
     update_geometry_info();
     doBaseCosseratInit();
@@ -108,64 +108,78 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::update_geometry_info()
     // abscissa of each frame.
     auto curv_abs_section = getReadAccessor(d_curv_abs_section);
     auto curv_abs_frames = getReadAccessor(d_curv_abs_frames);
+	if (curv_abs_section.empty() || curv_abs_frames.empty()) {
+		msg_warning() << "Empty curvilinear abscissa data";
+		return;
+	}
+	if (curv_abs_section.size() < 2) {
+		msg_error() << "Need at least 2 sections for beam geometry";
+		return;
+	}
 
     msg_info()
         << " curv_abs_section: " << curv_abs_section.size()
         << "\ncurv_abs_frames: " << curv_abs_frames.size();
 
-    m_indicesVectors.clear();
-    m_framesLengthVectors.clear();
-    m_beamLengthVectors.clear();
-    m_indicesVectorsDraw.clear(); // just for drawing
+	const auto frame_count = curv_abs_frames.size();
+	const auto section_count = curv_abs_section.size();
 
-    const auto sz = curv_abs_frames.size();
-    auto sectionIndex = 1;
+    m_indices_vectors.reserve(frame_count);
+    m_frames_length_vectors.reserve(frame_count);
+    m_beam_length_vectors.reserve(section_count);
+    m_indices_vectors_draw.reserve(frame_count); // just for drawing
+
+
     /*
      * This main loop iterates through the frames, comparing their curvilinear abscissa values with those of the beam sections:
       If the frame's abscissa is less than the current section's, it assigns the current section index.
       If they're equal, it assigns the current index and then increments it.
       If the frame's abscissa is greater, it increments the index and then assigns it.
      * */
-    for (auto i = 0; i < sz; ++i)
+	constexpr auto epsilon = std::numeric_limits<SReal>::epsilon();
+	auto current_section_index = 1;
+    for (auto i = 0; i < frame_count; ++i)
     {
-        if (curv_abs_section[sectionIndex] > curv_abs_frames[i])
+    	// The frame is associated with the current section
+        if (curv_abs_section[current_section_index] > curv_abs_frames[i])
         {
-            m_indicesVectors.emplace_back(sectionIndex);
-            m_indicesVectorsDraw.emplace_back(sectionIndex);
+            m_indices_vectors.emplace_back(current_section_index);
+            m_indices_vectors_draw.emplace_back(current_section_index);
         }
-        //@todo: I should change this with abs(val1-val2)>epsilon
-        else if (curv_abs_section[sectionIndex] == curv_abs_frames[i])
+    	// The frame is on the current section
+        else if (std::abs(curv_abs_section[current_section_index] - curv_abs_frames[i])<epsilon)
         {
-            m_indicesVectors.emplace_back(sectionIndex);
-            sectionIndex++;
-            m_indicesVectorsDraw.emplace_back(sectionIndex);
+            m_indices_vectors.emplace_back(current_section_index);
+            current_section_index++;
+            m_indices_vectors_draw.emplace_back(current_section_index);
         }
-        else {
-          sectionIndex++;
-            m_indicesVectors.emplace_back(sectionIndex);
-            m_indicesVectorsDraw.emplace_back(sectionIndex);
+    	// The frame is after the current section
+        else
+        {
+          current_section_index++;
+            m_indices_vectors.emplace_back(current_section_index);
+            m_indices_vectors_draw.emplace_back(current_section_index);
         }
 
         // Fill the vector m_framesLengthVectors with the distance
         // between frame(output) and the closest beam node toward the base
-        m_framesLengthVectors.emplace_back(
-                    curv_abs_frames[i] - curv_abs_section[m_indicesVectors.back() - 1]);
+        m_frames_length_vectors.emplace_back(
+                    curv_abs_frames[i] - curv_abs_section[m_indices_vectors.back() - 1]);
     }
 
-    for (auto j = 0; j < sz - 1; ++j)
-    {
-        m_beamLengthVectors.emplace_back(curv_abs_section[j + 1] - curv_abs_section[j]);
-    }
+	// compute the length of each beam segment.
+	std::adjacent_difference(curv_abs_section.begin() + 1, curv_abs_section.end(),
+						std::back_inserter(m_beam_length_vectors));
 
     msg_info()
-            << "m_indicesVectors : " << m_indicesVectors << msgendl
+            << "m_indicesVectors : " << m_indices_vectors << msgendl
             << "m_framesLengthVectors : " << msgendl
             << "m_BeamLengthVectors : " << msgendl;
 }
 
-auto buildXiHat(const Vec3& strain_i) -> se3
+inline auto buildXiHat(const Vec3& strain_i) -> SE3
 {
-    se3 Xi_hat;
+    SE3 Xi_hat;
 
     Xi_hat[0][1] = -strain_i[2];
     Xi_hat[0][2] =  strain_i[1];
@@ -175,14 +189,15 @@ auto buildXiHat(const Vec3& strain_i) -> se3
     Xi_hat[2][0] = -Xi_hat(0, 2);
     Xi_hat[2][1] = -Xi_hat(1, 2);
 
-    //@TODO:  Why this , if q = 0 ????
+    // To keep the length no null,
+	// This is on 0, because the beam is defined along x
     Xi_hat[0][3] = 1.0;
     return Xi_hat;
 }
 
-auto buildXiHat(const Vec6& strain_i) -> se3
+inline auto buildXiHat(const Vec6& strain_i) -> SE3
 {
-    se3 Xi = buildXiHat(Vec3(strain_i(0), strain_i(1), strain_i(2)));
+    SE3 Xi = buildXiHat(Vec3(strain_i(0), strain_i(1), strain_i(2)));
 
     for (unsigned int i = 0; i < 3; i++)
       Xi[i][3] += strain_i(i + 3);
@@ -202,7 +217,7 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::computeExponentialSE3(const double &
     SReal theta = k.norm();
 
     SE3 _g_X;
-    se3 Xi_hat_n = buildXiHat(strain_n);
+    SE3 Xi_hat_n = buildXiHat(strain_n);
 
     //todo: change double to Real
     if (theta <= std::numeric_limits<double>::epsilon())
@@ -226,6 +241,8 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::computeExponentialSE3(const double &
     // convert the rotation 3x3 matrix to a quaternion
     Quat<SReal> R; R.fromMatrix(M);
     g_X_n = Frame(Vec3(_g_X(0, 3), _g_X(1, 3), _g_X(2, 3)), R);
+	std::cout << "Translation :"<< Vec3(_g_X(0, 3), _g_X(1, 3), _g_X(2,3)) << std::endl;
+	std::cout << " ==> R : "<< R << std::endl;
 }
 
 // Fill exponential vectors
@@ -235,9 +252,9 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::updateExponentialSE3(
 {
     auto curv_abs_frames = getReadAccessor(d_curv_abs_frames);
 
-    m_framesExponentialSE3Vectors.clear();
-    m_nodesExponentialSE3Vectors.clear();
-    m_nodesLogarithmSE3Vectors.clear();
+    m_frames_exponential_se3_vectors.clear();
+    m_nodes_exponential_se3_vectors.clear();
+    m_nodes_logarithm_se3_vectors.clear();
 
     const auto sz = curv_abs_frames.size();
     // Compute exponential at each frame point
@@ -246,33 +263,33 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::updateExponentialSE3(
       Frame g_X_frame_i;
 
         const Coord1 strain_n =
-            strain_state[m_indicesVectors[i] - 1]; // Cosserat reduce coordinates (strain)
+            strain_state[m_indices_vectors[i] - 1]; // Cosserat reduce coordinates (strain)
 
         // the size varies from 3 to 6
         // The distance between the frame node and the closest beam node toward the base
-        const SReal sub_section_length = m_framesLengthVectors[i];
+        const SReal sub_section_length = m_frames_length_vectors[i];
         computeExponentialSE3(sub_section_length, strain_n, g_X_frame_i);
-        m_framesExponentialSE3Vectors.push_back(g_X_frame_i);
+        m_frames_exponential_se3_vectors.push_back(g_X_frame_i);
 
-        msg_info()
+        msg_info("BaseCosseratMapping")
                 << "_________________" << i << "_________________________" << msgendl
                 << "x :" << sub_section_length << "; strain :" << strain_n << msgendl
                 << "m_framesExponentialSE3Vectors :" << g_X_frame_i;
     }
 
     // Compute the exponential on the nodes
-    m_nodesExponentialSE3Vectors.push_back(
+    m_nodes_exponential_se3_vectors.push_back(
         Frame(Vec3(0.0, 0.0, 0.0),
                           Quat(0., 0., 0., 1.))); // The first node.
     //todo : merge this section with the previous one
     for (unsigned int j = 0; j < strain_state.size(); ++j)
     {
         Coord1 strain_n = strain_state[j];
-        const SReal section_length = m_beamLengthVectors[j];
+        const SReal section_length = m_beam_length_vectors[j];
 
         Frame g_X_node_j;
         computeExponentialSE3(section_length, strain_n, g_X_node_j);
-        m_nodesExponentialSE3Vectors.push_back(g_X_node_j);
+        m_nodes_exponential_se3_vectors.push_back(g_X_node_j);
 
         msg_info()
                 << "_________________Beam Node Expo___________________" << msgendl
@@ -356,39 +373,39 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::updateTangExpSE3(
     auto curv_abs_frames = getReadAccessor(d_curv_abs_frames);
 
     unsigned int sz = curv_abs_frames.size();
-    m_framesTangExpVectors.resize(sz);
+    m_frames_tang_exp_vectors.resize(sz);
 
     // Compute tangExpo at frame points
     for (unsigned int i = 0; i < sz; i++)
     {
         TangentTransform temp;
 
-        Coord1 strain_frame_i = inDeform[m_indicesVectors[i] - 1];
-        double curv_abs_x_i = m_framesLengthVectors[i];
+        Coord1 strain_frame_i = inDeform[m_indices_vectors[i] - 1];
+        double curv_abs_x_i = m_frames_length_vectors[i];
         computeTangExp(curv_abs_x_i, strain_frame_i, temp);
 
-        m_framesTangExpVectors[i] = temp;
+        m_frames_tang_exp_vectors[i] = temp;
 
         msg_info()
                 <<  "x :" << curv_abs_x_i << "; k :" << strain_frame_i << msgendl
-                 << "m_framesTangExpVectors :" << m_framesTangExpVectors[i];
+                 << "m_framesTangExpVectors :" << m_frames_tang_exp_vectors[i];
     }
 
     // Compute the TangExpSE3 at the nodes
-    m_nodesTangExpVectors.clear();
+    m_nodes_tang_exp_vectors.clear();
     TangentTransform tangExpO;
     tangExpO.clear();
-    m_nodesTangExpVectors.push_back(tangExpO);
+    m_nodes_tang_exp_vectors.push_back(tangExpO);
 
     for (size_t j = 1; j < curv_abs_section.size(); j++) {
         Coord1 strain_node_i = inDeform[j - 1];
-        double x = m_beamLengthVectors[j - 1];
+        double x = m_beam_length_vectors[j - 1];
         TangentTransform temp;
         temp.clear();
         computeTangExp(x, strain_node_i, temp);
-        m_nodesTangExpVectors.push_back(temp);
+        m_nodes_tang_exp_vectors.push_back(temp);
     }
-    msg_info() << "Node TangExpo : " << m_nodesTangExpVectors;
+    msg_info() << "Node TangExpo : " << m_nodes_tang_exp_vectors;
 }
 
 template <class TIn1, class TIn2, class TOut>
@@ -457,7 +474,7 @@ BaseCosseratMapping<TIn1, TIn2, TOut>::computeETA(const Vec6 &baseEta,
     // Same as for x1, query a read accessor so we can access the content of d_curv_abs_section
     auto curv_abs_input = getReadAccessor(d_curv_abs_section);
 
-    auto& kdot = k_dot[m_indexInput];
+    auto& kdot = k_dot[m_index_input];
     Vec6 Xi_dot {kdot[0], kdot[1], kdot[2],
                  0,0,0};
 
@@ -465,20 +482,20 @@ BaseCosseratMapping<TIn1, TIn2, TOut>::computeETA(const Vec6 &baseEta,
     double diff0 = abs_input;
     double _diff0 = -abs_input;
 
-    if (m_indexInput != 0)
+    if (m_index_input != 0)
     {
-        diff0 = abs_input - curv_abs_input[m_indexInput - 1];
-        _diff0 = curv_abs_input[m_indexInput - 1] - abs_input;
+        diff0 = abs_input - curv_abs_input[m_index_input - 1];
+        _diff0 = curv_abs_input[m_index_input - 1] - abs_input;
     }
 
     Frame outTransform;
-    computeExponentialSE3(_diff0, x1[m_indexInput], outTransform);
+    computeExponentialSE3(_diff0, x1[m_index_input], outTransform);
 
     TangentTransform adjointMatrix;
     computeAdjoint(outTransform, adjointMatrix);
 
     TangentTransform tangentMatrix;
-    computeTangExp(diff0, x1[m_indexInput], tangentMatrix);
+    computeTangExp(diff0, x1[m_index_input], tangentMatrix);
 
     return adjointMatrix * (baseEta + tangentMatrix * Xi_dot);
 }

@@ -40,10 +40,11 @@ namespace sofa::component::forcefield {
 	 */
 	template<typename DataTypes>
 	class HookeSeratPCSForceField : public HookeSeratBaseForceField<DataTypes> {
-	//using Inherit1 = HookeSeratBaseForceField<DataTypes>;
+		// using Inherit1 = HookeSeratBaseForceField<DataTypes>;
 
 	public:
-		SOFA_CLASS(SOFA_TEMPLATE(HookeSeratPCSForceField, DataTypes), SOFA_TEMPLATE(HookeSeratBaseForceField, DataTypes));
+		SOFA_CLASS(SOFA_TEMPLATE(HookeSeratPCSForceField, DataTypes),
+				   SOFA_TEMPLATE(HookeSeratBaseForceField, DataTypes));
 
 		using Real = typename Inherit1::Real;
 		using VecCoord = typename Inherit1::VecCoord;
@@ -56,7 +57,7 @@ namespace sofa::component::forcefield {
 
 		using Matrix3 = typename Inherit1::Matrix3;
 		using Matrix6 = typename Inherit1::Matrix6;
-		using Vector3 = typename  HookeSeratBaseForceField<DataTypes>::Vector3;
+		using Vector3 = typename HookeSeratBaseForceField<DataTypes>::Vector3;
 
 	public:
 		HookeSeratPCSForceField();
@@ -82,10 +83,10 @@ namespace sofa::component::forcefield {
 		Real getRadius();
 
 		// Debugging function to display forces
-		void displayForces(const DataVecDeriv forces, const std::string label="force - output");
-		void displayDForces(const DataVecDeriv dForces, const std::string label="dForce - output");
-		void displayKMatrix(const MultiMatrixAccessor *matrix, const std::string label="KMatrix - output");
-		void displaySectionMatrix(const Matrix3 &matrix, const std::string &label="_m_K_section - output");
+		static void displayForces(const VecDeriv &forces, const std::string &abel = "force - output");
+		static void displayDForces(const VecDeriv &dForces, const std::string &label = "dForce - output");
+		void displayKMatrix(const MultiMatrixAccessor *matrix, const std::string &label = "KMatrix - output");
+		static void displaySectionMatrix(const Matrix3 &matrix, const std::string &label = "_m_K_section - output");
 
 	protected:
 		// In case we have a beam with different properties per section
@@ -110,7 +111,6 @@ namespace sofa::component::forcefield {
 		// The stiffness matrix for the beam section in 6x6 format
 		Matrix6 m_K_section66;
 		type::vector<Matrix6> m_k_section66List;
-
 
 
 	private:

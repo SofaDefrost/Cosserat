@@ -23,7 +23,6 @@
 #include <Cosserat/mapping/DiscreteCosseratMapping.h>
 
 #include <sofa/core/Multi2Mapping.inl>
-#include <sofa/core/behavior/MechanicalState.h>
 #include <sofa/core/objectmodel/BaseContext.h>
 #include <sofa/core/visual/VisualParams.h>
 #include <sofa/gl/template.h>
@@ -120,10 +119,14 @@ namespace Cosserat::mapping {
 		bool doPrintLog = this->f_printLog.getValue();
 		for (unsigned int i = 0; i < sz; i++) {
 			auto frame = frame0;
-			for (unsigned int u = 0; u < m_indicesVectors[i]; u++) {
-				frame *= m_nodesExponentialSE3Vectors[u]; // frame = gX(L_0)*...*gX(L_{n-1})
+			std::cout << "frame "<< i <<std::endl;
+			for (unsigned int u = 0; u < m_indices_vectors[i]; u++) {
+				std::cout << "section "<< u << std::endl;
+				std::cout << "Expo node : " << m_nodes_exponential_se3_vectors[u] <<std::endl;
+				std::cout<< "current frame : "<< frame << std::endl;
+				frame *= m_nodes_exponential_se3_vectors[u]; // frame = gX(L_0)*...*gX(L_{n-1})
 			}
-			frame *= m_framesExponentialSE3Vectors[i]; // frame*gX(x)
+			frame *= m_frames_exponential_se3_vectors[i]; // frame*gX(x)
 
 			// This is a lazy printing approach, so there is no time consuming action in
 			// the core of the loop.
@@ -153,7 +156,7 @@ namespace Cosserat::mapping {
 
 		// TODO(dmarchal:2024/06/13): This looks a suspicious design pattern,
 		// elaborate more on the purpose of m_indexInput and how to use it.
-		m_indexInput = 0;
+		m_index_input = 0;
 	}
 
 	template<class TIn1, class TIn2, class TOut>
@@ -216,7 +219,7 @@ namespace Cosserat::mapping {
 		this->updateTangExpSE3(inDeform);
 
 		// Get base velocity as input this is also called eta
-		m_nodesVelocityVectors.clear();
+		m_nodes_velocity_vectors.clear();
 
 		// Get base velocity and convert to Vec6, for the facility of computation
 		Vec6 baseVelocity; //
@@ -229,13 +232,13 @@ namespace Cosserat::mapping {
 		auto TInverse = Frame(xfrom2Data[baseIndex].getCenter(), xfrom2Data[baseIndex].getOrientation()).inversed();
 		Mat6x6 P = this->buildProjector(TInverse);
 		Vec6 baseLocalVelocity = P * baseVelocity; // This is the base velocity in Locale frame
-		m_nodesVelocityVectors.push_back(baseLocalVelocity);
+		m_nodes_velocity_vectors.push_back(baseLocalVelocity);
 		if (d_debug.getValue())
 			std::cout << "Base local Velocity :" << baseLocalVelocity << std::endl;
 
 		// Compute velocity at nodes
 		for (unsigned int i = 1; i < curv_abs_section.size(); i++) {
-			auto Trans = m_nodesExponentialSE3Vectors[i].inversed();
+			auto Trans = m_nodes_exponential_se3_vectors[i].inversed();
 			TangentTransform Adjoint;
 			Adjoint.clear();
 			this->computeAdjoint(Trans, Adjoint);
@@ -243,8 +246,8 @@ namespace Cosserat::mapping {
 			/// The null vector is replace by the linear velocity in Vec6Type
 			Vec6 Xi_dot = Vec6(in1_vel[i - 1], Vec3(0.0, 0.0, 0.0));
 
-			Vec6 eta_node_i = Adjoint * (m_nodesVelocityVectors[i - 1] + m_nodesTangExpVectors[i] * Xi_dot);
-			m_nodesVelocityVectors.push_back(eta_node_i);
+			Vec6 eta_node_i = Adjoint * (m_nodes_velocity_vectors[i - 1] + m_nodes_tang_exp_vectors[i] * Xi_dot);
+			m_nodes_velocity_vectors.push_back(eta_node_i);
 			if (d_debug.getValue())
 				std::cout << "Node velocity : " << i << " = " << eta_node_i << std::endl;
 		}
@@ -253,18 +256,18 @@ namespace Cosserat::mapping {
 		auto sz = curv_abs_frames.size();
 		out_vel.resize(sz);
 		for (unsigned int i = 0; i < sz; i++) {
-			auto Trans = m_framesExponentialSE3Vectors[i].inversed();
+			auto Trans = m_frames_exponential_se3_vectors[i].inversed();
 			TangentTransform Adjoint; ///< the class insure that the constructed adjoint is zeroed.
 			Adjoint.clear();
 			this->computeAdjoint(Trans, Adjoint);
 			Vec6 frame_Xi_dot;
 
 			for (auto u = 0; u < 3; u++) {
-				frame_Xi_dot(u) = in1_vel[m_indicesVectors[i] - 1][u];
+				frame_Xi_dot(u) = in1_vel[m_indices_vectors[i] - 1][u];
 				frame_Xi_dot(u + 3) = 0.;
 			}
-			Vec6 eta_frame_i = Adjoint * (m_nodesVelocityVectors[m_indicesVectors[i] - 1] +
-										  m_framesTangExpVectors[i] * frame_Xi_dot); // eta
+			Vec6 eta_frame_i = Adjoint * (m_nodes_velocity_vectors[m_indices_vectors[i] - 1] +
+										  m_frames_tang_exp_vectors[i] * frame_Xi_dot); // eta
 
 			auto T = Frame(out[i].getCenter(), out[i].getOrientation());
 			Mat6x6 Proj = this->buildProjector(T);
@@ -282,7 +285,7 @@ namespace Cosserat::mapping {
 		}
 		
 		dataVecOutVel[0]->endEdit();
-		m_indexInput = 0;
+		m_index_input = 0;
 	}
 
 	template<class TIn1, class TIn2, class TOut>
@@ -330,14 +333,14 @@ namespace Cosserat::mapping {
 		}
 
 		// Compute output forces
-		auto sz = m_indicesVectors.size();
-		auto index = m_indicesVectors[sz - 1];
-		m_totalBeamForceVectors.clear();
-		m_totalBeamForceVectors.resize(sz);
+		auto sz = m_indices_vectors.size();
+		auto index = m_indices_vectors[sz - 1];
+		m_total_beam_force_vectors.clear();
+		m_total_beam_force_vectors.resize(sz);
 
 		Vec6 F_tot;
 		F_tot.clear();
-		m_totalBeamForceVectors.push_back(F_tot);
+		m_total_beam_force_vectors.push_back(F_tot);
 
 		Mat3x6 matB_trans;
 		matB_trans.clear();
@@ -347,21 +350,21 @@ namespace Cosserat::mapping {
 		for (auto s = sz; s--;) {
 			Mat6x6 coAdjoint;
 
-			this->computeCoAdjoint(m_framesExponentialSE3Vectors[s],
+			this->computeCoAdjoint(m_frames_exponential_se3_vectors[s],
 								   coAdjoint); // m_framesExponentialSE3Vectors[s] computed in apply
 			Vec6 node_F_Vec = coAdjoint * local_F_Vec[s];
-			Mat6x6 temp = m_framesTangExpVectors[s]; // m_framesTangExpVectors[s] computed in
+			Mat6x6 temp = m_frames_tang_exp_vectors[s]; // m_framesTangExpVectors[s] computed in
 			// applyJ (here we transpose)
 			temp.transpose();
 			Vec3 f = matB_trans * temp * node_F_Vec;
 
-			if (index != m_indicesVectors[s]) {
+			if (index != m_indices_vectors[s]) {
 				index--;
 				// bring F_tot to the reference of the new beam
-				this->computeCoAdjoint(m_nodesExponentialSE3Vectors[index],
-									   coAdjoint); // m_nodesExponentialSE3Vectors computed in apply
+				this->computeCoAdjoint(m_nodes_exponential_se3_vectors[index],
+									   coAdjoint); // m_nodes_exponential_se3_vectors computed in apply
 				F_tot = coAdjoint * F_tot;
-				Mat6x6 temp = m_nodesTangExpVectors[index];
+				Mat6x6 temp = m_nodes_tang_exp_vectors[index];
 				temp.transpose();
 				// apply F_tot to the new beam
 				Vec3 temp_f = matB_trans * temp * F_tot;
@@ -372,7 +375,7 @@ namespace Cosserat::mapping {
 
 			// compute F_tot
 			F_tot += node_F_Vec;
-			out1[m_indicesVectors[s] - 1] += f;
+			out1[m_indices_vectors[s] - 1] += f;
 		}
 
 		auto frame0 = Frame(frame[0].getCenter(), frame[0].getOrientation());
@@ -461,16 +464,16 @@ namespace Cosserat::mapping {
 				for (unsigned j = 0; j < 6; j++)
 					valueConst[j] = valueConst_[j];
 
-				int indexBeam = m_indicesVectors[childIndex];
+				int indexBeam = m_indices_vectors[childIndex];
 
 				const auto _T = Frame(frame[childIndex].getCenter(), frame[childIndex].getOrientation());
 				Mat6x6 P_trans = (this->buildProjector(_T));
 				P_trans.transpose();
 
 				Mat6x6 co_adjoint;
-				this->computeCoAdjoint(m_framesExponentialSE3Vectors[childIndex],
-									   co_adjoint); // m_framesExponentialSE3Vectors[s] computed in apply
-				Mat6x6 temp = m_framesTangExpVectors[childIndex]; // m_framesTangExpVectors[s]
+				this->computeCoAdjoint(m_frames_exponential_se3_vectors[childIndex],
+									   co_adjoint); // m_frames_exponential_se3_vectors[s] computed in apply
+				Mat6x6 temp = m_frames_tang_exp_vectors[childIndex]; // m_framesTangExpVectors[s]
 				// computed in applyJ
 				// (here we transpose)
 				temp.transpose();
@@ -542,11 +545,11 @@ namespace Cosserat::mapping {
 				while (i > 0) {
 					// cumulate on beam frame
 					Mat6x6 coAdjoint;
-					this->computeCoAdjoint(m_nodesExponentialSE3Vectors[i - 1],
-										   coAdjoint); // m_nodesExponentialSE3Vectors computed in apply
+					this->computeCoAdjoint(m_nodes_exponential_se3_vectors[i - 1],
+										   coAdjoint); // m_nodes_exponential_se3_vectors computed in apply
 					CumulativeF = coAdjoint * CumulativeF;
 					// transfer to strain space (local coordinates)
-					Mat6x6 temp = m_nodesTangExpVectors[i - 1];
+					Mat6x6 temp = m_nodes_tang_exp_vectors[i - 1];
 					temp.transpose();
 					Vec3 temp_f = matB_trans * temp * CumulativeF;
 
@@ -636,7 +639,7 @@ namespace Cosserat::mapping {
 			int j = 0;
 			vector<int> index = d_index.getValue();
 			for (unsigned int i = 0; i < sz - 1; i++) {
-				j = m_indicesVectorsDraw[i] - 1; // to get the articulation on which the frame is related to
+				j = m_indices_vectors_draw[i] - 1; // to get the articulation on which the frame is related to
 				RGBAColor color = _eval(xPos[j][d_deformationAxis.getValue()]);
 				vparams->drawTool()->drawLine(positions[i], positions[i + 1], color);
 			}
@@ -708,13 +711,13 @@ namespace Cosserat::mapping {
 	template<class TIn1, class TIn2, class TOut>
 	void DiscreteCosseratMapping<TIn1, TIn2, TOut>::displayTransformMatrices(const std::string &label) {
 		std::cout << label << std::endl;
-		std::cout << "Frames exponential SE3 matrices (size: " << m_framesExponentialSE3Vectors.size() << "):" << std::endl;
-		for (size_t i = 0; i < m_framesExponentialSE3Vectors.size(); ++i) {
-			std::cout << "  Frame[" << i << "]: " << m_framesExponentialSE3Vectors[i] << std::endl;
+		std::cout << "Frames exponential SE3 matrices (size: " << m_frames_exponential_se3_vectors.size() << "):" << std::endl;
+		for (size_t i = 0; i < m_frames_exponential_se3_vectors.size(); ++i) {
+			std::cout << "  Frame[" << i << "]: " << m_frames_exponential_se3_vectors[i] << std::endl;
 		}
-		std::cout << "Nodes exponential SE3 matrices (size: " << m_nodesExponentialSE3Vectors.size() << "):" << std::endl;
-		for (size_t i = 0; i < m_nodesExponentialSE3Vectors.size(); ++i) {
-			std::cout << "  Node[" << i << "]: " << m_nodesExponentialSE3Vectors[i] << std::endl;
+		std::cout << "Nodes exponential SE3 matrices (size: " << m_nodes_exponential_se3_vectors.size() << "):" << std::endl;
+		for (size_t i = 0; i < m_nodes_exponential_se3_vectors.size(); ++i) {
+			std::cout << "  Node[" << i << "]: " << m_nodes_exponential_se3_vectors[i] << std::endl;
 		}
 	}
 

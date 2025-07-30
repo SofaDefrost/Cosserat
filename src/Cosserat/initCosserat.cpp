@@ -46,11 +46,12 @@ namespace Cosserat {
 	extern void registerPointsManager(sofa::core::ObjectFactory *factory);
 	extern void registerProjectionEngine(sofa::core::ObjectFactory *factory);
 	extern void registerBeamHookeLawForceField(sofa::core::ObjectFactory *factory);
-	// extern void registerHookeSeratPCSForceField(sofa::core::ObjectFactory *factory);
+	extern void registerHookeSeratPCSForceField(sofa::core::ObjectFactory *factory);
 	extern void registerCosseratInternalActuation(sofa::core::ObjectFactory *factory);
 	extern void registerDifferenceMultiMapping(sofa::core::ObjectFactory *factory);
 	extern void registerDiscreteCosseratMapping(sofa::core::ObjectFactory *factory);
-	extern void registerDiscretDynamicCosseratMapping(sofa::core::ObjectFactory *factory);
+	extern void registerHookeSeratDiscretMapping(sofa::core::ObjectFactory *factory);
+	//extern void registerDiscretDynamicCosseratMapping(sofa::core::ObjectFactory *factory);
 	extern void registerLegendrePolynomialsMapping(sofa::core::ObjectFactory *factory);
 	extern void registerRigidDistanceMapping(sofa::core::ObjectFactory *factory);
 
@@ -94,11 +95,12 @@ namespace Cosserat {
 		registerPointsManager(factory);
 		registerProjectionEngine(factory);
 		registerBeamHookeLawForceField(factory);
-		// registerHookeSeratPCSForceField(factory);
+		registerHookeSeratPCSForceField(factory);
 		registerCosseratInternalActuation(factory);
 		registerDifferenceMultiMapping(factory);
 		registerDiscreteCosseratMapping(factory);
-		registerDiscretDynamicCosseratMapping(factory);
+		registerHookeSeratDiscretMapping(factory);
+		//registerDiscretDynamicCosseratMapping(factory);
 		registerLegendrePolynomialsMapping(factory);
 		registerRigidDistanceMapping(factory);
 	}

@@ -1,6 +1,9 @@
+// This file defines the main pybind11 module for the Cosserat plugin, including bindings for Lie groups and
+// PointsManager.
+
 /******************************************************************************
- *       SOFA, Simulation Open-Framework Architecture, development version     *
- *                (c) 2006-2019 INRIA, USTL, UJF, CNRS, MGH                    *
+ *                 SOFA, Simulation Open-Framework Architecture                *
+ *                    (c) 2021 INRIA, USTL, UJF, CNRS, MGH                     *
  *                                                                             *
  * This program is free software; you can redistribute it and/or modify it     *
  * under the terms of the GNU Lesser General Public License as published by    *
@@ -15,19 +18,35 @@
  * You should have received a copy of the GNU Lesser General Public License    *
  * along with this program. If not, see <http://www.gnu.org/licenses/>.        *
  *******************************************************************************
- * Authors: The SOFA Team and external contributors (see Authors.txt)          *
- *                                                                             *
  * Contact information: contact@sofa-framework.org                             *
  ******************************************************************************/
-#define SOFA_COSSERAT_CPP_BaseCosseratMapping
-#include <Cosserat/mapping/BaseCosseratMapping.inl>
-#include <sofa/defaulttype/VecTypes.h>
 
-namespace Cosserat::mapping
-{
-template class SOFA_COSSERAT_API
-    BaseCosseratMapping<sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types>;
-template class SOFA_COSSERAT_API
-    BaseCosseratMapping<sofa::defaulttype::Vec6Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types>;
+#include <functional>
+#include <iterator>
+#include <memory>
+#include <type_traits>
 
-} // namespace cosserat::mapping
+#include <pybind11/pybind11.h>
+#include "Binding_LieGroups.h"
+#include <liegroups/SO2.h>
+#include <liegroups/SE2.h>
+#include <liegroups/SO3.h>
+#include <liegroups/SE3.h>
+
+namespace py {
+	using namespace pybind11;
+}
+
+namespace sofapython3 {
+
+	PYBIND11_MODULE(Cosserat, m) {
+		m.doc() = "Cosserat plugin for SOFA, providing Lie group functionalities for Cosserat models.";
+		// Only add Lie groups related functionality
+		moduleAddSO2(m);
+		moduleAddSE2(m);
+		moduleAddSO3(m);
+		moduleAddSE3(m);
+	}
+
+} // namespace sofapython3
+

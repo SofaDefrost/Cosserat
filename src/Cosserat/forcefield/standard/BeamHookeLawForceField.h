@@ -79,10 +79,10 @@ namespace sofa::component::forcefield {
 		Real getRadius();
 
 		// Debugging functions
-		void displayForces(const DataVecDeriv &forces, const std::string &label="force - output");
-		void displayDForces(const DataVecDeriv &dForces, const std::string &label="dForce - output");
-		void displayKMatrix(const MultiMatrixAccessor *matrix, const std::string &label="KMatrix - output");
-		void displaySectionMatrix(const Mat33 &matrix, const std::string &label="_m_K_section - output");
+		void displayForces(const VecDeriv &forces, const std::string &label = "force - output");
+		void displayDForces(const VecDeriv &dForces, const std::string &label = "dForce - output");
+		void displayKMatrix(const MultiMatrixAccessor *matrix, const std::string &label = "KMatrix - output");
+		void displaySectionMatrix(const Mat33 &matrix, const std::string &label = "_m_K_section - output");
 
 	protected:
 		// In case we have a beam with different properties per section
@@ -120,15 +120,21 @@ namespace sofa::component::forcefield {
 	};
 
 	// Explicit declaration of this spécialisation
-	template<> void BeamHookeLawForceField<sofa::defaulttype::Vec6Types>::reinit();
-	template<> void BeamHookeLawForceField<sofa::defaulttype::Vec6Types>::addForce(
-		const MechanicalParams *mparams, DataVecDeriv &f, const DataVecCoord &x, const DataVecDeriv &v);
-	template<> void BeamHookeLawForceField<sofa::defaulttype::Vec6Types>::addDForce(
-		const MechanicalParams *mparams, DataVecDeriv &df, const DataVecDeriv &dx);
-	template<> void BeamHookeLawForceField<sofa::defaulttype::Vec6Types>::addKToMatrix(
-		const MechanicalParams *mparams, const MultiMatrixAccessor *matrix);
-	template<> double BeamHookeLawForceField<sofa::defaulttype::Vec6Types>::getPotentialEnergy(
-		const MechanicalParams *mparams, const DataVecCoord &x) const;
+	template<>
+	void BeamHookeLawForceField<sofa::defaulttype::Vec6Types>::reinit();
+	template<>
+	void BeamHookeLawForceField<sofa::defaulttype::Vec6Types>::addForce(const MechanicalParams *mparams,
+																		DataVecDeriv &f, const DataVecCoord &x,
+																		const DataVecDeriv &v);
+	template<>
+	void BeamHookeLawForceField<sofa::defaulttype::Vec6Types>::addDForce(const MechanicalParams *mparams,
+																		 DataVecDeriv &df, const DataVecDeriv &dx);
+	template<>
+	void BeamHookeLawForceField<sofa::defaulttype::Vec6Types>::addKToMatrix(const MechanicalParams *mparams,
+																			const MultiMatrixAccessor *matrix);
+	template<>
+	double BeamHookeLawForceField<sofa::defaulttype::Vec6Types>::getPotentialEnergy(const MechanicalParams *mparams,
+																					const DataVecCoord &x) const;
 
 #if !defined(SOFA_COSSERAT_CPP_BeamHookeLawForceField)
 	extern template class SOFA_COSSERAT_API BeamHookeLawForceField<defaulttype::Vec3Types>;

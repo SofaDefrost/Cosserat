@@ -73,10 +73,9 @@ namespace sofa::component::forcefield {
 	}
 
 
-
 	template<>
 	void HookeSeratPCSForceField<defaulttype::Vec6Types>::addForce(const MechanicalParams *mparams, DataVecDeriv &d_f,
-																  const DataVecCoord &d_x, const DataVecDeriv &d_v) {
+																   const DataVecCoord &d_x, const DataVecDeriv &d_v) {
 		SOFA_UNUSED(d_v);
 		SOFA_UNUSED(mparams);
 
@@ -114,7 +113,7 @@ namespace sofa::component::forcefield {
 
 	template<>
 	void HookeSeratPCSForceField<defaulttype::Vec6Types>::addDForce(const MechanicalParams *mparams, DataVecDeriv &d_df,
-																   const DataVecDeriv &d_dx) {
+																	const DataVecDeriv &d_dx) {
 		if (!compute_df)
 			return;
 
@@ -130,13 +129,12 @@ namespace sofa::component::forcefield {
 
 			for (unsigned int j = 0; j < 6; j++)
 				df[i][j] -= _df[j];
-
 		}
 	}
 
 	template<>
 	void HookeSeratPCSForceField<defaulttype::Vec6Types>::addKToMatrix(const MechanicalParams *mparams,
-																	  const MultiMatrixAccessor *matrix) {
+																	   const MultiMatrixAccessor *matrix) {
 		MultiMatrixAccessor::MatrixRef mref = matrix->getMatrix(this->mstate);
 		BaseMatrix *mat = mref.matrix;
 		unsigned int offset = mref.offset;
@@ -157,7 +155,7 @@ namespace sofa::component::forcefield {
 
 	template<>
 	double HookeSeratPCSForceField<defaulttype::Vec6Types>::getPotentialEnergy(const MechanicalParams *mparams,
-																			  const DataVecCoord &d_x) const {
+																			   const DataVecCoord &d_x) const {
 		SOFA_UNUSED(mparams);
 		if (!this->getMState())
 			return 0.0;
@@ -167,9 +165,9 @@ namespace sofa::component::forcefield {
 
 		double energy = 0.0;
 		for (unsigned int i = 0; i < x.size(); i++) {
-			auto strain = Vector6::Map(x[i].data())- Vector6::Map(x0[i].data());
+			auto strain = Vector6::Map(x[i].data()) - Vector6::Map(x0[i].data());
 
-			energy += 0.5 * strain.dot(m_K_section66 * strain)  * this->d_length.getValue()[i];
+			energy += 0.5 * strain.dot(m_K_section66 * strain) * this->d_length.getValue()[i];
 		}
 		return energy;
 	}

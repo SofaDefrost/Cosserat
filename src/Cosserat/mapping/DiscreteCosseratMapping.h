@@ -134,20 +134,20 @@ namespace Cosserat::mapping {
 		/// Bring inherited attributes and function in the current lookup context.
 		/// otherwise any access to the base::attribute would require
 		/// the "this->" approach.
-		using BaseCosseratMapping<TIn1, TIn2, TOut>::m_indicesVectors;
+		using BaseCosseratMapping<TIn1, TIn2, TOut>::m_indices_vectors;
 		using BaseCosseratMapping<TIn1, TIn2, TOut>::d_curv_abs_section;
 		using BaseCosseratMapping<TIn1, TIn2, TOut>::d_curv_abs_frames;
-		using BaseCosseratMapping<TIn1, TIn2, TOut>::m_nodesTangExpVectors;
-		using BaseCosseratMapping<TIn1, TIn2, TOut>::m_nodesVelocityVectors;
-		using BaseCosseratMapping<TIn1, TIn2, TOut>::m_framesExponentialSE3Vectors;
-		using BaseCosseratMapping<TIn1, TIn2, TOut>::m_framesTangExpVectors;
-		using BaseCosseratMapping<TIn1, TIn2, TOut>::m_totalBeamForceVectors;
-		using BaseCosseratMapping<TIn1, TIn2, TOut>::m_nodesExponentialSE3Vectors;
+		using BaseCosseratMapping<TIn1, TIn2, TOut>::m_nodes_tang_exp_vectors;
+		using BaseCosseratMapping<TIn1, TIn2, TOut>::m_nodes_velocity_vectors;
+		using BaseCosseratMapping<TIn1, TIn2, TOut>::m_frames_exponential_se3_vectors;
+		using BaseCosseratMapping<TIn1, TIn2, TOut>::m_frames_tang_exp_vectors;
+		using BaseCosseratMapping<TIn1, TIn2, TOut>::m_total_beam_force_vectors;
+		using BaseCosseratMapping<TIn1, TIn2, TOut>::m_nodes_exponential_se3_vectors;
 		using BaseCosseratMapping<TIn1, TIn2, TOut>::d_debug;
-		using BaseCosseratMapping<TIn1, TIn2, TOut>::m_vecTransform;
-		using BaseCosseratMapping<TIn1, TIn2, TOut>::m_nodeAdjointVectors;
-		using BaseCosseratMapping<TIn1, TIn2, TOut>::m_indexInput;
-		using BaseCosseratMapping<TIn1, TIn2, TOut>::m_indicesVectorsDraw;
+		using BaseCosseratMapping<TIn1, TIn2, TOut>::m_vec_transform;
+		using BaseCosseratMapping<TIn1, TIn2, TOut>::m_node_adjoint_vectors;
+		using BaseCosseratMapping<TIn1, TIn2, TOut>::m_index_input;
+		using BaseCosseratMapping<TIn1, TIn2, TOut>::m_indices_vectors_draw;
 		using BaseCosseratMapping<TIn1, TIn2, TOut>::computeTheta;
 
 		using BaseCosseratMapping<TIn1, TIn2, TOut>::m_global_frames;

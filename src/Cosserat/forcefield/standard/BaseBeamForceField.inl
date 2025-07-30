@@ -48,7 +48,9 @@ namespace sofa::component::forcefield {
 		computeCrossSectionProperties();
 
 		if (f_printLog.getValue()) {
+			msg_info("BaseBeamForceField") << "  ----------------------------------";
 			printDebugInfo();
+			msg_info("BaseBeamForceField") << "  ----------------------------------";
 		}
 	}
 
