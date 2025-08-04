@@ -55,7 +55,7 @@ namespace Cosserat::mapping {
 		// using FrameInfo = typename FrameInfo;
 		using SE3Types = sofa::component::cosserat::liegroups::SE3<double>;
 		using Vector3 = typename SE3Types::Vector3;
-		using Vector6 = typename SE3Types::TangentVector;
+		using TangentVector = typename SE3Types::TangentVector;
 
 	public:
 		//////////////////////////////////////////////////////////////////////
@@ -136,13 +136,6 @@ namespace Cosserat::mapping {
 		 */
 		void updateFrameTransformations(const sofa::type::vector<Coord1> &vec_of_strains);
 
-		/**
-		 * @brief Computes SE(3) exponential at a specific position along a section
-		 * @param section_length Length parameter
-		 * @param strain Strain vector (3D or 6D depending on TIn1)
-		 * @return SE(3) transformation
-		 */
-		SE3Types computeSE3Exponential(double section_length, const Vector6 &strain);
 
 		// Debug display functions
 		void displayStrainState(const sofa::type::vector<Coord1> &strainState, const std::string &context = "") const;

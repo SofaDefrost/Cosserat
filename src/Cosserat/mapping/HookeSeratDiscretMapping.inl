@@ -124,14 +124,13 @@ namespace Cosserat::mapping {
 		updateFrameTransformations(strainState);
 
 		// Get base frame transformation from rigid input
-		const auto &baseRigid = rigidBase[baseIndex];
-		Vector3 base_trans(baseRigid.getCenter()[0], baseRigid.getCenter()[1], baseRigid.getCenter()[2]);
+		const auto &base_rigid = rigidBase[baseIndex];
+		Vector3 base_trans(base_rigid.getCenter()[0], base_rigid.getCenter()[1], base_rigid.getCenter()[2]);
 
 		// Convert SOFA quaternion to Eigen quaternion (SOFA: x,y,z,w; Eigen: w,x,y,z)
-		const auto &base_sofa_quat = baseRigid.getOrientation();
+		const auto &base_sofa_quat = base_rigid.getOrientation();
 		Eigen::Quaternion<double> base_rot(base_sofa_quat[3], base_sofa_quat[0], base_sofa_quat[1], base_sofa_quat[2]);
 
-		std::cout << "The base config  : "<< base_trans.transpose() << " \n" << base_rot << std::endl;
 		// Create SE3 transformation
 		SE3Types base_frame(SE3Types::SO3Type(base_rot), base_trans);
 
@@ -146,26 +145,20 @@ namespace Cosserat::mapping {
 			// Apply section transformations up to the frame
 			for (unsigned int j = 0; j < m_frameProperties[i].get_related_beam_index_(); j++) {
 				// Compose with section transformation
-				std::cout<< " section : "<< j << std::endl;
 				//// frame = gX(L_0)*...*gX(L_{n-1})
 				current_frame = current_frame * m_section_properties[j].getTransformation();
 			}
-
-			std::cout << "Frame "<< i << "related to section : "<< m_frameProperties[i].get_related_beam_index_() <<std::endl;
-
-			std::cout<< "curentFrame : "<< current_frame<< "\nFrameProTran : "
-															""<<m_frameProperties[i] <<std::endl;
 
 			// Apply additional frame transformation
 			// frame*gX(x)
 			current_frame = current_frame * m_frameProperties[i].getTransformation();
 
+			//Save current rigid frame transformation into frame's properties
+			m_frameProperties[i].setTransformation(current_frame);
+
 			// Convert SE3 to SOFA rigid coordinates
 			const auto &translation = current_frame.translation();
 			const auto &rotation = current_frame.rotation();
-
-			std::cout << "Frame : "<<i<<" val :"<< translation.transpose()<< " " <<
-				rotation << std::endl;
 
 			// Convert rotation matrix to quaternion for SOFA
 			Eigen::Quaternion<double> quat(rotation.matrix());
@@ -227,11 +220,9 @@ namespace Cosserat::mapping {
 		auto nb_node = vec_of_strains.size();
 
 		// Update node properties with current strain values
-		std::cout << "Begin updateFrameTransformations "<< std::endl;
-		std::cout << "==================Begin Section ====================== "<< std::endl;
 		for (size_t i = 0; i < nb_node; ++i) {
 			// Extract strain components based on input type
-			Vector6 strain = Vector6::Zero();
+			TangentVector strain = TangentVector::Zero();
 			// No need anymore, this is already done in the constructor
 			// Handle different strain input types (Vec3 or Vec6)
 			if constexpr (std::is_same_v<Coord1, sofa::type::Vec3>) {
@@ -243,68 +234,35 @@ namespace Cosserat::mapping {
 					strain[j] = vec_of_strains[i][j];
 				}
 			}
-			std::cout << "DEBUG == HookeSeratDiscretMapping == > _strain : "<< strain.transpose() <<std::endl;
 			// Update node info with strain values
 			// i+1, since m_section_properties is 0-indexed
 			m_section_properties[i+1].setStrain(strain);
 
 			// Compute SE(3) exponential for this section
 			// Change input and give as input of the function m_section_properties[i]
-			SE3Types _gx = computeSE3Exponential(m_section_properties[i+1].getLength(),
-				m_section_properties[i+1].getStrainsVec());
+			//SE3Types _gx = computeSE3Exponential(m_section_properties[i+1].getLength(),
+			//	m_section_properties[i+1].getStrainsVec());
 
-			std::cout << "Node " << i+1 << " transformation: " << _gx<< " : "<<
-				_gx.translation().transpose() << std::endl;
+			auto section_length = m_section_properties[i+1].getLength();
+			SE3Types _gx = SE3Types::expCosserat(strain, section_length);
+
 			m_section_properties[i+1].setTransformation(_gx);
 		}
-		std::cout << "================== End Section ====================== "<< std::endl;
 
-		std::cout << "================== Begin Frames ====================== "<< std::endl;
 		// Update frame properties based on their position within sections
 		for (size_t i = 0; i < m_frameProperties.size(); ++i) {
 			if (i < m_indices_vectors.size()) {
 				int sectionIndex = m_frameProperties[i].get_related_beam_index_();
-				std::cout << "Frame " << i << " related to section index: " << sectionIndex << std::endl;
 				if (sectionIndex >= 0 && sectionIndex < static_cast<int>(vec_of_strains.size()+1)) {
 					// Compute frame transformation at its specific position
-					SE3Types frame_gx =
-							computeSE3Exponential(m_frameProperties[i].getDistanceToNearestBeamNode(),
-								m_section_properties[sectionIndex].getStrainsVec());
-					std::cout << "Frame " << i << " gX: " << frame_gx<< " : " << std::endl;
+					SE3Types frame_gx = SE3Types::expCosserat(m_section_properties[sectionIndex].getStrainsVec(),
+						m_frameProperties[i].getDistanceToNearestBeamNode());
 					m_frameProperties[i].setTransformation(frame_gx);
 				}
 			}
 		}
-		std::cout << "================== End Frames ====================== "<< std::endl;
 	}
 
-	template<class TIn1, class TIn2, class TOut>
-	typename HookeSeratDiscretMapping<TIn1, TIn2, TOut>::SE3Types
-	HookeSeratDiscretMapping<TIn1, TIn2, TOut>::computeSE3Exponential(const double section_length, const Vector6 &strain) {
-
-		// std::cout<< "<------------------------Begin computeSE3Exponential function-------------------->"<<std::endl;
-		// std::cout << "computeSE3Exponential function called with : len = " << section_length
-		// 		  << " and strain = " << strain << std::endl;
-		// // Extract strain vector components
-		//
-		//
-		// if constexpr (std::is_same_v<Coord1, sofa::type::Vec3>) {
-		// 	// For Vec3 input, assume curvature only
-		// 	strain_.head<3>() = Vector3(strain[0], strain[1], strain[2]); //*section_length;
-		// 	std::cout << "====> Strain_ : "<< strain_<< std::endl;
-		// } else {
-		// 	// For Vec6 input, use all components
-		// 	for (int i = 0; i < 6 && i < strain.size(); ++i) {
-		// 		strain_[i] = strain[i]; //*section_length;
-		// 	}
-		// }
-		// std::cout << "Strain vector for SE(3) exponential: " << strain_.transpose() << std::endl;
-		// // Compute SE(3) exponential using liegroups library
-		// std::cout<< "<--------------------------End function------------------------->"<<std::endl;
-		std::cout << "Input strain : " << strain.transpose() << "\n section_length : "<< section_length << std::endl;
-		return SE3Types::expCosserat(strain, section_length);
-		//return SE3Types::computeExp(strain*section_length);
-	}
 
 	template<class TIn1, class TIn2, class TOut>
 	void
@@ -322,60 +280,84 @@ namespace Cosserat::mapping {
 		if (d_debug.getValue())
 			std::cout << " ########## HookeSeratDiscretMapping ApplyJ Function ########" << std::endl;
 
-		const sofa::VecDeriv_t<In1> &strainVel = dataVecIn1Vel[0]->getValue();
-		const sofa::VecDeriv_t<In2> &baseVel = dataVecIn2Vel[0]->getValue();
-		sofa::VecDeriv_t<Out> &outputVel = *dataVecOutVel[0]->beginEdit();
+		const sofa::VecDeriv_t<In1> &strain_vel = dataVecIn1Vel[0]->getValue();
+		const sofa::VecDeriv_t<In2> &base_vel = dataVecIn2Vel[0]->getValue();
+		sofa::VecDeriv_t<Out> &frame_vel = *dataVecOutVel[0]->beginEdit();
 
 		// Debug input velocities if enabled
 		if (d_debug.getValue()) {
-			displayVelocities(strainVel, baseVel, outputVel, "applyJ - input");
+			displayVelocities(strain_vel, base_vel, frame_vel, "applyJ - input");
 		}
 
-		const auto baseIndex = d_baseIndex.getValue();
-		const auto sz = d_curv_abs_frames.getValue().size();
-		outputVel.resize(sz);
+		const auto base_index = d_baseIndex.getValue();
+		const auto frame_count = d_curv_abs_frames.getValue().size();
+		frame_vel.resize(frame_count);
 
-		// Convert base velocity to SE(3) tangent space
-		Vector6 baseVelocitySE3 = Vector6::Zero();
+		//1. compute current tangent exponential SE3 Matrix
+		this->updateTangExpSE3();
+
+		//2. compute the base velocity in SE(3) tangent space
+		//2.1 Convert base velocity to se(3) tangent vector(vector6)
+		TangentVector base_vel_local = TangentVector::Zero();
 		for (auto u = 0; u < 6; u++)
-			baseVelocitySE3[u] = baseVel[baseIndex][u];
+			base_vel_local[u] = base_vel[base_index][u];
 
-		// Compute velocities for each output frame
-		for (unsigned int i = 0; i < sz; i++) {
-			Vector6 frameVelocity = baseVelocitySE3;
+		// 2.2 Apply the local transform i.e., from SOFA's frame to Cosserat's frame
+		// inverse of the base frame transformation
+		const SE3Types base_sofa_pos = m_frameProperties[0].getTransformation().inverse();
 
-			// Add contributions from strain velocities
-			for (unsigned int u = 0; u < m_indices_vectors[i] && u < strainVel.size(); u++) {
-				Vector6 strainVelSE3 = Vector6::Zero();
+		// @todo 2.2: compare this with the base rigid frame transformation computation
 
-				if constexpr (std::is_same_v<typename sofa::Deriv_t<In1>, sofa::type::Vec3>) {
-					// For Vec3 input
-					strainVelSE3.head<3>() = Vector3(strainVel[u][0], strainVel[u][1], strainVel[u][2]);
-				} else {
-					// For Vec6 input
-					for (int j = 0; j < 6 && j < strainVel[u].size(); ++j) {
-						strainVelSE3[j] = strainVel[u][j];
-					}
-				}
+		// Use this transform to build the projector 6x6 matrix
+		//@todo: 2.3 Build the projector matrix
+		AdjointMatrix base_projector = base_sofa_pos.buildProjectionMatrix(base_sofa_pos.rotation().matrix());
 
-				// Scale by section length
-				if (u < m_section_properties.size()) {
-					strainVelSE3 *= m_section_properties[u].getLength();
-				}
+		//@todo 3. Compute velocity at nodes
+		// for (unsigned int i = 1; i < curv_abs_section.size(); i++) {
+		// 	auto Trans = m_nodes_exponential_se3_vectors[i].inversed();
+		// 	TangentTransform Adjoint;
+		// 	Adjoint.clear();
+		// 	this->computeAdjoint(Trans, Adjoint);
+		//
+		// 	/// The null vector is replace by the linear velocity in Vec6Type
+		// 	Vec6 Xi_dot = Vec6(in1_vel[i - 1], Vec3(0.0, 0.0, 0.0));
+		//
+		// 	Vec6 eta_node_i = Adjoint * (m_nodes_velocity_vectors[i - 1] + m_nodes_tang_exp_vectors[i] * Xi_dot);
+		// 	m_nodes_velocity_vectors.push_back(eta_node_i);
+		// 	if (d_debug.getValue())
+		// 		std::cout << "Node velocity : " << i << " = " << eta_node_i << std::endl;
+		// }
 
-				frameVelocity += strainVelSE3;
-			}
-
-			// Convert back to SOFA derivative format
-			outputVel[i] = sofa::Deriv_t<Out>(frameVelocity.data());
-
-			if (d_debug.getValue())
-				std::cout << "Frame velocity : " << i << " = " << frameVelocity.transpose() << std::endl;
-		}
+		//@todo: 4. Compute velocity at each frame
+		// const sofa::VecCoord_t<Out> &out = m_global_frames->read(sofa::core::vec_id::read_access::position)->getValue();
+		// auto sz = curv_abs_frames.size();
+		// out_vel.resize(sz);
+		// for (unsigned int i = 0; i < sz; i++) {
+		// 	auto Trans = m_frames_exponential_se3_vectors[i].inversed();
+		// 	TangentTransform Adjoint; ///< the class insure that the constructed adjoint is zeroed.
+		// 	Adjoint.clear();
+		// 	this->computeAdjoint(Trans, Adjoint);
+		// 	Vec6 frame_Xi_dot;
+		//
+		// 	for (auto u = 0; u < 3; u++) {
+		// 		frame_Xi_dot(u) = in1_vel[m_indices_vectors[i] - 1][u];
+		// 		frame_Xi_dot(u + 3) = 0.;
+		// 	}
+		// 	Vec6 eta_frame_i = Adjoint * (m_nodes_velocity_vectors[m_indices_vectors[i] - 1] +
+		// 								  m_frames_tang_exp_vectors[i] * frame_Xi_dot); // eta
+		//
+		// 	auto T = Frame(out[i].getCenter(), out[i].getOrientation());
+		// 	Mat6x6 Proj = this->buildProjector(T);
+		//
+		// 	out_vel[i] = Proj * eta_frame_i;
+		//
+		// 	if (d_debug.getValue())
+		// 		std::cout << "Frame velocity : " << i << " = " << eta_frame_i << std::endl;
+		// }
 
 		// Debug output velocities if enabled
 		if (d_debug.getValue()) {
-			displayVelocities(strainVel, baseVel, outputVel, "applyJ - output");
+			displayVelocities(strain_vel, base_vel, frame_vel, "applyJ - output");
 		}
 
 		dataVecOutVel[0]->endEdit();
@@ -408,11 +390,11 @@ namespace Cosserat::mapping {
 		strainForces.resize(strainState.size());
 
 		// Accumulate forces
-		Vector6 totalBaseForce = Vector6::Zero();
+		TangentVector totalBaseForce = TangentVector::Zero();
 
 		for (size_t i = 0; i < inputForces.size(); ++i) {
 			// Convert input force to SE(3) format
-			Vector6 frameForce = Vector6::Zero();
+			TangentVector frameForce = TangentVector::Zero();
 			for (auto j = 0; j < 6 && j < inputForces[i].size(); ++j) {
 				frameForce[j] = inputForces[i][j];
 			}

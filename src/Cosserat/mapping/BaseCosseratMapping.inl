@@ -572,6 +572,7 @@ auto BaseCosseratMapping<TIn1, TIn2, TOut>::getTildeMatrix(const Vec3 &u)
     tild[2][0] = -tild[0][2];
     tild[2][1] = -tild[1][2];
     return tild;
+
 }
 
 template <class TIn1, class TIn2, class TOut>
@@ -601,9 +602,6 @@ auto BaseCosseratMapping<TIn1, TIn2, TOut>::buildCoAdjoint(const Mat3x3 &A,
         {
             coAdjoint[i][j] = A[i][j];
             coAdjoint[i + 3][j + 3] = A[i][j];
-
-            // TODO(dmarchal: 2024/06/07) if co-adjoint is juste this single change
-            // (the j+3)
             coAdjoint[i][j + 3] = B[i][j];
         }
     }

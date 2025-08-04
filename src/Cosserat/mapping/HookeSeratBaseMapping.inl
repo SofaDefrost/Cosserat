@@ -90,7 +90,7 @@ namespace Cosserat::mapping {
 
 				SE3Type gXi(rotation, translation);
 
-				std::cout << " frame i : "<< i << " gXi : "<< translation.transpose() << "  " << rotation<< std::endl;
+			// Frame info initialized
 
 				// Create FrameInfo with initial transformation
 				// Length and kappa will be set later in initializeFrameProperties
@@ -190,12 +190,9 @@ namespace Cosserat::mapping {
 			// Fill with
 
 			SectionInfo node(length, strain_0, i, SE3Type::computeIdentity());
-			std::cout << "===> strain[i] : " << strain[i] << std::endl;
 			node.setStrain(strain[i]);
 			m_section_properties.push_back(node);
 		}
-		std::cout << "HookeSeratBaseMapping" << "  m_beam_length_vectors: " << m_beam_length_vectors.size()
-				  << " elements" << std::endl;
 	}
 
 	template<class TIn1, class TIn2, class TOut>
@@ -223,9 +220,92 @@ namespace Cosserat::mapping {
 				}
 
 				m_frameProperties[i+1].setLength(frame_length);
-				std::cout<< "Frame : "<< i+1 << "  length : " << frame_length << std::endl;
 			}
 		}
 	}
 
+	template<class TIn1, class TIn2, class TOut>
+void HookeSeratBaseMapping<TIn1, TIn2, TOut>::computeTangExpImplementation(const double& curv_abs,
+	const TangentVector & strain, const AdjointMatrix &adjoint_matrix, AdjointMatrix & tang_adjoint_matrix)
+	{
+		SReal theta = Vector3(strain(0), strain(1), strain(2)).norm();
+		//old method
+		//Matrix3 tilde_k = SO3Type::buildAntisymmetric(Vector3(strain_i(0), strain_i(1), strain_i(2)));// getTildeMatrix(Vec3(strain_i(0), strain_i(1), strain_i(2)));
+		//Matrix3 tilde_q = SO3Type::buildAntisymmetric(Vector3(strain_i(3), strain_i(4), strain_i(5)));
+		//buildAdjoint(tilde_k, tilde_q, ad_Xi);
+
+		//@info: new method with Lie algebra
+		//AdjointMatrix adjoint_matrix = node_info.getAdjoint();
+
+
+		//@todo : compare the result of these two methods for computing
+		//@todo : adjoint matrix;
+
+		tang_adjoint_matrix = AdjointMatrix::Zero();
+		AdjointMatrix Id6 = AdjointMatrix::Identity();
+
+		if (theta <= std::numeric_limits<double>::epsilon()) {
+			double scalar0 = std::pow(curv_abs, 2) / 2.0;
+			tang_adjoint_matrix = curv_abs * Id6 + scalar0 * adjoint_matrix;
+		} else {
+			double scalar1 = (4.0 - 4.0 * cos(curv_abs * theta) -
+							  curv_abs * theta * sin(curv_abs * theta)) /
+							 (2.0 * theta * theta);
+			double scalar2 = (4.0 * curv_abs * theta +
+							  curv_abs * theta * cos(curv_abs * theta) -
+							  5.0 * sin(curv_abs * theta)) /
+							 (2.0 * theta * theta * theta);
+			double scalar3 = (2.0 - 2.0 * cos(curv_abs * theta) -
+							  curv_abs * theta * sin(curv_abs * theta)) /
+							 (2.0 * theta * theta * theta * theta);
+			double scalar4 = (2.0 * curv_abs * theta +
+							  curv_abs * theta * cos(curv_abs * theta) -
+							  3.0 * sin(curv_abs * theta)) /
+							 (2.0 * theta * theta * theta * theta * theta);
+
+			tang_adjoint_matrix = curv_abs * Id6 + scalar1 * adjoint_matrix + scalar2 * adjoint_matrix * adjoint_matrix +
+				  scalar3 * adjoint_matrix * adjoint_matrix * adjoint_matrix +
+				  scalar4 * adjoint_matrix * adjoint_matrix * adjoint_matrix * adjoint_matrix;
+		}
+	}
+
+
+	template<class TIn1, class TIn2, class TOut>
+void HookeSeratBaseMapping<TIn1, TIn2, TOut>::updateTangExpSE3() {
+
+		auto node_count = m_section_properties.size();
+
+		//update node's tang SE3 matrix
+		AdjointMatrix tang_matrix = AdjointMatrix::Zero();
+		m_section_properties[0].setTanAdjointMatrix(tang_matrix);
+
+		for (auto i = 1; i< node_count; i++ ) {
+			auto node_info = m_section_properties[i];
+			computeTangExpImplementation(
+				node_info.getLength(),
+				node_info.getStrainsVec(),
+				node_info.getAdjoint(),
+				tang_matrix);
+			node_info.setTanAdjointMatrix(tang_matrix);
+			std::cout << "Node[" << i << "] tang adjoint matrix: \n" << tang_matrix << std::endl;
+		}
+
+		//update frames's tang SE3 matrix
+		auto frame_count = m_frameProperties.size();
+		for (auto i = 0; i<frame_count; i++) {
+			auto frame_info = m_frameProperties[i];
+			auto related_section_index = m_frameProperties[i].get_related_beam_index_();
+			auto frame_strain = m_section_properties[related_section_index].getStrainsVec();
+			computeTangExpImplementation(
+				frame_info.getDistanceToNearestBeamNode(),
+				frame_strain,
+				frame_info.getAdjoint(),
+				tang_matrix);
+			frame_info.setTanAdjointMatrix(tang_matrix);
+			std::cout << "Frame[" << i << "] tang adjoint matrix: \n"
+			<< tang_matrix << std::endl;
+		}
+
+
+	}
 } // namespace Cosserat::mapping

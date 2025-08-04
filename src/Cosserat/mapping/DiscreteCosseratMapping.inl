@@ -166,7 +166,7 @@ namespace Cosserat::mapping {
 		// computes theta
 		const double theta = computeTheta(x, gX);
 
-		// if theta is very small we return log_gX as the identity.
+		// if theta is very small, we return log_gX as the identity.
 		if (theta <= std::numeric_limits<double>::epsilon()) {
 			log_gX = Mat4x4::Identity();
 			return;
@@ -214,24 +214,28 @@ namespace Cosserat::mapping {
 		sofa::helper::ReadAccessor<sofa::Data<vector<double>>> curv_abs_frames = d_curv_abs_frames;
 
 		const sofa::VecDeriv_t<In1> &inDeform =
-				m_strain_state->read(sofa::core::vec_id::read_access::position)->getValue(); // Strains
-		// Compute the tangent Exponential SE3 vectors
+				m_strain_state->read(sofa::core::vec_id::read_access::position)->getValue(); // strains
+		//1. Compute the tangent Exponential SE3 vectors
 		this->updateTangExpSE3(inDeform);
 
+		//2. Get base velocity and convert to Vec6, for the facility of computation
 		// Get base velocity as input this is also called eta
-		m_nodes_velocity_vectors.clear();
-
-		// Get base velocity and convert to Vec6, for the facility of computation
+		//2.1 Get the base velocity from input
 		Vec6 baseVelocity; //
 		for (auto u = 0; u < 6; u++)
 			baseVelocity[u] = in2_vel[baseIndex][u];
 
-		// Apply the local transform i.e. from SOFA's frame to Cosserat's frame
+		//2.2 Apply the local transform i.e. from SOFA's frame to Cosserat's frame
 		const sofa::VecCoord_t<In2> &xfrom2Data =
 				m_rigid_base->read(sofa::core::vec_id::read_access::position)->getValue();
+		// Get the transformation from the SOFA to the local frame
 		auto TInverse = Frame(xfrom2Data[baseIndex].getCenter(), xfrom2Data[baseIndex].getOrientation()).inversed();
 		Mat6x6 P = this->buildProjector(TInverse);
+
+		// List of velocity vectors at nodes
+		m_nodes_velocity_vectors.clear();
 		Vec6 baseLocalVelocity = P * baseVelocity; // This is the base velocity in Locale frame
+
 		m_nodes_velocity_vectors.push_back(baseLocalVelocity);
 		if (d_debug.getValue())
 			std::cout << "Base local Velocity :" << baseLocalVelocity << std::endl;

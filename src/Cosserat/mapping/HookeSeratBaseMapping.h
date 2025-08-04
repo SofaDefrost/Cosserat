@@ -38,10 +38,12 @@ namespace Cosserat::mapping {
 		// Transformation SE3 au lieu de Matrix4 simple
 		SE3Type gX_;
 
-		// Matrices calculées automatiquement
+		//Matrix computed automatically
 		mutable AdjointMatrix adjoint_;
 		mutable AdjointMatrix coAdjoint_;
 		mutable bool adjoint_computed_ = false;
+		AdjointMatrix tang_adjoint_;
+		AdjointMatrix tang_co_adjoint_;
 
 	public:
 		SectionInfo() = default;
@@ -150,7 +152,7 @@ namespace Cosserat::mapping {
 
 		void setTransformationFromMatrix(const Matrix4 &matrix) {
 			gX_ = SE3Type(matrix);
-			adjoint_computed_ = false;
+			adjoint_computed_ = true;
 		}
 
 		// Exploitation de computeAdjoint() avec cache pour les performances
@@ -165,10 +167,22 @@ namespace Cosserat::mapping {
 
 		const AdjointMatrix &getCoAdjoint() const {
 			if (!adjoint_computed_) {
-				getAdjoint(); // Compute adjoint and co-adjoint matrix
+				adjoint_ = getAdjoint(); // Compute adjoint and co-adjoint matrix
+				coAdjoint_ = adjoint_.transpose();
+				return  coAdjoint_;
 			}
 			return coAdjoint_;
 		}
+
+		const AdjointMatrix & getTangAdjointMatrix() {
+			return tang_adjoint_;
+		}
+
+		void setTanAdjointMatrix(const AdjointMatrix & tang_adjoint_mat) {
+				tang_adjoint_ = tang_adjoint_mat;
+		}
+
+
 
 		// Nouvelles méthodes exploitant les fonctionnalités SE3
 
@@ -184,8 +198,6 @@ namespace Cosserat::mapping {
 
 			// Utiliser l'exponentielle SE3 pour calculer la transformation locale
 			TangentVector xi;
-			std::cout << " t : " << t << "\n sec_length_ : " << sec_length_ << "\nVector3::UnitX() : " << Vector3::UnitX().transpose()
-					  << std::endl;
 			xi.template head<3>() = t * sec_length_ * Vector3::UnitX(); // Translation le long de x
 			xi.template tail<3>() = t * angular_strain_; // Rotation basée sur la courbure
 
@@ -294,6 +306,7 @@ namespace Cosserat::mapping {
 		mutable AdjointMatrix adjoint_;
 		mutable AdjointMatrix coAdjoint_;
 		mutable bool adjoint_computed_ = false;
+		AdjointMatrix tang_adjoint_;
 
 	public:
 		FrameInfo() = default;
@@ -326,8 +339,9 @@ namespace Cosserat::mapping {
 		const SE3Type &getTransformation() const { return transformation_; }
 		void setTransformation(const SE3Type &transform) {
 			transformation_ = transform;
-			// I need to dive into it, in order to understand why I need to reset the adjoint_computed_ flag
-			adjoint_computed_ = true;
+
+			//Do I really need this?
+			adjoint_computed_ = false;
 		}
 
 		const AdjointMatrix &getAdjoint() const {
@@ -337,6 +351,15 @@ namespace Cosserat::mapping {
 				adjoint_computed_ = true;
 			}
 			return adjoint_;
+		}
+
+		const AdjointMatrix & getTangAdjointMatrix() {
+			return tang_adjoint_;
+		}
+
+
+		void setTanAdjointMatrix(const AdjointMatrix & tang_adjoint_mat) {
+			tang_adjoint_ = tang_adjoint_mat;
 		}
 
 		/**
@@ -355,6 +378,9 @@ namespace Cosserat::mapping {
 
 			return transformation_ * SE3Type::computeExp(xi);
 		}
+
+
+
 
 		/**
 		 * @brief Stream output operator for FrameInfo
@@ -407,7 +433,7 @@ namespace Cosserat::mapping {
 		bool validateSectionProperties() const {
 			for (size_t i = 0; i < m_section_properties.size(); ++i) {
 				const auto &section = m_section_properties[i];
-				if (section.getLength() <= 0) {
+				if (section.getLength() < 0) {
 					msg_warning() << "Section " << i << " has invalid length: " << section.getLength();
 					return false;
 				}
@@ -524,6 +550,11 @@ namespace Cosserat::mapping {
 
 		void clearSections() { m_section_properties.clear(); }
 		void clearFrames() { m_frameProperties.clear(); }
+
+		void updateTangExpSE3();
+		//void computeTangExp(double &x, const TangentVector &k, AdjointMatrix &TgX);
+		static void computeTangExpImplementation(const double& curv_abs,
+	const TangentVector & strain, const AdjointMatrix &adjoint_matrix, AdjointMatrix & tang_adjoint_matrix);
 
 	private:
 		struct SectionIndexResult {
