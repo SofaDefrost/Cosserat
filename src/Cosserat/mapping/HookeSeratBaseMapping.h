@@ -344,16 +344,25 @@ namespace Cosserat::mapping {
 			adjoint_computed_ = false;
 		}
 
-		const AdjointMatrix &getAdjoint() const {
-			if (!adjoint_computed_) {
-				adjoint_ = transformation_.computeAdjoint();
-				coAdjoint_ = adjoint_.transpose();
-				adjoint_computed_ = true;
-			}
-			return adjoint_;
+	const AdjointMatrix &getAdjoint() const {
+		if (!adjoint_computed_) {
+			adjoint_ = transformation_.computeAdjoint();
+			coAdjoint_ = adjoint_.transpose();
+			adjoint_computed_ = true;
 		}
+		return adjoint_;
+	}
 
-		const AdjointMatrix & getTangAdjointMatrix() {
+	const AdjointMatrix &getCoAdjoint() const {
+		if (!adjoint_computed_) {
+			adjoint_ = getAdjoint(); // Compute adjoint and co-adjoint matrix
+			coAdjoint_ = adjoint_.transpose();
+			return  coAdjoint_;
+		}
+		return coAdjoint_;
+	}
+
+	const AdjointMatrix & getTangAdjointMatrix() {
 			return tang_adjoint_;
 		}
 

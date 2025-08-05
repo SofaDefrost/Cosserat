@@ -384,53 +384,150 @@ namespace Cosserat::mapping {
 		sofa::VecDeriv_t<In2> &baseForces = *dataVecOut2Force[0]->beginEdit();
 		const auto baseIndex = d_baseIndex.getValue();
 
-		// Initialize output forces
+		// Get current positions to compute transformations
+		const sofa::VecCoord_t<Out> &framePositions =
+				this->m_frames->read(sofa::core::vec_id::read_access::position)->getValue();
 		const sofa::VecCoord_t<In1> &strainState =
 				m_strain_state->read(sofa::core::vec_id::read_access::position)->getValue();
+
+		// Initialize output forces
 		strainForces.resize(strainState.size());
 
-		// Accumulate forces
-		TangentVector totalBaseForce = TangentVector::Zero();
+		// Convert input forces from global frame to local frame and accumulate
+		vector<TangentVector> localForces;
+		localForces.reserve(inputForces.size());
 
 		for (size_t i = 0; i < inputForces.size(); ++i) {
-			// Convert input force to SE(3) format
+			// Convert SOFA force to SE(3) tangent vector
 			TangentVector frameForce = TangentVector::Zero();
-			for (auto j = 0; j < 6 && j < inputForces[i].size(); ++j) {
+			for (int j = 0; j < 6 && j < static_cast<int>(inputForces[i].size()); ++j) {
 				frameForce[j] = inputForces[i][j];
 			}
 
-			// Add to base force (all forces ultimately go through the base)
-			totalBaseForce += frameForce;
-
-			// Distribute force to strain components
-			if (i < m_indices_vectors.size()) {
-				int sectionIndex = m_indices_vectors[i] - 1;
-				if (sectionIndex >= 0 && sectionIndex < static_cast<int>(strainForces.size())) {
-					// Project force to strain space and scale by section length
-					Vector3 strainForce3D = frameForce.head<3>();
-					if (sectionIndex < static_cast<int>(m_section_properties.size())) {
-						strainForce3D *= m_section_properties[sectionIndex].getLength();
-					}
-
-					if constexpr (std::is_same_v<typename sofa::Deriv_t<In1>, sofa::type::Vec3>) {
-						strainForces[sectionIndex] +=
-								sofa::type::Vec3(strainForce3D[0], strainForce3D[1], strainForce3D[2]);
-					} else {
-						// For Vec6 output
-						for (int k = 0; k < 6 && k < strainForces[sectionIndex].size(); ++k) {
-							strainForces[sectionIndex][k] += frameForce[k];
-						}
-					}
+			// Transform from global SOFA frame to local beam frame using frame properties
+			if (i < m_frameProperties.size()) {
+				const FrameInfo &frame = m_frameProperties[i];
+				AdjointMatrix adjoint = frame.getAdjoint();
+				TangentVector localForce = adjoint.transpose() * frameForce;
+				localForces.push_back(localForce);
+			} else {
+				// Fallback: use frame transformation directly
+				SE3Types frameTransform;
+				if (i < framePositions.size()) {
+					const auto &pos = framePositions[i];
+					Vector3 translation(pos.getCenter()[0], pos.getCenter()[1], pos.getCenter()[2]);
+					const auto &quat = pos.getOrientation();
+					Eigen::Quaternion<double> rotation(quat[3], quat[0], quat[1], quat[2]);
+					frameTransform = SE3Types(SE3Types::SO3Type(rotation), translation);
+					AdjointMatrix adjoint = frameTransform.computeAdjoint();
+					TangentVector localForce = adjoint.transpose() * frameForce;
+					localForces.push_back(localForce);
+				} else {
+					localForces.push_back(frameForce);
 				}
 			}
 		}
 
-		// Set base force
-		baseForces[baseIndex] += sofa::Deriv_t<In2>(totalBaseForce.data());
+		// Process forces following the beam structure (similar to DiscreteCosseratMapping)
+		auto sz = m_indices_vectors.size();
+		if (sz == 0 || localForces.empty()) {
+			dataVecOut1Force[0]->endEdit();
+			dataVecOut2Force[0]->endEdit();
+			return;
+		}
+
+		auto lastSectionIndex = m_indices_vectors[sz - 1];
+		TangentVector totalForce = TangentVector::Zero();
+
+		// Process frames in reverse order to accumulate forces
+		for (int s = static_cast<int>(sz) - 1; s >= 0; s--) {
+			if (s >= static_cast<int>(localForces.size()))
+				continue;
+
+			int currentSectionIndex = m_indices_vectors[s];
+			TangentVector currentLocalForce = localForces[s];
+
+			// Transform force using section properties
+			if (s < static_cast<int>(m_frameProperties.size())) {
+				const FrameInfo &frame = m_frameProperties[s];
+				AdjointMatrix coAdjoint = frame.getCoAdjoint();
+				currentLocalForce = coAdjoint * currentLocalForce;
+			}
+
+			// Project to strain space (first 3 components)
+			Vector3 strainForce = currentLocalForce.head<3>();
+
+			// Handle section change - propagate accumulated force
+			if (lastSectionIndex != currentSectionIndex) {
+				lastSectionIndex--;
+				// Transform accumulated force to new section reference
+				if (lastSectionIndex > 0 && lastSectionIndex <= static_cast<int>(m_section_properties.size())) {
+					const SectionInfo &section = m_section_properties[lastSectionIndex - 1];
+					AdjointMatrix coAdjoint = section.getCoAdjoint();
+					totalForce = coAdjoint * totalForce;
+
+					// Add accumulated force to strain output
+					Vector3 accumulatedStrainForce = totalForce.head<3>();
+					if (lastSectionIndex - 1 >= 0 && lastSectionIndex - 1 < static_cast<int>(strainForces.size())) {
+						if constexpr (std::is_same_v<typename sofa::Deriv_t<In1>, sofa::type::Vec3>) {
+							strainForces[lastSectionIndex - 1] += sofa::type::Vec3(
+								accumulatedStrainForce[0], accumulatedStrainForce[1], accumulatedStrainForce[2]);
+						} else {
+							// For Vec6 output, set first 3 components
+							for (int k = 0; k < 3 && k < strainForces[lastSectionIndex - 1].size(); ++k) {
+								strainForces[lastSectionIndex - 1][k] += accumulatedStrainForce[k];
+							}
+						}
+					}
+				}
+			}
+
+			// Add current force to strain output
+			if (currentSectionIndex - 1 >= 0 && currentSectionIndex - 1 < static_cast<int>(strainForces.size())) {
+				if constexpr (std::is_same_v<typename sofa::Deriv_t<In1>, sofa::type::Vec3>) {
+					strainForces[currentSectionIndex - 1] += sofa::type::Vec3(
+						strainForce[0], strainForce[1], strainForce[2]);
+				} else {
+					// For Vec6 output, set first 3 components
+					for (int k = 0; k < 3 && k < strainForces[currentSectionIndex - 1].size(); ++k) {
+						strainForces[currentSectionIndex - 1][k] += strainForce[k];
+					}
+				}
+			}
+
+			// Accumulate total force
+			totalForce += currentLocalForce;
+		}
+
+		// Apply total force to base using base frame transformation
+		if (baseIndex < baseForces.size()) {
+			// Transform total force to base frame
+			SE3Types baseFrame;
+			if (!framePositions.empty()) {
+				const auto &basePos = framePositions[0];
+				Vector3 baseTranslation(basePos.getCenter()[0], basePos.getCenter()[1], basePos.getCenter()[2]);
+				const auto &baseQuat = basePos.getOrientation();
+				Eigen::Quaternion<double> baseRotation(baseQuat[3], baseQuat[0], baseQuat[1], baseQuat[2]);
+				baseFrame = SE3Types(SE3Types::SO3Type(baseRotation), baseTranslation);
+				AdjointMatrix baseAdjoint = baseFrame.computeAdjoint();
+				totalForce = baseAdjoint * totalForce;
+			}
+
+			// Convert to SOFA format and add to base forces
+			if constexpr (std::is_same_v<typename sofa::Deriv_t<In2>, sofa::type::Vec6>) {
+				for (int k = 0; k < 6; ++k) {
+					baseForces[baseIndex][k] += totalForce[k];
+				}
+			} else {
+				// For other base types, use data() method
+				baseForces[baseIndex] += sofa::Deriv_t<In2>(totalForce.data());
+			}
+		}
 
 		if (d_debug.getValue()) {
-			std::cout << "Strain forces computed" << std::endl;
-			std::cout << "Base Force: " << totalBaseForce.transpose() << std::endl;
+			std::cout << "Strain forces computed from " << inputForces.size() << " input forces" << std::endl;
+			std::cout << "Total base force: [" << totalForce.transpose() << "]" << std::endl;
+			std::cout << "Applied to base index: " << baseIndex << std::endl;
 		}
 
 		dataVecOut1Force[0]->endEdit();
@@ -453,33 +550,79 @@ namespace Cosserat::mapping {
 		if (d_debug.getValue())
 			std::cout << " ########## HookeSeratDiscretMapping ApplyJT Constraint Function ########" << std::endl;
 
-		// Get constraint matrices
+		// Prepare input and output data matrices
 		sofa::MatrixDeriv_t<In1> &out1 = *dataMatOut1Const[0]->beginEdit();
 		sofa::MatrixDeriv_t<In2> &out2 = *dataMatOut2Const[0]->beginEdit();
 		const sofa::MatrixDeriv_t<Out> &in = dataMatInConst[0]->getValue();
 
-		// Process constraints (simplified implementation)
-		// This would need to be expanded based on specific constraint requirements
-		// for (auto it = in.begin(); it != in.end(); ++it) {
-		//     int constraintId = it.index();
-		//     const auto &constraintLine = it.row();
-		//
-		//     // Apply constraint to base (simplified)
-		//     auto baseIt = out2.writeLine(constraintId);
-		//     baseIt.addCol(d_baseIndex.getValue(), constraintLine[0]); // Assuming first column is base force
-		//
-		//     // Apply constraint to strain space (simplified)
-		//     auto strainIt = out1.writeLine(constraintId);
-		//     for (auto colIt = constraintLine.begin(); colIt != constraintLine.end(); ++colIt) {
-		//         int frameIndex = colIt.index();
-		//         if (frameIndex < static_cast<int>(m_indices_vectors.size())) {
-		//             int sectionIndex = m_indices_vectors[frameIndex] - 1;
-		//             if (sectionIndex >= 0) {
-		//                 strainIt.addCol(sectionIndex, colIt.val());
-		//             }
-		//         }
-		//     }
-		// }
+		if (dataMatOut1Const.empty() || dataMatOut2Const.empty() || dataMatInConst.empty())
+			return;
+
+		if (this->d_componentState.getValue() != sofa::core::objectmodel::ComponentState::Valid)
+			return;
+
+		if (d_debug.getValue())
+			std::cout << " ********** HookeSeratDiscretMapping ApplyJT Constraint Function **********" << std::endl;
+
+		// Process constraints
+		for (auto rowIt = in.begin(); rowIt != in.end(); ++rowIt) {
+			auto colIt = rowIt.begin();
+			if (colIt == rowIt.end())
+				continue;
+
+			typename sofa::MatrixDeriv_t<In1>::RowIterator o1 = out1.writeLine(rowIt.index());
+			typename sofa::MatrixDeriv_t<In2>::RowIterator o2 = out2.writeLine(rowIt.index());
+
+			while (colIt != rowIt.end()) {
+				int frameIndex = colIt.index();
+				TangentVector constraintValue;
+				// Convert constraint value to TangentVector
+				const auto& val = colIt.val();
+				for (int j = 0; j < 6 && j < val.size(); ++j) {
+					constraintValue[j] = val[j];
+				}
+
+				const FrameInfo &frame = m_frameProperties[frameIndex];
+				AdjointMatrix adjoint = frame.getAdjoint();
+				TangentVector localForce = adjoint.transpose() * constraintValue;
+
+				int sectionIndex = m_indices_vectors[frameIndex] - 1;
+				if (sectionIndex >= 0) {
+					const SectionInfo &section = m_section_properties[sectionIndex];
+					AdjointMatrix coAdjoint = section.getCoAdjoint();
+					TangentVector strainSpaceForce = coAdjoint * localForce;
+
+					// Convert Eigen vector to SOFA Vec3
+					auto strainForce3D = strainSpaceForce.head<3>();
+					sofa::type::Vec3 sofaStrainForce(strainForce3D[0], strainForce3D[1], strainForce3D[2]);
+					o1.addCol(sectionIndex, sofaStrainForce);
+
+					while (sectionIndex-- > 0) {
+						const SectionInfo &prevSection = m_section_properties[sectionIndex];
+						coAdjoint = prevSection.getCoAdjoint();
+						strainSpaceForce = coAdjoint * strainSpaceForce;
+
+						if (sectionIndex > 0) {
+							auto prevStrainForce3D = strainSpaceForce.head<3>();
+							sofa::type::Vec3 sofaPrevStrainForce(prevStrainForce3D[0], prevStrainForce3D[1], prevStrainForce3D[2]);
+							o1.addCol(sectionIndex - 1, sofaPrevStrainForce);
+						}
+					}
+
+					// Convert constraintValue to SOFA format for base
+					sofa::type::Vec6 sofaConstraintValue;
+					for (int k = 0; k < 6; ++k) {
+						sofaConstraintValue[k] = constraintValue[k];
+					}
+					auto baseIndex = d_baseIndex.getValue();
+					o2.addCol(baseIndex, sofaConstraintValue);
+				}
+				++colIt;
+			}
+		}
+
+		dataMatOut1Const[0]->endEdit();
+		dataMatOut2Const[0]->endEdit();
 
 		dataMatOut1Const[0]->endEdit();
 		dataMatOut2Const[0]->endEdit();
