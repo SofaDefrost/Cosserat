@@ -26,12 +26,12 @@
 #include <memory>
 #include <type_traits>
 
+#include <liegroups/SE2.h>
+#include <liegroups/SE3.h>
+#include <liegroups/SO2.h>
+#include <liegroups/SO3.h>
 #include <pybind11/pybind11.h>
 #include "Binding_LieGroups.h"
-#include <liegroups/SO2.h>
-#include <liegroups/SE2.h>
-#include <liegroups/SO3.h>
-#include <liegroups/SE3.h>
 
 namespace py {
 	using namespace pybind11;
@@ -49,4 +49,3 @@ namespace sofapython3 {
 	}
 
 } // namespace sofapython3
-

@@ -29,15 +29,15 @@
 #include <type_traits>
 
 // Eigen/SOFA includes before pybind11
-#include "../../../../src/liegroups/Types.h"
 #include "../../../../src/liegroups/LieGroupBase.h"
 #include "../../../../src/liegroups/LieGroupBase.inl"
 #include "../../../../src/liegroups/RealSpace.h"
-#include "../../../../src/liegroups/SO2.h"
-#include "../../../../src/liegroups/SO3.h"
 #include "../../../../src/liegroups/SE2.h"
 #include "../../../../src/liegroups/SE3.h"
 #include "../../../../src/liegroups/SGal3.h"
+#include "../../../../src/liegroups/SO2.h"
+#include "../../../../src/liegroups/SO3.h"
+#include "../../../../src/liegroups/Types.h"
 
 // pybind11 includes last to avoid template conflicts
 #include <pybind11/pybind11.h>
@@ -595,97 +595,151 @@ namespace sofapython3 {
 
 	void moduleAddSO2(py::module &m) {
 		// SO2 bindings
-		py::class_<SO2<double>>(m, "SO2")
-				.def(py::init<>())
-				.def(py::init<double>())
-				.def("__mul__", &SO2<double>::operator*)
-				.def("inverse", &SO2<double>::inverse)
-				.def("matrix", &SO2<double>::matrix)
-				.def("angle", &SO2<double>::angle)
-				.def("exp", &SO2<double>::exp)
-				.def("log", &SO2<double>::log)
-				.def("adjoint", &SO2<double>::adjoint)
-				.def("isApprox", &SO2<double>::isApprox)
-				.def_static("identity", &SO2<double>::identity)
-				.def_static("hat", &SO2<double>::hat)
-				.def("act", static_cast<typename SO2<double>::Vector (SO2<double>::*)(
-									const typename SO2<double>::Vector &) const>(&SO2<double>::act));
+		py::class_<SO2<double>>(m, "SO2", "2D rotation group SO(2)")
+				.def(py::init<>(), "Default constructor (identity rotation)")
+				.def(py::init<double>(), "Construct from angle in radians", py::arg("angle"))
+				.def("__mul__", &SO2<double>::operator*, "Group composition")
+				.def("inverse", &SO2<double>::inverse, "Compute inverse rotation")
+				.def("matrix", &SO2<double>::matrix, "Get 2x2 rotation matrix")
+				.def("angle", &SO2<double>::angle, "Get rotation angle in radians")
+				.def("setAngle", &SO2<double>::setAngle, "Set rotation angle in radians", py::arg("angle"))
+				.def("complex", &SO2<double>::complex, "Get complex representation (cos θ, sin θ)")
+				.def("direction", &SO2<double>::direction, "Get unit direction vector")
+				.def("perpendicular", &SO2<double>::perpendicular, "Get perpendicular unit vector")
+				.def_static("exp", &SO2<double>::exp, "Exponential map from so(2) to SO(2)", py::arg("omega"))
+				.def("log", &SO2<double>::log, "Logarithmic map from SO(2) to so(2)")
+				.def("adjoint", &SO2<double>::adjoint, "Adjoint representation (identity for SO(2))")
+				.def("isApprox", &SO2<double>::isApprox, "Check approximate equality", py::arg("other"), py::arg("eps") = 1e-12)
+				.def_static("identity", &SO2<double>::identity, "Get identity element")
+				.def_static("hat", &SO2<double>::hat, "Hat operator: R -> so(2) matrix", py::arg("omega"))
+				.def_static("vee", &SO2<double>::vee, "Vee operator: so(2) matrix -> R", py::arg("matrix"))
+				.def("act", [](const SO2<double>& self, const Eigen::Vector2d& point) {
+					return self.act(point);
+				}, "Apply rotation to a 2D point", py::arg("point"))
+				.def("__repr__", [](const SO2<double>& self) {
+					std::ostringstream oss;
+					oss << "SO2(angle=" << self.angle() << " rad, " << (self.angle() * 180.0 / M_PI) << " deg)";
+					return oss.str();
+				})
+				.def_static("random", [](py::object seed = py::none()) {
+					static std::random_device rd;
+					static std::mt19937 gen(rd());
+					if (!seed.is_none()) {
+						gen.seed(seed.cast<unsigned int>());
+					}
+					return SO2<double>::computeRandom(gen);
+				}, "Generate random SO(2) element", py::arg("seed") = py::none());
 	}
 
 	void moduleAddSO3(py::module &m) {
 		// SO3 bindings
-		py::class_<SO3<double>>(m, "SO3")
-				.def(py::init<>())
-				.def(py::init<double, const Eigen::Vector3d &>())
-				.def(py::init<const Eigen::Quaterniond &>())
-				.def(py::init<const Eigen::Matrix3d &>())
-				.def("__mul__", &SO3<double>::operator*)
-				.def("inverse", &SO3<double>::inverse)
-				.def("matrix", &SO3<double>::matrix)
-				.def("quaternion", &SO3<double>::quaternion)
-				.def("exp", &SO3<double>::exp)
-				.def("log", &SO3<double>::log)
-				.def("adjoint", &SO3<double>::adjoint)
-				.def("isApprox", &SO3<double>::isApprox)
-				.def_static("identity", &SO3<double>::identity)
-				.def_static("hat", &SO3<double>::hat)
-				.def_static("vee", &SO3<double>::vee)
-				.def("act", static_cast<typename SO3<double>::Vector (SO3<double>::*)(
-									const typename SO3<double>::Vector &) const>(&SO3<double>::computeAction));
+		py::class_<SO3<double>>(m, "SO3", "3D rotation group SO(3)")
+				.def(py::init<>(), "Default constructor (identity rotation)")
+				.def(py::init<double, const Eigen::Vector3d &>(), "Construct from angle-axis representation", py::arg("angle"), py::arg("axis"))
+				.def(py::init<const Eigen::Quaterniond &>(), "Construct from quaternion", py::arg("quaternion"))
+				.def(py::init<const Eigen::Matrix3d &>(), "Construct from rotation matrix", py::arg("matrix"))
+				.def("__mul__", &SO3<double>::operator*, "Group composition")
+				.def("inverse", &SO3<double>::inverse, "Compute inverse rotation")
+				.def("matrix", &SO3<double>::matrix, "Get 3x3 rotation matrix")
+				.def("quaternion", &SO3<double>::quaternion, "Get quaternion representation")
+				.def_static("exp", &SO3<double>::exp, "Exponential map from so(3) to SO(3)", py::arg("omega"))
+				.def("log", &SO3<double>::log, "Logarithmic map from SO(3) to so(3)")
+				.def("adjoint", &SO3<double>::adjoint, "Adjoint representation (rotation matrix for SO(3))")
+				.def("isApprox", &SO3<double>::isApprox, "Check approximate equality", py::arg("other"), py::arg("eps") = 1e-12)
+				.def_static("identity", &SO3<double>::identity, "Get identity element")
+				.def_static("hat", &SO3<double>::hat, "Hat operator: R^3 -> so(3) matrix", py::arg("omega"))
+				.def_static("vee", &SO3<double>::vee, "Vee operator: so(3) matrix -> R^3", py::arg("matrix"))
+				.def("act", [](const SO3<double>& self, const Eigen::Vector3d& point) {
+					return self.act(point);
+				}, "Apply rotation to a 3D point", py::arg("point"))
+				.def("__repr__", [](const SO3<double>& self) {
+					std::ostringstream oss;
+					const auto quat = self.quaternion();
+					oss << "SO3(quat=[" << quat.w() << ", " << quat.x() << ", " << quat.y() << ", " << quat.z() << "])";
+					return oss.str();
+				})
+				.def_static("random", [](py::object seed = py::none()) {
+					static std::random_device rd;
+					static std::mt19937 gen(rd());
+					if (!seed.is_none()) {
+						gen.seed(seed.cast<unsigned int>());
+					}
+					return SO3<double>::computeRandom(gen);
+				}, "Generate random SO(3) element", py::arg("seed") = py::none());
 	}
 
 	void moduleAddSE2(py::module &m) {
 		// SE2 bindings
-		py::class_<SE2<double>>(m, "SE2")
-				.def(py::init<>())
-				.def(py::init<const SO2<double> &, const Eigen::Vector2d &>())
-				.def("__mul__", &SE2<double>::operator*)
-				.def("inverse", &SE2<double>::inverse)
-				.def("matrix", &SE2<double>::matrix)
-				.def("rotation", static_cast<const SO2<double> &(SE2<double>::*) () const>(&SE2<double>::rotation))
+		py::class_<SE2<double>>(m, "SE2", "2D Euclidean group SE(2)")
+				.def(py::init<>(), "Default constructor (identity transformation)")
+				.def(py::init<const SO2<double> &, const Eigen::Vector2d &>(), "Construct from rotation and translation", py::arg("rotation"), py::arg("translation"))
+				.def(py::init<const Eigen::Matrix3d &>(), "Construct from 3x3 transformation matrix", py::arg("matrix"))
+				.def("__mul__", &SE2<double>::operator*, "Group composition")
+				.def("inverse", &SE2<double>::inverse, "Compute inverse transformation")
+				.def("matrix", &SE2<double>::matrix, "Get 3x3 transformation matrix")
+				.def("rotation", static_cast<const SO2<double> &(SE2<double>::*) () const>(&SE2<double>::rotation), "Get rotation part")
 				.def("translation", static_cast<const typename SE2<double>::Vector2 &(SE2<double>::*) () const>(
-											&SE2<double>::translation))
-				.def("exp", &SE2<double>::exp)
-				.def("log", &SE2<double>::log)
-				.def("adjoint", &SE2<double>::adjoint)
-				.def("isApprox", &SE2<double>::isApprox)
-				.def_static("identity", &SE2<double>::identity)
-				.def("act", static_cast<typename SE2<double>::Vector2 (SE2<double>::*)(
-									const typename SE2<double>::Vector2 &) const>(&SE2<double>::act));
+											&SE2<double>::translation), "Get translation part")
+				.def_static("exp", &SE2<double>::exp, "Exponential map from se(2) to SE(2)", py::arg("xi"))
+				.def("log", &SE2<double>::log, "Logarithmic map from SE(2) to se(2)")
+				.def("adjoint", &SE2<double>::adjoint, "Adjoint representation")
+				.def("isApprox", &SE2<double>::isApprox, "Check approximate equality", py::arg("other"), py::arg("eps") = 1e-12)
+				.def_static("identity", &SE2<double>::identity, "Get identity element")
+				.def("act", [](const SE2<double>& self, const Eigen::Vector2d& point) {
+					return self.act(point);
+				}, "Apply transformation to a 2D point", py::arg("point"))
+				.def("__repr__", [](const SE2<double>& self) {
+					std::ostringstream oss;
+					const auto& rot = self.rotation();
+					const auto& trans = self.translation();
+					oss << "SE2(angle=" << rot.angle() << " rad, translation=[" << trans.x() << ", " << trans.y() << "])";
+					return oss.str();
+				})
+				.def_static("random", [](py::object seed = py::none()) {
+					static std::random_device rd;
+					static std::mt19937 gen(rd());
+					if (!seed.is_none()) {
+						gen.seed(seed.cast<unsigned int>());
+					}
+					return SE2<double>::computeRandom(gen);
+				}, "Generate random SE(2) element", py::arg("seed") = py::none());
 	}
 
 	void moduleAddSE3(py::module &m) {
 		// SE3 bindings with enhanced functionality
-		py::class_<SE3<double>>(m, "SE3")
-				.def(py::init<>())
-				.def(py::init<const SO3<double> &, const Eigen::Vector3d &>())
-				.def(py::init<const Eigen::Matrix4d &>())
-				.def("__mul__", &SE3<double>::operator*)
-				.def("inverse", &SE3<double>::inverse)
-				.def("matrix", &SE3<double>::matrix)
-				.def("rotation", static_cast<const SO3<double> &(SE3<double>::*) () const>(&SE3<double>::rotation))
+		py::class_<SE3<double>>(m, "SE3", "3D Euclidean group SE(3)")
+				.def(py::init<>(), "Default constructor (identity transformation)")
+				.def(py::init<const SO3<double> &, const Eigen::Vector3d &>(), "Construct from rotation and translation", py::arg("rotation"), py::arg("translation"))
+				.def(py::init<const Eigen::Matrix4d &>(), "Construct from 4x4 transformation matrix", py::arg("matrix"))
+				.def("__mul__", &SE3<double>::operator*, "Group composition")
+				.def("inverse", &SE3<double>::inverse, "Compute inverse transformation")
+				.def("matrix", &SE3<double>::matrix, "Get 4x4 transformation matrix")
+				.def("rotation", static_cast<const SO3<double> &(SE3<double>::*) () const>(&SE3<double>::rotation), "Get rotation part")
 				.def("translation", static_cast<const typename SE3<double>::Vector3 &(SE3<double>::*) () const>(
-											&SE3<double>::translation))
-				.def("exp", &SE3<double>::exp)
-				.def("log", &SE3<double>::log)
-				.def("adjoint", &SE3<double>::adjoint)
-				.def("isApprox", &SE3<double>::isApprox)
-				.def_static("identity", &SE3<double>::Identity)
-				// Add the hat operator (maps 6D vector to 4x4 matrix)
-				.def_static(
-						"hat", [](const Eigen::Matrix<double, 6, 1> &xi) { return dualMatrix<double>(xi); },
-						"Map 6D vector to 4x4 matrix representation (hat operator)")
-				// Add co-adjoint (transpose of adjoint)
-				.def(
-						"co_adjoint", [](const SE3<double> &self) { return self.adjoint().transpose(); },
-						"Co-adjoint representation (transpose of adjoint)")
-				.def(
-						"coadjoint", [](const SE3<double> &self) { return self.adjoint().transpose(); },
-						"Co-adjoint representation (alias for co_adjoint)")
-				.def("act", static_cast<typename SE3<double>::Vector3 (SE3<double>::*)(
-									const typename SE3<double>::Vector3 &) const>(&SE3<double>::act))
-				// Baker-Campbell-Hausdorff formula
-				.def_static("BCH", &SE3<double>::BCH, "Baker-Campbell-Hausdorff formula");
+											&SE3<double>::translation), "Get translation part")
+				.def_static("exp", &SE3<double>::exp, "Exponential map from se(3) to SE(3)", py::arg("xi"))
+				.def("log", &SE3<double>::log, "Logarithmic map from SE(3) to se(3)")
+				.def("adjoint", &SE3<double>::adjoint, "Adjoint representation")
+				.def("isApprox", &SE3<double>::isApprox, "Check approximate equality", py::arg("other"), py::arg("eps") = 1e-12)
+				.def_static("identity", &SE3<double>::identity, "Get identity element")
+				.def("act", [](const SE3<double>& self, const Eigen::Vector3d& point) {
+					return self.act(point);
+				}, "Apply transformation to a 3D point", py::arg("point"))
+				.def("__repr__", [](const SE3<double>& self) {
+					std::ostringstream oss;
+					const auto& rot = self.rotation().quaternion();
+					const auto& trans = self.translation();
+					oss << "SE3(quat=[" << rot.w() << ", " << rot.x() << ", " << rot.y() << ", " << rot.z() << "], translation=[" << trans.x() << ", " << trans.y() << ", " << trans.z() << "])";
+					return oss.str();
+				})
+				.def_static("random", [](py::object seed = py::none()) {
+					static std::random_device rd;
+					static std::mt19937 gen(rd());
+					if (!seed.is_none()) {
+						gen.seed(seed.cast<unsigned int>());
+					}
+					return SE3<double>::computeRandom(gen);
+				}, "Generate random SE(3) element", py::arg("seed") = py::none());
 	}
 
 	void moduleAddSGal3(py::module &m) {
@@ -725,4 +779,3 @@ namespace sofapython3 {
 	}
 
 } // namespace sofapython3
-
