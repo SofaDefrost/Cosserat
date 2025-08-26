@@ -78,7 +78,7 @@ def addHeader(parent_node, multithreading=False, inverse=False, is_constrained=F
             parent_node.addObject('QPInverseProblemSolver', name='ConstraintSolver', tolerance=1e-8, maxIterations=100,
                                   multithreading=multithreading, epsilon=1)
         else:
-            parent_node.addObject('GenericConstraintSolver', name='ConstraintSolver', tolerance=1e-8, maxIterations=100,
+            parent_node.addObject('ProjectedGaussSeidelConstraintSolver', name='ConstraintSolver', tolerance=1e-8, maxIterations=100,
                                   multithreading=multithreading)
 
     if is_contact:

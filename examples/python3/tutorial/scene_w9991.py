@@ -82,7 +82,7 @@ def createScene(root_node):
 
     root_node.addObject('FreeMotionAnimationLoop')
     root_node.addObject('EulerImplicitSolver', firstOrder="0", rayleighStiffness="0.0", rayleighMass="0.0")
-    root_node.addObject('GenericConstraintSolver', maxIterations="500", tolerance="1e-20", computeConstraintForces=1, printLog="0")
+    root_node.addObject('ProjectedGaussSeidelConstraintSolver', maxIterations="500", tolerance="1e-20", computeConstraintForces=1, printLog="0")
     root_node.addObject('SparseLDLSolver', name="solver", template="CompressedRowSparseMatrixd")
 
     base_node = _add_rigid_base(root_node)
