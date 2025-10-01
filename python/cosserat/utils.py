@@ -334,8 +334,8 @@ def computeNegativeAlongXDistanceBetweenPoints(constraintPointPos: List[np.ndarr
 
 def create_rigid_node(parent_node: Sofa.Core.Node,
                      name: str,
-                     translation: List[float],
-                     rotation: List[float],
+                     translation = [0.0, 0.0, 0.0] ,
+                     rotation = [0.0, 0.0, 0.0] ,
                      positions: List[List[float]] = None) -> Sofa.Core.Node:
     """
     Create a rigid body node with mechanical object.

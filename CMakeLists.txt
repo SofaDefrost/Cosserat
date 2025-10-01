@@ -67,6 +67,8 @@ set(HEADER_FILES
     ${SRC_ROOT_DIR}/forcefield/standard/BaseBeamForceField.inl
     ${SRC_ROOT_DIR}/forcefield/standard/BeamHookeLawForceField.h
     ${SRC_ROOT_DIR}/forcefield/standard/BeamHookeLawForceField.inl
+    ${SRC_ROOT_DIR}/forcefield/rigid/BeamHookeLawForceFieldRigid.h
+    ${SRC_ROOT_DIR}/forcefield/rigid/BeamHookeLawForceFieldRigid.inl
     ${SRC_ROOT_DIR}/forcefield/base/HookeSeratBaseForceField.h
     ${SRC_ROOT_DIR}/forcefield/base/HookeSeratBaseForceField.inl
     ${SRC_ROOT_DIR}/forcefield/standard/HookeSeratPCSForceField.h
@@ -79,7 +81,7 @@ set(HEADER_FILES
     ${SRC_ROOT_DIR}/mapping/LegendrePolynomialsMapping.inl
     ${SRC_ROOT_DIR}/constraint/CosseratNeedleSlidingConstraint.h
     ${SRC_ROOT_DIR}/constraint/CosseratNeedleSlidingConstraint.inl
-    )
+)
 set(SOURCE_FILES
     ${SRC_ROOT_DIR}/initCosserat.cpp
     ${SRC_ROOT_DIR}/mapping/BaseCosseratMapping.cpp
@@ -93,6 +95,7 @@ set(SOURCE_FILES
     ${SRC_ROOT_DIR}/engine/PointsManager.cpp
     ${SRC_ROOT_DIR}/forcefield/standard/BaseBeamForceField.cpp
     ${SRC_ROOT_DIR}/forcefield/standard/BeamHookeLawForceField.cpp
+    ${SRC_ROOT_DIR}/forcefield/rigid/BeamHookeLawForceFieldRigid.cpp
     ${SRC_ROOT_DIR}/forcefield/base/HookeSeratBaseForceField.cpp
     ${SRC_ROOT_DIR}/forcefield/standard/HookeSeratPCSForceField.cpp
     ${SRC_ROOT_DIR}/forcefield/experimental/CosseratInternalActuation.cpp
@@ -104,23 +107,23 @@ set(SOURCE_FILES
 
 sofa_find_package(SoftRobots QUIET)
 if(SoftRobots_FOUND)
-    message("-- Found dependency : 'SoftRobots' plugin .")
+  message("-- Found dependency : 'SoftRobots' plugin .")
 
-    set(COSSERAT_USES_SOFTROBOTS ON)
-    list(APPEND HEADER_FILES
+  set(COSSERAT_USES_SOFTROBOTS ON)
+  list(APPEND HEADER_FILES
         ${SRC_ROOT_DIR}/constraint/CosseratActuatorConstraint.h
         ${SRC_ROOT_DIR}/constraint/CosseratActuatorConstraint.inl
 
         ${SRC_ROOT_DIR}/constraint/QPSlidingConstraint.h
         ${SRC_ROOT_DIR}/constraint/QPSlidingConstraint.inl
-        )
-    list(APPEND SOURCE_FILES
+  )
+  list(APPEND SOURCE_FILES
         ${SRC_ROOT_DIR}/constraint/CosseratActuatorConstraint.cpp
 
         ${SRC_ROOT_DIR}/constraint/QPSlidingConstraint.cpp
-        )
+  )
 else()
-    message("-- SoftRobots dependency has not been found, some features like QPSlidingConstraint and CosseratActuatorConstraint will not be available. ")
+  message("-- SoftRobots dependency has not been found, some features like QPSlidingConstraint and CosseratActuatorConstraint will not be available. ")
 endif()
 
 
@@ -128,7 +131,7 @@ file(GLOB_RECURSE RESOURCE_FILES  "*.md" "*.psl" "*.py" "*.pyscn" "*.py3scn" "*.
 
 
 if(WIN32)
-    add_definitions(-D_WINSOCKAPI_)
+  add_definitions(-D_WINSOCKAPI_)
 endif()
 
 
@@ -143,16 +146,16 @@ target_link_libraries(${PROJECT_NAME}
 
 
 if(Sofa.GL_FOUND)
-    target_link_libraries(${PROJECT_NAME} Sofa.GL)
+  target_link_libraries(${PROJECT_NAME} Sofa.GL)
 endif()
 
 if(SoftRobots_FOUND)
-    target_link_libraries(${PROJECT_NAME} SoftRobots)
+  target_link_libraries(${PROJECT_NAME} SoftRobots)
 endif()
 
 find_package(SofaPython3 REQUIRED)
 if (SofaPython3_FOUND)
-    add_subdirectory(python/Binding)
+  add_subdirectory(python/Binding)
 endif()
 
 ## Install rules for the library and headers; CMake package configurations files
@@ -164,27 +167,27 @@ sofa_create_package_with_targets(
     INCLUDE_INSTALL_DIR ${PROJECT_NAME}
     EXAMPLE_INSTALL_DIR "tutorials"
     RELOCATABLE "plugins"
-    )
+)
 
 
 # Tests
 # If SOFA_BUILD_TESTS exists and is OFF, then these tests will be auto-disabled
 cmake_dependent_option(COSSERAT_BUILD_TESTS "Compile the tests" ON "SOFA_BUILD_TESTS OR NOT DEFINED SOFA_BUILD_TESTS" OFF)
 if(COSSERAT_BUILD_TESTS)
-    add_subdirectory(Tests)
-    # Tests for liegroups are in their own directory
-    add_subdirectory(src/liegroups/Tests)
+  add_subdirectory(Tests)
+  # Tests for liegroups are in their own directory
+  add_subdirectory(src/liegroups/Tests)
 endif()
 
 # Benchmarks
 # Only build benchmarks if Google Benchmark is available
 find_package(benchmark QUIET)
 if(benchmark_FOUND)
-    message(STATUS "Google Benchmark found, enabling benchmark support")
-    cmake_dependent_option(COSSERAT_BUILD_BENCHMARKS "Compile the benchmarks" ON "COSSERAT_BUILD_TESTS" OFF)
+  message(STATUS "Google Benchmark found, enabling benchmark support")
+  cmake_dependent_option(COSSERAT_BUILD_BENCHMARKS "Compile the benchmarks" ON "COSSERAT_BUILD_TESTS" OFF)
 else()
-    message(STATUS "Google Benchmark not found, benchmarks will be disabled")
-    set(COSSERAT_BUILD_BENCHMARKS OFF CACHE BOOL "Compile the benchmarks" FORCE)
+  message(STATUS "Google Benchmark not found, benchmarks will be disabled")
+  set(COSSERAT_BUILD_BENCHMARKS OFF CACHE BOOL "Compile the benchmarks" FORCE)
 endif()
 
 

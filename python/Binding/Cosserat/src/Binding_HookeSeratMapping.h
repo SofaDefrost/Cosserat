@@ -1,6 +1,6 @@
 /******************************************************************************
 *                 SOFA, Simulation Open-Framework Architecture                *
-*                    (c) 2021 INRIA, USTL, UJF, CNRS, MGH                     *
+*                    (c) 2021 INRIA, USTL, UJF, CNRS, MGH                    *
 *                                                                             *
 * This program is free software; you can redistribute it and/or modify it     *
 * under the terms of the GNU Lesser General Public License as published by    *
@@ -17,21 +17,11 @@
 *******************************************************************************
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
+#pragma once
 
 #include <pybind11/pybind11.h>
-#include "Binding_PointsManager.h"
-#include "Binding_HookeSeratMapping.h"
-
-
-namespace py { using namespace pybind11; }
 
 namespace sofapython3
 {
-
-PYBIND11_MODULE(Cosserat, m)
-{
-    moduleAddPointsManager(m);
-    moduleAddHookeSeratMapping(m);
+    void moduleAddHookeSeratMapping(pybind11::module& m);
 }
-
-} // namespace sofapython3

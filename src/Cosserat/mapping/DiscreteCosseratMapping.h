@@ -29,6 +29,7 @@ namespace Cosserat::mapping {
 	namespace {
 		using Mat3x6 = sofa::type::Mat<3, 6, SReal>;
 		using Mat6x3 = sofa::type::Mat<6, 3, SReal>;
+		using Mat3x3 = sofa::type::Mat<3, 3, SReal>;
 		using sofa::Data;
 		using sofa::type::Mat4x4;
 		using sofa::type::Mat6x6;

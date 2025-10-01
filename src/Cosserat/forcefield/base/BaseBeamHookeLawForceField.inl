@@ -121,7 +121,7 @@ BaseBeamHookeLawForceField<DataTypes>::getRelativeRotation(size_t index) const
 }
 
 } // namespace sofa::component::forcefield
- * (different properties for different segments).
+ /* (different properties for different segments).
  */
 
 template<typename DataTypes>

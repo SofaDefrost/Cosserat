@@ -743,19 +743,149 @@ namespace sofapython3 {
 	}
 
 	void moduleAddSGal3(py::module &m) {
-		// SGal3 bindings (placeholder for now)
-		// Implementation depends on the actual SGal3 class structure
+		// SGal3 bindings
+		py::class_<SGal3<double>>(m, "SGal3", "Special Galilean group SGal(3)")
+				.def(py::init<>(), "Default constructor (identity transformation)")
+				.def(py::init<const SE3<double> &, const Eigen::Vector3d &, double>(), "Construct from pose, velocity, and time", py::arg("pose"), py::arg("velocity"), py::arg("time"))
+				.def(py::init<const SO3<double> &, const Eigen::Vector3d &, const Eigen::Vector3d &, double>(), "Construct from rotation, position, velocity, and time", py::arg("rotation"), py::arg("position"), py::arg("velocity"), py::arg("time"))
+				.def("inverse", &SGal3<double>::inverse, "Compute inverse transformation")
+				.def("matrix", &SGal3<double>::extendedMatrix, "Get 6x6 extended transformation matrix")
+				.def("pose", static_cast<const SE3<double> &(SGal3<double>::*)() const>(&SGal3<double>::pose), "Get pose part")
+				.def("velocity", static_cast<const Eigen::Vector3d &(SGal3<double>::*)() const>(&SGal3<double>::velocity), "Get velocity part")
+				.def("time", static_cast<const double &(SGal3<double>::*)() const>(&SGal3<double>::time), "Get time part")
+				.def_static("exp", &SGal3<double>::exp, "Exponential map from sgal(3) to SGal(3)", py::arg("xi"))
+				.def("log", &SGal3<double>::log, "Logarithmic map from SGal(3) to sgal(3)")
+				.def("adjoint", &SGal3<double>::adjoint, "Adjoint representation")
+				.def("isApprox", &SGal3<double>::isApprox, "Check approximate equality", py::arg("other"), py::arg("eps") = 1e-12)
+				.def_static("identity", &SGal3<double>::identity, "Get identity element")
+				.def("act", [](const SGal3<double>& self, const Eigen::Matrix<double, 10, 1>& point_vel_time) {
+					return self.act(point_vel_time);
+				}, "Apply transformation to a 10D point-velocity-time vector", py::arg("point_vel_time"))
+				.def("__repr__", [](const SGal3<double>& self) {
+					std::ostringstream oss;
+					const auto& pose = self.pose();
+					const auto& vel = self.velocity();
+					oss << "SGal3(pose=" << pose << ", velocity=[" << vel.x() << ", " << vel.y() << ", " << vel.z() << "], time=" << self.time() << ")";
+					return oss.str();
+				})
+				.def_static("random", [](py::object seed = py::none()) {
+					static std::random_device rd;
+					static std::mt19937 gen(rd());
+					if (!seed.is_none()) {
+						gen.seed(seed.cast<unsigned int>());
+					}
+					return SGal3<double>::computeRandom(gen);
+				}, "Generate random SGal3 element", py::arg("seed") = py::none());
 	}
 
 	void moduleAddSE23(py::module &m) {
-		// SE23 bindings (placeholder for now)
-		// Implementation depends on the actual SE23 class structure
+		// SE23 bindings
+		py::class_<SE23<double>>(m, "SE23", "Extended 3D Euclidean group SE_2(3)")
+				.def(py::init<>(), "Default constructor (identity transformation)")
+				.def(py::init<const SE3<double> &, const Eigen::Vector3d &>(), "Construct from pose and velocity", py::arg("pose"), py::arg("velocity"))
+				.def(py::init<const SO3<double> &, const Eigen::Vector3d &, const Eigen::Vector3d &>(), "Construct from rotation, position, and velocity", py::arg("rotation"), py::arg("position"), py::arg("velocity"))
+				.def("inverse", &SE23<double>::inverse, "Compute inverse transformation")
+				.def("matrix", &SE23<double>::extendedMatrix, "Get 5x5 extended transformation matrix")
+				.def("pose", static_cast<const SE3<double> &(SE23<double>::*)() const>(&SE23<double>::pose), "Get pose part")
+				.def("velocity", static_cast<const Eigen::Vector3d &(SE23<double>::*)() const>(&SE23<double>::velocity), "Get velocity part")
+				.def_static("exp", &SE23<double>::exp, "Exponential map from se_2(3) to SE_2(3)", py::arg("xi"))
+				.def("log", &SE23<double>::log, "Logarithmic map from SE_2(3) to se_2(3)")
+				.def("adjoint", &SE23<double>::adjoint, "Adjoint representation")
+				.def("isApprox", &SE23<double>::isApprox, "Check approximate equality", py::arg("other"), py::arg("eps") = 1e-12)
+				.def_static("identity", &SE23<double>::identity, "Get identity element")
+				.def("act", [](const SE23<double>& self, const Eigen::Matrix<double, 6, 1>& point_vel) {
+					return self.act(point_vel);
+				}, "Apply transformation to a 6D point-velocity vector", py::arg("point_vel"))
+				.def("__repr__", [](const SE23<double>& self) {
+					std::ostringstream oss;
+					const auto& pose = self.pose();
+					const auto& vel = self.velocity();
+					oss << "SE23(pose=" << pose << ", velocity=[" << vel.x() << ", " << vel.y() << ", " << vel.z() << "])";
+					return oss.str();
+				})
+				.def_static("random", [](py::object seed = py::none()) {
+					static std::random_device rd;
+					static std::mt19937 gen(rd());
+					if (!seed.is_none()) {
+						gen.seed(seed.cast<unsigned int>());
+					}
+					return SE23<double>::computeRandom(gen);
+				}, "Generate random SE23 element", py::arg("seed") = py::none());
 	}
 
 	void moduleAddBundle(py::module &m) {
-		// Bundle bindings (placeholder for now)
-		// This would require template instantiation for specific Bundle types
-		// For example: Bundle<SE3<double>, RealSpace<double, 6>>
+		// SE3_Velocity Bundle (SE3 + R^6 velocity)
+		using SE3_Velocity_double = Bundle<SE3<double>, RealSpace<double, 6>>;
+		py::class_<SE3_Velocity_double>(m, "SE3_Velocity", "SE(3) x R^6 bundle for pose with 6D velocity")
+				.def(py::init<>(), "Default constructor (identity)")
+				.def(py::init<const SE3<double> &, const RealSpace<double, 6> &>(), "Construct from SE(3) and R^6", py::arg("pose"), py::arg("velocity"))
+				.def("__mul__", &SE3_Velocity_double::operator*, "Group composition")
+				.def("inverse", &SE3_Velocity_double::inverse, "Compute inverse")
+				.def("log", &SE3_Velocity_double::log, "Logarithmic map to algebra")
+				.def_static("exp", [](const SE3_Velocity_double::TangentVector& xi) {
+					return SE3_Velocity_double::identity().exp(xi);
+				}, "Exponential map from algebra", py::arg("xi"))
+				.def("adjoint", &SE3_Velocity_double::adjoint, "Adjoint representation")
+				.def("isApprox", &SE3_Velocity_double::isApprox, "Check approximate equality", py::arg("other"), py::arg("eps") = 1e-12)
+				.def_static("identity", []() { return SE3_Velocity_double::identity(); }, "Get identity element")
+				.def("get_pose", [](const SE3_Velocity_double& self) { return self.get<0>(); }, "Get the SE(3) component")
+				.def("get_velocity", [](const SE3_Velocity_double& self) { return self.get<1>(); }, "Get the R^6 component")
+				.def("__repr__", [](const SE3_Velocity_double& self) {
+					std::ostringstream oss;
+					oss << "SE3_Velocity(pose=" << self.get<0>() << ", velocity=" << self.get<1>() << ")";
+					return oss.str();
+				});
+
+		// SE2_Velocity Bundle (SE2 + R^3 velocity)
+		using SE2_Velocity_double = Bundle<SE2<double>, RealSpace<double, 3>>;
+		py::class_<SE2_Velocity_double>(m, "SE2_Velocity", "SE(2) x R^3 bundle for 2D pose with 3D velocity")
+				.def(py::init<>(), "Default constructor (identity)")
+				.def(py::init<const SE2<double> &, const RealSpace<double, 3> &>(), "Construct from SE(2) and R^3", py::arg("pose"), py::arg("velocity"))
+				.def("__mul__", &SE2_Velocity_double::operator*, "Group composition")
+				.def("inverse", &SE2_Velocity_double::inverse, "Compute inverse")
+				.def("log", &SE2_Velocity_double::log, "Logarithmic map to algebra")
+				.def_static("exp", [](const SE2_Velocity_double::TangentVector& xi) {
+					return SE2_Velocity_double::identity().exp(xi);
+				}, "Exponential map from algebra", py::arg("xi"))
+				.def("adjoint", &SE2_Velocity_double::adjoint, "Adjoint representation")
+				.def("isApprox", &SE2_Velocity_double::isApprox, "Check approximate equality", py::arg("other"), py::arg("eps") = 1e-12)
+				.def_static("identity", []() { return SE2_Velocity_double::identity(); }, "Get identity element")
+				.def("get_pose", [](const SE2_Velocity_double& self) { return self.get<0>(); }, "Get the SE(2) component")
+				.def("get_velocity", [](const SE2_Velocity_double& self) { return self.get<1>(); }, "Get the R^3 component")
+				.def("__repr__", [](const SE2_Velocity_double& self) {
+					std::ostringstream oss;
+					oss << "SE2_Velocity(pose=" << self.get<0>() << ", velocity=" << self.get<1>() << ")";
+					return oss.str();
+				});
+	}
+
+	void moduleAddRealSpace(py::module &m) {
+		// RealSpace bindings
+		py::class_<RealSpace<double, 3>>(m, "R3", "3D real space R^3")
+				.def(py::init<>(), "Default constructor (zero vector)")
+				.def(py::init<const Eigen::Vector3d &>(), "Construct from 3D vector", py::arg("vector"))
+				.def("__add__", [](const RealSpace<double, 3>& self, const RealSpace<double, 3>& other) {
+					return self + other;
+				}, "Vector addition")
+				.def("__neg__", [](const RealSpace<double, 3>& self) {
+					return -self;
+				}, "Vector negation")
+				.def("vector", [](const RealSpace<double, 3>& self) {
+					return self.computeLog();
+				}, "Get the underlying vector");
+
+		py::class_<RealSpace<double, 6>>(m, "R6", "6D real space R^6")
+				.def(py::init<>(), "Default constructor (zero vector)")
+				.def(py::init<const Eigen::Matrix<double, 6, 1> &>(), "Construct from 6D vector", py::arg("vector"))
+				.def("__add__", [](const RealSpace<double, 6>& self, const RealSpace<double, 6>& other) {
+					return self + other;
+				}, "Vector addition")
+				.def("__neg__", [](const RealSpace<double, 6>& self) {
+					return -self;
+				}, "Vector negation")
+				.def("vector", [](const RealSpace<double, 6>& self) {
+					return self.computeLog();
+				}, "Get the underlying vector");
 	}
 
 	void moduleAddLieGroupUtils(py::module &m) {
@@ -774,6 +904,7 @@ namespace sofapython3 {
 		moduleAddSE3(m);
 		moduleAddSGal3(m);
 		moduleAddSE23(m);
+		moduleAddRealSpace(m);
 		moduleAddBundle(m);
 		moduleAddLieGroupUtils(m);
 	}

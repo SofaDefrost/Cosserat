@@ -91,6 +91,8 @@ namespace Cosserat::mapping {
 		if (dataVecOutPos.empty() || dataVecIn1Pos.empty() || dataVecIn2Pos.empty())
 			return;
 
+		msg_info("DiscreteCosseratMapping") << " ########## The Apply (Position) Function is called ########";
+
 		// Checking the componentState, to trigger a callback if other data fields (specifically
 		// d_curv_abs_section and d_curv_abs_frames) were changed dynamically
 		if (this->d_componentState.getValue() != sofa::core::objectmodel::ComponentState::Valid)
@@ -100,10 +102,24 @@ namespace Cosserat::mapping {
 		const sofa::VecCoord_t<In1> &in1 = dataVecIn1Pos[0]->getValue();
 		const sofa::VecCoord_t<In2> &in2 = dataVecIn2Pos[0]->getValue();
 
+		// Simple verification, is the pos and state are same ?
+		const sofa::VecCoord_t<Out> &pos_r =
+				m_global_frames->read(sofa::core::vec_id::read_access::position)->getValue();
+
+		// Validate entries
 		const auto sz = d_curv_abs_frames.getValue().size();
+		if (sz != m_indices_vectors.size() || sz != m_frames_exponential_se3_vectors.size()) {
+			msg_error() << "Size mismatch in transformation vectors";
+			return;
+		}
+
 		sofa::VecCoord_t<Out> &out = *dataVecOutPos[0]->beginEdit(); // frames states
 		out.resize(sz);
 		const auto baseIndex = d_baseIndex.getValue();
+		if (baseIndex >= in2.size()) {
+			msg_error("DiscreteCosseratMapping") << "=== !!!! baseIndex out of bounds !!! ===";
+			return;
+		}
 
 		// update the Exponential matrices according to new deformation
 		// Here we update m_framesExponentialSE3Vectors & m_nodesExponentialSE3Vectors
@@ -111,45 +127,41 @@ namespace Cosserat::mapping {
 		// coordinate.
 		this->updateExponentialSE3(in1);
 
-		/* Apply the transformation to go from cossserat to SOFA frame*/
+		/* Apply the transformation to go from Cosserat to SOFA frame*/
 		const auto frame0 = Frame(In2::getCPos(in2[baseIndex]), In2::getCRot(in2[baseIndex]));
 
 		// Cache the printLog value out of the loop, otherwise it will trigger a graph
 		// update at every iteration.
 		bool doPrintLog = this->f_printLog.getValue();
+		Frame current_frame;
 		for (unsigned int i = 0; i < sz; i++) {
-			auto frame = frame0;
-			std::cout << "frame "<< i <<std::endl;
+			current_frame = frame0;
+			msg_info("DiscreteCosseratMapping") << "\n----------------------------------------------";
+			msg_info("DiscreteCosseratMapping") << "state pos : " << out[i];
+			msg_info("DiscreteCosseratMapping") << "global pos : " << pos_r[i] ;
+			msg_info("DiscreteCosseratMapping") << " ---------------------------------------------- \n";
+
 			for (unsigned int u = 0; u < m_indices_vectors[i]; u++) {
-				std::cout << "section "<< u << std::endl;
-				std::cout << "Expo node : " << m_nodes_exponential_se3_vectors[u] <<std::endl;
-				std::cout<< "current frame : "<< frame << std::endl;
-				frame *= m_nodes_exponential_se3_vectors[u]; // frame = gX(L_0)*...*gX(L_{n-1})
+				// frame = g(L_0)*...*g(L_{i-1})
+				current_frame *= m_nodes_exponential_se3_vectors[u];
 			}
-			frame *= m_frames_exponential_se3_vectors[i]; // frame*gX(x)
+			current_frame *= m_frames_exponential_se3_vectors[i]; // frame*gX(x)
 
-			// This is a lazy printing approach, so there is no time consuming action in
-			// the core of the loop.
-			msg_info_when(doPrintLog) << "Frame  : " << i << " = " << frame;
+			msg_info_when(doPrintLog) << "Frame  : " << i << " = " << current_frame;
 
-			Vec3 origin = frame.getOrigin();
-			Quat orientation = frame.getOrientation();
-			out[i] = sofa::Coord_t<Out>(origin, orientation);
+			out[i] = sofa::Coord_t<Out>(current_frame.getOrigin(), current_frame.getOrientation());
 		}
-
 		// If the printLog attribute is checked then print distance between out
 		// frames.
 		if (doPrintLog) {
-			std::stringstream tmp;
 			for (unsigned int i = 0; i < out.size() - 1; i++) {
-				Vec3 diff = out[i + 1].getCenter() - out[i].getCenter();
-				tmp << "dist " << i << "  : " << diff.norm() << msgendl;
+				SReal dist = (out[i + 1].getCenter() - out[i].getCenter()).norm();
+				msg_info("DiscreteCosseratMapping") << "Distance " << i << ": " << dist;
 			}
-			msg_info() << tmp.str();
 		}
 
 		// Debug output if needed
-		if (this->f_printLog.getValue()) {
+		if (doPrintLog) {
 			displayOutputFrames(out, "apply - computed output frames");
 			displayTransformMatrices("apply - transformation matrices");
 		}
@@ -203,91 +215,95 @@ namespace Cosserat::mapping {
 		if (this->d_componentState.getValue() != sofa::core::objectmodel::ComponentState::Valid)
 			return;
 		if (d_debug.getValue())
-			std::cout << " ########## ApplyJ Function ########" << std::endl;
-		const sofa::VecDeriv_t<In1> &in1_vel = dataVecIn1Vel[0]->getValue();
-		const sofa::VecDeriv_t<In2> &in2_vel = dataVecIn2Vel[0]->getValue();
-		sofa::VecDeriv_t<Out> &out_vel = *dataVecOutVel[0]->beginEdit();
-		const auto baseIndex = d_baseIndex.getValue();
+			std::cout << " ########## ApplyJ (Vel) Function g^{-1}.dot{g} ########" << std::endl;
+
+		const sofa::VecDeriv_t<In1> &nodes_velocity = dataVecIn1Vel[0]->getValue();
+		const sofa::VecDeriv_t<In2> &base_velocity = dataVecIn2Vel[0]->getValue();
+		sofa::VecDeriv_t<Out> &out_frames_velocity = *dataVecOutVel[0]->beginEdit();
+
+		const auto base_index = d_baseIndex.getValue();
 
 		// Curv abscissa of nodes and frames
 		sofa::helper::ReadAccessor<sofa::Data<vector<double>>> curv_abs_section = d_curv_abs_section;
 		sofa::helper::ReadAccessor<sofa::Data<vector<double>>> curv_abs_frames = d_curv_abs_frames;
 
-		const sofa::VecDeriv_t<In1> &inDeform =
+		const sofa::VecDeriv_t<In1> &strains_states =
 				m_strain_state->read(sofa::core::vec_id::read_access::position)->getValue(); // strains
-		//1. Compute the tangent Exponential SE3 vectors
-		this->updateTangExpSE3(inDeform);
+		// 1. Compute the tangent Exponential SE3 vectors
+		this->updateTangExpSE3(strains_states);
 
-		//2. Get base velocity and convert to Vec6, for the facility of computation
-		// Get base velocity as input this is also called eta
-		//2.1 Get the base velocity from input
-		Vec6 baseVelocity; //
+		// 2. Get base velocity and convert to Vec6, for the facility of computation
+		//  Get base velocity as input this is also called eta
+		// 2.1 Get the base velocity from input
+		Vec6 base_vel; //
 		for (auto u = 0; u < 6; u++)
-			baseVelocity[u] = in2_vel[baseIndex][u];
+			base_vel[u] = base_velocity[base_index][u];
 
-		//2.2 Apply the local transform i.e. from SOFA's frame to Cosserat's frame
-		const sofa::VecCoord_t<In2> &xfrom2Data =
+		// 2.2 Apply the local transform i.e. from SOFA's frame to Cosserat's frame
+		const sofa::VecCoord_t<In2> &rigid_base_pos =
 				m_rigid_base->read(sofa::core::vec_id::read_access::position)->getValue();
 		// Get the transformation from the SOFA to the local frame
-		auto TInverse = Frame(xfrom2Data[baseIndex].getCenter(), xfrom2Data[baseIndex].getOrientation()).inversed();
-		Mat6x6 P = this->buildProjector(TInverse);
+		auto TInverse = Frame(rigid_base_pos[base_index].getCenter(),
+						rigid_base_pos[base_index].getOrientation()).inversed();
+
+		// build base projector
+		Mat6x6 base_projector = this->buildProjector(TInverse);
 
 		// List of velocity vectors at nodes
 		m_nodes_velocity_vectors.clear();
-		Vec6 baseLocalVelocity = P * baseVelocity; // This is the base velocity in Locale frame
+		Vec6 base_local_velocity = base_projector * base_vel;
 
-		m_nodes_velocity_vectors.push_back(baseLocalVelocity);
-		if (d_debug.getValue())
-			std::cout << "Base local Velocity :" << baseLocalVelocity << std::endl;
+		m_nodes_velocity_vectors.push_back(base_local_velocity);
+
+		msg_info_when(d_debug.getValue()) <<  "Base local Velocity :" << base_local_velocity;
 
 		// Compute velocity at nodes
+		Vec6 xi_dot_at_node;
 		for (unsigned int i = 1; i < curv_abs_section.size(); i++) {
-			auto Trans = m_nodes_exponential_se3_vectors[i].inversed();
-			TangentTransform Adjoint;
-			Adjoint.clear();
-			this->computeAdjoint(Trans, Adjoint);
+			auto exp_gX_node_inverse = m_nodes_exponential_se3_vectors[i].inversed();
+			TangentTransform Adjoint_gX_node;
+			Adjoint_gX_node.clear();
+			this->compute_matrix_Adjoint(exp_gX_node_inverse, Adjoint_gX_node);
 
 			/// The null vector is replace by the linear velocity in Vec6Type
-			Vec6 Xi_dot = Vec6(in1_vel[i - 1], Vec3(0.0, 0.0, 0.0));
+			xi_dot_at_node = Vec6(nodes_velocity[i - 1], Vec3(0.0, 0.0, 0.0));
 
-			Vec6 eta_node_i = Adjoint * (m_nodes_velocity_vectors[i - 1] + m_nodes_tang_exp_vectors[i] * Xi_dot);
+			Vec6 eta_node_i =
+					Adjoint_gX_node * (m_nodes_velocity_vectors[i - 1] + m_nodes_tang_exp_vectors[i] * xi_dot_at_node);
 			m_nodes_velocity_vectors.push_back(eta_node_i);
-			if (d_debug.getValue())
-				std::cout << "Node velocity : " << i << " = " << eta_node_i << std::endl;
+
+			msg_info_when(d_debug.getValue()) << "Node velocity : " << i << " = " << eta_node_i ;
 		}
 
-		const sofa::VecCoord_t<Out> &out = m_global_frames->read(sofa::core::vec_id::read_access::position)->getValue();
+		const sofa::VecCoord_t<Out> &frames_pos = m_global_frames->read(sofa::core::vec_id::read_access::position)->getValue();
 		auto sz = curv_abs_frames.size();
-		out_vel.resize(sz);
+		out_frames_velocity.resize(sz);
 		for (unsigned int i = 0; i < sz; i++) {
-			auto Trans = m_frames_exponential_se3_vectors[i].inversed();
-			TangentTransform Adjoint; ///< the class insure that the constructed adjoint is zeroed.
-			Adjoint.clear();
-			this->computeAdjoint(Trans, Adjoint);
-			Vec6 frame_Xi_dot;
+			auto exp_gx_frame_inverse = m_frames_exponential_se3_vectors[i].inversed();
+			TangentTransform Adj_gX_frame; ///< the class insure that the constructed adjoint is zeroed.
+			Adj_gX_frame.clear();
+			this->compute_matrix_Adjoint(exp_gx_frame_inverse, Adj_gX_frame);
 
-			for (auto u = 0; u < 3; u++) {
-				frame_Xi_dot(u) = in1_vel[m_indices_vectors[i] - 1][u];
-				frame_Xi_dot(u + 3) = 0.;
-			}
-			Vec6 eta_frame_i = Adjoint * (m_nodes_velocity_vectors[m_indices_vectors[i] - 1] +
-										  m_frames_tang_exp_vectors[i] * frame_Xi_dot); // eta
+			//@adagolodjo: @todo this is xi_dot at node not at the beam frame pose. How to fixe it ???
+			auto xi_dot_at_related_node = Vec6(nodes_velocity[m_indices_vectors[i]-1], Vec3(0.0, 0.0, 0.0));
 
-			auto T = Frame(out[i].getCenter(), out[i].getOrientation());
-			Mat6x6 Proj = this->buildProjector(T);
+			auto eta_frame_i = Adj_gX_frame * (m_nodes_velocity_vectors[m_indices_vectors[i] - 1] +
+											   m_frames_tang_exp_vectors[i] * xi_dot_at_related_node); // eta
 
-			out_vel[i] = Proj * eta_frame_i;
+			auto T = Frame(frames_pos[i].getCenter(), frames_pos[i].getOrientation());
+			auto frames_projector = this->buildProjector(T);
 
-			if (d_debug.getValue())
-				std::cout << "Frame velocity : " << i << " = " << eta_frame_i << std::endl;
+			out_frames_velocity[i] = frames_projector * eta_frame_i;
+
+			msg_info_when(d_debug.getValue()) << "Frame velocity : " << i << " = " << eta_frame_i ;
 		}
-		
+
 		// Debug output if needed
 		if (this->f_printLog.getValue()) {
-			displayInputVelocities(in1_vel, in2_vel, "applyJ - input velocities");
-			displayOutputVelocities(out_vel, "applyJ - computed output velocities");
+			displayInputVelocities(nodes_velocity, base_velocity, "applyJ - input velocities");
+			displayOutputVelocities(out_frames_velocity, "applyJ - computed output velocities");
 		}
-		
+
 		dataVecOutVel[0]->endEdit();
 		m_index_input = 0;
 	}
@@ -305,98 +321,123 @@ namespace Cosserat::mapping {
 		if (this->d_componentState.getValue() != sofa::core::objectmodel::ComponentState::Valid)
 			return;
 
-		if (d_debug.getValue())
-			std::cout << " ########## ApplyJT force Function ########" << std::endl;
-		const sofa::VecDeriv_t<Out> &in = dataVecInForce[0]->getValue();
+		// if (d_debug.getValue())
+		msg_info("DiscreteCosseratMapping") << "\n ====== ########## ApplyJT force Function ######## ==== \n";
 
-		sofa::VecDeriv_t<In1> &out1 = *dataVecOut1Force[0]->beginEdit();
-		sofa::VecDeriv_t<In2> &out2 = *dataVecOut2Force[0]->beginEdit();
-		const auto baseIndex = d_baseIndex.getValue();
+		const sofa::VecDeriv_t<Out> &in_force_on_frame = dataVecInForce[0]->getValue();
 
-		const sofa::VecCoord_t<Out> &frame =
+		sofa::VecDeriv_t<In1> &out1_force_at_node_l = *dataVecOut1Force[0]->beginEdit();
+		sofa::VecDeriv_t<In2> &out2_force_at_base = *dataVecOut2Force[0]->beginEdit();
+		const auto base_index = d_baseIndex.getValue();
+
+		const sofa::VecCoord_t<Out> &frame_pos =
 				m_global_frames->read(sofa::core::vec_id::read_access::position)->getValue();
-		const sofa::DataVecCoord_t<In1> *x1fromData = m_strain_state->read(sofa::core::vec_id::read_access::position);
-		const sofa::VecCoord_t<In1> x1from = x1fromData->getValue();
-		vector<Vec6> local_F_Vec;
-		local_F_Vec.clear();
+		const sofa::DataVecCoord_t<In1> *strain_state_data = m_strain_state->read(sofa::core::vec_id::read_access::position);
+		const sofa::VecCoord_t<In1> strain_state = strain_state_data->getValue();
+		vector<Vec6> vec_of_l_forces;
+		vec_of_l_forces.clear();
 
-		out1.resize(x1from.size());
+		out1_force_at_node_l.resize(strain_state.size());
+		out1_force_at_node_l.clear();
 
-		// convert the input from Deriv type to vec6 type, for the purpose of the
-		// matrix vector multiplication
-		for (unsigned int var = 0; var < in.size(); ++var) {
-			Vec6 vec;
-			for (unsigned j = 0; j < 6; j++)
-				vec[j] = in[var][j];
-			// Convert input from global frame(SOFA) to local frame
-			const auto _T = Frame(frame[var].getCenter(), frame[var].getOrientation());
-			Mat6x6 P_trans = (this->buildProjector(_T));
-			P_trans.transpose();
-			Vec6 local_F = P_trans * vec;
-			local_F_Vec.push_back(local_F);
+		Vec6 _in_force_on_frame;
+		for (unsigned int var = 0; var < in_force_on_frame.size(); ++var) {
+			_in_force_on_frame = Vec6(in_force_on_frame[var][0], in_force_on_frame[var][1],in_force_on_frame[var][2],
+					in_force_on_frame[var][3],in_force_on_frame[var][4],in_force_on_frame[var][5]);
+
+			msg_info("DiscreteCosseratMapping") << "\n====== > Input force at index :"
+						<< var << " is : " << _in_force_on_frame;
+
+			//@todo [@adagolodjo] : The new version, do I need to invert the frame to go from sofa to local?
+			const auto _frame_pos = Frame(frame_pos[var].getCenter(), frame_pos[var].getOrientation());
+			Mat6x6 frame_projector_transpose = this->buildProjector(_frame_pos); frame_projector_transpose.transpose();
+
+			Vec6 local_force_on_frame = frame_projector_transpose * _in_force_on_frame;
+			msg_info("DiscreteCosseratMapping") <<"\n======>Local force at index : " << var << " = ===> : " << local_force_on_frame;
+			vec_of_l_forces.push_back(local_force_on_frame);
+
+			// @todo [@adagolodjo] : Compare with the second method 👇🏾
+			// F_local = Ad_star(frame[i].inverse()) * input_force[i];
+			// Vec3 bending_force = matB_trans * T_xi[i].transpose() * F_local;
+			//out_deform_force[i] += bending_force;
+
+			// 3. Accumulation et transport
+			//F_total += F_local;
+			//if (i > 0) {
+			//	F_total = Ad_star(exp_xi[i-1]) * F_total;
+			//}
+
 		}
 
 		// Compute output forces
 		auto sz = m_indices_vectors.size();
-		auto index = m_indices_vectors[sz - 1];
+		// Get the last node index
+		auto frame_b_node_index = m_indices_vectors[sz - 1];
 		m_total_beam_force_vectors.clear();
-		m_total_beam_force_vectors.resize(sz);
 
-		Vec6 F_tot;
-		F_tot.clear();
-		m_total_beam_force_vectors.push_back(F_tot);
+		Vec6 total_force;
+		total_force.clear();
+		m_total_beam_force_vectors.push_back(total_force);
 
-		Mat3x6 matB_trans;
-		matB_trans.clear();
-		for (unsigned int k = 0; k < 3; k++)
-			matB_trans[k][k] = 1.0;
+		// build the B matrix according to the choosing mode, 3 or 6 her!
+		Mat3x6 matB_trans; matB_trans.clear();
+		matB_trans.setsub(0,0,Mat3x3::Identity());
 
+		msg_info("DiscreteCosseratMapping") <<"\n======>m m_frames_exponential_se3_vectors : "<<
+			m_frames_exponential_se3_vectors.size();
+
+		Mat6x6 coAdjoint_gX_frame;
 		for (auto s = sz; s--;) {
-			Mat6x6 coAdjoint;
+			coAdjoint_gX_frame.clear();
 
-			this->computeCoAdjoint(m_frames_exponential_se3_vectors[s],
-								   coAdjoint); // m_framesExponentialSE3Vectors[s] computed in apply
-			Vec6 node_F_Vec = coAdjoint * local_F_Vec[s];
-			Mat6x6 temp = m_frames_tang_exp_vectors[s]; // m_framesTangExpVectors[s] computed in
+			this->compute_matrix_CoAdjoint(
+					m_frames_exponential_se3_vectors[s],
+					coAdjoint_gX_frame); // m_framesExponentialSE3Vectors[s] computed in apply function
+			Vec6 frame_coAdj_x_l_force = coAdjoint_gX_frame * vec_of_l_forces[s];
+
+			Mat6x6 tang_frame = m_frames_tang_exp_vectors[s]; //
+
 			// applyJ (here we transpose)
-			temp.transpose();
-			Vec3 f = matB_trans * temp * node_F_Vec;
+			tang_frame.transpose();
+			Vec3 f = matB_trans * tang_frame * frame_coAdj_x_l_force;
 
-			if (index != m_indices_vectors[s]) {
-				index--;
+			//@todo, @adagolodjo : add some comments here, please !!!
+			if (frame_b_node_index != m_indices_vectors[s]) {
+				frame_b_node_index--;
 				// bring F_tot to the reference of the new beam
-				this->computeCoAdjoint(m_nodes_exponential_se3_vectors[index],
-									   coAdjoint); // m_nodes_exponential_se3_vectors computed in apply
-				F_tot = coAdjoint * F_tot;
-				Mat6x6 temp = m_nodes_tang_exp_vectors[index];
+				this->compute_matrix_CoAdjoint(m_nodes_exponential_se3_vectors[frame_b_node_index],
+											   coAdjoint_gX_frame); // m_nodes_exponential_se3_vectors computed in apply
+				total_force = coAdjoint_gX_frame*total_force;
+				Mat6x6 temp = m_nodes_tang_exp_vectors[frame_b_node_index];
 				temp.transpose();
 				// apply F_tot to the new beam
-				Vec3 temp_f = matB_trans * temp * F_tot;
-				out1[index - 1] += temp_f;
+				Vec3 temp_f = matB_trans * temp * total_force;
+				out1_force_at_node_l[frame_b_node_index - 1] += temp_f;
 			}
 			if (d_debug.getValue())
-				std::cout << "f at s =" << s << " and index" << index << " is : " << f << std::endl;
+				std::cout << "f at s =" << s << " and index" << frame_b_node_index << " is : " << f << std::endl;
 
 			// compute F_tot
-			F_tot += node_F_Vec;
-			out1[m_indices_vectors[s] - 1] += f;
+			total_force += frame_coAdj_x_l_force;
+			out1_force_at_node_l[m_indices_vectors[s] - 1] += f;
 		}
 
-		auto frame0 = Frame(frame[0].getCenter(), frame[0].getOrientation());
+		auto frame0 = Frame(frame_pos[0].getCenter(), frame_pos[0].getOrientation());
 		Mat6x6 M = this->buildProjector(frame0);
-		out2[baseIndex] += M * F_tot;
+		out2_force_at_base[base_index] += M * total_force;
 
 		if (d_debug.getValue()) {
-			std::cout << "Node forces " << out1 << std::endl;
-			std::cout << "base Force: " << out2[baseIndex] << std::endl;
+			std::cout << "Node forces " << out1_force_at_node_l << std::endl;
+			std::cout << "base Force: " << out2_force_at_base[base_index] << std::endl;
 		}
 
 		// Debug output if needed
 		if (this->f_printLog.getValue()) {
-			displayOutputForces(in, "applyJT - input forces");
-			displayInputForces(out1, out2, "applyJT - computed input forces");
+			displayOutputForces(in_force_on_frame, "applyJT - input forces");
+			displayInputForces(out1_force_at_node_l, out2_force_at_base, "applyJT - computed input forces");
 		}
-
+		std::cout << " ------------------------------------------------------------------------------------"
+				  << std::endl;
 		dataVecOut1Force[0]->endEdit();
 		dataVecOut2Force[0]->endEdit();
 	}
@@ -474,17 +515,20 @@ namespace Cosserat::mapping {
 				Mat6x6 P_trans = (this->buildProjector(_T));
 				P_trans.transpose();
 
-				Mat6x6 co_adjoint;
-				this->computeCoAdjoint(m_frames_exponential_se3_vectors[childIndex],
-									   co_adjoint); // m_frames_exponential_se3_vectors[s] computed in apply
+				Mat6x6 co_adjoint_gx_frame;
+				this->compute_matrix_CoAdjoint(
+						m_frames_exponential_se3_vectors[childIndex],
+						co_adjoint_gx_frame); // m_frames_exponential_se3_vectors[s] computed in apply
 				Mat6x6 temp = m_frames_tang_exp_vectors[childIndex]; // m_framesTangExpVectors[s]
 				// computed in applyJ
 				// (here we transpose)
 				temp.transpose();
 
-				Vec6 local_F = co_adjoint * P_trans * valueConst; // constraint direction in local frame of the beam.
+				// constraint direction in the local frame of the beam.
+				Vec6 local_F = co_adjoint_gx_frame * P_trans * valueConst;
 
-				Vec3 f = matB_trans * temp * local_F; // constraint direction in the strain space.
+				// constraint direction in the strain space.
+				Vec3 f = matB_trans * temp * local_F;
 
 				o1.addCol(indexBeam - 1, f);
 				std::tuple<int, Vec6> test = std::make_tuple(indexBeam, local_F);
@@ -499,7 +543,7 @@ namespace Cosserat::mapping {
 							  << "\n ";
 			}
 
-			// sort the Nodes Invoved by decreasing order
+			// sort involved nodes by decreasing order
 			std::sort(begin(NodesInvolved), end(NodesInvolved),
 					  [](std::tuple<int, Vec6> const &t1, std::tuple<int, Vec6> const &t2) {
 						  return std::get<0>(t1) > std::get<0>(t2); // custom compare function
@@ -542,20 +586,21 @@ namespace Cosserat::mapping {
 
 			for (unsigned n = 0; n < NodesInvolvedCompressed.size(); n++) {
 				std::tuple<int, Vec6> test = NodesInvolvedCompressed[n];
-				int numNode = std::get<0>(test);
-				int i = numNode;
-				Vec6 CumulativeF = std::get<1>(test);
+				int num_node = std::get<0>(test);
+				int i = num_node;
+				Vec6 cumulative_node_force = std::get<1>(test);
 
 				while (i > 0) {
-					// cumulate on beam frame
-					Mat6x6 coAdjoint;
-					this->computeCoAdjoint(m_nodes_exponential_se3_vectors[i - 1],
-										   coAdjoint); // m_nodes_exponential_se3_vectors computed in apply
-					CumulativeF = coAdjoint * CumulativeF;
+					// cumulate on beam frame force
+					Mat6x6 coAdjoint_gx_node;
+					this->compute_matrix_CoAdjoint(
+							m_nodes_exponential_se3_vectors[i - 1],
+							coAdjoint_gx_node); // m_nodes_exponential_se3_vectors computed in apply
+					cumulative_node_force = coAdjoint_gx_node * cumulative_node_force;
 					// transfer to strain space (local coordinates)
 					Mat6x6 temp = m_nodes_tang_exp_vectors[i - 1];
 					temp.transpose();
-					Vec3 temp_f = matB_trans * temp * CumulativeF;
+					Vec3 temp_f = matB_trans * temp * cumulative_node_force;
 
 					if (i > 1)
 						o1.addCol(i - 2, temp_f);
@@ -564,7 +609,7 @@ namespace Cosserat::mapping {
 				const auto frame0 = Frame(frame[0].getCenter(), frame[0].getOrientation());
 				const Mat6x6 M = this->buildProjector(frame0);
 
-				const Vec6 base_force = M * CumulativeF;
+				const Vec6 base_force = M * cumulative_node_force;
 				o2.addCol(d_baseIndex.getValue(), base_force);
 			}
 		}
@@ -648,30 +693,33 @@ namespace Cosserat::mapping {
 				vparams->drawTool()->drawLine(positions[i], positions[i + 1], color);
 			}
 		}
-	glLineWidth(1);
-	if (!vparams->displayFlags().getShowMappings())
-		if (!d_debug.getValue())
-			return;
-	
-	// Debug output if needed
-	if (this->f_printLog.getValue()) {
-		displayOutputFrames(xData, "draw - rendering frames");
+		glLineWidth(1);
+		if (!vparams->displayFlags().getShowMappings())
+			if (!d_debug.getValue())
+				return;
+
+		// Debug output if needed
+		if (this->f_printLog.getValue()) {
+			displayOutputFrames(xData, "draw - rendering frames");
+		}
+
+		glEnd();
 	}
-	
-	glEnd();
-}
 
 	template<class TIn1, class TIn2, class TOut>
-	void DiscreteCosseratMapping<TIn1, TIn2, TOut>::displayOutputFrames(const sofa::VecCoord_t<Out> &frames, const std::string &label) {
+	void DiscreteCosseratMapping<TIn1, TIn2, TOut>::displayOutputFrames(const sofa::VecCoord_t<Out> &frames,
+																		const std::string &label) {
 		std::cout << label << std::endl;
 		for (size_t i = 0; i < frames.size(); ++i) {
-			std::cout << "Frame " << i << ": position=" << frames[i].getCenter() 
+			std::cout << "Frame " << i << ": position=" << frames[i].getCenter()
 					  << ", orientation=" << frames[i].getOrientation() << std::endl;
 		}
 	}
 
 	template<class TIn1, class TIn2, class TOut>
-	void DiscreteCosseratMapping<TIn1, TIn2, TOut>::displayInputVelocities(const sofa::VecDeriv_t<In1> &in1Vel, const sofa::VecDeriv_t<In2> &in2Vel, const std::string &label) {
+	void DiscreteCosseratMapping<TIn1, TIn2, TOut>::displayInputVelocities(const sofa::VecDeriv_t<In1> &in1Vel,
+																		   const sofa::VecDeriv_t<In2> &in2Vel,
+																		   const std::string &label) {
 		std::cout << label << std::endl;
 		std::cout << "Input 1 velocities:" << std::endl;
 		for (size_t i = 0; i < in1Vel.size(); ++i) {
@@ -684,7 +732,8 @@ namespace Cosserat::mapping {
 	}
 
 	template<class TIn1, class TIn2, class TOut>
-	void DiscreteCosseratMapping<TIn1, TIn2, TOut>::displayOutputVelocities(const sofa::VecDeriv_t<Out> &outVel, const std::string &label) {
+	void DiscreteCosseratMapping<TIn1, TIn2, TOut>::displayOutputVelocities(const sofa::VecDeriv_t<Out> &outVel,
+																			const std::string &label) {
 		std::cout << label << std::endl;
 		for (size_t i = 0; i < outVel.size(); ++i) {
 			std::cout << "Output velocity[" << i << "]: " << outVel[i] << std::endl;
@@ -692,7 +741,9 @@ namespace Cosserat::mapping {
 	}
 
 	template<class TIn1, class TIn2, class TOut>
-	void DiscreteCosseratMapping<TIn1, TIn2, TOut>::displayInputForces(const sofa::VecDeriv_t<In1> &in1Force, const sofa::VecDeriv_t<In2> &in2Force, const std::string &label) {
+	void DiscreteCosseratMapping<TIn1, TIn2, TOut>::displayInputForces(const sofa::VecDeriv_t<In1> &in1Force,
+																	   const sofa::VecDeriv_t<In2> &in2Force,
+																	   const std::string &label) {
 		std::cout << label << std::endl;
 		std::cout << "Input 1 forces:" << std::endl;
 		for (size_t i = 0; i < in1Force.size(); ++i) {
@@ -705,7 +756,8 @@ namespace Cosserat::mapping {
 	}
 
 	template<class TIn1, class TIn2, class TOut>
-	void DiscreteCosseratMapping<TIn1, TIn2, TOut>::displayOutputForces(const sofa::VecDeriv_t<Out> &outForce, const std::string &label) {
+	void DiscreteCosseratMapping<TIn1, TIn2, TOut>::displayOutputForces(const sofa::VecDeriv_t<Out> &outForce,
+																		const std::string &label) {
 		std::cout << label << std::endl;
 		for (size_t i = 0; i < outForce.size(); ++i) {
 			std::cout << "Output force[" << i << "]: " << outForce[i] << std::endl;
@@ -715,11 +767,13 @@ namespace Cosserat::mapping {
 	template<class TIn1, class TIn2, class TOut>
 	void DiscreteCosseratMapping<TIn1, TIn2, TOut>::displayTransformMatrices(const std::string &label) {
 		std::cout << label << std::endl;
-		std::cout << "Frames exponential SE3 matrices (size: " << m_frames_exponential_se3_vectors.size() << "):" << std::endl;
+		std::cout << "Frames exponential SE3 matrices (size: " << m_frames_exponential_se3_vectors.size()
+				  << "):" << std::endl;
 		for (size_t i = 0; i < m_frames_exponential_se3_vectors.size(); ++i) {
 			std::cout << "  Frame[" << i << "]: " << m_frames_exponential_se3_vectors[i] << std::endl;
 		}
-		std::cout << "Nodes exponential SE3 matrices (size: " << m_nodes_exponential_se3_vectors.size() << "):" << std::endl;
+		std::cout << "Nodes exponential SE3 matrices (size: " << m_nodes_exponential_se3_vectors.size()
+				  << "):" << std::endl;
 		for (size_t i = 0; i < m_nodes_exponential_se3_vectors.size(); ++i) {
 			std::cout << "  Node[" << i << "]: " << m_nodes_exponential_se3_vectors[i] << std::endl;
 		}

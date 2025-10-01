@@ -14,16 +14,16 @@ __copyright__ = "(c) 2021,Inria"
 __date__ = "October, 26 2021"
 
 import logging
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import List
 
 import Sofa
-from numpy import array, ndarray
+from numpy import array
 
 from .geometry import CosseratGeometry, generate_edge_list
 from .header import addHeader, addVisual
-from .params import BeamGeometryParameters, Parameters
-from .utils import (addEdgeCollision, addPointsCollision,
-                          create_rigid_node)
+from .params import (BeamGeometryParameters, BeamPhysicsBaseParameters,
+                     Parameters)
+from .utils import addEdgeCollision, addPointsCollision, create_rigid_node
 
 
 class CosseratBase(Sofa.Prefab):
@@ -88,6 +88,28 @@ class CosseratBase(Sofa.Prefab):
         self.params = kwargs.get("params")
         self.solverNode = kwargs.get("parent")
 
+        # Initialize translation and rotation from prefab parameters or defaults
+        # Try to get from Prefab parameters first, then from kwargs, then default
+        translation_param = getattr(self, 'translation', kwargs.get("translation", [0.0, 0.0, 0.0]))
+        rotation_param = getattr(self, 'rotation', kwargs.get("rotation", [0.0, 0.0, 0.0]))
+
+        # Handle SOFA DataContainer objects and extract actual values
+        if hasattr(translation_param, 'value'):
+            self._translation_value = translation_param.value
+        else:
+            self._translation_value = translation_param
+
+        if hasattr(rotation_param, 'value'):
+            self._rotation_value = rotation_param.value
+        else:
+            self._rotation_value = rotation_param
+
+        # Ensure they are lists (convert numpy arrays if needed)
+        if hasattr(self._translation_value, 'tolist'):
+            self._translation_value = self._translation_value.tolist()
+        if hasattr(self._rotation_value, 'tolist'):
+            self._rotation_value = self._rotation_value.tolist()
+
         # Extract physics parameters
         self.beam_physics_params = self.params.beam_physics_params
         self.beam_mass = self.beam_physics_params.beam_mass
@@ -128,12 +150,12 @@ class CosseratBase(Sofa.Prefab):
         """
         return (
             f"CosseratBase(name='{self.name}', "
-            f"mass={self.beam_mass}, "
-            f"radius={self.radius}, "
-            f"use_inertia={self.use_inertia_params})"
+                f"mass={self.beam_mass}, "
+                f"radius={self.radius}, "
+                f"use_inertia={self.use_inertia_params})"
         )
 
-    def add_collision_model(self) -> Sofa.Node:
+    def add_collision_model(self) -> "Sofa.Node":
         """
         Add an edge-based collision model to the cosserat beam.
 
@@ -145,7 +167,7 @@ class CosseratBase(Sofa.Prefab):
 
     def _add_point_collision_model(
         self, node_name: str = "CollisionPoints"
-    ) -> Sofa.Node:
+    ) -> "Sofa.Core.Node":
         """
         Add a point-based collision model to the cosserat beam.
 
@@ -160,7 +182,7 @@ class CosseratBase(Sofa.Prefab):
             self.cosserat_frame, self.frames3D, tab_edges, node_name
         )
 
-    def _add_sliding_points(self) -> Sofa.Node:
+    def _add_sliding_points(self) -> "Sofa.Core.Node":
         """
         Add sliding points to the cosserat frame.
 
@@ -176,7 +198,7 @@ class CosseratBase(Sofa.Prefab):
         sliding_point.addObject("IdentityMapping")
         return sliding_point
 
-    def _add_sliding_points_with_container(self) -> Sofa.Node:
+    def _add_sliding_points_with_container(self) -> "Sofa.Core.Node":
         """
         Add sliding points with topology container and modifier.
 
@@ -191,7 +213,7 @@ class CosseratBase(Sofa.Prefab):
         sliding_point.addObject("PointSetTopologyModifier")
         return sliding_point
 
-    def _add_rigid_base_node(self) -> Sofa.Node:
+    def _add_rigid_base_node(self) -> Sofa.Core.Node:
         """
         Create a rigid node at the base of the beam.
 
@@ -201,7 +223,7 @@ class CosseratBase(Sofa.Prefab):
             Sofa.Node: The created rigid base node
         """
         rigid_base_node = create_rigid_node(
-            self, "RigidBase", self.translation, self.rotation
+            self, "RigidBase", self._translation_value, self._rotation_value
         )
         return rigid_base_node
 
@@ -238,7 +260,7 @@ class CosseratBase(Sofa.Prefab):
         return cosserat_coordinate_node
 
     def _add_beam_hooke_law_without_inertia(
-        self, cosserat_coordinate_node: Sofa.Node, section_lengths: List[float]
+        self, cosserat_coordinate_node: "Sofa.Node", section_lengths: List[float]
     ) -> None:
         """
         Adds a BeamHookeLawForceField object to the cosserat coordinate node without inertia parameters.
@@ -260,7 +282,7 @@ class CosseratBase(Sofa.Prefab):
         )
 
     def _add_beam_hooke_law_with_inertia(
-        self, cosserat_coordinate_node: Sofa.Node, section_lengths: List[float]
+        self, cosserat_coordinate_node: "Sofa.Node", section_lengths: List[float]
     ) -> None:
         """
         Adds a BeamHookeLawForceField object to the cosserat coordinate node with inertia parameters.
@@ -293,7 +315,7 @@ class CosseratBase(Sofa.Prefab):
         frames_f: List,
         curv_abs_input_s: List[float],
         curv_abs_output_f: List[float],
-    ) -> Sofa.Node:
+    ) -> "Sofa.Node":
         """
         Create the node that represents the cosserat frames in the SOFA world frame.
 

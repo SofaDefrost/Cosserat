@@ -3,10 +3,12 @@ project(Cosserat.Python VERSION 21.12.0)
 set(SOURCE_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Module_Cosserat.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Binding_PointsManager.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/Binding_HookeSeratMapping.cpp
 )
 
 set(HEADER_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Binding_PointsManager.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/Binding_HookeSeratMapping.h
 )
 
 if (NOT TARGET SofaPython3::Plugin)
