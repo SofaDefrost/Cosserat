@@ -295,14 +295,11 @@ void BeamHookeLawForceField<DataTypes>::buildStiffnessMatrix(core::behavior::Sti
 
     for (unsigned int n=0; n<pos.size(); n++)
     {
-        if(!variantSections)
-            for(unsigned int i = 0; i < N; i++)
-                for (unsigned int j = 0; j< N; j++)
-                    dfdx(i + N*n, j + N*n) += - m_K_section[i][j] * length[n];
-        else
-            for(unsigned int i = 0; i < N; i++)
-                for (unsigned int j = 0; j< N; j++)
-                    dfdx(i + N*n, j + N*n) += - m_K_sectionList[n][i][j] * length[n];
+        const sofa::Index currentIndex = N*n;
+        const auto& K_section = (variantSections)? m_K_sectionList[n]: m_K_section;
+        for(unsigned int i = 0; i < N; i++)
+            for (unsigned int j = 0; j< N; j++)
+                dfdx(i + currentIndex, j + currentIndex) += - K_section[i][j] * length[n];
     }
 }
 
