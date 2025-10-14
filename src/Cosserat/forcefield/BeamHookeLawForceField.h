@@ -114,6 +114,11 @@ public :
                               const DataVecCoord& x) const override;
     ////////////////////////////////////////////////////////////////////////////
 
+    ////////////////////////// Inherited from BaseForceField ////////////////////
+    void buildStiffnessMatrix(core::behavior::StiffnessMatrix* matrix) override;
+    void buildDampingMatrix(core::behavior::DampingMatrix* matrices) override;
+    ////////////////////////////////////////////////////////////////////////////
+
     Real getRadius();
 
 protected:

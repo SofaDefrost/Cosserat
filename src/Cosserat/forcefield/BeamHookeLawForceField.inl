@@ -282,6 +282,34 @@ void BeamHookeLawForceField<DataTypes>::addKToMatrix(const MechanicalParams* mpa
     }
 }
 
+template<class DataTypes>
+void BeamHookeLawForceField<DataTypes>::buildStiffnessMatrix(core::behavior::StiffnessMatrix* matrix)
+{
+    static constexpr auto N = Deriv::total_size;
+    auto dfdx = matrix->getForceDerivativeIn(this->mstate)
+                    .withRespectToPositionsIn(this->mstate);
+    const VecCoord& pos = this->mstate->read(core::vec_id::read_access::position)->getValue();
+
+    const bool& variantSections = sofa::helper::ReadAccessor(d_variantSections);
+    const auto& length = sofa::helper::ReadAccessor(d_length);
+
+    for (unsigned int n=0; n<pos.size(); n++)
+    {
+        const sofa::Index currentIndex = N*n;
+        const auto& K_section = (variantSections)? m_K_sectionList[n]: m_K_section;
+        for(unsigned int i = 0; i < N; i++)
+            for (unsigned int j = 0; j< N; j++)
+                dfdx(i + currentIndex, j + currentIndex) += - K_section[i][j] * length[n];
+    }
+}
+
+template <class DataTypes>
+void BeamHookeLawForceField<DataTypes>::buildDampingMatrix(core::behavior::DampingMatrix*)
+{
+    // No damping in this ForceField
+}
+
+
 
 template<typename DataTypes>
 typename BeamHookeLawForceField<DataTypes>::Real BeamHookeLawForceField<DataTypes>::getRadius()
