@@ -290,16 +290,19 @@ void BeamHookeLawForceField<DataTypes>::buildStiffnessMatrix(core::behavior::Sti
                     .withRespectToPositionsIn(this->mstate);
     const VecCoord& pos = this->mstate->read(core::vec_id::read_access::position)->getValue();
 
+    const bool& variantSections = sofa::helper::ReadAccessor(d_variantSections);
+    const auto& length = sofa::helper::ReadAccessor(d_length);
+
     for (unsigned int n=0; n<pos.size(); n++)
     {
-        if(!d_variantSections.getValue())
+        if(!variantSections)
             for(unsigned int i = 0; i < N; i++)
                 for (unsigned int j = 0; j< N; j++)
-                    dfdx(i + N*n, j + N*n) += - m_K_section[i][j]*d_length.getValue()[n];
+                    dfdx(i + N*n, j + N*n) += - m_K_section[i][j] * length[n];
         else
             for(unsigned int i = 0; i < N; i++)
                 for (unsigned int j = 0; j< N; j++)
-                    dfdx(i + N*n, j + N*n) += - m_K_sectionList[n][i][j] * d_length.getValue()[n];
+                    dfdx(i + N*n, j + N*n) += - m_K_sectionList[n][i][j] * length[n];
     }
 }
 
