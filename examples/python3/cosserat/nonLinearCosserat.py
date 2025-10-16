@@ -51,7 +51,7 @@ class NonLinearCosserat(Sofa.Prefab):
                     Cosserat Mapping  //  it allow the transfer from the local to the global frame
             }
     """
-    prefabParameters = [
+    properties = [
         {'name': 'name', 'type': 'string', 'help': 'Node name', 'default': 'Cosserat'},
         {'name': 'position', 'type': 'Rigid3d::VecCoord', 'help': 'Cosserat base position',
          'default': [[0., 0., 0., 0, 0, 0, 1.]]},
@@ -67,7 +67,7 @@ class NonLinearCosserat(Sofa.Prefab):
          'default': 0.0},
         {'name': 'attachingToLink', 'type': 'string', 'help': 'a rest shape force field will constraint the object '
                                                               'to follow arm position', 'default': '1'},
-        {'name': 'showObject', 'type': 'string', 'help': ' Draw object arrow ', 'default': '1'}]
+        {'name': 'showObject', 'type': 'string', 'help': ' Draw object arrow ', 'default': '0'}]
 
     def __init__(self, *args, **kwargs):
         Sofa.Prefab.__init__(self, *args, **kwargs)
@@ -193,17 +193,17 @@ initialStrain = [[0., 0., 0], [0., 0., 0], [0., 0., 0]]
 
 def createScene(rootNode):
     rootNode.addObject('RequiredPlugin', name='plugins', pluginName=[pluginList,
-                                                                     ['Sofa.Component.Visual']])
+                                                                     ['SofaEngine', 'SofaLoader', 'SofaSimpleFem',
+                                                                      'SofaExporter']])
     rootNode.addObject('VisualStyle', displayFlags='showVisualModels showBehaviorModels hideCollisionModels '
-                                                   'hideBoundingCollisionModels hideForceFields '
+                                                   'hideBoundingCollisionModels hireForceFields '
                                                    'hideInteractionForceFields hideWireframe')
-    rootNode.addObject('DefaultAnimationLoop')
     rootNode.findData('dt').value = 0.01
     # rootNode.findData('gravity').value = [0., -9.81, 0.]
     rootNode.findData('gravity').value = [0., 0., 0.]
     rootNode.addObject('BackgroundSetting', color='0 0.168627 0.211765')
     # rootNode.addObject('FreeMotionAnimationLoop')
-    # rootNode.addObject('GenericConstraintSolver', tolerance=1e-5, maxIterations=5e2)
+    # rootNode.addObject('ProjectedGaussSeidelConstraintSolver', tolerance=1e-5, maxIterations=5e2)
     rootNode.addObject('Camera', position="-35 0 280", lookAt="0 0 0")
 
     solverNode = rootNode.addChild('solverNode')
@@ -213,11 +213,12 @@ def createScene(rootNode):
     # solverNode.addObject('CGLinearSolver', tolerance=1.e-12, iterations=1000, threshold=1.e-18)
 
     needCollisionModel = 0  # use this if the collision model if the beam will interact with another object
-    nonLinearCosserat = NonLinearCosserat(parent=solverNode, cosseratGeometry=nonLinearConfig,
-        useCollisionModel=needCollisionModel, name="cosserat", radius=0.1, legendreControlPoints=initialStrain, order=3)
+    nonLinearCosserat = solverNode.addChild(
+        NonLinearCosserat(parent=solverNode, cosseratGeometry=nonLinearConfig, useCollisionModel=needCollisionModel,
+                          name="cosserat", radius=0.1, legendreControlPoints=initialStrain, order=3))
 
     beamFrame = nonLinearCosserat.cosseratFrame
     beamFrame.addObject('ConstantForceField', name='constForce', showArrowSize=1.e-8, indices=12,
-                        forces=[0., 0., 0., 0., 0., 450.])
+                        force=[0., 0., 0., 0., 0., 450.])
 
     return rootNode

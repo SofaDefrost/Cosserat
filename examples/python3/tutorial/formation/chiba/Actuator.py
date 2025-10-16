@@ -10,7 +10,7 @@ def createScene(rootNode):
     rootNode.addObject('VisualStyle',displayFlags='showBehavior')
     rootNode.gravity.value = [-9810, 0, 0]
     rootNode.addObject('FreeMotionAnimationLoop')
-    rootNode.addObject('GenericConstraintSolver', tolerance=1e-9, maxIterations=50000)
+    rootNode.addObject('ProjectedGaussSeidelConstraintSolver', tolerance=1e-9, maxIterations=50000)
     rootNode.addObject('EulerImplicitSolver', name='odesolver', rayleighStiffness=0.01, rayleighMass=0.01)
 
     finger = rootNode.addChild('finger')

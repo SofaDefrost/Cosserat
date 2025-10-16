@@ -41,7 +41,7 @@ def createScene(rootNode):
                        coneFactor=ContactParams.coneFactor, angleCone=0.1)
 
     rootNode.addObject('FreeMotionAnimationLoop')
-    generic = rootNode.addObject('GenericConstraintSolver', tolerance="1e-20",
+    generic = rootNode.addObject('ProjectedGaussSeidelConstraintSolver', tolerance="1e-20",
                                  maxIterations="500", computeConstraintForces=1, printLog="0")
 
     gravity = [0, 0, 0]

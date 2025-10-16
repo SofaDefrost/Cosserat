@@ -156,7 +156,7 @@ def createScene(rootNode):
                        coneFactor=params.contact.coneFactor, angleCone=0.1)
 
     rootNode.addObject('FreeMotionAnimationLoop')
-    generic = rootNode.addObject('GenericConstraintSolver', tolerance="1e-20",
+    generic = rootNode.addObject('ProjectedGaussSeidelConstraintSolver', tolerance="1e-20",
                                  maxIterations="500", computeConstraintForces=1, printLog="0")
 
     gravity = [0, 0, 0]
@@ -168,7 +168,7 @@ def createScene(rootNode):
     ###############
     solverNode = rootNode.addChild('solverNode')
     solverNode.addObject('EulerImplicitSolver',
-                         rayleighStiffness=params.Physics.rayleigh_stiffness)
+                         rayleighStiffness=params.Physics.rayleighStiffness)
     solverNode.addObject('SparseLDLSolver', name='solver',
                          template="CompressedRowSparseMatrixd")
     solverNode.addObject('GenericConstraintCorrection')
@@ -176,7 +176,7 @@ def createScene(rootNode):
     needle = solverNode.addChild(
         Cosserat(parent=solverNode, cosseratGeometry=needleGeometryConfig, radius=params.Geometry.radius,
                  name="needle", youngModulus=params.Physics.youngModulus, poissonRatio=params.Physics.poissonRatio,
-                 rayleighStiffness=params.Physics.rayleigh_stiffness))
+                 rayleighStiffness=params.Physics.rayleighStiffness))
     needleCollisionModel = needle.addPointCollisionModel()
     slidingPoint = needle.addSlidingPoints()
 
