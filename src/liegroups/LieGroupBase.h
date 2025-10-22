@@ -220,6 +220,62 @@ namespace sofa::component::cosserat::liegroups {
 		[[nodiscard]] static constexpr Derived Identity() noexcept { return Derived::computeIdentity(); }
 
 		/**
+		 * @brief Right-plus operator: X ⊕ τ = X ◦ Exp(τ)
+		 * 
+		 * This operator adds a tangent vector increment to a group element.
+		 * The increment is expressed in the local frame (tangent space at X).
+		 * 
+		 * @param tau Tangent vector in local frame (TₓM)
+		 * @return Composed element X ⊕ τ ∈ M
+		 * 
+		 * @note This is equivalent to X.compose(Derived::exp(tau)) but provides
+		 *       a more intuitive notation consistent with Lie theory literature.
+		 */
+		[[nodiscard]] Derived plus(const TangentVector &tau) const noexcept {
+			return derived().compose(Derived::exp(tau));
+		}
+
+		/**
+		 * @brief Right-minus operator: Y ⊖ X = Log(X⁻¹ ◦ Y)
+		 * 
+		 * This operator computes the tangent vector difference between two
+		 * group elements. The result is expressed in the local frame at X.
+		 * 
+		 * @param other Another group element Y
+		 * @return Tangent vector τ ∈ TₓM such that Y = X ⊕ τ
+		 * 
+		 * @note This is the inverse operation of plus: Y.minus(X) gives the
+		 *       tangent vector τ such that Y = X.plus(τ)
+		 */
+		[[nodiscard]] TangentVector minus(const Derived &other) const noexcept {
+			return derived().inverse().compose(other).log();
+		}
+
+		/**
+		 * @brief Operator overload for plus (X + τ = X ⊕ τ)
+		 * 
+		 * Provides intuitive syntax: X_new = X + delta
+		 * 
+		 * @param tau Tangent vector increment
+		 * @return X ⊕ τ
+		 */
+		[[nodiscard]] Derived operator+(const TangentVector &tau) const noexcept {
+			return plus(tau);
+		}
+
+		/**
+		 * @brief Operator overload for minus (Y - X = Y ⊖ X)
+		 * 
+		 * Provides intuitive syntax: error = Y - X
+		 * 
+		 * @param other Another group element
+		 * @return Y ⊖ X (tangent vector difference)
+		 */
+		[[nodiscard]] TangentVector operator-(const Derived &other) const noexcept {
+			return minus(other);
+		}
+
+		/**
 		 * @brief Compute distance between two group elements
 		 * @param other Another element of the same Lie group
 		 * @return A scalar representing the distance
@@ -285,18 +341,88 @@ namespace sofa::component::cosserat::liegroups {
 		[[nodiscard]] static TangentVector BCH(const TangentVector &v, const TangentVector &w, int order = 3);
 
 		/**
+		 * @brief Right Jacobian of the manifold: Jr(τ) = τD Exp(τ)/Dτ
+		 * 
+		 * The right Jacobian maps variations of the argument τ into variations
+		 * in the local tangent space at Exp(τ).
+		 * 
+		 * For small δτ:
+		 *   Exp(τ + δτ) ≈ Exp(τ) ◦ Exp(Jr(τ) δτ)
+		 * 
+		 * @param tau Tangent vector
+		 * @return Right Jacobian matrix ∈ ℝᵐˣᵐ
+		 * 
+		 * @note Essential for uncertainty propagation in Kalman filters
+		 */
+		[[nodiscard]] static AdjointMatrix rightJacobian(const TangentVector &tau) noexcept {
+			return Derived::computeRightJacobian(tau);
+		}
+
+		/**
+		 * @brief Left Jacobian of the manifold: Jl(τ) = ᴱD Exp(τ)/Dτ
+		 * 
+		 * The left Jacobian maps variations of the argument τ into variations
+		 * in the global tangent space (Lie algebra at identity).
+		 * 
+		 * For small δτ:
+		 *   Exp(τ + δτ) ≈ Exp(Jl(τ) δτ) ◦ Exp(τ)
+		 * 
+		 * @param tau Tangent vector
+		 * @return Left Jacobian matrix ∈ ℝᵐˣᵐ
+		 * 
+		 * @note Related to right Jacobian: Jl(τ) = Jr(-τ)
+		 */
+		[[nodiscard]] static AdjointMatrix leftJacobian(const TangentVector &tau) noexcept {
+			return Derived::computeLeftJacobian(tau);
+		}
+
+		/**
+		 * @brief Inverse of the right Jacobian: Jr⁻¹(τ)
+		 * 
+		 * Satisfies:
+		 *   Log(Exp(τ) ◦ Exp(δτ)) ≈ τ + Jr⁻¹(τ) δτ
+		 * 
+		 * @param tau Tangent vector
+		 * @return Inverse right Jacobian matrix ∈ ℝᵐˣᵐ
+		 */
+		[[nodiscard]] static AdjointMatrix rightJacobianInverse(const TangentVector &tau) noexcept {
+			return Derived::computeRightJacobianInverse(tau);
+		}
+
+		/**
+		 * @brief Inverse of the left Jacobian: Jl⁻¹(τ)
+		 * 
+		 * Satisfies:
+		 *   Log(Exp(δτ) ◦ Exp(τ)) ≈ τ + Jl⁻¹(τ) δτ
+		 * 
+		 * @param tau Tangent vector
+		 * @return Inverse left Jacobian matrix ∈ ℝᵐˣᵐ
+		 * 
+		 * @note Related to right inverse: Jl⁻¹(τ) = Jr⁻¹(-τ)
+		 */
+		[[nodiscard]] static AdjointMatrix leftJacobianInverse(const TangentVector &tau) noexcept {
+			return Derived::computeLeftJacobianInverse(tau);
+		}
+
+		/**
 		 * @brief Get the differential of the exponential map
 		 * @param v Tangent vector
 		 * @return Matrix representing the differential of exp at v
+		 * @deprecated Use rightJacobian() instead for clarity
 		 */
-		[[nodiscard]] static AdjointMatrix dexp(const TangentVector &v);
+		[[nodiscard]] static AdjointMatrix dexp(const TangentVector &v) {
+			return rightJacobian(v);
+		}
 
 		/**
 		 * @brief Get the inverse of the differential of the exponential map
 		 * @param v Tangent vector
 		 * @return Matrix representing the inverse differential of exp at v
+		 * @deprecated Use rightJacobianInverse() instead for clarity
 		 */
-		[[nodiscard]] static AdjointMatrix dexpInv(const TangentVector &v);
+		[[nodiscard]] static AdjointMatrix dexpInv(const TangentVector &v) {
+			return rightJacobianInverse(v);
+		}
 
 		/**
 		 * @brief Get the differential of the logarithm map
