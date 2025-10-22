@@ -147,7 +147,7 @@ namespace sofa::component::forcefield
         }
         else
         {
-            //Pour du vec 6, on a  _m_K =diag([G*J E*Iy E*Iz E*A G*As G*As]); % stifness matrix
+            //Pour du vec 6, on a  _m_K =diag([G*J E*Iy E*Iz E*A G*As G*As]); % stiffness matrix
             Real E = d_youngModulus.getValue();
             Real G = E/(2.0*(1.0+d_poissonRatio.getValue()));
             //Translational Stiffness (X, Y, Z directions):

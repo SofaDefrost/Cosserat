@@ -1,4 +1,3 @@
-
 from dataclasses import dataclass
 import string
 
@@ -10,7 +9,8 @@ class GeometryParams:
     radius: float = 0.1
     nbSections: int = 16
     nbFrames: int = 15
-    totalLength: float = 15.
+    totalLength: float = 15.0
+
 
 @dataclass
 class PhysicsParams:
@@ -42,14 +42,13 @@ class ContactParams:
 
 
 def display():
-    print(f'''
+    print(f"""
           # Geometry
           {string.ascii_uppercase[:4]}
           {string.ascii_uppercase[4:6]}
           {string.ascii_uppercase[6:8]}
           {string.ascii_uppercase[8:10]}
-          '''
-          )
+          """)
 
 
 @dataclass
@@ -60,8 +59,8 @@ class NeedleParameters:
     # contact: ContactParams = ContactParams()
     pass
 
+
 @dataclass
 class ConstraintsParams:
     constraintDistance: float = 1.3  # distance between two constraint points
     entryForce: float = 0.3  # The required force to penetrate the volume
-
