@@ -425,6 +425,22 @@ namespace sofa::component::cosserat::liegroups {
 		}
 
 		/**
+		 * @brief Alternative implementation using direct computation with ad() operator
+		 * @param v Tangent vector
+		 * @return Matrix representing the differential of exp at v
+		 * @note Equivalent to dexp() but uses different computation method (needs comparison)
+		 */
+		[[nodiscard]] static AdjointMatrix dexp_alternative(const TangentVector &v);
+
+		/**
+		 * @brief Alternative implementation using direct computation with ad() operator
+		 * @param v Tangent vector
+		 * @return Matrix representing the inverse differential of exp at v
+		 * @note Equivalent to dexpInv() but uses different computation method (needs comparison)
+		 */
+		[[nodiscard]] static AdjointMatrix dexpInv_alternative(const TangentVector &v);
+
+		/**
 		 * @brief Get the differential of the logarithm map
 		 * @return Matrix representing the differential of log at the current point
 		 */
