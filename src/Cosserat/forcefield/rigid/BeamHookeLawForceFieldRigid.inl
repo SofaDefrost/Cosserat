@@ -75,7 +75,7 @@ namespace sofa::component::forcefield
               d_GA(initData(&d_GA, "GA", "The inertia parameter, GA")),
               d_EA(initData(&d_EA, "EA", "The inertia parameter, EA")),
               d_EIy(initData(&d_EIy, "EIy", "The inertia parameter, EIy")),
-               d_EIz(initData(&d_EIz, "EIz", "The inertia parameter, EIz")),
+	          d_EIz(initData(&d_EIz, "EIz", "The inertia parameter, EIz")),
               d_buildTorsion(initData(&d_buildTorsion, true,"build_torsion", "build torsion or the elongation of the beam ?"))
 
     {
@@ -101,6 +101,7 @@ namespace sofa::component::forcefield
     template<typename DataTypes>
     void BeamHookeLawForceFieldRigid<DataTypes>::reinit()
     {
+    	Inherit1::reinit();
         // Precompute and store values
         Real Iy, Iz, J, A;
         if ( d_crossSectionShape.getValue().getSelectedItem() == "rectangular")  //rectangular cross-section
@@ -146,7 +147,7 @@ namespace sofa::component::forcefield
         }
         else
         {
-            //Pour du vec 6, on a  _m_K =diag([G*J E*Iy E*Iz E*A G*As G*As]); % stifness matrix
+            //Pour du vec 6, on a  _m_K =diag([G*J E*Iy E*Iz E*A G*As G*As]); % stiffness matrix
             Real E = d_youngModulus.getValue();
             Real G = E/(2.0*(1.0+d_poissonRatio.getValue()));
             //Translational Stiffness (X, Y, Z directions):
@@ -179,6 +180,10 @@ namespace sofa::component::forcefield
             return;
         }
         VecDeriv& f = *d_f.beginEdit();
+
+    	std::cout << " BeamHookeLawForceFieldRigid::addForce " << std::endl ;
+    	std::cout << "The in force is " << f << std::endl ;
+
         const VecCoord& x = d_x.getValue();
         // get the rest position (for non straight shape)
         const VecCoord& x0 = this->mstate->read(sofa::core::vec_id::read_access::restPosition)->getValue();

@@ -37,91 +37,91 @@ namespace Cosserat {
 
 
 #ifdef COSSERAT_USES_SOFTROBOTS
-extern void registerQPSlidingConstraint(sofa::core::ObjectFactory* factory);
-extern void registerCosseratActuatorConstraint(sofa::core::ObjectFactory* factory);
+	extern void registerQPSlidingConstraint(sofa::core::ObjectFactory *factory);
+	extern void registerCosseratActuatorConstraint(sofa::core::ObjectFactory *factory);
 #endif
 
-extern void registerCosseratNeedleSlidingConstraint(sofa::core::ObjectFactory* factory);
-extern void registerCosseratSlidingConstraint(sofa::core::ObjectFactory* factory);
-extern void registerPointsManager(sofa::core::ObjectFactory* factory);
-extern void registerProjectionEngine(sofa::core::ObjectFactory* factory);
-extern void registerBeamHookeLawForceField(sofa::core::ObjectFactory* factory);
-extern void registerBeamHookeLawForceFieldRigid(sofa::core::ObjectFactory* factory);
-extern void registerCosseratInternalActuation(sofa::core::ObjectFactory* factory);
-extern void registerDifferenceMultiMapping(sofa::core::ObjectFactory* factory);
-extern void registerDiscreteCosseratMapping(sofa::core::ObjectFactory* factory);
-extern void registerDiscretDynamicCosseratMapping(sofa::core::ObjectFactory* factory);
-extern void registerLegendrePolynomialsMapping(sofa::core::ObjectFactory* factory);
-extern void registerRigidDistanceMapping(sofa::core::ObjectFactory* factory);
+	extern void registerCosseratNeedleSlidingConstraint(sofa::core::ObjectFactory *factory);
+	extern void registerCosseratSlidingConstraint(sofa::core::ObjectFactory *factory);
+	extern void registerPointsManager(sofa::core::ObjectFactory *factory);
+	extern void registerProjectionEngine(sofa::core::ObjectFactory *factory);
+	extern void registerBeamHookeLawForceField(sofa::core::ObjectFactory *factory);
+	extern void registerBeamHookeLawForceFieldRigid(sofa::core::ObjectFactory *factory);
+	extern void registerHookeSeratPCSForceField(sofa::core::ObjectFactory *factory);
+	extern void registerCosseratInternalActuation(sofa::core::ObjectFactory *factory);
+	extern void registerDifferenceMultiMapping(sofa::core::ObjectFactory *factory);
+	extern void registerDiscreteCosseratMapping(sofa::core::ObjectFactory *factory);
+	extern void registerHookeSeratDiscretMapping(sofa::core::ObjectFactory *factory);
 
-extern "C" {
-SOFA_COSSERAT_API void initExternalModule();
-SOFA_COSSERAT_API const char *getModuleLicense();
-SOFA_COSSERAT_API const char *getModuleName();
-SOFA_COSSERAT_API const char *getModuleVersion();
-SOFA_COSSERAT_API const char *getModuleDescription();
-SOFA_COSSERAT_API const char *getModuleComponentList();
-SOFA_COSSERAT_API void registerObjects(sofa::core::ObjectFactory* factory);
-}
+	// extern void registerDiscretDynamicCosseratMapping(sofa::core::ObjectFactory *factory);
+	extern void registerLegendrePolynomialsMapping(sofa::core::ObjectFactory *factory);
+	extern void registerRigidDistanceMapping(sofa::core::ObjectFactory *factory);
 
-// Here are just several convenient functions to help user to know what contains
-// the plugin
+	extern "C" {
+	SOFA_COSSERAT_API void initExternalModule();
+	SOFA_COSSERAT_API const char *getModuleLicense();
+	SOFA_COSSERAT_API const char *getModuleName();
+	SOFA_COSSERAT_API const char *getModuleVersion();
+	SOFA_COSSERAT_API const char *getModuleDescription();
+	SOFA_COSSERAT_API const char *getModuleComponentList();
+	SOFA_COSSERAT_API void registerObjects(sofa::core::ObjectFactory *factory);
+	}
 
-void initExternalModule() {
-  static bool first = true;
-  if (first)
-  {
-    sofa::helper::system::PluginManager::getInstance().registerPlugin(MODULE_NAME);
-    first = false;
-  }
-  // Automatically load the STLIB plugin if available.
-  if (!PluginManager::getInstance().findPlugin("STLIB").empty())
-  {
-    PluginManager::getInstance().loadPlugin("STLIB");
-  }
+	// Here are just several convenient functions to help user to know what contains
+	// the plugin
+
+	void initExternalModule() {
+		static bool first = true;
+		if (first) {
+			sofa::helper::system::PluginManager::getInstance().registerPlugin(MODULE_NAME);
+			first = false;
+		}
+		// Automatically load the STLIB plugin if available.
+		if (!PluginManager::getInstance().findPlugin("STLIB").empty()) {
+			PluginManager::getInstance().loadPlugin("STLIB");
+		}
 
 #ifdef SOFTROBOTS_PYTHON
-  PythonEnvironment::addPythonModulePathsForPluginsByName("Cosserat");
+		PythonEnvironment::addPythonModulePathsForPluginsByName("Cosserat");
 #endif
-}
+	}
 
-void registerObjects(sofa::core::ObjectFactory* factory)
-{
+	void registerObjects(sofa::core::ObjectFactory *factory) {
 
 #ifdef COSSERAT_USES_SOFTROBOTS
-  registerQPSlidingConstraint(factory);
-  registerCosseratActuatorConstraint(factory);
+		registerQPSlidingConstraint(factory);
+		registerCosseratActuatorConstraint(factory);
 #endif
-  registerCosseratNeedleSlidingConstraint(factory);
-  registerCosseratSlidingConstraint(factory);
-  registerPointsManager(factory);
-  registerProjectionEngine(factory);
-  registerBeamHookeLawForceField(factory);
-  registerBeamHookeLawForceFieldRigid(factory);
-  registerCosseratInternalActuation(factory);
-  registerDifferenceMultiMapping(factory);
-  registerDiscreteCosseratMapping(factory);
-  registerDiscretDynamicCosseratMapping(factory);
-  registerLegendrePolynomialsMapping(factory);
-  registerRigidDistanceMapping(factory);
-}
+		registerCosseratNeedleSlidingConstraint(factory);
+		registerCosseratSlidingConstraint(factory);
+		registerPointsManager(factory);
+		registerProjectionEngine(factory);
+		registerBeamHookeLawForceField(factory);
+		registerBeamHookeLawForceFieldRigid(factory);
 
-const char *getModuleLicense() { return "LGPL"; }
+		registerHookeSeratPCSForceField(factory);
+		registerCosseratInternalActuation(factory);
+		registerDifferenceMultiMapping(factory);
+		registerDiscreteCosseratMapping(factory);
+		registerHookeSeratDiscretMapping(factory);
+		// registerDiscretDynamicCosseratMapping(factory);
+		registerLegendrePolynomialsMapping(factory);
+		registerRigidDistanceMapping(factory);
+	}
 
-const char *getModuleName() { return Cosserat::MODULE_NAME; }
+	const char *getModuleLicense() { return "LGPL"; }
 
-const char *getModuleVersion() { return Cosserat::MODULE_VERSION; }
+	const char *getModuleName() { return Cosserat::MODULE_NAME; }
 
-const char *getModuleDescription() {
-  return "This plugin is used to implement slender object";
-}
+	const char *getModuleVersion() { return Cosserat::MODULE_VERSION; }
 
-const char *getModuleComponentList() {
-  // string containing the names of the classes provided by the plugin
-  static std::string classes =
-      sofa::core::ObjectFactory::getInstance()->listClassesFromTarget(
-          sofa_tostring(SOFA_TARGET));
-  return classes.c_str();
-}
+	const char *getModuleDescription() { return "This plugin is used to implement slender object"; }
 
-} // namespace cosserat
+	const char *getModuleComponentList() {
+		// string containing the names of the classes provided by the plugin
+		static std::string classes =
+				sofa::core::ObjectFactory::getInstance()->listClassesFromTarget(sofa_tostring(SOFA_TARGET));
+		return classes.c_str();
+	}
+
+} // namespace Cosserat

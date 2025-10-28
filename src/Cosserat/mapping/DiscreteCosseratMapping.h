@@ -25,147 +25,150 @@
 #include <Cosserat/mapping/BaseCosseratMapping.h>
 #include <sofa/helper/ColorMap.h>
 
-namespace Cosserat::mapping
-{
-namespace
-{
-using Mat3x6 = sofa::type::Mat<3, 6, SReal>;
-using Mat6x3 = sofa::type::Mat<6, 3, SReal>;
-using sofa::type::Mat4x4;
-using sofa::type::Mat6x6;
-using sofa::type::Vec3;
-using sofa::type::Vec6;
-using sofa::type::Quat;
-using sofa::Data;
-}
+namespace Cosserat::mapping {
+	namespace {
+		using Mat3x6 = sofa::type::Mat<3, 6, SReal>;
+		using Mat6x3 = sofa::type::Mat<6, 3, SReal>;
+		using Mat3x3 = sofa::type::Mat<3, 3, SReal>;
+		using sofa::Data;
+		using sofa::type::Mat4x4;
+		using sofa::type::Mat6x6;
+		using sofa::type::Quat;
+		using sofa::type::Vec3;
+		using sofa::type::Vec6;
+	} // namespace
 
-/*!
- * \class DiscreteCosseratMapping
- * @brief Base class for Cosserat rod mappings in SOFA framework
- *
- * This class provides the foundation for implementing Cosserat rod mappings,
- * which are used to map between different representations of a Cosserat rod's
- * configuration and deformation.
- *
- * @tparam TIn1 The first input type for the mapping
- * @tparam TIn2 The second input type for the mapping
- * @tparam TOut The output type for the mapping
- */
-template <class TIn1, class TIn2, class TOut>
-class DiscreteCosseratMapping : public BaseCosseratMapping<TIn1, TIn2, TOut> {
-public:
-    SOFA_CLASS(SOFA_TEMPLATE3(DiscreteCosseratMapping, TIn1, TIn2, TOut),
-               SOFA_TEMPLATE3(Cosserat::mapping::BaseCosseratMapping, TIn1, TIn2, TOut));
+	/*!
+	 * \class DiscreteCosseratMapping
+	 * @brief Base class for Cosserat rod mappings in SOFA framework
+	 *
+	 * This class provides the foundation for implementing Cosserat rod mappings,
+	 * which are used to map between different representations of a Cosserat rod's
+	 * configuration and deformation.
+	 *
+	 * @tparam TIn1 The first input type for the mapping
+	 * @tparam TIn2 The second input type for the mapping
+	 * @tparam TOut The output type for the mapping
+	 */
+	template<class TIn1, class TIn2, class TOut>
+	class DiscreteCosseratMapping : public BaseCosseratMapping<TIn1, TIn2, TOut> {
+	public:
+		SOFA_CLASS(SOFA_TEMPLATE3(DiscreteCosseratMapping, TIn1, TIn2, TOut),
+				   SOFA_TEMPLATE3(Cosserat::mapping::BaseCosseratMapping, TIn1, TIn2, TOut));
 
-    /// Input Model Type
-    typedef TIn1 In1;
-    typedef TIn2 In2;
-    typedef TOut Out;
+		/// Input Model Type
+		typedef TIn1 In1;
+		typedef TIn2 In2;
+		typedef TOut Out;
 
-    //////////////////////////////////////////////////////////////////////
-    /// @name Data Fields
-    /// @{
-    Data<int>   d_deformationAxis;
-    Data<SReal> d_max;
-    Data<SReal> d_min;
-    Data<SReal> d_radius;
-    Data<bool>  d_drawMapBeam;
-    Data<sofa::type::RGBAColor> d_color;
-    Data<vector<int>>  d_index;
-    Data<unsigned int> d_baseIndex;
-    /// @}
-    //////////////////////////////////////////////////////////////////////
+		//////////////////////////////////////////////////////////////////////
+		/// @name Data Fields
+		/// @{
+		Data<int> d_deformationAxis;
+		Data<SReal> d_max;
+		Data<SReal> d_min;
+		Data<SReal> d_radius;
+		Data<bool> d_drawMapBeam;
+		Data<sofa::type::RGBAColor> d_color;
+		Data<vector<int>> d_index;
+		Data<unsigned int> d_baseIndex;
+		/// @}
+		//////////////////////////////////////////////////////////////////////
 
-public:
-    //////////////////////////////////////////////////////////////////////
-    /// The following methods are inherited from BaseObject
-    /// @{
-    void doBaseCosseratInit() final override;
-    void draw(const sofa::core::visual::VisualParams *vparams) override;
-    /// @}
-    //////////////////////////////////////////////////////////////////////
-
-
-    //////////////////////////////////////////////////////////////////////
-    /// The following method are inherited from MultiMapping
-    /// @{
-    auto apply(const sofa::core::MechanicalParams* /* mparams */,
-               const vector<sofa::DataVecCoord_t<Out>*>& dataVecOutPos,
-               const vector<const sofa::DataVecCoord_t<In1>*>& dataVecIn1Pos,
-               const vector<const sofa::DataVecCoord_t<In2>*>& dataVecIn2Pos) ->
-        void override;
-
-    void applyJ(const sofa::core::MechanicalParams * /* mparams */,
-                const vector<sofa::DataVecDeriv_t<Out> *> &dataVecOutVel,
-                const vector<const sofa::DataVecDeriv_t<In1> *> &dataVecIn1Vel,
-                const vector<const sofa::DataVecDeriv_t<In2> *> &dataVecIn2Vel) override;
-
-    void applyJT(const sofa::core::MechanicalParams * /* mparams */,
-                 const vector<sofa::DataVecDeriv_t<In1> *> &dataVecOut1Force,
-                 const vector<sofa::DataVecDeriv_t<In2> *> &dataVecOut2RootForce,
-                 const vector<const sofa::DataVecDeriv_t<Out> *> &dataVecInForce) override;
-
-    // TODO(dmarchal:2024/06/13): Override with an empty function is a rare code pattern
-    // to make it clear this is the intented and not just an "I'm too lazy to implement it"
-    // please always have a precise code comment explaning with details why it is empty.
-    void applyDJT(const sofa::core::MechanicalParams * /*mparams*/,
-                  sofa::core::MultiVecDerivId /*inForce*/,
-                  sofa::core::ConstMultiVecDerivId /*outForce*/) override {}
-
-    /// Support for constraints.
-    void applyJT(
-            const sofa::core::ConstraintParams *cparams,
-            const vector<sofa::DataMatrixDeriv_t<In1> *> &dataMatOut1Const,
-            const vector<sofa::DataMatrixDeriv_t<In2> *> &dataMatOut2Const,
-            const vector<const sofa::DataMatrixDeriv_t<Out> *> &dataMatInConst) override;
-    /// @}
-    /////////////////////////////////////////////////////////////////////////////
+	public:
+		//////////////////////////////////////////////////////////////////////
+		/// The following methods are inherited from BaseObject
+		/// @{
+		void doBaseCosseratInit() final override;
+		void draw(const sofa::core::visual::VisualParams *vparams) override;
+		/// @}
+		//////////////////////////////////////////////////////////////////////
 
 
-    void computeBBox(const sofa::core::ExecParams *params, bool onlyVisible) override;
-    void computeLogarithm(const double &x, const Mat4x4 &gX, Mat4x4 &log_gX);
+		//////////////////////////////////////////////////////////////////////
+		/// The following method are inherited from MultiMapping
+		/// @{
+		auto apply(const sofa::core::MechanicalParams * /* mparams */,
+				   const vector<sofa::DataVecCoord_t<Out> *> &dataVecOutPos,
+				   const vector<const sofa::DataVecCoord_t<In1> *> &dataVecIn1Pos,
+				   const vector<const sofa::DataVecCoord_t<In2> *> &dataVecIn2Pos) -> void override;
 
-protected:
-    ////////////////////////// Inherited attributes ////////////////////////////
-    /// https://gcc.gnu.org/onlinedocs/gcc/Name-lookup.html
-    /// Bring inherited attributes and function in the current lookup context.
-    /// otherwise any access to the base::attribute would require
-    /// the "this->" approach.
-    using BaseCosseratMapping<TIn1, TIn2, TOut>::m_indicesVectors;
-    using BaseCosseratMapping<TIn1, TIn2, TOut>::d_curv_abs_section;
-    using BaseCosseratMapping<TIn1, TIn2, TOut>::d_curv_abs_frames;
-    using BaseCosseratMapping<TIn1, TIn2, TOut>::m_nodesTangExpVectors;
-    using BaseCosseratMapping<TIn1, TIn2, TOut>::m_nodesVelocityVectors;
-    using BaseCosseratMapping<TIn1, TIn2, TOut>::m_framesExponentialSE3Vectors;
-    using BaseCosseratMapping<TIn1, TIn2, TOut>::m_framesTangExpVectors;
-    using BaseCosseratMapping<TIn1, TIn2, TOut>::m_totalBeamForceVectors;
-    using BaseCosseratMapping<TIn1, TIn2, TOut>::m_nodesExponentialSE3Vectors;
-    using BaseCosseratMapping<TIn1, TIn2, TOut>::d_debug;
-    using BaseCosseratMapping<TIn1, TIn2, TOut>::m_vecTransform;
-    using BaseCosseratMapping<TIn1, TIn2, TOut>::m_nodeAdjointVectors;
-    using BaseCosseratMapping<TIn1, TIn2, TOut>::m_indexInput;
-    using BaseCosseratMapping<TIn1, TIn2, TOut>::m_indicesVectorsDraw;
-    using BaseCosseratMapping<TIn1, TIn2, TOut>::computeTheta;
+		void applyJ(const sofa::core::MechanicalParams * /* mparams */,
+					const vector<sofa::DataVecDeriv_t<Out> *> &dataVecOutVel,
+					const vector<const sofa::DataVecDeriv_t<In1> *> &dataVecIn1Vel,
+					const vector<const sofa::DataVecDeriv_t<In2> *> &dataVecIn2Vel) override;
 
-    using BaseCosseratMapping<TIn1, TIn2, TOut>::m_global_frames;
-    using BaseCosseratMapping<TIn1, TIn2, TOut>::m_strain_state;
-    using BaseCosseratMapping<TIn1, TIn2, TOut>::m_rigid_base;
+		void applyJT(const sofa::core::MechanicalParams * /* mparams */,
+					 const vector<sofa::DataVecDeriv_t<In1> *> &dataVecOut1Force,
+					 const vector<sofa::DataVecDeriv_t<In2> *> &dataVecOut2RootForce,
+					 const vector<const sofa::DataVecDeriv_t<Out> *> &dataVecInForce) override;
 
-    //////////////////////////////////////////////////////////////////////////////
+		// TODO(dmarchal:2024/06/13): Override with an empty function is a rare code pattern
+		// to make it clear this is the intented and not just an "I'm too lazy to implement it"
+		// please always have a precise code comment explaning with details why it is empty.
+		void applyDJT(const sofa::core::MechanicalParams * /*mparams*/, sofa::core::MultiVecDerivId /*inForce*/,
+					  sofa::core::ConstMultiVecDerivId /*outForce*/) override {}
 
-    sofa::helper::ColorMap m_colorMap;
-protected:
-    DiscreteCosseratMapping();
-    ~DiscreteCosseratMapping() override = default;
-};
+		/// Support for constraints.
+		void applyJT(const sofa::core::ConstraintParams *cparams,
+					 const vector<sofa::DataMatrixDeriv_t<In1> *> &dataMatOut1Const,
+					 const vector<sofa::DataMatrixDeriv_t<In2> *> &dataMatOut2Const,
+					 const vector<const sofa::DataMatrixDeriv_t<Out> *> &dataMatInConst) override;
+		/// @}
+		/////////////////////////////////////////////////////////////////////////////
+
+
+		void computeBBox(const sofa::core::ExecParams *params, bool onlyVisible) override;
+		void computeLogarithm(const double &x, const Mat4x4 &gX, Mat4x4 &log_gX);
+
+		// Debugging functions
+		void displayOutputFrames(const sofa::VecCoord_t<Out> &frames, const std::string &label="output - frames");
+		void displayInputVelocities(const sofa::VecDeriv_t<In1> &in1Vel, const sofa::VecDeriv_t<In2> &in2Vel, const std::string &label="input - velocities");
+		void displayOutputVelocities(const sofa::VecDeriv_t<Out> &outVel, const std::string &label="output - velocities");
+		void displayInputForces(const sofa::VecDeriv_t<In1> &in1Force, const sofa::VecDeriv_t<In2> &in2Force, const std::string &label="input - forces");
+		void displayOutputForces(const sofa::VecDeriv_t<Out> &outForce, const std::string &label="output - forces");
+		void displayTransformMatrices(const std::string &label="transform - matrices");
+
+	protected:
+		////////////////////////// Inherited attributes ////////////////////////////
+		/// https://gcc.gnu.org/onlinedocs/gcc/Name-lookup.html
+		/// Bring inherited attributes and function in the current lookup context.
+		/// otherwise any access to the base::attribute would require
+		/// the "this->" approach.
+		using BaseCosseratMapping<TIn1, TIn2, TOut>::m_indices_vectors;
+		using BaseCosseratMapping<TIn1, TIn2, TOut>::d_curv_abs_section;
+		using BaseCosseratMapping<TIn1, TIn2, TOut>::d_curv_abs_frames;
+		using BaseCosseratMapping<TIn1, TIn2, TOut>::m_nodes_tang_exp_vectors;
+		using BaseCosseratMapping<TIn1, TIn2, TOut>::m_nodes_velocity_vectors;
+		using BaseCosseratMapping<TIn1, TIn2, TOut>::m_frames_exponential_se3_vectors;
+		using BaseCosseratMapping<TIn1, TIn2, TOut>::m_frames_tang_exp_vectors;
+		using BaseCosseratMapping<TIn1, TIn2, TOut>::m_total_beam_force_vectors;
+		using BaseCosseratMapping<TIn1, TIn2, TOut>::m_nodes_exponential_se3_vectors;
+		using BaseCosseratMapping<TIn1, TIn2, TOut>::d_debug;
+		using BaseCosseratMapping<TIn1, TIn2, TOut>::m_vec_transform;
+		using BaseCosseratMapping<TIn1, TIn2, TOut>::m_node_adjoint_vectors;
+		using BaseCosseratMapping<TIn1, TIn2, TOut>::m_index_input;
+		using BaseCosseratMapping<TIn1, TIn2, TOut>::m_indices_vectors_draw;
+		using BaseCosseratMapping<TIn1, TIn2, TOut>::computeTheta;
+
+		using BaseCosseratMapping<TIn1, TIn2, TOut>::m_global_frames;
+		using BaseCosseratMapping<TIn1, TIn2, TOut>::m_strain_state;
+		using BaseCosseratMapping<TIn1, TIn2, TOut>::m_rigid_base;
+
+		//////////////////////////////////////////////////////////////////////////////
+
+		sofa::helper::ColorMap m_colorMap;
+
+	protected:
+		DiscreteCosseratMapping();
+		~DiscreteCosseratMapping() override = default;
+	};
 
 #if !defined(SOFA_COSSERAT_CPP_DiscreteCosseratMapping)
-extern template class SOFA_COSSERAT_API DiscreteCosseratMapping<
-        sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types,
-        sofa::defaulttype::Rigid3Types>;
-extern template class SOFA_COSSERAT_API DiscreteCosseratMapping<
-        sofa::defaulttype::Vec6Types, sofa::defaulttype::Rigid3Types,
-        sofa::defaulttype::Rigid3Types>;
+	extern template class SOFA_COSSERAT_API DiscreteCosseratMapping<
+			sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types>;
+	extern template class SOFA_COSSERAT_API DiscreteCosseratMapping<
+			sofa::defaulttype::Vec6Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types>;
 #endif
 
 } // namespace Cosserat::mapping
