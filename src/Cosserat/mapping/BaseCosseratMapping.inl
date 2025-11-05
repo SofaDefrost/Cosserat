@@ -397,7 +397,7 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::computeTangExp(double &curv_abs_n,
                                                            Mat6x6 &TgX)
 {
     if constexpr( Coord1::static_size == 3 )
-        computeTangExpImplementation(curv_abs_n, Vec6(strain_i(0),strain_i(1),strain_i(2),0,0,0), TgX);
+        computeTangExpImplementation(curv_abs_n, Vec6(strain_i(0),strain_i(1),strain_i(2),1.0,0,0), TgX);
     else
         computeTangExpImplementation(curv_abs_n, strain_i, TgX);
 }
