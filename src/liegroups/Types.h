@@ -2,8 +2,8 @@
 
 #include <cmath>
 #include <concepts>
-#include <eigen3/Eigen/Dense>
-#include <eigen3/Eigen/Geometry>
+#include <Eigen/Dense>
+#include <Eigen/Geometry>
 #include <limits>
 #include <random>
 #include <type_traits>

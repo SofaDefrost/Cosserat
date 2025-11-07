@@ -26,8 +26,8 @@
 #include "SE3.h"            // Then other dependencies
 #include "SO2.h"            // Then other dependencies
 #include "Types.h"          // Then our type system
-#include <eigen3/Eigen/Dense>
-#include <eigen3/Eigen/Geometry>
+#include <Eigen/Dense>
+#include <Eigen/Geometry>
 #include <random>
 
 namespace sofa::component::cosserat::liegroups {

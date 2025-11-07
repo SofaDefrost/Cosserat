@@ -27,7 +27,7 @@
 #include "LieGroupBase.inl" // Then the base class interface
 #include "Types.h"          // Then our type system
 #include <cmath>
-#include <eigen3/Eigen/Geometry>
+#include <Eigen/Geometry>
 
 namespace sofa::component::cosserat::liegroups {
 

@@ -6,7 +6,7 @@
 #define COSSERAT_LIEGROUPS_ENHANCED_UTILS_H
 
 #include <cmath>
-#include <eigen3/Eigen/Dense>
+#include <Eigen/Dense>
 #include <limits>
 #include <type_traits>
 #include <vector>
