@@ -39,4 +39,4 @@ custom_bending_states = [[0, 0, curvature_per_section] for _ in range(num_sectio
 - **`curvature_per_section`**: We calculate the constant curvature required at each section to achieve the total desired angle over the entire beam length. We apply this curvature around the Z-axis (`κ₃`).
 - **`custom_bending_states`**: We create a list where every section has the same calculated curvature. This results in a uniform, circular arch.
 
-When you pass this `custom_bending_states` to the `_add_cosserat_state` function, the `DiscreteCosseratMapping` will automatically compute the correct curved initial positions for the visual frames.
+When you pass this `custom_bending_states` to the `_add_cosserat_state` function, the `HookeSeratDiscretMapping` will automatically compute the correct curved initial positions for the visual frames.

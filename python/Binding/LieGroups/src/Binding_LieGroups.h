@@ -36,6 +36,12 @@ namespace sofapython3 {
 	// Add SE3 class bindings to the module
 	void moduleAddSE3(pybind11::module &m);
 
+	// Add Sim3 class bindings to the module
+	void moduleAddSim3(pybind11::module &m);
+
+	// Add Uncertainty propagation bindings to the module
+	void moduleAddUncertainty(pybind11::module &m);
+
 	// Add SGal3 class bindings to the module
 	void moduleAddSGal3(pybind11::module &m);
 

@@ -41,11 +41,18 @@ namespace sofapython3 {
 
 	PYBIND11_MODULE(Cosserat, m) {
 		m.doc() = "Cosserat plugin for SOFA, providing Lie group functionalities for Cosserat models.";
-		// Only add Lie groups related functionality
+		// Add all Lie groups related functionality
 		moduleAddSO2(m);
 		moduleAddSE2(m);
 		moduleAddSO3(m);
 		moduleAddSE3(m);
+		moduleAddSim3(m);
+		moduleAddUncertainty(m);
+		moduleAddSGal3(m);
+		moduleAddSE23(m);
+		moduleAddRealSpace(m);
+		moduleAddBundle(m);
+		moduleAddLieGroupUtils(m);
 	}
 
 } // namespace sofapython3

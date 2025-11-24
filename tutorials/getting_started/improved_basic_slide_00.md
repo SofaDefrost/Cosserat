@@ -297,7 +297,7 @@ Now, we'll dive into the essential part – configuring the Cosserat plugin with
     - **section** and **frames**
     - **section** and **cross-section**
 - The notion of force-field : here **BeamHookeLawForceField**
-- The notion of mapping: here **DiscreteCosseratMapping**
+- The notion of mapping: here **HookeSeratDiscretMapping**
 - Functions: **apply, applyJ**, **applyJT** for forces and **ApplyJ^T** for constraints
 
 ---
@@ -450,7 +450,7 @@ def _add_cosserat_frame(
     cosserat_in_sofa_frame_node.addObject("UniformMass", totalMass=beam_mass)
 
     cosserat_in_sofa_frame_node.addObject(
-        "DiscreteCosseratMapping",
+        "HookeSeratDiscretMapping",
         curv_abs_input=geometry.curv_abs_sections,  # Use geometry data
         curv_abs_output=geometry.curv_abs_frames,  # Use geometry data
         name="cosseratMapping",
@@ -467,7 +467,7 @@ def _add_cosserat_frame(
 
 ### Mapping : From Cosserat state to Sofa state
 
-##### The notion of mapping: **DiscreteCosseratMapping**
+##### The notion of mapping: **HookeSeratDiscretMapping**
 
 - **apply** : It calculates how the positions of elements in the input models (deformations and base) are transformed to the output model (rigid frames).
   The function applies the mapping to these input positions and updates the output frames accordingly.
@@ -479,7 +479,7 @@ def _add_cosserat_frame(
 
 ### Mapping : From Cosserat state to Sofa state
 
-#### The notion of mapping: **DiscreteCosseratMapping**
+#### The notion of mapping: **HookeSeratDiscretMapping**
 
 - **applyJT force** : It updates forces in reduced coordinate based on forces in global coordinate.
 

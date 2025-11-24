@@ -353,6 +353,116 @@ namespace sofa::component::cosserat::liegroups {
 			return os;
 		}
 
+		/**
+		 * @brief Right Jacobian of SE(3): Jr(ξ) = d/dξ Exp(ξ)
+		 *
+		 * For ξ = [ω, v]ᵀ ∈ ℝ⁶, the right Jacobian has the form:
+		 * Jr(ξ) = [ Jr_SO3(ω),  Q(ξ)
+		 *           0,           Jr_SO3(ω) ]
+		 *
+		 * @param xi Tangent vector ξ = [ω, v]ᵀ
+		 * @return 6×6 right Jacobian matrix
+		 */
+		static AdjointMatrix computeRightJacobian(const TangentVector &xi) noexcept {
+			const Vector3 omega = xi.template tail<3>();
+			const Vector3 v = xi.template head<3>();
+
+			const Scalar theta = omega.norm();
+			const Matrix3 Jr_SO3 = SO3Type::computeRightJacobian(omega);
+
+			AdjointMatrix Jr = AdjointMatrix::Zero();
+
+			// Top-left: Jr_SO3(ω)
+			Jr.template block<3, 3>(0, 0) = Jr_SO3;
+
+			// Top-right: Q(ξ) where Q(ξ) = Jr_SO3(ω) * V(ξ)
+			// For small angles, V(ξ) ≈ I + ½[ω]×, but we use the general formula
+			if (theta < Types<Scalar>::epsilon()) {
+				// Small angle approximation
+				Matrix3 V = Matrix3::Identity() + Scalar(0.5) * SO3Type::hat(omega);
+				Jr.template block<3, 3>(0, 3) = Jr_SO3 * V;
+			} else {
+				// General case: V = I + (1-cosθ)/θ² [ω]× + (θ-sinθ)/θ³ [ω]×²
+				const Scalar cos_theta = std::cos(theta);
+				const Scalar sin_theta = std::sin(theta);
+				const Matrix3 omega_hat = SO3Type::hat(omega);
+				const Matrix3 omega_hat2 = omega_hat * omega_hat;
+				const Scalar theta2 = theta * theta;
+				const Scalar theta3 = theta2 * theta;
+
+				Matrix3 V = Matrix3::Identity();
+				V += ((Scalar(1) - cos_theta) / theta2) * omega_hat;
+				V += ((theta - sin_theta) / theta3) * omega_hat2;
+
+				Jr.template block<3, 3>(0, 3) = Jr_SO3 * V;
+			}
+
+			// Bottom-left: 0 (already zero)
+
+			// Bottom-right: Jr_SO3(ω)
+			Jr.template block<3, 3>(3, 3) = Jr_SO3;
+
+			return Jr;
+		}
+
+		/**
+		 * @brief Left Jacobian of SE(3): Jl(ξ) = Jr(-ξ)
+		 *
+		 * @param xi Tangent vector ξ = [ω, v]ᵀ
+		 * @return 6×6 left Jacobian matrix
+		 */
+		static AdjointMatrix computeLeftJacobian(const TangentVector &xi) noexcept {
+			return computeRightJacobian(-xi);
+		}
+
+		/**
+		 * @brief Inverse of the right Jacobian: Jr⁻¹(ξ)
+		 *
+		 * @param xi Tangent vector ξ = [ω, v]ᵀ
+		 * @return 6×6 inverse right Jacobian matrix
+		 */
+		static AdjointMatrix computeRightJacobianInverse(const TangentVector &xi) noexcept {
+			const Vector3 omega = xi.template tail<3>();
+			const Vector3 v = xi.template head<3>();
+
+			const Scalar theta = omega.norm();
+			const Matrix3 Jr_SO3_inv = SO3Type::computeRightJacobianInverse(omega);
+
+			AdjointMatrix Jr_inv = AdjointMatrix::Zero();
+
+			// Top-left: Jr_SO3⁻¹(ω)
+			Jr_inv.template block<3, 3>(0, 0) = Jr_SO3_inv;
+
+			// Top-right: -Jr_SO3⁻¹(ω) * Q(ξ) * Jr_SO3⁻¹(ω)
+			// This is an approximation; the exact formula is more complex
+			if (theta < Types<Scalar>::epsilon()) {
+				// Small angle approximation
+				Matrix3 V_inv = Matrix3::Identity() - Scalar(0.5) * SO3Type::hat(omega);
+				Jr_inv.template block<3, 3>(0, 3) = -Jr_SO3_inv * V_inv * Jr_SO3_inv;
+			} else {
+				// For general case, we use a simplified approximation
+				// The exact inverse would require more complex calculations
+				Jr_inv.template block<3, 3>(0, 3) = -Jr_SO3_inv * computeRightJacobian(xi).template block<3, 3>(0, 3) * Jr_SO3_inv;
+			}
+
+			// Bottom-left: 0 (already zero)
+
+			// Bottom-right: Jr_SO3⁻¹(ω)
+			Jr_inv.template block<3, 3>(3, 3) = Jr_SO3_inv;
+
+			return Jr_inv;
+		}
+
+		/**
+		 * @brief Inverse of the left Jacobian: Jl⁻¹(ξ) = Jr⁻¹(-ξ)
+		 *
+		 * @param xi Tangent vector ξ = [ω, v]ᵀ
+		 * @return 6×6 inverse left Jacobian matrix
+		 */
+		static AdjointMatrix computeLeftJacobianInverse(const TangentVector &xi) noexcept {
+			return computeRightJacobianInverse(-xi);
+		}
+
 	private:
 		SO3Type m_rotation;
 		Vector3 m_translation;
@@ -428,13 +538,15 @@ namespace sofa::component::cosserat::liegroups {
 			xi_hat(2, 1) = phi.x();
 
 			// Top-right 3x1: translation part
-			xi_hat(0, 3) = 1.0 + rho.x();
+			xi_hat(0, 3) = rho.x();
 			xi_hat(1, 3) = rho.y();
 			xi_hat(2, 3) = rho.z();
 
 			// The bottom row is already zero
 			return xi_hat;
 		}
+
+
 	};
 
 	// ========== Type Aliases ==========

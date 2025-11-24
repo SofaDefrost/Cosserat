@@ -81,7 +81,7 @@ Now, we'll dive into the essential part – configuring the Cosserat plugin with
     - **section** and **frames**
     - **section** and **cross-section**
 - The notion of force-field : here **BeamHookeLawForceField**
-- The notion of mapping: here **DiscreteCosseratMapping**
+- The notion of mapping: here **HookeSeratDiscretMapping**
 - Functions: **apply, applyJ**, **applyJT** for forces and **ApplyJ^T** for constraints
 
 ### Scene Graph Structure
@@ -99,7 +99,7 @@ root_node
 └── cosserat_in_Sofa_frame_node
     ├── FramesMO (MechanicalObject)
     ├── UniformMass
-    └── DiscreteCosseratMapping
+     └── HookeSeratDiscretMapping
 ```
 
 - **root_node**: The root of our scene.

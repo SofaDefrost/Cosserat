@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cmath>
-#include <concepts>
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
 #include <limits>
@@ -20,8 +19,7 @@ namespace sofa::component::cosserat::liegroups {
 	 * This class provides type aliases and utility functions for different
 	 * scalar types used in Lie group computations.
 	 */
-	template<typename _Scalar>
-		requires std::is_floating_point_v<_Scalar>
+	template<typename _Scalar, typename = typename std::enable_if<std::is_floating_point<_Scalar>::value>::type>
 	class Types {
 	public:
 		using Scalar = _Scalar;

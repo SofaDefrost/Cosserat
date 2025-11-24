@@ -98,11 +98,12 @@ def _add_cosserat_frame(
 
     cosserat_in_sofa_frame_node.addObject("UniformMass", totalMass=beam_mass)
 
+    # Use the enhanced HookeSeratDiscretMapping with Lie groups support
     cosserat_in_sofa_frame_node.addObject(
-        "DiscreteCosseratMapping",
+        "HookeSeratDiscretMapping",
         curv_abs_input=geometry.curv_abs_sections,  # Use geometry data
         curv_abs_output=geometry.curv_abs_frames,  # Use geometry data
-        name="cosseratMapping",
+        name="hookeSeratMapping",
         input1=bending_node.cosserat_state.getLinkPath(),
         input2=p_node.cosserat_base_mo.getLinkPath(),
         output=frames_mo.getLinkPath(),

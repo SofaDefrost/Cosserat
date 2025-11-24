@@ -37,7 +37,10 @@
 #include "../../../../src/liegroups/SGal3.h"
 #include "../../../../src/liegroups/SO2.h"
 #include "../../../../src/liegroups/SO3.h"
+#include "../../../../src/liegroups/Sim3.h"
+#include "../../../../src/liegroups/Uncertainty.h"
 #include "../../../../src/liegroups/Types.h"
+#include "../../../../src/liegroups/Bundle.h"
 
 // pybind11 includes last to avoid template conflicts
 #include <pybind11/pybind11.h>
@@ -135,445 +138,7 @@ namespace sofa::component::cosserat::liegroups {
 
 	} // namespace detail
 
-	/**
-	 * @brief Implementation of product manifold bundle of Lie groups
-	 *
-	 * This class implements a Cartesian product of multiple Lie groups, allowing
-	 * them to be treated as a single composite Lie group. The bundle maintains the
-	 * product structure while providing all necessary group operations.
-	 *
-	 * Mathematical Background:
-	 * For Lie groups G₁, G₂, ..., Gₙ, the product manifold G = G₁ × G₂ × ... × Gₙ
-	 * is also a Lie group with:
-	 * - Group operation: (g₁, g₂, ..., gₙ) * (h₁, h₂, ..., hₙ) = (g₁h₁, g₂h₂, ...,
-	 * gₙhₙ)
-	 * - Identity: (e₁, e₂, ..., eₙ) where eᵢ is identity of Gᵢ
-	 * - Inverse: (g₁, g₂, ..., gₙ)⁻¹ = (g₁⁻¹, g₂⁻¹, ..., gₙ⁻¹)
-	 * - Lie algebra: 𝔤 = 𝔤₁ ⊕ 𝔤₂ ⊕ ... ⊕ 𝔤ₙ (direct sum)
-	 * - Adjoint: block diagonal with Adᵢ on diagonal blocks
-	 *
-	 * Usage Examples:
-	 * ```cpp
-	 * // Rigid body pose with velocity
-	 * using RigidBodyState = Bundle<SE3<double>, RealSpace<double, 6>>;
-	 *
-	 * // 2D robot with multiple joints
-	 * using Robot2D = Bundle<SE2<double>, SO2<double>, SO2<double>>;
-	 *
-	 * // Create and manipulate
-	 * auto state1 = RigidBodyState(SE3<double>::identity(),
-	 *                             RealSpace<double, 6>::zero());
-	 * auto state2 = RigidBodyState(pose, velocity);
-	 * auto combined = state1 * state2;
-	 * ```
-	 *
-	 * @tparam Groups The Lie groups to bundle together (must have same scalar type)
-	 */
-	template<typename... Groups>
-	class Bundle
-		: public LieGroupBase<typename std::tuple_element_t<0, std::tuple<Groups...>>::Scalar,
-							  std::integral_constant<int, detail::TotalDimension<Groups...>::value>,
-							  detail::TotalDimension<Groups...>::value, detail::TotalDimension<Groups...>::value> {
 
-		// Compile-time validation
-		static_assert(sizeof...(Groups) > 0, "Bundle must contain at least one group");
-
-		using FirstGroup = std::tuple_element_t<0, std::tuple<Groups...>>;
-		using FirstScalar = typename FirstGroup::Scalar;
-
-		static_assert(detail::AllAreLieGroups<FirstScalar, Groups...>::value,
-					  "All template parameters must be Lie groups with the same scalar type");
-
-	public:
-		using Base = LieGroupBase<FirstScalar, std::integral_constant<int, detail::TotalDimension<Groups...>::value>,
-								  detail::TotalDimension<Groups...>::value, detail::TotalDimension<Groups...>::value>;
-		using Scalar = typename Base::Scalar;
-		using Vector = typename Base::Vector;
-		using Matrix = typename Base::Matrix;
-		using TangentVector = typename Base::TangentVector;
-		using AdjointMatrix = typename Base::AdjointMatrix;
-
-		static constexpr int Dim = Base::Dim;
-		static constexpr std::size_t NumGroups = sizeof...(Groups);
-
-		using GroupTuple = std::tuple<Groups...>;
-
-		// Compile-time offset table for algebra elements
-		template<std::size_t I>
-		static constexpr int AlgebraOffset = detail::OffsetAt<I, Groups...>::value;
-
-		template<std::size_t I>
-		using GroupType = std::tuple_element_t<I, GroupTuple>;
-
-		// ========== Constructors ==========
-
-		/**
-		 * @brief Default constructor creates identity bundle
-		 */
-		Bundle() : m_groups(), m_action_offsets(m_groups) {}
-
-		/**
-		 * @brief Construct from individual group elements
-		 */
-		explicit Bundle(const Groups &...groups) : m_groups(groups...), m_action_offsets(m_groups) {}
-
-		/**
-		 * @brief Construct from tuple of groups
-		 */
-		explicit Bundle(const GroupTuple &groups) : m_groups(groups), m_action_offsets(m_groups) {}
-
-		/**
-		 * @brief Construct from Lie algebra vector
-		 */
-		explicit Bundle(const TangentVector &algebra_element) : Bundle() { *this = exp(algebra_element); }
-
-		/**
-		 * @brief Copy constructor
-		 */
-		Bundle(const Bundle &other) = default;
-
-		/**
-		 * @brief Move constructor
-		 */
-		Bundle(Bundle &&other) noexcept = default;
-
-		/**
-		 * @brief Copy assignment
-		 */
-		Bundle &operator=(const Bundle &other) = default;
-
-		/**
-		 * @brief Move assignment
-		 */
-		Bundle &operator=(Bundle &&other) noexcept = default;
-
-		// ========== Group Operations ==========
-
-		/**
-		 * @brief Group composition (component-wise)
-		 * Implements: (g₁, ..., gₙ) * (h₁, ..., hₙ) = (g₁h₁, ..., gₙhₙ)
-		 */
-		Bundle operator*(const Bundle &other) const {
-			return multiply_impl(other, std::index_sequence_for<Groups...>());
-		}
-
-		/**
-		 * @brief In-place group composition
-		 */
-		Bundle &operator*=(const Bundle &other) {
-			multiply_assign_impl(other, std::index_sequence_for<Groups...>());
-			return *this;
-		}
-
-		/**
-		 * @brief Inverse element (component-wise)
-		 * Implements: (g₁, ..., gₙ)⁻¹ = (g₁⁻¹, ..., gₙ⁻¹)
-		 */
-		Bundle inverse() const { return inverse_impl(std::index_sequence_for<Groups...>()); }
-
-		// ========== Lie Algebra Operations ==========
-
-		/**
-		 * @brief Exponential map from Lie algebra to bundle
-		 * The Lie algebra of the product is the direct sum of individual algebras
-		 */
-		Bundle exp(const TangentVector &algebra_element) const {
-			validateAlgebraElement(algebra_element);
-			return exp_impl(algebra_element, std::index_sequence_for<Groups...>());
-		}
-
-		/**
-		 * @brief Logarithmic map from bundle to Lie algebra
-		 * Maps to the direct sum of individual Lie algebras
-		 */
-		TangentVector log() const { return log_impl(std::index_sequence_for<Groups...>()); }
-
-		/**
-		 * @brief Adjoint representation (block diagonal structure)
-		 * Ad_{(g₁,...,gₙ)} = diag(Ad_{g₁}, ..., Ad_{gₙ})
-		 */
-		AdjointMatrix adjoint() const { return adjoint_impl(std::index_sequence_for<Groups...>()); }
-
-		// ========== Group Actions ==========
-
-		/**
-		 * @brief Group action on a point (component-wise on appropriate subspaces)
-		 * Each group acts on its corresponding portion of the input vector
-		 */
-		Vector act(const Vector &point) const {
-			validateActionInput(point);
-			return act_impl(point, std::index_sequence_for<Groups...>());
-		}
-
-		/**
-		 * @brief Batch group action on multiple points
-		 */
-		template<int N>
-		Eigen::Matrix<Scalar, Eigen::Dynamic, N> act(const Eigen::Matrix<Scalar, Eigen::Dynamic, N> &points) const {
-
-			if (points.rows() != actionDimension()) {
-				throw std::invalid_argument("Point matrix has wrong dimension");
-			}
-
-			Eigen::Matrix<Scalar, Eigen::Dynamic, N> result(actionDimension(), N);
-
-			for (int i = 0; i < N; ++i) {
-				result.col(i) = act(points.col(i));
-			}
-
-			return result;
-		}
-
-		// ========== Utility Functions ==========
-
-		/**
-		 * @brief Check if approximately equal to another bundle
-		 */
-		bool isApprox(const Bundle &other, const Scalar &eps = Types<Scalar>::epsilon()) const {
-			return isApprox_impl(other, eps, std::index_sequence_for<Groups...>());
-		}
-
-		/**
-		 * @brief Equality operator
-		 */
-		bool operator==(const Bundle &other) const { return isApprox(other); }
-
-		/**
-		 * @brief Inequality operator
-		 */
-		bool operator!=(const Bundle &other) const { return !(*this == other); }
-
-		/**
-		 * @brief Linear interpolation between two bundles (geodesic in product space)
-		 * @param other Target bundle
-		 * @param t Interpolation parameter [0,1]
-		 */
-		Bundle interpolate(const Bundle &other, const Scalar &t) const {
-			if (t < 0 || t > 1) {
-				throw std::invalid_argument("Interpolation parameter must be in [0,1]");
-			}
-
-			TangentVector delta = (inverse() * other).log();
-			return *this * exp(t * delta);
-		}
-
-		/**
-		 * @brief Generate random bundle element
-		 */
-		template<typename Generator>
-		static Bundle random(Generator &gen, const Scalar &scale = Scalar(1)) {
-			return random_impl(gen, scale, std::index_sequence_for<Groups...>());
-		}
-
-		// ========== Accessors ==========
-
-		/**
-		 * @brief Get the identity element
-		 */
-		static const Bundle &identity() {
-			static const Bundle id;
-			return id;
-		}
-
-		/**
-		 * @brief Get the dimension of the Lie algebra
-		 */
-		int algebraDimension() const { return Dim; }
-
-		/**
-		 * @brief Get the dimension of the space the group acts on (computed at
-		 * runtime)
-		 */
-		int actionDimension() const { return m_action_offsets.total(); }
-
-		/**
-		 * @brief Access individual group elements (const)
-		 */
-		template<std::size_t I>
-		const auto &get() const {
-			static_assert(I < NumGroups, "Index out of bounds");
-			return std::get<I>(m_groups);
-		}
-
-		/**
-		 * @brief Access individual group elements (mutable)
-		 */
-		template<std::size_t I>
-		auto &get() {
-			static_assert(I < NumGroups, "Index out of bounds");
-			// Need to recompute action offsets if groups are modified
-			auto &result = std::get<I>(m_groups);
-			// In practice, you might want to make this const and provide setters
-			return result;
-		}
-
-		/**
-		 * @brief Set individual group element
-		 */
-		template<std::size_t I>
-		void set(const GroupType<I> &group) {
-			std::get<I>(m_groups) = group;
-			m_action_offsets = detail::ActionOffsets<Groups...>(m_groups);
-		}
-
-		/**
-		 * @brief Get the underlying tuple
-		 */
-		const GroupTuple &groups() const { return m_groups; }
-
-		/**
-		 * @brief Get algebra element for specific group
-		 */
-		template<std::size_t I>
-		typename GroupType<I>::TangentVector getAlgebraElement() const {
-			return std::get<I>(m_groups).log();
-		}
-
-		/**
-		 * @brief Set from algebra element for specific group
-		 */
-		template<std::size_t I>
-		void setFromAlgebra(const typename GroupType<I>::TangentVector &algebra) {
-			std::get<I>(m_groups) = GroupType<I>().exp(algebra);
-			m_action_offsets = detail::ActionOffsets<Groups...>(m_groups);
-		}
-
-		// ========== Stream Output ==========
-
-		/**
-		 * @brief Output stream operator
-		 */
-		friend std::ostream &operator<<(std::ostream &os, const Bundle &bundle) {
-			os << "Bundle<" << NumGroups << ">(";
-			bundle.print_impl(os, std::index_sequence_for<Groups...>());
-			os << ")";
-			return os;
-		}
-
-	private:
-		GroupTuple m_groups; ///< Tuple of group elements
-		detail::ActionOffsets<Groups...> m_action_offsets; ///< Cached action dimension offsets
-
-		// ========== Implementation Helpers ==========
-
-		// Validation helpers
-		void validateAlgebraElement(const TangentVector &element) const {
-			if (element.size() != Dim) {
-				throw std::invalid_argument("Algebra element has wrong dimension");
-			}
-		}
-
-		void validateActionInput(const Vector &point) const {
-			if (point.size() != actionDimension()) {
-				throw std::invalid_argument("Action input has wrong dimension");
-			}
-		}
-
-		// Multiplication implementation
-		template<std::size_t... Is>
-		Bundle multiply_impl(const Bundle &other, std::index_sequence<Is...>) const {
-			return Bundle((std::get<Is>(m_groups) * std::get<Is>(other.m_groups))...);
-		}
-
-		template<std::size_t... Is>
-		void multiply_assign_impl(const Bundle &other, std::index_sequence<Is...>) {
-			((std::get<Is>(m_groups) *= std::get<Is>(other.m_groups)), ...);
-		}
-
-		// Inverse implementation
-		template<std::size_t... Is>
-		Bundle inverse_impl(std::index_sequence<Is...>) const {
-			return Bundle((std::get<Is>(m_groups).inverse())...);
-		}
-
-		// Exponential map implementation
-		template<std::size_t... Is>
-		Bundle exp_impl(const TangentVector &algebra_element, std::index_sequence<Is...>) const {
-			return Bundle(
-					(GroupType<Is>().exp(algebra_element.template segment<GroupType<Is>::Dim>(AlgebraOffset<Is>)))...);
-		}
-
-		// Logarithmic map implementation
-		template<std::size_t... Is>
-		TangentVector log_impl(std::index_sequence<Is...>) const {
-			TangentVector result;
-			((result.template segment<GroupType<Is>::Dim>(AlgebraOffset<Is>) = std::get<Is>(m_groups).log()), ...);
-			return result;
-		}
-
-		// Adjoint implementation (block diagonal)
-		template<std::size_t... Is>
-		AdjointMatrix adjoint_impl(std::index_sequence<Is...>) const {
-			AdjointMatrix result = AdjointMatrix::Zero();
-			((result.template block<GroupType<Is>::Dim, GroupType<Is>::Dim>(AlgebraOffset<Is>, AlgebraOffset<Is>) =
-					  std::get<Is>(m_groups).adjoint()),
-			 ...);
-			return result;
-		}
-
-		// Group action implementation
-		template<std::size_t... Is>
-		Vector act_impl(const Vector &point, std::index_sequence<Is...>) const {
-			Vector result(actionDimension());
-
-			// Apply each group's action to its corresponding subspace
-			((applyGroupAction<Is>(result, point)), ...);
-
-			return result;
-		}
-
-		template<std::size_t I>
-		void applyGroupAction(Vector &result, const Vector &point) const {
-			const auto &group = std::get<I>(m_groups);
-			int in_offset = m_action_offsets[I];
-			int out_offset = in_offset; // Same offset for output
-			int dim = group.actionDimension();
-
-			auto input_segment = point.segment(in_offset, dim);
-			auto output_segment = result.segment(out_offset, dim);
-			output_segment = group.act(input_segment);
-		}
-
-		// Approximate equality implementation
-		template<std::size_t... Is>
-		bool isApprox_impl(const Bundle &other, const Scalar &eps, std::index_sequence<Is...>) const {
-			return (std::get<Is>(m_groups).isApprox(std::get<Is>(other.m_groups), eps) && ...);
-		}
-
-		// Random generation implementation
-		template<typename Generator, std::size_t... Is>
-		static Bundle random_impl(Generator &gen, const Scalar &scale, std::index_sequence<Is...>) {
-			return Bundle((GroupType<Is>::random(gen, scale))...);
-		}
-
-		// Stream output implementation
-		template<std::size_t... Is>
-		void print_impl(std::ostream &os, std::index_sequence<Is...>) const {
-			bool first = true;
-			((os << (first ? (first = false, "") : ", ") << std::get<Is>(m_groups)), ...);
-		}
-	};
-
-	// ========== Type Aliases ==========
-
-	// Common bundles for robotics applications
-	template<typename Scalar>
-	using SE3_Velocity = Bundle<SE3<Scalar>, RealSpace<Scalar, 6>>;
-
-	template<typename Scalar>
-	using SE2_Velocity = Bundle<SE2<Scalar>, RealSpace<Scalar, 3>>;
-
-	template<typename Scalar, int N>
-	using SE3_Joints = Bundle<SE3<Scalar>, RealSpace<Scalar, N>>;
-
-	// Convenience aliases
-	template<typename... Groups>
-	using Bundlef = Bundle<Groups...>;
-
-	template<typename... Groups>
-	using Bundled = Bundle<Groups...>;
-
-} // namespace sofa::component::cosserat::liegroups
 
 // Python bindings implementation
 #include <pybind11/eigen.h>
@@ -610,7 +175,17 @@ namespace sofapython3 {
 				.def("log", &SO2<double>::log, "Logarithmic map from SO(2) to so(2)")
 				.def("adjoint", &SO2<double>::adjoint, "Adjoint representation (identity for SO(2))")
 				.def("isApprox", &SO2<double>::isApprox, "Check approximate equality", py::arg("other"), py::arg("eps") = 1e-12)
-				.def_static("identity", &SO2<double>::identity, "Get identity element")
+				.def_static("identity", &SO2<double>::Identity, "Get identity element")
+				.def("__add__", &SO2<double>::operator+, "Right-plus operator: X + τ = X ⊕ τ", py::arg("tau"))
+				.def("__sub__", [](const SO2<double>& self, const SO2<double>& other) {
+					return self - other;
+				}, "Right-minus operator: Y - X = Log(X⁻¹ ◦ Y)", py::arg("other"))
+				.def("distance", &SO2<double>::distance, "Compute geodesic distance to another element", py::arg("other"))
+				.def("lerp", &SO2<double>::lerp, "Linear interpolation between elements", py::arg("other"), py::arg("t"))
+				.def("slerp", &SO2<double>::slerp, "Spherical linear interpolation between elements", py::arg("other"), py::arg("t"))
+				.def_static("BCH", &SO2<double>::BCH, "Baker-Campbell-Hausdorff formula", py::arg("v"), py::arg("w"), py::arg("order") = 3)
+				.def("actionJacobian", &SO2<double>::actionJacobian, "Jacobian of group action", py::arg("point"))
+				.def("dlog", &SO2<double>::dlog, "Differential of logarithm map")
 				.def_static("hat", &SO2<double>::hat, "Hat operator: R -> so(2) matrix", py::arg("omega"))
 				.def_static("vee", &SO2<double>::vee, "Vee operator: so(2) matrix -> R", py::arg("matrix"))
 				.def("act", [](const SO2<double>& self, const Eigen::Vector2d& point) {
@@ -646,7 +221,17 @@ namespace sofapython3 {
 				.def("log", &SO3<double>::log, "Logarithmic map from SO(3) to so(3)")
 				.def("adjoint", &SO3<double>::adjoint, "Adjoint representation (rotation matrix for SO(3))")
 				.def("isApprox", &SO3<double>::isApprox, "Check approximate equality", py::arg("other"), py::arg("eps") = 1e-12)
-				.def_static("identity", &SO3<double>::identity, "Get identity element")
+				.def_static("identity", &SO3<double>::Identity, "Get identity element")
+				.def("__add__", &SO3<double>::operator+, "Right-plus operator: X + τ = X ⊕ τ", py::arg("tau"))
+				.def("__sub__", [](const SO3<double>& self, const SO3<double>& other) {
+					return self - other;
+				}, "Right-minus operator: Y - X = Log(X⁻¹ ◦ Y)", py::arg("other"))
+				.def("distance", &SO3<double>::distance, "Compute geodesic distance to another element", py::arg("other"))
+				.def("lerp", &SO3<double>::lerp, "Linear interpolation between elements", py::arg("other"), py::arg("t"))
+				.def("slerp", &SO3<double>::slerp, "Spherical linear interpolation between elements", py::arg("other"), py::arg("t"))
+				.def_static("BCH", &SO3<double>::BCH, "Baker-Campbell-Hausdorff formula", py::arg("v"), py::arg("w"), py::arg("order") = 3)
+				.def("actionJacobian", &SO3<double>::actionJacobian, "Jacobian of group action", py::arg("point"))
+				.def("dlog", &SO3<double>::dlog, "Differential of logarithm map")
 				.def_static("hat", &SO3<double>::hat, "Hat operator: R^3 -> so(3) matrix", py::arg("omega"))
 				.def_static("vee", &SO3<double>::vee, "Vee operator: so(3) matrix -> R^3", py::arg("matrix"))
 				.def("act", [](const SO3<double>& self, const Eigen::Vector3d& point) {
@@ -684,7 +269,17 @@ namespace sofapython3 {
 				.def("log", &SE2<double>::log, "Logarithmic map from SE(2) to se(2)")
 				.def("adjoint", &SE2<double>::adjoint, "Adjoint representation")
 				.def("isApprox", &SE2<double>::isApprox, "Check approximate equality", py::arg("other"), py::arg("eps") = 1e-12)
-				.def_static("identity", &SE2<double>::identity, "Get identity element")
+				.def_static("identity", &SE2<double>::Identity, "Get identity element")
+				.def("__add__", &SE2<double>::operator+, "Right-plus operator: X + τ = X ⊕ τ", py::arg("tau"))
+				.def("__sub__", [](const SE2<double>& self, const SE2<double>& other) {
+					return self - other;
+				}, "Right-minus operator: Y - X = Log(X⁻¹ ◦ Y)", py::arg("other"))
+				.def("distance", &SE2<double>::distance, "Compute geodesic distance to another element", py::arg("other"))
+				.def("lerp", &SE2<double>::lerp, "Linear interpolation between elements", py::arg("other"), py::arg("t"))
+				.def("slerp", &SE2<double>::slerp, "Spherical linear interpolation between elements", py::arg("other"), py::arg("t"))
+				.def_static("BCH", &SE2<double>::BCH, "Baker-Campbell-Hausdorff formula", py::arg("v"), py::arg("w"), py::arg("order") = 3)
+				.def("actionJacobian", &SE2<double>::actionJacobian, "Jacobian of group action", py::arg("point"))
+				.def("dlog", &SE2<double>::dlog, "Differential of logarithm map")
 				.def("act", [](const SE2<double>& self, const Eigen::Vector2d& point) {
 					return self.act(point);
 				}, "Apply transformation to a 2D point", py::arg("point"))
@@ -706,7 +301,7 @@ namespace sofapython3 {
 	}
 
 	void moduleAddSE3(py::module &m) {
-		// SE3 bindings with enhanced functionality
+		// SE3 bindings with enhanced functionality including Jacobians
 		py::class_<SE3<double>>(m, "SE3", "3D Euclidean group SE(3)")
 				.def(py::init<>(), "Default constructor (identity transformation)")
 				.def(py::init<const SO3<double> &, const Eigen::Vector3d &>(), "Construct from rotation and translation", py::arg("rotation"), py::arg("translation"))
@@ -718,13 +313,32 @@ namespace sofapython3 {
 				.def("translation", static_cast<const typename SE3<double>::Vector3 &(SE3<double>::*) () const>(
 											&SE3<double>::translation), "Get translation part")
 				.def_static("exp", &SE3<double>::exp, "Exponential map from se(3) to SE(3)", py::arg("xi"))
+				.def_static("expCosserat", &SE3<double>::expCosserat, "Cosserat-style exponential map", py::arg("strain"), py::arg("length"))
 				.def("log", &SE3<double>::log, "Logarithmic map from SE(3) to se(3)")
 				.def("adjoint", &SE3<double>::adjoint, "Adjoint representation")
 				.def("isApprox", &SE3<double>::isApprox, "Check approximate equality", py::arg("other"), py::arg("eps") = 1e-12)
-				.def_static("identity", &SE3<double>::identity, "Get identity element")
+				.def_static("identity", &SE3<double>::Identity, "Get identity element")
+				.def("__add__", &SE3<double>::operator+, "Right-plus operator: X + τ = X ⊕ τ", py::arg("tau"))
+				.def("__sub__", [](const SE3<double>& self, const SE3<double>& other) {
+					return self - other;
+				}, "Right-minus operator: Y - X = Log(X⁻¹ ◦ Y)", py::arg("other"))
+				.def("distance", static_cast<double (SE3<double>::*)(const SE3<double>&, double, double) const>(&SE3<double>::distance), "Compute weighted distance to another element", py::arg("other"), py::arg("w_rot") = 1.0, py::arg("w_trans") = 1.0)
+				.def("lerp", &SE3<double>::lerp, "Linear interpolation between elements", py::arg("other"), py::arg("t"))
+				.def("slerp", &SE3<double>::slerp, "Spherical linear interpolation between elements", py::arg("other"), py::arg("t"))
+				.def_static("BCH", &SE3<double>::BCH, "Baker-Campbell-Hausdorff formula", py::arg("v"), py::arg("w"), py::arg("order") = 3)
+				.def("actionJacobian", &SE3<double>::actionJacobian, "Jacobian of group action", py::arg("point"))
+				.def("dlog", &SE3<double>::dlog, "Differential of logarithm map")
 				.def("act", [](const SE3<double>& self, const Eigen::Vector3d& point) {
 					return self.act(point);
 				}, "Apply transformation to a 3D point", py::arg("point"))
+				// Jacobian methods for uncertainty propagation
+				.def_static("rightJacobian", &SE3<double>::rightJacobian, "Right Jacobian for uncertainty propagation", py::arg("xi"))
+				.def_static("leftJacobian", &SE3<double>::leftJacobian, "Left Jacobian for uncertainty propagation", py::arg("xi"))
+				.def_static("rightJacobianInverse", &SE3<double>::rightJacobianInverse, "Inverse right Jacobian", py::arg("xi"))
+				.def_static("leftJacobianInverse", &SE3<double>::leftJacobianInverse, "Inverse left Jacobian", py::arg("xi"))
+				// Advanced features
+				.def("interpolate", &SE3<double>::interpolate, "Interpolate between transformations", py::arg("other"), py::arg("t"))
+				.def_static("generateTrajectory", &SE3<double>::generateTrajectory, "Generate trajectory between waypoints", py::arg("waypoints"), py::arg("num_points") = 10)
 				.def("__repr__", [](const SE3<double>& self) {
 					std::ostringstream oss;
 					const auto& rot = self.rotation().quaternion();
@@ -757,7 +371,7 @@ namespace sofapython3 {
 				.def("log", &SGal3<double>::log, "Logarithmic map from SGal(3) to sgal(3)")
 				.def("adjoint", &SGal3<double>::adjoint, "Adjoint representation")
 				.def("isApprox", &SGal3<double>::isApprox, "Check approximate equality", py::arg("other"), py::arg("eps") = 1e-12)
-				.def_static("identity", &SGal3<double>::identity, "Get identity element")
+				.def_static("identity", &SGal3<double>::Identity, "Get identity element")
 				.def("act", [](const SGal3<double>& self, const Eigen::Matrix<double, 10, 1>& point_vel_time) {
 					return self.act(point_vel_time);
 				}, "Apply transformation to a 10D point-velocity-time vector", py::arg("point_vel_time"))
@@ -778,6 +392,85 @@ namespace sofapython3 {
 				}, "Generate random SGal3 element", py::arg("seed") = py::none());
 	}
 
+	void moduleAddSim3(py::module &m) {
+		// Sim3 bindings for similarity transformations
+		py::class_<Sim3<double>>(m, "Sim3", "3D Similarity group Sim(3) - rotations, translations, and scaling")
+				.def(py::init<>(), "Default constructor (identity transformation)")
+				.def(py::init<const SO3<double> &, const Eigen::Vector3d &, double>(), "Construct from rotation, translation, and scale", py::arg("rotation"), py::arg("translation"), py::arg("scale"))
+				.def(py::init<const Eigen::Quaterniond &, const Eigen::Vector3d &, double>(), "Construct from quaternion, translation, and scale", py::arg("quaternion"), py::arg("translation"), py::arg("scale"))
+				.def(py::init<const Eigen::Matrix4d &>(), "Construct from 4x4 similarity matrix", py::arg("matrix"))
+				.def("__mul__", &Sim3<double>::operator*, "Group composition")
+				.def("inverse", &Sim3<double>::inverse, "Compute inverse transformation")
+				.def("matrix", &Sim3<double>::matrix, "Get 4x4 transformation matrix")
+				.def("rotation", static_cast<const SO3<double> &(Sim3<double>::*) () const>(&Sim3<double>::rotation), "Get rotation part")
+				.def("translation", static_cast<const typename Sim3<double>::Vector3 &(Sim3<double>::*) () const>(
+											&Sim3<double>::translation), "Get translation part")
+				.def("scale", static_cast<const double &(Sim3<double>::*) () const>(&Sim3<double>::scale), "Get scale factor")
+				.def_static("exp", &Sim3<double>::exp, "Exponential map from sim(3) to Sim(3)", py::arg("xi"))
+				.def("log", &Sim3<double>::log, "Logarithmic map from Sim(3) to sim(3)")
+				.def("adjoint", &Sim3<double>::adjoint, "Adjoint representation")
+				.def("isApprox", &Sim3<double>::isApprox, "Check approximate equality", py::arg("other"), py::arg("eps") = 1e-12)
+				.def_static("identity", &Sim3<double>::Identity, "Get identity element")
+				.def("act", [](const Sim3<double>& self, const Eigen::Vector3d& point) {
+					return self.act(point);
+				}, "Apply similarity transformation to a 3D point", py::arg("point"))
+				.def("__repr__", [](const Sim3<double>& self) {
+					std::ostringstream oss;
+					const auto& rot = self.rotation().quaternion();
+					const auto& trans = self.translation();
+					oss << "Sim3(quat=[" << rot.w() << ", " << rot.x() << ", " << rot.y() << ", " << rot.z() << "], translation=[" << trans.x() << ", " << trans.y() << ", " << trans.z() << "], scale=" << self.scale() << ")";
+					return oss.str();
+				})
+				.def_static("random", [](py::object seed = py::none()) {
+					static std::random_device rd;
+					static std::mt19937 gen(rd());
+					if (!seed.is_none()) {
+						gen.seed(seed.cast<unsigned int>());
+					}
+					return Sim3<double>::computeRandom(gen);
+				}, "Generate random Sim(3) element", py::arg("seed") = py::none());
+	}
+
+	void moduleAddUncertainty(py::module &m) {
+		// GaussianOnManifold bindings for uncertainty propagation
+		py::class_<GaussianOnManifold<SE3<double>>>(m, "GaussianSE3", "Gaussian distribution on SE(3) manifold for uncertainty propagation")
+				.def(py::init<const SE3<double> &, const Eigen::Matrix<double, 6, 6> &>(),
+					 "Construct from mean and covariance", py::arg("mean"), py::arg("covariance"))
+				.def("mean", &GaussianOnManifold<SE3<double>>::mean, "Get the mean element")
+				.def("covariance", &GaussianOnManifold<SE3<double>>::covariance, "Get the covariance matrix")
+				.def("toGlobalFrame", &GaussianOnManifold<SE3<double>>::toGlobalFrame, "Transform covariance to global frame")
+				.def("composeWith", &GaussianOnManifold<SE3<double>>::composeWith,
+					 "Compose with tangent space increment", py::arg("delta"), py::arg("delta_cov"))
+				.def("mahalanobisDistance", &GaussianOnManifold<SE3<double>>::mahalanobisDistance,
+					 "Compute Mahalanobis distance to another distribution", py::arg("other"))
+				.def("__repr__", [](const GaussianOnManifold<SE3<double>>& self) {
+					std::ostringstream oss;
+					oss << "GaussianSE3(mean=" << self.mean() << ")";
+					return oss.str();
+				});
+
+		py::class_<GaussianOnManifold<SO3<double>>>(m, "GaussianSO3", "Gaussian distribution on SO(3) manifold for uncertainty propagation")
+				.def(py::init<const SO3<double> &, const Eigen::Matrix3d &>(),
+					 "Construct from mean and covariance", py::arg("mean"), py::arg("covariance"))
+				.def("mean", &GaussianOnManifold<SO3<double>>::mean, "Get the mean element")
+				.def("covariance", &GaussianOnManifold<SO3<double>>::covariance, "Get the covariance matrix")
+				.def("toGlobalFrame", &GaussianOnManifold<SO3<double>>::toGlobalFrame, "Transform covariance to global frame")
+				.def("mahalanobisDistance", &GaussianOnManifold<SO3<double>>::mahalanobisDistance,
+					 "Compute Mahalanobis distance to another distribution", py::arg("other"))
+				.def("__repr__", [](const GaussianOnManifold<SO3<double>>& self) {
+					std::ostringstream oss;
+					oss << "GaussianSO3(mean=" << self.mean() << ")";
+					return oss.str();
+				});
+
+		// Uncertainty propagation utilities
+		py::class_<UncertaintyPropagation>(m, "UncertaintyPropagation", "Utilities for uncertainty propagation on Lie groups")
+				.def_static("isotropic", &UncertaintyPropagation::isotropic<SE3<double>>,
+						"Create isotropic Gaussian distribution", py::arg("mean"), py::arg("std_dev"))
+				.def_static("diagonal", &UncertaintyPropagation::diagonal<SE3<double>>,
+						"Create diagonal covariance Gaussian distribution", py::arg("mean"), py::arg("variances"));
+	}
+
 	void moduleAddSE23(py::module &m) {
 		// SE23 bindings
 		py::class_<SE23<double>>(m, "SE23", "Extended 3D Euclidean group SE_2(3)")
@@ -792,7 +485,7 @@ namespace sofapython3 {
 				.def("log", &SE23<double>::log, "Logarithmic map from SE_2(3) to se_2(3)")
 				.def("adjoint", &SE23<double>::adjoint, "Adjoint representation")
 				.def("isApprox", &SE23<double>::isApprox, "Check approximate equality", py::arg("other"), py::arg("eps") = 1e-12)
-				.def_static("identity", &SE23<double>::identity, "Get identity element")
+				.def_static("identity", &SE23<double>::Identity, "Get identity element")
 				.def("act", [](const SE23<double>& self, const Eigen::Matrix<double, 6, 1>& point_vel) {
 					return self.act(point_vel);
 				}, "Apply transformation to a 6D point-velocity vector", py::arg("point_vel"))
@@ -827,7 +520,7 @@ namespace sofapython3 {
 				}, "Exponential map from algebra", py::arg("xi"))
 				.def("adjoint", &SE3_Velocity_double::adjoint, "Adjoint representation")
 				.def("isApprox", &SE3_Velocity_double::isApprox, "Check approximate equality", py::arg("other"), py::arg("eps") = 1e-12)
-				.def_static("identity", []() { return SE3_Velocity_double::identity(); }, "Get identity element")
+				.def_static("identity", []() { return SE3_Velocity_double::Identity(); }, "Get identity element")
 				.def("get_pose", [](const SE3_Velocity_double& self) { return self.get<0>(); }, "Get the SE(3) component")
 				.def("get_velocity", [](const SE3_Velocity_double& self) { return self.get<1>(); }, "Get the R^6 component")
 				.def("__repr__", [](const SE3_Velocity_double& self) {
@@ -849,7 +542,7 @@ namespace sofapython3 {
 				}, "Exponential map from algebra", py::arg("xi"))
 				.def("adjoint", &SE2_Velocity_double::adjoint, "Adjoint representation")
 				.def("isApprox", &SE2_Velocity_double::isApprox, "Check approximate equality", py::arg("other"), py::arg("eps") = 1e-12)
-				.def_static("identity", []() { return SE2_Velocity_double::identity(); }, "Get identity element")
+				.def_static("identity", []() { return SE2_Velocity_double::Identity(); }, "Get identity element")
 				.def("get_pose", [](const SE2_Velocity_double& self) { return self.get<0>(); }, "Get the SE(2) component")
 				.def("get_velocity", [](const SE2_Velocity_double& self) { return self.get<1>(); }, "Get the R^3 component")
 				.def("__repr__", [](const SE2_Velocity_double& self) {
@@ -872,7 +565,9 @@ namespace sofapython3 {
 				}, "Vector negation")
 				.def("vector", [](const RealSpace<double, 3>& self) {
 					return self.computeLog();
-				}, "Get the underlying vector");
+				}, "Get the underlying vector")
+				.def_static("hat", &RealSpace<double, 3>::hat, "Hat operator: R^3 -> 3x3 matrix", py::arg("v"))
+				.def_static("vee", &RealSpace<double, 3>::vee, "Vee operator: 3x3 matrix -> R^3", py::arg("X"));
 
 		py::class_<RealSpace<double, 6>>(m, "R6", "6D real space R^6")
 				.def(py::init<>(), "Default constructor (zero vector)")
@@ -885,7 +580,9 @@ namespace sofapython3 {
 				}, "Vector negation")
 				.def("vector", [](const RealSpace<double, 6>& self) {
 					return self.computeLog();
-				}, "Get the underlying vector");
+				}, "Get the underlying vector")
+				.def_static("hat", &RealSpace<double, 6>::hat, "Hat operator: R^6 -> 6x6 matrix", py::arg("v"))
+				.def_static("vee", &RealSpace<double, 6>::vee, "Vee operator: 6x6 matrix -> R^6", py::arg("X"));
 	}
 
 	void moduleAddLieGroupUtils(py::module &m) {

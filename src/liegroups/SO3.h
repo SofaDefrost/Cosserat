@@ -277,6 +277,55 @@ namespace sofa::component::cosserat::liegroups {
 		 * @return Matrix representing the adjoint action.
 		 */
 		static AdjointMatrix ad(const TangentVector &v);
+
+		/**
+		 * @brief Right Jacobian of SO(3): Jr(ω) = d/dω Exp(ω)
+		 * @param omega Angular velocity vector
+		 * @return 3×3 right Jacobian matrix
+		 */
+		static AdjointMatrix computeRightJacobian(const TangentVector &omega) noexcept {
+			const Scalar theta = omega.norm();
+			if (theta < Types<Scalar>::epsilon()) {
+				// Small angle approximation: Jr(ω) ≈ I - ½[ω]×
+				return AdjointMatrix::Identity() - Scalar(0.5) * hat(omega);
+			} else {
+				// General case: Jr(ω) = I - ((1-cosθ)/θ²)[ω]× + ((θ-sinθ)/θ³)[ω]×²
+				const Scalar cos_theta = std::cos(theta);
+				const Scalar sin_theta = std::sin(theta);
+				const Matrix omega_hat = hat(omega);
+				const Matrix omega_hat2 = omega_hat * omega_hat;
+				const Scalar theta2 = theta * theta;
+				const Scalar theta3 = theta2 * theta;
+
+				AdjointMatrix Jr = AdjointMatrix::Identity();
+				Jr -= ((Scalar(1) - cos_theta) / theta2) * omega_hat;
+				Jr += ((theta - sin_theta) / theta3) * omega_hat2;
+				return Jr;
+			}
+		}
+
+		/**
+		 * @brief Left Jacobian of SO(3): Jl(ω) = Jr(-ω)
+		 * @param omega Angular velocity vector
+		 * @return 3×3 left Jacobian matrix
+		 */
+		static AdjointMatrix computeLeftJacobian(const TangentVector &omega) noexcept;
+
+		/**
+		 * @brief Inverse of the right Jacobian: Jr⁻¹(ω)
+		 * @param omega Angular velocity vector
+		 * @return 3×3 inverse right Jacobian matrix
+		 */
+		static AdjointMatrix computeRightJacobianInverse(const TangentVector &omega) noexcept;
+
+		/**
+		 * @brief Inverse of the left Jacobian: Jl⁻¹(ω) = Jr⁻¹(-ω)
+		 * @param omega Angular velocity vector
+		 * @return 3×3 inverse left Jacobian matrix
+		 */
+		static AdjointMatrix computeLeftJacobianInverse(const TangentVector &omega) noexcept {
+			return computeRightJacobianInverse(-omega);
+		}
 		/**
 		 * @brief Get the rotation matrix representation.
 		 * @return The 3x3 rotation matrix.
