@@ -20,6 +20,8 @@ if (UNIT_TEST)
         unit/BeamHookeLawForceFieldTest.cpp
         unit/DiscretCosseratMappingTest.cpp
         unit/CosseratUnilateralInteractionConstraintTest.cpp
+        unit/HookeSeratBaseMappingTest.cpp
+        unit/HookeSeratEquivalenceTest.cpp
     )
 
     add_executable(${PROJECT_NAME} ${HEADER_FILES} ${SOURCE_FILES})
@@ -40,6 +42,7 @@ if (INTEGRATION_TEST)
     # Set up integration tests
     set(INTEGRATION_SOURCE_FILES
         integration/LieGroupIntegrationTest.cpp
+        integration/HookeSeratIntegrationTest.cpp
     )
 
     add_executable(${PROJECT_NAME}_integration ${INTEGRATION_SOURCE_FILES})

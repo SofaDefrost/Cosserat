@@ -101,7 +101,8 @@ class BaseCosserat(BaseObject):
         for length in lengths:
             l += length
             curv_abs.append(l)
-        rod.addObject('DiscreteCosseratMapping',
+        # Use enhanced HookeSeratDiscretMapping with Lie groups support
+        rod.addObject('HookeSeratDiscretMapping',
                       curv_abs_input=curv_abs,
                       curv_abs_output=curv_abs,
                       input1=self.deformable.MechanicalObject.getLinkPath(),

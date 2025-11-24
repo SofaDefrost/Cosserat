@@ -351,7 +351,236 @@ void HookeSeratBaseMapping<TIn1, TIn2, TOut>::updateTangExpSE3() {
 			std::cout << "Frame[" << i << "] tang adjoint matrix: \n"
 			<< tang_matrix << std::endl;
 		}
-
-
 	}
+
+	// Implementation of BeamTopology
+	bool BeamTopology::isValid() const {
+		if (parent_indices.empty()) return true;
+
+		// Check for valid tree structure (no cycles, valid parent indices)
+		std::vector<bool> visited(parent_indices.size(), false);
+		std::vector<int> parent_count(parent_indices.size(), 0);
+
+		// Count parents
+		for (int parent : parent_indices) {
+			if (parent >= 0 && static_cast<size_t>(parent) < parent_indices.size()) {
+				parent_count[parent]++;
+			} else if (parent != -1) {
+				return false; // Invalid parent index
+			}
+		}
+
+		// Check for cycles using DFS
+		std::function<bool(size_t)> hasCycle = [&](size_t node) -> bool {
+			if (visited[node]) return true; // Cycle detected
+			visited[node] = true;
+
+			for (size_t child : getChildren(node)) {
+				if (hasCycle(child)) return true;
+			}
+
+			visited[node] = false; // Backtrack
+			return false;
+		};
+
+		// Check each node for cycles
+		std::fill(visited.begin(), visited.end(), false);
+		for (size_t i = 0; i < parent_indices.size(); ++i) {
+			if (hasCycle(i)) return false;
+		}
+
+		return true;
+	}
+
+	std::vector<size_t> BeamTopology::getChildren(size_t section_idx) const {
+		std::vector<size_t> children;
+		for (size_t i = 0; i < parent_indices.size(); ++i) {
+			if (static_cast<size_t>(parent_indices[i]) == section_idx) {
+				children.push_back(i);
+			}
+		}
+		return children;
+	}
+
+	// Implementation of BeamStateEstimator
+	BeamStateEstimator::BeamStateEstimator()
+		: process_noise_(Eigen::Matrix<double, 12, 12>::Identity() * 0.01),
+		  measurement_noise_(Eigen::Matrix<double, 6, 6>::Identity() * 0.1) {
+		// Initialize with identity pose and zero strain
+		SE3Type identity_pose = SE3Type::computeIdentity();
+		StrainState zero_strain(SO3Type(Vector3::Zero()),
+							   sofa::component::cosserat::liegroups::RealSpace<double, 3>(Vector3::Zero()));
+
+		Eigen::Matrix<double, 12, 12> initial_cov = Eigen::Matrix<double, 12, 12>::Identity() * 0.1;
+		initialize(identity_pose, zero_strain, initial_cov);
+	}
+
+	void BeamStateEstimator::initialize(const SE3Type& initial_pose, const StrainState& initial_strain,
+									   const Eigen::Matrix<double, 12, 12>& initial_covariance) {
+		pose_estimate_ = sofa::component::cosserat::liegroups::GaussianOnManifold<SE3Type>(initial_pose,
+			initial_covariance.template topLeftCorner<6, 6>());
+		strain_estimate_ = initial_strain;
+		state_covariance_ = initial_covariance;
+		initialized_ = true;
+	}
+
+	void BeamStateEstimator::predict(const TangentVector& control_input, double dt) {
+		if (!initialized_) return;
+
+		// Simple prediction model: constant velocity with process noise
+		// In a real implementation, this would use the beam dynamics model
+		state_covariance_ += process_noise_ * dt;
+		// Pose prediction would use the control input through the beam model
+		// For now, we keep the pose estimate unchanged
+	}
+
+	void BeamStateEstimator::update(const SE3Type& measurement,
+								   const Eigen::Matrix<double, 6, 6>& measurement_covariance) {
+		if (!initialized_) return;
+
+		// Kalman update for pose measurement
+		auto pose_cov = state_covariance_.template topLeftCorner<6, 6>();
+		Eigen::Matrix<double, 6, 6> innovation_cov = pose_cov + measurement_covariance;
+
+		// Compute Kalman gain
+		Eigen::Matrix<double, 6, 6> kalman_gain = pose_cov * innovation_cov.inverse();
+
+		// Update pose estimate (simplified - would need proper Lie group update)
+		// This is a placeholder for the actual Lie group Kalman update
+		auto pose_cov_updated = (Eigen::Matrix<double, 6, 6>::Identity() - kalman_gain) * pose_cov;
+		state_covariance_.template topLeftCorner<6, 6>() = pose_cov_updated;
+	}
+
+	void BeamStateEstimator::updateStrain(const StrainState& strain_measurement,
+										 const Eigen::Matrix<double, 6, 6>& measurement_covariance) {
+		if (!initialized_) return;
+
+		// Kalman update for strain measurement
+		auto strain_cov = state_covariance_.template bottomRightCorner<6, 6>();
+		Eigen::Matrix<double, 6, 6> innovation_cov = strain_cov + measurement_covariance;
+
+		// Compute Kalman gain
+		Eigen::Matrix<double, 6, 6> kalman_gain = strain_cov * innovation_cov.inverse();
+
+		// Update strain estimate (simplified)
+		auto strain_cov_updated = (Eigen::Matrix<double, 6, 6>::Identity() - kalman_gain) * strain_cov;
+		state_covariance_.template bottomRightCorner<6, 6>() = strain_cov_updated;
+	}
+
+	double BeamStateEstimator::getEstimationConfidence() const {
+		if (!initialized_) return 0.0;
+		return 1.0 / state_covariance_.trace();
+	}
+
+	void BeamStateEstimator::reset() {
+		initialized_ = false;
+		state_covariance_.setZero();
+	}
+
+	// HookeSeratBaseMapping multi-section and state estimation methods
+	template<class TIn1, class TIn2, class TOut>
+	void HookeSeratBaseMapping<TIn1, TIn2, TOut>::setBeamTopology(const BeamTopology& topology) {
+		if (!topology.isValid()) {
+			msg_error() << "Invalid beam topology provided";
+			return;
+		}
+		m_beam_topology = topology;
+		m_multi_section_enabled = true;
+		msg_info() << "Beam topology set with " << topology.getNumSections() << " sections";
+	}
+
+	template<class TIn1, class TIn2, class TOut>
+	void HookeSeratBaseMapping<TIn1, TIn2, TOut>::enableStateEstimation(bool enable) {
+		if (enable && !m_state_estimator) {
+			m_state_estimator = std::make_unique<BeamStateEstimator>();
+			msg_info() << "State estimation enabled";
+		} else if (!enable && m_state_estimator) {
+			m_state_estimator.reset();
+			msg_info() << "State estimation disabled";
+		}
+	}
+
+	template<class TIn1, class TIn2, class TOut>
+	void HookeSeratBaseMapping<TIn1, TIn2, TOut>::updateStateEstimate(const SE3Type& measurement,
+																	 const Eigen::Matrix<double, 6, 6>& covariance) {
+		if (m_state_estimator) {
+			m_state_estimator->update(measurement, covariance);
+		}
+	}
+
+	template<class TIn1, class TIn2, class TOut>
+	void HookeSeratBaseMapping<TIn1, TIn2, TOut>::predictState(const TangentVector& control_input, double dt) {
+		if (m_state_estimator) {
+			m_state_estimator->predict(control_input, dt);
+		}
+	}
+
+	template<class TIn1, class TIn2, class TOut>
+	double HookeSeratBaseMapping<TIn1, TIn2, TOut>::getEstimationConfidence() const {
+		return m_state_estimator ? m_state_estimator->getEstimationConfidence() : 0.0;
+	}
+
+	// Performance optimization methods
+	template<class TIn1, class TIn2, class TOut>
+	void HookeSeratBaseMapping<TIn1, TIn2, TOut>::enableParallelComputation(bool enable) {
+		parallel_computation_enabled_ = enable;
+		if (enable) {
+			// Determine optimal thread count based on system capabilities
+			optimal_thread_count_ = std::max(1u, std::thread::hardware_concurrency() / 2);
+			msg_info() << "Parallel computation enabled with " << optimal_thread_count_ << " threads";
+		} else {
+			optimal_thread_count_ = 1;
+			msg_info() << "Parallel computation disabled";
+		}
+	}
+
+	template<class TIn1, class TIn2, class TOut>
+	void HookeSeratBaseMapping<TIn1, TIn2, TOut>::clearComputationCache() {
+		computation_cache_.clear();
+		last_cache_clear_ = std::chrono::steady_clock::now();
+		msg_info() << "Computation cache cleared";
+	}
+
+	template<class TIn1, class TIn2, class TOut>
+	void HookeSeratBaseMapping<TIn1, TIn2, TOut>::runPerformanceBenchmark(size_t iterations) {
+		msg_info() << "Running performance benchmark with " << iterations << " iterations";
+		m_jacobian_stats.benchmarkJacobianComputation(iterations);
+		msg_info() << "Performance benchmark completed";
+	}
+
+	template<class TIn1, class TIn2, class TOut>
+	void HookeSeratBaseMapping<TIn1, TIn2, TOut>::printPerformanceReport() const {
+		m_jacobian_stats.printPerformanceReport();
+	}
+
+	// JacobianStats benchmarking implementation
+	template<class TIn1, class TIn2, class TOut>
+	void HookeSeratBaseMapping<TIn1, TIn2, TOut>::JacobianStats::benchmarkJacobianComputation(size_t iterations) {
+		reset();
+
+		// Create test data
+		TangentVector test_strain = TangentVector::Random();
+
+		for (size_t i = 0; i < iterations; ++i) {
+			startTiming();
+			AdjointMatrix jacobian = SE3Type::rightJacobian(test_strain);
+			endTiming();
+
+			// Use the result to prevent optimization
+			jacobian(0, 0) += 0.0;
+		}
+	}
+
+	template<class TIn1, class TIn2, class TOut>
+	void HookeSeratBaseMapping<TIn1, TIn2, TOut>::JacobianStats::printPerformanceReport() const {
+		std::cout << "=== Jacobian Computation Performance Report ===" << std::endl;
+		std::cout << "Total computations: " << computation_count << std::endl;
+		std::cout << "Cache hits: " << cache_hits << std::endl;
+		std::cout << "Cache hit rate: " << cacheHitRate() * 100.0 << "%" << std::endl;
+		std::cout << "Average computation time: " << averageComputationTime() << " ms" << std::endl;
+		std::cout << "Total computation time: " << total_computation_time << " ms" << std::endl;
+		std::cout << "Cache size: " << jacobian_cache.size() << " entries" << std::endl;
+		std::cout << "===============================================" << std::endl;
+	}
+
 } // namespace Cosserat::mapping

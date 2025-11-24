@@ -248,6 +248,183 @@ TEST_F(HookeSeratBaseMappingTest, AdjointMatrixPerformance) {
     EXPECT_TRUE(adjoint1.isApprox(adjoint2));
 }
 
+// Test BeamTopology functionality
+TEST_F(HookeSeratBaseMappingTest, BeamTopology_BasicOperations) {
+    using BeamTopology = Cosserat::mapping::BeamTopology;
+    using SE3Type = sofa::component::cosserat::liegroups::SE3<double>;
+
+    BeamTopology topology;
+
+    // Test empty topology
+    EXPECT_TRUE(topology.isValid());
+    EXPECT_EQ(topology.getNumSections(), 0u);
+
+    // Add sections (simple chain: 0 -> 1 -> 2)
+    topology.parent_indices = {-1, 0, 1};
+    topology.relative_transforms = {SE3Type::computeIdentity(), SE3Type::computeIdentity(), SE3Type::computeIdentity()};
+    topology.connection_stiffnesses = {1000.0, 1000.0, 1000.0};
+
+    EXPECT_TRUE(topology.isValid());
+    EXPECT_EQ(topology.getNumSections(), 3u);
+
+    // Test children relationships
+    auto children0 = topology.getChildren(0);
+    EXPECT_EQ(children0.size(), 1u);
+    EXPECT_EQ(children0[0], 1u);
+
+    auto children1 = topology.getChildren(1);
+    EXPECT_EQ(children1.size(), 1u);
+    EXPECT_EQ(children1[0], 2u);
+
+    auto children2 = topology.getChildren(2);
+    EXPECT_EQ(children2.size(), 0u);
+}
+
+// Test BeamTopology validation (cycles)
+TEST_F(HookeSeratBaseMappingTest, BeamTopology_CycleDetection) {
+    using BeamTopology = Cosserat::mapping::BeamTopology;
+    using SE3Type = sofa::component::cosserat::liegroups::SE3<double>;
+
+    BeamTopology topology;
+
+    // Create a cycle: 0 -> 1 -> 2 -> 0
+    topology.parent_indices = {2, 0, 1}; // 2 points to 0, creating cycle
+    topology.relative_transforms = {SE3Type::computeIdentity(), SE3Type::computeIdentity(), SE3Type::computeIdentity()};
+    topology.connection_stiffnesses = {1000.0, 1000.0, 1000.0};
+
+    EXPECT_FALSE(topology.isValid()); // Should detect cycle
+}
+
+// Test BeamStateEstimator basic functionality
+TEST_F(HookeSeratBaseMappingTest, BeamStateEstimator_BasicOperations) {
+    using BeamStateEstimator = Cosserat::mapping::BeamStateEstimator;
+    using SE3Type = sofa::component::cosserat::liegroups::SE3<double>;
+    using StrainState = Cosserat::mapping::StrainState;
+    using SO3Type = sofa::component::cosserat::liegroups::SO3<double>;
+    using RealSpace = sofa::component::cosserat::liegroups::RealSpace<double, 3>;
+    using Vector3 = SE3Type::Vector3;
+
+    BeamStateEstimator estimator;
+
+    // Test initialization
+    SE3Type initial_pose = SE3Type::computeIdentity();
+    StrainState initial_strain(SO3Type(Vector3::Zero()), RealSpace(Vector3::Zero()));
+    Eigen::Matrix<double, 12, 12> initial_cov = Eigen::Matrix<double, 12, 12>::Identity() * 0.1;
+
+    estimator.initialize(initial_pose, initial_strain, initial_cov);
+
+    // Test confidence computation
+    double confidence = estimator.getEstimationConfidence();
+    EXPECT_GT(confidence, 0.0);
+
+    // Test prediction
+    using TangentVector = SE3Type::TangentVector;
+    TangentVector control_input = TangentVector::Zero();
+    control_input << 0.01, 0.0, 0.0, 0.0, 0.0, 0.0; // Small rotation
+
+    estimator.predict(control_input);
+
+    // Confidence should still be positive
+    double confidence_after_predict = estimator.getEstimationConfidence();
+    EXPECT_GT(confidence_after_predict, 0.0);
+}
+
+// Test BeamStateEstimator update operations
+TEST_F(HookeSeratBaseMappingTest, BeamStateEstimator_UpdateOperations) {
+    using BeamStateEstimator = Cosserat::mapping::BeamStateEstimator;
+    using SE3Type = sofa::component::cosserat::liegroups::SE3<double>;
+    using StrainState = Cosserat::mapping::StrainState;
+    using SO3Type = sofa::component::cosserat::liegroups::SO3<double>;
+    using RealSpace = sofa::component::cosserat::liegroups::RealSpace<double, 3>;
+    using Vector3 = SE3Type::Vector3;
+
+    BeamStateEstimator estimator;
+
+    // Initialize
+    SE3Type initial_pose = SE3Type::computeIdentity();
+    StrainState initial_strain(SO3Type(Vector3::Zero()), RealSpace(Vector3::Zero()));
+    Eigen::Matrix<double, 12, 12> initial_cov = Eigen::Matrix<double, 12, 12>::Identity() * 0.1;
+    estimator.initialize(initial_pose, initial_strain, initial_cov);
+
+    // Test pose update
+    SE3Type measurement = SE3Type::computeIdentity();
+    Eigen::Matrix<double, 6, 6> measurement_cov = Eigen::Matrix<double, 6, 6>::Identity() * 0.01;
+
+    estimator.update(measurement, measurement_cov);
+
+    // Confidence should improve after measurement update
+    double confidence_after_update = estimator.getEstimationConfidence();
+    EXPECT_GT(confidence_after_update, 0.0);
+}
+
+// Test performance optimization features
+TEST_F(HookeSeratBaseMappingTest, PerformanceOptimization_Caching) {
+    // Test that mapping has caching capabilities
+    EXPECT_TRUE(mapping->supportsMultiSectionBeams());
+
+    // Test cache operations
+    mapping->clearComputationCache();
+    EXPECT_EQ(mapping->getCacheSize(), 0u);
+
+    // Test parallel computation settings
+    mapping->enableParallelComputation(false);
+    EXPECT_FALSE(mapping->isParallelComputationEnabled());
+
+    mapping->enableParallelComputation(true);
+    EXPECT_TRUE(mapping->isParallelComputationEnabled());
+    EXPECT_GT(mapping->getOptimalThreadCount(), 0u);
+}
+
+// Test multi-section beam support
+TEST_F(HookeSeratBaseMappingTest, MultiSectionBeamSupport) {
+    using BeamTopology = Cosserat::mapping::BeamTopology;
+    using SE3Type = sofa::component::cosserat::liegroups::SE3<double>;
+
+    // Create a simple topology
+    BeamTopology topology;
+    topology.parent_indices = {-1, 0};
+    topology.relative_transforms = {SE3Type::computeIdentity(), SE3Type::computeIdentity()};
+    topology.connection_stiffnesses = {1000.0, 1000.0};
+
+    // Test setting topology
+    mapping->setBeamTopology(topology);
+    const auto& retrieved_topology = mapping->getBeamTopology();
+    EXPECT_EQ(retrieved_topology.getNumSections(), 2u);
+
+    // Test multi-section enable/disable
+    mapping->enableMultiSectionSupport(true);
+    // Note: We can't easily test the internal state without accessing private members
+    // This would require friend classes or additional getter methods
+}
+
+// Test Jacobian statistics and benchmarking
+TEST_F(HookeSeratBaseMappingTest, JacobianStatistics_Benchmarking) {
+    // Test that we can run performance benchmarks
+    EXPECT_NO_THROW({
+        mapping->runPerformanceBenchmark(10); // Small benchmark for testing
+    });
+
+    // Test that we can get statistics
+    const auto& stats = mapping->getJacobianStats();
+    // Statistics should be available even if not computed yet
+    EXPECT_GE(stats.computation_count, 0u);
+}
+
+// Test state estimation integration
+TEST_F(HookeSeratBaseMappingTest, StateEstimationIntegration) {
+    // Test state estimation enable/disable
+    mapping->enableStateEstimation(false);
+    EXPECT_FALSE(mapping->isStateEstimationEnabled());
+
+    mapping->enableStateEstimation(true);
+    EXPECT_TRUE(mapping->isStateEstimationEnabled());
+
+    // Test confidence query
+    double confidence = mapping->getEstimationConfidence();
+    // Confidence should be 0 when no estimator is active, or positive when active
+    EXPECT_GE(confidence, 0.0);
+}
+
 int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();

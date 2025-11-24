@@ -330,8 +330,9 @@ class Cosserat(Sofa.Prefab):
                 "UniformMass", totalMass=self.beamMass, showAxisSizeFactor="0"
             )
 
+        # Use enhanced HookeSeratDiscretMapping with Lie groups support
         cosseratInSofaFrameNode.addObject(
-            "DiscreteCosseratMapping",
+            "HookeSeratDiscretMapping",
             curv_abs_input=curv_abs_inputS,
             curv_abs_output=curv_abs_outputF,
             name="cosseratMapping",

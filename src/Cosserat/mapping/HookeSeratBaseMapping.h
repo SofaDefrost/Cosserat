@@ -32,6 +32,160 @@ namespace Cosserat::mapping {
 	using PoseUncertainty = sofa::component::cosserat::liegroups::GaussianOnManifold<SE3Type>;
 
 	/**
+	 * @brief Advanced state estimation for beam pose and strain using Kalman filtering
+	 */
+	class BeamStateEstimator {
+	private:
+		// State estimates
+		GaussianOnManifold<SE3Type> pose_estimate_;
+		StrainState strain_estimate_;
+
+		// Process and measurement noise covariances
+		Eigen::Matrix<double, 12, 12> process_noise_;  // 6D pose + 6D strain
+		Eigen::Matrix<double, 6, 6> measurement_noise_; // Typical measurement noise
+
+		// Kalman filter state
+		Eigen::Matrix<double, 12, 12> state_covariance_;
+		bool initialized_ = false;
+
+	public:
+		BeamStateEstimator();
+
+		/**
+		 * @brief Initialize the estimator with initial state and uncertainties
+		 */
+		void initialize(const SE3Type& initial_pose, const StrainState& initial_strain,
+					   const Eigen::Matrix<double, 12, 12>& initial_covariance);
+
+		/**
+		 * @brief Predict state evolution based on control input
+		 * @param control_input Control input (e.g., applied forces/torques)
+		 * @param dt Time step
+		 */
+		void predict(const TangentVector& control_input, double dt = 1.0);
+
+		/**
+		 * @brief Update state estimate with new measurement
+		 * @param measurement New pose measurement
+		 * @param measurement_covariance Measurement uncertainty
+		 */
+		void update(const SE3Type& measurement,
+				   const Eigen::Matrix<double, 6, 6>& measurement_covariance);
+
+		/**
+		 * @brief Update state estimate with strain measurement
+		 * @param strain_measurement New strain measurement
+		 * @param measurement_covariance Measurement uncertainty
+		 */
+		void updateStrain(const StrainState& strain_measurement,
+						 const Eigen::Matrix<double, 6, 6>& measurement_covariance);
+
+		/**
+		 * @brief Get current pose estimate
+		 */
+		const GaussianOnManifold<SE3Type>& getPoseEstimate() const { return pose_estimate_; }
+
+		/**
+		 * @brief Get current strain estimate
+		 */
+		const StrainState& getStrainEstimate() const { return strain_estimate_; }
+
+		/**
+		 * @brief Get estimation confidence (inverse of covariance trace)
+		 */
+		double getEstimationConfidence() const;
+
+		/**
+		 * @brief Reset the estimator
+		 */
+		void reset();
+
+		/**
+		 * @brief Set process noise covariance
+		 */
+		void setProcessNoise(const Eigen::Matrix<double, 12, 12>& noise) { process_noise_ = noise; }
+
+	/**
+	 * @brief Advanced state estimation for beam pose and strain using Kalman filtering
+	 */
+	class BeamStateEstimator {
+	private:
+		// State estimates
+		sofa::component::cosserat::liegroups::GaussianOnManifold<SE3Type> pose_estimate_;
+		StrainState strain_estimate_;
+
+		// Process and measurement noise covariances
+		Eigen::Matrix<double, 12, 12> process_noise_;  // 6D pose + 6D strain
+		Eigen::Matrix<double, 6, 6> measurement_noise_; // Typical measurement noise
+
+		// Kalman filter state
+		Eigen::Matrix<double, 12, 12> state_covariance_;
+		bool initialized_ = false;
+
+	public:
+		BeamStateEstimator();
+
+		/**
+		 * @brief Initialize the estimator with initial state and uncertainties
+		 */
+		void initialize(const SE3Type& initial_pose, const StrainState& initial_strain,
+					   const Eigen::Matrix<double, 12, 12>& initial_covariance);
+
+		/**
+		 * @brief Predict state evolution based on control input
+		 * @param control_input Control input (e.g., applied forces/torques)
+		 * @param dt Time step
+		 */
+		void predict(const TangentVector& control_input, double dt = 1.0);
+
+		/**
+		 * @brief Update state estimate with new measurement
+		 * @param measurement New pose measurement
+		 * @param measurement_covariance Measurement uncertainty
+		 */
+		void update(const SE3Type& measurement,
+				   const Eigen::Matrix<double, 6, 6>& measurement_covariance);
+
+		/**
+		 * @brief Update state estimate with strain measurement
+		 * @param strain_measurement New strain measurement
+		 * @param measurement_covariance Measurement uncertainty
+		 */
+		void updateStrain(const StrainState& strain_measurement,
+						 const Eigen::Matrix<double, 6, 6>& measurement_covariance);
+
+		/**
+		 * @brief Get current pose estimate
+		 */
+		const sofa::component::cosserat::liegroups::GaussianOnManifold<SE3Type>& getPoseEstimate() const { return pose_estimate_; }
+
+		/**
+		 * @brief Get current strain estimate
+		 */
+		const StrainState& getStrainEstimate() const { return strain_estimate_; }
+
+		/**
+		 * @brief Get estimation confidence (inverse of covariance trace)
+		 */
+		double getEstimationConfidence() const;
+
+		/**
+		 * @brief Reset the estimator
+		 */
+		void reset();
+
+		/**
+		 * @brief Set process noise covariance
+		 */
+		void setProcessNoise(const Eigen::Matrix<double, 12, 12>& noise) { process_noise_ = noise; }
+
+		/**
+		 * @brief Set measurement noise covariance
+		 */
+		void setMeasurementNoise(const Eigen::Matrix<double, 6, 6>& noise) { measurement_noise_ = noise; }
+	};
+
+	/**
 	 * @brief Class encapsulating the properties of a Cosserat beam node
 	 * @todo : change this class to node info instead of section info
 	 */
@@ -479,6 +633,110 @@ namespace Cosserat::mapping {
 		}
 	};
 
+	/**
+	 * @brief Topology structure for multi-section beam support
+	 */
+	struct BeamTopology {
+		std::vector<int> parent_indices;           // Parent section index for each section (-1 for root)
+		std::vector<SE3Type> relative_transforms;  // Relative transforms between connected sections
+		std::vector<double> connection_stiffnesses; // Stiffness of connections between sections
+
+		/**
+		 * @brief Check if topology represents a valid tree structure
+		 */
+		bool isValid() const;
+
+		/**
+		 * @brief Get children indices for a given section
+		 */
+		std::vector<size_t> getChildren(size_t section_idx) const;
+
+		/**
+		 * @brief Compute total number of sections
+		 */
+		size_t getNumSections() const { return parent_indices.size(); }
+	};
+
+	/**
+	 * @brief Advanced state estimation for beam pose and strain using Kalman filtering
+	 */
+	class BeamStateEstimator {
+	private:
+		// State estimates
+		sofa::component::cosserat::liegroups::GaussianOnManifold<SE3Type> pose_estimate_;
+		StrainState strain_estimate_;
+
+		// Process and measurement noise covariances
+		Eigen::Matrix<double, 12, 12> process_noise_;  // 6D pose + 6D strain
+		Eigen::Matrix<double, 6, 6> measurement_noise_; // Typical measurement noise
+
+		// Kalman filter state
+		Eigen::Matrix<double, 12, 12> state_covariance_;
+		bool initialized_ = false;
+
+	public:
+		BeamStateEstimator();
+
+		/**
+		 * @brief Initialize the estimator with initial state and uncertainties
+		 */
+		void initialize(const SE3Type& initial_pose, const StrainState& initial_strain,
+					   const Eigen::Matrix<double, 12, 12>& initial_covariance);
+
+		/**
+		 * @brief Predict state evolution based on control input
+		 * @param control_input Control input (e.g., applied forces/torques)
+		 * @param dt Time step
+		 */
+		void predict(const TangentVector& control_input, double dt = 1.0);
+
+		/**
+		 * @brief Update state estimate with new measurement
+		 * @param measurement New pose measurement
+		 * @param measurement_covariance Measurement uncertainty
+		 */
+		void update(const SE3Type& measurement,
+				   const Eigen::Matrix<double, 6, 6>& measurement_covariance);
+
+		/**
+		 * @brief Update state estimate with strain measurement
+		 * @param strain_measurement New strain measurement
+		 * @param measurement_covariance Measurement uncertainty
+		 */
+		void updateStrain(const StrainState& strain_measurement,
+						 const Eigen::Matrix<double, 6, 6>& measurement_covariance);
+
+		/**
+		 * @brief Get current pose estimate
+		 */
+		const sofa::component::cosserat::liegroups::GaussianOnManifold<SE3Type>& getPoseEstimate() const { return pose_estimate_; }
+
+		/**
+		 * @brief Get current strain estimate
+		 */
+		const StrainState& getStrainEstimate() const { return strain_estimate_; }
+
+		/**
+		 * @brief Get estimation confidence (inverse of covariance trace)
+		 */
+		double getEstimationConfidence() const;
+
+		/**
+		 * @brief Reset the estimator
+		 */
+		void reset();
+
+		/**
+		 * @brief Set process noise covariance
+		 */
+		void setProcessNoise(const Eigen::Matrix<double, 12, 12>& noise) { process_noise_ = noise; }
+
+		/**
+		 * @brief Set measurement noise covariance
+		 */
+		void setMeasurementNoise(const Eigen::Matrix<double, 6, 6>& noise) { measurement_noise_ = noise; }
+	};
+
 	template<class TIn1, class TIn2, class TOut>
 	class HookeSeratBaseMapping : public sofa::core::Multi2Mapping<TIn1, TIn2, TOut> {
 	public:
@@ -495,6 +753,19 @@ namespace Cosserat::mapping {
 	protected:
 		std::vector<SectionInfo> m_section_properties;
 		std::vector<FrameInfo> m_frameProperties;
+
+		// Multi-section beam support
+		BeamTopology m_beam_topology;
+		bool m_multi_section_enabled = false;
+
+		// Advanced state estimation
+		std::unique_ptr<BeamStateEstimator> m_state_estimator;
+
+		// Performance optimization
+		mutable std::unordered_map<std::string, AdjointMatrix> computation_cache_;
+		mutable std::chrono::steady_clock::time_point last_cache_clear_;
+		bool parallel_computation_enabled_ = false;
+		size_t optimal_thread_count_ = 1;
 
 		// This should be changed by the new Data
 		// Geometry information vectors (similar to BaseCosseratMapping)
@@ -514,6 +785,7 @@ namespace Cosserat::mapping {
 			size_t computation_count = 0;
 			size_t cache_hits = 0;
 			double total_computation_time = 0.0;
+			std::chrono::steady_clock::time_point start_time;
 			std::unordered_map<std::string, AdjointMatrix> jacobian_cache;
 
 			void reset() {
@@ -521,6 +793,17 @@ namespace Cosserat::mapping {
 				cache_hits = 0;
 				total_computation_time = 0.0;
 				jacobian_cache.clear();
+			}
+
+			void startTiming() {
+				start_time = std::chrono::steady_clock::now();
+			}
+
+			void endTiming() {
+				auto end_time = std::chrono::steady_clock::now();
+				auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+				total_computation_time += duration.count() / 1000.0; // Convert to milliseconds
+				computation_count++;
 			}
 
 			double averageComputationTime() const {
@@ -531,6 +814,10 @@ namespace Cosserat::mapping {
 				size_t total_requests = computation_count + cache_hits;
 				return total_requests > 0 ? static_cast<double>(cache_hits) / total_requests : 0.0;
 			}
+
+			// Benchmarking methods
+			void benchmarkJacobianComputation(size_t iterations = 100);
+			void printPerformanceReport() const;
 		};
 
 		mutable JacobianStats m_jacobian_stats;
@@ -862,6 +1149,31 @@ namespace Cosserat::mapping {
 		 */
 		static bool testTangExpImplementationEquivalence(const double& curv_abs,
 			const TangentVector & strain, const AdjointMatrix &adjoint_matrix, double tolerance = 1e-6);
+
+		// Multi-section beam support methods
+		bool supportsMultiSectionBeams() const { return true; }
+		void setBeamTopology(const BeamTopology& topology);
+		const BeamTopology& getBeamTopology() const { return m_beam_topology; }
+		void enableMultiSectionSupport(bool enable = true) { m_multi_section_enabled = enable; }
+
+		// Advanced state estimation methods
+		void enableStateEstimation(bool enable = true);
+		bool isStateEstimationEnabled() const { return m_state_estimator != nullptr; }
+		void updateStateEstimate(const SE3Type& measurement, const Eigen::Matrix<double, 6, 6>& covariance);
+		void predictState(const TangentVector& control_input, double dt = 1.0);
+		double getEstimationConfidence() const;
+
+		// Performance optimization methods
+		void enableParallelComputation(bool enable = true);
+		bool isParallelComputationEnabled() const { return parallel_computation_enabled_; }
+		size_t getOptimalThreadCount() const { return optimal_thread_count_; }
+		void clearComputationCache();
+		size_t getCacheSize() const { return computation_cache_.size(); }
+
+		// Performance benchmarking
+		void runPerformanceBenchmark(size_t iterations = 1000);
+		void printPerformanceReport() const;
+		const JacobianStats& getJacobianStats() const { return m_jacobian_stats; }
 
 	private:
 		struct SectionIndexResult {

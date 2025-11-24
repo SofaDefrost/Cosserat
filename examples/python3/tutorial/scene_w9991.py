@@ -34,7 +34,8 @@ def _add_cosserat_frame(p_node, _bending_node, nb_framesF, _section_curv_abs, _f
     frames_mo = cosserat_in_Sofa_frame_node.addObject('MechanicalObject', template="Rigid3d", name="FramesMO",
     position=nb_framesF, showIndices=0, showObject=0, showObjectScale=0.8)
     cosserat_in_Sofa_frame_node.addObject('UniformMass', totalMass=physicsParams.beamMass)
-    cosserat_in_Sofa_frame_node.addObject('DiscreteCosseratMapping', name="cosseratMapping",
+    # Use enhanced HookeSeratDiscretMapping with Lie groups support
+    cosserat_in_Sofa_frame_node.addObject('HookeSeratDiscretMapping', name="cosseratMapping",
     curv_abs_input=_section_curv_abs, curv_abs_output=_frame_curv_abs,
     input1=_bending_node.cosserat_state.getLinkPath(), input2=p_node.cosserat_base_mo.getLinkPath(),
     output=frames_mo.getLinkPath(), debug=0, radius=_radius)

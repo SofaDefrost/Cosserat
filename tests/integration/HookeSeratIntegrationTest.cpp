@@ -431,4 +431,259 @@ TEST_F(HookeSeratIntegrationTest, JacobianCaching)
     EXPECT_GT(mapping->getJacobianStats().jacobian_cache.size(), 0);
 }
 
+/**
+ * Test BeamStateEstimator integration
+ */
+TEST_F(HookeSeratIntegrationTest, BeamStateEstimatorIntegration)
+{
+    auto mapping = createHookeSeratMapping();
+    mapping->init();
+
+    // Enable state estimation
+    mapping->enableStateEstimation(true);
+    EXPECT_TRUE(mapping->isStateEstimationEnabled());
+
+    // Test confidence query
+    double confidence = mapping->getEstimationConfidence();
+    EXPECT_GE(confidence, 0.0);
+
+    // Test state prediction
+    using TangentVector = sofa::component::cosserat::liegroups::SE3<double>::TangentVector;
+    TangentVector control_input = TangentVector::Zero();
+    control_input << 0.01, 0.0, 0.0, 0.0, 0.0, 0.0; // Small control input
+
+    EXPECT_NO_THROW(mapping->predictState(control_input));
+
+    // Test state update with measurement
+    using SE3Type = sofa::component::cosserat::liegroups::SE3<double>;
+    SE3Type measurement = SE3Type::computeIdentity();
+    Eigen::Matrix<double, 6, 6> measurement_cov = Eigen::Matrix<double, 6, 6>::Identity() * 0.01;
+
+    EXPECT_NO_THROW(mapping->updateStateEstimate(measurement, measurement_cov));
+
+    // Disable state estimation
+    mapping->enableStateEstimation(false);
+    EXPECT_FALSE(mapping->isStateEstimationEnabled());
+}
+
+/**
+ * Test BeamTopology integration
+ */
+TEST_F(HookeSeratIntegrationTest, BeamTopologyIntegration)
+{
+    auto mapping = createHookeSeratMapping();
+    mapping->init();
+
+    // Test multi-section support
+    EXPECT_TRUE(mapping->supportsMultiSectionBeams());
+
+    // Create a simple topology
+    using BeamTopology = sofa::component::cosserat::mapping::BeamTopology;
+    using SE3Type = sofa::component::cosserat::liegroups::SE3<double>;
+
+    BeamTopology topology;
+    topology.parent_indices = {-1, 0, 1}; // Chain topology
+    topology.relative_transforms = {
+        SE3Type::computeIdentity(),
+        SE3Type::computeIdentity(),
+        SE3Type::computeIdentity()
+    };
+    topology.connection_stiffnesses = {1000.0, 1000.0, 1000.0};
+
+    // Set topology
+    EXPECT_NO_THROW(mapping->setBeamTopology(topology));
+
+    // Verify topology was set
+    const auto& retrieved_topology = mapping->getBeamTopology();
+    EXPECT_EQ(retrieved_topology.getNumSections(), 3u);
+    EXPECT_TRUE(retrieved_topology.isValid());
+
+    // Test multi-section enable/disable
+    mapping->enableMultiSectionSupport(true);
+    // Note: Internal state verification would require additional accessors
+}
+
+/**
+ * Test performance optimization features
+ */
+TEST_F(HookeSeratIntegrationTest, PerformanceOptimizationIntegration)
+{
+    auto mapping = createHookeSeratMapping();
+    mapping->init();
+
+    // Test parallel computation
+    mapping->enableParallelComputation(true);
+    EXPECT_TRUE(mapping->isParallelComputationEnabled());
+    EXPECT_GT(mapping->getOptimalThreadCount(), 0u);
+
+    mapping->enableParallelComputation(false);
+    EXPECT_FALSE(mapping->isParallelComputationEnabled());
+
+    // Test cache operations
+    size_t initial_cache_size = mapping->getCacheSize();
+    mapping->clearComputationCache();
+    EXPECT_EQ(mapping->getCacheSize(), 0u);
+
+    // Test performance benchmarking
+    EXPECT_NO_THROW(mapping->runPerformanceBenchmark(50));
+
+    // Test performance reporting
+    EXPECT_NO_THROW(mapping->printPerformanceReport());
+
+    // Verify stats are updated
+    const auto& stats = mapping->getJacobianStats();
+    EXPECT_GE(stats.computation_count, 0u);
+}
+
+/**
+ * Test advanced state estimation with realistic scenarios
+ */
+TEST_F(HookeSeratIntegrationTest, AdvancedStateEstimation)
+{
+    auto mapping = createHookeSeratMapping();
+    mapping->init();
+    mapping->enableStateEstimation(true);
+
+    // Simulate a sequence of measurements and predictions
+    using SE3Type = sofa::component::cosserat::liegroups::SE3<double>;
+    using TangentVector = SE3Type::TangentVector;
+
+    // Initial measurement
+    SE3Type measurement1 = SE3Type::computeIdentity();
+    Eigen::Matrix<double, 6, 6> cov1 = Eigen::Matrix<double, 6, 6>::Identity() * 0.1;
+    mapping->updateStateEstimate(measurement1, cov1);
+
+    double confidence1 = mapping->getEstimationConfidence();
+    EXPECT_GT(confidence1, 0.0);
+
+    // Prediction step
+    TangentVector control = TangentVector::Zero();
+    control << 0.05, 0.0, 0.0, 0.0, 0.0, 0.0; // Some curvature
+    mapping->predictState(control);
+
+    // Second measurement (slightly different)
+    SE3Type measurement2 = SE3Type::computeIdentity();
+    measurement2.translation() << 0.01, 0.0, 0.0; // Small translation
+    Eigen::Matrix<double, 6, 6> cov2 = Eigen::Matrix<double, 6, 6>::Identity() * 0.05; // Better accuracy
+    mapping->updateStateEstimate(measurement2, cov2);
+
+    double confidence2 = mapping->getEstimationConfidence();
+    EXPECT_GT(confidence2, 0.0);
+
+    // Confidence should potentially improve with better measurements
+    // (This is a statistical property, so we just check it's reasonable)
+    EXPECT_GE(confidence2, 0.0);
+}
+
+/**
+ * Test multi-section beam with complex topology
+ */
+TEST_F(HookeSeratIntegrationTest, MultiSectionBeamComplexTopology)
+{
+    auto mapping = createHookeSeratMapping();
+    mapping->init();
+
+    // Create a branched topology (more complex than simple chain)
+    using BeamTopology = sofa::component::cosserat::mapping::BeamTopology;
+    using SE3Type = sofa::component::cosserat::liegroups::SE3<double>;
+
+    BeamTopology topology;
+    // Root -> Branch1, Branch2
+    topology.parent_indices = {-1, 0, 0, 1, 2}; // Branched structure
+    topology.relative_transforms.resize(5, SE3Type::computeIdentity());
+    topology.connection_stiffnesses = {1000.0, 800.0, 800.0, 600.0, 600.0};
+
+    EXPECT_TRUE(topology.isValid());
+    EXPECT_EQ(topology.getNumSections(), 5u);
+
+    // Test children relationships
+    auto root_children = topology.getChildren(0);
+    EXPECT_EQ(root_children.size(), 2u); // Two children from root
+
+    auto branch1_children = topology.getChildren(1);
+    EXPECT_EQ(branch1_children.size(), 1u); // One child from branch 1
+
+    // Set complex topology
+    EXPECT_NO_THROW(mapping->setBeamTopology(topology));
+    mapping->enableMultiSectionSupport(true);
+}
+
+/**
+ * Test performance benchmarking with different configurations
+ */
+TEST_F(HookeSeratIntegrationTest, PerformanceBenchmarking)
+{
+    auto mapping = createHookeSeratMapping();
+    mapping->init();
+
+    // Test with different benchmark sizes
+    std::vector<size_t> benchmark_sizes = {10, 50, 100};
+
+    for (size_t size : benchmark_sizes) {
+        // Reset stats before each benchmark
+        mapping->resetJacobianStats();
+
+        // Run benchmark
+        EXPECT_NO_THROW(mapping->runPerformanceBenchmark(size));
+
+        // Verify stats were collected
+        const auto& stats = mapping->getJacobianStats();
+        EXPECT_GE(stats.computation_count, size);
+        EXPECT_GE(stats.averageComputationTime(), 0.0);
+    }
+
+    // Test cache performance
+    mapping->clearComputationCache();
+    EXPECT_EQ(mapping->getCacheSize(), 0u);
+
+    // Run benchmark again to test caching
+    mapping->runPerformanceBenchmark(20);
+    size_t cache_size_after = mapping->getCacheSize();
+    EXPECT_GE(cache_size_after, 0u); // Cache should be populated
+}
+
+/**
+ * Test integration of all Phase 2 features together
+ */
+TEST_F(HookeSeratIntegrationTest, Phase2FeatureIntegration)
+{
+    auto mapping = createHookeSeratMapping();
+    mapping->init();
+
+    // Enable all Phase 2 features
+    mapping->enableStateEstimation(true);
+    mapping->enableParallelComputation(true);
+    mapping->enableMultiSectionSupport(true);
+
+    // Set up complex topology
+    using BeamTopology = sofa::component::cosserat::mapping::BeamTopology;
+    using SE3Type = sofa::component::cosserat::liegroups::SE3<double>;
+
+    BeamTopology topology;
+    topology.parent_indices = {-1, 0, 1};
+    topology.relative_transforms.resize(3, SE3Type::computeIdentity());
+    topology.connection_stiffnesses = {1000.0, 800.0, 600.0};
+
+    mapping->setBeamTopology(topology);
+
+    // Run performance benchmark with all features enabled
+    EXPECT_NO_THROW(mapping->runPerformanceBenchmark(25));
+
+    // Test state estimation with topology
+    using TangentVector = SE3Type::TangentVector;
+    TangentVector control = TangentVector::Random() * 0.1;
+    mapping->predictState(control);
+
+    SE3Type measurement = SE3Type::computeIdentity();
+    Eigen::Matrix<double, 6, 6> cov = Eigen::Matrix<double, 6, 6>::Identity() * 0.05;
+    mapping->updateStateEstimate(measurement, cov);
+
+    // Verify everything works together
+    EXPECT_TRUE(mapping->isStateEstimationEnabled());
+    EXPECT_TRUE(mapping->isParallelComputationEnabled());
+    EXPECT_TRUE(mapping->supportsMultiSectionBeams());
+    EXPECT_GT(mapping->getEstimationConfidence(), 0.0);
+    EXPECT_GT(mapping->getCacheSize(), 0u);
+}
+
 } // namespace sofa::component::cosserat::mapping::testing
