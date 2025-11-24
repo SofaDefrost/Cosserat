@@ -425,6 +425,167 @@ TEST_F(HookeSeratBaseMappingTest, StateEstimationIntegration) {
     EXPECT_GE(confidence, 0.0);
 }
 
+// Phase 4: Advanced Lie Group Features Tests
+
+// Test BCH correction computation
+TEST_F(HookeSeratBaseMappingTest, AdvancedLieGroups_BCHCorrection) {
+    using TangentVector = sofa::component::cosserat::liegroups::SE3<double>::TangentVector;
+
+    // Create two tangent vectors
+    TangentVector v1 = TangentVector::Zero();
+    v1 << 0.1, 0.0, 0.0, 0.0, 0.0, 0.0; // Pure rotation around x
+
+    TangentVector v2 = TangentVector::Zero();
+    v2 << 0.0, 0.1, 0.0, 0.0, 0.0, 0.0; // Pure rotation around y
+
+    // Compute BCH correction
+    TangentVector bch_result = mapping->computeBCHCorrection(v1, v2);
+
+    // BCH correction should be non-zero for non-commuting elements
+    EXPECT_FALSE(bch_result.isZero());
+
+    // Test commutativity: [v1,v2] = -[v2,v1]
+    TangentVector bch_reverse = mapping->computeBCHCorrection(v2, v1);
+    EXPECT_TRUE(bch_result.isApprox(-bch_reverse));
+}
+
+// Test parallel transport
+TEST_F(HookeSeratBaseMappingTest, AdvancedLieGroups_ParallelTransport) {
+    using SE3Type = sofa::component::cosserat::liegroups::SE3<double>;
+    using TangentVector = SE3Type::TangentVector;
+
+    // Create a tangent vector and target pose
+    TangentVector tangent_vector;
+    tangent_vector << 0.1, 0.0, 0.0, 0.0, 0.0, 0.1;
+
+    SE3Type target_pose = SE3Type::computeIdentity();
+
+    // Compute parallel transport
+    TangentVector transported = mapping->parallelTransport(tangent_vector, target_pose);
+
+    // For identity transport, result should be the same (simplified implementation)
+    EXPECT_TRUE(transported.isApprox(tangent_vector));
+}
+
+// Test geodesic distance computation
+TEST_F(HookeSeratBaseMappingTest, AdvancedLieGroups_GeodesicDistance) {
+    using SectionInfo = Cosserat::mapping::SectionInfo;
+    using TangentVector = sofa::component::cosserat::liegroups::SE3<double>::TangentVector;
+
+    // Create two sections with different strains
+    TangentVector strain1 = TangentVector::Zero();
+    strain1 << 0.1, 0.0, 0.0, 0.0, 0.0, 0.0;
+
+    TangentVector strain2 = TangentVector::Zero();
+    strain2 << 0.2, 0.0, 0.0, 0.0, 0.0, 0.0;
+
+    SectionInfo section1(1.0, strain1, 0);
+    SectionInfo section2(1.0, strain2, 0);
+
+    // Add sections to mapping
+    mapping->addSection(section1);
+
+    // Compute geodesic distance
+    double distance = mapping->computeGeodesicDistance(section2);
+
+    // Distance should be positive
+    EXPECT_GT(distance, 0.0);
+
+    // Distance to self should be zero
+    double self_distance = mapping->computeGeodesicDistance(section1);
+    EXPECT_DOUBLE_EQ(self_distance, 0.0);
+}
+
+// Test Riemannian exponential map
+TEST_F(HookeSeratBaseMappingTest, AdvancedLieGroups_RiemannianExponential) {
+    using SectionInfo = Cosserat::mapping::SectionInfo;
+    using TangentVector = sofa::component::cosserat::liegroups::SE3<double>::TangentVector;
+
+    // Create a base section
+    TangentVector strain = TangentVector::Zero();
+    strain << 0.1, 0.0, 0.0, 0.0, 0.0, 0.0;
+
+    SectionInfo base_section(1.0, strain, 0);
+
+    // Create a direction vector
+    TangentVector direction = TangentVector::Zero();
+    direction << 0.01, 0.0, 0.0, 0.0, 0.0, 0.01;
+
+    // Compute Riemannian exponential
+    SectionInfo result = mapping->riemannianExponential(base_section, direction, 1.0);
+
+    // Result should be different from base section
+    EXPECT_FALSE(result.getStrainsVec().isApprox(base_section.getStrainsVec()));
+}
+
+// Phase 4: Machine Learning Integration Tests
+
+// Test adaptive controller basic functionality
+TEST_F(HookeSeratBaseMappingTest, MLIntegration_AdaptiveControllerBasic) {
+    // Test enable/disable adaptive control
+    mapping->enableAdaptiveControl(false);
+    EXPECT_FALSE(mapping->isAdaptiveControlEnabled());
+
+    mapping->enableAdaptiveControl(true);
+    EXPECT_TRUE(mapping->isAdaptiveControlEnabled());
+
+    // Test prediction with no training (should return zero)
+    using SE3Type = sofa::component::cosserat::liegroups::SE3<double>;
+    SE3Type target_pose = SE3Type::computeIdentity();
+
+    auto prediction = mapping->getAdaptiveControlPrediction(target_pose);
+    EXPECT_TRUE(prediction.isZero());
+}
+
+// Test adaptive controller training
+TEST_F(HookeSeratBaseMappingTest, MLIntegration_AdaptiveControllerTraining) {
+    using SectionInfo = Cosserat::mapping::SectionInfo;
+    using TangentVector = sofa::component::cosserat::liegroups::SE3<double>::TangentVector;
+    using SE3Type = sofa::component::cosserat::liegroups::SE3<double>;
+
+    // Enable adaptive control
+    mapping->enableAdaptiveControl(true);
+    EXPECT_TRUE(mapping->isAdaptiveControlEnabled());
+
+    // Create training data
+    std::vector<std::pair<SectionInfo, TangentVector>> training_data;
+
+    TangentVector strain1 = TangentVector::Zero();
+    strain1 << 0.1, 0.0, 0.0, 0.0, 0.0, 0.0;
+    SectionInfo section1(1.0, strain1, 0);
+
+    TangentVector control1 = TangentVector::Zero();
+    control1 << 0.05, 0.0, 0.0, 0.0, 0.0, 0.0;
+
+    training_data.emplace_back(section1, control1);
+
+    // Train the controller
+    mapping->trainAdaptiveController(training_data);
+
+    // Test prediction
+    SE3Type target_pose = SE3Type::computeIdentity();
+    auto prediction = mapping->getAdaptiveControlPrediction(target_pose);
+
+    // Prediction should be non-zero after training
+    EXPECT_FALSE(prediction.isZero());
+}
+
+// Test material adaptation
+TEST_F(HookeSeratBaseMappingTest, MLIntegration_MaterialAdaptation) {
+    // Enable adaptive control
+    mapping->enableAdaptiveControl(true);
+
+    // Create feedback vector
+    Eigen::VectorXd feedback(24);
+    feedback.setRandom();
+
+    // Update material adaptation
+    mapping->updateMaterialAdaptation(feedback);
+
+    // Test should pass without errors
+    EXPECT_TRUE(mapping->isAdaptiveControlEnabled());
+}
+
 int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();

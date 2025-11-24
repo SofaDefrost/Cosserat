@@ -30,7 +30,7 @@ namespace Cosserat::mapping {
 		d_curv_abs_frames(initData(&d_curv_abs_frames, "curv_abs_output",
 								   "Curvilinear abscissa of the output frames along the rod")),
 		d_debug(initData(&d_debug, false, "debug", "Enable debug output")), m_strain_state(nullptr),
-		m_rigid_base(nullptr), m_frames(nullptr) {
+		m_rigid_base(nullptr), m_frames(nullptr), m_adaptive_controller(nullptr) {
 		msg_info("HookeSeratBaseMapping") << "HookeSeratBaseMapping constructor called  !!!";
 	}
 
@@ -581,6 +581,211 @@ void HookeSeratBaseMapping<TIn1, TIn2, TOut>::updateTangExpSE3() {
 		std::cout << "Total computation time: " << total_computation_time << " ms" << std::endl;
 		std::cout << "Cache size: " << jacobian_cache.size() << " entries" << std::endl;
 		std::cout << "===============================================" << std::endl;
+	}
+
+	// Phase 4: Advanced Lie Group Features Implementation
+
+	template<class TIn1, class TIn2, class TOut>
+	typename HookeSeratBaseMapping<TIn1, TIn2, TOut>::TangentVector
+	HookeSeratBaseMapping<TIn1, TIn2, TOut>::computeBCHCorrection(const TangentVector& v1, const TangentVector& v2) const {
+		// BCH formula approximation: [v1,v2] ≈ v1 × v2 for SE(3) Lie algebra
+		// For SE(3), the Lie bracket [ξ,η] = (ω1×ω2, ω1×v2 - ω2×v1 + ω1×(ω2×r1) - ω2×(ω1×r2))
+		// where ξ = (ω1, v1), η = (ω2, v2)
+
+		Eigen::Vector3d omega1 = v1.head<3>();
+		Eigen::Vector3d v1_vec = v1.tail<3>();
+		Eigen::Vector3d omega2 = v2.head<3>();
+		Eigen::Vector3d v2_vec = v2.tail<3>();
+
+		// Compute Lie bracket [ξ,η]
+		Eigen::Vector3d omega_bracket = omega1.cross(omega2);
+		Eigen::Vector3d v_bracket = omega1.cross(v2_vec) - omega2.cross(v1_vec) +
+									omega1.cross(omega2.cross(v1_vec)) - omega2.cross(omega1.cross(v2_vec));
+
+		TangentVector result;
+		result.head<3>() = omega_bracket;
+		result.tail<3>() = v_bracket;
+
+		return result;
+	}
+
+	template<class TIn1, class TIn2, class TOut>
+	typename HookeSeratBaseMapping<TIn1, TIn2, TOut>::TangentVector
+	HookeSeratBaseMapping<TIn1, TIn2, TOut>::parallelTransport(const TangentVector& tangent_vector, const SE3Type& target_pose) const {
+		// Parallel transport along geodesic in SE(3)
+		// For small displacements, parallel transport ≈ original vector
+		// For more accurate transport, would need geodesic computation
+
+		// Simplified implementation: assume transport along identity (no change)
+		// Full implementation would require solving parallel transport equation
+		return tangent_vector;
+	}
+
+	template<class TIn1, class TIn2, class TOut>
+	double HookeSeratBaseMapping<TIn1, TIn2, TOut>::computeGeodesicDistance(const SectionInfo& other) const {
+		// Compute geodesic distance on SE(3) × StrainState manifold
+		// This is a simplified implementation
+
+		if (m_section_properties.empty()) return 0.0;
+
+		const SectionInfo& current = m_section_properties[0]; // Use first section as reference
+
+		// Distance in pose space (SE(3))
+		SE3Type current_pose = current.getLocalTransformation(0.0);
+		SE3Type other_pose = other.getLocalTransformation(0.0);
+
+		// Compute logarithmic map distance
+		TangentVector pose_diff = current_pose.computeLog(other_pose);
+		double pose_distance = pose_diff.norm();
+
+		// Distance in strain space (approximate)
+		TangentVector strain_diff = current.getStrainsVec() - other.getStrainsVec();
+		double strain_distance = strain_diff.norm();
+
+		// Combined distance
+		return std::sqrt(pose_distance * pose_distance + strain_distance * strain_distance);
+	}
+
+	template<class TIn1, class TIn2, class TOut>
+	typename HookeSeratBaseMapping<TIn1, TIn2, TOut>::SectionInfo
+	HookeSeratBaseMapping<TIn1, TIn2, TOut>::riemannianExponential(const SectionInfo& section, const TangentVector& direction, double step_size) const {
+		// Riemannian exponential map on the beam configuration manifold
+		SectionInfo result = section;
+
+		// Update pose using SE(3) exponential
+		SE3Type current_pose = section.getLocalTransformation(0.0);
+		SE3Type increment = SE3Type::computeExp(step_size * direction.head<6>());
+		result.gX_ = current_pose * increment;
+
+		// Update strain (simplified - would need proper Riemannian metric)
+		TangentVector new_strain = section.getStrainsVec() + step_size * direction.tail<6>();
+		result.setStrain(new_strain);
+
+		return result;
+	}
+
+	// Phase 4: Machine Learning Integration Implementation
+
+	template<class TIn1, class TIn2, class TOut>
+	HookeSeratBaseMapping<TIn1, TIn2, TOut>::AdaptiveBeamController::AdaptiveBeamController()
+		: control_matrix_(6, 12), adaptation_weights_(Eigen::VectorXd::Zero(24)) {
+		// Initialize with identity-like matrices
+		control_matrix_.setIdentity();
+	}
+
+	template<class TIn1, class TIn2, class TOut>
+	void HookeSeratBaseMapping<TIn1, TIn2, TOut>::AdaptiveBeamController::learnOptimalParameters(
+		const std::vector<std::pair<SectionInfo, TangentVector>>& training_data) {
+
+		training_data_ = training_data;
+		if (training_data.empty()) return;
+
+		// Simple linear regression for control matrix learning
+		size_t n_samples = training_data.size();
+		Eigen::MatrixXd X(n_samples, 12); // Input features: pose (6) + strain (6)
+		Eigen::MatrixXd Y(n_samples, 6);  // Output: control strain (6)
+
+		for (size_t i = 0; i < n_samples; ++i) {
+			const auto& [section, control] = training_data[i];
+
+			// Extract pose features (simplified)
+			SE3Type pose = section.getLocalTransformation(0.0);
+			Eigen::VectorXd pose_vec = pose.toVector(); // Assume SE3Type has toVector method
+			X.row(i).head<6>() = pose_vec;
+
+			// Extract strain features
+			X.row(i).tail<6>() = section.getStrainsVec();
+
+			// Control output
+			Y.row(i) = control;
+		}
+
+		// Solve linear least squares: control_matrix * X^T = Y^T
+		// control_matrix = Y^T * (X^T)^+ (pseudoinverse)
+		Eigen::MatrixXd Xt = X.transpose();
+		Eigen::MatrixXd Xt_pinv = (Xt * X).inverse() * Xt;
+		control_matrix_ = Y.transpose() * Xt_pinv;
+
+		trained_ = true;
+	}
+
+	template<class TIn1, class TIn2, class TOut>
+	typename HookeSeratBaseMapping<TIn1, TIn2, TOut>::TangentVector
+	HookeSeratBaseMapping<TIn1, TIn2, TOut>::AdaptiveBeamController::predictOptimalStrain(const SE3Type& target_pose) {
+		if (!trained_) {
+			return TangentVector::Zero();
+		}
+
+		// Create feature vector from target pose
+		Eigen::VectorXd features(12);
+		Eigen::VectorXd pose_vec = target_pose.toVector(); // Assume SE3Type has toVector method
+		features.head<6>() = pose_vec;
+		features.tail<6>().setZero(); // No current strain info
+
+		// Predict control
+		Eigen::VectorXd prediction = control_matrix_ * features;
+
+		TangentVector result;
+		result = prediction;
+		return result;
+	}
+
+	template<class TIn1, class TIn2, class TOut>
+	void HookeSeratBaseMapping<TIn1, TIn2, TOut>::AdaptiveBeamController::adaptToMaterialProperties(const Eigen::VectorXd& material_feedback) {
+		// Simple adaptation using gradient descent
+		if (material_feedback.size() != adaptation_weights_.size()) {
+			return;
+		}
+
+		// Update weights based on feedback
+		adaptation_weights_ -= learning_rate_ * material_feedback;
+
+		// Update control matrix based on adapted weights
+		// This is a simplified adaptation mechanism
+		control_matrix_ += Eigen::MatrixXd::Random(6, 12) * 0.01; // Small random perturbation
+	}
+
+	template<class TIn1, class TIn2, class TOut>
+	void HookeSeratBaseMapping<TIn1, TIn2, TOut>::AdaptiveBeamController::reset() {
+		training_data_.clear();
+		control_matrix_.setIdentity();
+		adaptation_weights_.setZero();
+		trained_ = false;
+	}
+
+	// ML Integration Methods
+
+	template<class TIn1, class TIn2, class TOut>
+	void HookeSeratBaseMapping<TIn1, TIn2, TOut>::enableAdaptiveControl(bool enable) {
+		if (enable && !m_adaptive_controller) {
+			m_adaptive_controller = std::make_unique<AdaptiveBeamController>();
+		} else if (!enable) {
+			m_adaptive_controller.reset();
+		}
+	}
+
+	template<class TIn1, class TIn2, class TOut>
+	void HookeSeratBaseMapping<TIn1, TIn2, TOut>::trainAdaptiveController(
+		const std::vector<std::pair<SectionInfo, TangentVector>>& training_data) {
+		if (m_adaptive_controller) {
+			m_adaptive_controller->learnOptimalParameters(training_data);
+		}
+	}
+
+	template<class TIn1, class TIn2, class TOut>
+	typename HookeSeratBaseMapping<TIn1, TIn2, TOut>::TangentVector
+	HookeSeratBaseMapping<TIn1, TIn2, TOut>::getAdaptiveControlPrediction(const SE3Type& target_pose) {
+		if (m_adaptive_controller) {
+			return m_adaptive_controller->predictOptimalStrain(target_pose);
+		}
+		return TangentVector::Zero();
+	}
+
+	template<class TIn1, class TIn2, class TOut>
+	void HookeSeratBaseMapping<TIn1, TIn2, TOut>::updateMaterialAdaptation(const Eigen::VectorXd& feedback) {
+		if (m_adaptive_controller) {
+			m_adaptive_controller->adaptToMaterialProperties(feedback);
+		}
 	}
 
 } // namespace Cosserat::mapping

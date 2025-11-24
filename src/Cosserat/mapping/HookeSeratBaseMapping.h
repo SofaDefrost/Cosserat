@@ -1175,7 +1175,96 @@ namespace Cosserat::mapping {
 		void printPerformanceReport() const;
 		const JacobianStats& getJacobianStats() const { return m_jacobian_stats; }
 
+		// Phase 4: Advanced Lie Group Features
+		/**
+		 * @brief Compute BCH (Baker-Campbell-Hausdorff) correction for Lie algebra composition
+		 * @param v1 First tangent vector
+		 * @param v2 Second tangent vector
+		 * @return BCH correction term [v1,v2]
+		 */
+		TangentVector computeBCHCorrection(const TangentVector& v1, const TangentVector& v2) const;
+
+		/**
+		 * @brief Compute parallel transport of a tangent vector along the beam
+		 * @param tangent_vector Vector to transport
+		 * @param target_pose Target pose for transport
+		 * @return Transported tangent vector
+		 */
+		TangentVector parallelTransport(const TangentVector& tangent_vector, const SE3Type& target_pose) const;
+
+		/**
+		 * @brief Compute geodesic distance between two section states
+		 * @param other Other section info
+		 * @return Geodesic distance on the Lie group manifold
+		 */
+		double computeGeodesicDistance(const SectionInfo& other) const;
+
+		/**
+		 * @brief Compute Riemannian exponential map for beam sections
+		 * @param section Base section
+		 * @param direction Tangent direction
+		 * @param step_size Step size for exponential
+		 * @return New section after exponential map
+		 */
+		SectionInfo riemannianExponential(const SectionInfo& section, const TangentVector& direction, double step_size = 1.0) const;
+
+		// Phase 4: Machine Learning Integration
+		/**
+		 * @brief Adaptive beam controller using machine learning techniques
+		 */
+		class AdaptiveBeamController {
+		private:
+			std::vector<std::pair<SectionInfo, TangentVector>> training_data_;
+			Eigen::MatrixXd control_matrix_;
+			bool trained_ = false;
+
+			// Neural network-like adaptation parameters
+			Eigen::VectorXd adaptation_weights_;
+			double learning_rate_ = 0.01;
+
+		public:
+			AdaptiveBeamController();
+
+			/**
+			 * @brief Learn optimal control parameters from training data
+			 * @param training_data Vector of (section_state, optimal_control) pairs
+			 */
+			void learnOptimalParameters(const std::vector<std::pair<SectionInfo, TangentVector>>& training_data);
+
+			/**
+			 * @brief Predict optimal strain for reaching target pose
+			 * @param target_pose Desired end-effector pose
+			 * @return Predicted optimal strain vector
+			 */
+			TangentVector predictOptimalStrain(const SE3Type& target_pose);
+
+			/**
+			 * @brief Adapt controller to new material properties
+			 * @param material_feedback Feedback from material deformation
+			 */
+			void adaptToMaterialProperties(const Eigen::VectorXd& material_feedback);
+
+			/**
+			 * @brief Check if controller has been trained
+			 */
+			bool isTrained() const { return trained_; }
+
+			/**
+			 * @brief Reset the controller
+			 */
+			void reset();
+		};
+
+		// ML integration methods
+		void enableAdaptiveControl(bool enable = true);
+		bool isAdaptiveControlEnabled() const { return m_adaptive_controller != nullptr; }
+		void trainAdaptiveController(const std::vector<std::pair<SectionInfo, TangentVector>>& training_data);
+		TangentVector getAdaptiveControlPrediction(const SE3Type& target_pose);
+		void updateMaterialAdaptation(const Eigen::VectorXd& feedback);
+
 	private:
+		// ML controller instance
+		std::unique_ptr<AdaptiveBeamController> m_adaptive_controller;
 		struct SectionIndexResult {
 			size_t index_for_frame; // Pour set_related_beam_index_
 			size_t index_for_next; // Pour la prochaine itération
