@@ -228,6 +228,21 @@ namespace Cosserat::mapping {
 void HookeSeratBaseMapping<TIn1, TIn2, TOut>::computeTangExpImplementation(const double& curv_abs,
 	const TangentVector & strain, const AdjointMatrix &adjoint_matrix, AdjointMatrix & tang_adjoint_matrix)
 	{
+		// Use Lie group right Jacobian instead of manual trigonometric series
+		// This replaces the complex manual computation with the robust Lie group library implementation
+		TangentVector scaled_strain = strain * curv_abs;
+		tang_adjoint_matrix = SE3Type::rightJacobian(scaled_strain);
+	}
+
+	/**
+	 * @brief Legacy implementation using manual trigonometric series (kept for verification)
+	 * This method computes the tangent exponential map using the original trigonometric series expansion.
+	 * Kept for comparison and validation against the new Lie group implementation.
+	 */
+	template<class TIn1, class TIn2, class TOut>
+	void HookeSeratBaseMapping<TIn1, TIn2, TOut>::computeTangExpImplementationLegacy(const double& curv_abs,
+		const TangentVector & strain, const AdjointMatrix &adjoint_matrix, AdjointMatrix & tang_adjoint_matrix)
+	{
 		SReal theta = Vector3(strain(0), strain(1), strain(2)).norm();
 		//old method
 		//Matrix3 tilde_k = SO3Type::buildAntisymmetric(Vector3(strain_i(0), strain_i(1), strain_i(2)));// getTildeMatrix(Vec3(strain_i(0), strain_i(1), strain_i(2)));
@@ -267,6 +282,37 @@ void HookeSeratBaseMapping<TIn1, TIn2, TOut>::computeTangExpImplementation(const
 				  scalar3 * adjoint_matrix * adjoint_matrix * adjoint_matrix +
 				  scalar4 * adjoint_matrix * adjoint_matrix * adjoint_matrix * adjoint_matrix;
 		}
+	}
+
+	/**
+	 * @brief Test function to compare new and legacy implementations
+	 * @return true if implementations produce equivalent results within tolerance
+	 */
+	template<class TIn1, class TIn2, class TOut>
+	bool HookeSeratBaseMapping<TIn1, TIn2, TOut>::testTangExpImplementationEquivalence(const double& curv_abs,
+		const TangentVector & strain, const AdjointMatrix &adjoint_matrix, double tolerance = 1e-6)
+	{
+		AdjointMatrix new_result, legacy_result;
+
+		// Compute using new Lie group implementation
+		computeTangExpImplementation(curv_abs, strain, adjoint_matrix, new_result);
+
+		// Compute using legacy trigonometric implementation
+		computeTangExpImplementationLegacy(curv_abs, strain, adjoint_matrix, legacy_result);
+
+		// Compare results
+		AdjointMatrix diff = new_result - legacy_result;
+		double max_diff = diff.cwiseAbs().maxCoeff();
+
+		if (max_diff > tolerance) {
+			msg_warning("HookeSeratBaseMapping") << "Tangent exponential implementations differ by " << max_diff
+				<< " (tolerance: " << tolerance << ")";
+			msg_warning("HookeSeratBaseMapping") << "New result:\n" << new_result;
+			msg_warning("HookeSeratBaseMapping") << "Legacy result:\n" << legacy_result;
+			return false;
+		}
+
+		return true;
 	}
 
 

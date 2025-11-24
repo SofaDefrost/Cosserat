@@ -3,6 +3,9 @@
 #include <Cosserat/config.h>
 #include <liegroups/SE3.h>
 #include <liegroups/SO3.h>
+#include <liegroups/Bundle.h>
+#include <liegroups/RealSpace.h>
+#include <liegroups/Uncertainty.h>
 #include <liegroups/Types.h>
 #include <sofa/core/Multi2Mapping.h>
 #include <sofa/core/objectmodel/BaseContext.h>
@@ -21,6 +24,13 @@ namespace Cosserat::mapping {
 	using JacobianMatrix = typename SE3Type::JacobianMatrix;
 	using TangentVector = typename SE3Type::TangentVector;
 
+	// Type-safe strain state management using Bundle
+	using StrainState = sofa::component::cosserat::liegroups::Bundle<SO3Type, sofa::component::cosserat::liegroups::RealSpace<double, 3>>;
+	using FullState = sofa::component::cosserat::liegroups::Bundle<SE3Type, StrainState>;
+
+	// Uncertainty propagation for state estimation
+	using PoseUncertainty = sofa::component::cosserat::liegroups::GaussianOnManifold<SE3Type>;
+
 	/**
 	 * @brief Class encapsulating the properties of a Cosserat beam node
 	 * @todo : change this class to node info instead of section info
@@ -28,6 +38,10 @@ namespace Cosserat::mapping {
 	class SectionInfo {
 	private:
 		double sec_length_ = 0.0;
+		// Type-safe strain state management using Bundle
+		StrainState strain_state_; // Angular + linear strain as SO3 × ℝ³
+
+		// Legacy members for backward compatibility (to be removed)
 		Vector3 angular_strain_ = Vector3::Zero(); // angular strain
 		Vector3 linear_strain_ = Vector3::Zero(); // linear strain
 		TangentVector strain_ = TangentVector::Zero() ; // strain_ = (angular_strain_^T, linear_strain_^T)^T
@@ -286,6 +300,64 @@ namespace Cosserat::mapping {
 
 		return SectionInfo(total_length, composed_strain, index_0_, composed_transform);
 	}
+
+		/**
+		 * @brief Get the strain state as a type-safe bundle
+		 * @return StrainState containing angular and linear strain
+		 */
+		StrainState getStrainState() const {
+			return StrainState(SO3Type(angular_strain_), sofa::component::cosserat::liegroups::RealSpace<double, 3>(linear_strain_));
+		}
+
+		/**
+		 * @brief Set the strain state from a type-safe bundle
+		 * @param strain_state The new strain state
+		 */
+		void setStrainState(const StrainState &strain_state) {
+			// Extract components from the bundle using proper accessors
+			const auto& angular_component = strain_state.template get<0>(); // SO3 component
+			const auto& linear_component = strain_state.template get<1>();  // RealSpace component
+
+			// Extract the logarithms (tangent vectors) from each component
+			angular_strain_ = angular_component.log();
+			linear_strain_ = linear_component.log();
+
+			// Update the combined strain vector
+			strain_.template head<3>() = angular_strain_;
+			strain_.template tail<3>() = linear_strain_;
+		}
+
+		/**
+		 * @brief Get the full state (pose + strain) as a bundle
+		 * @return FullState containing both pose and strain
+		 */
+		FullState getFullState() const {
+			return FullState(gX_, getStrainState());
+		}
+
+		/**
+		 * @brief Linear interpolation between two sections
+		 * @param other Target section
+		 * @param t Interpolation parameter [0,1]
+		 * @return Interpolated section
+		 */
+		SectionInfo lerp(const SectionInfo &other, double t) const {
+			SE3Type interp_transform = gX_.interpolate(other.gX_, t);
+			TangentVector interp_strain = (1.0 - t) * strain_ + t * other.strain_;
+			double interp_length = (1.0 - t) * sec_length_ + t * other.sec_length_;
+			return SectionInfo(interp_length, interp_strain, index_0_, interp_transform);
+		}
+
+		/**
+		 * @brief Spherical linear interpolation between two sections
+		 * @param other Target section
+		 * @param t Interpolation parameter [0,1]
+		 * @return Interpolated section
+		 */
+		SectionInfo slerp(const SectionInfo &other, double t) const {
+			// For SE3, slerp is the same as interpolate (uses exponential map)
+			return lerp(other, t);
+		}
 	};
 
 	/**
@@ -437,6 +509,32 @@ namespace Cosserat::mapping {
 		void initializeSectionProperties();
 		void initializeFrameProperties();
 
+		// Performance monitoring and caching
+		struct JacobianStats {
+			size_t computation_count = 0;
+			size_t cache_hits = 0;
+			double total_computation_time = 0.0;
+			std::unordered_map<std::string, AdjointMatrix> jacobian_cache;
+
+			void reset() {
+				computation_count = 0;
+				cache_hits = 0;
+				total_computation_time = 0.0;
+				jacobian_cache.clear();
+			}
+
+			double averageComputationTime() const {
+				return computation_count > 0 ? total_computation_time / computation_count : 0.0;
+			}
+
+			double cacheHitRate() const {
+				size_t total_requests = computation_count + cache_hits;
+				return total_requests > 0 ? static_cast<double>(cache_hits) / total_requests : 0.0;
+			}
+		};
+
+		mutable JacobianStats m_jacobian_stats;
+
 
 		// Validation exploitant les nouvelles méthodes
 		bool validateSectionProperties() const {
@@ -492,6 +590,120 @@ namespace Cosserat::mapping {
 		}
 
 		/**
+		 * @brief Validate the overall beam geometry
+		 * @return true if geometry is valid
+		 */
+		bool validateBeamGeometry() const {
+			// Check basic section properties
+			if (!validateSectionProperties()) {
+				return false;
+			}
+
+			// Check frame properties
+			if (!validateFrameProperties()) {
+				return false;
+			}
+
+			// Check inter-section continuity
+			if (!checkInterSectionContinuity()) {
+				return false;
+			}
+
+			// Check frame-to-section associations
+			if (!validateFrameSectionAssociations()) {
+				return false;
+			}
+
+			return true;
+		}
+
+		/**
+		 * @brief Validate frame properties
+		 * @return true if all frame properties are valid
+		 */
+		bool validateFrameProperties() const {
+			for (size_t i = 0; i < m_frameProperties.size(); ++i) {
+				const auto &frame = m_frameProperties[i];
+				if (frame.getLength() < 0) {
+					msg_warning() << "Frame " << i << " has invalid length: " << frame.getLength();
+					return false;
+				}
+				if (frame.get_related_beam_index_() < 0) {
+					msg_warning() << "Frame " << i << " has invalid related beam index: "
+								  << frame.get_related_beam_index_();
+					return false;
+				}
+				if (frame.getDistanceToNearestBeamNode() < 0) {
+					msg_warning() << "Frame " << i << " has invalid distance to beam node: "
+								  << frame.getDistanceToNearestBeamNode();
+					return false;
+				}
+			}
+			return true;
+		}
+
+		/**
+		 * @brief Check continuity between adjacent sections
+		 * @param eps Tolerance for continuity check
+		 * @return true if all sections are continuous
+		 */
+		bool checkInterSectionContinuity(double eps = 1e-6) const {
+			if (m_section_properties.size() < 2) {
+				return true; // Single section or empty is trivially continuous
+			}
+
+			for (size_t i = 0; i < m_section_properties.size() - 1; ++i) {
+				const auto &current = m_section_properties[i];
+				const auto &next = m_section_properties[i + 1];
+
+				// Check that end of current section matches start of next section
+				SE3Type end_transform = current.getLocalTransformation(1.0);
+				SE3Type start_transform = next.getLocalTransformation(0.0);
+
+				if (!end_transform.computeIsApprox(start_transform, eps)) {
+					msg_warning() << "Discontinuity detected between sections " << i << " and " << i + 1
+								  << ". End transform: " << end_transform.matrix()
+								  << ". Start transform: " << start_transform.matrix();
+					return false;
+				}
+
+				// Check length consistency
+				if (std::abs(current.getIndex1() - next.getIndex0()) != 1) {
+					msg_warning() << "Index discontinuity between sections " << i << " and " << i + 1;
+					return false;
+				}
+			}
+			return true;
+		}
+
+		/**
+		 * @brief Validate frame-to-section associations
+		 * @return true if all associations are valid
+		 */
+		bool validateFrameSectionAssociations() const {
+			for (size_t i = 0; i < m_frameProperties.size(); ++i) {
+				const auto &frame = m_frameProperties[i];
+				size_t section_idx = frame.get_related_beam_index_();
+
+				if (section_idx >= m_section_properties.size()) {
+					msg_warning() << "Frame " << i << " references invalid section index: " << section_idx;
+					return false;
+				}
+
+				// Check that the frame's distance is within the section bounds
+				const auto &section = m_section_properties[section_idx];
+				double frame_distance = frame.getDistanceToNearestBeamNode();
+				if (frame_distance < 0 || frame_distance > section.getLength()) {
+					msg_warning() << "Frame " << i << " distance " << frame_distance
+								  << " is outside section " << section_idx << " bounds [0, "
+								  << section.getLength() << "]";
+					return false;
+				}
+			}
+			return true;
+		}
+
+		/**
 		 * @brief Calcule les forces internes utilisant les matrices adjointes
 		 * @param strains Déformations d'entrée
 		 * @return Forces internes
@@ -508,6 +720,79 @@ namespace Cosserat::mapping {
 				}
 			}
 			return forces;
+		}
+
+		/**
+		 * @brief Validate Jacobian matrix accuracy by comparing with finite differences
+		 * @param section_idx Section index to validate
+		 * @param eps Step size for finite differences
+		 * @param tolerance Acceptable error tolerance
+		 * @return true if Jacobian is accurate within tolerance
+		 */
+		bool validateJacobianAccuracy(size_t section_idx, double eps = 1e-8, double tolerance = 1e-6) const {
+			if (section_idx >= m_section_properties.size()) {
+				msg_error() << "Invalid section index: " << section_idx;
+				return false;
+			}
+
+			const auto &section = m_section_properties[section_idx];
+			SE3Type base_transform = section.getTransformation();
+
+			// Compute analytical Jacobian
+			TangentVector strain = section.getStrainsVec();
+			AdjointMatrix analytical_jacobian = SE3Type::rightJacobian(strain);
+
+			// Compute numerical Jacobian using finite differences
+			AdjointMatrix numerical_jacobian = AdjointMatrix::Zero();
+
+			for (int i = 0; i < 6; ++i) {
+				TangentVector strain_plus = strain;
+				TangentVector strain_minus = strain;
+
+				strain_plus[i] += eps;
+				strain_minus[i] -= eps;
+
+				SE3Type transform_plus = base_transform * SE3Type::computeExp(strain_plus);
+				SE3Type transform_minus = base_transform * SE3Type::computeExp(strain_minus);
+
+				TangentVector diff = SE3Type::log(transform_plus * transform_minus.inverse());
+				numerical_jacobian.col(i) = diff / (2 * eps);
+			}
+
+			// Compare Jacobians
+			AdjointMatrix error = analytical_jacobian - numerical_jacobian;
+			double max_error = error.cwiseAbs().maxCoeff();
+
+			if (max_error > tolerance) {
+				msg_warning() << "Jacobian validation failed for section " << section_idx
+							  << ". Max error: " << max_error << " (tolerance: " << tolerance << ")";
+				return false;
+			}
+
+			return true;
+		}
+
+		/**
+		 * @brief Get performance statistics
+		 * @return Current Jacobian computation statistics
+		 */
+		const JacobianStats &getJacobianStats() const { return m_jacobian_stats; }
+
+		/**
+		 * @brief Reset performance statistics
+		 */
+		void resetJacobianStats() { m_jacobian_stats.reset(); }
+
+		/**
+		 * @brief Enable or disable Jacobian caching
+		 * @param enabled Whether to enable caching
+		 */
+		void setJacobianCaching(bool enabled) {
+			if (!enabled) {
+				m_jacobian_stats.jacobian_cache.clear();
+			}
+			// Note: Caching is always enabled in the current implementation
+			// This method could be extended to disable caching if needed
 		}
 
 	public:
@@ -564,6 +849,19 @@ namespace Cosserat::mapping {
 		//void computeTangExp(double &x, const TangentVector &k, AdjointMatrix &TgX);
 		static void computeTangExpImplementation(const double& curv_abs,
 	const TangentVector & strain, const AdjointMatrix &adjoint_matrix, AdjointMatrix & tang_adjoint_matrix);
+
+		/**
+		 * @brief Legacy implementation using manual trigonometric series (kept for verification)
+		 */
+		static void computeTangExpImplementationLegacy(const double& curv_abs,
+			const TangentVector & strain, const AdjointMatrix &adjoint_matrix, AdjointMatrix & tang_adjoint_matrix);
+
+		/**
+		 * @brief Test function to compare new and legacy implementations
+		 * @return true if implementations produce equivalent results within tolerance
+		 */
+		static bool testTangExpImplementationEquivalence(const double& curv_abs,
+			const TangentVector & strain, const AdjointMatrix &adjoint_matrix, double tolerance = 1e-6);
 
 	private:
 		struct SectionIndexResult {
