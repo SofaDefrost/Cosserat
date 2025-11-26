@@ -20,6 +20,7 @@ if (UNIT_TEST)
         unit/BeamHookeLawForceFieldTest.cpp
         unit/DiscretCosseratMappingTest.cpp
         unit/CosseratUnilateralInteractionConstraintTest.cpp
+        test_jacobian_verification.cpp  # Step 1: Jacobian verification
     )
 
     add_executable(${PROJECT_NAME} ${HEADER_FILES} ${SOURCE_FILES})
