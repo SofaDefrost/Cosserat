@@ -167,6 +167,13 @@ namespace sofa::component::cosserat::liegroups {
 			return tangent;
 		}
 
+		TangentVector log(SE3 & trans) const {
+			TangentVector tangent;
+			tangent.template head<3>() = trans.m_rotation.log();
+			tangent.template tail<3>() = trans.m_rotation.inverse().act(trans.m_translation);
+			return tangent;
+		}
+
 		AdjointMatrix ad(const TangentVector &v) {
 			AdjointMatrix Ad = AdjointMatrix::Zero();
 			const Vector3 omega = v.template tail<3>();
@@ -287,6 +294,8 @@ namespace sofa::component::cosserat::liegroups {
 			const Scalar trans_dist = (m_translation - other.m_translation).norm();
 			return w_rot * rot_dist + w_trans * trans_dist;
 		}
+
+		static constexpr int actionDimension() { return 3; }
 
 		static std::vector<SE3> generateTrajectory(const std::vector<SE3> &waypoints, int num_points = 10) {
 			if (waypoints.size() < 2) {

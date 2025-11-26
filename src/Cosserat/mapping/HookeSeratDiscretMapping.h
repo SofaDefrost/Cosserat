@@ -129,6 +129,7 @@ namespace Cosserat::mapping {
 		//////////////////////////////////////////////////////////////////////////////
 
 		sofa::helper::ColorMap m_colorMap;
+		typedef sofa::type::vector<type::RGBAColor> VecColor;
 
 		/**
 		 * @brief Updates frame transformations using liegroups SE(3) exponential map

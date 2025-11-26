@@ -1,14 +1,16 @@
 #pragma once
 
-#include <Cosserat/config.h>
-#include <liegroups/SE3.h>
-#include <liegroups/SO3.h>
-#include <liegroups/Bundle.h>
-#include <liegroups/RealSpace.h>
-#include <liegroups/Uncertainty.h>
-#include <liegroups/Types.h>
+#include <Eigen/Dense>
 #include <sofa/core/Multi2Mapping.h>
 #include <sofa/core/objectmodel/BaseContext.h>
+#include <sofa/defaulttype/RigidTypes.h>
+#include <sofa/defaulttype/VecTypes.h>
+#include  <liegroups/Bundle.h>
+#include  <liegroups/RealSpace.h>
+#include  <liegroups/SO3.h>
+#include  <liegroups/SE3.h>
+#include  <liegroups/Types.h>
+#include  <liegroups/Uncertainty.h>
 
 
 namespace Cosserat::mapping {
@@ -17,7 +19,7 @@ namespace Cosserat::mapping {
 	using SE3Type = sofa::component::cosserat::liegroups::SE3<double>;
 	using SO3Type = sofa::component::cosserat::liegroups::SO3<double>;
 	using Vector3 = typename SE3Type::Vector3;
-	//using TangentVector = typename SE3Type::TangentVector; // SE3 utilise TangentVector pour les vecteurs 6D
+	// using TangentVector = typename SE3Type::TangentVector; // SE3 utilise TangentVector pour les vecteurs 6D
 	using Matrix3 = typename SE3Type::Matrix3;
 	using Matrix4 = typename SE3Type::Matrix4;
 	using AdjointMatrix = typename SE3Type::AdjointMatrix;
@@ -25,23 +27,27 @@ namespace Cosserat::mapping {
 	using TangentVector = typename SE3Type::TangentVector;
 
 	// Type-safe strain state management using Bundle
-	using StrainState = sofa::component::cosserat::liegroups::Bundle<SO3Type, sofa::component::cosserat::liegroups::RealSpace<double, 3>>;
+	using StrainState =
+			sofa::component::cosserat::liegroups::Bundle<SO3Type,
+														 sofa::component::cosserat::liegroups::RealSpace<double, 3>>;
 	using FullState = sofa::component::cosserat::liegroups::Bundle<SE3Type, StrainState>;
 
 	// Uncertainty propagation for state estimation
 	using PoseUncertainty = sofa::component::cosserat::liegroups::GaussianOnManifold<SE3Type>;
 
+	using RealSpace = sofa::component::cosserat::liegroups::RealSpace<double, 3>;
+
 	/**
 	 * @brief Advanced state estimation for beam pose and strain using Kalman filtering
 	 */
 	class BeamStateEstimator {
 	private:
 		// State estimates
-		GaussianOnManifold<SE3Type> pose_estimate_;
+		PoseUncertainty pose_estimate_;
 		StrainState strain_estimate_;
 
 		// Process and measurement noise covariances
-		Eigen::Matrix<double, 12, 12> process_noise_;  // 6D pose + 6D strain
+		Eigen::Matrix<double, 12, 12> process_noise_; // 6D pose + 6D strain
 		Eigen::Matrix<double, 6, 6> measurement_noise_; // Typical measurement noise
 
 		// Kalman filter state
@@ -54,41 +60,40 @@ namespace Cosserat::mapping {
 		/**
 		 * @brief Initialize the estimator with initial state and uncertainties
 		 */
-		void initialize(const SE3Type& initial_pose, const StrainState& initial_strain,
-					   const Eigen::Matrix<double, 12, 12>& initial_covariance);
+		void initialize(const SE3Type &initial_pose, const StrainState &initial_strain,
+						const Eigen::Matrix<double, 12, 12> &initial_covariance);
 
 		/**
 		 * @brief Predict state evolution based on control input
 		 * @param control_input Control input (e.g., applied forces/torques)
 		 * @param dt Time step
 		 */
-		void predict(const TangentVector& control_input, double dt = 1.0);
+		void predict(const TangentVector &control_input, double dt = 1.0);
 
 		/**
 		 * @brief Update state estimate with new measurement
 		 * @param measurement New pose measurement
 		 * @param measurement_covariance Measurement uncertainty
 		 */
-		void update(const SE3Type& measurement,
-				   const Eigen::Matrix<double, 6, 6>& measurement_covariance);
+		void update(const SE3Type &measurement, const Eigen::Matrix<double, 6, 6> &measurement_covariance);
 
 		/**
 		 * @brief Update state estimate with strain measurement
 		 * @param strain_measurement New strain measurement
 		 * @param measurement_covariance Measurement uncertainty
 		 */
-		void updateStrain(const StrainState& strain_measurement,
-						 const Eigen::Matrix<double, 6, 6>& measurement_covariance);
+		void updateStrain(const StrainState &strain_measurement,
+						  const Eigen::Matrix<double, 6, 6> &measurement_covariance);
 
 		/**
 		 * @brief Get current pose estimate
 		 */
-		const GaussianOnManifold<SE3Type>& getPoseEstimate() const { return pose_estimate_; }
+		const PoseUncertainty &getPoseEstimate() const { return pose_estimate_; }
 
 		/**
 		 * @brief Get current strain estimate
 		 */
-		const StrainState& getStrainEstimate() const { return strain_estimate_; }
+		const StrainState &getStrainEstimate() const { return strain_estimate_; }
 
 		/**
 		 * @brief Get estimation confidence (inverse of covariance trace)
@@ -103,86 +108,7 @@ namespace Cosserat::mapping {
 		/**
 		 * @brief Set process noise covariance
 		 */
-		void setProcessNoise(const Eigen::Matrix<double, 12, 12>& noise) { process_noise_ = noise; }
-
-	/**
-	 * @brief Advanced state estimation for beam pose and strain using Kalman filtering
-	 */
-	class BeamStateEstimator {
-	private:
-		// State estimates
-		sofa::component::cosserat::liegroups::GaussianOnManifold<SE3Type> pose_estimate_;
-		StrainState strain_estimate_;
-
-		// Process and measurement noise covariances
-		Eigen::Matrix<double, 12, 12> process_noise_;  // 6D pose + 6D strain
-		Eigen::Matrix<double, 6, 6> measurement_noise_; // Typical measurement noise
-
-		// Kalman filter state
-		Eigen::Matrix<double, 12, 12> state_covariance_;
-		bool initialized_ = false;
-
-	public:
-		BeamStateEstimator();
-
-		/**
-		 * @brief Initialize the estimator with initial state and uncertainties
-		 */
-		void initialize(const SE3Type& initial_pose, const StrainState& initial_strain,
-					   const Eigen::Matrix<double, 12, 12>& initial_covariance);
-
-		/**
-		 * @brief Predict state evolution based on control input
-		 * @param control_input Control input (e.g., applied forces/torques)
-		 * @param dt Time step
-		 */
-		void predict(const TangentVector& control_input, double dt = 1.0);
-
-		/**
-		 * @brief Update state estimate with new measurement
-		 * @param measurement New pose measurement
-		 * @param measurement_covariance Measurement uncertainty
-		 */
-		void update(const SE3Type& measurement,
-				   const Eigen::Matrix<double, 6, 6>& measurement_covariance);
-
-		/**
-		 * @brief Update state estimate with strain measurement
-		 * @param strain_measurement New strain measurement
-		 * @param measurement_covariance Measurement uncertainty
-		 */
-		void updateStrain(const StrainState& strain_measurement,
-						 const Eigen::Matrix<double, 6, 6>& measurement_covariance);
-
-		/**
-		 * @brief Get current pose estimate
-		 */
-		const sofa::component::cosserat::liegroups::GaussianOnManifold<SE3Type>& getPoseEstimate() const { return pose_estimate_; }
-
-		/**
-		 * @brief Get current strain estimate
-		 */
-		const StrainState& getStrainEstimate() const { return strain_estimate_; }
-
-		/**
-		 * @brief Get estimation confidence (inverse of covariance trace)
-		 */
-		double getEstimationConfidence() const;
-
-		/**
-		 * @brief Reset the estimator
-		 */
-		void reset();
-
-		/**
-		 * @brief Set process noise covariance
-		 */
-		void setProcessNoise(const Eigen::Matrix<double, 12, 12>& noise) { process_noise_ = noise; }
-
-		/**
-		 * @brief Set measurement noise covariance
-		 */
-		void setMeasurementNoise(const Eigen::Matrix<double, 6, 6>& noise) { measurement_noise_ = noise; }
+		void setProcessNoise(const Eigen::Matrix<double, 12, 12> &noise) { process_noise_ = noise; }
 	};
 
 	/**
@@ -198,7 +124,7 @@ namespace Cosserat::mapping {
 		// Legacy members for backward compatibility (to be removed)
 		Vector3 angular_strain_ = Vector3::Zero(); // angular strain
 		Vector3 linear_strain_ = Vector3::Zero(); // linear strain
-		TangentVector strain_ = TangentVector::Zero() ; // strain_ = (angular_strain_^T, linear_strain_^T)^T
+		TangentVector strain_ = TangentVector::Zero(); // strain_ = (angular_strain_^T, linear_strain_^T)^T
 
 		unsigned int index_0_ = 0;
 		unsigned int index_1_ = 1;
@@ -206,7 +132,7 @@ namespace Cosserat::mapping {
 		// Transformation SE3 au lieu de Matrix4 simple
 		SE3Type gX_;
 
-		//Matrix computed automatically
+		// Matrix computed automatically
 		mutable AdjointMatrix adjoint_;
 		mutable AdjointMatrix coAdjoint_;
 		mutable bool adjoint_computed_ = false;
@@ -258,7 +184,6 @@ namespace Cosserat::mapping {
 				for (int i = 0; i < 3; ++i) {
 					angular_strain_[i] = strain[i];
 					linear_strain_[i] = strain[i + 3];
-
 				}
 				strain_.head<3>() = angular_strain_;
 				strain_.tail<3>() = linear_strain_;
@@ -291,7 +216,7 @@ namespace Cosserat::mapping {
 			}
 		}
 
-		const TangentVector &getStrainsVec() const { return strain_;}
+		const TangentVector &getStrainsVec() const { return strain_; }
 		// void setStrain(const sofa::type::Vec3 &k) {for (unsigned int i = 0; i<3; i++) kappa_[i] = k[i];}
 		//
 		// void setStrain(const TangentVector &strain) {
@@ -304,9 +229,7 @@ namespace Cosserat::mapping {
 
 		unsigned int getIndex0() const { return index_0_; }
 		unsigned int getIndex1() const { return index_1_; }
-		void setIndices(unsigned int i0) {
-			index_0_ = i0;
-		}
+		void setIndices(unsigned int i0) { index_0_ = i0; }
 
 		// Accesseurs pour la transformation SE3
 		const SE3Type &getTransformation() const { return gX_; }
@@ -337,19 +260,14 @@ namespace Cosserat::mapping {
 			if (!adjoint_computed_) {
 				adjoint_ = getAdjoint(); // Compute adjoint and co-adjoint matrix
 				coAdjoint_ = adjoint_.transpose();
-				return  coAdjoint_;
+				return coAdjoint_;
 			}
 			return coAdjoint_;
 		}
 
-		const AdjointMatrix & getTangAdjointMatrix() {
-			return tang_adjoint_;
-		}
+		const AdjointMatrix &getTangAdjointMatrix() { return tang_adjoint_; }
 
-		void setTanAdjointMatrix(const AdjointMatrix & tang_adjoint_mat) {
-				tang_adjoint_ = tang_adjoint_mat;
-		}
-
+		void setTanAdjointMatrix(const AdjointMatrix &tang_adjoint_mat) { tang_adjoint_ = tang_adjoint_mat; }
 
 
 		// Nouvelles méthodes exploitant les fonctionnalités SE3
@@ -426,8 +344,7 @@ namespace Cosserat::mapping {
 		 * @return true si les sections sont approximativement égales
 		 */
 		bool isApprox(const SectionInfo &other, double eps = 1e-6) const {
-			return gX_.computeIsApprox(other.gX_, eps) &&
-				   (angular_strain_ - other.angular_strain_).norm() < eps &&
+			return gX_.computeIsApprox(other.gX_, eps) && (angular_strain_ - other.angular_strain_).norm() < eps &&
 				   std::abs(sec_length_ - other.sec_length_) < eps;
 		}
 
@@ -435,32 +352,30 @@ namespace Cosserat::mapping {
 		 * @brief Calcule l'inverse de la transformation
 		 * @return Section avec transformation inverse
 		 */
-		SectionInfo inverse() const {
-			return SectionInfo(sec_length_, -strain_, index_0_, gX_.computeInverse());
-		}
+		SectionInfo inverse() const { return SectionInfo(sec_length_, -strain_, index_0_, gX_.computeInverse()); }
 
 		/**
 		 * @brief Compose deux sections
 		 * @param other Section à composer
 		 * @return Section composée
 		 */
-	SectionInfo compose(const SectionInfo &other) const {
-		SE3Type composed_transform = gX_.compose(other.gX_);
-		// Create a proper 6D strain vector by combining angular and linear strains
-		TangentVector composed_strain;
-		composed_strain.head<3>() = angular_strain_ + other.angular_strain_; // Angular strain
-		composed_strain.tail<3>() = linear_strain_ + other.linear_strain_; // Linear strain
-		double total_length = sec_length_ + other.sec_length_;
+		SectionInfo compose(const SectionInfo &other) const {
+			SE3Type composed_transform = gX_.compose(other.gX_);
+			// Create a proper 6D strain vector by combining angular and linear strains
+			TangentVector composed_strain;
+			composed_strain.head<3>() = angular_strain_ + other.angular_strain_; // Angular strain
+			composed_strain.tail<3>() = linear_strain_ + other.linear_strain_; // Linear strain
+			double total_length = sec_length_ + other.sec_length_;
 
-		return SectionInfo(total_length, composed_strain, index_0_, composed_transform);
-	}
+			return SectionInfo(total_length, composed_strain, index_0_, composed_transform);
+		}
 
 		/**
 		 * @brief Get the strain state as a type-safe bundle
 		 * @return StrainState containing angular and linear strain
 		 */
 		StrainState getStrainState() const {
-			return StrainState(SO3Type(angular_strain_), sofa::component::cosserat::liegroups::RealSpace<double, 3>(linear_strain_));
+			return StrainState(SO3Type::exp(angular_strain_), RealSpace(linear_strain_));
 		}
 
 		/**
@@ -469,8 +384,8 @@ namespace Cosserat::mapping {
 		 */
 		void setStrainState(const StrainState &strain_state) {
 			// Extract components from the bundle using proper accessors
-			const auto& angular_component = strain_state.template get<0>(); // SO3 component
-			const auto& linear_component = strain_state.template get<1>();  // RealSpace component
+			const auto &angular_component = strain_state.template get<0>(); // SO3 component
+			const auto &linear_component = strain_state.template get<1>(); // RealSpace component
 
 			// Extract the logarithms (tangent vectors) from each component
 			angular_strain_ = angular_component.log();
@@ -485,9 +400,7 @@ namespace Cosserat::mapping {
 		 * @brief Get the full state (pose + strain) as a bundle
 		 * @return FullState containing both pose and strain
 		 */
-		FullState getFullState() const {
-			return FullState(gX_, getStrainState());
-		}
+		FullState getFullState() const { return FullState(gX_, getStrainState()); }
 
 		/**
 		 * @brief Linear interpolation between two sections
@@ -513,6 +426,7 @@ namespace Cosserat::mapping {
 			return lerp(other, t);
 		}
 	};
+
 
 	/**
 	 * @brief Classe pour les propriétés des frames (utilise TangentVector pour kappa)
@@ -566,36 +480,32 @@ namespace Cosserat::mapping {
 		void setTransformation(const SE3Type &transform) {
 			transformation_ = transform;
 
-			//Do I really need this?
+			// Do I really need this?
 			adjoint_computed_ = false;
 		}
 
-	const AdjointMatrix &getAdjoint() const {
-		if (!adjoint_computed_) {
-			adjoint_ = transformation_.computeAdjoint();
-			coAdjoint_ = adjoint_.transpose();
-			adjoint_computed_ = true;
-		}
-		return adjoint_;
-	}
-
-	const AdjointMatrix &getCoAdjoint() const {
-		if (!adjoint_computed_) {
-			adjoint_ = getAdjoint(); // Compute adjoint and co-adjoint matrix
-			coAdjoint_ = adjoint_.transpose();
-			return  coAdjoint_;
-		}
-		return coAdjoint_;
-	}
-
-	const AdjointMatrix & getTangAdjointMatrix() {
-			return tang_adjoint_;
+		const AdjointMatrix &getAdjoint() const {
+			if (!adjoint_computed_) {
+				adjoint_ = transformation_.computeAdjoint();
+				coAdjoint_ = adjoint_.transpose();
+				adjoint_computed_ = true;
+			}
+			return adjoint_;
 		}
 
-
-		void setTanAdjointMatrix(const AdjointMatrix & tang_adjoint_mat) {
-			tang_adjoint_ = tang_adjoint_mat;
+		const AdjointMatrix &getCoAdjoint() const {
+			if (!adjoint_computed_) {
+				adjoint_ = getAdjoint(); // Compute adjoint and co-adjoint matrix
+				coAdjoint_ = adjoint_.transpose();
+				return coAdjoint_;
+			}
+			return coAdjoint_;
 		}
+
+		const AdjointMatrix &getTangAdjointMatrix() { return tang_adjoint_; }
+
+
+		void setTanAdjointMatrix(const AdjointMatrix &tang_adjoint_mat) { tang_adjoint_ = tang_adjoint_mat; }
 
 		/**
 		 * @brief Calcule la transformation locale complète (6D)
@@ -615,30 +525,29 @@ namespace Cosserat::mapping {
 		}
 
 
-
-
 		/**
 		 * @brief Stream output operator for FrameInfo
 		 * @param os Output stream
 		 * @param frame FrameInfo object to output
 		 * @return Reference to output stream
 		 */
-		friend std::ostream& operator<<(std::ostream& os, const FrameInfo& frame) {
+		friend std::ostream &operator<<(std::ostream &os, const FrameInfo &frame) {
 			os << "FrameInfo{length=" << frame.frames_sect_length_
 			   << ", related_beam_index=" << frame.related_beam_index_
-			   << ", distance_to_nearest=" << frame.distance_to_nearest_beam_node
-			   << ", kappa=[" << frame.kappa_.transpose() << "]"
+			   << ", distance_to_nearest=" << frame.distance_to_nearest_beam_node << ", kappa=["
+			   << frame.kappa_.transpose() << "]"
 			   << ", transformation=" << frame.transformation_ << "}";
 			return os;
 		}
 	};
 
+
 	/**
 	 * @brief Topology structure for multi-section beam support
 	 */
 	struct BeamTopology {
-		std::vector<int> parent_indices;           // Parent section index for each section (-1 for root)
-		std::vector<SE3Type> relative_transforms;  // Relative transforms between connected sections
+		std::vector<int> parent_indices; // Parent section index for each section (-1 for root)
+		std::vector<SE3Type> relative_transforms; // Relative transforms between connected sections
 		std::vector<double> connection_stiffnesses; // Stiffness of connections between sections
 
 		/**
@@ -660,82 +569,55 @@ namespace Cosserat::mapping {
 	/**
 	 * @brief Advanced state estimation for beam pose and strain using Kalman filtering
 	 */
-	class BeamStateEstimator {
+
+
+	// Phase 4: Machine Learning Integration
+	/**
+	 * @brief Adaptive beam controller using machine learning techniques
+	 */
+	class AdaptiveBeamController {
 	private:
-		// State estimates
-		sofa::component::cosserat::liegroups::GaussianOnManifold<SE3Type> pose_estimate_;
-		StrainState strain_estimate_;
+		std::vector<std::pair<SectionInfo, TangentVector>> training_data_;
+		Eigen::MatrixXd control_matrix_;
+		bool trained_ = false;
 
-		// Process and measurement noise covariances
-		Eigen::Matrix<double, 12, 12> process_noise_;  // 6D pose + 6D strain
-		Eigen::Matrix<double, 6, 6> measurement_noise_; // Typical measurement noise
-
-		// Kalman filter state
-		Eigen::Matrix<double, 12, 12> state_covariance_;
-		bool initialized_ = false;
+		// Neural network-like adaptation parameters
+		Eigen::VectorXd adaptation_weights_;
+		double learning_rate_ = 0.01;
 
 	public:
-		BeamStateEstimator();
+		AdaptiveBeamController();
 
 		/**
-		 * @brief Initialize the estimator with initial state and uncertainties
+		 * @brief Learn optimal control parameters from training data
+		 * @param training_data Vector of (section_state, optimal_control) pairs
 		 */
-		void initialize(const SE3Type& initial_pose, const StrainState& initial_strain,
-					   const Eigen::Matrix<double, 12, 12>& initial_covariance);
+		void learnOptimalParameters(const std::vector<std::pair<SectionInfo, TangentVector>> &training_data);
 
 		/**
-		 * @brief Predict state evolution based on control input
-		 * @param control_input Control input (e.g., applied forces/torques)
-		 * @param dt Time step
+		 * @brief Predict optimal strain for reaching target pose
+		 * @param target_pose Desired end-effector pose
+		 * @return Predicted optimal strain vector
 		 */
-		void predict(const TangentVector& control_input, double dt = 1.0);
+		TangentVector predictOptimalStrain(const SE3Type &target_pose);
 
 		/**
-		 * @brief Update state estimate with new measurement
-		 * @param measurement New pose measurement
-		 * @param measurement_covariance Measurement uncertainty
+		 * @brief Adapt controller to new material properties
+		 * @param material_feedback Feedback from material deformation
 		 */
-		void update(const SE3Type& measurement,
-				   const Eigen::Matrix<double, 6, 6>& measurement_covariance);
+		void adaptToMaterialProperties(const Eigen::VectorXd &material_feedback);
 
 		/**
-		 * @brief Update state estimate with strain measurement
-		 * @param strain_measurement New strain measurement
-		 * @param measurement_covariance Measurement uncertainty
+		 * @brief Check if controller has been trained
 		 */
-		void updateStrain(const StrainState& strain_measurement,
-						 const Eigen::Matrix<double, 6, 6>& measurement_covariance);
+		bool isTrained() const { return trained_; }
 
 		/**
-		 * @brief Get current pose estimate
-		 */
-		const sofa::component::cosserat::liegroups::GaussianOnManifold<SE3Type>& getPoseEstimate() const { return pose_estimate_; }
-
-		/**
-		 * @brief Get current strain estimate
-		 */
-		const StrainState& getStrainEstimate() const { return strain_estimate_; }
-
-		/**
-		 * @brief Get estimation confidence (inverse of covariance trace)
-		 */
-		double getEstimationConfidence() const;
-
-		/**
-		 * @brief Reset the estimator
+		 * @brief Reset the controller
 		 */
 		void reset();
-
-		/**
-		 * @brief Set process noise covariance
-		 */
-		void setProcessNoise(const Eigen::Matrix<double, 12, 12>& noise) { process_noise_ = noise; }
-
-		/**
-		 * @brief Set measurement noise covariance
-		 */
-		void setMeasurementNoise(const Eigen::Matrix<double, 6, 6>& noise) { measurement_noise_ = noise; }
 	};
+
 
 	template<class TIn1, class TIn2, class TOut>
 	class HookeSeratBaseMapping : public sofa::core::Multi2Mapping<TIn1, TIn2, TOut> {
@@ -795,9 +677,7 @@ namespace Cosserat::mapping {
 				jacobian_cache.clear();
 			}
 
-			void startTiming() {
-				start_time = std::chrono::steady_clock::now();
-			}
+			void startTiming() { start_time = std::chrono::steady_clock::now(); }
 
 			void endTiming() {
 				auto end_time = std::chrono::steady_clock::now();
@@ -916,13 +796,13 @@ namespace Cosserat::mapping {
 					return false;
 				}
 				if (frame.get_related_beam_index_() < 0) {
-					msg_warning() << "Frame " << i << " has invalid related beam index: "
-								  << frame.get_related_beam_index_();
+					msg_warning() << "Frame " << i
+								  << " has invalid related beam index: " << frame.get_related_beam_index_();
 					return false;
 				}
 				if (frame.getDistanceToNearestBeamNode() < 0) {
-					msg_warning() << "Frame " << i << " has invalid distance to beam node: "
-								  << frame.getDistanceToNearestBeamNode();
+					msg_warning() << "Frame " << i
+								  << " has invalid distance to beam node: " << frame.getDistanceToNearestBeamNode();
 					return false;
 				}
 			}
@@ -981,9 +861,8 @@ namespace Cosserat::mapping {
 				const auto &section = m_section_properties[section_idx];
 				double frame_distance = frame.getDistanceToNearestBeamNode();
 				if (frame_distance < 0 || frame_distance > section.getLength()) {
-					msg_warning() << "Frame " << i << " distance " << frame_distance
-								  << " is outside section " << section_idx << " bounds [0, "
-								  << section.getLength() << "]";
+					msg_warning() << "Frame " << i << " distance " << frame_distance << " is outside section "
+								  << section_idx << " bounds [0, " << section.getLength() << "]";
 					return false;
 				}
 			}
@@ -1133,34 +1012,36 @@ namespace Cosserat::mapping {
 		void clearFrames() { m_frameProperties.clear(); }
 
 		void updateTangExpSE3();
-		//void computeTangExp(double &x, const TangentVector &k, AdjointMatrix &TgX);
-		static void computeTangExpImplementation(const double& curv_abs,
-	const TangentVector & strain, const AdjointMatrix &adjoint_matrix, AdjointMatrix & tang_adjoint_matrix);
+		// void computeTangExp(double &x, const TangentVector &k, AdjointMatrix &TgX);
+		static void computeTangExpImplementation(const double &curv_abs, const TangentVector &strain,
+												 const AdjointMatrix &adjoint_matrix,
+												 AdjointMatrix &tang_adjoint_matrix);
 
 		/**
 		 * @brief Legacy implementation using manual trigonometric series (kept for verification)
 		 */
-		static void computeTangExpImplementationLegacy(const double& curv_abs,
-			const TangentVector & strain, const AdjointMatrix &adjoint_matrix, AdjointMatrix & tang_adjoint_matrix);
+		static void computeTangExpImplementationLegacy(const double &curv_abs, const TangentVector &strain,
+													   const AdjointMatrix &adjoint_matrix,
+													   AdjointMatrix &tang_adjoint_matrix);
 
 		/**
 		 * @brief Test function to compare new and legacy implementations
 		 * @return true if implementations produce equivalent results within tolerance
 		 */
-		static bool testTangExpImplementationEquivalence(const double& curv_abs,
-			const TangentVector & strain, const AdjointMatrix &adjoint_matrix, double tolerance = 1e-6);
+		static bool testTangExpImplementationEquivalence(const double &curv_abs, const TangentVector &strain,
+														 const AdjointMatrix &adjoint_matrix, double tolerance = 1e-6);
 
 		// Multi-section beam support methods
 		bool supportsMultiSectionBeams() const { return true; }
-		void setBeamTopology(const BeamTopology& topology);
-		const BeamTopology& getBeamTopology() const { return m_beam_topology; }
+		void setBeamTopology(const BeamTopology &topology);
+		const BeamTopology &getBeamTopology() const { return m_beam_topology; }
 		void enableMultiSectionSupport(bool enable = true) { m_multi_section_enabled = enable; }
 
 		// Advanced state estimation methods
 		void enableStateEstimation(bool enable = true);
 		bool isStateEstimationEnabled() const { return m_state_estimator != nullptr; }
-		void updateStateEstimate(const SE3Type& measurement, const Eigen::Matrix<double, 6, 6>& covariance);
-		void predictState(const TangentVector& control_input, double dt = 1.0);
+		void updateStateEstimate(const SE3Type &measurement, const Eigen::Matrix<double, 6, 6> &covariance);
+		void predictState(const TangentVector &control_input, double dt = 1.0);
 		double getEstimationConfidence() const;
 
 		// Performance optimization methods
@@ -1173,7 +1054,6 @@ namespace Cosserat::mapping {
 		// Performance benchmarking
 		void runPerformanceBenchmark(size_t iterations = 1000);
 		void printPerformanceReport() const;
-		const JacobianStats& getJacobianStats() const { return m_jacobian_stats; }
 
 		// Phase 4: Advanced Lie Group Features
 		/**
@@ -1182,7 +1062,7 @@ namespace Cosserat::mapping {
 		 * @param v2 Second tangent vector
 		 * @return BCH correction term [v1,v2]
 		 */
-		TangentVector computeBCHCorrection(const TangentVector& v1, const TangentVector& v2) const;
+		TangentVector computeBCHCorrection(const TangentVector &v1, const TangentVector &v2) const;
 
 		/**
 		 * @brief Compute parallel transport of a tangent vector along the beam
@@ -1190,14 +1070,14 @@ namespace Cosserat::mapping {
 		 * @param target_pose Target pose for transport
 		 * @return Transported tangent vector
 		 */
-		TangentVector parallelTransport(const TangentVector& tangent_vector, const SE3Type& target_pose) const;
+		TangentVector parallelTransport(const TangentVector &tangent_vector, const SE3Type &target_pose) const;
 
 		/**
 		 * @brief Compute geodesic distance between two section states
 		 * @param other Other section info
 		 * @return Geodesic distance on the Lie group manifold
 		 */
-		double computeGeodesicDistance(const SectionInfo& other) const;
+		double computeGeodesicDistance(const SectionInfo &other) const;
 
 		/**
 		 * @brief Compute Riemannian exponential map for beam sections
@@ -1206,61 +1086,15 @@ namespace Cosserat::mapping {
 		 * @param step_size Step size for exponential
 		 * @return New section after exponential map
 		 */
-		SectionInfo riemannianExponential(const SectionInfo& section, const TangentVector& direction, double step_size = 1.0) const;
-
-		// Phase 4: Machine Learning Integration
-		/**
-		 * @brief Adaptive beam controller using machine learning techniques
-		 */
-		class AdaptiveBeamController {
-		private:
-			std::vector<std::pair<SectionInfo, TangentVector>> training_data_;
-			Eigen::MatrixXd control_matrix_;
-			bool trained_ = false;
-
-			// Neural network-like adaptation parameters
-			Eigen::VectorXd adaptation_weights_;
-			double learning_rate_ = 0.01;
-
-		public:
-			AdaptiveBeamController();
-
-			/**
-			 * @brief Learn optimal control parameters from training data
-			 * @param training_data Vector of (section_state, optimal_control) pairs
-			 */
-			void learnOptimalParameters(const std::vector<std::pair<SectionInfo, TangentVector>>& training_data);
-
-			/**
-			 * @brief Predict optimal strain for reaching target pose
-			 * @param target_pose Desired end-effector pose
-			 * @return Predicted optimal strain vector
-			 */
-			TangentVector predictOptimalStrain(const SE3Type& target_pose);
-
-			/**
-			 * @brief Adapt controller to new material properties
-			 * @param material_feedback Feedback from material deformation
-			 */
-			void adaptToMaterialProperties(const Eigen::VectorXd& material_feedback);
-
-			/**
-			 * @brief Check if controller has been trained
-			 */
-			bool isTrained() const { return trained_; }
-
-			/**
-			 * @brief Reset the controller
-			 */
-			void reset();
-		};
+		SectionInfo riemannianExponential(const SectionInfo &section, const TangentVector &direction,
+										  double step_size = 1.0) const;
 
 		// ML integration methods
 		void enableAdaptiveControl(bool enable = true);
 		bool isAdaptiveControlEnabled() const { return m_adaptive_controller != nullptr; }
-		void trainAdaptiveController(const std::vector<std::pair<SectionInfo, TangentVector>>& training_data);
-		TangentVector getAdaptiveControlPrediction(const SE3Type& target_pose);
-		void updateMaterialAdaptation(const Eigen::VectorXd& feedback);
+		void trainAdaptiveController(const std::vector<std::pair<SectionInfo, TangentVector>> &training_data);
+		TangentVector getAdaptiveControlPrediction(const SE3Type &target_pose);
+		void updateMaterialAdaptation(const Eigen::VectorXd &feedback);
 
 	private:
 		// ML controller instance
@@ -1338,9 +1172,10 @@ namespace Cosserat::mapping {
 		// This method is used to log the completion of the geometry update process.
 		void logCompletionInfo() const {
 			if constexpr (ENABLE_GEOMETRY_LOGGING) { // Constante de compilation
-				std::cout<<"HookeSeratBaseMapping updateGeometryInfo completed: m_indices_vectors: " <<
-					m_indices_vectors.size() <<std::endl;
-				std::cout<< " elements m_frames_length_vectors: " << m_frames_length_vectors.size() << " elements"<<std::endl;
+				std::cout << "HookeSeratBaseMapping updateGeometryInfo completed: m_indices_vectors: "
+						  << m_indices_vectors.size() << std::endl;
+				std::cout << " elements m_frames_length_vectors: " << m_frames_length_vectors.size() << " elements"
+						  << std::endl;
 			}
 		}
 
@@ -1364,13 +1199,6 @@ namespace Cosserat::mapping {
 
 		// HookeSeratBaseMapping(const HookeSeratBaseMapping &) = delete;
 		HookeSeratBaseMapping &operator=(const HookeSeratBaseMapping &) = delete;
-	};
 
-#if !defined(SOFA_COSSERAT_CPP_HookeSeratBaseMapping)
-	extern template class SOFA_COSSERAT_API HookeSeratBaseMapping<
-			sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types>;
-// extern template class SOFA_COSSERAT_API HookeSeratBaseMapping<
-// 		sofa::defaulttype::Vec6Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types>;
-#endif
 
-} // namespace Cosserat::mapping
+	}; // namespace Cosserat::mapping
