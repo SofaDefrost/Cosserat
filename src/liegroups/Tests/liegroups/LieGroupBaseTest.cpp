@@ -16,15 +16,15 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.        *
  ******************************************************************************/
 
+#include <liegroups/LieGroupBase.h>
 #include <sofa/testing/BaseTest.h>
-#include <Cosserat/liegroups/LieGroupBase.h>
 
 namespace sofa::component::cosserat::liegroups::testing {
 
-using namespace sofa::testing;
+	using namespace sofa::testing;
 
-// LieGroupBase is an abstract base class, so it cannot be directly instantiated or tested.
-// Tests for LieGroupBase functionalities should be performed through its concrete derived classes.
-// This file serves as a placeholder.
+	// LieGroupBase is an abstract base class, so it cannot be directly instantiated or tested.
+	// Tests for LieGroupBase functionalities should be performed through its concrete derived classes.
+	// This file serves as a placeholder.
 
 } // namespace sofa::component::cosserat::liegroups::testing

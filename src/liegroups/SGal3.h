@@ -300,7 +300,7 @@ private:
     // This is a placeholder, actual implementation depends on the specific
     // representation
     Matrix result = Matrix::Zero();
-    // ... implement hat operator for SGal(3)
+    // TODO ... implement hat operator for SGal(3)
     return result;
   }
 
@@ -315,7 +315,7 @@ private:
     // This is a placeholder, actual implementation depends on the specific
     // representation
     TangentVector result = TangentVector::Zero();
-    // ... implement vee operator for SGal(3)
+    //TODO  ... implement vee operator for SGal(3)
     return result;
   }
 
@@ -330,7 +330,7 @@ private:
     // This is a placeholder, actual implementation depends on the specific
     // representation
     AdjointMatrix result = AdjointMatrix::Zero();
-    // ... implement adjoint operator for SGal(3)
+    // TODO ... implement adjoint operator for SGal(3)
     return result;
   }
 
@@ -397,3 +397,5 @@ private:
   }
 
 }; // namespace sofa::component::cosserat::liegroups
+
+#include "SGal3.inl"

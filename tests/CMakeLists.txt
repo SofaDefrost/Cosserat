@@ -1,40 +1,40 @@
 cmake_minimum_required(VERSION 3.12)
+project(Cosserat_tests VERSION 1.0)
+find_package(Sofa.Testing REQUIRED)
+sofa_find_package(Sofa.SimpleApi REQUIRED)
 
-project(Cosserat_test)
+set(
+    HEADER_FILES
+    unit/Example.h
+    unit/ClassName.h
+    unit/Constraint.h
+)
 
-if (UNIT_TEST)
-
-    enable_testing()
-
-    set(HEADER_FILES
-    )
-
-    set(SOURCE_FILES
-        unit/Example.cpp
-        unit/SO2Test.cpp
-        unit/SO3Test.cpp
-        unit/SE3Test.cpp
-        unit/SE23Test.cpp
-        unit/SGal3Test.cpp
-        unit/BundleTest.cpp
-        unit/BeamHookeLawForceFieldTest.cpp
-        unit/DiscretCosseratMappingTest.cpp
-        unit/CosseratUnilateralInteractionConstraintTest.cpp
-        test_jacobian_verification.cpp  # Step 1: Jacobian verification
-    )
+set(SOURCE_FILES
+    unit/Example.cpp
+    unit/ExampleTest.cpp
+    unit/SO2Test.cpp
+    unit/SO3Test.cpp
+    unit/SE3Test.cpp
+    unit/SE23Test.cpp
+    unit/SGal3Test.cpp
+    unit/BundleTest.cpp
+    unit/BeamHookeLawForceFieldTest.cpp
+    unit/DiscretCosseratMappingTest.cpp
+    unit/CosseratUnilateralInteractionConstraintTest.cpp
+    unit/test_jacobian_verification.cpp  # Step 1: Jacobian verification
+)
 
     add_executable(${PROJECT_NAME} ${HEADER_FILES} ${SOURCE_FILES})
-    target_link_libraries(${PROJECT_NAME} Cosserat_SRC)
-    target_link_libraries(${PROJECT_NAME} gtest gtest_main)
-    target_link_libraries(${PROJECT_NAME} SofaGTestMain)
+    target_link_libraries(${PROJECT_NAME} Sofa.Testing  Cosserat_SRC)
+    # target_link_libraries(${PROJECT_NAME} gtest gtest_main)
+    # target_link_libraries(${PROJECT_NAME} SofaGTestMain)
 
-    if(APPLE)
+if(APPLE)
     target_link_libraries(${PROJECT_NAME} "-framework Cocoa")
-    endif()
-
-    add_test(NAME ${PROJECT_NAME} COMMAND ${PROJECT_NAME})
-
 endif()
+
+add_test(NAME ${PROJECT_NAME} COMMAND ${PROJECT_NAME})
 
 # Add integration tests if enabled
 if (INTEGRATION_TEST)

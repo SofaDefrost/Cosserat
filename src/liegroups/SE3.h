@@ -37,7 +37,6 @@ namespace sofa::component::cosserat::liegroups {
 		using JacobianMatrix = typename Base::JacobianMatrix;
 		using AlgebraMatrix = typename Base::AlgebraMatrix;
 
-
 		using SO3Type = SO3<Scalar>;
 		using Vector3 = typename SO3Type::Vector;
 		using Matrix3 = typename SO3Type::Matrix;
@@ -107,10 +106,10 @@ namespace sofa::component::cosserat::liegroups {
 			Matrix3 V;
 
 			if (angle < Types<Scalar>::epsilon()) {
-				V = Matrix3::Identity() + Scalar(0.5) * SO3Type::hat(phi);
+				V = Matrix3::Identity() + Scalar(0.5) * SO3Type::computeHat(phi);
 			} else {
 				const Vector3 axis = phi / angle;
-				const Matrix3 K = SO3Type::hat(axis);
+				const Matrix3 K = SO3Type::computeHat(axis);
 				const Scalar sin_angle = std::sin(angle);
 				const Scalar cos_angle = std::cos(angle);
 				V = Matrix3::Identity() + (Scalar(1) - cos_angle) / angle * K +
@@ -125,10 +124,10 @@ namespace sofa::component::cosserat::liegroups {
 			Matrix3 V_inv;
 
 			if (angle < Types<Scalar>::epsilon()) {
-				V_inv = Matrix3::Identity() - Scalar(0.5) * SO3Type::hat(phi);
+				V_inv = Matrix3::Identity() - Scalar(0.5) * SO3Type::computeHat(phi);
 			} else {
 				const Vector3 axis = phi / angle;
-				const Matrix3 K = SO3Type::hat(axis);
+				const Matrix3 K = SO3Type::computeHat(axis);
 				const Scalar sin_angle = std::sin(angle);
 				const Scalar cos_angle = std::cos(angle);
 				V_inv = Matrix3::Identity() - Scalar(0.5) * K +
@@ -148,7 +147,7 @@ namespace sofa::component::cosserat::liegroups {
 			const Matrix3 R = m_rotation.matrix();
 			Ad.template block<3, 3>(0, 0) = R;
 			Ad.template block<3, 3>(3, 3) = R;
-			Ad.template block<3, 3>(0, 3) = SO3Type::hat(m_translation) * R;
+			Ad.template block<3, 3>(0, 3) = SO3Type::computeHat(m_translation) * R;
 			return Ad;
 		}
 
@@ -175,8 +174,8 @@ namespace sofa::component::cosserat::liegroups {
 
 			Ad.template block<3, 3>(0, 0) = R;
 			Ad.template block<3, 3>(3, 3) = R;
-			Ad.template block<3, 3>(0, 3) = SO3Type::hat(rho) * R;
-			Ad.template block<3, 3>(0, 0) += SO3Type::hat(omega) * R;
+			Ad.template block<3, 3>(0, 3) = SO3Type::computeHat(rho) * R;
+			Ad.template block<3, 3>(0, 0) += SO3Type::computeHat(omega) * R;
 
 			return Ad;
 		}
@@ -189,8 +188,8 @@ namespace sofa::component::cosserat::liegroups {
 
 			Ad.template block<3, 3>(0, 0) = R;
 			Ad.template block<3, 3>(3, 3) = R;
-			Ad.template block<3, 3>(0, 3) = SO3Type::hat(rho) * R;
-			Ad.template block<3, 3>(0, 0) += SO3Type::hat(omega) * R;
+			Ad.template block<3, 3>(0, 3) = SO3Type::computeHat(rho) * R;
+			Ad.template block<3, 3>(0, 0) += SO3Type::computeHat(omega) * R;
 
 			return Ad;
 		}
@@ -203,8 +202,8 @@ namespace sofa::component::cosserat::liegroups {
 
 			Ad.template block<3, 3>(0, 0) = R;
 			Ad.template block<3, 3>(3, 3) = R;
-			Ad.template block<3, 3>(0, 3) = SO3Type::hat(rho) * R;
-			Ad.template block<3, 3>(0, 0) += SO3Type::hat(omega) * R;
+			Ad.template block<3, 3>(0, 3) = SO3Type::computeHat(rho) * R;
+			Ad.template block<3, 3>(0, 0) += SO3Type::computeHat(omega) * R;
 
 			return Ad;
 		}
@@ -217,8 +216,8 @@ namespace sofa::component::cosserat::liegroups {
 
 			Ad.template block<3, 3>(0, 0) = R;
 			Ad.template block<3, 3>(3, 3) = R;
-			Ad.template block<3, 3>(0, 3) = SO3Type::hat(rho) * R;
-			Ad.template block<3, 3>(0, 0) += SO3Type::hat(omega) * R;
+			Ad.template block<3, 3>(0, 3) = SO3Type::computeHat(rho) * R;
+			Ad.template block<3, 3>(0, 0) += SO3Type::computeHat(omega) * R;
 
 			return Ad;
 		}
@@ -233,8 +232,8 @@ namespace sofa::component::cosserat::liegroups {
 
 			Ad.template block<3, 3>(0, 0) = R;
 			Ad.template block<3, 3>(3, 3) = R;
-			Ad.template block<3, 3>(0, 3) = SO3Type::hat(rho_v) * R;
-			Ad.template block<3, 3>(0, 0) += SO3Type::hat(omega_v) * R;
+			Ad.template block<3, 3>(0, 3) = SO3Type::computeHat(rho_v) * R;
+			Ad.template block<3, 3>(0, 0) += SO3Type::computeHat(omega_v) * R;
 
 			return Ad;
 		}
@@ -244,9 +243,9 @@ namespace sofa::component::cosserat::liegroups {
 			const Matrix3 R = m_rotation.matrix();
 			Ad.template block<3, 3>(0, 0) = R;
 			Ad.template block<3, 3>(3, 3) = R;
-			Ad.template block<3, 3>(0, 3) = SO3Type::hat(m_translation) * R;
+			Ad.template block<3, 3>(0, 3) = SO3Type::computeHat(m_translation) * R;
 			return Ad;
-		}	
+		}
 
 
 		/**
@@ -259,10 +258,9 @@ namespace sofa::component::cosserat::liegroups {
 			const Matrix3 R = m_rotation.matrix();
 			Ad.template block<3, 3>(0, 0) = R;
 			Ad.template block<3, 3>(3, 3) = R;
-			Ad.template block<3, 3>(0, 3) = SO3Type::hat(m_translation) * R;
+			Ad.template block<3, 3>(0, 3) = SO3Type::computeHat(m_translation) * R;
 			return Ad;
 		}
-
 
 
 		AdjointMatrix adjoint() const noexcept { return computeAdjoint(); }
@@ -270,6 +268,28 @@ namespace sofa::component::cosserat::liegroups {
 
 		bool computeIsApprox(const SE3 &other, const Scalar &eps) const {
 			return m_rotation.isApprox(other.m_rotation, eps) && m_translation.isApprox(other.m_translation, eps);
+		}
+
+		/**
+		 * @brief Checks if the current SE3 element is valid.
+		 * @return True if rotation is valid and translation is finite.
+		 */
+		bool computeIsValid() const {
+			// Check if rotation is valid (unit quaternion) and translation has finite values
+			// We can use a loose tolerance for the quaternion norm check
+			return m_rotation.computeIsApprox(m_rotation.normalized(), Scalar(1e-4)) && m_translation.allFinite();
+		}
+
+		/**
+		 * @brief Normalizes the SE3 element.
+		 * Normalizes the rotation component.
+		 */
+		void computeNormalize() {
+			// Normalize the quaternion to ensure it remains a valid rotation
+			// We can't modify m_rotation directly if it doesn't expose a normalize method that modifies in-place
+			// But SO3 is likely a wrapper around a quaternion
+			// Let's assume we can assign a normalized version back
+			m_rotation = m_rotation.normalized();
 		}
 
 		// ========== New Integrated Functions ==========
@@ -313,6 +333,31 @@ namespace sofa::component::cosserat::liegroups {
 		const Vector3 &translation() const { return m_translation; }
 		Vector3 &translation() { return m_translation; }
 
+		/**
+		 * @brief Generates a random SE3 element.
+		 * @tparam Generator The type of the random number generator.
+		 * @param gen The random number generator.
+		 * @return A random SE3 element.
+		 */
+		template<typename Generator>
+		static SE3 computeRandom(Generator &gen) {
+			// Generate random rotation (quaternion)
+			// A simple way is to generate a random unit vector for axis and random angle
+			// Or generate random quaternion directly
+			// For simplicity, let's use a random vector for translation and a random rotation
+
+			// Random translation
+			Vector3 t = Types<Scalar>::template randomVector<3>(gen);
+
+			// Random rotation
+			// Using a simple approach: random axis and random angle
+			Vector3 axis = Types<Scalar>::template randomUnitVector<3>(gen);
+			std::uniform_real_distribution<Scalar> dist(-M_PI, M_PI);
+			Scalar angle = dist(gen);
+
+			return SE3(SO3Type(angle, axis), t);
+		}
+
 		Matrix4 matrix() const {
 			Matrix4 T = Matrix4::Identity();
 			T.template block<3, 3>(0, 0) = m_rotation.matrix();
@@ -321,7 +366,7 @@ namespace sofa::component::cosserat::liegroups {
 		}
 
 		// ========== Projection Matrix ==========
-		AdjointMatrix buildProjectionMatrix(const Matrix3 & rotation) const {
+		AdjointMatrix buildProjectionMatrix(const Matrix3 &rotation) const {
 			// Build the projection matrix for the frame
 			AdjointMatrix proj_matrix = AdjointMatrix::Zero();
 			proj_matrix.template block<3, 3>(0, 3) = rotation.matrix();

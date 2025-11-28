@@ -147,3 +147,19 @@ Untitled*.ipynb
 *.idea/
 # Files created by or for emacs (RMM, 29 Dec 2017)
 *~
+tutorials/.obsidian/workspace.json
+tutorials/.obsidian/core-plugins.json
+tutorials/.obsidian/appearance.json
+tutorials/.obsidian/app.json
+Testing/Temporary/CTestCostData.txt
+test_lie_groups
+src/Cosserat/mapping/archived/BaseHookeSeratPCSMapping.inl
+src/Cosserat/mapping/archived/BaseHookeSeratPCSMapping.h
+src/Cosserat/mapping/archived/BaseHookeSeratPCSMapping.cpp
+src/Cosserat/liegroups/SO2.h
+src/Cosserat/forcefield/standard/reiniit.h
+src/Cosserat/mapping/improve_resume_cl.md
+python/REORGANIZATION_PLAN.md
+HOOKESERAT_MAPPING_IMPROVEMENTS_PLAN.md
+HOOKESERAT_MAPPING_IMPROVEMENTS.md
+HOOKESERAT_CURRENT_STATUS.md

@@ -210,6 +210,18 @@ namespace sofa::component::cosserat::liegroups {
 		}
 
 		/**
+		 * @brief Checks if the current SO3 element is valid.
+		 * @return True if the quaternion is normalized.
+		 */
+		bool computeIsValid() const noexcept { return std::abs(m_quat.norm() - Scalar(1)) < Scalar(1e-4); }
+
+		/**
+		 * @brief Normalizes the SO3 element.
+		 * Normalizes the internal quaternion.
+		 */
+		void computeNormalize() noexcept { m_quat.normalize(); }
+
+		/**
 		 * @brief Get the identity element of the group.
 		 * @return The identity element.
 		 */
@@ -221,6 +233,21 @@ namespace sofa::component::cosserat::liegroups {
 		 * @return The identity element.
 		 */
 		static SO3 computeIdentity() noexcept { return SO3(); }
+
+		/**
+		 * @brief Generates a random SO3 element.
+		 * @tparam Generator The type of the random number generator.
+		 * @param gen The random number generator.
+		 * @return A random SO3 element.
+		 */
+		template<typename Generator>
+		static SO3 computeRandom(Generator &gen) {
+			// Generate random axis and angle
+			Vector axis = Types<Scalar>::template randomUnitVector<3>(gen);
+			std::uniform_real_distribution<Scalar> dist(-M_PI, M_PI);
+			Scalar angle = dist(gen);
+			return SO3(angle, axis);
+		}
 
 		/**
 		 * @brief Get the dimension of the Lie algebra (3 for SO(3)).
@@ -273,10 +300,11 @@ namespace sofa::component::cosserat::liegroups {
 
 		/**
 		 * @brief Adjoint representation of Lie algebra element.
+		 * This is a CRTP-required method (used by LieGroupBase::ad).
 		 * @param v Element of the Lie algebra in vector form.
 		 * @return Matrix representing the adjoint action.
 		 */
-		static AdjointMatrix ad(const TangentVector &v);
+		static AdjointMatrix computeAd(const TangentVector &v);
 		/**
 		 * @brief Get the rotation matrix representation.
 		 * @return The 3x3 rotation matrix.
@@ -319,7 +347,7 @@ namespace sofa::component::cosserat::liegroups {
 		 * @param v Vector in ℝ³.
 		 * @return 3x3 skew-symmetric matrix.
 		 */
-		static Matrix hat(const TangentVector &v) noexcept {
+		static Matrix computeHat(const TangentVector &v) noexcept {
 			Matrix Omega;
 			Omega << 0, -v[2], v[1], v[2], 0, -v[0], -v[1], v[0], 0;
 			return Omega;
@@ -330,7 +358,7 @@ namespace sofa::component::cosserat::liegroups {
 		 * @param Omega 3x3 skew-symmetric matrix.
 		 * @return Vector in ℝ³.
 		 */
-		static TangentVector vee(const Matrix &Omega) noexcept {
+		static TangentVector computeVee(const Matrix &Omega) noexcept {
 			return TangentVector(Omega(2, 1), Omega(0, 2), Omega(1, 0));
 		}
 
@@ -371,7 +399,7 @@ namespace sofa::component::cosserat::liegroups {
 			const Scalar scalar2 = (s_theta - std::sin(s_theta)) / theta3;
 
 			// Build antisymmetric matrix [strain]×
-			Matrix strain_hat = hat(strain);
+			Matrix strain_hat = computeHat(strain);
 
 			// Compute strain_hat²
 			Matrix strain_hat2 = strain_hat * strain_hat;
@@ -457,6 +485,7 @@ namespace sofa::component::cosserat::liegroups {
 		 * @param strain Angular strain rate vector in ℝ³ (curvature vector).
 		 * @param length Arc length parameter for integration.
 		 * @return The corresponding SO3 element.
+		 * TODO :  uncomment this implementation
 		 */
 		// static SO3 expCosserat(const TangentVector &strain, const Scalar &length) noexcept {
 		//   const Scalar strain_norm = strain.norm();
