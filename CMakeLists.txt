@@ -22,65 +22,65 @@ endif()
 
 set(SRC_ROOT_DIR src/${PROJECT_NAME})
 set(SRC_ROOT_LIE_GROUPE src/liegroups)
+# set(SRC_TEST_UNIT tests/unit)
 
 set(HEADER_FILES
   # Lie group implementations
   ${SRC_ROOT_LIE_GROUPE}/Types.h
   ${SRC_ROOT_LIE_GROUPE}/LieGroupBase.h
-  ${SRC_ROOT_LIE_GROUPE}/LieGroupBase.inl
   ${SRC_ROOT_LIE_GROUPE}/RealSpace.h
   ${SRC_ROOT_LIE_GROUPE}/SO2.h
   ${SRC_ROOT_LIE_GROUPE}/SE2.h
   ${SRC_ROOT_LIE_GROUPE}/SO3.h
-  ${SRC_ROOT_LIE_GROUPE}/SO3.inl
   ${SRC_ROOT_LIE_GROUPE}/SE3.h
-  ${SRC_ROOT_LIE_GROUPE}/SE3.inl
   ${SRC_ROOT_LIE_GROUPE}/SE23.h
-  ${SRC_ROOT_LIE_GROUPE}/SE23.inl
   ${SRC_ROOT_LIE_GROUPE}/SGal3.h
-  ${SRC_ROOT_LIE_GROUPE}/SGal3.inl
   ${SRC_ROOT_LIE_GROUPE}/Bundle.h
-  ${SRC_ROOT_LIE_GROUPE}/Utils.h
+  ${SRC_ROOT_LIE_GROUPE}/LieGroupBase.inl
+  ${SRC_ROOT_LIE_GROUPE}/SO3.inl
+  ${SRC_ROOT_LIE_GROUPE}/SE3.inl
+  ${SRC_ROOT_LIE_GROUPE}/SE23.inl
+  ${SRC_ROOT_LIE_GROUPE}/SGal3.inl
 
-    ${SRC_ROOT_DIR}/config.h.in
-    ${SRC_ROOT_DIR}/fwd.h
-    ${SRC_ROOT_DIR}/types.h
-    ${SRC_ROOT_DIR}/mapping/HookeSeratBaseMapping.h
-    ${SRC_ROOT_DIR}/mapping/HookeSeratBaseMapping.inl
-    ${SRC_ROOT_DIR}/mapping/HookeSeratDiscretMapping.h
-    ${SRC_ROOT_DIR}/mapping/HookeSeratDiscretMapping.inl
-    ${SRC_ROOT_DIR}/mapping/BaseCosseratMapping.h
-    ${SRC_ROOT_DIR}/mapping/BaseCosseratMapping.inl
-    ${SRC_ROOT_DIR}/mapping/DiscreteCosseratMapping.h
-    ${SRC_ROOT_DIR}/mapping/DiscreteCosseratMapping.inl
-    # ${SRC_ROOT_DIR}/mapping/DiscreteDynamicCosseratMapping.h
-    # ${SRC_ROOT_DIR}/mapping/DiscreteDynamicCosseratMapping.inl
-    ${SRC_ROOT_DIR}/engine/ProjectionEngine.h
-    ${SRC_ROOT_DIR}/engine/ProjectionEngine.inl
-    ${SRC_ROOT_DIR}/mapping/DifferenceMultiMapping.h
-    ${SRC_ROOT_DIR}/mapping/DifferenceMultiMapping.inl
-    ${SRC_ROOT_DIR}/mapping/RigidDistanceMapping.h
-    ${SRC_ROOT_DIR}/mapping/RigidDistanceMapping.inl
-    ${SRC_ROOT_DIR}/engine/PointsManager.h
-    ${SRC_ROOT_DIR}/engine/PointsManager.inl
-    ${SRC_ROOT_DIR}/forcefield/standard/BaseBeamForceField.h
-    ${SRC_ROOT_DIR}/forcefield/standard/BaseBeamForceField.inl
-    ${SRC_ROOT_DIR}/forcefield/standard/BeamHookeLawForceField.h
-    ${SRC_ROOT_DIR}/forcefield/standard/BeamHookeLawForceField.inl
-    ${SRC_ROOT_DIR}/forcefield/rigid/BeamHookeLawForceFieldRigid.h
-    ${SRC_ROOT_DIR}/forcefield/rigid/BeamHookeLawForceFieldRigid.inl
-    ${SRC_ROOT_DIR}/forcefield/base/HookeSeratBaseForceField.h
-    ${SRC_ROOT_DIR}/forcefield/base/HookeSeratBaseForceField.inl
-    ${SRC_ROOT_DIR}/forcefield/standard/HookeSeratPCSForceField.h
-    ${SRC_ROOT_DIR}/forcefield/standard/HookeSeratPCSForceField.inl
-    # ${SRC_ROOT_DIR}/forcefield/experimental/CosseratInternalActuation.h
-    # ${SRC_ROOT_DIR}/forcefield/experimental/CosseratInternalActuation.inl
-    ${SRC_ROOT_DIR}/constraint/CosseratSlidingConstraint.h
-    ${SRC_ROOT_DIR}/constraint/CosseratSlidingConstraint.inl
-    ${SRC_ROOT_DIR}/mapping/LegendrePolynomialsMapping.h
-    ${SRC_ROOT_DIR}/mapping/LegendrePolynomialsMapping.inl
-    ${SRC_ROOT_DIR}/constraint/CosseratNeedleSlidingConstraint.h
-    ${SRC_ROOT_DIR}/constraint/CosseratNeedleSlidingConstraint.inl
+  ${SRC_ROOT_DIR}/config.h.in
+  ${SRC_ROOT_DIR}/fwd.h
+  ${SRC_ROOT_DIR}/types.h
+  ${SRC_ROOT_DIR}/mapping/HookeSeratBaseMapping.h
+  ${SRC_ROOT_DIR}/mapping/HookeSeratBaseMapping.inl
+  ${SRC_ROOT_DIR}/mapping/HookeSeratDiscretMapping.h
+  ${SRC_ROOT_DIR}/mapping/HookeSeratDiscretMapping.inl
+  ${SRC_ROOT_DIR}/mapping/BaseCosseratMapping.h
+  ${SRC_ROOT_DIR}/mapping/BaseCosseratMapping.inl
+  ${SRC_ROOT_DIR}/mapping/DiscreteCosseratMapping.h
+  ${SRC_ROOT_DIR}/mapping/DiscreteCosseratMapping.inl
+  # ${SRC_ROOT_DIR}/mapping/DiscreteDynamicCosseratMapping.h
+  # ${SRC_ROOT_DIR}/mapping/DiscreteDynamicCosseratMapping.inl
+  ${SRC_ROOT_DIR}/engine/ProjectionEngine.h
+  ${SRC_ROOT_DIR}/engine/ProjectionEngine.inl
+  ${SRC_ROOT_DIR}/mapping/DifferenceMultiMapping.h
+  ${SRC_ROOT_DIR}/mapping/DifferenceMultiMapping.inl
+  ${SRC_ROOT_DIR}/mapping/RigidDistanceMapping.h
+  ${SRC_ROOT_DIR}/mapping/RigidDistanceMapping.inl
+  ${SRC_ROOT_DIR}/engine/PointsManager.h
+  ${SRC_ROOT_DIR}/engine/PointsManager.inl
+  ${SRC_ROOT_DIR}/forcefield/standard/BaseBeamForceField.h
+  ${SRC_ROOT_DIR}/forcefield/standard/BaseBeamForceField.inl
+  ${SRC_ROOT_DIR}/forcefield/standard/BeamHookeLawForceField.h
+  ${SRC_ROOT_DIR}/forcefield/standard/BeamHookeLawForceField.inl
+  ${SRC_ROOT_DIR}/forcefield/rigid/BeamHookeLawForceFieldRigid.h
+  ${SRC_ROOT_DIR}/forcefield/rigid/BeamHookeLawForceFieldRigid.inl
+  ${SRC_ROOT_DIR}/forcefield/base/HookeSeratBaseForceField.h
+  ${SRC_ROOT_DIR}/forcefield/base/HookeSeratBaseForceField.inl
+  ${SRC_ROOT_DIR}/forcefield/standard/HookeSeratPCSForceField.h
+  ${SRC_ROOT_DIR}/forcefield/standard/HookeSeratPCSForceField.inl
+  # ${SRC_ROOT_DIR}/forcefield/experimental/CosseratInternalActuation.h
+  # ${SRC_ROOT_DIR}/forcefield/experimental/CosseratInternalActuation.inl
+  ${SRC_ROOT_DIR}/constraint/CosseratSlidingConstraint.h
+  ${SRC_ROOT_DIR}/constraint/CosseratSlidingConstraint.inl
+  ${SRC_ROOT_DIR}/mapping/LegendrePolynomialsMapping.h
+  ${SRC_ROOT_DIR}/mapping/LegendrePolynomialsMapping.inl
+  ${SRC_ROOT_DIR}/constraint/CosseratNeedleSlidingConstraint.h
+  ${SRC_ROOT_DIR}/constraint/CosseratNeedleSlidingConstraint.inl
 )
 set(SOURCE_FILES
     ${SRC_ROOT_DIR}/initCosserat.cpp
@@ -103,7 +103,6 @@ set(SOURCE_FILES
     ${SRC_ROOT_DIR}/mapping/LegendrePolynomialsMapping.cpp
     ${SRC_ROOT_DIR}/constraint/CosseratNeedleSlidingConstraint.cpp
 )
-
 
 sofa_find_package(SoftRobots QUIET)
 if(SoftRobots_FOUND)
@@ -172,11 +171,18 @@ sofa_create_package_with_targets(
 
 # Tests
 # If SOFA_BUILD_TESTS exists and is OFF, then these tests will be auto-disabled
+
 cmake_dependent_option(COSSERAT_BUILD_TESTS "Compile the tests" ON "SOFA_BUILD_TESTS OR NOT DEFINED SOFA_BUILD_TESTS" OFF)
 if(COSSERAT_BUILD_TESTS)
-  add_subdirectory(Tests)
+  message(STATUS "Building Cosserat tests")
+  enable_testing()
+
   # Tests for liegroups are in their own directory
   add_subdirectory(src/liegroups/Tests)
+
+else()
+  message(STATUS "Cosserat tests will be disabled")
+
 endif()
 
 # Benchmarks
