@@ -16,12 +16,16 @@ This library implements the following Lie groups:
 - **RealSpace**: Euclidean vector space ℝⁿ
 - **SO(2)**: Special Orthogonal group in 2D (rotations in a plane)
 - **SE(2)**: Special Euclidean group in 2D (rigid transformations in a plane)
-
-Future implementations will include:
-
 - **SO(3)**: Special Orthogonal group in 3D (rotations in 3D space)
 - **SE(3)**: Special Euclidean group in 3D (rigid transformations in 3D space)
-- **Sim(3)**: Similarity transformations in 3D space
+- **Sim(3)**: Similarity transformations in 3D space (rotation + translation + scaling)
+- **SE(2,3)**: Extended Special Euclidean group in 3D (rigid transformations with linear velocity)
+- **SGal(3)**: Special Galilean group in 3D (Galilean transformations with time)
+
+Additional utilities:
+
+- **Bundle**: Product manifold for combining multiple Lie groups
+- **GaussianOnManifold**: Gaussian distributions on Lie groups for uncertainty propagation
 
 ## Installation
 
@@ -109,7 +113,18 @@ For more detailed documentation, including mathematical foundations, implementat
 - [RealSpace Implementation](docs/realspace.md)
 - [SO(2) Implementation](docs/so2.md)
 - [SE(2) Implementation](docs/se2.md)
+- [SO(3) Implementation](docs/so3.md)
+- [SE(3) Implementation](docs/se3.md)
+- [Sim(3) Implementation](docs/sim3.md)
+- [SE(2,3) Implementation](docs/se23.md)
+- [SGal(3) Implementation](docs/sgal3.md)
+- [Bundle Implementation](docs/bundle.md)
+- [Gaussian on Manifold](docs/gaussian_on_manifold.md)
+- [Advanced Topics](docs/advanced_topics.md)
+- [Usage Guide](docs/USAGE.md)
 - [Performance Benchmarks](docs/benchmarks.md)
+- [Comparison of Implementations](docs/comparison.md)
+- [Dependency Tree](docs/dependency_tree.md)
 
 ## Benchmarking
 
