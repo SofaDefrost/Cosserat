@@ -2,9 +2,13 @@ cmake_minimum_required(VERSION 3.12)
 
 project(Cosserat_liegroups_benchmarks)
 
+# Find Google Benchmark library
+find_package(benchmark REQUIRED)
+
 # Set benchmark source files
 set(BENCHMARK_SOURCE_FILES
-    liegroups/LieGroupsBenchmark.cpp
+    LieGroupBenchmark.cpp
+    benchmark_HookeSerat.cpp
 )
 
 # Create benchmark executable

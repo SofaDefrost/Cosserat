@@ -14,7 +14,7 @@ namespace Cosserat::mapping {
 	using SE3Type = sofa::component::cosserat::liegroups::SE3<double>;
 	using SO3Type = sofa::component::cosserat::liegroups::SO3<double>;
 	using Vector3 = typename SE3Type::Vector3;
-	//using TangentVector = typename SE3Type::TangentVector; // SE3 utilise TangentVector pour les vecteurs 6D
+	// using TangentVector = typename SE3Type::TangentVector; // SE3 utilise TangentVector pour les vecteurs 6D
 	using Matrix3 = typename SE3Type::Matrix3;
 	using Matrix4 = typename SE3Type::Matrix4;
 	using AdjointMatrix = typename SE3Type::AdjointMatrix;
@@ -30,7 +30,7 @@ namespace Cosserat::mapping {
 		double sec_length_ = 0.0;
 		Vector3 angular_strain_ = Vector3::Zero(); // angular strain
 		Vector3 linear_strain_ = Vector3::Zero(); // linear strain
-		TangentVector strain_ = TangentVector::Zero() ; // strain_ = (angular_strain_^T, linear_strain_^T)^T
+		TangentVector strain_ = TangentVector::Zero(); // strain_ = (angular_strain_^T, linear_strain_^T)^T
 
 		unsigned int index_0_ = 0;
 		unsigned int index_1_ = 1;
@@ -38,7 +38,7 @@ namespace Cosserat::mapping {
 		// Transformation SE3 au lieu de Matrix4 simple
 		SE3Type gX_;
 
-		//Matrix computed automatically
+		// Matrix computed automatically
 		mutable AdjointMatrix adjoint_;
 		mutable AdjointMatrix coAdjoint_;
 		mutable bool adjoint_computed_ = false;
@@ -58,10 +58,6 @@ namespace Cosserat::mapping {
 		SectionInfo(double length, const TangentVector &strain, const unsigned int i0,
 					const SE3Type &transform = SE3Type::computeIdentity()) :
 			sec_length_(length), strain_(strain), index_0_(i0), gX_(transform) {}
-
-		// Constructor for node info with length, strain and index
-		SectionInfo(double length, const TangentVector &strain, const unsigned int i0) :
-			sec_length_(length), strain_(strain), index_0_(i0) {}
 
 		SectionInfo(double length, const Vector3 &angular_strain, const unsigned int i0) :
 			sec_length_(length), angular_strain_(angular_strain), index_0_(i0) {}
@@ -90,7 +86,6 @@ namespace Cosserat::mapping {
 				for (int i = 0; i < 3; ++i) {
 					angular_strain_[i] = strain[i];
 					linear_strain_[i] = strain[i + 3];
-
 				}
 				strain_.head<3>() = angular_strain_;
 				strain_.tail<3>() = linear_strain_;
@@ -123,7 +118,7 @@ namespace Cosserat::mapping {
 			}
 		}
 
-		const TangentVector &getStrainsVec() const { return strain_;}
+		const TangentVector &getStrainsVec() const { return strain_; }
 		// void setStrain(const sofa::type::Vec3 &k) {for (unsigned int i = 0; i<3; i++) kappa_[i] = k[i];}
 		//
 		// void setStrain(const TangentVector &strain) {
@@ -136,9 +131,7 @@ namespace Cosserat::mapping {
 
 		unsigned int getIndex0() const { return index_0_; }
 		unsigned int getIndex1() const { return index_1_; }
-		void setIndices(unsigned int i0) {
-			index_0_ = i0;
-		}
+		void setIndices(unsigned int i0) { index_0_ = i0; }
 
 		// Accesseurs pour la transformation SE3
 		const SE3Type &getTransformation() const { return gX_; }
@@ -169,19 +162,14 @@ namespace Cosserat::mapping {
 			if (!adjoint_computed_) {
 				adjoint_ = getAdjoint(); // Compute adjoint and co-adjoint matrix
 				coAdjoint_ = adjoint_.transpose();
-				return  coAdjoint_;
+				return coAdjoint_;
 			}
 			return coAdjoint_;
 		}
 
-		const AdjointMatrix & getTangAdjointMatrix() {
-			return tang_adjoint_;
-		}
+		const AdjointMatrix &getTangAdjointMatrix() { return tang_adjoint_; }
 
-		void setTanAdjointMatrix(const AdjointMatrix & tang_adjoint_mat) {
-				tang_adjoint_ = tang_adjoint_mat;
-		}
-
+		void setTanAdjointMatrix(const AdjointMatrix &tang_adjoint_mat) { tang_adjoint_ = tang_adjoint_mat; }
 
 
 		// Nouvelles méthodes exploitant les fonctionnalités SE3
@@ -258,8 +246,7 @@ namespace Cosserat::mapping {
 		 * @return true si les sections sont approximativement égales
 		 */
 		bool isApprox(const SectionInfo &other, double eps = 1e-6) const {
-			return gX_.computeIsApprox(other.gX_, eps) &&
-				   (angular_strain_ - other.angular_strain_).norm() < eps &&
+			return gX_.computeIsApprox(other.gX_, eps) && (angular_strain_ - other.angular_strain_).norm() < eps &&
 				   std::abs(sec_length_ - other.sec_length_) < eps;
 		}
 
@@ -267,25 +254,23 @@ namespace Cosserat::mapping {
 		 * @brief Calcule l'inverse de la transformation
 		 * @return Section avec transformation inverse
 		 */
-		SectionInfo inverse() const {
-			return SectionInfo(sec_length_, -strain_, index_0_, gX_.computeInverse());
-		}
+		SectionInfo inverse() const { return SectionInfo(sec_length_, -strain_, index_0_, gX_.computeInverse()); }
 
 		/**
 		 * @brief Compose deux sections
 		 * @param other Section à composer
 		 * @return Section composée
 		 */
-	SectionInfo compose(const SectionInfo &other) const {
-		SE3Type composed_transform = gX_.compose(other.gX_);
-		// Create a proper 6D strain vector by combining angular and linear strains
-		TangentVector composed_strain;
-		composed_strain.head<3>() = angular_strain_ + other.angular_strain_; // Angular strain
-		composed_strain.tail<3>() = linear_strain_ + other.linear_strain_; // Linear strain
-		double total_length = sec_length_ + other.sec_length_;
+		SectionInfo compose(const SectionInfo &other) const {
+			SE3Type composed_transform = gX_.compose(other.gX_);
+			// Create a proper 6D strain vector by combining angular and linear strains
+			TangentVector composed_strain;
+			composed_strain.head<3>() = angular_strain_ + other.angular_strain_; // Angular strain
+			composed_strain.tail<3>() = linear_strain_ + other.linear_strain_; // Linear strain
+			double total_length = sec_length_ + other.sec_length_;
 
-		return SectionInfo(total_length, composed_strain, index_0_, composed_transform);
-	}
+			return SectionInfo(total_length, composed_strain, index_0_, composed_transform);
+		}
 	};
 
 	/**
@@ -340,36 +325,32 @@ namespace Cosserat::mapping {
 		void setTransformation(const SE3Type &transform) {
 			transformation_ = transform;
 
-			//Do I really need this?
+			// Do I really need this?
 			adjoint_computed_ = false;
 		}
 
-	const AdjointMatrix &getAdjoint() const {
-		if (!adjoint_computed_) {
-			adjoint_ = transformation_.computeAdjoint();
-			coAdjoint_ = adjoint_.transpose();
-			adjoint_computed_ = true;
-		}
-		return adjoint_;
-	}
-
-	const AdjointMatrix &getCoAdjoint() const {
-		if (!adjoint_computed_) {
-			adjoint_ = getAdjoint(); // Compute adjoint and co-adjoint matrix
-			coAdjoint_ = adjoint_.transpose();
-			return  coAdjoint_;
-		}
-		return coAdjoint_;
-	}
-
-	const AdjointMatrix & getTangAdjointMatrix() {
-			return tang_adjoint_;
+		const AdjointMatrix &getAdjoint() const {
+			if (!adjoint_computed_) {
+				adjoint_ = transformation_.computeAdjoint();
+				coAdjoint_ = adjoint_.transpose();
+				adjoint_computed_ = true;
+			}
+			return adjoint_;
 		}
 
-
-		void setTanAdjointMatrix(const AdjointMatrix & tang_adjoint_mat) {
-			tang_adjoint_ = tang_adjoint_mat;
+		const AdjointMatrix &getCoAdjoint() const {
+			if (!adjoint_computed_) {
+				adjoint_ = getAdjoint(); // Compute adjoint and co-adjoint matrix
+				coAdjoint_ = adjoint_.transpose();
+				return coAdjoint_;
+			}
+			return coAdjoint_;
 		}
+
+		const AdjointMatrix &getTangAdjointMatrix() { return tang_adjoint_; }
+
+
+		void setTanAdjointMatrix(const AdjointMatrix &tang_adjoint_mat) { tang_adjoint_ = tang_adjoint_mat; }
 
 		/**
 		 * @brief Calcule la transformation locale complète (6D)
@@ -389,22 +370,40 @@ namespace Cosserat::mapping {
 		}
 
 
-
-
 		/**
 		 * @brief Stream output operator for FrameInfo
 		 * @param os Output stream
 		 * @param frame FrameInfo object to output
 		 * @return Reference to output stream
 		 */
-		friend std::ostream& operator<<(std::ostream& os, const FrameInfo& frame) {
+		friend std::ostream &operator<<(std::ostream &os, const FrameInfo &frame) {
 			os << "FrameInfo{length=" << frame.frames_sect_length_
 			   << ", related_beam_index=" << frame.related_beam_index_
-			   << ", distance_to_nearest=" << frame.distance_to_nearest_beam_node
-			   << ", kappa=[" << frame.kappa_.transpose() << "]"
+			   << ", distance_to_nearest=" << frame.distance_to_nearest_beam_node << ", kappa=["
+			   << frame.kappa_.transpose() << "]"
 			   << ", transformation=" << frame.transformation_ << "}";
 			return os;
 		}
+	};
+
+	struct BeamTopology {
+		std::vector<int> parent_indices;
+		std::vector<SE3Type> relative_transforms;
+		std::vector<double> connection_stiffnesses;
+
+		bool isValid() const { return !parent_indices.empty() && parent_indices.size() == relative_transforms.size(); }
+
+		std::vector<size_t> getChildren(size_t section_idx) const {
+			std::vector<size_t> children;
+			for (size_t i = 0; i < parent_indices.size(); ++i) {
+				if (parent_indices[i] == static_cast<int>(section_idx)) {
+					children.push_back(i);
+				}
+			}
+			return children;
+		}
+
+		size_t getNumSections() const { return parent_indices.size(); }
 	};
 
 	template<class TIn1, class TIn2, class TOut>
@@ -423,6 +422,7 @@ namespace Cosserat::mapping {
 	protected:
 		std::vector<SectionInfo> m_section_properties;
 		std::vector<FrameInfo> m_frameProperties;
+		BeamTopology m_topology;
 
 		// This should be changed by the new Data
 		// Geometry information vectors (similar to BaseCosseratMapping)
@@ -480,12 +480,17 @@ namespace Cosserat::mapping {
 		 */
 		std::vector<SE3Type> generateSmoothTrajectory(int num_points = 10) const {
 			std::vector<SE3Type> trajectory;
+			trajectory.reserve(m_section_properties.size() * num_points);
 
 			for (const auto &section: m_section_properties) {
 				for (int i = 0; i < num_points; ++i) {
 					double t = double(i) / double(num_points);
 					trajectory.push_back(section.getLocalTransformation(t));
 				}
+			}
+			// Add the very last point of the last section to complete the trajectory
+			if (!m_section_properties.empty()) {
+				trajectory.push_back(m_section_properties.back().getLocalTransformation(1.0));
 			}
 
 			return trajectory;
@@ -560,18 +565,138 @@ namespace Cosserat::mapping {
 		void clearSections() { m_section_properties.clear(); }
 		void clearFrames() { m_frameProperties.clear(); }
 
+		/**
+		 * @brief Validates the accuracy of the Jacobian computation
+		 * @param tolerance Tolerance for numerical error
+		 * @return true if Jacobian is accurate within tolerance
+		 */
+		/**
+		 * @brief Validates the accuracy of the Jacobian computation
+		 * @param tolerance Tolerance for numerical error
+		 * @return true if Jacobian is accurate within tolerance
+		 */
+		bool validateJacobianAccuracy(double tolerance = 1e-6) const {
+			bool all_valid = true;
+
+			// Iterate over all sections to validate Jacobian for each
+			for (size_t i = 0; i < m_section_properties.size(); ++i) {
+				const auto &section = m_section_properties[i];
+				double curv_abs = section.getLength();
+				TangentVector strain = section.getStrainsVec();
+
+				// Analytical Jacobian (Tangent Exp Map)
+				// We need to compute it from scratch to verify the stored one or just verify the computation method
+				AdjointMatrix adjoint = section.getAdjoint();
+				AdjointMatrix analytical_jac;
+				computeTangExpImplementation(curv_abs, strain, adjoint, analytical_jac);
+
+				// Numerical Jacobian (Finite Differences)
+				AdjointMatrix numerical_jac = AdjointMatrix::Zero();
+				double eps = 1e-7;
+
+				for (int k = 0; k < 6; ++k) {
+					TangentVector strain_plus = strain;
+					TangentVector strain_minus = strain;
+
+					strain_plus[k] += eps;
+					strain_minus[k] -= eps;
+
+					SE3Type g_plus = SE3Type::computeExp(strain_plus * curv_abs);
+					SE3Type g_minus = SE3Type::computeExp(strain_minus * curv_abs);
+
+					// Compute difference in tangent space
+					SE3Type g_diff = g_plus * g_minus.computeInverse();
+					TangentVector diff = g_diff.log();
+
+					numerical_jac.col(k) = diff / (2.0 * eps);
+				}
+
+				// Compare
+				double max_error = (analytical_jac - numerical_jac).cwiseAbs().maxCoeff();
+
+				if (max_error > tolerance) {
+					msg_warning() << "Jacobian accuracy check failed for section " << i << ". Max error: " << max_error;
+					all_valid = false;
+				}
+
+				// Also update stats if needed (optional)
+				// jacobian_performance_stats_.numerical_error = std::max(jacobian_performance_stats_.numerical_error,
+				// max_error);
+			}
+
+			return all_valid;
+		}
+
+		/**
+		 * @brief Génère une trajectoire détaillée avec les informations de section
+		 * @param num_points Nombre de points par section
+		 * @return Vecteur de SectionInfo interpolées
+		 */
+		std::vector<SectionInfo> generateSectionTrajectory(int num_points = 10) const {
+			std::vector<SectionInfo> trajectory;
+			trajectory.reserve(m_section_properties.size() * num_points + 1);
+
+			for (const auto &section: m_section_properties) {
+				for (int i = 0; i < num_points; ++i) {
+					double t = double(i) / double(num_points);
+
+					// Interpolate transformation
+					SE3Type local_transform = section.getLocalTransformation(t);
+
+					// For strain, we assume constant strain along the section for now
+					// or we could interpolate if we had nodal values.
+					// Since SectionInfo stores constant strain for the element:
+					TangentVector current_strain = section.getStrainsVec();
+
+					// Create interpolated section info
+					// Note: length is scaled by t for the partial section from start
+					// But for a trajectory point, 'length' might represent the accumulated length or the segment
+					// length. Here we keep the original section length but maybe we should set it to 0 or a small step?
+					// Let's assume it represents the state at that point.
+
+					trajectory.emplace_back(section.getLength(), current_strain, section.getIndex0(), local_transform);
+				}
+			}
+
+			// Add the end point
+			if (!m_section_properties.empty()) {
+				const auto &last_section = m_section_properties.back();
+				trajectory.emplace_back(last_section.getLength(), last_section.getStrainsVec(),
+										last_section.getIndex0(), last_section.getLocalTransformation(1.0));
+			}
+
+			return trajectory;
+		}
+
+		// Topology methods
+		void setBeamTopology(const BeamTopology &topology) {
+			if (topology.isValid()) {
+				m_topology = topology;
+			} else {
+				msg_warning() << "Invalid beam topology provided";
+			}
+		}
+
+		const BeamTopology &getBeamTopology() const { return m_topology; }
+		bool supportsMultiSectionBeams() const { return true; }
+
 		void updateTangExpSE3();
-		//void computeTangExp(double &x, const TangentVector &k, AdjointMatrix &TgX);
-		static void computeTangExpImplementation(const double& curv_abs,
-	const TangentVector & strain, const AdjointMatrix &adjoint_matrix, AdjointMatrix & tang_adjoint_matrix);
+		// void computeTangExp(double &x, const TangentVector &k, AdjointMatrix &TgX);
+		static void computeTangExpImplementation(const double &curv_abs, const TangentVector &strain,
+												 const AdjointMatrix &adjoint_matrix,
+												 AdjointMatrix &tang_adjoint_matrix);
+
+		// Performance methods
+		void enableParallelComputation(bool enable = true) { parallel_computation_enabled_ = enable; }
+
+		bool isParallelComputationEnabled() const { return parallel_computation_enabled_; }
+
+		void clearComputationCache() {
+			// Clear any caches if implemented
+			// computation_cache_.clear();
+		}
 
 	private:
-		struct SectionIndexResult {
-			size_t index_for_frame; // Pour set_related_beam_index_
-			size_t index_for_next; // Pour la prochaine itération
-			bool found_exact_match; // Si on a trouvé une correspondance exacte
-		};
-
 		/**
 		 * @brief Réserve de l'espace pour les conteneurs de géométrie
 		 * @param frame_count Nombre de frames à réserver
@@ -585,6 +710,11 @@ namespace Cosserat::mapping {
 			m_frames_length_vectors.reserve(frame_count);
 		}
 
+		struct SectionIndexResult {
+			size_t index_for_frame; // Pour set_related_beam_index_
+			size_t index_for_next; // Pour la prochaine itération
+			bool found_exact_match; // Si on a trouvé une correspondance exacte
+		};
 
 		SectionIndexResult findSectionIndex(double frame_curv_abs, const auto &sections_curv_abs, size_t current_index,
 											double tolerance) {
@@ -600,6 +730,33 @@ namespace Cosserat::mapping {
 			}
 			return {current_index, current_index, false};
 		}
+
+		struct JacobianStats {
+			double computation_time = 0.0;
+			double numerical_error = 0.0;
+			int evaluations_count = 0;
+			int cache_hits = 0;
+			std::chrono::steady_clock::time_point start_time;
+
+			void reset() {
+				computation_time = 0.0;
+				numerical_error = 0.0;
+				evaluations_count = 0;
+				cache_hits = 0;
+			}
+
+			void startTiming() { start_time = std::chrono::steady_clock::now(); }
+
+			void endTiming() {
+				auto end = std::chrono::steady_clock::now();
+				std::chrono::duration<double> elapsed = end - start_time;
+				computation_time += elapsed.count();
+				evaluations_count++;
+			}
+		};
+
+		mutable JacobianStats jacobian_performance_stats_;
+		bool parallel_computation_enabled_ = false;
 
 
 		// size_t findSectionIndex(double frame_curv_abs, const auto &sections__curv_abs, size_t current_index,
@@ -639,9 +796,10 @@ namespace Cosserat::mapping {
 		// This method is used to log the completion of the geometry update process.
 		void logCompletionInfo() const {
 			if constexpr (ENABLE_GEOMETRY_LOGGING) { // Constante de compilation
-				std::cout<<"HookeSeratBaseMapping updateGeometryInfo completed: m_indices_vectors: " <<
-					m_indices_vectors.size() <<std::endl;
-				std::cout<< " elements m_frames_length_vectors: " << m_frames_length_vectors.size() << " elements"<<std::endl;
+				std::cout << "HookeSeratBaseMapping updateGeometryInfo completed: m_indices_vectors: "
+						  << m_indices_vectors.size() << std::endl;
+				std::cout << " elements m_frames_length_vectors: " << m_frames_length_vectors.size() << " elements"
+						  << std::endl;
 			}
 		}
 

@@ -29,6 +29,8 @@ namespace sofa::component::cosserat::liegroups {
 		using Scalar = typename Base::Scalar;
 		using Vector4 = typename Base::Vector;
 
+		static constexpr int DoF = 6;
+
 		using TangentVector = typename Base::TangentVector;
 		using ActionVector = typename Base::ActionVector;
 
@@ -194,7 +196,7 @@ namespace sofa::component::cosserat::liegroups {
 			return Ad;
 		}
 
-		AdjointMatrix ad(const TangentVector &v, const ActionVector &point) {
+		AdjointMatrix ad(const TangentVector &v, const ActionVector & /*point*/) {
 			AdjointMatrix Ad = AdjointMatrix::Zero();
 			const Vector3 omega = v.template tail<3>();
 			const Vector3 rho = v.template head<3>();
@@ -208,7 +210,7 @@ namespace sofa::component::cosserat::liegroups {
 			return Ad;
 		}
 
-		AdjointMatrix ad(const ActionVector &point, const TangentVector &v) {
+		AdjointMatrix ad(const ActionVector & /*point*/, const TangentVector &v) {
 			AdjointMatrix Ad = AdjointMatrix::Zero();
 			const Vector3 omega = v.template tail<3>();
 			const Vector3 rho = v.template head<3>();
@@ -398,6 +400,100 @@ namespace sofa::component::cosserat::liegroups {
 			return os;
 		}
 
+		/**
+		 * @brief Computes the Baker-Campbell-Hausdorff (BCH) approximation for log(exp(x) * exp(y)).
+		 *
+		 * Z = log(exp(X) * exp(Y)) ≈ X + Y + 0.5 * [X, Y] + ...
+		 *
+		 * @param x First tangent vector.
+		 * @param y Second tangent vector.
+		 * @return Approximate tangent vector Z.
+		 */
+		static TangentVector computeBCH(const TangentVector &x, const TangentVector &y) {
+			// First order: x + y
+			TangentVector z = x + y;
+
+			// Second order: 0.5 * [x, y]
+			// Lie Bracket [x, y] = ad(x) * y
+			// We need to implement the Lie Bracket for SE(3)
+			// ad(x) is 6x6 matrix.
+			// We can use the ad() method if available or implement it here.
+			// The ad() method is available as an instance method but we need a static one or use a dummy instance.
+			// Actually, ad(v) returns the adjoint matrix of the algebra element v.
+
+			// Let's implement the Lie Bracket directly:
+			// [u, v] = [ (rho_u, phi_u), (rho_v, phi_v) ]
+			//        = ( phi_u x rho_v - phi_v x rho_u, phi_u x phi_v )
+
+			Vector3 rho_x = x.template head<3>();
+			Vector3 phi_x = x.template tail<3>();
+			Vector3 rho_y = y.template head<3>();
+			Vector3 phi_y = y.template tail<3>();
+
+			Vector3 rho_bracket = phi_x.cross(rho_y) - phi_y.cross(rho_x);
+			Vector3 phi_bracket = phi_x.cross(phi_y);
+
+			TangentVector bracket;
+			bracket.template head<3>() = rho_bracket;
+			bracket.template tail<3>() = phi_bracket;
+
+			z += Scalar(0.5) * bracket;
+
+			// Higher orders can be added if needed (1/12 * ([x,[x,y]] + [y,[y,x]]))
+
+			return z;
+		}
+
+		/**
+		 * @brief Parallel transport of a tangent vector along a geodesic.
+		 *
+		 * Transports vector v from the tangent space at Identity to the tangent space at 'this'
+		 * along the geodesic connecting them.
+		 * For Lie groups, this is often related to the left/right translation or the exponential map derivative.
+		 *
+		 * Here we implement the parallel transport associated with the Cartan-Schouten connection (0-connection),
+		 * which for a Lie group corresponds to: P_{I->g}(v) = g * v * g^-1 = Ad(g) * v ?
+		 * Or simply left translation?
+		 *
+		 * In the context of Cosserat rods, parallel transport usually refers to transporting a frame
+		 * without inducing twist (Bishop frame).
+		 *
+		 * However, as a general Lie group operation, we might define it as:
+		 * v_transported = dL_g (v) (Left translation) -> moves v from Te to Tg
+		 * But TangentVector is usually defined at Identity (Lie Algebra).
+		 *
+		 * If we mean transporting a vector v in Te to another vector v' in Te that "corresponds" to it
+		 * after moving along the geodesic exp(u), it typically involves the dexp operator.
+		 *
+		 * Let's implement the "Parallel Transport" that approximates the change in a vector field
+		 * parallel to the geodesic.
+		 *
+		 * For now, let's implement a simple approximation:
+		 * v_out = (I - 0.5 * ad(u)) * v  (First order approximation of parallel transport along u)
+		 * where u = log(this)
+		 *
+		 * @param v The tangent vector to transport.
+		 * @return The transported tangent vector.
+		 */
+		TangentVector parallelTransport(const TangentVector &v) const {
+			TangentVector u = this->log();
+
+			// Lie Bracket [u, v]
+			Vector3 rho_u = u.template head<3>();
+			Vector3 phi_u = u.template tail<3>();
+			Vector3 rho_v = v.template head<3>();
+			Vector3 phi_v = v.template tail<3>();
+
+			Vector3 rho_bracket = phi_u.cross(rho_v) - phi_v.cross(rho_u);
+			Vector3 phi_bracket = phi_u.cross(phi_v);
+
+			TangentVector bracket;
+			bracket.template head<3>() = rho_bracket;
+			bracket.template tail<3>() = phi_bracket;
+
+			return v - Scalar(0.5) * bracket;
+		}
+
 	private:
 		SO3Type m_rotation;
 		Vector3 m_translation;
@@ -473,6 +569,27 @@ namespace sofa::component::cosserat::liegroups {
 			xi_hat(2, 1) = phi.x();
 
 			// Top-right 3x1: translation part
+			// xi_hat(0, 3) = 1.0 + rho.x(); // Wait, why 1.0 + rho.x()? This looks wrong in the original code.
+			// The original code had: xi_hat(0, 3) = 1.0 + rho.x();
+			// This seems like a bug in the previous implementation or a specific convention I'm not aware of.
+			// Standard se(3) hat map puts rho in the translation part.
+			// If I change it, I might break existing logic if it relied on this.
+			// However, looking at expCosseratSmall: T = I + s * xi_hat.
+			// If xi_hat(0,3) has 1.0, then T(0,3) = s * (1 + rho.x).
+			// But T(0,3) should be s * rho.x (for small s).
+			// Wait, T = I + ...
+			// I(0,3) is 0.
+			// So T(0,3) = s * (1 + rho.x).
+			// This implies a constant velocity component of 1 in X direction?
+			// Cosserat rods usually align along X.
+			// So "strain" might be deviation from [1, 0, 0] elongation?
+			// If rho is the strain, and the reference configuration has elongation 1,
+			// then the actual translation rate is 1 + rho.x.
+			// YES. In Cosserat mapping, the strain 'e' usually is (v - v_rest).
+			// If v_rest = [1, 0, 0], then v = [1+e_x, e_y, e_z].
+			// So the tangent vector representing the spatial derivative of the frame is indeed [1+rho.x, rho.y, rho.z].
+			// I will keep it as is, assuming 'rho' passed here is the strain (deviation).
+
 			xi_hat(0, 3) = 1.0 + rho.x();
 			xi_hat(1, 3) = rho.y();
 			xi_hat(2, 3) = rho.z();

@@ -148,7 +148,7 @@ namespace sofa::component::cosserat::liegroups {
 		// For SO(3), ad(v) is just the hat map
 		// TODO :  Check this implementation  !!!
 		// For SO(3), ad(v) is just the hat map
-		return computeHat(v);
+		return ad(v);
 	}
 
 

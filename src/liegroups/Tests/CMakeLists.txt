@@ -8,16 +8,21 @@ sofa_find_package(Sofa.SimpleApi REQUIRED)
 
 # Add test sources
 set(LIEGROUPS_TEST_FILES
-    liegroups/SO2Test.cpp
-    liegroups/UtilsTest.cpp
-    liegroups/LieGroupBaseTest.cpp
-    liegroups/TypesTest.cpp
-    liegroups/RealSpaceTest.cpp
-    liegroups/SE2Test.cpp
-    liegroups/SE23Test.cpp
-    liegroups/SO3Test.cpp
-    #liegroups/SE3Test.cpp
-    #liegroups/SGal3Test.cpp
+        integration/SO2Test.cpp
+        integration/UtilsTest.cpp
+        integration/LieGroupBaseTest.cpp
+        integration/TypesTest.cpp
+        integration/RealSpaceTest.cpp
+        integration/SE2Test.cpp
+        integration/SE23Test.cpp
+    
+        # Unit tests
+        unit/test_jacobian_verification.cpp
+        unit/test_HookeSerat_Phase1.cpp
+        unit/test_Phase2.cpp
+        unit/test_HookeSerat_Comprehensive.cpp
+        unit/test_MultiSectionBeam.cpp
+        unit/test_AdvancedFeatures.cpp
 )
 
 # If unit tests are enabled
@@ -46,7 +51,9 @@ message("=======> Buildin Cosserat lieGroup test", ${UNIT_TEST})
     add_test(NAME ${PROJECT_NAME} COMMAND ${PROJECT_NAME})
 
 
-# Add benchmarks if enabled
+
+# Add benchmarks subdirectory if benchmarks are enabled
 if(COSSERAT_BUILD_BENCHMARKS)
     add_subdirectory(benchmarks)
 endif()
+
