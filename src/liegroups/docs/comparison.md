@@ -16,28 +16,47 @@ This document compares the various Lie group implementations in the Cosserat plu
 | **Commutative**               | Yes                       | Yes                  | No                   | No                       | No                       | No                          |
 | **Primary application**       | Points, vectors           | 2D rotations         | 3D rotations         | 2D mechanics             | 3D mechanics             | Computer vision             |
 
+### Extended and Galilean Groups
+
+**SE(2,3)**: Combines SE(3) with linear velocity for dynamic rigid body motions
+- **Use case**: Cosserat rods with velocity-dependent effects
+- **Advantages**: Captures both pose and velocity in a single group
+- **Performance**: Similar to SE(3) but with additional velocity computations
+
+**SGal(3)**: Galilean group including time evolution
+- **Use case**: Time-dependent simulations, relativistic approximations
+- **Advantages**: Handles time as a group parameter
+- **Performance**: Higher computational cost due to time integration
+
+### Bundle (Product Manifold)
+
+**Bundle<Group1, Group2, ...>**: Product of multiple Lie groups
+- **Use case**: Multi-segment Cosserat rods, articulated systems
+- **Advantages**: Composes different group types, flexible configurations
+- **Performance**: Scales with number of components
+
 ## Lie Algebra Properties
 
-| Property                       | RealSpace | SO(2)            | SO(3)            | SE(2)                 | SE(3)            | Sim(3)          |
-| ------------------------------ | --------- | ---------------- | ---------------- | --------------------- | ---------------- | --------------- |
-| **Algebra dimension**          | n         | 1                | 3                | 3                     | 6                | 7               |
-| **Represents**                 | Vectors   | Angular velocity | Angular velocity | Twist (ang.+lin. vel) | Twist            | Twist + scaling |
-| **Exponential map complexity** | Trivial   | Simple           | Medium           | Medium                | Complex          | Complex         |
-| **Logarithmic map complexity** | Trivial   | Simple           | Medium           | Medium                | Complex          | Complex         |
-| **Primary application**        | Velocity  | Angular velocity | Angular velocity | 2D body velocity      | 3D body velocity | Scale-velocity  |
+| Property                       | RealSpace | SO(2)            | SO(3)            | SE(2)                 | SE(3)            | Sim(3)          | SE(2,3)         | SGal(3)         | Bundle          |
+| ------------------------------ | --------- | ---------------- | ---------------- | --------------------- | ---------------- | --------------- | --------------- | --------------- | --------------- |
+| **Algebra dimension**          | n         | 1                | 3                | 3                     | 6                | 7               | 9               | 10              | Sum of dims     |
+| **Represents**                 | Vectors   | Angular velocity | Angular velocity | Twist (ang.+lin. vel) | Twist            | Twist + scaling | Twist + accel   | Twist + vel + τ | Component twists|
+| **Exponential map complexity** | Trivial   | Simple           | Medium           | Medium                | Complex          | Complex         | Complex         | Complex         | Component-wise  |
+| **Logarithmic map complexity** | Trivial   | Simple           | Medium           | Medium                | Complex          | Complex         | Complex         | Complex         | Component-wise  |
+| **Primary application**        | Velocity  | Angular velocity | Angular velocity | 2D body velocity      | 3D body velocity | Scale-velocity  | Dynamic twist   | Time evolution  | Multi-DoF twist |
 
 ## Performance Comparison
 
 The following table shows approximate relative performance for common operations (normalized to the fastest implementation, lower is better):
 
-| Operation            | RealSpace | SO(2) | SO(3) | SE(2) | SE(3) | Sim(3) |
-| -------------------- | --------- | ----- | ----- | ----- | ----- | ------ |
-| **Composition**      | 1.0       | 1.2   | 2.5   | 3.0   | 5.0   | 5.5    |
-| **Inverse**          | 1.0       | 1.1   | 2.0   | 2.2   | 3.5   | 4.0    |
-| **Log**              | 1.0       | 2.0   | 4.0   | 5.0   | 10.0  | 12.0   |
-| **Exp**              | 1.0       | 1.5   | 3.5   | 4.5   | 9.0   | 11.0   |
-| **Acting on point**  | 1.0       | 1.2   | 1.8   | 2.0   | 2.2   | 2.5    |
-| **Memory footprint** | n         | 1     | 4     | 3     | 7     | 8      |
+| Operation            | RealSpace | SO(2) | SO(3) | SE(2) | SE(3) | Sim(3) | SE(2,3) | SGal(3) | Bundle |
+| -------------------- | --------- | ----- | ----- | ----- | ----- | ------ | ------- | ------- | ------ |
+| **Composition**      | 1.0       | 1.2   | 2.5   | 3.0   | 5.0   | 5.5    | 6.0     | 7.0     | Sum    |
+| **Inverse**          | 1.0       | 1.1   | 2.0   | 2.2   | 3.5   | 4.0    | 4.5     | 5.5     | Sum    |
+| **Log**              | 1.0       | 2.0   | 4.0   | 5.0   | 10.0  | 12.0   | 14.0    | 16.0    | Sum    |
+| **Exp**              | 1.0       | 1.5   | 3.5   | 4.5   | 9.0   | 11.0   | 13.0    | 15.0    | Sum    |
+| **Acting on point**  | 1.0       | 1.2   | 1.8   | 2.0   | 2.2   | 2.5    | 2.8     | 3.2     | Max    |
+| **Memory footprint** | n         | 1     | 4     | 3     | 7     | 8      | 10      | 13      | Sum    |
 
 Note: These numbers are approximate and can vary based on hardware, compiler optimizations, and the specific data being processed.
 
@@ -198,6 +217,117 @@ std::vector<Eigen::Vector3d> aligned_points;
 for (const auto& p : source_points) {
     aligned_points.push_back(alignment.act(p));
 }
+```
+
+### When to use SE(2,3)
+
+- For dynamic Cosserat rods with velocity-dependent effects
+- When both pose and velocity need to be propagated together
+- For momentum-based simulations
+- When linear acceleration is part of the state
+
+Example: Dynamic rod with velocity constraints
+
+```cpp
+// Creating a dynamic pose (SE(3) + velocity)
+Cosserat::SE3<double> pose(Cosserat::SO3<double>(rotation), translation);
+Eigen::Vector3d velocity(0.1, 0.2, 0.3);
+Cosserat::SE23<double> dynamic_pose(pose, velocity);
+
+// Acting on point-velocity pairs
+Eigen::Matrix<double, 6, 1> point_velocity;
+point_velocity << 1.0, 0.0, 0.0, 0.0, 0.0, 0.0; // position + velocity
+auto transformed = dynamic_pose.act(point_velocity);
+```
+
+### When to use SGal(3)
+
+- For time-dependent Cosserat simulations
+- When time evolution is part of the group structure
+- For relativistic approximations in mechanics
+- When Galilean invariance is required
+
+Example: Time-evolving rod configuration
+
+```cpp
+// Creating a Galilean transform (SE(3) + velocity + time)
+Cosserat::SE3<double> pose(Cosserat::SO3<double>(rotation), translation);
+Eigen::Vector3d velocity(0.1, 0.2, 0.3);
+double time = 1.0;
+Cosserat::SGal3<double> galilean_transform(pose, velocity, time);
+
+// Advanced time-dependent operations
+auto evolved = galilean_transform.compose(time_increment);
+```
+
+### When to use Bundle
+
+- For multi-segment Cosserat rods
+- When combining different types of motions
+- For articulated systems with multiple DoF
+- When you need product manifolds
+
+Example: Multi-segment rod with different group types
+
+```cpp
+// Bundle of SE(3) for rigid segments and SO(3) for orientation-only joints
+using MultiSegmentRod = Cosserat::Bundle<Cosserat::SE3<double>, Cosserat::SO3<double>, Cosserat::SE3<double>>;
+
+// Creating a 3-segment configuration
+Cosserat::SE3<double> segment1_pose(/* ... */);
+Cosserat::SO3<double> joint_orientation(/* ... */);
+Cosserat::SE3<double> segment2_pose(/* ... */);
+
+MultiSegmentRod rod_config(segment1_pose, joint_orientation, segment2_pose);
+
+// Composing configurations
+auto deformed_rod = rod_config.compose(deformation);
+```
+
+### Advanced Use Cases
+
+#### Uncertainty Propagation with GaussianOnManifold
+
+For state estimation and sensor fusion:
+
+```cpp
+// Pose estimation with uncertainty
+Cosserat::SE3<double> estimated_pose(/* ... */);
+Eigen::Matrix<double, 6, 6> pose_covariance = 0.01 * Eigen::Matrix<double, 6, 6>::Identity();
+Cosserat::GaussianOnManifold<Cosserat::SE3<double>> pose_distribution(estimated_pose, pose_covariance);
+
+// Propagate through motion
+Cosserat::SE3<double> motion(/* ... */);
+auto predicted = pose_distribution.transform(motion);
+```
+
+#### Optimal Control on Lie Groups
+
+For trajectory optimization:
+
+```cpp
+// Work in Lie algebra for linear control
+Eigen::Matrix<double, 6, 1> desired_velocity;
+Cosserat::SE3<double> current_pose;
+
+// Compute control input in tangent space
+auto control_input = controller.computeControl(current_pose, desired_velocity);
+
+// Apply control (small displacement)
+Cosserat::SE3<double> next_pose = current_pose.compose(Cosserat::SE3<double>::exp(control_input));
+```
+
+#### Multi-Scale Modeling
+
+Using Sim(3) for scale-aware simulations:
+
+```cpp
+// Handle different scales in the same simulation
+Cosserat::Sim3<double> fine_scale(/* scale = 1.0 */);
+Cosserat::Sim3<double> coarse_scale(/* scale = 0.1 */);
+
+// Transform between scales
+auto scaled_transform = fine_scale.compose(coarse_scale);
 ```
 
 ## Implementation Trade-offs

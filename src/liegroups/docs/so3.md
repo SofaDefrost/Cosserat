@@ -13,6 +13,7 @@ SO(3) is the group of all 3×3 orthogonal matrices with determinant 1. Mathemati
 SO(3) = {R ∈ ℝ³ˣ³ | R^T R = I, det(R) = 1}
 
 Key properties:
+
 - **Group operation**: Matrix multiplication (composition of rotations)
 - **Identity element**: 3×3 identity matrix (no rotation)
 - **Inverse element**: Transpose of the rotation matrix (R^T = R^(-1))
@@ -37,9 +38,11 @@ A general element of so(3) has the form:
 where ω = [ω₁, ω₂, ω₃] ∈ ℝ³ is the corresponding angular velocity vector.
 
 The "hat" operator (^) maps a 3D vector to a skew-symmetric matrix:
+
 - ω̂ = hat(ω)
 
 The inverse "vee" operator (∨) maps a skew-symmetric matrix to a 3D vector:
+
 - ω = vee(ω̂)
 
 ### Exponential and Logarithmic Maps
@@ -74,6 +77,7 @@ Special care is needed for rotations near the identity (θ ≈ 0) and for 180° 
 Unit quaternions provide a compact and numerically stable representation of rotations.
 
 A quaternion q = [w, x, y, z] represents the rotation:
+
 - Around axis [x, y, z]/‖[x, y, z]‖
 - By angle 2·arccos(w)
 
@@ -84,6 +88,7 @@ q = [cos(θ/2), sin(θ/2)·n]
 ```
 
 Key properties:
+
 - The quaternion must have unit length (‖q‖ = 1)
 - Quaternions q and -q represent the same rotation (double cover)
 - Composition of rotations corresponds to quaternion multiplication
@@ -141,6 +146,7 @@ Operation performance with quaternion representation:
 - **Exponential map**: O(1), transcendental functions + normalization
 
 Compared to matrix representation, quaternions are:
+
 - More memory efficient (4 vs. 9 elements)
 - Faster for composition and inversion
 - Slower for point transformation (unless batched)
@@ -165,45 +171,45 @@ The implementation includes special handling for numerical stability:
 
 int main() {
     // Creating rotations in different ways
-    
+
     // 1. From axis-angle representation
     Eigen::Vector3d axis(1.0, 1.0, 1.0);
     axis.normalize();
     double angle = M_PI/3;  // 60 degrees
     Cosserat::SO3<double> rotation1(Eigen::AngleAxisd(angle, axis));
-    
+
     // 2. From rotation matrix
     Eigen::Matrix3d R;
     R = Eigen::AngleAxisd(M_PI/2, Eigen::Vector3d::UnitZ());
     Cosserat::SO3<double> rotation2(R);
-    
+
     // 3. From quaternion
     Eigen::Quaterniond q;
     q = Eigen::AngleAxisd(M_PI/4, Eigen::Vector3d::UnitX());
     Cosserat::SO3<double> rotation3(q);
-    
+
     // Compose rotations (apply rotation2 after rotation1)
     auto composed = rotation1.compose(rotation2);
-    
+
     // Inverse rotation
     auto inverse = rotation1.inverse();
-    
+
     // Convert to different representations
     Eigen::Matrix3d rot_mat = rotation1.matrix();
     Eigen::Quaterniond quat = rotation1.quaternion();
     Eigen::AngleAxisd aa = rotation1.angleAxis();
-    
+
     // Accessing properties
     std::cout << "Rotation matrix:\n" << rot_mat << "\n";
     std::cout << "Quaternion: " << quat.coeffs().transpose() << "\n";
     std::cout << "Axis: " << aa.axis().transpose() << ", angle: " << aa.angle() << "\n";
-    
+
     // Rotate a point
     Eigen::Vector3d point(1.0, 0.0, 0.0);
     Eigen::Vector3d rotated_point = rotation1.act(point);
     std::cout << "Original point: " << point.transpose() << "\n";
     std::cout << "Rotated point: " << rotated_point.transpose() << "\n";
-    
+
     return 0;
 }
 ```
@@ -223,12 +229,12 @@ Cosserat::SO3<double> slerp(
     // Get quaternions
     Eigen::Quaterniond q_start = start.quaternion();
     Eigen::Quaterniond q_end = end.quaternion();
-    
+
     // Ensure shortest path (handle double cover)
     if (q_start.dot(q_end) < 0) {
         q_end.coeffs() = -q_end.coeffs();
     }
-    
+
     // Use Eigen's SLERP
     Eigen::Quaterniond q_interp = q_start.slerp(t, q_end);
     return Cosserat::SO3<double>(q_interp);
@@ -262,10 +268,10 @@ Cosserat::SO3<double> integrateRotation(
 ) {
     // Convert body angular velocity to a rotation increment
     Eigen::Vector3d delta_rot = omega * dt;
-    
+
     // Apply the increment using the exponential map
     Cosserat::SO3<double> delta_R = Cosserat::SO3<double>::exp(delta_rot);
-    
+
     // Apply to current rotation (left multiplication for body frame)
     return R.compose(delta_R);
 }
@@ -280,13 +286,13 @@ void rigidBodyStep(
 ) {
     // Angular momentum
     Eigen::Vector3d angular_momentum = inertia_tensor * angular_velocity;
-    
+
     // Update angular momentum with torque
     angular_momentum += torque * dt;
-    
+
     // Update angular velocity
     angular_velocity = inertia_tensor.inverse() * angular_momentum;
-    
+
     // Update orientation
     orientation = integrateRotation(orientation, angular_velocity, dt);
 }
@@ -302,23 +308,23 @@ class Camera {
 private:
     Cosserat::SO3<double> orientation;
     Eigen::Vector3d position;
-    
+
 public:
     // Update from IMU measurements
     void updateFromIMU(const Eigen::Vector3d& gyro, double dt) {
         orientation = integrateRotation(orientation, gyro, dt);
     }
-    
+
     // Get view matrix for rendering
     Eigen::Matrix4d getViewMatrix() const {
         Eigen::Matrix4d view = Eigen::Matrix4d::Identity();
-        
+
         // Set rotation part
         view.block<3,3>(0,0) = orientation.inverse().matrix();
-        
+
         // Set translation part
         view.block<3,1>(0,3) = -orientation.inverse().act(position);
-        
+
         return view;
     }
 };
@@ -329,18 +335,18 @@ private:
     Cosserat::SO3<double> orientation;
     Eigen::Vector3d angular_velocity;
     Eigen::Matrix3d inertia;
-    
+
 public:
     // Compute control torque to reach target orientation
     Eigen::Vector3d computeControlTorque(const Cosserat::SO3<double>& target) {
         // Error in orientation (in the Lie algebra)
-        Eigen::Vector3d error_vector = 
+        Eigen::Vector3d error_vector =
             (orientation.inverse().compose(target)).log();
-        
+
         // PD controller
         double Kp = 1.0;  // Proportional gain
         double Kd = 0.5;  // Derivative gain
-        
+
         return Kp * error_vector - Kd * angular_velocity;
     }
 };
@@ -367,13 +373,13 @@ Eigen::Vector3d robustLog(const Eigen::Matrix3d& R) {
             R(1,0) - R(0,1)
         ) * 0.5;
     }
-    
+
     // Check if near 180° rotation
     if (std::abs(trace + 1.0) < 1e-10) {
         // Find axis by checking non-zero elements in R + I
         // [Implementation omitted for brevity]
     }
-    
+
     // Standard case
     double theta = std::acos((trace - 1.0) / 2.0);
     return Eigen::Vector3d(
@@ -388,11 +394,11 @@ Eigen::Vector3d robustLog(const Eigen::Matrix3d& R) {
    - For small rotation angles, use Taylor series approximation
    - Handle zero-magnitude rotation vectors
 
-```cpp
+````cpp
 // Robust exponential map implementation
 Eigen::Matrix3d robustExp(const Eigen::Vector3d& omega) {
     double theta = omega.norm();
-    
+
     // Check if near-zero rotation
     if (theta < 1e-10) {
         // Use
@@ -454,19 +460,21 @@ Vector3<Scalar> act(const Vector3<Scalar>& point) const;
 
 // Adjoint representation
 Matrix3<Scalar> adjoint() const;
-```
+````
 
 ## Mathematical Background
 
 ### Rotation Matrix
 
 A 3×3 rotation matrix R must satisfy:
+
 - Orthogonality: R^T R = I (identity matrix)
 - Proper rotation: det(R) = 1
 
 ### Lie Algebra
 
 The Lie algebra so(3) consists of 3×3 skew-symmetric matrices of the form:
+
 ```
 S = [  0  -w3   w2 ]
     [  w3   0  -w1 ]
@@ -480,6 +488,7 @@ where [w1, w2, w3] is the axis-angle representation scaled by the angle. This ve
 The exponential map from so(3) to SO(3) can be computed using Rodrigues' formula:
 
 For a rotation vector ω = θ·a (where a is a unit vector and θ is the angle):
+
 ```
 exp(ω) = I + sin(θ)/θ · [ω]× + (1-cos(θ))/θ² · [ω]×²
 ```
@@ -493,6 +502,7 @@ For small rotations, numerical approximations are used to avoid division by near
 The logarithmic map from SO(3) to so(3) extracts the rotation vector from a rotation matrix or quaternion:
 
 From a rotation matrix R with trace tr(R):
+
 ```
 θ = acos((tr(R) - 1)/2)
 ω = θ/(2*sin(θ)) · [R32-R23, R13-R31, R21-R12]^T
@@ -525,24 +535,24 @@ int main() {
     // Create an SO(3) element (90-degree rotation around z-axis)
     Eigen::AngleAxisd angle_axis(M_PI/2, Eigen::Vector3d::UnitZ());
     Cosserat::SO3<double> rotation(angle_axis);
-    
+
     // Get representations
     Eigen::Matrix3d rot_mat = rotation.matrix();
     Eigen::Quaterniond quat = rotation.quaternion();
-    
+
     std::cout << "Rotation matrix:\n" << rot_mat << "\n";
     std::cout << "Quaternion: " << quat.coeffs().transpose() << "\n";
-    
+
     // Create another rotation (45-degree rotation around x-axis)
     Eigen::AngleAxisd another_angle_axis(M_PI/4, Eigen::Vector3d::UnitX());
     Cosserat::SO3<double> another_rotation(another_angle_axis);
-    
+
     // Compose rotations
     auto composed = rotation.compose(another_rotation);
-    
+
     // Inverse rotation
     auto inverse = rotation.inverse();
-    
+
     return 0;
 }
 ```
@@ -560,18 +570,18 @@ int main() {
     double angle = M_PI/3;
     Eigen::AngleAxisd angle_axis(angle, axis);
     Cosserat::SO3<double> rotation(angle_axis);
-    
+
     // Convert to Lie algebra (tangent space)
     Eigen::Vector3d tangent = rotation.log();
     std::cout << "Tangent vector: " << tangent.transpose() << "\n";
-    
+
     // Convert back from Lie algebra to SO(3)
     auto recovered = Cosserat::SO3<double>::exp(tangent);
-    
+
     // Create directly from tangent vector
     Eigen::Vector3d new_tangent(0.1, 0.2, 0.3); // Small rotation
     auto new_rotation = Cosserat::SO3<double>::exp(new_tangent);
-    
+
     return 0;
 }
 ```
@@ -587,25 +597,25 @@ int main() {
     // Create a rotation
     Eigen::AngleAxisd angle_axis(M_PI/2, Eigen::Vector3d::UnitZ());
     Cosserat::SO3<double> rotation(angle_axis);
-    
+
     // Rotate a single point
     Eigen::Vector3d point(1.0, 0.0, 0.0);
     Eigen::Vector3d rotated_point = rotation.act(point);
     std::cout << "Original point: " << point.transpose() << "\n";
     std::cout << "Rotated point: " << rotated_point.transpose() << "\n";
-    
+
     // Rotate multiple points
     std::vector<Eigen::Vector3d> points = {
         Eigen::Vector3d(1.0, 0.0, 0.0),
         Eigen::Vector3d(0.0, 1.0, 0.0),
         Eigen::Vector3d(0.0, 0.0, 1.0)
     };
-    
+
     std::vector<Eigen::Vector3d> rotated_points;
     for (const auto& p : points) {
         rotated_points.push_back(rotation.act(p));
     }
-    
+
     return 0;
 }
 ```
@@ -620,16 +630,16 @@ int main() {
     // Create two rotations
     Cosserat::SO3<double> start(Eigen::AngleAxisd(0, Eigen::Vector3d::UnitZ()));
     Cosserat::SO3<double> end(Eigen::AngleAxisd(M_PI/2, Eigen::Vector3d::UnitZ()));
-    
+
     // Interpolate between them (spherical linear interpolation)
     Cosserat::SO3<double> mid = Cosserat::slerp(start, end, 0.5);
-    
+
     // Interpolate using the exponential map
     Eigen::Vector3d start_tangent = start.log();
     Eigen::Vector3d end_tangent = end.log();
     Eigen::Vector3d mid_tangent = start_tangent + 0.5 * (end_tangent - start_tangent);
     Cosserat::SO3<double> mid2 = Cosserat::SO3<double>::exp(mid_tangent);
-    
+
     return 0;
 }
 ```
@@ -674,6 +684,7 @@ int main() {
 ## Internal Representation
 
 The `SO3` class can be internally represented in several ways:
+
 - Rotation matrix (3×3 orthogonal matrix with determinant 1)
 - Unit quaternion (more compact and numerically stable)
 - Angle-axis representation (for certain operations)
@@ -683,6 +694,7 @@ Our implementation primarily uses unit quaternions for storage, with conversion 
 ## Implementation Details
 
 The `SO3` class is implemented as a template with one parameter:
+
 - `Scalar`: The scalar type (typically `double` or `float`)
 
 ### Key Methods
@@ -739,24 +751,24 @@ int main() {
     // Create an SO(3) element (90-degree rotation around z-axis)
     Eigen::AngleAxisd angle_axis(M_PI/2, Eigen::Vector3d::UnitZ());
     Cosserat::SO3<double> rotation(angle_axis);
-    
+
     // Get representations
     Eigen::Matrix3d rot_mat = rotation.matrix();
     Eigen::Quaterniond quat = rotation.quaternion();
-    
+
     std::cout << "Rotation matrix:\n" << rot_mat << "\n";
     std::cout << "Quaternion: " << quat.coeffs().transpose() << "\n";
-    
+
     // Create another rotation (45-degree rotation around x-axis)
     Eigen::AngleAxisd another_angle_axis(M_PI/4, Eigen::Vector3d::UnitX());
     Cosserat::SO3<double> another_rotation(another_angle_axis);
-    
+
     // Compose rotations
     auto composed = rotation.compose(another_rotation);
-    
+
     // Inverse rotation
     auto inverse = rotation.inverse();
-    
+
     return 0;
 }
 ```
@@ -774,18 +786,18 @@ int main() {
     double angle = M_PI/3;
     Eigen::AngleAxisd angle_axis(angle, axis);
     Cosserat::SO3<double> rotation(angle_axis);
-    
+
     // Convert to Lie algebra (tangent space)
     Eigen::Vector3d tangent = rotation.log();
     std::cout << "Tangent vector: " << tangent.transpose() << "\n";
-    
+
     // Convert back from Lie algebra to SO(3)
     auto recovered = Cosserat::SO3<double>::exp(tangent);
-    
+
     // Create directly from tangent vector
     Eigen::Vector3d new_tangent(0.1, 0.2, 0.3); // Small rotation
     auto new_rotation = Cosserat::SO3<double>::exp(new_tangent);
-    
+
     return 0;
 }
 ```
@@ -801,25 +813,25 @@ int main() {
     // Create a rotation
     Eigen::AngleAxisd angle_axis(M_PI/2, Eigen::Vector3d::UnitZ());
     Cosserat::SO3<double> rotation(angle_axis);
-    
+
     // Rotate a single point
     Eigen::Vector3d point(1.0, 0.0, 0.0);
     Eigen::Vector3d rotated_point = rotation.act(point);
     std::cout << "Original point: " << point.transpose() << "\n";
     std::cout << "Rotated point: " << rotated_point.transpose() << "\n";
-    
+
     // Rotate multiple points
     std::vector<Eigen::Vector3d> points = {
         Eigen::Vector3d(1.0, 0.0, 0.0),
         Eigen::Vector3d(0.0, 1.0, 0.0),
         Eigen::Vector3d(0.0, 0.0, 1.0)
     };
-    
+
     std::vector<Eigen::Vector3d> rotated_points;
     for (const auto& p : points) {
         rotated_points.push_back(rotation.act(p));
     }
-    
+
     return 0;
 }
 ```
@@ -834,16 +846,16 @@ int main() {
     // Create two rotations
     Cosserat::SO3<double> start(Eigen::AngleAxisd(0, Eigen::Vector3d::UnitZ()));
     Cosserat::SO3<double> end(Eigen::AngleAxisd(M_PI/2, Eigen::Vector3d::UnitZ()));
-    
+
     // Interpolate between them (spherical linear interpolation)
     Cosserat::SO3<double> mid = Cosserat::slerp(start, end, 0.5);
-    
+
     // Interpolate using the exponential map
     Eigen::Vector3d start_tangent = start.log();
     Eigen::Vector3d end_tangent = end.log();
     Eigen::Vector3d mid_tangent = start_tangent + 0.5 * (end_tangent - start_tangent);
     Cosserat::SO3<double> mid2 = Cosserat::SO3<double>::exp(mid_tangent);
-    
+
     return 0;
 }
 ```
@@ -868,4 +880,3 @@ int main() {
 - **Avoiding gimbal lock**: Work with quaternions or axis-angle rather than Euler angles
 - **Double cover handling**: Ensure that interpolation takes the shortest path
 - **Composition of many rotations**: Reorthogonalize occasionally to prevent drift
-

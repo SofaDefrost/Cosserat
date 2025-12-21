@@ -453,4 +453,3 @@ std::vector<Group> stochasticMotionPlanning(
 }
 ```
 
-This completes the advanced topics documentation with comprehensive coverage of dynamics integration, optimization, and advanced applications on Lie groups.
