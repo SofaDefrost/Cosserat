@@ -328,12 +328,105 @@ namespace sofa::component::cosserat::liegroups {
 			return trajectory;
 		}
 
-		// ========== Accessors ==========
+	// ========== NEW: Differentiation Jacobians ==========
 
-		const SO3Type &rotation() const { return m_rotation; }
-		SO3Type &rotation() { return m_rotation; }
-		const Vector3 &translation() const { return m_translation; }
-		Vector3 &translation() { return m_translation; }
+	/**
+	 * @brief Compute the Jacobian of group composition.
+	 * 
+	 * For g = this * h, computes jacobians in the tangent space se(3).
+	 * Left Jacobian: ∂g/∂this when perturbing this on the left
+	 * Right Jacobian: ∂g/∂h when perturbing h on the left
+	 * 
+	 * @param other The other SE3 element h
+	 * @return Pair of 6x6 Jacobians (J_left, J_right)
+	 */
+	std::pair<AdjointMatrix, AdjointMatrix> composeJacobians(const SE3 &other) const noexcept {
+		// For SE(3): g * h with left perturbation
+		// Left Jacobian: ∂(g*h)/∂g = Ad_{h^{-1}}
+		AdjointMatrix J_left = other.inverse().computeAdjoint();
+		
+		// Right Jacobian: ∂(g*h)/∂h = I
+		AdjointMatrix J_right = AdjointMatrix::Identity();
+		
+		return {J_left, J_right};
+	}
+
+	/**
+	 * @brief Compute the Jacobian of the inverse operation.
+	 * 
+	 * For g^{-1}, computes ∂(g^{-1})/∂g in the tangent space.
+	 * 
+	 * @return 6x6 Jacobian matrix
+	 */
+	AdjointMatrix inverseJacobian() const noexcept {
+		// ∂g^{-1}/∂g = -Ad_{g^{-1}}
+		return -inverse().computeAdjoint();
+	}
+
+	/**
+	 * @brief Compute the Jacobian of the group action on a point.
+	 * 
+	 * For y = g*p (where g acts on point p), computes:
+	 * - ∂y/∂g (with g perturbed in tangent space): 3x6 matrix
+	 * - ∂y/∂p: 3x3 matrix
+	 * 
+	 * @param point The point p ∈ ℝ³
+	 * @return Pair of Jacobians (∂y/∂g, ∂y/∂p)
+	 */
+	std::pair<JacobianMatrix, Matrix3> actionJacobians(const ActionVector &point) const noexcept {
+		// For SE(3) action: y = R*p + t
+		// Perturbation: (exp(ξ) * g) * p where ξ = [ρ, φ]ᵀ
+		// exp(ξ) * g * p ≈ g*p + [R 0; [t]×R R] * ξ
+		//                = R*p + t + R*ρ + φ×(R*p)
+		
+		Vector3 Rp = m_rotation.act(point);
+		Matrix3 R = m_rotation.matrix();
+		
+		// Jacobian w.r.t. ξ = [ρ, φ]ᵀ is 3x6:
+		// [R  -[R*p]×]
+		JacobianMatrix J_wrt_group;  // 3x6
+		J_wrt_group.template block<3, 3>(0, 0) = R;  // ∂y/∂ρ
+		J_wrt_group.template block<3, 3>(0, 3) = -SO3Type::computeHat(Rp);  // ∂y/∂φ
+		
+		// Jacobian w.r.t. p is simply R
+		Matrix3 J_wrt_point = R;
+		
+		return {J_wrt_group, J_wrt_point};
+	}
+
+	/**
+	 * @brief Compute only the Jacobian w.r.t. the group element for action.
+	 * 
+	 * @param point The point p ∈ ℝ³
+	 * @return 3x6 Jacobian ∂(g*p)/∂g
+	 */
+	JacobianMatrix actionJacobianGroup(const ActionVector &point) const noexcept {
+		Vector3 Rp = m_rotation.act(point);
+		Matrix3 R = m_rotation.matrix();
+		
+		JacobianMatrix J;  // 3x6
+		J.template block<3, 3>(0, 0) = R;
+		J.template block<3, 3>(0, 3) = -SO3Type::computeHat(Rp);
+		
+		return J;
+	}
+
+	/**
+	 * @brief Compute only the Jacobian w.r.t. point for action.
+	 * 
+	 * @param point The point p ∈ ℝ³ (unused)
+	 * @return 3x3 Jacobian ∂(g*p)/∂p = R
+	 */
+	Matrix3 actionJacobianPoint([[maybe_unused]] const ActionVector &point) const noexcept {
+		return m_rotation.matrix();
+	}
+
+	// ========== Accessors ==========
+
+	const SO3Type &rotation() const { return m_rotation; }
+	SO3Type &rotation() { return m_rotation; }
+	const Vector3 &translation() const { return m_translation; }
+	Vector3 &translation() { return m_translation; }
 
 		/**
 		 * @brief Generates a random SE3 element.

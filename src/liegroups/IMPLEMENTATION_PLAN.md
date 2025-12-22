@@ -1,6 +1,6 @@
 # Plan d'Implémentation - Librairie Différentiable
 
-## Phase 1 : Préparation de l'Infrastructure ✅ EN COURS
+## Phase 1 : Préparation de l'Infrastructure ✅ TERMINÉE
 
 ### Objectifs
 1. Créer une structure de tests dédiée à la différentiabilité
@@ -11,8 +11,8 @@
 
 #### 1.1 Structure de Tests ✅
 - [x] Créer `Tests/differentiation/` pour les tests de différentiabilité
-- [ ] Créer `DifferentiationTestUtils.h` avec utilitaires de test
-- [ ] Créer `test_finite_differences.cpp` pour validation numérique
+- [x] Créer `DifferentiationTestUtils.h` avec utilitaires de test
+- [x] Créer `test_finite_differences.cpp` pour validation numérique
 - [ ] Créer `test_autodiff_integration.cpp` (si autodiff activé)
 
 #### 1.2 Support Autodiff (Optionnel)
@@ -34,13 +34,15 @@
 
 ---
 
-## Phase 2 : Implémentation des Jacobiens (À venir)
+## Phase 2 : Implémentation des Jacobiens ✅ EN COURS
 
 ### Tâches Planifiées
-- [ ] Ajouter `composeJacobians()` à tous les groupes
-- [ ] Ajouter `inverseJacobian()` à tous les groupes
-- [ ] Implémenter `actionJacobian()` complet
-- [ ] Tests exhaustifs
+- [x] Ajouter `composeJacobians()` pour SO3 et SE3
+- [x] Ajouter `inverseJacobian()` pour SO3 et SE3
+- [x] Implémenter `actionJacobians()` complet pour SO3 et SE3
+- [x] Créer `test_analytical_jacobians.cpp` avec tests exhaustifs
+- [ ] Ajouter jacobiens pour SO2 et SE2
+- [ ] Valider tous les tests
 
 ---
 
@@ -57,10 +59,16 @@
 ## Statut Actuel
 
 **Branche** : `feature/differentiable-liegroups`  
-**Phase Actuelle** : Phase 1 - Préparation  
-**Progression** : 10%
+**Phase Actuelle** : Phase 2 - Implémentation Jacobiens  
+**Progression** : 60%
+
+### Accompli Récemment
+- ✅ Infrastructure complète de tests
+- ✅ Jacobiens analytiques pour SO3 (compose, inverse, action)
+- ✅ Jacobiens analytiques pour SE3 (compose, inverse, action)
+- ✅ Suite de tests compréhensive avec validation numérique
 
 ### Prochaines Actions Immédiates
-1. Créer le dossier `Tests/differentiation/`
-2. Implémenter `DifferentiationTestUtils.h`
-3. Créer les premiers tests de différences finies
+1. Compiler et valider les tests
+2. Ajouter jacobiens pour SO2 et SE2 (optionnel)
+3. Documenter les nouvelles API

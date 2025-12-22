@@ -298,13 +298,96 @@ namespace sofa::component::cosserat::liegroups {
 		 */
 		AdjointMatrix dlog() const;
 
-		/**
-		 * @brief Adjoint representation of Lie algebra element.
-		 * This is a CRTP-required method (used by LieGroupBase::ad).
-		 * @param v Element of the Lie algebra in vector form.
-		 * @return Matrix representing the adjoint action.
-		 */
-		static AdjointMatrix computeAd(const TangentVector &v);
+	/**
+	 * @brief Adjoint representation of Lie algebra element.
+	 * This is a CRTP-required method (used by LieGroupBase::ad).
+	 * @param v Element of the Lie algebra in vector form.
+	 * @return Matrix representing the adjoint action.
+	 */
+	static AdjointMatrix computeAd(const TangentVector &v);
+
+	// ========== NEW: Differentiation Jacobians ==========
+
+	/**
+	 * @brief Compute the Jacobian of group composition.
+	 * 
+	 * For g = this * h, computes:
+	 * - J_left = ∂g/∂this (in tangent space)
+	 * - J_right = ∂g/∂h (in tangent space)
+	 * 
+	 * Using the relation: g * exp(δ) = g * exp(Ad_g⁻¹(δ)) for left perturbation
+	 * 
+	 * @param other The other SO3 element h
+	 * @return Pair of Jacobians (J_left, J_right)
+	 */
+	std::pair<AdjointMatrix, AdjointMatrix> composeJacobians(const SO3 &other) const noexcept {
+		// For SO(3):
+		// Left Jacobian: ∂(R*S)/∂R = Ad_S^{-1} = S^T
+		// Right Jacobian: ∂(R*S)/∂S = I
+		AdjointMatrix J_left = other.matrix().transpose();  // Ad_{h^{-1}}
+		AdjointMatrix J_right = AdjointMatrix::Identity();
+		return {J_left, J_right};
+	}
+
+	/**
+	 * @brief Compute the Jacobian of the inverse operation.
+	 * 
+	 * For R^{-1}, computes ∂(R^{-1})/∂R in the tangent space.
+	 * 
+	 * Using the relation: (R * exp(δ))^{-1} = exp(-δ) * R^{-1}
+	 * we get: ∂R^{-1}/∂R = -Ad_{R^{-1}} = -R^T
+	 * 
+	 * @return Jacobian matrix
+	 */
+	AdjointMatrix inverseJacobian() const noexcept {
+		// ∂R^{-1}/∂R = -Ad_{R^{-1}} = -R^T
+		return -matrix().transpose();
+	}
+
+	/**
+	 * @brief Compute the Jacobian of the group action on a point.
+	 * 
+	 * For y = R*p, computes:
+	 * - ∂y/∂R (with R perturbed in tangent space): 3x3 matrix
+	 * - ∂y/∂p: 3x3 matrix (rotation matrix itself)
+	 * 
+	 * @param point The point p ∈ ℝ³
+	 * @return Pair of Jacobians (∂y/∂R, ∂y/∂p)
+	 */
+	std::pair<Matrix, Matrix> actionJacobians(const Vector &point) const noexcept {
+		// For perturbation R_δ = exp(δ) * R:
+		// (exp(δ) * R) * p ≈ R*p + δ × (R*p)
+		// So: ∂(R*p)/∂δ = -[R*p]× (negative skew-symmetric)
+		Vector Rp = act(point);
+		Matrix J_wrt_rotation = -buildAntisymmetric(Rp);
+		
+		// ∂(R*p)/∂p = R
+		Matrix J_wrt_point = matrix();
+		
+		return {J_wrt_rotation, J_wrt_point};
+	}
+
+	/**
+	 * @brief Compute only the Jacobian w.r.t. rotation for action.
+	 * Convenience method when only rotation jacobian is needed.
+	 * 
+	 * @param point The point p ∈ ℝ³
+	 * @return Jacobian ∂(R*p)/∂R
+	 */
+	Matrix actionJacobianRotation(const Vector &point) const noexcept {
+		return -buildAntisymmetric(act(point));
+	}
+
+	/**
+	 * @brief Compute only the Jacobian w.r.t. point for action.
+	 * This is simply the rotation matrix.
+	 * 
+	 * @param point The point p ∈ ℝ³ (unused, included for API consistency)
+	 * @return Jacobian ∂(R*p)/∂p = R
+	 */
+	Matrix actionJacobianPoint([[maybe_unused]] const Vector &point) const noexcept {
+		return matrix();
+	}
 		/**
 		 * @brief Get the rotation matrix representation.
 		 * @return The 3x3 rotation matrix.
