@@ -361,12 +361,95 @@ struct CachedJacobian {
 
 ---
 
+## Application : Optimisation de Trajectoires
+
+### Utilisation de `CosseratTrajectoryOptimizer`
+
+La classe `CosseratTrajectoryOptimizer` utilise les jacobiens analytiques pour optimiser des configurations de poutres Cosserat.
+
+#### Exemple Simple
+
+```cpp
+#include "optimization/CosseratTrajectoryOptimizer.h"
+
+using namespace sofa::component::cosserat::liegroups::optimization;
+
+// Configuration
+const int n_sections = 10;
+const double section_length = 0.1;  // 10cm par section
+
+// Strains initiaux (poutre droite)
+std::vector<Vector6> initial_strains(n_sections, Vector6::Zero());
+
+// Cible : 80cm en X, 20cm en Z
+SE3d target = SE3d::Identity();
+target.translation() = Vector3(0.8, 0.0, 0.2);
+
+// Paramètres d'optimisation
+CosseratTrajectoryOptimizer<double>::Parameters params;
+params.learning_rate = 0.05;
+params.max_iterations = 500;
+params.tolerance = 1e-6;
+params.regularization = 0.001;
+params.use_line_search = true;
+params.verbose = true;
+
+// Optimiser
+CosseratTrajectoryOptimizer<double> optimizer;
+auto result = optimizer.optimizeToTarget(
+    initial_strains, target, section_length, params
+);
+
+// Résultats
+std::cout << "Convergé: " << result.converged << std::endl;
+std::cout << "Erreur finale: " 
+          << (result.final_transform.translation() - target.translation()).norm() 
+          << " m" << std::endl;
+```
+
+#### Fonctionnalités
+
+1. **Backpropagation automatique** : Les gradients sont calculés en propageant en arrière à travers la chaîne cinématique
+
+2. **Line search adaptatif** : Recherche linéaire d'Armijo pour déterminer le pas optimal
+
+3. **Régularisation** : Pénalisation L2 sur les strains pour éviter les solutions extrêmes
+
+4. **Fonction coût personnalisée** :
+```cpp
+auto custom_cost = [](const std::vector<Vector6>& strains, 
+                      std::vector<Vector6>& gradient) -> double {
+    // Implémentez votre fonction coût ici
+    // gradient doit être rempli
+    return cost_value;
+};
+
+auto result = optimizer.optimizeCustom(initial_strains, custom_cost, params);
+```
+
+#### Exemple Complet
+
+Voir `examples/simple_trajectory_optimization.cpp` pour un exemple complet avec :
+- Affichage progressif
+- Analyse de convergence
+- Validation des résultats
+
+Compiler avec :
+```bash
+cmake -DCOSSERAT_BUILD_EXAMPLES=ON ..
+make simple_trajectory_optimization
+./bin/examples/simple_trajectory_optimization
+```
+
+---
+
 ## Références
 
 1. **Lie Groups for Computer Vision** - Eade (2017)
 2. **A micro Lie theory for state estimation** - Solà et al. (2018)
 3. **Numerical Recipes** - Press et al. (2007) - Chapitre sur différentiation numérique
 4. **autodiff Documentation** - https://autodiff.github.io
+5. **Optimization on Manifolds** - Absil, Mahony, Sepulchre (2008)
 
 ---
 

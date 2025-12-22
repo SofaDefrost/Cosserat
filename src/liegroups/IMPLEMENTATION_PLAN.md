@@ -46,29 +46,45 @@
 
 ---
 
-## Phase 3 : Validation et Optimisation (À venir)
+## Phase 3 : Optimisation de Trajectoires ✅ PHASE 3.1 TERMINÉE
 
-### Tâches Planifiées
-- [ ] Benchmarks de performance
-- [ ] Tests de précision numérique
-- [ ] Documentation complète
-- [ ] Exemples d'applications
+### Phase 3.1 : Optimiseur Gradient pour Cosserat ✅
+
+#### Tâches Complétées
+- [x] Créer `CosseratTrajectoryOptimizer.h` avec optimiseur complet
+- [x] Implémenter descente de gradient avec backpropagation
+- [x] Ajouter recherche linéaire d'Armijo pour step size adaptatif
+- [x] Support de régularisation L2 sur les strains
+- [x] Créer `test_trajectory_optimization.cpp` avec 7 tests
+- [x] Créer `simple_trajectory_optimization.cpp` exemple complet
+- [x] Ajouter support CMake pour exemples (COSSERAT_BUILD_EXAMPLES)
+- [x] Compiler et valider - ✅ SUCCÈS
+
+### Phase 3.2 : Contrôle Optimal iLQR (Planifié)
+- [ ] Implémenter iLQR sur SE(3)
+- [ ] Tests de contrôle optimal
+- [ ] Exemples de suivi de trajectoire
+
+### Phase 3.3 : Calibration de Paramètres (Planifié)
+- [ ] Implémenter `CosseratParameterEstimator`
+- [ ] Tests de calibration
+- [ ] Validation croisée
 
 ---
 
 ## Statut Actuel
 
 **Branche** : `feature/differentiable-liegroups`  
-**Phase Actuelle** : Phase 2 - Implémentation Jacobiens  
-**Progression** : 60%
+**Phase Actuelle** : Phase 3.1 Complète - Phase 3.2 à venir  
+**Progression** : 75%
 
 ### Accompli Récemment
-- ✅ Infrastructure complète de tests
-- ✅ Jacobiens analytiques pour SO3 (compose, inverse, action)
-- ✅ Jacobiens analytiques pour SE3 (compose, inverse, action)
-- ✅ Suite de tests compréhensive avec validation numérique
+- ✅ Phase 3.1 : Optimiseur de trajectoires complet et fonctionnel
+- ✅ 7 tests d'optimisation validés
+- ✅ Exemple simple compilé avec succès
+- ✅ Documentation roadmap complète (ADVANCED_OPTIMIZATION_ROADMAP.md)
 
 ### Prochaines Actions Immédiates
-1. Compiler et valider les tests
-2. Ajouter jacobiens pour SO2 et SE2 (optionnel)
-3. Documenter les nouvelles API
+1. Tester l'exemple simple_trajectory_optimization
+2. Implémenter Phase 3.2 (iLQR) si souhaité
+3. Ou passer aux phases avancées (simulation différentiable, ML)
