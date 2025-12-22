@@ -343,7 +343,7 @@ namespace sofa::component::cosserat::liegroups {
 	std::pair<AdjointMatrix, AdjointMatrix> composeJacobians(const SE3 &other) const noexcept {
 		// For SE(3): g * h with left perturbation
 		// Left Jacobian: ∂(g*h)/∂g = Ad_{h^{-1}}
-		AdjointMatrix J_left = other.inverse().computeAdjoint();
+		AdjointMatrix J_left = other.computeInverse().computeAdjoint();
 		
 		// Right Jacobian: ∂(g*h)/∂h = I
 		AdjointMatrix J_right = AdjointMatrix::Identity();
@@ -360,7 +360,7 @@ namespace sofa::component::cosserat::liegroups {
 	 */
 	AdjointMatrix inverseJacobian() const noexcept {
 		// ∂g^{-1}/∂g = -Ad_{g^{-1}}
-		return -inverse().computeAdjoint();
+		return -computeInverse().computeAdjoint();
 	}
 
 	/**
