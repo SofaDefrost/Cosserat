@@ -259,12 +259,3 @@ TEST_F(DifferentiationTest, FiniteDifferenceAccuracy) {
     EXPECT_LT(error_central, error_forward * 0.01);
     EXPECT_LT(error_central, 1e-8);
 }
-
-// =============================================================================
-// Main
-// =============================================================================
-
-int main(int argc, char **argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
-}

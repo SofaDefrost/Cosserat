@@ -196,6 +196,15 @@ else()
   set(COSSERAT_BUILD_BENCHMARKS OFF CACHE BOOL "Compile the benchmarks" FORCE)
 endif()
 
+# Examples
+option(COSSERAT_BUILD_EXAMPLES "Build Cosserat examples" OFF)
+if(COSSERAT_BUILD_EXAMPLES)
+  message(STATUS "Building Cosserat examples")
+  add_subdirectory(examples)
+else()
+  message(STATUS "Cosserat examples will be disabled (enable with -DCOSSERAT_BUILD_EXAMPLES=ON)")
+endif()
+
 
 # Config files and install rules for pythons scripts
 sofa_install_pythonscripts(PLUGIN_NAME ${PROJECT_NAME} PYTHONSCRIPTS_SOURCE_DIR "examples/python3/")

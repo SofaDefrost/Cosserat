@@ -332,12 +332,3 @@ TEST_F(AnalyticalJacobianTest, SE3_ActionWithIdentity) {
     EXPECT_TRUE(J_point.isApprox(I3, tolerance)) 
         << "Identity action Jacobian w.r.t. point should be identity";
 }
-
-// =============================================================================
-// Main
-// =============================================================================
-
-int main(int argc, char **argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
-}

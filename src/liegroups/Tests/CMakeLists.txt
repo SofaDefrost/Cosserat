@@ -23,6 +23,11 @@ set(LIEGROUPS_TEST_FILES
         unit/test_HookeSerat_Comprehensive.cpp
         unit/test_MultiSectionBeam.cpp
         unit/test_AdvancedFeatures.cpp
+        
+        # Differentiation tests
+        differentiation/test_finite_differences.cpp
+        differentiation/test_analytical_jacobians.cpp
+        differentiation/test_trajectory_optimization.cpp
 )
 
 # If unit tests are enabled
