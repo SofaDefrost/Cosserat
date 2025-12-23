@@ -28,6 +28,12 @@ set(LIEGROUPS_TEST_FILES
         differentiation/test_finite_differences.cpp
         differentiation/test_analytical_jacobians.cpp
         differentiation/test_trajectory_optimization.cpp
+        
+        # Control tests
+        control/test_ilqr_control.cpp
+        
+        # Calibration tests
+        calibration/test_parameter_estimation.cpp
 )
 
 # Add autodiff test if enabled

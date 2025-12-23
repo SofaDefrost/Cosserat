@@ -71,31 +71,32 @@ L'intégration directe d'autodiff avec Eigen+Lie groups révèle des incompatibi
 - [x] Ajouter support CMake pour exemples (COSSERAT_BUILD_EXAMPLES)
 - [x] Compiler et valider - ✅ SUCCÈS
 
-### Phase 3.2 : Contrôle Optimal iLQR (Planifié)
-- [ ] Implémenter iLQR sur SE(3)
-- [ ] Tests de contrôle optimal
-- [ ] Exemples de suivi de trajectoire
+### Phase 3.2 : Contrôle Optimal iLQR ✅ TERMINÉE
+- [x] Implémenter iLQR sur SE(3) - `CosseratILQRController.h`
+- [x] Tests de contrôle optimal - 3 tests (ligne droite, courbe, convergence)
+- [x] Exemples de suivi de trajectoire - `ilqr_trajectory_tracking.cpp`
 
-### Phase 3.3 : Calibration de Paramètres (Planifié)
-- [ ] Implémenter `CosseratParameterEstimator`
-- [ ] Tests de calibration
-- [ ] Validation croisée
+### Phase 3.3 : Calibration de Paramètres ✅ TERMINÉE
+- [x] Implémenter `CosseratParameterEstimator` - gradient descent avec régularisation
+- [x] Tests de calibration - 3 tests (récupération params, bruit, convergence)
+- [x] Exemple de calibration - `parameter_calibration.cpp`
 
 ---
 
 ## Statut Actuel
 
 **Branche** : `feature/differentiable-liegroups`  
-**Phase Actuelle** : Phase 3.1 Complète - Phase 3.2 à venir  
-**Progression** : 75%
+**Phase Actuelle** : Phase 3 COMPLÈTE (✅ 3.1 + ✅ 3.2 + ✅ 3.3)  
+**Progression** : 100% (Phases 1-3)
 
 ### Accompli Récemment
-- ✅ Phase 3.1 : Optimiseur de trajectoires complet et fonctionnel
-- ✅ 7 tests d'optimisation validés
-- ✅ Exemple simple compilé avec succès
-- ✅ Documentation roadmap complète (ADVANCED_OPTIMIZATION_ROADMAP.md)
+- ✅ Phase 3.1 : Optimiseur de trajectoires avec backpropagation corrigée
+- ✅ Phase 3.2 : Contrôleur iLQR pour suivi de trajectoire sur SE(3)
+- ✅ Phase 3.3 : Estimateur de paramètres physiques (E, G, I, A)
+- ✅ Tous les tests compilés et ajoutés au CMake
+- ✅ 3 exemples complets : optimization, iLQR, calibration
 
-### Prochaines Actions Immédiates
-1. Tester l'exemple simple_trajectory_optimization
-2. Implémenter Phase 3.2 (iLQR) si souhaité
-3. Ou passer aux phases avancées (simulation différentiable, ML)
+### Prochaines Phases (Optionnel)
+1. Phase 4 : Simulation différentiable (contact, déformation)
+2. Phase 5 : Intégration ML (PyTorch/JAX bindings)
+3. Ou : améliorations performance (GPU, parallélisation)
