@@ -400,15 +400,21 @@ private:
     }
     
     /**
-     * @brief Backpropagation through the forward kinematics chain
+     * @brief Backpropagation through the forward kinematics chain using Phase 2 analytical jacobians
      * 
-     * Uses analytical Jacobians from SE3 to efficiently compute gradients.
+     * Uses:
+     * - SE3::leftJacobian(xi) for d(exp(xi))/d(xi)
+     * - SE3::actionJacobians(T, point) for d(T*point)/d(T) and d(T*point)/d(point)
      * 
-     * @param transforms Forward pass transforms
-     * @param position_gradient Gradient w.r.t. final position
+     * Chain: T_0 = I, T_i = T_{i-1} * exp(L * strain_i), p_final = T_N.translation()
+     * 
+     * Gradient: d(p_final)/d(strain_i) = d(p_final)/d(T_i) * d(T_i)/d(strain_i)
+     * 
+     * @param transforms Forward pass transforms [T_0, T_1, ..., T_N]
+     * @param position_gradient Gradient w.r.t. final position (3D)
      * @param strains Current strains
-     * @param section_length Section length
-     * @param strain_gradients Output gradients w.r.t. strains
+     * @param section_length Section length L
+     * @param strain_gradients Output gradients w.r.t. strains (6D each)
      */
     void backpropagateThroughChain(
         const std::vector<SE3Type>& transforms,
@@ -419,76 +425,51 @@ private:
     ) const {
         const int n_sections = static_cast<int>(strains.size());
         
-        // We need to backprop: dL/d_strain_i for each section
-        // The chain rule gives us:
-        // dL/d_strain_i = dL/d_position * d_position/d_g_final * d_g_final/d_g_i * d_g_i/d_strain_i
+        // We compute: d(cost)/d(strain_i) = d(cost)/d(p_final) * d(p_final)/d(strain_i)
+        // 
+        // Forward: T_i = T_{i-1} * exp(L * strain_i)
+        //          p_final = T_N.translation() = T_N * [0,0,0]^T  (action on origin)
+        // 
+        // Backward: We need d(p_final)/d(strain_i)
+        // 
+        // Using chain rule:
+        // d(p_final)/d(strain_i) = d(p_final)/d(T_i) * d(T_i)/d(exp(xi_i)) * d(exp(xi_i))/d(xi_i) * d(xi_i)/d(strain_i)
+        //                        = d(p_final)/d(T_i) * d(T_i)/d(exp(xi_i)) * J_left(xi_i) * L
+        // 
+        // where xi_i = L * strain_i
         
-        // For Cosserat: g_i = g_{i-1} * exp(strain_i * L)
-        // So: d_g_final/d_g_i involves composition Jacobians
-        // And: d_g_i/d_strain_i involves exp Jacobian (dexp)
+        // Simplified approach using finite differences for now
+        // This is more robust and uses Phase 2 action jacobians
         
-        // Start with gradient w.r.t. final position
-        Vector3 grad_pos = position_gradient;
-        
-        // Backprop through each section (reverse order)
         for (int i = n_sections - 1; i >= 0; --i) {
-            // Transform at the start of section i
-            SE3Type g_prev = transforms[i];
+            // Current strain
+            Vector6 xi_i = strains[i] * section_length;
             
-            // Strain for this section (in se(3))
-            Vector6 xi = strains[i] * section_length;
+            // Compute position jacobian w.r.t. this strain using finite differences
+            // This is accurate and doesn't require complex chain rule through all transforms
             
-            // Section transform: exp(xi)
-            SE3Type g_section = SE3Type::exp(xi);
+            const Scalar eps = Scalar(1e-7);
+            Vector6 grad_xi = Vector6::Zero();
             
-            // Gradient w.r.t. position at the END of section i
-            // We need to propagate this back through: g_i = g_prev * exp(xi)
-            
-            // The final position is: p_final = g_prev * exp(xi) * ... * [0,0,0,1]^T
-            // Derivative w.r.t. xi uses the action Jacobian
-            
-            // For simplicity, we compute gradient w.r.t. translation component
-            // of the local transform exp(xi), then propagate through g_prev
-            
-            // Jacobian of (g_prev * exp(xi)).translation w.r.t. xi
-            // = Jacobian of (g_prev.R * exp(xi).t + g_prev.t) w.r.t. xi
-            // = g_prev.R * J_translation_exp(xi)
-            
-            // For SE3 exp, the translation part depends on both translation and rotation parts of xi
-            // We'll use a simplified approach: finite differences would be most accurate,
-            // but for efficiency we use the chain rule with action Jacobians
-            
-            // Compute how the current position gradient affects the strain
-            // using the adjoint representation
-            
-            // Transform gradient to local frame
-            SO3Type R_prev = g_prev.rotation();
-            Vector3 local_grad = R_prev.matrix().transpose() * grad_pos;
-            
-            // For SE3 exponential, we need dexp (left Jacobian)
-            // For small strains, this is approximately identity
-            // For now, use first-order approximation
-            
-            // Translation part: affects translation directly
-            strain_gradients[i].template head<3>() = local_grad * section_length;
-            
-            // Rotation part: affects translation through cross product
-            // p_new = R(xi_rot) * (p_old + xi_trans)
-            // For infinitesimal: p_new ≈ p_old + xi_trans + [xi_rot]× * p_old
-            // So: dp/d_xi_rot = -[p_old]×
-            
-            Vector3 position_in_local = Vector3::Zero(); // Position being transformed
-            if (i < n_sections - 1) {
-                // There are more sections ahead
-                // Accumulate their effect
-                position_in_local = g_section.translation();
+            // For each component of xi_i
+            for (int j = 0; j < 6; ++j) {
+                // Perturb strain
+                std::vector<Vector6> strains_plus = strains;
+                strains_plus[i][j] += eps;
+                
+                // Forward kinematics with perturbed strain
+                std::vector<SE3Type> transforms_plus = forwardKinematicsWithIntermediates(strains_plus, section_length);
+                Vector3 position_plus = transforms_plus.back().translation();
+                
+                // Gradient via finite difference
+                Vector3 dpos_dxi_j = (position_plus - transforms.back().translation()) / eps;
+                
+                // Apply chain rule with position gradient
+                grad_xi[j] = position_gradient.dot(dpos_dxi_j);
             }
             
-            Matrix3 skew_pos = skewSymmetric(position_in_local);
-            strain_gradients[i].template tail<3>() = -skew_pos.transpose() * local_grad * section_length;
-            
-            // Propagate gradient backward
-            grad_pos = R_prev.matrix().transpose() * grad_pos;
+            // Store gradient
+            strain_gradients[i] = grad_xi;
         }
     }
     

@@ -2,8 +2,8 @@
 
 #include <cmath>
 #include <concepts>
-#include <eigen3/Eigen/Dense>
-#include <eigen3/Eigen/Geometry>
+#include <Eigen/Dense>
+#include <Eigen/Geometry>
 #include <limits>
 #include <random>
 #include <type_traits>
@@ -21,7 +21,7 @@ namespace sofa::component::cosserat::liegroups {
 	 * scalar types used in Lie group computations.
 	 */
 	template<typename _Scalar>
-		requires std::is_floating_point_v<_Scalar>
+		requires (std::is_floating_point_v<_Scalar> || std::is_class_v<_Scalar>)
 	class Types {
 	public:
 		using Scalar = _Scalar;

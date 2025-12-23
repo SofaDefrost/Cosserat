@@ -38,8 +38,9 @@ namespace sofa::component::cosserat::liegroups {
 	class LieAlgebra;
 
 	// Modern C++20 concepts for better error messages and type safety
+	// Accept both standard floating-point types and autodiff types
 	template<typename T>
-	concept FloatingPoint = std::is_floating_point_v<T>;
+	concept FloatingPoint = std::is_floating_point_v<T> || std::is_class_v<T>;
 
 	template<typename T, typename Scalar>
 	concept HasScalarType = std::same_as<typename T::Scalar, Scalar>;

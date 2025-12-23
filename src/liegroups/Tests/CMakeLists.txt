@@ -30,6 +30,13 @@ set(LIEGROUPS_TEST_FILES
         differentiation/test_trajectory_optimization.cpp
 )
 
+# Add autodiff test if enabled
+if(COSSERAT_WITH_AUTODIFF)
+    list(APPEND LIEGROUPS_TEST_FILES
+        differentiation/test_autodiff_integration.cpp
+    )
+endif()
+
 # If unit tests are enabled
 message("=======> Buildin Cosserat lieGroup test", ${UNIT_TEST})
 
