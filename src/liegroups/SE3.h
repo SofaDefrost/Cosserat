@@ -68,22 +68,33 @@ namespace sofa::component::cosserat::liegroups {
 
 		ActionVector computeAction(const ActionVector &point) const { return m_rotation.act(point) + m_translation; }
 
-		/**
-		 * @brief Exponential map from se(3) to SE(3) using Cosserat-style approach.
-		 *
-		 * For ξ = [ρ, φ]ᵀ ∈ se(3) where ρ ∈ ℝ³ (translation) and φ ∈ ℝ³ (rotation):
-		 *
-		 * Small case (‖φ‖ ≈ 0):
-		 *   T = I₄ + s·ξ̂
-		 *
-		 * General case:
-		 *   T = I₄ + s·ξ̂ + α·ξ̂² + β·ξ̂³
-		 *   where α = (1-cos(s‖φ‖))/‖φ‖², β = (s‖φ‖-sin(s‖φ‖))/‖φ‖³
-		 *
-		 * @param strain 6D strain vector [ρ, φ]ᵀ (linear and angular strain rates).
-		 * @param length Arc length parameter for integration.
-		 * @return The corresponding SE3 element.
-		 */
+	/**
+	 * @brief Exponential map from se(3) to SE(3) using Cosserat-style approach.
+	 *
+	 * CONVENTION STRAIN COSSERAT:
+	 * strain = [φx, φy, φz, ρx, ρy, ρz]ᵀ ∈ ℝ⁶
+	 *   - φ = [φx, φy, φz] (head<3>) : Angular strain (rotation)
+	 *     φx = torsion, φy = bending Y, φz = bending Z
+	 *   - ρ = [ρx, ρy, ρz] (tail<3>) : Linear strain (translation)
+	 *     ρx = elongation, ρy = shearing Y, ρz = shearing Z
+	 *
+	 * NOTE: ρx is a DEVIATION from nominal elongation 1.0 along X-axis.
+	 * The actual translation in buildXiHat is [1+ρx, ρy, ρz].
+	 * See STRAIN_CONVENTION.md for detailed explanation.
+	 *
+	 * For ξ = [φ, ρ]ᵀ ∈ se(3):
+	 *
+	 * Small case (‖φ‖ ≈ 0):
+	 *   T = I₄ + s·ξ̂
+	 *
+	 * General case:
+	 *   T = I₄ + s·ξ̂ + α·ξ̂² + β·ξ̂³
+	 *   where α = (1-cos(s‖φ‖))/‖φ‖², β = (s‖φ‖-sin(s‖φ‖))/‖φ‖³
+	 *
+	 * @param strain 6D strain vector [φ, ρ]ᵀ (angular and linear strain rates).
+	 * @param length Arc length parameter for integration.
+	 * @return The corresponding SE3 element.
+	 */
 		static SE3 expCosserat(const TangentVector &strain, const Scalar &length) noexcept {
 			// Extract translation and rotation parts
 			const Vector3 rho = strain.template tail<3>(); // Linear strain (translation rate)

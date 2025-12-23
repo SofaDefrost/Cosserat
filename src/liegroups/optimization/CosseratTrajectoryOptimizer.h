@@ -42,6 +42,12 @@ namespace sofa::component::cosserat::liegroups::optimization {
  * forward kinematics chain to optimize strain configurations that achieve
  * desired end-effector poses.
  * 
+ * STRAIN CONVENTION:
+ * Each strain is a Vector6 = [φx, φy, φz, ρx, ρy, ρz]ᵀ where:
+ *   - φx, φy, φz (indices 0-2): Angular strains (torsion, bending Y, bending Z)
+ *   - ρx, ρy, ρz (indices 3-5): Linear strains (elongation, shearing Y, shearing Z)
+ * See STRAIN_CONVENTION.md for detailed documentation.
+ * 
  * The optimization uses analytical Jacobians from the SE3 class for efficient
  * and accurate gradient computation.
  * 
