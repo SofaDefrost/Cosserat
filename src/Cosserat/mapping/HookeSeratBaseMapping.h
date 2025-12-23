@@ -182,7 +182,7 @@ namespace Cosserat::mapping {
 			return coAdjoint_;
 		}
 
-		const AdjointMatrix &getTangAdjointMatrix() { return tang_adjoint_; }
+		const AdjointMatrix &getTangAdjointMatrix() const { return tang_adjoint_; }
 
 		void setTanAdjointMatrix(const AdjointMatrix &tang_adjoint_mat) { tang_adjoint_ = tang_adjoint_mat; }
 
@@ -362,7 +362,7 @@ namespace Cosserat::mapping {
 			return coAdjoint_;
 		}
 
-		const AdjointMatrix &getTangAdjointMatrix() { return tang_adjoint_; }
+		const AdjointMatrix &getTangAdjointMatrix() const { return tang_adjoint_; }
 
 
 		void setTanAdjointMatrix(const AdjointMatrix &tang_adjoint_mat) { tang_adjoint_ = tang_adjoint_mat; }
