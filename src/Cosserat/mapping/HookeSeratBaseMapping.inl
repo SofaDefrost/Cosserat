@@ -280,21 +280,23 @@ void HookeSeratBaseMapping<TIn1, TIn2, TOut>::updateTangExpSE3() {
 		m_section_properties[0].setTanAdjointMatrix(tang_matrix);
 
 		for (auto i = 1; i< node_count; i++ ) {
-			auto node_info = m_section_properties[i];
+			auto& node_info = m_section_properties[i];  // Use reference to modify in place
 			computeTangExpImplementation(
 				node_info.getLength(),
 				node_info.getStrainsVec(),
 				node_info.getAdjoint(),
 				tang_matrix);
 			node_info.setTanAdjointMatrix(tang_matrix);
-			std::cout << "Node[" << i << "] tang adjoint matrix: \n" << tang_matrix << std::endl;
+			if (d_debug.getValue()) {
+				msg_info() << "Node[" << i << "] tang adjoint matrix: \n" << tang_matrix;
+			}
 		}
 
 		//update frames's tang SE3 matrix
 		auto frame_count = m_frameProperties.size();
 		for (auto i = 0; i<frame_count; i++) {
-			auto frame_info = m_frameProperties[i];
-			auto related_section_index = m_frameProperties[i].get_related_beam_index_();
+			auto& frame_info = m_frameProperties[i];  // Use reference to modify in place
+			auto related_section_index = frame_info.get_related_beam_index_();
 			auto frame_strain = m_section_properties[related_section_index].getStrainsVec();
 			computeTangExpImplementation(
 				frame_info.getDistanceToNearestBeamNode(),
@@ -302,8 +304,9 @@ void HookeSeratBaseMapping<TIn1, TIn2, TOut>::updateTangExpSE3() {
 				frame_info.getAdjoint(),
 				tang_matrix);
 			frame_info.setTanAdjointMatrix(tang_matrix);
-			std::cout << "Frame[" << i << "] tang adjoint matrix: \n"
-			<< tang_matrix << std::endl;
+			if (d_debug.getValue()) {
+				msg_info() << "Frame[" << i << "] tang adjoint matrix: \n" << tang_matrix;
+			}
 		}
 
 
