@@ -23,14 +23,21 @@ namespace Cosserat::mapping {
 
 	/**
 	 * @brief Class encapsulating the properties of a Cosserat beam node
+	 * 
+	 * STRAIN CONVENTION:
+	 * Strains follow Cosserat convention: [φx, φy, φz, ρx, ρy, ρz]ᵀ
+	 *   - angular_strain_ = φ = [φx, φy, φz] (head<3>): torsion, bending Y, bending Z
+	 *   - linear_strain_  = ρ = [ρx, ρy, ρz] (tail<3>): elongation, shearing Y, shearing Z
+	 * See liegroups/STRAIN_CONVENTION.md for detailed documentation.
+	 * 
 	 * @todo : change this class to node info instead of section info
 	 */
 	class SectionInfo {
 	private:
 		double sec_length_ = 0.0;
-		Vector3 angular_strain_ = Vector3::Zero(); // angular strain
-		Vector3 linear_strain_ = Vector3::Zero(); // linear strain
-		TangentVector strain_ = TangentVector::Zero(); // strain_ = (angular_strain_^T, linear_strain_^T)^T
+		Vector3 angular_strain_ = Vector3::Zero(); ///< φ = [φx, φy, φz]: torsion, bending Y, bending Z
+		Vector3 linear_strain_ = Vector3::Zero();  ///< ρ = [ρx, ρy, ρz]: elongation, shearing Y, shearing Z
+		TangentVector strain_ = TangentVector::Zero(); ///< Full strain [φ, ρ]ᵀ ∈ se(3)
 
 		unsigned int index_0_ = 0;
 		unsigned int index_1_ = 1;
@@ -71,22 +78,30 @@ namespace Cosserat::mapping {
 				throw std::invalid_argument("_Length must be positive_");
 			sec_length_ = length;
 		}
-		template<typename VecType>
-		void setStrain(const VecType &strain) {
-			// Handle SOFA Vec types which use size() instead of SizeAtCompileTime
-			if constexpr (std::is_same_v<VecType, sofa::type::Vec<3, double>>) {
-				// For sofa::type::Vec<3, double>, convert to our Vector3 type
-				for (int i = 0; i < 3; ++i) {
-					angular_strain_[i] = strain[i];
-				}
-				strain_.head<3>() = angular_strain_;
-				strain_.tail<3>() = linear_strain_;
-			} else if constexpr (std::is_same_v<VecType, sofa::type::Vec<6, double>>) {
-				// For sofa::type::Vec<6, double>, split into kappa and gamma
-				for (int i = 0; i < 3; ++i) {
-					angular_strain_[i] = strain[i];
-					linear_strain_[i] = strain[i + 3];
-				}
+	/**
+	 * @brief Set strain values from various vector types
+	 * 
+	 * STRAIN INDEXING:
+	 * For Vec<6>: strain = [φx, φy, φz, ρx, ρy, ρz]
+	 *   - strain[0-2] → angular_strain_ (φ: torsion, bending Y, bending Z)
+	 *   - strain[3-5] → linear_strain_ (ρ: elongation, shearing Y, shearing Z)
+	 */
+	template<typename VecType>
+	void setStrain(const VecType &strain) {
+		// Handle SOFA Vec types which use size() instead of SizeAtCompileTime
+		if constexpr (std::is_same_v<VecType, sofa::type::Vec<3, double>>) {
+			// For sofa::type::Vec<3, double>, convert to our Vector3 type (angular only)
+			for (int i = 0; i < 3; ++i) {
+				angular_strain_[i] = strain[i];
+			}
+			strain_.head<3>() = angular_strain_;
+			strain_.tail<3>() = linear_strain_;
+		} else if constexpr (std::is_same_v<VecType, sofa::type::Vec<6, double>>) {
+			// For sofa::type::Vec<6, double>, split: [0-2]=angular, [3-5]=linear
+			for (int i = 0; i < 3; ++i) {
+				angular_strain_[i] = strain[i];      // φx, φy, φz
+				linear_strain_[i] = strain[i + 3];   // ρx, ρy, ρz
+			}
 				strain_.head<3>() = angular_strain_;
 				strain_.tail<3>() = linear_strain_;
 			} else {
