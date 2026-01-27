@@ -1,42 +1,38 @@
 cmake_minimum_required(VERSION 3.12)
 
-set(This Cosserat_test)
+project(Cosserat_test)
 
-project(${This} C CXX)
+if (UNIT_TEST)
 
-#find_package(Cosserat REQUIRED)
-find_package(Sofa.Testing REQUIRED)
+    enable_testing()
 
-enable_testing()
-
-set(HEADER_FILES
-        Example.h
-        constraint/Constraint.h
-        )
-set(SOURCE_FILES
-        Example.cpp
-        constraint/ExampleTest.cpp
-#        constraint/CosseratUnilateralInteractionConstraintTest.cpp
-        forcefield/BeamHookeLawForceFieldTest.cpp
+    set(HEADER_FILES
     )
 
+    set(SOURCE_FILES
+        engine/GeometricStiffnessEngineTest.cpp
+        forcefield/BeamHookeLawForceFieldTest.cpp
+        mapping/AdaptiveBeamMappingTest.cpp
+        mapping/CosseratNonLinearMapping2DTest.cpp
+        liegroups/RealSpaceTest.cpp
+        liegroups/SO2Test.cpp
+        liegroups/SE2Test.cpp
+    )
 
-add_executable(${This} ${SOURCE_FILES} ${HEADER_FILES})
+    add_executable(${PROJECT_NAME} ${HEADER_FILES} ${SOURCE_FILES})
+    target_link_libraries(${PROJECT_NAME} Cosserat_SRC)
+    target_link_libraries(${PROJECT_NAME} gtest gtest_main)
+    target_link_libraries(${PROJECT_NAME} SofaGTestMain)
 
-target_link_libraries(${PROJECT_NAME} 
-        Sofa.Testing
-        Cosserat
-)
+    if(APPLE)
+    target_link_libraries(${PROJECT_NAME} "-framework Cocoa")
+    endif()
 
-target_include_directories(${This} 
-        PUBLIC 
-        "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../../>"
-)
+    add_test(NAME ${PROJECT_NAME} COMMAND ${PROJECT_NAME})
 
+endif()
 
-add_test(
-        NAME ${This} 
-        COMMAND ${This}
-)
-
-#[[add_subdirectory(constraint)]]
+# Add benchmarks subdirectory if benchmarks are enabled
+if(COSSERAT_BUILD_BENCHMARKS)
+    add_subdirectory(benchmarks)
+endif()
