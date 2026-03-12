@@ -16,14 +16,16 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.        *
  ******************************************************************************/
 
-#include <gtest/gtest.h>
 #include <Cosserat/mapping/HookeSeratDiscretMapping.h>
-#include <sofa/defaulttype/VecTypes.h>
-#include <sofa/defaulttype/RigidTypes.h>
-#include <sofa/simulation/Simulation.h>
-#include <sofa/simulation/Node.h>
+#include <gtest/gtest.h>
 #include <sofa/component/statecontainer/MechanicalObject.h>
+#include <sofa/core/MechanicalParams.h>
+#include <sofa/core/VecId.h>
+#include <sofa/defaulttype/RigidTypes.h>
+#include <sofa/defaulttype/VecTypes.h>
 #include <sofa/helper/system/FileRepository.h>
+#include <sofa/simulation/Node.h>
+#include <sofa/simulation/Simulation.h>
 
 using namespace Cosserat::mapping;
 using namespace sofa::defaulttype;
@@ -35,284 +37,279 @@ using namespace sofa::component::statecontainer;
  */
 class HookeSeratDiscretMappingTest : public ::testing::Test {
 protected:
-    using Mapping = HookeSeratDiscretMapping<Vec3Types, Rigid3Types, Rigid3Types>;
-    using StrainMO = MechanicalObject<Vec3Types>;
-    using RigidMO = MechanicalObject<Rigid3Types>;
+	using Mapping = HookeSeratDiscretMapping<Vec3Types, Rigid3Types, Rigid3Types>;
+	using StrainMO = MechanicalObject<Vec3Types>;
+	using RigidMO = MechanicalObject<Rigid3Types>;
 
-    sofa::simulation::Node::SPtr root;
-    typename Mapping::SPtr mapping;
-    typename StrainMO::SPtr strainState;
-    typename RigidMO::SPtr rigidBase;
-    typename RigidMO::SPtr outputFrames;
+	sofa::simulation::Node::SPtr root;
+	typename Mapping::SPtr mapping;
+	typename StrainMO::SPtr strainState;
+	typename RigidMO::SPtr rigidBase;
+	typename RigidMO::SPtr outputFrames;
 
-    void SetUp() override {
-        // Create simulation root
-        root = sofa::simulation::getSimulation()->createNewNode("root");
+	void SetUp() override {
+		// Create simulation root
+		root = sofa::simulation::getSimulation()->createNewNode("root");
 
-        // Create mechanical objects
-        strainState = sofa::core::objectmodel::New<StrainMO>();
-        rigidBase = sofa::core::objectmodel::New<RigidMO>();
-        outputFrames = sofa::core::objectmodel::New<RigidMO>();
+		// Create mechanical objects
+		strainState = sofa::core::objectmodel::New<StrainMO>();
+		rigidBase = sofa::core::objectmodel::New<RigidMO>();
+		outputFrames = sofa::core::objectmodel::New<RigidMO>();
 
-        // Add to scene graph
-        root->addObject(strainState);
-        root->addObject(rigidBase);
-        root->addObject(outputFrames);
+		// Add to scene graph
+		root->addObject(strainState);
+		root->addObject(rigidBase);
+		root->addObject(outputFrames);
 
-        // Create mapping
-        mapping = sofa::core::objectmodel::New<Mapping>();
-        root->addObject(mapping);
+		// Create mapping
+		mapping = sofa::core::objectmodel::New<Mapping>();
+		root->addObject(mapping);
 
-        // Link inputs and outputs
-        mapping->setModels(strainState.get(), rigidBase.get(), outputFrames.get());
-    }
+		// Link inputs and outputs
+		mapping->setModels(strainState.get(), rigidBase.get(), outputFrames.get());
+	}
 
-    void TearDown() override {
-        if (root) {
-            sofa::simulation::getSimulation()->unload(root);
-        }
-    }
+	void TearDown() override {
+		if (root) {
+			sofa::simulation::getSimulation()->unload(root);
+		}
+	}
 
-    /**
-     * @brief Setup a simple straight beam configuration
-     */
-    void setupStraightBeam(int numSections = 5) {
-        // Setup curvilinear abscissas
-        sofa::type::vector<double> curvAbsSection;
-        sofa::type::vector<double> curvAbsFrames;
+	/**
+	 * @brief Setup a simple straight beam configuration
+	 */
+	void setupStraightBeam(int numSections = 5) {
+		// Setup curvilinear abscissas
+		sofa::type::vector<double> curvAbsSection;
+		sofa::type::vector<double> curvAbsFrames;
 
-        double sectionLength = 1.0;
-        for (int i = 0; i <= numSections; ++i) {
-            curvAbsSection.push_back(i * sectionLength);
-            curvAbsFrames.push_back(i * sectionLength);
-        }
+		double sectionLength = 1.0;
+		for (int i = 0; i <= numSections; ++i) {
+			curvAbsSection.push_back(i * sectionLength);
+			curvAbsFrames.push_back(i * sectionLength);
+		}
 
-        mapping->d_curv_abs_section.setValue(curvAbsSection);
-        mapping->d_curv_abs_frames.setValue(curvAbsFrames);
+		mapping->d_curv_abs_section.setValue(curvAbsSection);
+		mapping->d_curv_abs_frames.setValue(curvAbsFrames);
 
-        // Initialize strain state (zero strain = straight beam)
-        strainState->resize(numSections);
-        auto* strainData = strainState->write(sofa::core::VecCoordId::position());
-        for (int i = 0; i < numSections; ++i) {
-            (*strainData)[i] = Vec3Types::Coord(0, 0, 0);
-        }
+		// Initialize strain state (zero strain = straight beam)
+		strainState->resize(numSections);
+		auto *strainData = strainState->write(sofa::core::vec_id::write_access::position);
+		for (int i = 0; i < numSections; ++i) {
+			(*strainData)[i] = Vec3Types::Coord(0, 0, 0);
+		}
 
-        // Initialize rigid base (identity)
-        rigidBase->resize(1);
-        auto* baseData = rigidBase->write(sofa::core::VecCoordId::position());
-        (*baseData)[0] = Rigid3Types::Coord(Vec3(0, 0, 0), Quat<SReal>(0, 0, 0, 1));
+		// Initialize rigid base (identity)
+		rigidBase->resize(1);
+		auto *baseData = rigidBase->write(sofa::core::vec_id::write_access::position);
+		(*baseData)[0] = Rigid3Types::Coord(Vec3(0, 0, 0), Quat<SReal>(0, 0, 0, 1));
 
-        // Initialize output frames
-        outputFrames->resize(numSections + 1);
+		// Initialize output frames
+		outputFrames->resize(numSections + 1);
 
-        // Initialize mapping
-        mapping->init();
-    }
+		// Initialize mapping
+		mapping->init();
+	}
 };
 
 /**
  * @brief Test basic initialization
  */
 TEST_F(HookeSeratDiscretMappingTest, Initialization) {
-    setupStraightBeam(5);
+	setupStraightBeam(5);
 
-    EXPECT_NE(mapping, nullptr);
-    EXPECT_EQ(mapping->getNumberOfSections(), 6); // 5 sections + base
-    EXPECT_EQ(mapping->getNumberOfFrames(), 6);
+	EXPECT_NE(mapping, nullptr);
+	EXPECT_EQ(mapping->getNumberOfSections(), 6); // 5 sections + base
+	EXPECT_EQ(mapping->getNumberOfFrames(), 6);
 }
 
 /**
  * @brief Test apply() with zero strain (straight beam)
  */
 TEST_F(HookeSeratDiscretMappingTest, ApplyZeroStrain) {
-    setupStraightBeam(5);
+	setupStraightBeam(5);
 
-    // Apply mapping
-    sofa::core::MechanicalParams mparams;
-    mapping->apply(&mparams,
-                   {outputFrames->write(sofa::core::VecCoordId::position())},
-                   {strainState->read(sofa::core::ConstVecCoordId::position())},
-                   {rigidBase->read(sofa::core::ConstVecCoordId::position())});
+	// Apply mapping
+	sofa::core::MechanicalParams mparams;
+	mapping->apply(&mparams, {outputFrames->write(sofa::core::vec_id::write_access::position)},
+				   {strainState->read(sofa::core::vec_id::read_access::position)},
+				   {rigidBase->read(sofa::core::vec_id::read_access::position)});
 
-    // Verify output frames are along a straight line
-    const auto& frames = outputFrames->read(sofa::core::ConstVecCoordId::position())->getValue();
-    
-    for (size_t i = 0; i < frames.size(); ++i) {
-        const auto& frame = frames[i];
-        
-        // Check position is along x-axis
-        EXPECT_NEAR(frame.getCenter()[0], i * 1.0, 1e-6) << "Frame " << i << " x position";
-        EXPECT_NEAR(frame.getCenter()[1], 0.0, 1e-6) << "Frame " << i << " y position";
-        EXPECT_NEAR(frame.getCenter()[2], 0.0, 1e-6) << "Frame " << i << " z position";
-        
-        // Check orientation is identity
-        const auto& quat = frame.getOrientation();
-        EXPECT_NEAR(quat[0], 0.0, 1e-6) << "Frame " << i << " quat x";
-        EXPECT_NEAR(quat[1], 0.0, 1e-6) << "Frame " << i << " quat y";
-        EXPECT_NEAR(quat[2], 0.0, 1e-6) << "Frame " << i << " quat z";
-        EXPECT_NEAR(quat[3], 1.0, 1e-6) << "Frame " << i << " quat w";
-    }
+	const auto &frames = outputFrames->read(sofa::core::vec_id::read_access::position)->getValue();
+
+	for (size_t i = 0; i < frames.size(); ++i) {
+		const auto &frame = frames[i];
+
+		// Check position is along x-axis
+		EXPECT_NEAR(frame.getCenter()[0], i * 1.0, 1e-6) << "Frame " << i << " x position";
+		EXPECT_NEAR(frame.getCenter()[1], 0.0, 1e-6) << "Frame " << i << " y position";
+		EXPECT_NEAR(frame.getCenter()[2], 0.0, 1e-6) << "Frame " << i << " z position";
+
+		// Check orientation is identity
+		const auto &quat = frame.getOrientation();
+		EXPECT_NEAR(quat[0], 0.0, 1e-6) << "Frame " << i << " quat x";
+		EXPECT_NEAR(quat[1], 0.0, 1e-6) << "Frame " << i << " quat y";
+		EXPECT_NEAR(quat[2], 0.0, 1e-6) << "Frame " << i << " quat z";
+		EXPECT_NEAR(quat[3], 1.0, 1e-6) << "Frame " << i << " quat w";
+	}
 }
 
 /**
  * @brief Test applyJ() with finite differences
  */
 TEST_F(HookeSeratDiscretMappingTest, JacobianFiniteDifference) {
-    setupStraightBeam(3);
+	setupStraightBeam(3);
 
-    const double epsilon = 1e-7;
-    const double tolerance = 1e-5;
+	const double epsilon = 1e-7;
+	const double tolerance = 1e-5;
 
-    // Get initial positions
-    sofa::core::MechanicalParams mparams;
-    mapping->apply(&mparams,
-                   {outputFrames->write(sofa::core::VecCoordId::position())},
-                   {strainState->read(sofa::core::ConstVecCoordId::position())},
-                   {rigidBase->read(sofa::core::ConstVecCoordId::position())});
+	// Get initial positions
+	sofa::core::MechanicalParams mparams;
+	mapping->apply(&mparams, {outputFrames->write(sofa::core::vec_id::write_access::position)},
+				   {strainState->read(sofa::core::vec_id::read_access::position)},
+				   {rigidBase->read(sofa::core::vec_id::read_access::position)});
 
-    const auto& frames0 = outputFrames->read(sofa::core::ConstVecCoordId::position())->getValue();
+	const auto &frames0 = outputFrames->read(sofa::core::vec_id::read_access::position)->getValue();
 
-    // Test Jacobian for each strain component
-    for (int strainIdx = 0; strainIdx < 3; ++strainIdx) {
-        for (int component = 0; component < 3; ++component) {
-            // Perturb strain
-            auto* strainData = strainState->write(sofa::core::VecCoordId::position());
-            (*strainData)[strainIdx][component] += epsilon;
+	// Test Jacobian for each strain component
+	for (int strainIdx = 0; strainIdx < 3; ++strainIdx) {
+		for (int component = 0; component < 3; ++component) {
+			// Perturb strain
+			auto *strainData = strainState->write(sofa::core::vec_id::write_access::position);
+			(*strainData)[strainIdx][component] += epsilon;
 
-            // Apply mapping with perturbed strain
-            mapping->apply(&mparams,
-                          {outputFrames->write(sofa::core::VecCoordId::position())},
-                          {strainState->read(sofa::core::ConstVecCoordId::position())},
-                          {rigidBase->read(sofa::core::ConstVecCoordId::position())});
+			// Apply mapping with perturbed strain
+			mapping->apply(&mparams, {outputFrames->write(sofa::core::vec_id::write_access::position)},
+						   {strainState->read(sofa::core::vec_id::read_access::position)},
+						   {rigidBase->read(sofa::core::vec_id::read_access::position)});
 
-            const auto& framesPerturbed = outputFrames->read(sofa::core::ConstVecCoordId::position())->getValue();
+			const auto &framesPerturbed = outputFrames->read(sofa::core::vec_id::read_access::position)->getValue();
 
-            // Compute finite difference
-            sofa::type::vector<Rigid3Types::Deriv> fdJacobian;
-            fdJacobian.resize(framesPerturbed.size());
-            
-            for (size_t i = 0; i < framesPerturbed.size(); ++i) {
-                // Approximate derivative
-                for (int k = 0; k < 6; ++k) {
-                    if (k < 3) {
-                        fdJacobian[i][k] = (framesPerturbed[i].getCenter()[k] - frames0[i].getCenter()[k]) / epsilon;
-                    } else {
-                        // For orientation, use quaternion difference (simplified)
-                        fdJacobian[i][k] = (framesPerturbed[i].getOrientation()[k-3] - frames0[i].getOrientation()[k-3]) / epsilon;
-                    }
-                }
-            }
+			// Compute finite difference
+			sofa::type::vector<Rigid3Types::Deriv> fdJacobian;
+			fdJacobian.resize(framesPerturbed.size());
 
-            // Reset strain
-            (*strainData)[strainIdx][component] -= epsilon;
+			for (size_t i = 0; i < framesPerturbed.size(); ++i) {
+				// Approximate derivative
+				for (int k = 0; k < 6; ++k) {
+					if (k < 3) {
+						fdJacobian[i][k] = (framesPerturbed[i].getCenter()[k] - frames0[i].getCenter()[k]) / epsilon;
+					} else {
+						// For orientation, use quaternion difference (simplified)
+						fdJacobian[i][k] =
+								(framesPerturbed[i].getOrientation()[k - 3] - frames0[i].getOrientation()[k - 3]) /
+								epsilon;
+					}
+				}
+			}
 
-            // Compute analytical Jacobian using applyJ
-            sofa::type::vector<Vec3Types::Deriv> strainVel;
-            strainVel.resize(3);
-            strainVel[strainIdx][component] = 1.0;
+			// Reset strain
+			(*strainData)[strainIdx][component] -= epsilon;
 
-            sofa::type::vector<Rigid3Types::Deriv> baseVel;
-            baseVel.resize(1);
-            baseVel[0] = Rigid3Types::Deriv(Vec3(0,0,0), Vec3(0,0,0));
+			// Compute analytical Jacobian using applyJ
+			sofa::type::vector<Vec3Types::Deriv> strainVel;
+			strainVel.resize(3);
+			strainVel[strainIdx][component] = 1.0;
 
-            sofa::type::vector<Rigid3Types::Deriv> frameVel;
-            frameVel.resize(framesPerturbed.size());
+			sofa::type::vector<Rigid3Types::Deriv> baseVel;
+			baseVel.resize(1);
+			baseVel[0] = Rigid3Types::Deriv(Vec3(0, 0, 0), Vec3(0, 0, 0));
 
-            mapping->applyJ(&mparams,
-                           {outputFrames->write(sofa::core::VecDerivId::velocity())},
-                           {strainState->read(sofa::core::ConstVecDerivId::velocity())},
-                           {rigidBase->read(sofa::core::ConstVecDerivId::velocity())});
+			sofa::type::vector<Rigid3Types::Deriv> frameVel;
+			frameVel.resize(framesPerturbed.size());
 
-            // Compare (simplified - full comparison would need proper SE(3) metrics)
-            // This is a basic sanity check
-            for (size_t i = 0; i < frameVel.size(); ++i) {
-                for (int k = 0; k < 3; ++k) {
-                    double diff = std::abs(frameVel[i][k] - fdJacobian[i][k]);
-                    EXPECT_LT(diff, tolerance) << "Jacobian mismatch at frame " << i 
-                                               << " component " << k 
-                                               << " for strain " << strainIdx << "," << component;
-                }
-            }
-        }
-    }
+			mapping->applyJ(&mparams, {outputFrames->write(sofa::core::vec_id::write_access::velocity)},
+							{strainState->read(sofa::core::vec_id::read_access::velocity)},
+							{rigidBase->read(sofa::core::vec_id::read_access::velocity)});
+
+			// Compare (simplified - full comparison would need proper SE(3) metrics)
+			// This is a basic sanity check
+			for (size_t i = 0; i < frameVel.size(); ++i) {
+				for (int k = 0; k < 3; ++k) {
+					double diff = std::abs(frameVel[i][k] - fdJacobian[i][k]);
+					EXPECT_LT(diff, tolerance) << "Jacobian mismatch at frame " << i << " component " << k
+											   << " for strain " << strainIdx << "," << component;
+				}
+			}
+		}
+	}
 }
 
 /**
  * @brief Test applyJT() is transpose of applyJ()
  */
 TEST_F(HookeSeratDiscretMappingTest, JacobianTranspose) {
-    setupStraightBeam(3);
+	setupStraightBeam(3);
 
-    sofa::core::MechanicalParams mparams;
+	sofa::core::MechanicalParams mparams;
 
-    // Create random velocities
-    sofa::type::vector<Vec3Types::Deriv> strainVel;
-    strainVel.resize(3);
-    for (int i = 0; i < 3; ++i) {
-        strainVel[i] = Vec3Types::Deriv(0.1 * i, 0.2 * i, 0.3 * i);
-    }
+	// Create random velocities
+	sofa::type::vector<Vec3Types::Deriv> strainVel;
+	strainVel.resize(3);
+	for (int i = 0; i < 3; ++i) {
+		strainVel[i] = Vec3Types::Deriv(0.1 * i, 0.2 * i, 0.3 * i);
+	}
 
-    sofa::type::vector<Rigid3Types::Deriv> baseVel;
-    baseVel.resize(1);
-    baseVel[0] = Rigid3Types::Deriv(Vec3(0.1, 0.2, 0.3), Vec3(0.01, 0.02, 0.03));
+	sofa::type::vector<Rigid3Types::Deriv> baseVel;
+	baseVel.resize(1);
+	baseVel[0] = Rigid3Types::Deriv(Vec3(0.1, 0.2, 0.3), Vec3(0.01, 0.02, 0.03));
 
-    // Apply J
-    sofa::type::vector<Rigid3Types::Deriv> frameVel;
-    frameVel.resize(4);
-    
-    // TODO: Complete this test when applyJ is fully functional
-    // Test: <J*v, f> = <v, J^T*f>
+	// Apply J
+	sofa::type::vector<Rigid3Types::Deriv> frameVel;
+	frameVel.resize(4);
+
+	// TODO: Complete this test when applyJ is fully functional
+	// Test: <J*v, f> = <v, J^T*f>
 }
 
 /**
  * @brief Test with curved beam (non-zero strain)
  */
 TEST_F(HookeSeratDiscretMappingTest, CurvedBeam) {
-    setupStraightBeam(5);
+	setupStraightBeam(5);
 
-    // Set constant curvature (bending in y-direction)
-    auto* strainData = strainState->write(sofa::core::VecCoordId::position());
-    for (int i = 0; i < 5; ++i) {
-        (*strainData)[i] = Vec3Types::Coord(0, 0.1, 0); // Curvature around z-axis
-    }
+	// Set constant curvature (bending in y-direction)
+	auto *strainData = strainState->write(sofa::core::vec_id::write_access::position);
+	for (int i = 0; i < 5; ++i) {
+		(*strainData)[i] = Vec3Types::Coord(0, 0.1, 0); // Curvature around z-axis
+	}
 
-    // Apply mapping
-    sofa::core::MechanicalParams mparams;
-    mapping->apply(&mparams,
-                   {outputFrames->write(sofa::core::VecCoordId::position())},
-                   {strainState->read(sofa::core::ConstVecCoordId::position())},
-                   {rigidBase->read(sofa::core::ConstVecCoordId::position())});
+	// Apply mapping
+	sofa::core::MechanicalParams mparams;
+	mapping->apply(&mparams, {outputFrames->write(sofa::core::vec_id::write_access::position)},
+				   {strainState->read(sofa::core::vec_id::read_access::position)},
+				   {rigidBase->read(sofa::core::vec_id::read_access::position)});
 
-    const auto& frames = outputFrames->read(sofa::core::ConstVecCoordId::position())->getValue();
+	const auto &frames = outputFrames->read(sofa::core::vec_id::read_access::position)->getValue();
 
-    // Verify beam is curved (not straight)
-    bool isCurved = false;
-    for (size_t i = 1; i < frames.size() - 1; ++i) {
-        // Check if middle frames deviate from straight line
-        double expectedY = 0.0; // Straight beam would have y=0
-        if (std::abs(frames[i].getCenter()[1] - expectedY) > 0.01) {
-            isCurved = true;
-            break;
-        }
-    }
+	// Verify beam is curved (not straight)
+	bool isCurved = false;
+	for (size_t i = 1; i < frames.size() - 1; ++i) {
+		// Check if middle frames deviate from straight line
+		double expectedY = 0.0; // Straight beam would have y=0
+		if (std::abs(frames[i].getCenter()[1] - expectedY) > 0.01) {
+			isCurved = true;
+			break;
+		}
+	}
 
-    EXPECT_TRUE(isCurved) << "Beam should be curved with non-zero strain";
+	EXPECT_TRUE(isCurved) << "Beam should be curved with non-zero strain";
 }
 
 /**
  * @brief Test validateJacobianAccuracy method
  */
 TEST_F(HookeSeratDiscretMappingTest, ValidateJacobianAccuracy) {
-    setupStraightBeam(3);
+	setupStraightBeam(3);
 
-    // This test verifies the built-in numerical validation
-    bool isValid = mapping->validateJacobianAccuracy(1e-5);
-    
-    EXPECT_TRUE(isValid) << "Jacobian accuracy validation should pass";
+	// This test verifies the built-in numerical validation
+	bool isValid = mapping->validateJacobianAccuracy(1e-5);
+
+	EXPECT_TRUE(isValid) << "Jacobian accuracy validation should pass";
 }
 
-int main(int argc, char** argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-    sofa::simulation::setSimulation(new sofa::simulation::graph::DAGSimulation());
-    return RUN_ALL_TESTS();
+int main(int argc, char **argv) {
+	::testing::InitGoogleTest(&argc, argv);
+	sofa::simulation::setSimulation(new sofa::simulation::graph::DAGSimulation());
+	return RUN_ALL_TESTS();
 }

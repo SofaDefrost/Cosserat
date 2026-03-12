@@ -179,6 +179,7 @@ if(COSSERAT_BUILD_TESTS)
 
   # Tests for liegroups are in their own directory
   add_subdirectory(src/liegroups/Tests)
+  add_subdirectory(tests)
 
 else()
   message(STATUS "Cosserat tests will be disabled")

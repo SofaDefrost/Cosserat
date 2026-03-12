@@ -58,6 +58,25 @@ namespace Cosserat::mapping {
 		using TangentVector = typename SE3Types::TangentVector;
 
 	public:
+		/**
+		 * @brief Helper method for manually setting linked models (useful for unit tests)
+		 */
+		/*void setModels(sofa::core::State<In1> *strain, sofa::core::State<In2> *base, sofa::core::State<Out> *frames) {
+			this->m_strain_state = strain;
+			this->m_rigid_base = base;
+			this->m_frames = frames;
+
+			// Populate Multi2Mapping legacy vectors to pass validation checks in init()
+			// Why do I add this ?
+			this->fromModels1.clear();
+			this->fromModels1.push_back(strain);
+			this->fromModels2.clear();
+			this->fromModels2.push_back(base);
+			this->toModels.clear();
+			this->toModels.push_back(frames);
+		}*/
+
+	public:
 		//////////////////////////////////////////////////////////////////////
 		/// @name Data Fields
 		/// @{

@@ -11,21 +11,12 @@ set(
 )
 
 set(SOURCE_FILES
-    unit/Example.cpp
-    unit/ExampleTest.cpp
-    unit/SO2Test.cpp
-    unit/SO3Test.cpp
-    unit/SE3Test.cpp
-    unit/SE23Test.cpp
-    unit/SGal3Test.cpp
-    unit/BundleTest.cpp
-    unit/BeamHookeLawForceFieldTest.cpp
-    unit/DiscretCosseratMappingTest.cpp
-    unit/CosseratUnilateralInteractionConstraintTest.cpp
+    unit/HookeSeratDiscretMappingTest.cpp
 )
 
     add_executable(${PROJECT_NAME} ${HEADER_FILES} ${SOURCE_FILES})
-    target_link_libraries(${PROJECT_NAME} Sofa.Testing  Cosserat_SRC)
+    target_link_libraries(${PROJECT_NAME} Sofa.Testing Cosserat)
+    target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../src)
     # target_link_libraries(${PROJECT_NAME} gtest gtest_main)
     # target_link_libraries(${PROJECT_NAME} SofaGTestMain)
 
