@@ -326,14 +326,21 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJT(
   const sofa::VecCoord_t<In1> x1from = x1fromData->getValue();
   vector<Vec6> local_F_Vec;
   local_F_Vec.clear();
+  vector<Vec6> global_F_Vec;
+  global_F_Vec.clear();
 
   out1.resize(x1from.size());
 
   // convert the input from Deriv type to vec6 type, for the purpose of the
   // matrix vector multiplication
+  Vec6 vec;
   for (unsigned int var = 0; var < in.size(); ++var) {
-    Vec6 vec;
-    for (unsigned j = 0; j < 6; j++)
+
+    vec = Vec6(in[var][3],in[var][4],in[var][5],in[var][0],in[var][1],in[var][2]);
+
+    global_F_Vec.push_back(vec);
+
+    /*for (unsigned j = 0; j < 6; j++)
       vec[j] = in[var][j];
     // Convert input from global frame(SOFA) to local frame
     const auto _T =
@@ -341,7 +348,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJT(
     Mat6x6 P_trans = (this->buildProjector(_T));
     P_trans.transpose();
     Vec6 local_F = P_trans * vec;
-    local_F_Vec.push_back(local_F);
+    local_F_Vec.push_back(local_F);*/
   }
 
   // Compute output forces
@@ -360,7 +367,8 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJT(
     matB_trans[k][k] = 1.0;
 
   for (auto s = sz; s--;) {
-    Mat6x6 coAdjoint;
+    
+    /*Mat6x6 coAdjoint;
 
     this->computeCoAdjoint(
         m_framesExponentialSE3Vectors[s],
@@ -370,15 +378,38 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJT(
         m_framesTangExpVectors[s]; // m_framesTangExpVectors[s] computed in
     // applyJ (here we transpose)
     temp.transpose();
-    Vec3 f = matB_trans * temp * node_F_Vec;
+    Vec3 f = matB_trans * temp * node_F_Vec;*/
 
+    Mat6x6 temp =
+        m_framesTangExpVectors[s]; // m_framesTangExpVectors[s] computed in
+    // applyJ (here we transpose)
+    temp.transpose();
+
+    Vec3 f = matB_trans * temp * global_F_Vec[s];
+
+    std::cout<<"Global F = " << global_F_Vec[s] <<" at s = " << s <<std::endl;
+    std::cout<<"temp = " << temp <<" at s = " << s <<std::endl;
+    std::cout<<"f = " << f <<" at s = " << s <<std::endl;
+
+    Vec3 dispMoment;
+    Vec3 deltaPos;
     if (index != m_indicesVectors[s]) {
       index--;
       // bring F_tot to the reference of the new beam
-      this->computeCoAdjoint(
+      /* this->computeCoAdjoint(
           m_nodesExponentialSE3Vectors[index],
           coAdjoint); // m_nodesExponentialSE3Vectors computed in apply
-      F_tot = coAdjoint * F_tot;
+      F_tot = coAdjoint * F_tot;*/
+
+      // Move the total wrench applied at the tip of one section to the previous one, expressed in the global frame
+      // Like a coAdjoint operator but with R.transpose = Identity
+      deltaPos = m_nodesExponentialSE3Vectors[index-1].getOrigin() - m_nodesExponentialSE3Vectors[index].getOrigin();
+      dispMoment = getTildeMatrix(deltaPos)*Vec3(F_tot[3],F_tot[4],F_tot[5]);
+      for(unsigned int k = 0;k<3; k++){
+        F_tot[k] = F_tot[k] + dispMoment[k];
+        F_tot[k+3] = F_tot[k+3];
+      }
+
       Mat6x6 temp = m_nodesTangExpVectors[index];
       temp.transpose();
       // apply F_tot to the new beam
@@ -390,7 +421,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJT(
                 << std::endl;
 
     // compute F_tot
-    F_tot += node_F_Vec;
+    F_tot += global_F_Vec[s];
     out1[m_indicesVectors[s] - 1] += f;
   }
 
@@ -483,7 +514,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJT(
 
       int indexBeam = m_indicesVectors[childIndex];
 
-      const auto _T = Frame(frame[childIndex].getCenter(),
+      /*const auto _T = Frame(frame[childIndex].getCenter(),
                                frame[childIndex].getOrientation());
       Mat6x6 P_trans = (this->buildProjector(_T));
       P_trans.transpose();
@@ -491,22 +522,26 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJT(
       Mat6x6 co_adjoint;
         this->computeCoAdjoint(
           m_framesExponentialSE3Vectors[childIndex],
-          co_adjoint); // m_framesExponentialSE3Vectors[s] computed in apply
+          co_adjoint);*/ // m_framesExponentialSE3Vectors[s] computed in apply
       Mat6x6 temp =
           m_framesTangExpVectors[childIndex]; // m_framesTangExpVectors[s]
       // computed in applyJ
       // (here we transpose)
       temp.transpose();
 
-      Vec6 local_F =
+      /*Vec6 local_F =
           co_adjoint * P_trans *
-          valueConst; // constraint direction in local frame of the beam.
+          valueConst;*/ // constraint direction in local frame of the beam.
+      
+      /*Vec3 f = matB_trans * temp *
+               local_F; // constraint direction in the strain space.*/
 
-      Vec3 f = matB_trans * temp *
-               local_F; // constraint direction in the strain space.
+      Vec6 global_F = Vec6(valueConst[3],valueConst[4],valueConst[5],valueConst[0],valueConst[1],valueConst[2]);
+
+      Vec3 f = matB_trans * temp * global_F;
 
       o1.addCol(indexBeam - 1, f);
-      std::tuple<int, Vec6> test = std::make_tuple(indexBeam, local_F);
+      std::tuple<int, Vec6> test = std::make_tuple(indexBeam, global_F);
 
       NodesInvolved.push_back(test);
       colIt++;
@@ -569,12 +604,13 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJT(
 
       while (i > 0) {
         // cumulate on beam frame
-        Mat6x6 coAdjoint;
+        /*Mat6x6 coAdjoint;
         this->computeCoAdjoint(
             m_nodesExponentialSE3Vectors[i - 1],
             coAdjoint); // m_nodesExponentialSE3Vectors computed in apply
         CumulativeF = coAdjoint * CumulativeF;
-        // transfer to strain space (local coordinates)
+        // transfer to strain space (local coordinates)*/
+        
         Mat6x6 temp = m_nodesTangExpVectors[i - 1];
         temp.transpose();
         Vec3 temp_f = matB_trans * temp * CumulativeF;
@@ -686,6 +722,20 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::draw(
     if (!d_debug.getValue())
       return;
   glEnd();
+}
+
+template <class TIn1, class TIn2, class TOut>
+auto DiscreteCosseratMapping<TIn1, TIn2, TOut>::getTildeMatrix(const Vec3 &u)
+-> Mat3x3 {
+    sofa::type::Matrix3 tild;
+    tild[0][1] = -u[2];
+    tild[0][2] = u[1];
+    tild[1][2] = -u[0];
+
+    tild[1][0] = -tild[0][1];
+    tild[2][0] = -tild[0][2];
+    tild[2][1] = -tild[1][2];
+    return tild;
 }
 
 } // namespace Cosserat::mapping
