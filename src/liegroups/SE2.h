@@ -51,7 +51,7 @@ namespace sofa::component::cosserat::liegroups {
 	 */
 	template<typename _Scalar>
 	class SE2 : public LieGroupBase<SE2<_Scalar>, _Scalar, 3, 3, 2> {
-
+	public:
 		using Base = LieGroupBase<SE2<_Scalar>, _Scalar, 3, 3, 2>;
 		using Scalar = typename Base::Scalar;
 		using Vector = typename Base::Vector;
@@ -150,6 +150,13 @@ namespace sofa::component::cosserat::liegroups {
 		SE2 operator*(const SE2 &other) const {
 			return SE2(m_rotation * other.m_rotation, m_rotation.act(other.m_translation) + m_translation);
 		}
+
+		/**
+		 * @brief Composes two SE2 elements (group multiplication).
+		 * @param other The other SE2 element to compose with.
+		 * @return The composed SE2 element.
+		 */
+		SE2 compose(const SE2 &other) const { return (*this) * other; }
 
 		/**
 		 * @brief In-place group composition operator.
@@ -364,7 +371,7 @@ namespace sofa::component::cosserat::liegroups {
 		 * @param v The 3D Lie algebra vector [vx, vy, ω].
 		 * @return The 3x3 matrix representation.
 		 */
-		static Matrix hat(const TangentVector &v) {
+		static Matrix computeHat(const TangentVector &v) {
 			Matrix R = Matrix::Zero();
 			R(0, 2) = v(0);
 			R(1, 2) = v(1);
@@ -379,7 +386,7 @@ namespace sofa::component::cosserat::liegroups {
 		 * @param X The 3x3 matrix representation.
 		 * @return The 3D Lie algebra vector [vx, vy, ω].
 		 */
-		static TangentVector vee(const Matrix &X) {
+		static TangentVector computeVee(const Matrix &X) {
 			TangentVector v;
 			v(0) = X(0, 2);
 			v(1) = X(1, 2);

@@ -210,6 +210,18 @@ namespace sofa::component::cosserat::liegroups {
 		}
 
 		/**
+		 * @brief Checks if the current SO3 element is valid.
+		 * @return True if the quaternion is normalized.
+		 */
+		bool computeIsValid() const noexcept { return std::abs(m_quat.norm() - Scalar(1)) < Scalar(1e-4); }
+
+		/**
+		 * @brief Normalizes the SO3 element.
+		 * Normalizes the internal quaternion.
+		 */
+		void computeNormalize() noexcept { m_quat.normalize(); }
+
+		/**
 		 * @brief Get the identity element of the group.
 		 * @return The identity element.
 		 */
@@ -221,6 +233,21 @@ namespace sofa::component::cosserat::liegroups {
 		 * @return The identity element.
 		 */
 		static SO3 computeIdentity() noexcept { return SO3(); }
+
+		/**
+		 * @brief Generates a random SO3 element.
+		 * @tparam Generator The type of the random number generator.
+		 * @param gen The random number generator.
+		 * @return A random SO3 element.
+		 */
+		template<typename Generator>
+		static SO3 computeRandom(Generator &gen) {
+			// Generate random axis and angle
+			Vector axis = Types<Scalar>::template randomUnitVector<3>(gen);
+			std::uniform_real_distribution<Scalar> dist(-M_PI, M_PI);
+			Scalar angle = dist(gen);
+			return SO3(angle, axis);
+		}
 
 		/**
 		 * @brief Get the dimension of the Lie algebra (3 for SO(3)).
@@ -271,12 +298,96 @@ namespace sofa::component::cosserat::liegroups {
 		 */
 		AdjointMatrix dlog() const;
 
-		/**
-		 * @brief Adjoint representation of Lie algebra element.
-		 * @param v Element of the Lie algebra in vector form.
-		 * @return Matrix representing the adjoint action.
-		 */
-		static AdjointMatrix ad(const TangentVector &v);
+	/**
+	 * @brief Adjoint representation of Lie algebra element.
+	 * This is a CRTP-required method (used by LieGroupBase::ad).
+	 * @param v Element of the Lie algebra in vector form.
+	 * @return Matrix representing the adjoint action.
+	 */
+	static AdjointMatrix computeAd(const TangentVector &v);
+
+	// ========== NEW: Differentiation Jacobians ==========
+
+	/**
+	 * @brief Compute the Jacobian of group composition.
+	 * 
+	 * For g = this * h, computes:
+	 * - J_left = ∂g/∂this (in tangent space)
+	 * - J_right = ∂g/∂h (in tangent space)
+	 * 
+	 * Using the relation: g * exp(δ) = g * exp(Ad_g⁻¹(δ)) for left perturbation
+	 * 
+	 * @param other The other SO3 element h
+	 * @return Pair of Jacobians (J_left, J_right)
+	 */
+	std::pair<AdjointMatrix, AdjointMatrix> composeJacobians(const SO3 &other) const noexcept {
+		// For SO(3):
+		// Left Jacobian: ∂(R*S)/∂R = Ad_S^{-1} = S^T
+		// Right Jacobian: ∂(R*S)/∂S = I
+		AdjointMatrix J_left = other.matrix().transpose();  // Ad_{h^{-1}}
+		AdjointMatrix J_right = AdjointMatrix::Identity();
+		return {J_left, J_right};
+	}
+
+	/**
+	 * @brief Compute the Jacobian of the inverse operation.
+	 * 
+	 * For R^{-1}, computes ∂(R^{-1})/∂R in the tangent space.
+	 * 
+	 * Using the relation: (R * exp(δ))^{-1} = exp(-δ) * R^{-1}
+	 * we get: ∂R^{-1}/∂R = -Ad_{R^{-1}} = -R^T
+	 * 
+	 * @return Jacobian matrix
+	 */
+	AdjointMatrix inverseJacobian() const noexcept {
+		// ∂R^{-1}/∂R = -Ad_{R^{-1}} = -R^T
+		return -matrix().transpose();
+	}
+
+	/**
+	 * @brief Compute the Jacobian of the group action on a point.
+	 * 
+	 * For y = R*p, computes:
+	 * - ∂y/∂R (with R perturbed in tangent space): 3x3 matrix
+	 * - ∂y/∂p: 3x3 matrix (rotation matrix itself)
+	 * 
+	 * @param point The point p ∈ ℝ³
+	 * @return Pair of Jacobians (∂y/∂R, ∂y/∂p)
+	 */
+	std::pair<Matrix, Matrix> actionJacobians(const Vector &point) const noexcept {
+		// For perturbation R_δ = exp(δ) * R:
+		// (exp(δ) * R) * p ≈ R*p + δ × (R*p)
+		// So: ∂(R*p)/∂δ = -[R*p]× (negative skew-symmetric)
+		Vector Rp = act(point);
+		Matrix J_wrt_rotation = -buildAntisymmetric(Rp);
+		
+		// ∂(R*p)/∂p = R
+		Matrix J_wrt_point = matrix();
+		
+		return {J_wrt_rotation, J_wrt_point};
+	}
+
+	/**
+	 * @brief Compute only the Jacobian w.r.t. rotation for action.
+	 * Convenience method when only rotation jacobian is needed.
+	 * 
+	 * @param point The point p ∈ ℝ³
+	 * @return Jacobian ∂(R*p)/∂R
+	 */
+	Matrix actionJacobianRotation(const Vector &point) const noexcept {
+		return -buildAntisymmetric(act(point));
+	}
+
+	/**
+	 * @brief Compute only the Jacobian w.r.t. point for action.
+	 * This is simply the rotation matrix.
+	 * 
+	 * @param point The point p ∈ ℝ³ (unused, included for API consistency)
+	 * @return Jacobian ∂(R*p)/∂p = R
+	 */
+	Matrix actionJacobianPoint([[maybe_unused]] const Vector &point) const noexcept {
+		return matrix();
+	}
 		/**
 		 * @brief Get the rotation matrix representation.
 		 * @return The 3x3 rotation matrix.
@@ -319,7 +430,7 @@ namespace sofa::component::cosserat::liegroups {
 		 * @param v Vector in ℝ³.
 		 * @return 3x3 skew-symmetric matrix.
 		 */
-		static Matrix hat(const TangentVector &v) noexcept {
+		static Matrix computeHat(const TangentVector &v) noexcept {
 			Matrix Omega;
 			Omega << 0, -v[2], v[1], v[2], 0, -v[0], -v[1], v[0], 0;
 			return Omega;
@@ -330,7 +441,7 @@ namespace sofa::component::cosserat::liegroups {
 		 * @param Omega 3x3 skew-symmetric matrix.
 		 * @return Vector in ℝ³.
 		 */
-		static TangentVector vee(const Matrix &Omega) noexcept {
+		static TangentVector computeVee(const Matrix &Omega) noexcept {
 			return TangentVector(Omega(2, 1), Omega(0, 2), Omega(1, 0));
 		}
 
@@ -371,7 +482,7 @@ namespace sofa::component::cosserat::liegroups {
 			const Scalar scalar2 = (s_theta - std::sin(s_theta)) / theta3;
 
 			// Build antisymmetric matrix [strain]×
-			Matrix strain_hat = hat(strain);
+			Matrix strain_hat = computeHat(strain);
 
 			// Compute strain_hat²
 			Matrix strain_hat2 = strain_hat * strain_hat;
@@ -457,6 +568,7 @@ namespace sofa::component::cosserat::liegroups {
 		 * @param strain Angular strain rate vector in ℝ³ (curvature vector).
 		 * @param length Arc length parameter for integration.
 		 * @return The corresponding SO3 element.
+		 * TODO :  uncomment this implementation
 		 */
 		// static SO3 expCosserat(const TangentVector &strain, const Scalar &length) noexcept {
 		//   const Scalar strain_norm = strain.norm();

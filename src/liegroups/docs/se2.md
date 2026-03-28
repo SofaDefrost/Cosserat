@@ -17,6 +17,7 @@
 ## Internal Representation
 
 The `SE2` class internally stores:
+
 - A rotation component as an `SO(2)` element
 - A translation component as a 2D vector
 
@@ -25,6 +26,7 @@ This representation ensures proper handling of the group structure and efficient
 ## Implementation Details
 
 The `SE2` class is implemented as a template with one parameter:
+
 - `Scalar`: The scalar type (typically `double` or `float`)
 
 ### Key Methods
@@ -80,30 +82,30 @@ The actual performance depends on the hardware and compiler optimizations, but t
 int main() {
     // Create an SE(2) element (45-degree rotation with translation (1,2))
     Cosserat::SE2<double> transform(M_PI/4.0, 1.0, 2.0);
-    
+
     // Get components
     double angle = transform.angle();
     Eigen::Vector2d translation = transform.translation();
     std::cout << "Angle: " << angle << " radians\n";
     std::cout << "Translation: [" << translation.transpose() << "]\n";
-    
+
     // Convert to homogeneous transformation matrix
     Eigen::Matrix3d mat = transform.matrix();
     std::cout << "Matrix:\n" << mat << "\n";
-    
+
     // Create another transformation
     Cosserat::SE2<double> another_transform(M_PI/2.0, 3.0, 4.0);
-    
+
     // Compose transformations
     auto composed = transform.compose(another_transform);
     std::cout << "Composed angle: " << composed.angle() << " radians\n";
     std::cout << "Composed translation: [" << composed.translation().transpose() << "]\n";
-    
+
     // Inverse transformation
     auto inverse = transform.inverse();
     std::cout << "Inverse angle: " << inverse.angle() << " radians\n";
     std::cout << "Inverse translation: [" << inverse.translation().transpose() << "]\n";
-    
+
     return 0;
 }
 ```
@@ -117,21 +119,21 @@ int main() {
 int main() {
     // Create an SE(2) element
     Cosserat::SE2<double> transform(M_PI/4.0, 1.0, 2.0);
-    
+
     // Convert to Lie algebra (tangent space)
     Eigen::Vector3d tangent = transform.log();
     std::cout << "Tangent vector: [" << tangent.transpose() << "]\n";
-    
+
     // Convert back from Lie algebra to SE(2)
     auto recovered = Cosserat::SE2<double>::exp(tangent);
     std::cout << "Recovered angle: " << recovered.angle() << " radians\n";
     std::cout << "Recovered translation: [" << recovered.translation().transpose() << "]\n";
-    
+
     // Create directly from tangent vector
     Eigen::Vector3d new_tangent;
     new_tangent << M_PI/6.0, 3.0, 4.0;
     auto new_transform = Cosserat::SE2<double>::exp(new_tangent);
-    
+
     return 0;
 }
 ```
@@ -146,29 +148,29 @@ int main() {
 int main() {
     // Create an SE(2) element
     Cosserat::SE2<double> transform(M_PI/4.0, 1.0, 2.0);
-    
+
     // Transform a single point
     Eigen::Vector2d point(3.0, 4.0);
     Eigen::Vector2d transformed_point = transform.act(point);
     std::cout << "Original point: [" << point.transpose() << "]\n";
     std::cout << "Transformed point: [" << transformed_point.transpose() << "]\n";
-    
+
     // Transform multiple points
     std::vector<Eigen::Vector2d> points = {
         Eigen::Vector2d(1.0, 0.0),
         Eigen::Vector2d(0.0, 1.0),
         Eigen::Vector2d(1.0, 1.0)
     };
-    
+
     std::vector<Eigen::Vector2d> transformed_points;
     for (const auto& p : points) {
         transformed_points.push_back(transform.act(p));
     }
-    
+
     // Check that applying the transformation twice is equivalent to composing
     Eigen::Vector2d twice_transformed = transform.act(transform.act(point));
     Eigen::Vector2d composed_transform = transform.compose(transform).act(point);
-    
+
     return 0;
 }
 ```
@@ -183,4 +185,3 @@ int main() {
 6. **When working with velocities**, use the Lie algebra representation which directly corresponds to angular and linear velocities.
 7. **For small displacements**, the exponential map can be approximated, but use the full implementation for general cases.
 8. **Remember that SE(2) is not commutative** - the order of composition matters.
-

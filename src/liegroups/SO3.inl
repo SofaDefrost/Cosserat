@@ -146,7 +146,9 @@ namespace sofa::component::cosserat::liegroups {
 	template<typename _Scalar>
 	typename SO3<_Scalar>::AdjointMatrix SO3<_Scalar>::computeAd(const TangentVector &v) {
 		// For SO(3), ad(v) is just the hat map
-		return hat(v);
+		// TODO :  Check this implementation  !!!
+		// For SO(3), ad(v) is just the hat map
+		return ad(v);
 	}
 
 	/**

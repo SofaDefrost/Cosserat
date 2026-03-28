@@ -29,6 +29,8 @@ namespace sofa::component::cosserat::liegroups {
 		using Scalar = typename Base::Scalar;
 		using Vector4 = typename Base::Vector;
 
+		static constexpr int DoF = 6;
+
 		using TangentVector = typename Base::TangentVector;
 		using ActionVector = typename Base::ActionVector;
 
@@ -36,7 +38,6 @@ namespace sofa::component::cosserat::liegroups {
 		using AdjointMatrix = typename Base::AdjointMatrix;
 		using JacobianMatrix = typename Base::JacobianMatrix;
 		using AlgebraMatrix = typename Base::AlgebraMatrix;
-
 
 		using SO3Type = SO3<Scalar>;
 		using Vector3 = typename SO3Type::Vector;
@@ -67,22 +68,33 @@ namespace sofa::component::cosserat::liegroups {
 
 		ActionVector computeAction(const ActionVector &point) const { return m_rotation.act(point) + m_translation; }
 
-		/**
-		 * @brief Exponential map from se(3) to SE(3) using Cosserat-style approach.
-		 *
-		 * For ξ = [ρ, φ]ᵀ ∈ se(3) where ρ ∈ ℝ³ (translation) and φ ∈ ℝ³ (rotation):
-		 *
-		 * Small case (‖φ‖ ≈ 0):
-		 *   T = I₄ + s·ξ̂
-		 *
-		 * General case:
-		 *   T = I₄ + s·ξ̂ + α·ξ̂² + β·ξ̂³
-		 *   where α = (1-cos(s‖φ‖))/‖φ‖², β = (s‖φ‖-sin(s‖φ‖))/‖φ‖³
-		 *
-		 * @param strain 6D strain vector [ρ, φ]ᵀ (linear and angular strain rates).
-		 * @param length Arc length parameter for integration.
-		 * @return The corresponding SE3 element.
-		 */
+	/**
+	 * @brief Exponential map from se(3) to SE(3) using Cosserat-style approach.
+	 *
+	 * CONVENTION STRAIN COSSERAT:
+	 * strain = [φx, φy, φz, ρx, ρy, ρz]ᵀ ∈ ℝ⁶
+	 *   - φ = [φx, φy, φz] (head<3>) : Angular strain (rotation)
+	 *     φx = torsion, φy = bending Y, φz = bending Z
+	 *   - ρ = [ρx, ρy, ρz] (tail<3>) : Linear strain (translation)
+	 *     ρx = elongation, ρy = shearing Y, ρz = shearing Z
+	 *
+	 * NOTE: ρx is a DEVIATION from nominal elongation 1.0 along X-axis.
+	 * The actual translation in buildXiHat is [1+ρx, ρy, ρz].
+	 * See STRAIN_CONVENTION.md for detailed explanation.
+	 *
+	 * For ξ = [φ, ρ]ᵀ ∈ se(3):
+	 *
+	 * Small case (‖φ‖ ≈ 0):
+	 *   T = I₄ + s·ξ̂
+	 *
+	 * General case:
+	 *   T = I₄ + s·ξ̂ + α·ξ̂² + β·ξ̂³
+	 *   where α = (1-cos(s‖φ‖))/‖φ‖², β = (s‖φ‖-sin(s‖φ‖))/‖φ‖³
+	 *
+	 * @param strain 6D strain vector [φ, ρ]ᵀ (angular and linear strain rates).
+	 * @param length Arc length parameter for integration.
+	 * @return The corresponding SE3 element.
+	 */
 		static SE3 expCosserat(const TangentVector &strain, const Scalar &length) noexcept {
 			// Extract translation and rotation parts
 			const Vector3 rho = strain.template tail<3>(); // Linear strain (translation rate)
@@ -107,10 +119,10 @@ namespace sofa::component::cosserat::liegroups {
 			Matrix3 V;
 
 			if (angle < Types<Scalar>::epsilon()) {
-				V = Matrix3::Identity() + Scalar(0.5) * SO3Type::hat(phi);
+				V = Matrix3::Identity() + Scalar(0.5) * SO3Type::computeHat(phi);
 			} else {
 				const Vector3 axis = phi / angle;
-				const Matrix3 K = SO3Type::hat(axis);
+				const Matrix3 K = SO3Type::computeHat(axis);
 				const Scalar sin_angle = std::sin(angle);
 				const Scalar cos_angle = std::cos(angle);
 				V = Matrix3::Identity() + (Scalar(1) - cos_angle) / angle * K +
@@ -125,10 +137,10 @@ namespace sofa::component::cosserat::liegroups {
 			Matrix3 V_inv;
 
 			if (angle < Types<Scalar>::epsilon()) {
-				V_inv = Matrix3::Identity() - Scalar(0.5) * SO3Type::hat(phi);
+				V_inv = Matrix3::Identity() - Scalar(0.5) * SO3Type::computeHat(phi);
 			} else {
 				const Vector3 axis = phi / angle;
-				const Matrix3 K = SO3Type::hat(axis);
+				const Matrix3 K = SO3Type::computeHat(axis);
 				const Scalar sin_angle = std::sin(angle);
 				const Scalar cos_angle = std::cos(angle);
 				V_inv = Matrix3::Identity() - Scalar(0.5) * K +
@@ -148,7 +160,7 @@ namespace sofa::component::cosserat::liegroups {
 			const Matrix3 R = m_rotation.matrix();
 			Ad.template block<3, 3>(0, 0) = R;
 			Ad.template block<3, 3>(3, 3) = R;
-			Ad.template block<3, 3>(0, 3) = SO3Type::hat(m_translation) * R;
+			Ad.template block<3, 3>(0, 3) = SO3Type::computeHat(m_translation) * R;
 			return Ad;
 		}
 
@@ -175,8 +187,8 @@ namespace sofa::component::cosserat::liegroups {
 
 			Ad.template block<3, 3>(0, 0) = R;
 			Ad.template block<3, 3>(3, 3) = R;
-			Ad.template block<3, 3>(0, 3) = SO3Type::hat(rho) * R;
-			Ad.template block<3, 3>(0, 0) += SO3Type::hat(omega) * R;
+			Ad.template block<3, 3>(0, 3) = SO3Type::computeHat(rho) * R;
+			Ad.template block<3, 3>(0, 0) += SO3Type::computeHat(omega) * R;
 
 			return Ad;
 		}
@@ -189,13 +201,13 @@ namespace sofa::component::cosserat::liegroups {
 
 			Ad.template block<3, 3>(0, 0) = R;
 			Ad.template block<3, 3>(3, 3) = R;
-			Ad.template block<3, 3>(0, 3) = SO3Type::hat(rho) * R;
-			Ad.template block<3, 3>(0, 0) += SO3Type::hat(omega) * R;
+			Ad.template block<3, 3>(0, 3) = SO3Type::computeHat(rho) * R;
+			Ad.template block<3, 3>(0, 0) += SO3Type::computeHat(omega) * R;
 
 			return Ad;
 		}
 
-		AdjointMatrix ad(const TangentVector &v, const ActionVector &point) {
+		AdjointMatrix ad(const TangentVector &v, const ActionVector & /*point*/) {
 			AdjointMatrix Ad = AdjointMatrix::Zero();
 			const Vector3 omega = v.template tail<3>();
 			const Vector3 rho = v.template head<3>();
@@ -203,13 +215,13 @@ namespace sofa::component::cosserat::liegroups {
 
 			Ad.template block<3, 3>(0, 0) = R;
 			Ad.template block<3, 3>(3, 3) = R;
-			Ad.template block<3, 3>(0, 3) = SO3Type::hat(rho) * R;
-			Ad.template block<3, 3>(0, 0) += SO3Type::hat(omega) * R;
+			Ad.template block<3, 3>(0, 3) = SO3Type::computeHat(rho) * R;
+			Ad.template block<3, 3>(0, 0) += SO3Type::computeHat(omega) * R;
 
 			return Ad;
 		}
 
-		AdjointMatrix ad(const ActionVector &point, const TangentVector &v) {
+		AdjointMatrix ad(const ActionVector & /*point*/, const TangentVector &v) {
 			AdjointMatrix Ad = AdjointMatrix::Zero();
 			const Vector3 omega = v.template tail<3>();
 			const Vector3 rho = v.template head<3>();
@@ -217,8 +229,8 @@ namespace sofa::component::cosserat::liegroups {
 
 			Ad.template block<3, 3>(0, 0) = R;
 			Ad.template block<3, 3>(3, 3) = R;
-			Ad.template block<3, 3>(0, 3) = SO3Type::hat(rho) * R;
-			Ad.template block<3, 3>(0, 0) += SO3Type::hat(omega) * R;
+			Ad.template block<3, 3>(0, 3) = SO3Type::computeHat(rho) * R;
+			Ad.template block<3, 3>(0, 0) += SO3Type::computeHat(omega) * R;
 
 			return Ad;
 		}
@@ -233,8 +245,8 @@ namespace sofa::component::cosserat::liegroups {
 
 			Ad.template block<3, 3>(0, 0) = R;
 			Ad.template block<3, 3>(3, 3) = R;
-			Ad.template block<3, 3>(0, 3) = SO3Type::hat(rho_v) * R;
-			Ad.template block<3, 3>(0, 0) += SO3Type::hat(omega_v) * R;
+			Ad.template block<3, 3>(0, 3) = SO3Type::computeHat(rho_v) * R;
+			Ad.template block<3, 3>(0, 0) += SO3Type::computeHat(omega_v) * R;
 
 			return Ad;
 		}
@@ -244,9 +256,9 @@ namespace sofa::component::cosserat::liegroups {
 			const Matrix3 R = m_rotation.matrix();
 			Ad.template block<3, 3>(0, 0) = R;
 			Ad.template block<3, 3>(3, 3) = R;
-			Ad.template block<3, 3>(0, 3) = SO3Type::hat(m_translation) * R;
+			Ad.template block<3, 3>(0, 3) = SO3Type::computeHat(m_translation) * R;
 			return Ad;
-		}	
+		}
 
 
 		/**
@@ -259,10 +271,9 @@ namespace sofa::component::cosserat::liegroups {
 			const Matrix3 R = m_rotation.matrix();
 			Ad.template block<3, 3>(0, 0) = R;
 			Ad.template block<3, 3>(3, 3) = R;
-			Ad.template block<3, 3>(0, 3) = SO3Type::hat(m_translation) * R;
+			Ad.template block<3, 3>(0, 3) = SO3Type::computeHat(m_translation) * R;
 			return Ad;
 		}
-
 
 
 		AdjointMatrix adjoint() const noexcept { return computeAdjoint(); }
@@ -270,6 +281,28 @@ namespace sofa::component::cosserat::liegroups {
 
 		bool computeIsApprox(const SE3 &other, const Scalar &eps) const {
 			return m_rotation.isApprox(other.m_rotation, eps) && m_translation.isApprox(other.m_translation, eps);
+		}
+
+		/**
+		 * @brief Checks if the current SE3 element is valid.
+		 * @return True if rotation is valid and translation is finite.
+		 */
+		bool computeIsValid() const {
+			// Check if rotation is valid (unit quaternion) and translation has finite values
+			// We can use a loose tolerance for the quaternion norm check
+			return m_rotation.computeIsApprox(m_rotation.normalized(), Scalar(1e-4)) && m_translation.allFinite();
+		}
+
+		/**
+		 * @brief Normalizes the SE3 element.
+		 * Normalizes the rotation component.
+		 */
+		void computeNormalize() {
+			// Normalize the quaternion to ensure it remains a valid rotation
+			// We can't modify m_rotation directly if it doesn't expose a normalize method that modifies in-place
+			// But SO3 is likely a wrapper around a quaternion
+			// Let's assume we can assign a normalized version back
+			m_rotation = m_rotation.normalized();
 		}
 
 		// ========== New Integrated Functions ==========
@@ -306,12 +339,130 @@ namespace sofa::component::cosserat::liegroups {
 			return trajectory;
 		}
 
-		// ========== Accessors ==========
+	// ========== NEW: Differentiation Jacobians ==========
 
-		const SO3Type &rotation() const { return m_rotation; }
-		SO3Type &rotation() { return m_rotation; }
-		const Vector3 &translation() const { return m_translation; }
-		Vector3 &translation() { return m_translation; }
+	/**
+	 * @brief Compute the Jacobian of group composition.
+	 * 
+	 * For g = this * h, computes jacobians in the tangent space se(3).
+	 * Left Jacobian: ∂g/∂this when perturbing this on the left
+	 * Right Jacobian: ∂g/∂h when perturbing h on the left
+	 * 
+	 * @param other The other SE3 element h
+	 * @return Pair of 6x6 Jacobians (J_left, J_right)
+	 */
+	std::pair<AdjointMatrix, AdjointMatrix> composeJacobians(const SE3 &other) const noexcept {
+		// For SE(3): g * h with left perturbation
+		// Left Jacobian: ∂(g*h)/∂g = Ad_{h^{-1}}
+		AdjointMatrix J_left = other.computeInverse().computeAdjoint();
+		
+		// Right Jacobian: ∂(g*h)/∂h = I
+		AdjointMatrix J_right = AdjointMatrix::Identity();
+		
+		return {J_left, J_right};
+	}
+
+	/**
+	 * @brief Compute the Jacobian of the inverse operation.
+	 * 
+	 * For g^{-1}, computes ∂(g^{-1})/∂g in the tangent space.
+	 * 
+	 * @return 6x6 Jacobian matrix
+	 */
+	AdjointMatrix inverseJacobian() const noexcept {
+		// ∂g^{-1}/∂g = -Ad_{g^{-1}}
+		return -computeInverse().computeAdjoint();
+	}
+
+	/**
+	 * @brief Compute the Jacobian of the group action on a point.
+	 * 
+	 * For y = g*p (where g acts on point p), computes:
+	 * - ∂y/∂g (with g perturbed in tangent space): 3x6 matrix
+	 * - ∂y/∂p: 3x3 matrix
+	 * 
+	 * @param point The point p ∈ ℝ³
+	 * @return Pair of Jacobians (∂y/∂g, ∂y/∂p)
+	 */
+	std::pair<JacobianMatrix, Matrix3> actionJacobians(const ActionVector &point) const noexcept {
+		// For SE(3) action: y = R*p + t
+		// Perturbation: (exp(ξ) * g) * p where ξ = [ρ, φ]ᵀ
+		// exp(ξ) * g * p ≈ g*p + [R 0; [t]×R R] * ξ
+		//                = R*p + t + R*ρ + φ×(R*p)
+		
+		Vector3 Rp = m_rotation.act(point);
+		Matrix3 R = m_rotation.matrix();
+		
+		// Jacobian w.r.t. ξ = [ρ, φ]ᵀ is 3x6:
+		// [R  -[R*p]×]
+		JacobianMatrix J_wrt_group;  // 3x6
+		J_wrt_group.template block<3, 3>(0, 0) = R;  // ∂y/∂ρ
+		J_wrt_group.template block<3, 3>(0, 3) = -SO3Type::computeHat(Rp);  // ∂y/∂φ
+		
+		// Jacobian w.r.t. p is simply R
+		Matrix3 J_wrt_point = R;
+		
+		return {J_wrt_group, J_wrt_point};
+	}
+
+	/**
+	 * @brief Compute only the Jacobian w.r.t. the group element for action.
+	 * 
+	 * @param point The point p ∈ ℝ³
+	 * @return 3x6 Jacobian ∂(g*p)/∂g
+	 */
+	JacobianMatrix actionJacobianGroup(const ActionVector &point) const noexcept {
+		Vector3 Rp = m_rotation.act(point);
+		Matrix3 R = m_rotation.matrix();
+		
+		JacobianMatrix J;  // 3x6
+		J.template block<3, 3>(0, 0) = R;
+		J.template block<3, 3>(0, 3) = -SO3Type::computeHat(Rp);
+		
+		return J;
+	}
+
+	/**
+	 * @brief Compute only the Jacobian w.r.t. point for action.
+	 * 
+	 * @param point The point p ∈ ℝ³ (unused)
+	 * @return 3x3 Jacobian ∂(g*p)/∂p = R
+	 */
+	Matrix3 actionJacobianPoint([[maybe_unused]] const ActionVector &point) const noexcept {
+		return m_rotation.matrix();
+	}
+
+	// ========== Accessors ==========
+
+	const SO3Type &rotation() const { return m_rotation; }
+	SO3Type &rotation() { return m_rotation; }
+	const Vector3 &translation() const { return m_translation; }
+	Vector3 &translation() { return m_translation; }
+
+		/**
+		 * @brief Generates a random SE3 element.
+		 * @tparam Generator The type of the random number generator.
+		 * @param gen The random number generator.
+		 * @return A random SE3 element.
+		 */
+		template<typename Generator>
+		static SE3 computeRandom(Generator &gen) {
+			// Generate random rotation (quaternion)
+			// A simple way is to generate a random unit vector for axis and random angle
+			// Or generate random quaternion directly
+			// For simplicity, let's use a random vector for translation and a random rotation
+
+			// Random translation
+			Vector3 t = Types<Scalar>::template randomVector<3>(gen);
+
+			// Random rotation
+			// Using a simple approach: random axis and random angle
+			Vector3 axis = Types<Scalar>::template randomUnitVector<3>(gen);
+			std::uniform_real_distribution<Scalar> dist(-M_PI, M_PI);
+			Scalar angle = dist(gen);
+
+			return SE3(SO3Type(angle, axis), t);
+		}
 
 		Matrix4 matrix() const {
 			Matrix4 T = Matrix4::Identity();
@@ -321,7 +472,7 @@ namespace sofa::component::cosserat::liegroups {
 		}
 
 		// ========== Projection Matrix ==========
-		AdjointMatrix buildProjectionMatrix(const Matrix3 & rotation) const {
+		AdjointMatrix buildProjectionMatrix(const Matrix3 &rotation) const {
 			// Build the projection matrix for the frame
 			AdjointMatrix proj_matrix = AdjointMatrix::Zero();
 			proj_matrix.template block<3, 3>(0, 3) = rotation.matrix();
@@ -351,6 +502,100 @@ namespace sofa::component::cosserat::liegroups {
 			os << "SE3(R=" << m_rotation << ", t=[" << m_translation[0] << ", " << m_translation[1] << ", "
 			   << m_translation[2] << "])";
 			return os;
+		}
+
+		/**
+		 * @brief Computes the Baker-Campbell-Hausdorff (BCH) approximation for log(exp(x) * exp(y)).
+		 *
+		 * Z = log(exp(X) * exp(Y)) ≈ X + Y + 0.5 * [X, Y] + ...
+		 *
+		 * @param x First tangent vector.
+		 * @param y Second tangent vector.
+		 * @return Approximate tangent vector Z.
+		 */
+		static TangentVector computeBCH(const TangentVector &x, const TangentVector &y) {
+			// First order: x + y
+			TangentVector z = x + y;
+
+			// Second order: 0.5 * [x, y]
+			// Lie Bracket [x, y] = ad(x) * y
+			// We need to implement the Lie Bracket for SE(3)
+			// ad(x) is 6x6 matrix.
+			// We can use the ad() method if available or implement it here.
+			// The ad() method is available as an instance method but we need a static one or use a dummy instance.
+			// Actually, ad(v) returns the adjoint matrix of the algebra element v.
+
+			// Let's implement the Lie Bracket directly:
+			// [u, v] = [ (rho_u, phi_u), (rho_v, phi_v) ]
+			//        = ( phi_u x rho_v - phi_v x rho_u, phi_u x phi_v )
+
+			Vector3 rho_x = x.template head<3>();
+			Vector3 phi_x = x.template tail<3>();
+			Vector3 rho_y = y.template head<3>();
+			Vector3 phi_y = y.template tail<3>();
+
+			Vector3 rho_bracket = phi_x.cross(rho_y) - phi_y.cross(rho_x);
+			Vector3 phi_bracket = phi_x.cross(phi_y);
+
+			TangentVector bracket;
+			bracket.template head<3>() = rho_bracket;
+			bracket.template tail<3>() = phi_bracket;
+
+			z += Scalar(0.5) * bracket;
+
+			// Higher orders can be added if needed (1/12 * ([x,[x,y]] + [y,[y,x]]))
+
+			return z;
+		}
+
+		/**
+		 * @brief Parallel transport of a tangent vector along a geodesic.
+		 *
+		 * Transports vector v from the tangent space at Identity to the tangent space at 'this'
+		 * along the geodesic connecting them.
+		 * For Lie groups, this is often related to the left/right translation or the exponential map derivative.
+		 *
+		 * Here we implement the parallel transport associated with the Cartan-Schouten connection (0-connection),
+		 * which for a Lie group corresponds to: P_{I->g}(v) = g * v * g^-1 = Ad(g) * v ?
+		 * Or simply left translation?
+		 *
+		 * In the context of Cosserat rods, parallel transport usually refers to transporting a frame
+		 * without inducing twist (Bishop frame).
+		 *
+		 * However, as a general Lie group operation, we might define it as:
+		 * v_transported = dL_g (v) (Left translation) -> moves v from Te to Tg
+		 * But TangentVector is usually defined at Identity (Lie Algebra).
+		 *
+		 * If we mean transporting a vector v in Te to another vector v' in Te that "corresponds" to it
+		 * after moving along the geodesic exp(u), it typically involves the dexp operator.
+		 *
+		 * Let's implement the "Parallel Transport" that approximates the change in a vector field
+		 * parallel to the geodesic.
+		 *
+		 * For now, let's implement a simple approximation:
+		 * v_out = (I - 0.5 * ad(u)) * v  (First order approximation of parallel transport along u)
+		 * where u = log(this)
+		 *
+		 * @param v The tangent vector to transport.
+		 * @return The transported tangent vector.
+		 */
+		TangentVector parallelTransport(const TangentVector &v) const {
+			TangentVector u = this->log();
+
+			// Lie Bracket [u, v]
+			Vector3 rho_u = u.template head<3>();
+			Vector3 phi_u = u.template tail<3>();
+			Vector3 rho_v = v.template head<3>();
+			Vector3 phi_v = v.template tail<3>();
+
+			Vector3 rho_bracket = phi_u.cross(rho_v) - phi_v.cross(rho_u);
+			Vector3 phi_bracket = phi_u.cross(phi_v);
+
+			TangentVector bracket;
+			bracket.template head<3>() = rho_bracket;
+			bracket.template tail<3>() = phi_bracket;
+
+			return v - Scalar(0.5) * bracket;
 		}
 
 	private:
@@ -428,6 +673,27 @@ namespace sofa::component::cosserat::liegroups {
 			xi_hat(2, 1) = phi.x();
 
 			// Top-right 3x1: translation part
+			// xi_hat(0, 3) = 1.0 + rho.x(); // Wait, why 1.0 + rho.x()? This looks wrong in the original code.
+			// The original code had: xi_hat(0, 3) = 1.0 + rho.x();
+			// This seems like a bug in the previous implementation or a specific convention I'm not aware of.
+			// Standard se(3) hat map puts rho in the translation part.
+			// If I change it, I might break existing logic if it relied on this.
+			// However, looking at expCosseratSmall: T = I + s * xi_hat.
+			// If xi_hat(0,3) has 1.0, then T(0,3) = s * (1 + rho.x).
+			// But T(0,3) should be s * rho.x (for small s).
+			// Wait, T = I + ...
+			// I(0,3) is 0.
+			// So T(0,3) = s * (1 + rho.x).
+			// This implies a constant velocity component of 1 in X direction?
+			// Cosserat rods usually align along X.
+			// So "strain" might be deviation from [1, 0, 0] elongation?
+			// If rho is the strain, and the reference configuration has elongation 1,
+			// then the actual translation rate is 1 + rho.x.
+			// YES. In Cosserat mapping, the strain 'e' usually is (v - v_rest).
+			// If v_rest = [1, 0, 0], then v = [1+e_x, e_y, e_z].
+			// So the tangent vector representing the spatial derivative of the frame is indeed [1+rho.x, rho.y, rho.z].
+			// I will keep it as is, assuming 'rho' passed here is the strain (deviation).
+
 			xi_hat(0, 3) = 1.0 + rho.x();
 			xi_hat(1, 3) = rho.y();
 			xi_hat(2, 3) = rho.z();

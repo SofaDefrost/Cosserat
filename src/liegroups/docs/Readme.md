@@ -16,25 +16,149 @@ This library implements the following Lie groups:
 - **RealSpace**: Euclidean vector space ℝⁿ
 - **SO(2)**: Special Orthogonal group in 2D (rotations in a plane)
 - **SE(2)**: Special Euclidean group in 2D (rigid transformations in a plane)
-
-Future implementations will include:
-
 - **SO(3)**: Special Orthogonal group in 3D (rotations in 3D space)
 - **SE(3)**: Special Euclidean group in 3D (rigid transformations in 3D space)
-- **Sim(3)**: Similarity transformations in 3D space
+- **Sim(3)**: Similarity transformations in 3D space (rotation + translation + scaling)
+- **SE(2,3)**: Extended Special Euclidean group in 3D (rigid transformations with linear velocity)
+- **SGal(3)**: Special Galilean group in 3D (Galilean transformations with time)
+
+Additional utilities:
+
+- **Bundle**: Product manifold for combining multiple Lie groups
+- **GaussianOnManifold**: Gaussian distributions on Lie groups for uncertainty propagation
 
 ## Installation
 
-The Lie groups library is part of the Cosserat plugin. Installation requirements:
+The Lie groups library is part of the Cosserat plugin. Follow these steps to set up the development environment:
 
-- C++14 or higher
-- Eigen 3.3 or higher
-- Sofa Framework
+### Prerequisites
+
+- **C++ Compiler**: C++14 or higher (GCC 7+, Clang 5+, MSVC 2017+)
+- **CMake**: Version 3.10 or higher
+- **Eigen**: Version 3.3 or higher
+- **SOFA Framework**: Compatible version for the Cosserat plugin
+
+### Building from Source
+
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/your-repo/cosserat-plugin.git
+   cd cosserat-plugin
+   ```
+
+2. **Create a build directory**:
+   ```bash
+   mkdir build && cd build
+   ```
+
+3. **Configure with CMake**:
+   ```bash
+   cmake .. -DCMAKE_BUILD_TYPE=Release
+   ```
+
+   For development with debug symbols:
+   ```bash
+   cmake .. -DCMAKE_BUILD_TYPE=Debug
+   ```
+
+4. **Build the project**:
+   ```bash
+   make -j$(nproc)
+   ```
+
+5. **Install (optional)**:
+   ```bash
+   make install
+   ```
+
+### Integration with SOFA
+
+To use the Lie groups in your SOFA-based Cosserat simulations:
+
+1. **Include headers**:
+   ```cpp
+   #include <Cosserat/liegroups/SE3.h>
+   #include <Cosserat/liegroups/SO3.h>
+   // etc.
+   ```
+
+2. **Link libraries**:
+   In your CMakeLists.txt:
+   ```cmake
+   find_package(Cosserat REQUIRED)
+   target_link_libraries(your_target Cosserat::liegroups)
+   ```
+
+### Running Tests
+
+After building, run the unit tests:
+```bash
+cd build
+ctest --output-on-failure
+```
+
+Or run specific Lie groups tests:
+```bash
+./bin/test_liegroups
+```
+
+### Troubleshooting
+
+#### Build Issues
+
+- **Eigen not found**: Ensure Eigen is installed and CMake can find it. You may need to set `EIGEN3_INCLUDE_DIR`:
+  ```bash
+  cmake .. -DEIGEN3_INCLUDE_DIR=/path/to/eigen
+  ```
+
+- **SOFA compatibility**: Check that your SOFA version is compatible with the Cosserat plugin. Refer to the plugin documentation for version requirements.
+
+- **Compilation errors**: Ensure your compiler supports C++14 features. Update to GCC 7+, Clang 5+, or MSVC 2017+ if needed.
+
+- **CMake errors**: Clear the build directory and reconfigure:
+  ```bash
+  rm -rf build && mkdir build && cd build && cmake ..
+  ```
+
+#### Runtime Issues
+
+- **Linking errors**: Ensure the Lie groups library is properly linked. Check your CMakeLists.txt includes:
+  ```cmake
+  target_link_libraries(your_target Cosserat::liegroups)
+  ```
+
+- **Memory issues**: Some operations allocate matrices. Ensure adequate stack/heap space for large problems.
+
+#### Usage Issues
+
+- **Unexpected transformation results**: Double-check composition order. `A.compose(B)` applies B after A.
+
+- **Numerical instability**: For long transformation chains, consider periodic normalization:
+  ```cpp
+  pose = pose.normalize(); // If available
+  ```
+
+- **Performance problems**: Cache frequently used matrices and avoid repeated conversions between representations.
+
+#### Common Mistakes
+
+1. **Wrong composition order**: Remember that `A.compose(B)` means "B after A"
+2. **Uninitialized matrices**: Always initialize Eigen matrices before use
+3. **Dimension mismatches**: Check vector/matrix sizes match group dimensions
+4. **Coordinate frame confusion**: Ensure all transformations use consistent coordinate frames
+
+#### Getting Help
+
+- Check the [detailed documentation](docs/) for your specific Lie group
+- Look at [examples](../examples/) for usage patterns
+- Run [unit tests](../tests/) to verify your setup
+- Check [benchmarks](docs/benchmarks.md) for performance guidance
 
 ## Dependencies
 
-- Eigen: For linear algebra operations
-- CMake: For building the project
+- **Eigen**: For linear algebra operations and matrix computations
+- **CMake**: For building the project and managing dependencies
+- **SOFA**: Framework integration for Cosserat rod simulations
 
 ## Basic Usage
 
@@ -109,7 +233,18 @@ For more detailed documentation, including mathematical foundations, implementat
 - [RealSpace Implementation](docs/realspace.md)
 - [SO(2) Implementation](docs/so2.md)
 - [SE(2) Implementation](docs/se2.md)
+- [SO(3) Implementation](docs/so3.md)
+- [SE(3) Implementation](docs/se3.md)
+- [Sim(3) Implementation](docs/sim3.md)
+- [SE(2,3) Implementation](docs/se23.md)
+- [SGal(3) Implementation](docs/sgal3.md)
+- [Bundle Implementation](docs/bundle.md)
+- [Gaussian on Manifold](docs/gaussian_on_manifold.md)
+- [Advanced Topics](docs/advanced_topics.md)
+- [Usage Guide](docs/USAGE.md)
 - [Performance Benchmarks](docs/benchmarks.md)
+- [Comparison of Implementations](docs/comparison.md)
+- [Dependency Tree](docs/dependency_tree.md)
 
 ## Benchmarking
 

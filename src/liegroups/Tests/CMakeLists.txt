@@ -1,43 +1,77 @@
 cmake_minimum_required(VERSION 3.12)
+project(Cosserat_liegroups_tests VERSION 1.4)
+find_package(Sofa.Testing REQUIRED)
+sofa_find_package(Sofa.SimpleApi REQUIRED)
 
 # Set project for liegroups tests
-project(Cosserat_liegroups_tests)
+
 
 # Add test sources
 set(LIEGROUPS_TEST_FILES
-    liegroups/SO2Test.cpp
-    liegroups/UtilsTest.cpp
-    liegroups/LieGroupBaseTest.cpp
-    liegroups/TypesTest.cpp
-    liegroups/RealSpaceTest.cpp
-    liegroups/SE2Test.cpp
-    liegroups/SE23Test.cpp
-    liegroups/SO3Test.cpp
-    liegroups/SGal3Test.cpp
+        integration/SO2Test.cpp
+        integration/UtilsTest.cpp
+        integration/LieGroupBaseTest.cpp
+        integration/TypesTest.cpp
+        integration/RealSpaceTest.cpp
+        integration/SE2Test.cpp
+        integration/SE23Test.cpp
+    
+        # Unit tests
+        unit/test_jacobian_verification.cpp
+        unit/test_HookeSerat_Phase1.cpp
+        unit/test_Phase2.cpp
+        unit/test_HookeSerat_Comprehensive.cpp
+        unit/test_MultiSectionBeam.cpp
+        unit/test_AdvancedFeatures.cpp
+        
+        # Differentiation tests
+        differentiation/test_finite_differences.cpp
+        differentiation/test_analytical_jacobians.cpp
+        differentiation/test_trajectory_optimization.cpp
+        
+        # Control tests
+        control/test_ilqr_control.cpp
+        
+        # Calibration tests
+        calibration/test_parameter_estimation.cpp
 )
 
-# If unit tests are enabled
-if(UNIT_TEST)
-    # Create test executable
-    add_executable(${PROJECT_NAME} ${LIEGROUPS_TEST_FILES})
+# Add autodiff test if enabled
+if(COSSERAT_WITH_AUTODIFF)
+    list(APPEND LIEGROUPS_TEST_FILES
+        differentiation/test_autodiff_integration.cpp
+    )
+endif()
 
+# If unit tests are enabled
+message("=======> Buildin Cosserat lieGroup test", ${UNIT_TEST})
+
+    # Create test executable
+    message("=======> Buildin Cosserat lieGroup test" )
+    add_executable(${PROJECT_NAME} ${LIEGROUPS_TEST_FILES})
     # Link against required libraries
     target_link_libraries(${PROJECT_NAME}
-        gtest
-        gtest_main
-        SofaGTestMain
+        Sofa.Testing
+        Cosserat
+        Sofa.SimpleApi
+        #gtest
+        #gtest_main
+        #SofaGTestMain
     )
 
     # Include directories
     target_include_directories(${PROJECT_NAME} PRIVATE
         ${CMAKE_SOURCE_DIR}/src
     )
+    add_definitions("-DCOSSETRAT_TEST_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}/\"")
 
     # Add test
-    add_test(NAME liegroups_tests COMMAND ${PROJECT_NAME})
-endif()
+    add_test(NAME ${PROJECT_NAME} COMMAND ${PROJECT_NAME})
 
-# Add benchmarks if enabled
+
+
+# Add benchmarks subdirectory if benchmarks are enabled
 if(COSSERAT_BUILD_BENCHMARKS)
     add_subdirectory(benchmarks)
 endif()
+
