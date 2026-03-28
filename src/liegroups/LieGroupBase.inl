@@ -275,11 +275,16 @@ namespace sofa::component::cosserat::liegroups {
 	}
 
 	/**
-	 * @brief Computes the differential of the exponential map (dexp).
+	 * @brief Alternative implementation of the differential of the exponential map.
 	 * This function calculates the Jacobian of the exponential map, which is
 	 * crucial for relating velocities in the Lie algebra to velocities on the Lie
 	 * group. It uses Taylor series expansion for small input values for numerical
 	 * stability and a closed-form expression for larger values.
+	 * 
+	 * NOTE: This is an alternative implementation to the wrapper dexp() in LieGroupBase.h
+	 * that calls rightJacobian(). Both implementations should be equivalent but need
+	 * comparison/validation. This version uses direct computation with ad() operator.
+	 * 
 	 * @tparam Derived The derived class implementing the specific Lie group.
 	 * @tparam _Scalar The scalar type used for computations.
 	 * @tparam _Dim The dimension of the group representation.
@@ -293,7 +298,7 @@ namespace sofa::component::cosserat::liegroups {
 	template<typename Derived, FloatingPoint _Scalar, int _Dim, int _AlgebraDim, int _ActionDim>
 		requires(_Dim > 0 && _AlgebraDim > 0 && _ActionDim > 0)
 	inline typename LieGroupBase<Derived, _Scalar, _Dim, _AlgebraDim, _ActionDim>::AdjointMatrix
-	LieGroupBase<Derived, _Scalar, _Dim, _AlgebraDim, _ActionDim>::dexp(const TangentVector &v) {
+	LieGroupBase<Derived, _Scalar, _Dim, _AlgebraDim, _ActionDim>::dexp_alternative(const TangentVector &v) {
 		using Matrix = typename Derived::AdjointMatrix;
 		using Scalar = typename Derived::Scalar;
 		using Types = typename Derived::Types;
@@ -333,11 +338,16 @@ namespace sofa::component::cosserat::liegroups {
 	}
 
 	/**
-	 * @brief Computes the inverse of the differential of the exponential map
-	 * (dexpInv). This function calculates the inverse Jacobian of the exponential
+	 * @brief Alternative implementation of the inverse differential of the exponential map.
+	 * This function calculates the inverse Jacobian of the exponential
 	 * map, useful for mapping velocities on the Lie group back to the Lie algebra.
 	 * It employs Taylor series expansion for small input values and a closed-form
 	 * expression for larger values to ensure numerical stability.
+	 * 
+	 * NOTE: This is an alternative implementation to the wrapper dexpInv() in LieGroupBase.h
+	 * that calls rightJacobianInverse(). Both implementations should be equivalent but need
+	 * comparison/validation. This version uses direct computation with ad() operator.
+	 * 
 	 * @tparam Derived The derived class implementing the specific Lie group.
 	 * @tparam _Scalar The scalar type used for computations.
 	 * @tparam _Dim The dimension of the group representation.
@@ -351,7 +361,7 @@ namespace sofa::component::cosserat::liegroups {
 	template<typename Derived, FloatingPoint _Scalar, int _Dim, int _AlgebraDim, int _ActionDim>
 		requires(_Dim > 0 && _AlgebraDim > 0 && _ActionDim > 0)
 	inline typename LieGroupBase<Derived, _Scalar, _Dim, _AlgebraDim, _ActionDim>::AdjointMatrix
-	LieGroupBase<Derived, _Scalar, _Dim, _AlgebraDim, _ActionDim>::dexpInv(const TangentVector &v) {
+	LieGroupBase<Derived, _Scalar, _Dim, _AlgebraDim, _ActionDim>::dexpInv_alternative(const TangentVector &v) {
 		using Matrix = typename Derived::AdjointMatrix;
 		using Scalar = typename Derived::Scalar;
 		using Types = typename Derived::Types;

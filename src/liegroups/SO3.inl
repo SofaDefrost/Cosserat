@@ -151,5 +151,111 @@ namespace sofa::component::cosserat::liegroups {
 		return ad(v);
 	}
 
+	/**
+	 * @brief Computes the right Jacobian of SO(3): Jr(ω)
+	 * 
+	 * Formula from Solà et al. (2021), Equation (143):
+	 *   Jr(θ) = I - (1-cos θ)/θ² [θ]× + (θ-sin θ)/θ³ [θ]²×
+	 * 
+	 * For small angles (θ < ε):
+	 *   Jr(θ) ≈ I - ½[θ]×
+	 * 
+	 * @tparam _Scalar The scalar type.
+	 * @param omega Angular velocity vector in ℝ³.
+	 * @return Right Jacobian matrix (3×3).
+	 */
+	template<typename _Scalar>
+	typename SO3<_Scalar>::AdjointMatrix SO3<_Scalar>::computeRightJacobian(const TangentVector &omega) noexcept {
+		const Scalar theta = omega.norm();
+		
+		// Small angle approximation
+		if (theta < Types<Scalar>::epsilon()) {
+			return Matrix::Identity() - Scalar(0.5) * hat(omega);
+		}
+		
+		// General case
+		const Matrix omega_hat = hat(omega);
+		const Matrix omega_hat2 = omega_hat * omega_hat;
+		const Scalar theta2 = theta * theta;
+		const Scalar theta3 = theta2 * theta;
+		const Scalar sin_theta = std::sin(theta);
+		const Scalar cos_theta = std::cos(theta);
+		
+		// Jr(θ) = I - (1-cos θ)/θ² [θ]× + (θ-sin θ)/θ³ [θ]²×
+		return Matrix::Identity() 
+			   - ((Scalar(1) - cos_theta) / theta2) * omega_hat
+			   + ((theta - sin_theta) / theta3) * omega_hat2;
+	}
+
+	/**
+	 * @brief Computes the left Jacobian of SO(3): Jl(ω)
+	 * 
+	 * Formula from Solà et al. (2021):
+	 *   Jl(θ) = Jr(-θ)
+	 * 
+	 * @tparam _Scalar The scalar type.
+	 * @param omega Angular velocity vector in ℝ³.
+	 * @return Left Jacobian matrix (3×3).
+	 */
+	template<typename _Scalar>
+	typename SO3<_Scalar>::AdjointMatrix SO3<_Scalar>::computeLeftJacobian(const TangentVector &omega) noexcept {
+		// Jl(θ) = Jr(-θ)
+		return computeRightJacobian(-omega);
+	}
+
+	/**
+	 * @brief Computes the inverse of the right Jacobian: Jr⁻¹(ω)
+	 * 
+	 * Formula from Solà et al. (2021), Equation (144):
+	 *   Jr⁻¹(θ) = I + ½[θ]× + (1/θ² - (1+cos θ)/(2θ sin θ))[θ]²×
+	 * 
+	 * For small angles (θ < ε):
+	 *   Jr⁻¹(θ) ≈ I + ½[θ]×
+	 * 
+	 * @tparam _Scalar The scalar type.
+	 * @param omega Angular velocity vector in ℝ³.
+	 * @return Inverse right Jacobian matrix (3×3).
+	 */
+	template<typename _Scalar>
+	typename SO3<_Scalar>::AdjointMatrix SO3<_Scalar>::computeRightJacobianInverse(const TangentVector &omega) noexcept {
+		const Scalar theta = omega.norm();
+		
+		// Small angle approximation
+		if (theta < Types<Scalar>::epsilon()) {
+			return Matrix::Identity() + Scalar(0.5) * hat(omega);
+		}
+		
+		// General case
+		const Matrix omega_hat = hat(omega);
+		const Matrix omega_hat2 = omega_hat * omega_hat;
+		const Scalar theta2 = theta * theta;
+		const Scalar sin_theta = std::sin(theta);
+		const Scalar cos_theta = std::cos(theta);
+		
+		// Coefficient for [θ]²× term
+		const Scalar coeff = Scalar(1) / theta2 
+						   - (Scalar(1) + cos_theta) / (Scalar(2) * theta * sin_theta);
+		
+		// Jr⁻¹(θ) = I + ½[θ]× + coeff·[θ]²×
+		return Matrix::Identity() 
+			   + Scalar(0.5) * omega_hat 
+			   + coeff * omega_hat2;
+	}
+
+	/**
+	 * @brief Computes the inverse of the left Jacobian: Jl⁻¹(ω)
+	 * 
+	 * Formula from Solà et al. (2021):
+	 *   Jl⁻¹(θ) = Jr⁻¹(-θ)
+	 * 
+	 * @tparam _Scalar The scalar type.
+	 * @param omega Angular velocity vector in ℝ³.
+	 * @return Inverse left Jacobian matrix (3×3).
+	 */
+	template<typename _Scalar>
+	typename SO3<_Scalar>::AdjointMatrix SO3<_Scalar>::computeLeftJacobianInverse(const TangentVector &omega) noexcept {
+		// Jl⁻¹(θ) = Jr⁻¹(-θ)
+		return computeRightJacobianInverse(-omega);
+	}
 
 } // namespace sofa::component::cosserat::liegroups
