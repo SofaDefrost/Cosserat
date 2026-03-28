@@ -227,13 +227,6 @@ namespace sofa::component::forcefield {
 		 */
 		bool areGeometricParametersConsistent() const;
 		///////////////////////////////////////////////////////////////////////////
-
-		////////////////////////// Inherited attributes (for lookup) /////////////
-		/// Bring inherited attributes into current lookup context
-		using ForceField<DataTypes>::getContext;
-		using ForceField<DataTypes>::f_printLog;
-
-		///////////////////////////////////////////////////////////////////////////
 	};
 
 ////////////////////////// External template declarations ////////////////////

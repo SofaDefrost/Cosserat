@@ -113,15 +113,6 @@ namespace sofa::component::forcefield {
 		type::vector<Matrix6> m_k_section66List;
 
 
-	private:
-		////////////////////////// Inherited attributes ////////////////////////////
-		/// https://gcc.gnu.org/onlinedocs/gcc/Name-lookup.html
-		/// Bring inherited attributes and function in the current lookup context.
-		/// otherwise any access to the base::attribute would require
-		/// the "this->" approach.
-		using ForceField<DataTypes>::getContext;
-		using ForceField<DataTypes>::f_printLog;
-		////////////////////////////////////////////////////////////////////////////
 	};
 
 	// Explicit declaration of this spécialisation

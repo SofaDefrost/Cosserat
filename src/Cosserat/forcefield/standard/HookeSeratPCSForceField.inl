@@ -79,11 +79,7 @@ namespace sofa::component::forcefield {
 		m_K_section66.setZero();
 		m_k_section66List.clear();
 
-		if (f_printLog.getValue()) {
-			msg_info("HookeSeratPCSForceField") << "HookeSeratPCSForceField initialized.";
-		}
-
-		f_printLog.setValue(true);
+	        msg_info("HookeSeratPCSForceField") << "HookeSeratPCSForceField initialized.";
 		compute_df = true;
 	}
 
@@ -214,10 +210,9 @@ namespace sofa::component::forcefield {
 		}
 
 		// Debug output if needed
-		if (this->f_printLog.getValue()) {
-			displayForces(f, "addForce - computed forces");
-			displaySectionMatrix(m_K_section, "addForce - K section matrix");
-		}
+		displayForces(f, "addForce - computed forces");
+		displaySectionMatrix(m_K_section, "addForce - K section matrix");
+
 
 		d_f.endEdit();
 	}
@@ -255,9 +250,7 @@ namespace sofa::component::forcefield {
 			}
 
 		// Debug output if needed
-		if (this->f_printLog.getValue()) {
-			displayDForces(df, "addDForce - computed differential forces");
-		}
+		displayDForces(df, "addDForce - computed differential forces");
 	}
 
 	template<typename DataTypes>
@@ -317,9 +310,7 @@ namespace sofa::component::forcefield {
 		}
 
 		// Debug output if needed
-		if (this->f_printLog.getValue()) {
-			displayKMatrix(matrix, "addKToMatrix - global K matrix");
-		}
+	        displayKMatrix(matrix, "addKToMatrix - global K matrix");
 	}
 
 	template<typename DataTypes>

@@ -46,12 +46,11 @@ namespace sofa::component::forcefield {
 	template<typename DataTypes>
 	void HookeSeratBaseForceField<DataTypes>::reinit() {
 		computeCrossSectionProperties();
+	    
+		msg_info("HookeSeratBaseForceField") << "  ----------------------------------" ;
+		printDebugInfo();
+		msg_info("HookeSeratBaseForceField") << "  ----------------------------------" ;
 
-		if (f_printLog.getValue()) {
-			msg_info("HookeSeratBaseForceField") << "  ----------------------------------" ;
-			printDebugInfo();
-			msg_info("HookeSeratBaseForceField") << "  ----------------------------------" ;
-		}
 	}
 
 	template<typename DataTypes>
