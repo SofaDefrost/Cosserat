@@ -136,7 +136,7 @@ jobs:
           clean: true
 
       - name: Create documentation artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: cosserat-documentation
           path: build/docs/combined
@@ -148,7 +148,7 @@ jobs:
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/develop')
     steps:
       - name: Download documentation artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: cosserat-documentation
           path: cosserat-documentation
@@ -160,7 +160,7 @@ jobs:
           tar -czvf cosserat-docs.tar.gz plugin-docs/
           
       - name: Upload documentation package
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: cosserat-docs-package
           path: cosserat-docs.tar.gz
