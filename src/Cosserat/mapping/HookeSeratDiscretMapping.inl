@@ -539,14 +539,10 @@ namespace Cosserat::mapping {
 					baseForces[baseIndex][k] += totalForce[k];
 				}
 			} else {
-				// For other base types, use data() method
-				baseForces[baseIndex] += sofa::Deriv_t<In2>(totalForce.data());
+			// For other base types, copy components manually (avoid deprecated raw pointer construction)
+			for (int k = 0; k < 6 && k < baseForces[baseIndex].size(); ++k) {
+				baseForces[baseIndex][k] += totalForce[k];
 			}
-		}
-
-		if (d_debug.getValue()) {
-			std::cout << "Strain forces computed from " << inputForces.size() << " input forces" << std::endl;
-			std::cout << "Total base force: [" << totalForce.transpose() << "]" << std::endl;
 			std::cout << "Applied to base index: " << baseIndex << std::endl;
 		}
 
@@ -589,7 +585,7 @@ namespace Cosserat::mapping {
 				TangentVector constraintValue;
 				// Convert constraint value to TangentVector
 				const auto &val = colIt.val();
-				for (int j = 0; j < 6 && j < val.size(); ++j) {
+				for (size_t j = 0; j < 6 && j < val.size(); ++j) {
 					constraintValue[j] = val[j];
 				}
 

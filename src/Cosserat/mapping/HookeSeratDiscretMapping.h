@@ -61,20 +61,11 @@ namespace Cosserat::mapping {
 		/**
 		 * @brief Helper method for manually setting linked models (useful for unit tests)
 		 */
-		/*void setModels(sofa::core::State<In1> *strain, sofa::core::State<In2> *base, sofa::core::State<Out> *frames) {
+		void setModels(sofa::core::State<In1> *strain, sofa::core::State<In2> *base, sofa::core::State<Out> *frames) {
 			this->m_strain_state = strain;
 			this->m_rigid_base = base;
 			this->m_frames = frames;
-
-			// Populate Multi2Mapping legacy vectors to pass validation checks in init()
-			// Why do I add this ?
-			this->fromModels1.clear();
-			this->fromModels1.push_back(strain);
-			this->fromModels2.clear();
-			this->fromModels2.push_back(base);
-			this->toModels.clear();
-			this->toModels.push_back(frames);
-		}*/
+		}
 
 	public:
 		//////////////////////////////////////////////////////////////////////
@@ -131,6 +122,13 @@ namespace Cosserat::mapping {
 
 		void computeBBox(const sofa::core::ExecParams *params, bool onlyVisible) override;
 
+	public:
+		////////////////////////// Inherited attributes ////////////////////////////
+		/// Bring inherited attributes into the current lookup context
+		using HookeSeratBaseMapping<TIn1, TIn2, TOut>::d_curv_abs_section;
+		using HookeSeratBaseMapping<TIn1, TIn2, TOut>::d_curv_abs_frames;
+		using HookeSeratBaseMapping<TIn1, TIn2, TOut>::d_debug;
+
 	protected:
 		////////////////////////// Inherited attributes ////////////////////////////
 		/// Bring inherited attributes into the current lookup context
@@ -139,9 +137,6 @@ namespace Cosserat::mapping {
 		using HookeSeratBaseMapping<TIn1, TIn2, TOut>::m_indices_vectors;
 		using HookeSeratBaseMapping<TIn1, TIn2, TOut>::m_indices_vectors_draw;
 		using HookeSeratBaseMapping<TIn1, TIn2, TOut>::m_beam_length_vectors;
-		using HookeSeratBaseMapping<TIn1, TIn2, TOut>::d_curv_abs_section;
-		using HookeSeratBaseMapping<TIn1, TIn2, TOut>::d_curv_abs_frames;
-		using HookeSeratBaseMapping<TIn1, TIn2, TOut>::d_debug;
 		using HookeSeratBaseMapping<TIn1, TIn2, TOut>::m_strain_state;
 		using HookeSeratBaseMapping<TIn1, TIn2, TOut>::m_rigid_base;
 		using HookeSeratBaseMapping<TIn1, TIn2, TOut>::m_frames;
