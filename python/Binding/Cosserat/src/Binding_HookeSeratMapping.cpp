@@ -60,14 +60,14 @@ void moduleAddHookeSeratMapping(py::module &m) {
         });
 
 
-    // Explicit instantiation for Vec6Types
-    using HookeSeratDiscretMapping6 = HookeSeratDiscretMapping<Vec6Types, Rigid3Types, Rigid3Types>;
-    py::class_<HookeSeratDiscretMapping6, HookeSeratBaseMapping<Vec6Types, Rigid3Types, Rigid3Types>, py_shared_ptr<HookeSeratDiscretMapping6>> c6(m, "HookeSeratDiscretMapping6");
+    // Vec6 instantiation is currently disabled (not instantiated in HookeSeratDiscretMapping.cpp)
+    // using HookeSeratDiscretMapping6 = HookeSeratDiscretMapping<Vec6Types, Rigid3Types, Rigid3Types>;
+    // py::class_<HookeSeratDiscretMapping6, HookeSeratBaseMapping<Vec6Types, Rigid3Types, Rigid3Types>, py_shared_ptr<HookeSeratDiscretMapping6>> c6(m, "HookeSeratDiscretMapping6");
 
-    PythonFactory::registerType<HookeSeratDiscretMapping6>(
-        [](sofa::core::objectmodel::Base *object) {
-            return py::cast(dynamic_cast<HookeSeratDiscretMapping6 *>(object));
-        });
+    // PythonFactory::registerType<HookeSeratDiscretMapping6>(
+    //     [](sofa::core::objectmodel::Base *object) {
+    //         return py::cast(dynamic_cast<HookeSeratDiscretMapping6 *>(object));
+    //     });
 }
 
 } // namespace sofapython3

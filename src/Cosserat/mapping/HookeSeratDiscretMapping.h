@@ -173,8 +173,9 @@ namespace Cosserat::mapping {
 #if !defined(SOFA_COSSERAT_CPP_HookeSeratDiscretMapping)
 	extern template class SOFA_COSSERAT_API HookeSeratDiscretMapping<
 			sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types>;
-	extern template class SOFA_COSSERAT_API HookeSeratDiscretMapping<
-			sofa::defaulttype::Vec6Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types>;
+	// Vec6 instantiation is currently disabled
+	// extern template class SOFA_COSSERAT_API HookeSeratDiscretMapping<
+	// 		sofa::defaulttype::Vec6Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types>;
 #endif
 
 } // namespace Cosserat::mapping
