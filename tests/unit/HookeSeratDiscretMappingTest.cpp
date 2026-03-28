@@ -23,6 +23,7 @@
 #include <sofa/core/VecId.h>
 #include <sofa/defaulttype/RigidTypes.h>
 #include <sofa/defaulttype/VecTypes.h>
+#include <sofa/helper/accessor.h>
 #include <sofa/helper/system/FileRepository.h>
 #include <sofa/simulation/Node.h>
 #include <sofa/simulation/Simulation.h>
@@ -97,17 +98,17 @@ protected:
 		// Initialize strain state (zero strain = straight beam)
 		strainState->resize(numSections);
 		{
-			auto writer = strainState->write(sofa::core::vec_id::write_access::position);
+			sofa::helper::WriteAccessor<sofa::Data<sofa::type::vector<Vec3Types::Coord>>> writer = *strainState->write(sofa::core::vec_id::write_access::position);
 			for (int i = 0; i < numSections; ++i) {
-				(*writer)[i] = Vec3Types::Coord(0, 0, 0);
+				writer[i] = Vec3Types::Coord(0, 0, 0);
 			}
 		}
 
 		// Initialize rigid base (identity)
 		rigidBase->resize(1);
 		{
-			auto writer = rigidBase->write(sofa::core::vec_id::write_access::position);
-			(*writer)[0] = Rigid3Types::Coord(sofa::type::Vec3(0, 0, 0), Quat<SReal>(0, 0, 0, 1));
+			sofa::helper::WriteAccessor<sofa::Data<sofa::type::vector<Rigid3Types::Coord>>> writer = *rigidBase->write(sofa::core::vec_id::write_access::position);
+			writer[0] = Rigid3Types::Coord(sofa::type::Vec3(0, 0, 0), Quat<SReal>(0, 0, 0, 1));
 		}
 
 		// Initialize output frames
@@ -182,8 +183,8 @@ TEST_F(HookeSeratDiscretMappingTest, JacobianFiniteDifference) {
 		for (int component = 0; component < 3; ++component) {
 			// Perturb strain
 			{
-				auto writer = strainState->write(sofa::core::vec_id::write_access::position);
-			(*writer)[strainIdx][component] += epsilon;
+				sofa::helper::WriteAccessor<sofa::Data<sofa::type::vector<Vec3Types::Coord>>> writer = *strainState->write(sofa::core::vec_id::write_access::position);
+			writer[strainIdx][component] += epsilon;
 			mapping->apply(&mparams, {outputFrames->write(sofa::core::vec_id::write_access::position)},
 						   {strainState->read(sofa::core::vec_id::read_access::position)},
 						   {rigidBase->read(sofa::core::vec_id::read_access::position)});
@@ -210,8 +211,8 @@ TEST_F(HookeSeratDiscretMappingTest, JacobianFiniteDifference) {
 
 			// Reset strain
 			{
-				auto writer = strainState->write(sofa::core::vec_id::write_access::position);
-				(*writer)[strainIdx][component] -= epsilon;
+				sofa::helper::WriteAccessor<sofa::Data<sofa::type::vector<Vec3Types::Coord>>> writer = *strainState->write(sofa::core::vec_id::write_access::position);
+				writer[strainIdx][component] -= epsilon;
 			}
 
 			// Compute analytical Jacobian using applyJ
@@ -278,9 +279,9 @@ TEST_F(HookeSeratDiscretMappingTest, CurvedBeam) {
 
 	// Set constant curvature (bending in y-direction)
 	{
-		auto writer = strainState->write(sofa::core::vec_id::write_access::position);
+		sofa::helper::WriteAccessor<sofa::Data<sofa::type::vector<Vec3Types::Coord>>> writer = *strainState->write(sofa::core::vec_id::write_access::position);
 		for (int i = 0; i < 5; ++i) {
-			(*writer)[i] = Vec3Types::Coord(0, 0.1, 0); // Curvature around z-axis
+			writer[i] = Vec3Types::Coord(0, 0.1, 0); // Curvature around z-axis
 		}
 	}
 
