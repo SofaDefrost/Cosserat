@@ -32,7 +32,7 @@ def createScene(rootNode):
     addHeader(rootNode, isConstrained=False)
     rootNode.addObject('FreeMotionAnimationLoop', parallelCollisionDetectionAndFreeMotion=False,
                        parallelODESolving=False)
-    rootNode.addObject('GenericConstraintSolver', name='ConstraintSolver', tolerance=1e-20, maxIterations=1000,
+    rootNode.addObject('ProjectedGaussSeidelConstraintSolver', name='ConstraintSolver', tolerance=1e-20, maxIterations=1000,
                        multithreading=False)
     rootNode.findData('gravity').value = [0., 0., 0.]
 

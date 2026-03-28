@@ -17,28 +17,12 @@ from stlib3.scene import MainHeader
 from splib3.numerics import Quat
 
 sys.path.append('../')
-from cosserat.createFemRegularGrid import createFemCube
-from cosserat.usefulFunctions import BuildCosseratGeometry, AddPointProcess
+from createFemRegularGrid import createFemCube
+from usefulFunctions import BuildCosseratGeometry, AddPointProcess
 
-pluginNameList = """Cosserat
- Sofa.Component.AnimationLoop
- Sofa.Component.Collision.Geometry
- Sofa.Component.Constraint.Lagrangian.Correction
- Sofa.Component.Constraint.Lagrangian.Solver
- Sofa.Component.Engine.Select
- Sofa.Component.LinearSolver.Direct
- Sofa.Component.Mapping.Linear
- Sofa.Component.ODESolver.Backward
- Sofa.Component.Setting
- Sofa.Component.SolidMechanics.FEM.Elastic
- Sofa.Component.SolidMechanics.Spring
- Sofa.Component.StateContainer
- Sofa.Component.Topology.Container.Dynamic
- Sofa.Component.Topology.Container.Grid
- Sofa.Component.Topology.Mapping
- Sofa.Component.Visual
- Sofa.GL.Component.Rendering3D
-"""
+pluginNameList = 'SofaConstraint SofaDeformable SofaImplicitOdeSolver SofaMeshCollision SofaPreconditioner' \
+                 ' SofaGeneralTopology SofaOpenglVisual SofaGeneralRigid SoftRobots SofaSparseSolver' \
+                 ' Cosserat SofaBoundaryCondition'
 
 
 class Animation(Sofa.Core.Controller):
@@ -87,7 +71,7 @@ def createScene(rootNode):
     rootNode.addObject('VisualStyle', displayFlags='showBehaviorModels hideCollisionModels hideBoundingCollisionModels '
                                                    'showForceFields hideInteractionForceFields showWireframe')
     rootNode.addObject('FreeMotionAnimationLoop')
-    rootNode.addObject('GenericConstraintSolver', tolerance="1e-20", maxIterations="500", printLog="0")
+    rootNode.addObject('ProjectedGaussSeidelConstraintSolver', tolerance="1e-20", maxIterations="500", printLog="0")
 
     gravity = [0, 0, 0]
     rootNode.gravity.value = gravity
@@ -98,7 +82,7 @@ def createScene(rootNode):
     ###############
     cableNode = rootNode.addChild('cableNode')
     cableNode.addObject('EulerImplicitSolver', firstOrder="0", rayleighStiffness="0.1", rayleighMass='0.1')
-    cableNode.addObject('EigenSimplicialLDLT', name='solver', template='CompressedRowSparseMatrixd')
+    cableNode.addObject('SparseLUSolver', name='solver')
     cableNode.addObject('GenericConstraintCorrection')
 
     # ###############

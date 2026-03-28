@@ -96,7 +96,7 @@ def createScene(rootNode):
     rootNode.addObject('VisualStyle', displayFlags='showBehaviorModels hideCollisionModels hideBoundingCollisionModels '
                                                    'showForceFields hideInteractionForceFields showWireframe')
     rootNode.addObject('FreeMotionAnimationLoop')
-    rootNode.addObject('GenericConstraintSolver',
+    rootNode.addObject('ProjectedGaussSeidelConstraintSolver',
                        tolerance="1e-20", maxIterations="500", printLog="0")
 
     gravity = [0, 0, 0]
