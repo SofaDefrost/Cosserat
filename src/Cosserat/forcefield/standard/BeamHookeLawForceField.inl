@@ -72,7 +72,6 @@ namespace sofa::component::forcefield {
 		d_EA(initData(&d_EA, "EA", "The inertia parameter, EA")),
 		d_EI(initData(&d_EI, "EI", "The inertia parameter, EI")) {
 		compute_df = false;
-		f_printLog.setValue(true);
 	}
 
 	template<typename DataTypes>
@@ -185,10 +184,10 @@ namespace sofa::component::forcefield {
 				f[i] -= (m_K_sectionList[i] * (x[i] - x0[i])) * this->d_length.getValue()[i];
 
 		// Debug output if needed
-		if (this->f_printLog.getValue()) {
+
 			displayForces(f, "addForce - computed forces");
 			displaySectionMatrix(m_K_section, "addForce - K section matrix");
-		}
+
 
 		d_f.endEdit();
 	}
@@ -213,9 +212,8 @@ namespace sofa::component::forcefield {
 
 
 		// Debug output if needed
-		if (this->f_printLog.getValue()) {
-			displayDForces(df, "addDForce - computed differential forces");
-		}
+		displayDForces(df, "addDForce - computed differential forces");
+
 	}
 
 	template<typename DataTypes>
@@ -276,9 +274,8 @@ namespace sofa::component::forcefield {
 		}
 
 		// Debug output if needed
-		if (this->f_printLog.getValue()) {
-			displayKMatrix(matrix, "addKToMatrix - global K matrix");
-		}
+		displayKMatrix(matrix, "addKToMatrix - global K matrix");
+
 	}
 
 	template<typename DataTypes>
