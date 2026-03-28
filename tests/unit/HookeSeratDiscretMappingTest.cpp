@@ -98,9 +98,8 @@ protected:
 		strainState->resize(numSections);
 		{
 			auto writer = strainState->write(sofa::core::vec_id::write_access::position);
-			auto& strainData = *writer;
 			for (int i = 0; i < numSections; ++i) {
-				strainData[i] = Vec3Types::Coord(0, 0, 0);
+				(*writer)[i] = Vec3Types::Coord(0, 0, 0);
 			}
 		}
 
@@ -108,8 +107,7 @@ protected:
 		rigidBase->resize(1);
 		{
 			auto writer = rigidBase->write(sofa::core::vec_id::write_access::position);
-			auto& baseData = *writer;
-			baseData[0] = Rigid3Types::Coord(sofa::type::Vec3(0, 0, 0), Quat<SReal>(0, 0, 0, 1));
+			(*writer)[0] = Rigid3Types::Coord(sofa::type::Vec3(0, 0, 0), Quat<SReal>(0, 0, 0, 1));
 		}
 
 		// Initialize output frames
@@ -185,11 +183,7 @@ TEST_F(HookeSeratDiscretMappingTest, JacobianFiniteDifference) {
 			// Perturb strain
 			{
 				auto writer = strainState->write(sofa::core::vec_id::write_access::position);
-				auto& strainData = *writer;
-				strainData[strainIdx][component] += epsilon;
-			}
-
-			// Apply mapping with perturbed strain
+			(*writer)[strainIdx][component] += epsilon;
 			mapping->apply(&mparams, {outputFrames->write(sofa::core::vec_id::write_access::position)},
 						   {strainState->read(sofa::core::vec_id::read_access::position)},
 						   {rigidBase->read(sofa::core::vec_id::read_access::position)});
@@ -217,8 +211,7 @@ TEST_F(HookeSeratDiscretMappingTest, JacobianFiniteDifference) {
 			// Reset strain
 			{
 				auto writer = strainState->write(sofa::core::vec_id::write_access::position);
-				auto& strainData = *writer;
-				strainData[strainIdx][component] -= epsilon;
+				(*writer)[strainIdx][component] -= epsilon;
 			}
 
 			// Compute analytical Jacobian using applyJ
@@ -286,9 +279,8 @@ TEST_F(HookeSeratDiscretMappingTest, CurvedBeam) {
 	// Set constant curvature (bending in y-direction)
 	{
 		auto writer = strainState->write(sofa::core::vec_id::write_access::position);
-		auto& strainData = *writer;
 		for (int i = 0; i < 5; ++i) {
-			strainData[i] = Vec3Types::Coord(0, 0.1, 0); // Curvature around z-axis
+			(*writer)[i] = Vec3Types::Coord(0, 0.1, 0); // Curvature around z-axis
 		}
 	}
 
@@ -328,6 +320,5 @@ TEST_F(HookeSeratDiscretMappingTest, ValidateJacobianAccuracy) {
 
 int main(int argc, char **argv) {
 	::testing::InitGoogleTest(&argc, argv);
-	sofa::simulation::setSimulation(new sofa::simulation::graph::DAGSimulation());
 	return RUN_ALL_TESTS();
 }
