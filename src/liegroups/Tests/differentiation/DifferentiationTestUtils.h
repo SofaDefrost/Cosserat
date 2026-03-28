@@ -3,7 +3,7 @@
 #include <cmath>
 #include <functional>
 #include <iostream>
-#include <eigen3/Eigen/Dense>
+#include <Eigen/Dense>
 #include "../../Types.h"
 
 namespace sofa::component::cosserat::liegroups::testing {

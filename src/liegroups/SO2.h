@@ -24,7 +24,7 @@
 #pragma once
 
 #include <cmath>
-#include <eigen3/Eigen/Geometry>
+#include <Eigen/Geometry>
 #include "LieGroupBase.h" // Then the base class interface
 #include "LieGroupBase.inl" // Then the base class interface
 #include "Types.h" // Then our type system

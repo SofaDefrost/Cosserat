@@ -21,8 +21,8 @@
 
 #pragma once
 
-#include <eigen3/Eigen/Dense>
-#include <eigen3/Eigen/Geometry>
+#include <Eigen/Dense>
+#include <Eigen/Geometry>
 #include <random>
 #include "LieGroupBase.h" // Then the base class interface
 #include "LieGroupBase.inl" // Then the base class interface
