@@ -85,7 +85,7 @@ namespace sofa::component::cosserat::liegroups {
 	public:
 		// Type aliases for scalar and types
 		using Scalar = _Scalar;
-		using Types = Types<Scalar>;
+		using Types = sofa::component::cosserat::liegroups::Types<Scalar>;
 
 		// Dimensions as static constants
 		static constexpr int Dim = _Dim;

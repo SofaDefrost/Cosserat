@@ -1,5 +1,6 @@
 #pragma once
 
+#include <chrono>
 #include <Cosserat/config.h>
 #include <liegroups/SE3.h>
 #include <liegroups/SO3.h>
