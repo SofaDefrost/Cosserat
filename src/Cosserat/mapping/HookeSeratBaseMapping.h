@@ -299,7 +299,6 @@ namespace Cosserat::mapping {
 		// angular strain (kappa) and linear strain (q)
 		TangentVector kappa_ = TangentVector::Zero();
 		unsigned int index_0_ = 0;
-		unsigned int index_1_ = 1;
 		unsigned int related_beam_index_ = 0; // Index de la tige associée
 		double distance_to_nearest_beam_node = 0.0; // The distance to the nearest beam node from the base
 		SE3Type transformation_;
@@ -819,11 +818,12 @@ namespace Cosserat::mapping {
 			}
 		}
 
-	protected:
+	public:
 		sofa::Data<sofa::type::vector<double>> d_curv_abs_section;
 		sofa::Data<sofa::type::vector<double>> d_curv_abs_frames;
 		sofa::Data<bool> d_debug;
 
+	protected:
 		// The strain state of the beam, known as \xi in Vec3 or Vec6
 		// \xi = (\kappa^T, q^T)^T
 		// where \kappa is the angular strain and q is the linear strain
