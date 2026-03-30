@@ -4,7 +4,7 @@ project(LieGroups.Python)
 
 set(SOURCE_FILES
   ${CMAKE_CURRENT_SOURCE_DIR}/src/Module_LieGroupe.cpp
- # # ${CMAKE_CURRENT_SOURCE_DIR}/src/Binding_LieGroups.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/Binding_LieGroups.cpp
 )
 
 set(HEADER_FILES

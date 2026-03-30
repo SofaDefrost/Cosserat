@@ -21,31 +21,17 @@
  * Contact information: contact@sofa-framework.org                             *
  ******************************************************************************/
 
-#include <functional>
-#include <iterator>
-#include <memory>
-#include <type_traits>
-
-#include <liegroups/SE2.h>
-#include <liegroups/SE3.h>
-#include <liegroups/SO2.h>
-#include <liegroups/SO3.h>
 #include <pybind11/pybind11.h>
 #include "Binding_LieGroups.h"
 
-namespace py {
-	using namespace pybind11;
-}
-
 namespace sofapython3 {
 
-	PYBIND11_MODULE(Cosserat, m) {
+	PYBIND11_MODULE(LieGroups, m) {
 		m.doc() = "Cosserat plugin for SOFA, providing Lie group functionalities for Cosserat models.";
-		// Only add Lie groups related functionality
-		moduleAddSO2(m);
-		moduleAddSE2(m);
-		moduleAddSO3(m);
-		moduleAddSE3(m);
+		// Add all Lie group bindings
+		moduleAddLieGroups(m);
+	        // @TODO, add the reste of the bindings here !
+
 	}
 
 } // namespace sofapython3

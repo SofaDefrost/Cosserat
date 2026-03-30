@@ -21,6 +21,7 @@
 #pragma once
 
 #include <pybind11/pybind11.h>
+//namespace lg = sofa::component::cosserat::liegroups;
 
 namespace sofapython3 {
 

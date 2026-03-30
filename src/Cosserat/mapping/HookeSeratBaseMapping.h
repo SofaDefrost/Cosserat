@@ -299,6 +299,7 @@ namespace Cosserat::mapping {
 		// angular strain (kappa) and linear strain (q)
 		TangentVector kappa_ = TangentVector::Zero();
 		unsigned int index_0_ = 0;
+		unsigned int index_1_ = 1;
 		unsigned int related_beam_index_ = 0; // Index de la tige associée
 		double distance_to_nearest_beam_node = 0.0; // The distance to the nearest beam node from the base
 		SE3Type transformation_;
