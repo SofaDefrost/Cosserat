@@ -37,9 +37,9 @@ def createScene(root_node):
     """Create a Cosserat beam scene with forces and dynamics."""
     # Configure scene with time integration
     add_mini_header(root_node)
-    root_node.addObject('RequiredPlugin', name='Sofa.Component.LinearSolver.Direct') # Needed to use components [SparseLDLSolver]  
-    root_node.addObject('RequiredPlugin', name='Sofa.Component.ODESolver.Backward') # Needed to use components [EulerImplicitSolver]  
-    root_node.addObject('RequiredPlugin', name='Sofa.Component.MechanicalLoad') # Needed to use components [ConstantForceField] 
+    root_node.addObject('RequiredPlugin', pluginName='Sofa.Component.LinearSolver.Direct') # Needed to use components [SparseLDLSolver]  
+    root_node.addObject('RequiredPlugin', pluginName='Sofa.Component.ODESolver.Backward') # Needed to use components [EulerImplicitSolver]  
+    root_node.addObject('RequiredPlugin', pluginName='Sofa.Component.MechanicalLoad') # Needed to use components [ConstantForceField] 
     
     # Add gravity
     root_node.gravity = [0, -9.81, 0]  # Add gravity!

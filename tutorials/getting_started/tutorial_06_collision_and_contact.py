@@ -31,18 +31,18 @@ def createScene(root_node):
     """Create a Cosserat beam scene with collision."""
     add_mini_header(root_node)
 
-    root_node.addObject('RequiredPlugin', name='Sofa.Component.Collision.Detection.Algorithm') # Needed to use components [BVHNarrowPhase,BruteForceBroadPhase,CollisionPipeline]  
-    root_node.addObject('RequiredPlugin', name='Sofa.Component.Collision.Detection.Intersection') # Needed to use components [MinProximityIntersection]  
-    root_node.addObject('RequiredPlugin', name='Sofa.Component.Collision.Response.Contact') # Needed to use components [RuleBasedContactManager]  
-    root_node.addObject('RequiredPlugin', name='Sofa.Component.LinearSolver.Direct') # Needed to use components [SparseLDLSolver]  
-    root_node.addObject('RequiredPlugin', name='Sofa.Component.ODESolver.Backward') # Needed to use components [EulerImplicitSolver] 
-    root_node.addObject('RequiredPlugin', name='Sofa.Component.Collision.Geometry') # Needed to use components [LineCollisionModel]  
-    root_node.addObject('RequiredPlugin', name='Sofa.Component.Mapping.Linear') # Needed to use components [IdentityMapping]  
-    root_node.addObject('RequiredPlugin', name='Sofa.Component.Topology.Container.Dynamic') # Needed to use components [EdgeSetTopologyContainer]    
-    root_node.addObject('RequiredPlugin', name='Sofa.Component.IO.Mesh') # Needed to use components [MeshOBJLoader]  
-    root_node.addObject('RequiredPlugin', name='Sofa.Component.Topology.Container.Constant') # Needed to use components [MeshTopology]  
-    root_node.addObject('RequiredPlugin', name='Sofa.GL.Component.Rendering3D') # Needed to use components [OglModel]
-    root_node.addObject('RequiredPlugin', name='Sofa.Component.Mapping.NonLinear') # Needed to use components [RigidMapping]  
+    root_node.addObject('RequiredPlugin', pluginName='Sofa.Component.Collision.Detection.Algorithm') # Needed to use components [BVHNarrowPhase,BruteForceBroadPhase,CollisionPipeline]  
+    root_node.addObject('RequiredPlugin', pluginName='Sofa.Component.Collision.Detection.Intersection') # Needed to use components [MinProximityIntersection]  
+    root_node.addObject('RequiredPlugin', pluginName='Sofa.Component.Collision.Response.Contact') # Needed to use components [RuleBasedContactManager]  
+    root_node.addObject('RequiredPlugin', pluginName='Sofa.Component.LinearSolver.Direct') # Needed to use components [SparseLDLSolver]  
+    root_node.addObject('RequiredPlugin', pluginName='Sofa.Component.ODESolver.Backward') # Needed to use components [EulerImplicitSolver] 
+    root_node.addObject('RequiredPlugin', pluginName='Sofa.Component.Collision.Geometry') # Needed to use components [LineCollisionModel]  
+    root_node.addObject('RequiredPlugin', pluginName='Sofa.Component.Mapping.Linear') # Needed to use components [IdentityMapping]  
+    root_node.addObject('RequiredPlugin', pluginName='Sofa.Component.Topology.Container.Dynamic') # Needed to use components [EdgeSetTopologyContainer]    
+    root_node.addObject('RequiredPlugin', pluginName='Sofa.Component.IO.Mesh') # Needed to use components [MeshOBJLoader]  
+    root_node.addObject('RequiredPlugin', pluginName='Sofa.Component.Topology.Container.Constant') # Needed to use components [MeshTopology]  
+    root_node.addObject('RequiredPlugin', pluginName='Sofa.GL.Component.Rendering3D') # Needed to use components [OglModel]
+    root_node.addObject('RequiredPlugin', pluginName='Sofa.Component.Mapping.NonLinear') # Needed to use components [RigidMapping]  
     
     root_node.gravity = [0, -9.81, 0]
 

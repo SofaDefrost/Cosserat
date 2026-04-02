@@ -27,8 +27,8 @@ from introduction_and_setup import (_add_cosserat_frame, _add_cosserat_state,
 def createScene(root_node):
     """Create a scene with an initially curved Cosserat beam."""
     add_mini_header(root_node)
-    root_node.addObject('RequiredPlugin', name='Sofa.Component.LinearSolver.Direct') # Needed to use components [SparseLDLSolver]  
-    root_node.addObject('RequiredPlugin', name='Sofa.Component.ODESolver.Backward') # Needed to use components [EulerImplicitSolver] 
+    root_node.addObject('RequiredPlugin', pluginName='Sofa.Component.LinearSolver.Direct') # Needed to use components [SparseLDLSolver]  
+    root_node.addObject('RequiredPlugin', pluginName='Sofa.Component.ODESolver.Backward') # Needed to use components [EulerImplicitSolver] 
 
     root_node.gravity = [0, -9.81, 0] # Add some gravity to see it deform
 

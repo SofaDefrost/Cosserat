@@ -112,11 +112,11 @@ def _add_cosserat_frame(
     return cosserat_in_sofa_frame_node
 
 def add_mini_header(root_node):
-    root_node.addObject("RequiredPlugin", name="Sofa.Component.Mass")
-    root_node.addObject("RequiredPlugin", name="Sofa.Component.SolidMechanics.Spring")
-    root_node.addObject("RequiredPlugin", name="Sofa.Component.StateContainer")
-    root_node.addObject("RequiredPlugin", name="Sofa.Component.Visual")
-    root_node.addObject("RequiredPlugin", name="Cosserat")
+    root_node.addObject("RequiredPlugin", pluginName="Sofa.Component.Mass")
+    root_node.addObject("RequiredPlugin", pluginName="Sofa.Component.SolidMechanics.Spring")
+    root_node.addObject("RequiredPlugin", pluginName="Sofa.Component.StateContainer")
+    root_node.addObject("RequiredPlugin", pluginName="Sofa.Component.Visual")
+    root_node.addObject("RequiredPlugin", pluginName="Cosserat")
 
     # Configure scene
     root_node.addObject(
