@@ -123,6 +123,7 @@ def add_mini_header(root_node):
         "VisualStyle",
         displayFlags="showBehaviorModels showCollisionModels showMechanicalMappings",
     )
+    root_node.addObject("DefaultAnimationLoop")
 
 
 def createScene(root_node):

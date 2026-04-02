@@ -26,12 +26,18 @@ from introduction_and_setup import (_add_cosserat_frame, _add_cosserat_state,
 def createScene(root_node):
     """Create a scene with a Cosserat beam and an attached FEM object."""
     add_mini_header(root_node)
+    root_node.addObject('RequiredPlugin', name='Sofa.Component.IO.Mesh') # Needed to use components [MeshVTKLoader]  
+    root_node.addObject('RequiredPlugin', name='Sofa.Component.LinearSolver.Direct') # Needed to use components [SparseLDLSolver]  
+    root_node.addObject('RequiredPlugin', name='Sofa.Component.ODESolver.Backward') # Needed to use components [EulerImplicitSolver]  
+    root_node.addObject('RequiredPlugin', name='Sofa.Component.SolidMechanics.FEM.Elastic') # Needed to use components [TetrahedronFEMForceField]  
+    root_node.addObject('RequiredPlugin', name='Sofa.Component.Topology.Container.Dynamic') # Needed to use components [TetrahedronSetTopologyContainer]     
+    
     root_node.gravity = [0, -9.81, 0]
 
     # --- Solver ---
     solver_node = root_node.addChild("solver")
     solver_node.addObject("EulerImplicitSolver", rayleighStiffness="0.0", rayleighMass="0.0", vdamping=0.5)
-    solver_node.addObject("SparseLDLSolver", name="solver")
+    solver_node.addObject("SparseLDLSolver", name="solver", template="CompressedRowSparseMatrixd")
 
     # --- Beam ---
     beam_geometry_params = BeamGeometryParameters(beam_length=20.0, nb_section=10, nb_frames=10)
@@ -44,9 +50,10 @@ def createScene(root_node):
     # --- FEM Gripper ---
     fem_node = root_node.addChild("fem_gripper")
     fem_node.addObject("EulerImplicitSolver", name="fem_solver")
-    fem_node.addObject("SparseLDLSolver", name="fem_ldl_solver")
+    fem_node.addObject("SparseLDLSolver", name="fem_ldl_solver", template="CompressedRowSparseMatrixd")
     fem_node.addObject("MeshVTKLoader", name="loader", filename="mesh/liver.vtk")
     fem_node.addObject("TetrahedronSetTopologyContainer", name="topology", src="@loader")
+    fem_node.addObject("TetrahedronSetGeometryAlgorithms", template="Vec3", name="GeomAlgo")
     fem_node.addObject("MechanicalObject", name="femMO", template="Vec3d", dx=20, dy=0, dz=0)
     fem_node.addObject("TetrahedronFEMForceField", name="femForceField", youngModulus=1000, poissonRatio=0.4)
     fem_node.addObject("UniformMass", totalMass=1.0)
