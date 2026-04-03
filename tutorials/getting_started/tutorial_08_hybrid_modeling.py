@@ -13,6 +13,7 @@ Key concepts:
 """
 
 import os
+from re import template
 import sys
 
 # Add the python package to the path
@@ -31,6 +32,7 @@ def createScene(root_node):
     root_node.addObject('RequiredPlugin', pluginName='Sofa.Component.ODESolver.Backward') # Needed to use components [EulerImplicitSolver]  
     root_node.addObject('RequiredPlugin', pluginName='Sofa.Component.SolidMechanics.FEM.Elastic') # Needed to use components [TetrahedronFEMForceField]  
     root_node.addObject('RequiredPlugin', pluginName='Sofa.Component.Topology.Container.Dynamic') # Needed to use components [TetrahedronSetTopologyContainer]     
+    root_node.addObject('RequiredPlugin', pluginName='Sofa.GL.Component.Rendering3D') # Needed to use components [OglModel]  
     
     root_node.gravity = [0, -9.81, 0]
 
@@ -51,17 +53,18 @@ def createScene(root_node):
     fem_node = root_node.addChild("fem_gripper")
     fem_node.addObject("EulerImplicitSolver", name="fem_solver")
     fem_node.addObject("SparseLDLSolver", name="fem_ldl_solver", template="CompressedRowSparseMatrixd")
-    fem_node.addObject("MeshVTKLoader", name="loader", filename="mesh/liver.vtk")
+    fem_node.addObject("MeshVTKLoader", name="loader", filename="mesh/liver.vtk", scale=0.1)
     fem_node.addObject("TetrahedronSetTopologyContainer", name="topology", src="@loader")
-    fem_node.addObject("TetrahedronSetGeometryAlgorithms", template="Vec3", name="GeomAlgo")
+    fem_node.addObject("TetrahedronSetGeometryAlgorithms", template="Vec3d", name="GeomAlgo")
     fem_node.addObject("MechanicalObject", name="femMO", template="Vec3d", dx=20, dy=0, dz=0)
-    fem_node.addObject("TetrahedronFEMForceField", name="femForceField", youngModulus=1000, poissonRatio=0.4)
+    # fem_node.addObject("TetrahedronFEMForceField", name="femForceField", youngModulus=1000, poissonRatio=0.4)
     fem_node.addObject("UniformMass", totalMass=1.0)
+    fem_node.addObject("OglModel", name="VisualModel", src="@loader", color="red", texturename="textures/liver-texture-square.png")
 
-    # --- Connection ---
+    # # --- Connection ---
     # Use BarycentricMapping to attach the FEM object to the beam's tip.
     connection_node = fem_node.addChild("connection")
-    connection_node.addObject("BarycentricMapping", name="mapping",
+    connection_node.addObject("BarycentricMapping", name="mapping", #Pb avec le barycentrique mapping
                               map_from=frame_node.FramesMO.getLinkPath(),
                               map_to=fem_node.femMO.getLinkPath(),
                               use_rigid=True,
