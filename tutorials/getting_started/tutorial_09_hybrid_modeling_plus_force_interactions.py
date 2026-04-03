@@ -10,6 +10,7 @@ physical models in a single simulation. We will attach a 3D deformable
 Key concepts:
 - Creating a simple FEM model.
 - Using `RigidMapping` to connect two different models.
+- Adding Force Controller to see what happen
 """
 
 import os
@@ -22,6 +23,9 @@ from cosserat import BeamGeometryParameters, CosseratGeometry
 
 from introduction_and_setup import (_add_cosserat_frame, _add_cosserat_state,
                                     _add_rigid_base, add_mini_header)
+
+from force_controller import ForceController
+
 
 def createScene(root_node):
     """Create a scene with a Cosserat beam and an attached FEM object."""
@@ -73,7 +77,33 @@ def createScene(root_node):
     fem_visual_node.addObject("IdentityMapping")
 
 
-    print("✨ Created a hybrid model: FEM gripper attached to a Cosserat beam.")
+    # === ADD FORCES ===
+    # Add a force at the tip of the beam
+    # this constance force is used only in the case we are doing force_type 1 or 2
+    force_null = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]  # No force initially
+
+    const_force_node = frame_node.addObject('ConstantForceField', name='constForce', showArrowSize=1.e-8,
+                                                 indices=[beam_geometry.get_number_of_frames()], forces=force_null)
+
+    # The effector is used only when force_type is 3
+    # create a rigid body to control the end effector of the beam
+    tip_controller = root_node.addChild('tip_controller')
+    controller_state = tip_controller.addObject('MechanicalObject', template='Rigid3d', name="controlEndEffector",
+                                                showObjectScale=0.3, position=[beam_geometry.get_beam_length(), 0, 0, 0, 0, 0, 1],
+                                                showObject=True)
+
+    # add the controller to animate the force
+    root_node.addObject(ForceController(
+        name="ForceController",
+        forceNode=const_force_node,     # ConstantForceField
+        frame_node=frame_node,          # node containing FramesMO
+        force_type=2,                   # Change 1, 2 or 3 to test all force type
+        tip_controller=controller_state,# a MechanicalObject used to control the beam's tip (for force_type 3)
+        geoParams=beam_geometry_params  # geometric params
+    ))
+
+
+    print("✨ Created a hybrid model: FEM gripper attached to a Cosserat beam. + Force Controller")
 
     return root_node
 
