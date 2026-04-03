@@ -13,6 +13,7 @@ Key concepts:
 """
 
 import os
+from re import template
 import sys
 
 # Add the python package to the path
@@ -44,11 +45,11 @@ def createScene(root_node):
         rayleighMass="0.0",
         vdamping=v_damping_param,
     )
-    solver_node.addObject("SparseLDLSolver", name="solver")
+    solver_node.addObject("SparseLDLSolver", name="solver", template="CompressedRowSparseMatrixd")
 
     # Define beam geometry
     beam_geometry_params = BeamGeometryParameters(
-        beam_length=40.0,
+        beam_length=20.0,
         nb_section=40,
         nb_frames=40,
     )
@@ -59,16 +60,18 @@ def createScene(root_node):
     bending_node = _add_cosserat_state(solver_node, beam_geometry)
     frame_node = _add_cosserat_frame(
         base_node, bending_node, beam_geometry, beam_mass=10.0
-    )
+    ) #-> [ERROR]   [MappingGraph] Requested mechanical state (/solver/rigid_base/cosserat_in_Sofa_frame_node/FramesMO) is probably mapped or unknown from the graph: only main mechanical states have an associated submatrix in the global matrix
+
 
     # --- CONSTRAINT ---
     # Fix the tip of the beam to create a bridge
-    tip_frame_index = beam_geometry.get_number_of_frames() -1
+    tip_frame_index = beam_geometry.get_number_of_sections()-1
 
     # Add a FixedConstraint to the last frame of the beam.
     # This will lock its position and orientation.
+    
     frame_node.addObject(
-        "FixedConstraint",
+        "FixedProjectiveConstraint",
         name="bridgeConstraint",
         indices=[tip_frame_index], # Index of the frame to constrain
     )
