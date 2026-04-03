@@ -67,7 +67,6 @@ def _add_cosserat_state(p_node, geometry: CosseratGeometry, node_name="cosserat_
         template="Vec3d",
         name="cosserat_state",
         position=bending_states,
-        showIndices=1
     )
     cosserat_coordinate_node.addObject(
         "BeamHookeLawForceField",
