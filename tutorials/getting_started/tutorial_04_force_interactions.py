@@ -94,6 +94,7 @@ def createScene(root_node):
     # Add a force at the tip of the beam
     # this constance force is used only in the case we are doing force_type 1 or 2
     force_null = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]  # No force initially
+   # force_active = [0.0, 30.0, 0.0, 0.0, 0.0, 0.0]  # Pull the rod upward
 
     const_force_node = frame_node.addObject('ConstantForceField', name='constForce', showArrowSize=1.e-8,
                                                  indices=[beam_geometry.get_number_of_frames()], forces=force_null)
@@ -105,5 +106,14 @@ def createScene(root_node):
                                                 showObjectScale=0.3, position=[beam_geometry.get_beam_length(), 0, 0, 0, 0, 0, 1],
                                                 showObject=True)
 
+    # add the controller to animate the force
+    root_node.addObject(ForceController(
+        name="ForceController",
+        forceNode=const_force_node,     # ConstantForceField
+        frame_node=frame_node,          # node containing FramesMO
+        force_type=2,                   # Change 1, 2 or 3 to test all force type
+        tip_controller=controller_state,# a MechanicalObject used to control the beam's tip (for force_type 3)
+        geoParams=beam_geometry_params  # geometric params
+    ))
 
     return root_node
