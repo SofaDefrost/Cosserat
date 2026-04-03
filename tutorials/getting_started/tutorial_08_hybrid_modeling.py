@@ -13,7 +13,6 @@ Key concepts:
 """
 
 import os
-from re import template
 import sys
 
 # Add the python package to the path

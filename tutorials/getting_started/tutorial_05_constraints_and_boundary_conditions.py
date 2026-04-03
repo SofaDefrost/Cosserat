@@ -13,7 +13,6 @@ Key concepts:
 """
 
 import os
-from re import template
 import sys
 
 # Add the python package to the path
@@ -22,9 +21,13 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "python")
 from cosserat import BeamGeometryParameters, CosseratGeometry
 
 from introduction_and_setup import (_add_cosserat_frame, _add_cosserat_state,
-                                    _add_rigid_base, add_mini_header)
+                                    _add_rigid_base, add_mini_header, stiffness_param)
 
 v_damping_param: float = 0.4  # Damping parameter for dynamics
+stiffness_param: float = 1e6  # Stiffness
+beam_mass = 300.
+beam_radius = 1.
+
 
 def createScene(root_node):
     """Create a Cosserat beam scene with constraints."""
@@ -58,22 +61,43 @@ def createScene(root_node):
     # Create the beam nodes
     base_node = _add_rigid_base(solver_node)
     bending_node = _add_cosserat_state(solver_node, beam_geometry)
-    frame_node = _add_cosserat_frame(
-        base_node, bending_node, beam_geometry, beam_mass=10.0
-    ) #-> [ERROR]   [MappingGraph] Requested mechanical state (/solver/rigid_base/cosserat_in_Sofa_frame_node/FramesMO) is probably mapped or unknown from the graph: only main mechanical states have an associated submatrix in the global matrix
+    frame_node = base_node.addChild("frame_node")
+    bending_node.addChild(frame_node)
 
+    frames_mo = frame_node.addObject(
+        "MechanicalObject",
+        template="Rigid3d",
+        name="FramesMO",
+        position=beam_geometry.frames,  # Use geometry data
+        showIndices=1,
+        showObject=1,
+        showObjectScale=0.8,
+    )
+
+    frame_node.addObject("UniformMass", totalMass=beam_mass)
 
     # --- CONSTRAINT ---
     # Fix the tip of the beam to create a bridge
-    tip_frame_index = beam_geometry.get_number_of_sections()-1
-
-    # Add a FixedConstraint to the last frame of the beam.
-    # This will lock its position and orientation.
+    tip_frame_index = beam_geometry.get_number_of_frames()
     
+    frame_node.addObject("RestShapeSpringsForceField", 
+        name="fixed_end", 
+        stiffness=stiffness_param, 
+        angularStiffness=stiffness_param,
+        points=tip_frame_index,
+        mstate="@FramesMO",
+        template="Rigid3d")
+
     frame_node.addObject(
-        "FixedProjectiveConstraint",
-        name="bridgeConstraint",
-        indices=[tip_frame_index], # Index of the frame to constrain
+        "DiscreteCosseratMapping",
+        curv_abs_input=beam_geometry.curv_abs_sections,  # Use geometry data
+        curv_abs_output=beam_geometry.curv_abs_frames,  # Use geometry data
+        name="cosseratMapping",
+        input1=bending_node.cosserat_state.getLinkPath(),
+        input2=base_node.cosserat_base_mo.getLinkPath(),
+        output=frames_mo.getLinkPath(),
+        debug=0,
+        radius=beam_radius,
     )
 
     print("✨ Created a beam bridge by fixing both ends.")
