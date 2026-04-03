@@ -32,6 +32,8 @@ def createScene(root_node):
     root_node.addObject('RequiredPlugin', pluginName='Sofa.Component.SolidMechanics.FEM.Elastic') # Needed to use components [TetrahedronFEMForceField]  
     root_node.addObject('RequiredPlugin', pluginName='Sofa.Component.Topology.Container.Dynamic') # Needed to use components [TetrahedronSetTopologyContainer]     
     root_node.addObject('RequiredPlugin', pluginName='Sofa.GL.Component.Rendering3D') # Needed to use components [OglModel]  
+    root_node.addObject('RequiredPlugin', pluginName='Sofa.Component.Mapping.Linear') # Needed to use components [IdentityMapping]      
+    root_node.addObject('RequiredPlugin', name='Sofa.Component.Mapping.NonLinear') # Needed to use components [RigidMapping]      
     
     root_node.gravity = [0, -9.81, 0]
 
@@ -49,25 +51,27 @@ def createScene(root_node):
     frame_node = _add_cosserat_frame(base_node, bending_node, beam_geometry, beam_mass=2.0)
 
     # --- FEM Gripper ---
-    fem_node = root_node.addChild("fem_gripper")
+    fem_node = frame_node.addChild("fem_gripper") # fem_node child node of frame_node (Essential for the futur Mapping)
     fem_node.addObject("EulerImplicitSolver", name="fem_solver")
     fem_node.addObject("SparseLDLSolver", name="fem_ldl_solver", template="CompressedRowSparseMatrixd")
-    fem_node.addObject("MeshVTKLoader", name="loader", filename="mesh/liver.vtk", scale=0.1)
+    fem_node.addObject("MeshGmshLoader", name="loader", filename="mesh/liver.msh", scale=1.5) # from Gmsh in order to use TetrahedronFEMForceField
     fem_node.addObject("TetrahedronSetTopologyContainer", name="topology", src="@loader")
-    fem_node.addObject("TetrahedronSetGeometryAlgorithms", template="Vec3d", name="GeomAlgo")
     fem_node.addObject("MechanicalObject", name="femMO", template="Vec3d", dx=20, dy=0, dz=0)
-    # fem_node.addObject("TetrahedronFEMForceField", name="femForceField", youngModulus=1000, poissonRatio=0.4)
+    fem_node.addObject("TetrahedronFEMForceField", name="femForceField", youngModulus=1000, poissonRatio=0.4)
     fem_node.addObject("UniformMass", totalMass=1.0)
-    fem_node.addObject("OglModel", name="VisualModel", src="@loader", color="red", texturename="textures/liver-texture-square.png")
+
 
     # # --- Connection ---
-    # Use BarycentricMapping to attach the FEM object to the beam's tip.
-    connection_node = fem_node.addChild("connection")
-    connection_node.addObject("BarycentricMapping", name="mapping", #Pb avec le barycentrique mapping
-                              map_from=frame_node.FramesMO.getLinkPath(),
-                              map_to=fem_node.femMO.getLinkPath(),
-                              use_rigid=True,
-                              rigid_indices=[beam_geometry.get_number_of_frames() - 1])
+    # map the last frame of the beam to the liver (fem) points
+    fem_node.addObject("RigidMapping", name="mapping",
+                              input=frame_node.FramesMO.getLinkPath(),
+                              output=fem_node.femMO.getLinkPath(),
+                              index=beam_geometry.get_number_of_frames() - 1)
+
+    fem_visual_node = fem_node.addChild("fem_visual")
+    fem_visual_node.addObject("OglModel", name="VisualModel", src="@../loader", color="red", texturename="textures/liver-texture-square.png")
+    fem_visual_node.addObject("IdentityMapping")
+
 
     print("✨ Created a hybrid model: FEM gripper attached to a Cosserat beam.")
 
