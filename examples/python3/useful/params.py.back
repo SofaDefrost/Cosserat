@@ -1,0 +1,549 @@
+# -*- coding: utf-8 -*-
+"""
+Parameter definitions for Cosserat rod simulations.
+
+This module provides a set of dataclasses that represent the parameters used
+in Cosserat rod simulations. These parameters are organized into logical groups
+and provide validation to ensure that the simulation is physically plausible.
+
+Example:
+    ```python
+    # Create parameters with default values
+    params = Parameters()
+    
+    # Customize beam geometry
+    params.beam_geo_params.beam_length = 0.5
+    params.beam_geo_params.nb_frames = 20
+    
+    # Customize physics parameters
+    params.beam_physics_params.young_modulus = 1.0e6
+    params.beam_physics_params.beam_radius = 0.02
+    
+    # Validate parameters
+    params.validate()
+    
+    # Save parameters to file
+    params.to_json("config.json")
+    
+    # Load parameters from file
+    loaded_params = Parameters.from_json("config.json")
+    ```
+"""
+
+from dataclasses import dataclass, field, asdict
+from typing import List, Literal, Dict, Any, Optional, Union, ClassVar, Type
+import json
+import numpy as np
+import os
+
+
+@dataclass
+class BeamPhysicsBaseParameters(BaseParameters):
+    """
+    Base class for Cosserat Beam Physics parameters.
+    
+    These parameters define the physical properties of a Cosserat rod,
+    including material properties and cross-section configuration.
+    
+    Attributes:
+        young_modulus: Young's modulus in Pa (stiffness of the material)
+        poisson_ratio: Poisson's ratio (material compressibility)
+        beam_mass: Total mass of the beam in kg
+        beam_radius: Radius of the beam in meters (for circular cross-section)
+        beam_length: Length of the beam in meters
+        beam_shape: Shape of the cross-section ('circular' or 'rectangular')
+        length_Y: Width of the beam in Y direction for rectangular cross-section
+        length_Z: Height of the beam in Z direction for rectangular cross-section
+        useInertia: Whether to use inertia parameters directly (True) or compute them (False)
+    """
+
+    young_modulus: float = 1.205e8
+    poisson_ratio: float = 0.3
+    beam_mass: float = 1.0
+    beam_radius: float = 0.01
+    beam_length: float = 1.0
+    beam_shape: Literal['circular', 'rectangular'] = 'circular'
+    length_Y: float = 0.1
+    length_Z: float = 0.1
+    useInertia: bool = False
+
+    def validate(self) -> None:
+        """
+        Validate physics parameters.
+        
+        Raises:
+            ValueError: If parameters fail validation
+        """
+        if self.young_modulus <= 0:
+            raise ValueError("Young's modulus must be positive")
+        if not 0 < self.poisson_ratio < 0.5:
+            raise ValueError("Poisson's ratio must be between 0 and 0.5")
+        if self.beam_mass <= 0:
+            raise ValueError("Beam mass must be positive")
+        if self.beam_radius <= 0:
+            raise ValueError("Beam radius must be positive")
+        if self.beam_length <= 0:
+            raise ValueError("Beam length must be positive")
+        if self.beam_shape == 'rectangular' and (self.length_Y <= 0 or self.length_Z <= 0):
+            raise ValueError("Rectangular beam dimensions must be positive")
+    
+    def calculate_cross_section_area(self) -> float:
+        """
+        Calculate the cross-section area of the beam.
+        
+        Returns:
+            Area in square meters
+        """
+        if self.beam_shape == 'circular':
+            return np.pi * self.beam_radius **
+        beam_shape: Shape of the cross-section ('circular' or 'rectangular')
+        length_Y: Width of the beam in Y direction for rectangular cross-section
+        length_Z: Height of the beam in Z direction for rectangular cross-section
+        useInertia: Whether to use inertia parameters directly (True) or compute them (False)
+    """
+
+    young_modulus: float = 1.205e8
+    poisson_ratio: float = 0.3
+    beam_mass: float = 1.0
+    beam_radius: float = 0.01
+    beam_length: float = 1.0
+    beam_shape: Literal['circular', 'rectangular'] = 'circular'
+    length_Y: float = 0.1
+    length_Z: float = 0.1
+    useInertia: bool = False
+
+    def validate(self) -> None:
+        """
+        Validate physics parameters.
+        
+        Raises:
+            ValueError: If parameters fail validation
+        """
+        if self.young_modulus <= 0:
+            raise ValueError("Young's modulus must be positive")
+        if not 0 < self.poisson_ratio < 0.5:
+            raise ValueError("Poisson's ratio must be between 0 and 0.5")
+        if self.beam_mass <= 0:
+            raise ValueError("Beam mass must be positive")
+        if self.beam_radius <= 0:
+            raise ValueError("Beam radius must be positive")
+        if self.beam_length <= 0:
+            raise ValueError("Beam length must be positive")
+        if self.beam_shape == 'rectangular' and (self.length_Y <= 0 or self.length_Z <= 0):
+            raise ValueError("Rectangular beam dimensions must be positive")
+    
+    def calculate_cross_section_area(self) -> float:
+        """
+        Calculate the cross-section area of the beam.
+        
+        Returns:
+            Area in square meters
+        """
+        if self.beam_shape == 'circular':
+            return np.pi * self.beam_radius ** 2
+        else:  # rectangular
+            return self.length_Y
+
+    responseParams: str = "mu=0.0"
+    response: str = "FrictionContactConstraint"
+    alarmDistance: float = 0.05
+    contactDistance: float = 0.01
+    isMultithreading: bool = False
+    tolerance: float = 1.0e-8
+    maxIterations: int = 100
+    epsilon: float = 1.0e-6
+    
+    def validate(self) -> None:
+        """
+        Validate contact parameters.
+        
+        Raises:
+            ValueError: If parameters fail validation
+        """
+        if self.alarmDistance <= 0:
+            raise ValueError("Alarm distance must be positive")
+        if self.contactDistance <= 0:
+            raise ValueError("Contact distance must be positive")
+        if self.contactDistance > self.alarmDistance:
+            raise ValueError("Contact distance must be less than or equal to alarm distance")
+        if self.tolerance <= 0:
+            raise ValueError("Tolerance must be positive")
+        if self.maxIterations <= 0:
+            raise ValueError("Maximum iterations must be positive")
+        if self.epsilon <= 0:
+            raise ValueError("Epsilon must be positive")
+
+    young_modulus: float = 1.205e8
+    poisson_ratio: float = 0.3
+    beam_mass: float = 1.0
+    beam_radius: float = 0.01
+    beam_length: float = 1.0
+    beam_shape: Literal['circular', 'rectangular'] = 'circular'
+    length_Y: float = 0.1
+    length_Z: float = 0.1
+    useInertia: bool = False
+
+    def validate(self) -> None:
+        """
+        Validate physics parameters.
+        
+        Raises:
+            ValueError: If parameters fail validation
+        """
+        if self.young_modulus <= 0:
+            raise ValueError("Young's modulus must be positive")
+        if not 0 < self.poisson_ratio < 0.5:
+            raise ValueError("Poisson's ratio must be between 0 and 0.5")
+        if self.beam_mass <= 0:
+            raise ValueError("Beam mass must be positive")
+        if self.beam_radius <= 0:
+            raise ValueError("Beam radius must be positive")
+        if self.beam_length <= 0:
+            raise ValueError("Beam length must be positive")
+        if self.beam_shape == 'rectangular' and (self.length_Y <= 0 or self.length_Z <= 0):
+            raise ValueError("Rectangular beam dimensions must be positive")
+    
+    def calculate_second_moment_of_area(self) -> Dict[str, float]:
+        """
+        Calculate the second moment of area of the beam cross-section.
+        
+        Returns:
+            Dictionary with keys 'Ix', 'Iy', 'Iz' for moments around each axis
+        """
+        if self.beam_shape == 'circular':
+            I = np.pi * self.beam_radius ** 4 / 4
+            return {'Ix': I, 'Iy': I, 'Iz': I}
+        else:  # rectangular
+            Iy = self.length_Z * self.length_Y ** 3 / 12  # around y-axis
+            Iz = self.length_Y * self.length_Z ** 3 / 12  # around z-axis
+            Ix = Iy + Iz  # polar moment
+            return {'Ix': Ix, 'Iy': Iy, 'Iz': Iz}
+        )
+        return result
+    
+    def to_prefab_params(self) -> Dict[str, Any]:
+        """
+// Remove this duplicate block as it's already in the BaseParameters class
+    params = Parameters()
+    params.beam_physics_params.young_modulus = 2.0e8  # Stiffer material
+    params.beam_physics_params.beam_radius = 0.005    # Thinner beam
+    params.beam_geo_params.beam_length = 0.3          # Shorter beam
+    params.beam_geo_params.nb_section = 10            # More sections for accuracy
+    return params
+        Convert parameters to a dictionary.
+        
+        Returns:
+            Dictionary representation of parameters
+        """
+        return asdict(self)
+    
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'BaseParameters':
+        """
+        Create parameter object from a dictionary.
+        
+        Args:
+            data: Dictionary containing parameter values
+            
+        Returns:
+            Instance of the parameter class
+        """
+        return cls(**{k: v for k, v in data.items() if k in cls.__annotations__})
+    
+    def to_json(self, filepath: str) -> None:
+        """
+        Save parameters to a JSON file.
+        
+        Args:
+            filepath: Path to the output JSON file
+        """
+        with open(filepath, 'w') as f:
+            json.dump(self.to_dict(), f, indent=2)
+    
+    @classmethod
+    def from_json(cls, filepath: str) -> 'BaseParameters':
+        """
+        Load parameters from a JSON file.
+        
+        Args:
+            filepath: Path to the input JSON file
+            
+        Returns:
+            Instance of the parameter class
+            
+        Raises:
+            FileNotFoundError: If the file does not exist
+            json.JSONDecodeError: If the file is not valid JSON
+        """
+        if not os.path.exists(filepath):
+            raise FileNotFoundError(f"File not found: {filepath}")
+        
+        with open(filepath, 'r') as f:
+            data = json.load(f)
+        
+        return cls.from_dict(data)
+
+
+@dataclass
+class BeamGeometryParameters(BaseParameters):
+    """
+    Cosserat Beam Geometry parameters.
+    
+    These parameters define the geometric characteristics of a Cosserat rod,
+    including its length, discretization, and collision properties.
+    
+    Attributes:
+        beam_length: Length of the beam in meters
+        nb_section: Number of sections along the beam length for physics discretization
+        nb_frames: Number of frames along the beam for visualization and collision
+        build_collision_model: Whether to build a collision model (0=no, 1=yes)
+    """
+
+    beam_length: float = 1.0
+    nb_section: int = 5
+    nb_frames: int = 30
+    build_collision_model: int = 0
+
+    def validate(self) -> None:
+        """
+        Validate geometry parameters.
+        
+        Raises:
+            ValueError: If parameters fail validation
+        """
+        if self.beam_length <= 0:
+            raise ValueError("Beam length must be positive")
+        if self.nb_section <= 0:
+            raise ValueError("Number of sections must be positive")
+        if self.nb_frames <= 0:
+            raise ValueError("Number of frames must be positive")
+        if self.nb_frames < self.nb_section:
+            raise ValueError("Number of frames must be greater than or equal to number of sections")
+            
+    def get_section_lengths(self) -> List[float]:
+        """
+        Calculate the length of each section based on beam length and number of sections.
+        
+        Returns:
+            List of section lengths in meters
+        """
+        section_length = self.beam_length / self.nb_section
+        return [section_length] * self.nb_section
+
+
+@dataclass
+class BeamPhysicsBaseParameters(BaseParameters):
+    """
+    Base class for Cosserat Beam Physics parameters.
+    
+    These parameters define the physical properties of a Cosserat rod,
+    including material properties and cross-section configuration.
+    
+    Attributes:
+        young_modulus: Young's modulus in Pa (stiffness of the material)
+        poisson_ratio: Poisson's ratio (material compressibility)
+        beam_mass: Total mass of the beam in kg
+        beam_radius: Radius of the beam in meters (for circular cross-section)
+        beam_length: Length of the beam in meters
+        beam_shape: Shape of the cross-section ('circular' or 'rectangular')
+        length_Y: Width of the beam in Y direction for rectangular cross-section
+        length_Z: Height of the beam in Z direction for rectangular cross-section
+        useInertia: Whether to use inertia parameters directly (True) or compute them (False)
+    """
+
+    young_modulus: float = 1.205e8
+    poisson_ratio: float = 0.3
+    beam_mass: float = 1.0
+    beam_radius: float = 0.01
+    beam_length: float = 1.0
+    beam_shape: Literal['circular', 'rectangular'] = 'circular'
+    length_Y: float = 0.1
+    length_Z: float = 0.1
+    useInertia: bool = False
+
+    def validate(self) -> None:
+        """
+        Validate physics parameters.
+        
+        Raises:
+            ValueError: If parameters fail validation
+        """
+        if self.young_modulus <= 0:
+            raise ValueError("Young's modulus must be positive")
+        if not 0 < self.poisson_ratio < 0.5:
+            raise ValueError("Poisson's ratio must be between 0 and 0.5")
+        if self.beam_mass <= 0:
+            raise ValueError("Beam mass must be positive")
+        if self.beam_radius <= 0:
+            raise ValueError("Beam radius must be positive")
+        if self.beam_length <= 0:
+            raise ValueError("Beam length must be positive")
+        if self.beam_shape == 'rectangular' and (self.length_Y <= 0 or self.length_Z <= 0):
+            raise ValueError("Rectangular beam dimensions must be positive")
+    
+    def calculate_cross_section_area(self) -> float:
+        """
+        Calculate the cross-section area of the beam.
+        
+        Returns:
+            Area in square meters
+        """
+        if self.beam_shape == 'circular':
+            return np.pi * self.beam_radius ** 2
+        else:  # rectangular
+            return self.length_Y * self.length_Z
+            
+    def calculate_second_moment_of_area(self) -> Dict[str, float]:
+        """
+        Calculate the second moment of area of the beam cross-section.
+        
+        Returns:
+            Dictionary with keys 'Ix', 'Iy', 'Iz' for moments around each axis
+        """
+        if self.beam_shape == 'circular':
+            I = np.pi * self.beam_radius ** 4 / 4
+            return {'Ix': I, 'Iy': I, 'Iz': I}
+        else:  # rectangular
+            Iy = self.length_Z * self.length_Y ** 3 / 12  # around y-axis
+            Iz = self.length_Y * self.length_Z ** 3 / 12  # around z-axis
+            Ix = Iy + Iz  # polar moment
+            return {'Ix': Ix, 'Iy': Iy, 'Iz': Iz}
+
+
+@dataclass
+class BeamPhysicsParametersNoInertia(BeamPhysicsBaseParameters):
+    """
+    Parameters for a Cosserat Beam without explicit inertia values.
+    
+    This class is used when the inertia parameters (GI, GA, EI, EA) should be
+    computed automatically from material properties and cross-section geometry.
+    """
+    def __post_init__(self):
+        """Ensure useInertia is set to False"""
+        self.useInertia = False
+
+
+@dataclass
+class BeamPhysicsParametersWithInertia(BeamPhysicsBaseParameters):
+    """
+    Parameters for a Cosserat Beam with explicit inertia values.
+    
+    This class is used when specific inertia parameters should be provided directly
+    rather than computed from material properties.
+    
+    Attributes:
+        GI: Torsional stiffness (shear modulus × polar moment of inertia)
+        GA: Shear stiffness (shear modulus × cross-section area)
+        EI: Bending stiffness (Young's modulus × second moment of area)
+        EA: Axial stiffness (Young's modulus × cross-section area)
+    """
+
+    GI: float = 1.5708
+    GA: float = 3.1416e4
+    EI: float = 0.7854
+    EA: float = 3.1416e4
+
+    def __post_init__(self):
+        """Ensure useInertia is set to True"""
+        self.useInertia = True
+
+    def validate(self) -> None:
+        """
+        Validate physics parameters including inertia values.
+        
+        Raises:
+            ValueError: If parameters fail validation
+        """
+        super().validate()
+        if self.GI <= 0:
+            raise ValueError("GI (torsional stiffness) must be positive")
+        if self.GA <= 0:
+            raise ValueError("GA (shear stiffness) must be positive")
+        if self.EI <= 0:
+            raise ValueError("EI (bending stiffness) must be positive")
+        if self.EA <= 0:
+            raise ValueError("EA (axial stiffness) must be positive")
+    
+    @classmethod
+    def from_material_properties(cls, params: BeamPhysicsBaseParameters) -> 'BeamPhysicsParametersWithInertia':
+        """
+        Create inertia parameters calculated from material properties.
+        
+        Args:
+            params: Base physics parameters with material properties
+            
+        Returns:
+            Instance with calculated inertia parameters
+        """
+        # Copy existing parameters
+        result = cls(
+            young_modulus=params.young_modulus,
+            poisson_ratio=params.poisson_ratio,
+            beam_mass=params.beam_mass,
+            beam_radius=params.beam_radius,
+            beam_length=params.beam_length,
+            beam_shape=params.beam_shape,
+            length_Y=params.length_Y,
+            length_Z=params.length_Z
+        )
+        
+        # Calculate derived parameters
+        shear_modulus = params.young_modulus / (2 * (1 + params.poisson_ratio))
+        area = params.calculate_cross_section_area()
+        moments = params.calculate_second_moment_of_area()
+        
+        # Set inertia parameters
+        result.GI = shear_modulus * moments['Ix']
+        result.GA = shear_modulus * area
+        result.EI = params.young_modulus * moments['Iy']  # Using Iy for simplicity
+        result.EA = params.young_modulus * area
+        
+        return result
+
+
+@dataclass
+class SimulationParameters(BaseParameters):
+    """
+    Simulation parameters for Cosserat rod simulation.
+    
+    These parameters control the numerical aspects of the simulation, such as
+    damping and solver order.
+    
+    Attributes:
+        rayleigh_stiffness: Rayleigh damping stiffness coefficient
+        rayleigh_mass: Rayleigh damping mass coefficient
+        firstOrder: Whether to use first-order integration (True) or second-order (False)
+    """
+
+    rayleigh_stiffness: float = 0.2
+    rayleigh_mass: float = 0.1
+    firstOrder: bool = False
+
+    def validate(self) -> None:
+        """
+        Validate simulation parameters.
+        
+        Raises:
+            ValueError: If parameters fail validation
+        """
+        if self.rayleigh_stiffness < 0:
+            raise ValueError("Rayleigh stiffness must be non-negative")
+        if self.rayleigh_mass < 0:
+            raise ValueError("Rayleigh mass must be non-negative")
+
+
+@dataclass
+class VisualParameters(BaseParameters):
+    """
+    Visual parameters for Cosserat rod visualization.
+    
+    These parameters control the visual appearance of Cosserat rods in the simulation.
+    
+    Attributes:
+        showObject: Whether to show the visual representation (0=no, 1=yes)
+        show_object_scale: Scale factor for visual objects
+        show_object_color: RGBA color values [red, green, blue, alpha]
+    """
+
+    showObject: int = 1
+    show_object_scale: float = 1.0

@@ -1,0 +1,134 @@
+/******************************************************************************
+ *       SOFA, Simulation Open-Framework Architecture                          *
+ *                (c) 2006-2018 INRIA, USTL, UJF, CNRS, MGH                    *
+ *                                                                             *
+ * This library is free software; you can redistribute it and/or modify it     *
+ * under the terms of the GNU Lesser General Public License as published by    *
+ * the Free Software Foundation; either version 2.1 of the License, or (at     *
+ * your option) any later version.                                             *
+ *                                                                             *
+ * This library is distributed in the hope that it will be useful, but WITHOUT *
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or       *
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License *
+ * for more details.                                                           *
+ *                                                                             *
+ * You should have received a copy of the GNU Lesser General Public License    *
+ * along with this library; if not, write to the Free Software Foundation,     *
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301 USA.          *
+ *******************************************************************************
+ *                           Plugin Cosserat    v1.0                           *
+ *				                                              *
+ * This plugin is also distributed under the GNU LGPL (Lesser General          *
+ * Public License) license with the same conditions than SOFA.                 *
+ *                                                                             *
+ * Contributors: Defrost team  (INRIA, University of Lille, CNRS,              *
+ *               Ecole Centrale de Lille)                                      *
+ *                                                                             *
+ * Contact information: https://project.inria.fr/softrobot/contact/            *
+ *                                                                             *
+ ******************************************************************************/
+#pragma once
+#include <Cosserat/forcefield/standard/BaseBeamForceField.h>
+
+namespace sofa::component::forcefield {
+
+	/**
+	 * This component is used to compute the Hooke's law on a beam computed on strain / stress
+	 * Only bending and torsion strain / stress are considered here for Vec3Types
+	 * Full 6DOF strain/stress for Vec6Types
+	 */
+	template<typename DataTypes>
+	class BeamHookeLawForceField : public BaseBeamForceField<DataTypes> {
+	public:
+		SOFA_CLASS(SOFA_TEMPLATE(BeamHookeLawForceField, DataTypes), SOFA_TEMPLATE(BaseBeamForceField, DataTypes));
+
+		typedef typename DataTypes::Real Real;
+		typedef typename DataTypes::VecCoord VecCoord;
+		typedef typename DataTypes::VecDeriv VecDeriv;
+		typedef typename DataTypes::Coord Coord;
+		typedef typename DataTypes::Deriv Deriv;
+
+		typedef Data<VecCoord> DataVecCoord;
+		typedef Data<VecDeriv> DataVecDeriv;
+
+		typedef Vec<3, Real> Vec3;
+		typedef Mat<3, 3, Real> Mat33;
+		typedef Mat<6, 6, Real> Mat66;
+
+	public:
+		BeamHookeLawForceField();
+		virtual ~BeamHookeLawForceField();
+
+		////////////////////////// Inherited from BaseObject /////////////////////////
+		void init() override;
+		void reinit() override;
+		///////////////////////////////////////////////////////////////////////////
+
+		////////////////////////// Inherited from ForceField /////////////////////////
+		void addForce(const MechanicalParams *mparams, DataVecDeriv &f, const DataVecCoord &x,
+					  const DataVecDeriv &v) override;
+
+		void addDForce(const MechanicalParams *mparams, DataVecDeriv &df, const DataVecDeriv &dx) override;
+
+
+		void addKToMatrix(const MechanicalParams *mparams, const MultiMatrixAccessor *matrix) override;
+
+		double getPotentialEnergy(const MechanicalParams *mparams, const DataVecCoord &x) const override;
+		////////////////////////////////////////////////////////////////////////////
+
+		Real getRadius();
+
+		// Debugging functions
+		void displayForces(const VecDeriv &forces, const std::string &label = "force - output");
+		void displayDForces(const VecDeriv &dForces, const std::string &label = "dForce - output");
+		void displayKMatrix(const MultiMatrixAccessor *matrix, const std::string &label = "KMatrix - output");
+		void displaySectionMatrix(const Mat33 &matrix, const std::string &label = "_m_K_section - output");
+
+	protected:
+		// In case we have a beam with different properties per section
+		Data<bool> d_variantSections; /// bool to identify different beams sections
+		Data<type::vector<Real>> d_youngModulusList; /// youngModulus
+		Data<type::vector<Real>> d_poissonRatioList; /// poissonRatio
+		/// If the inertia parameters are given by the user, there is no longer any need to use YG.
+		Data<bool> d_useInertiaParams;
+		Data<Real> d_GI;
+		Data<Real> d_GA;
+		Data<Real> d_EA;
+		Data<Real> d_EI;
+		Data<Real> d_EIy;
+		Data<Real> d_EIz;
+
+		bool compute_df;
+
+		// The stiffness matrix for the beam section
+		Mat33 m_K_section;
+		type::vector<Mat33> m_K_sectionList;
+
+		// The stiffness matrix for the beam section in 6x6 format
+		Mat66 m_K_section66;
+		type::vector<Mat66> m_k_section66List;
+	};
+
+	// Explicit declaration of this spécialisation
+	template<>
+	void BeamHookeLawForceField<sofa::defaulttype::Vec6Types>::reinit();
+	template<>
+	void BeamHookeLawForceField<sofa::defaulttype::Vec6Types>::addForce(const MechanicalParams *mparams,
+																		DataVecDeriv &f, const DataVecCoord &x,
+																		const DataVecDeriv &v);
+	template<>
+	void BeamHookeLawForceField<sofa::defaulttype::Vec6Types>::addDForce(const MechanicalParams *mparams,
+																		 DataVecDeriv &df, const DataVecDeriv &dx);
+	template<>
+	void BeamHookeLawForceField<sofa::defaulttype::Vec6Types>::addKToMatrix(const MechanicalParams *mparams,
+																			const MultiMatrixAccessor *matrix);
+	template<>
+	double BeamHookeLawForceField<sofa::defaulttype::Vec6Types>::getPotentialEnergy(const MechanicalParams *mparams,
+																					const DataVecCoord &x) const;
+
+#if !defined(SOFA_COSSERAT_CPP_BeamHookeLawForceField)
+	extern template class SOFA_COSSERAT_API BeamHookeLawForceField<defaulttype::Vec3Types>;
+	extern template class SOFA_COSSERAT_API BeamHookeLawForceField<defaulttype::Vec6Types>;
+#endif
+
+} // namespace sofa::component::forcefield
