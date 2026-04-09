@@ -664,7 +664,7 @@ namespace Cosserat::mapping {
 
 		const sofa::DataVecCoord_t<Out> *xfromData = this->m_frames->read(sofa::core::vec_id::read_access::position);
 		const sofa::VecCoord_t<Out> xData = xfromData->getValue();
-		vector<Vec3> positions;
+		vector<sofa::type::Vec3> positions;
 		vector<sofa::type::Quat<SReal>> Orientation;
 		positions.clear();
 		Orientation.clear();
