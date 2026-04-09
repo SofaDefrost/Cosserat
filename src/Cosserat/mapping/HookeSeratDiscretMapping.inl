@@ -408,7 +408,7 @@ namespace Cosserat::mapping {
 		const sofa::VecCoord_t<Out> &framePositions =
 				this->m_frames->read(sofa::core::vec_id::read_access::position)->getValue();
 		const sofa::VecCoord_t<In1> &strainState =
-				m_strain_state->read(sofa::core::vec_id::read_access::position)->getValue();
+				this->m_strain_state->read(sofa::core::vec_id::read_access::position)->getValue();
 
 		// Initialize output forces
 		strainForces.resize(strainState.size());
@@ -639,18 +639,88 @@ namespace Cosserat::mapping {
 		dataMatOut2Const[0]->endEdit();
 	}
 
+	// template<class TIn1, class TIn2, class TOut>
+	// void HookeSeratDiscretMapping<TIn1, TIn2, TOut>::draw(const sofa::core::visual::VisualParams *vparams) {
+	// 	if (!vparams->displayFlags().getShowMappings())
+	// 		return;
+
+	// 	// Draw implementation similar to DiscreteCosseratMapping
+	// 	// This would include beam visualization with colormap
+	// 	if (d_drawMapBeam.getValue()) {
+	// 		// Draw colored beam based on deformation
+	// 		// Implementation would depend on specific visualization requirements
+	// 	}
+	// }
+
 	template<class TIn1, class TIn2, class TOut>
 	void HookeSeratDiscretMapping<TIn1, TIn2, TOut>::draw(const sofa::core::visual::VisualParams *vparams) {
-		if (!vparams->displayFlags().getShowMappings())
+		if (!vparams->displayFlags().getShowMechanicalMappings())
 			return;
 
-		// Draw implementation similar to DiscreteCosseratMapping
-		// This would include beam visualization with colormap
-		if (d_drawMapBeam.getValue()) {
-			// Draw colored beam based on deformation
-			// Implementation would depend on specific visualization requirements
+		// draw cable
+		typedef sofa::type::RGBAColor RGBAColor;
+
+		const auto stateLifeCycle = vparams->drawTool()->makeStateLifeCycle();
+
+		const sofa::DataVecCoord_t<Out> *xfromData = this->m_frames->read(sofa::core::vec_id::read_access::position);
+		const sofa::VecCoord_t<Out> xData = xfromData->getValue();
+		vector<Vec3> positions;
+		vector<sofa::type::Quat<SReal>> Orientation;
+		positions.clear();
+		Orientation.clear();
+		unsigned int sz = xData.size();
+		for (unsigned int i = 0; i < sz; i++) {
+			positions.push_back(xData[i].getCenter());
+			Orientation.push_back(xData[i].getOrientation());
 		}
+
+		// Get access articulated
+		const sofa::DataVecCoord_t<In1> *artiData = this->m_strain_state->read(sofa::core::vec_id::read_access::position);
+		const sofa::VecCoord_t<In1> xPos = artiData->getValue();
+
+		RGBAColor drawColor = d_color.getValue();
+		// draw each segment of the beam as a cylinder.
+		for (unsigned int i = 0; i < sz - 1; i++)
+			vparams->drawTool()->drawCylinder(positions[i], positions[i + 1], d_radius.getValue(), drawColor);
+
+		// Define color map
+		SReal min = d_min.getValue();
+		SReal max = d_max.getValue();
+		sofa::helper::ColorMap::evaluator<SReal> _eval = m_colorMap.getEvaluator(min, max);
+
+		glLineWidth(d_radius.getValue());
+		//glBegin(GL_LINES);
+		if (d_drawMapBeam.getValue()) {
+			sofa::type::RGBAColor _color = d_color.getValue();
+			RGBAColor colorL = RGBAColor(_color[0], _color[1], _color[2], _color[3]);
+			glColor4f(colorL[0], colorL[1], colorL[2], colorL[3]);
+			for (unsigned int i = 0; i < sz - 1; i++) {
+				vparams->drawTool()->drawLine(positions[i], positions[i + 1], colorL);
+			}
+		} else {
+			int j = 0;
+			vector<int> index = d_index.getValue();
+			for (unsigned int i = 0; i < sz - 1; i++) {
+				j = m_indices_vectors[i] - 1; // to get the articulation on which the frame is related to
+				RGBAColor color = _eval(xPos[j][d_deformationAxis.getValue()]);
+				vparams->drawTool()->drawLine(positions[i], positions[i + 1], color);
+			}
+		}
+		glLineWidth(1);
+		if (!vparams->displayFlags().getShowMappings())
+			if (!d_debug.getValue())
+				return;
+
+		// Debug output if needed
+		if (this->f_printLog.getValue()) {
+			displayOutputFrames(xData, "draw - rendering frames");
+		}
+
+		//glEnd();
 	}
+
+
+
 
 	template<class TIn1, class TIn2, class TOut>
 	void HookeSeratDiscretMapping<TIn1, TIn2, TOut>::computeBBox(const sofa::core::ExecParams *params,
