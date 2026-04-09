@@ -689,7 +689,7 @@ namespace Cosserat::mapping {
 		sofa::helper::ColorMap::evaluator<SReal> _eval = m_colorMap.getEvaluator(min, max);
 
 		glLineWidth(d_radius.getValue());
-		//glBegin(GL_LINES);
+		glBegin(GL_LINES);
 		if (d_drawMapBeam.getValue()) {
 			sofa::type::RGBAColor _color = d_color.getValue();
 			RGBAColor colorL = RGBAColor(_color[0], _color[1], _color[2], _color[3]);
@@ -716,7 +716,7 @@ namespace Cosserat::mapping {
 			displayOutputFrames(xData, "draw - rendering frames");
 		}
 
-		//glEnd();
+		glEnd();
 	}
 
 
