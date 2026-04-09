@@ -41,7 +41,7 @@ namespace Cosserat::mapping {
 		TangentVector strain_ = TangentVector::Zero(); ///< Full strain [φ, ρ]ᵀ ∈ se(3)
 
 		unsigned int index_0_ = 0;
-		unsigned int index_1_ = indes_0_ + 1;
+		unsigned int index_1_ = index_0_ + 1;
 
 		// Transformation SE3 au lieu de Matrix4 simple
 		SE3Type gX_;
