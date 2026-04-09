@@ -38,7 +38,7 @@ def createScene(root_node):
     root_node.addObject('RequiredPlugin', pluginName='Sofa.GL.Component.Rendering3D') # Needed to use components [OglModel]  
     root_node.addObject('RequiredPlugin', pluginName='Sofa.Component.Mapping.Linear') # Needed to use components [IdentityMapping]      
     root_node.addObject('RequiredPlugin', name='Sofa.Component.Mapping.NonLinear') # Needed to use components [RigidMapping]      
-    
+    root_node.addObject('RequiredPlugin', name='Sofa.Component.MechanicalLoad') # Needed to use components [ConstantForceField]
     root_node.gravity = [0, -9.81, 0]
 
     # --- Solver ---
