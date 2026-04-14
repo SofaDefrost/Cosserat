@@ -32,7 +32,9 @@ def createScene(root_node):
     """Create a Cosserat beam scene with forces and dynamics."""
     # Configure scene with time integration
     add_mini_header(root_node)
-
+    root_node.addObject('RequiredPlugin', pluginName='Sofa.Component.LinearSolver.Direct') # Needed to use components [SparseLDLSolver]  
+    root_node.addObject('RequiredPlugin', pluginName='Sofa.Component.ODESolver.Backward') # Needed to use components [EulerImplicitSolver]  
+    
     # Add gravity
     root_node.gravity = [0, -9.81, 0]  # Add gravity!
 
@@ -46,7 +48,7 @@ def createScene(root_node):
         rayleighMass="0.0",
         vdamping=v_damping_param,  # Damping parameter for dynamics
     )
-    solver_node.addObject("SparseLDLSolver", name="solver")
+    solver_node.addObject("SparseLDLSolver", template="CompressedRowSparseMatrixMat3x3d", name="solver")
 
     # === NEW APPROACH: Use CosseratGeometry with more sections for smoother dynamics ===
     beam_geometry_params = BeamGeometryParameters(
@@ -97,13 +99,13 @@ def createScene(root_node):
         name="euler_solver2",
         vdamping=v_damping_param
     )
-    solver_node2.addObject("SparseLDLSolver", name="solver2")
+    solver_node2.addObject("SparseLDLSolver", template="CompressedRowSparseMatrixMat3x3d", name="solver2")
 
     # # Define second beam geometry parameters
     beam_geometry_params2 = BeamGeometryParameters(
         beam_length=30.0,  # Same beam length
-        nb_section=15,  # 30 sections for good physics resolution
-        nb_frames=15,  # 3 frames for smooth visualization
+        nb_section=15,    # Fewer nb. of section
+        nb_frames=15,
     )
 
     # # Create second geometry object

@@ -21,7 +21,7 @@ import sys
 # Add the python package to the path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "python"))
 
-from python.cosserat import BeamGeometryParameters, CosseratGeometry
+from cosserat import BeamGeometryParameters, CosseratGeometry
 
 from introduction_and_setup import (_add_cosserat_frame, _add_cosserat_state,
                                     _add_rigid_base, add_mini_header)
@@ -32,6 +32,8 @@ def createScene(root_node):
     """Create a Cosserat beam scene with forces and dynamics."""
     # Configure scene with time integration
     add_mini_header(root_node)
+    root_node.addObject('RequiredPlugin', pluginName='Sofa.Component.LinearSolver.Direct') # Needed to use components [SparseLDLSolver]  
+    root_node.addObject('RequiredPlugin', pluginName='Sofa.Component.ODESolver.Backward') # Needed to use components [EulerImplicitSolver]  
 
     # Add gravity
     root_node.gravity = [0, -9.81, 0]  # Add gravity!
@@ -46,7 +48,7 @@ def createScene(root_node):
         rayleighMass="0.0",
         vdamping=v_damping_param,  # Damping parameter for dynamics
     )
-    solver_node.addObject("SparseLDLSolver", name="solver")
+    solver_node.addObject("SparseLDLSolver", template="CompressedRowSparseMatrixMat3x3d", name="solver")
 
     # === NEW APPROACH: Use CosseratGeometry with more sections for smoother dynamics ===
     beam_geometry_params = BeamGeometryParameters(

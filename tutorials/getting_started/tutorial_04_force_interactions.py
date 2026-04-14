@@ -21,12 +21,11 @@ import sys
 _beam_radius = 0.5
 _beam_length = 30.
 _nb_section = 32
-force_null = [0., 0., 0., 0., 0., 0.]  # N
 
 # Add the python package to the path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "python"))
 
-from python.cosserat import BeamGeometryParameters, CosseratGeometry
+from cosserat import BeamGeometryParameters, CosseratGeometry
 
 from force_controller import ForceController
 from introduction_and_setup import (_add_cosserat_frame, _add_cosserat_state,
@@ -38,7 +37,10 @@ def createScene(root_node):
     """Create a Cosserat beam scene with forces and dynamics."""
     # Configure scene with time integration
     add_mini_header(root_node)
-
+    root_node.addObject('RequiredPlugin', pluginName='Sofa.Component.LinearSolver.Direct') # Needed to use components [SparseLDLSolver]  
+    root_node.addObject('RequiredPlugin', pluginName='Sofa.Component.ODESolver.Backward') # Needed to use components [EulerImplicitSolver]  
+    root_node.addObject('RequiredPlugin', pluginName='Sofa.Component.MechanicalLoad') # Needed to use components [ConstantForceField] 
+    
     # Add gravity
     root_node.gravity = [0, -9.81, 0]  # Add gravity!
 
@@ -52,7 +54,7 @@ def createScene(root_node):
         rayleighMass="0.0",
         vdamping=v_damping_param,  # Damping parameter for dynamics
     )
-    solver_node.addObject("SparseLDLSolver", name="solver")
+    solver_node.addObject("SparseLDLSolver", template="CompressedRowSparseMatrixMat3x3d", name="solver")
 
     # === NEW APPROACH: Use CosseratGeometry with more sections for smoother dynamics ===
     beam_geometry_params = BeamGeometryParameters(
@@ -92,15 +94,26 @@ def createScene(root_node):
     # Add a force at the tip of the beam
     # this constance force is used only in the case we are doing force_type 1 or 2
     force_null = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]  # No force initially
+   # force_active = [0.0, 30.0, 0.0, 0.0, 0.0, 0.0]  # Pull the rod upward
 
     const_force_node = frame_node.addObject('ConstantForceField', name='constForce', showArrowSize=1.e-8,
-                                                 indices=beam_geometry.nb_frames, forces=force_null)
+                                                 indices=[beam_geometry.get_number_of_frames()], forces=force_null)
 
     # The effector is used only when force_type is 3
     # create a rigid body to control the end effector of the beam
     tip_controller = root_node.addChild('tip_controller')
     controller_state = tip_controller.addObject('MechanicalObject', template='Rigid3d', name="controlEndEffector",
-                                                showObjectScale=0.3, position=[beam_geometry.beam_length, 0, 0, 0, 0, 0, 1],
+                                                showObjectScale=0.3, position=[beam_geometry.get_beam_length(), 0, 0, 0, 0, 0, 1],
                                                 showObject=True)
+
+    # add the controller to animate the force
+    root_node.addObject(ForceController(
+        name="ForceController",
+        forceNode=const_force_node,     # ConstantForceField
+        frame_node=frame_node,          # node containing FramesMO
+        force_type=2,                   # Change 1, 2 or 3 to test all force type
+        tip_controller=controller_state,# a MechanicalObject used to control the beam's tip (for force_type 3)
+        geoParams=beam_geometry_params  # geometric params
+    ))
 
     return root_node
