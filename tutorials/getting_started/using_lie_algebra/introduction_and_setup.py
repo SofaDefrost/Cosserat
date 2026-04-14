@@ -27,11 +27,11 @@ stiffness_param: float = 1.0e10
 beam_radius: float = 1.0
 
 def add_mini_header(root_node):
-    root_node.addObject("RequiredPlugin", name="Sofa.Component.Mass")
-    root_node.addObject("RequiredPlugin", name="Sofa.Component.SolidMechanics.Spring")
-    root_node.addObject("RequiredPlugin", name="Sofa.Component.StateContainer")
-    root_node.addObject("RequiredPlugin", name="Sofa.Component.Visual")
-    root_node.addObject("RequiredPlugin", name="Cosserat")
+    root_node.addObject("RequiredPlugin", pluginName="Sofa.Component.Mass")
+    root_node.addObject("RequiredPlugin", pluginName="Sofa.Component.SolidMechanics.Spring")
+    root_node.addObject("RequiredPlugin", pluginName="Sofa.Component.StateContainer")
+    root_node.addObject("RequiredPlugin", pluginName="Sofa.Component.Visual")
+    root_node.addObject("RequiredPlugin", pluginName="Cosserat")
 
     # Configure scene
     root_node.addObject(
@@ -198,9 +198,9 @@ def createScene(root_node):
     # === NEW APPROACH: Use CosseratGeometry ===
     # Define beam geometry parameters
     beam_geometry_params = BeamGeometryParameters(
-        beam_length=30.0,  # Total beam length
-        nb_section=3,  # Number of sections for physics
-        nb_frames=6,  # Number of frames for visualization
+        beam_length=10.0,  # Total beam length
+        nb_section=4,  # Number of sections for physics
+        nb_frames=5,  # Number of frames for visualization
     )
 
     # Create geometry object - this automatically calculates all the geometry!
@@ -212,6 +212,7 @@ def createScene(root_node):
     print(f"   - Frames: {beam_geometry.get_number_of_frames()}")
     print(f"   - Section lengths: {beam_geometry.section_lengths}")
 
+
     # Create rigid base with Lie groupe Component
     # base_node = _add_rigid_base(root_node, node_name="rigid_base")
 
@@ -221,9 +222,7 @@ def createScene(root_node):
     # to give the beam a slight initial bend. This helps visualize the
     # beam's orientation and response to forces.
     custom_bending_states = [
-        [0.0, 0.0, 0.1],  # Section 1: slight bend in y and z
-        [0.0, 0.0, 0.1],  # Section 2: slight bend in y and z
-        [0.0, 0.0, 0.1],  # Section 3: slight bend in y and z
+        [0.0, 0.0, 0.1] for _ in range(beam_geometry_params.nb_section)
     ]
 
     # Create cosserat state using the geometry object
