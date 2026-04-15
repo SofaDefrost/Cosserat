@@ -124,7 +124,7 @@ jobs:
         run: |
           mkdir -p build/docs/combined
           cp -r build/docs/html/* build/docs/combined/
-          mkdir -p build/docs/combined/tutorials
+          mkdir -p build/docs/combined/guides
           cp -r build/docs/mkdocs/* build/docs/combined/guides/
 
       - name: Deploy to GitHub Pages
