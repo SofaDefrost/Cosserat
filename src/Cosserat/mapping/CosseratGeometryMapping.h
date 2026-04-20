@@ -423,9 +423,9 @@ namespace Cosserat::mapping {
 	};
 
 	template<class TIn1, class TIn2, class TOut>
-	class HookeSeratBaseMapping : public sofa::core::Multi2Mapping<TIn1, TIn2, TOut> {
+	class CosseratGeometryMapping : public sofa::core::Multi2Mapping<TIn1, TIn2, TOut> {
 	public:
-		SOFA_ABSTRACT_CLASS(SOFA_TEMPLATE3(HookeSeratBaseMapping, TIn1, TIn2, TOut),
+		SOFA_ABSTRACT_CLASS(SOFA_TEMPLATE3(CosseratGeometryMapping, TIn1, TIn2, TOut),
 							SOFA_TEMPLATE3(sofa::core::Multi2Mapping, TIn1, TIn2, TOut));
 
 
@@ -835,17 +835,17 @@ namespace Cosserat::mapping {
 		sofa::core::State<Out> *m_frames;
 
 	protected:
-		HookeSeratBaseMapping();
-		~HookeSeratBaseMapping() override = default;
+		CosseratGeometryMapping();
+		~CosseratGeometryMapping() override = default;
 
-		// HookeSeratBaseMapping(const HookeSeratBaseMapping &) = delete;
-		HookeSeratBaseMapping &operator=(const HookeSeratBaseMapping &) = delete;
+		// CosseratGeometryMapping(const CosseratGeometryMapping &) = delete;
+		CosseratGeometryMapping &operator=(const CosseratGeometryMapping &) = delete;
 	};
 
-#if !defined(SOFA_COSSERAT_CPP_HookeSeratBaseMapping)
-	extern template class SOFA_COSSERAT_API HookeSeratBaseMapping<
+#if !defined(SOFA_COSSERAT_CPP_CosseratGeometryMapping)
+	extern template class SOFA_COSSERAT_API CosseratGeometryMapping<
 			sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types>;
-// extern template class SOFA_COSSERAT_API HookeSeratBaseMapping<
+// extern template class SOFA_COSSERAT_API CosseratGeometryMapping<
 // 		sofa::defaulttype::Vec6Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types>;
 #endif
 

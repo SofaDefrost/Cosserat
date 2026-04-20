@@ -19,14 +19,14 @@
  *                                                                             *
  * Contact information: contact@sofa-framework.org                             *
  ******************************************************************************/
-#define SOFA_COSSERAT_CPP_HookeSeratBaseMapping
-#include <Cosserat/mapping/HookeSeratBaseMapping.inl>
+#define SOFA_COSSERAT_CPP_CosseratGeometryMapping
+#include <Cosserat/mapping/CosseratGeometryMapping.inl>
 #include <sofa/defaulttype/VecTypes.h>
 
 namespace Cosserat::mapping {
-	template class SOFA_COSSERAT_API HookeSeratBaseMapping<sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types,
+	template class SOFA_COSSERAT_API CosseratGeometryMapping<sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types,
 														   sofa::defaulttype::Rigid3Types>;
-	// template class SOFA_COSSERAT_API HookeSeratBaseMapping<sofa::defaulttype::Vec6Types, sofa::defaulttype::Rigid3Types,
+	// template class SOFA_COSSERAT_API CosseratGeometryMapping<sofa::defaulttype::Vec6Types, sofa::defaulttype::Rigid3Types,
 	// 													   sofa::defaulttype::Rigid3Types>;
 
 } // namespace Cosserat::mapping

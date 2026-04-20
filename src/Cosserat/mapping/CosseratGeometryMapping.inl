@@ -1,12 +1,12 @@
 /*
- * HookeSeratBaseMapping.inl
- * Implementation details for the HookeSeratBaseMapping class.
- * This file contains implementations for functions inline in the HookeSeratBaseMapping class.
+ * CosseratGeometryMapping.inl
+ * Implementation details for the CosseratGeometryMapping class.
+ * This file contains implementations for functions inline in the CosseratGeometryMapping class.
  */
 #pragma once
 
 #include <Cosserat/config.h>
-#include <Cosserat/mapping/HookeSeratBaseMapping.h>
+#include <Cosserat/mapping/CosseratGeometryMapping.h>
 #include <iostream>
 #include <sofa/core/Multi2Mapping.inl>
 #include <sofa/core/objectmodel/BaseContext.h>
@@ -24,20 +24,20 @@ namespace Cosserat::mapping {
 	using sofa::type::vector;
 
 	template<class TIn1, class TIn2, class TOut>
-	HookeSeratBaseMapping<TIn1, TIn2, TOut>::HookeSeratBaseMapping() :
+	CosseratGeometryMapping<TIn1, TIn2, TOut>::CosseratGeometryMapping() :
 		d_curv_abs_section(initData(&d_curv_abs_section, "curv_abs_input",
 									"Curvilinear abscissa of the input sections along the rod")),
 		d_curv_abs_frames(initData(&d_curv_abs_frames, "curv_abs_output",
 								   "Curvilinear abscissa of the output frames along the rod")),
 		d_debug(initData(&d_debug, false, "debug", "Enable debug output")), m_strain_state(nullptr),
 		m_rigid_base(nullptr), m_frames(nullptr) {
-		msg_info("HookeSeratBaseMapping") << "HookeSeratBaseMapping constructor called  !!!";
+		msg_info("CosseratGeometryMappingng") << "CosseratGeometryMapping constructor called  !!!";
 	}
 
 	template<class TIn1, class TIn2, class TOut>
-	void HookeSeratBaseMapping<TIn1, TIn2, TOut>::init() {
+	void CosseratGeometryMapping<TIn1, TIn2, TOut>::init() {
 		// Initialize pointers to nullptr
-		msg_info("HookeSeratBaseMapping") << "Initializing HookeSeratBaseMapping...";
+		msg_info("CosseratGeometryMapping") << "Initializing CosseratGeometryMapping...";
 
 		m_strain_state = nullptr;
 		m_rigid_base = nullptr;
@@ -130,12 +130,12 @@ namespace Cosserat::mapping {
 	}
 
 	template<class TIn1, class TIn2, class TOut>
-	void HookeSeratBaseMapping<TIn1, TIn2, TOut>::updateGeometryInfo() {
+	void CosseratGeometryMapping<TIn1, TIn2, TOut>::updateGeometryInfo() {
 		const auto &curv_abs_section = d_curv_abs_section.getValue();
 		const auto &curv_abs_frames = d_curv_abs_frames.getValue();
 
 		if (curv_abs_frames.empty()) {
-			msg_warning("HookeSeratBaseMapping") << "Empty frames data";
+			msg_warning("CosseratGeometryMapping") << "Empty frames data";
 			return;
 		}
 
@@ -162,7 +162,7 @@ namespace Cosserat::mapping {
 	}
 
 	template<class TIn1, class TIn2, class TOut>
-	void HookeSeratBaseMapping<TIn1, TIn2, TOut>::initializeSectionProperties() {
+	void CosseratGeometryMapping<TIn1, TIn2, TOut>::initializeSectionProperties() {
 		const auto &curv_abs_section = d_curv_abs_section.getValue();
 		const auto node_count = curv_abs_section.size();
 		const auto &strain = m_strain_state->read(sofa::core::vec_id::read_access::position)->getValue();
@@ -197,7 +197,7 @@ namespace Cosserat::mapping {
 	}
 
 	template<class TIn1, class TIn2, class TOut>
-	void HookeSeratBaseMapping<TIn1, TIn2, TOut>::initializeFrameProperties() {
+	void CosseratGeometryMapping<TIn1, TIn2, TOut>::initializeFrameProperties() {
 		const auto &curv_abs_section = d_curv_abs_section.getValue();
 		const auto &curv_abs_frames = d_curv_abs_frames.getValue();
 
@@ -226,7 +226,7 @@ namespace Cosserat::mapping {
 	}
 
 	template<class TIn1, class TIn2, class TOut>
-void HookeSeratBaseMapping<TIn1, TIn2, TOut>::computeTangExpImplementation(const double& curv_abs,
+void CosseratGeometryMapping<TIn1, TIn2, TOut>::computeTangExpImplementation(const double& curv_abs,
 	const TangentVector & strain, const AdjointMatrix &adjoint_matrix, AdjointMatrix & tang_adjoint_matrix)
 	{
 		SReal theta = Vector3(strain(0), strain(1), strain(2)).norm();
@@ -272,7 +272,7 @@ void HookeSeratBaseMapping<TIn1, TIn2, TOut>::computeTangExpImplementation(const
 
 
 	template<class TIn1, class TIn2, class TOut>
-void HookeSeratBaseMapping<TIn1, TIn2, TOut>::updateTangExpSE3() {
+void CosseratGeometryMapping<TIn1, TIn2, TOut>::updateTangExpSE3() {
 
 		auto node_count = m_section_properties.size();
 

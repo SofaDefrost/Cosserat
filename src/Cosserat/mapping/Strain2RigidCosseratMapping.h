@@ -18,7 +18,7 @@
 #pragma once
 
 #include <Cosserat/config.h>
-#include <Cosserat/mapping/HookeSeratBaseMapping.h>
+#include <Cosserat/mapping/CosseratGeometryMapping.h>
 #include <sofa/helper/ColorMap.h>
 
 namespace Cosserat::mapping {
@@ -28,7 +28,7 @@ namespace Cosserat::mapping {
 	}
 
 	/**
-	 * @brief Discrete implementation of HookeSeratBaseMapping using liegroups library
+	 * @brief Discrete implementation of CosseratGeometryMapping using liegroups library
 	 *
 	 * This class provides a concrete implementation of the Cosserat rod mapping
 	 * using the liegroups library for SE(3) operations, with discrete exponential
@@ -39,16 +39,16 @@ namespace Cosserat::mapping {
 	 * @tparam TOut The output type for the mapping (frames)
 	 */
 	template<class TIn1, class TIn2, class TOut>
-	class Strain2RigidCosseratMapping : public HookeSeratBaseMapping<TIn1, TIn2, TOut> {
+	class Strain2RigidCosseratMapping : public CosseratGeometryMapping<TIn1, TIn2, TOut> {
 	public:
 		SOFA_CLASS(SOFA_TEMPLATE3(Strain2RigidCosseratMapping
 	, TIn1, TIn2, TOut),
-				   SOFA_TEMPLATE3(HookeSeratBaseMapping, TIn1, TIn2, TOut));
+				   SOFA_TEMPLATE3(CosseratGeometryMapping, TIn1, TIn2, TOut));
 
 		using In1 = TIn1;
 		using In2 = TIn2;
 		using Out = TOut;
-		using Inherit = HookeSeratBaseMapping<TIn1, TIn2, TOut>;
+		using Inherit = CosseratGeometryMapping<TIn1, TIn2, TOut>;
 
 		// Type aliases from base classes
 		using Coord1 = sofa::Coord_t<In1>;
@@ -56,7 +56,7 @@ namespace Cosserat::mapping {
 		using OutCoord = sofa::Coord_t<Out>;
 		using OutDeriv = sofa::Deriv_t<Out>;
 
-		// using SectionProperties = typename HookeSeratBaseMapping<TIn1,TIn2,TOut>::SectionProperties;
+		// using SectionProperties = typename CosseratGeometryMapping<TIn1,TIn2,TOut>::SectionProperties;
 		// using FrameInfo = typename FrameInfo;
 		using SE3Types = sofa::component::cosserat::liegroups::SE3<double>;
 		using Vector3 = typename SE3Types::Vector3;
@@ -130,21 +130,21 @@ namespace Cosserat::mapping {
 	public:
 		////////////////////////// Inherited attributes ////////////////////////////
 		/// Bring inherited attributes into the current lookup context
-		using HookeSeratBaseMapping<TIn1, TIn2, TOut>::d_curv_abs_section;
-		using HookeSeratBaseMapping<TIn1, TIn2, TOut>::d_curv_abs_frames;
-		using HookeSeratBaseMapping<TIn1, TIn2, TOut>::d_debug;
+		using CosseratGeometryMapping<TIn1, TIn2, TOut>::d_curv_abs_section;
+		using CosseratGeometryMapping<TIn1, TIn2, TOut>::d_curv_abs_frames;
+		using CosseratGeometryMapping<TIn1, TIn2, TOut>::d_debug;
 
 	protected:
 		////////////////////////// Inherited attributes ////////////////////////////
 		/// Bring inherited attributes into the current lookup context
-		using HookeSeratBaseMapping<TIn1, TIn2, TOut>::m_section_properties;
-		using HookeSeratBaseMapping<TIn1, TIn2, TOut>::m_frameProperties;
-		using HookeSeratBaseMapping<TIn1, TIn2, TOut>::m_indices_vectors;
-		using HookeSeratBaseMapping<TIn1, TIn2, TOut>::m_indices_vectors_draw;
-		using HookeSeratBaseMapping<TIn1, TIn2, TOut>::m_beam_length_vectors;
-		using HookeSeratBaseMapping<TIn1, TIn2, TOut>::m_strain_state;
-		using HookeSeratBaseMapping<TIn1, TIn2, TOut>::m_rigid_base;
-		using HookeSeratBaseMapping<TIn1, TIn2, TOut>::m_frames;
+		using CosseratGeometryMapping<TIn1, TIn2, TOut>::m_section_properties;
+		using CosseratGeometryMapping<TIn1, TIn2, TOut>::m_frameProperties;
+		using CosseratGeometryMapping<TIn1, TIn2, TOut>::m_indices_vectors;
+		using CosseratGeometryMapping<TIn1, TIn2, TOut>::m_indices_vectors_draw;
+		using CosseratGeometryMapping<TIn1, TIn2, TOut>::m_beam_length_vectors;
+		using CosseratGeometryMapping<TIn1, TIn2, TOut>::m_strain_state;
+		using CosseratGeometryMapping<TIn1, TIn2, TOut>::m_rigid_base;
+		using CosseratGeometryMapping<TIn1, TIn2, TOut>::m_frames;
 		//////////////////////////////////////////////////////////////////////////////
 
 		sofa::helper::ColorMap m_colorMap;

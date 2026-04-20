@@ -45,8 +45,8 @@ set(HEADER_FILES
   ${SRC_ROOT_DIR}/config.h.in
   ${SRC_ROOT_DIR}/fwd.h
   ${SRC_ROOT_DIR}/types.h
-  ${SRC_ROOT_DIR}/mapping/HookeSeratBaseMapping.h
-  ${SRC_ROOT_DIR}/mapping/HookeSeratBaseMapping.inl
+  ${SRC_ROOT_DIR}/mapping/CosseratGeometryMapping.h
+  ${SRC_ROOT_DIR}/mapping/CosseratGeometryMapping.inl
   ${SRC_ROOT_DIR}/mapping/Strain2RigidCosseratMapping.h
   ${SRC_ROOT_DIR}/mapping/Strain2RigidCosseratMapping.inl
   ${SRC_ROOT_DIR}/mapping/BaseCosseratMapping.h
@@ -85,7 +85,7 @@ set(HEADER_FILES
 set(SOURCE_FILES
     ${SRC_ROOT_DIR}/initCosserat.cpp
     ${SRC_ROOT_DIR}/mapping/BaseCosseratMapping.cpp
-    ${SRC_ROOT_DIR}/mapping/HookeSeratBaseMapping.cpp
+    ${SRC_ROOT_DIR}/mapping/CosseratGeometryMapping.cpp
     ${SRC_ROOT_DIR}/mapping/Strain2RigidCosseratMapping.cpp
     ${SRC_ROOT_DIR}/mapping/DiscreteCosseratMapping.cpp
     # ${SRC_ROOT_DIR}/mapping/DiscreteDynamicCosseratMapping.cpp

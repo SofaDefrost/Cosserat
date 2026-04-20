@@ -18,8 +18,8 @@
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
 #include "Binding_HookeSeratMapping.h"
-#include <Cosserat/mapping/HookeSeratBaseMapping.h>
-#include <Cosserat/mapping/HookeSeratDiscretMapping.h>
+#include <Cosserat/mapping/CosseratGeometryMapping.h>
+#include <Cosserat/mapping/Strain2RigidCosseratMapping.h>
 #include <SofaPython3/PythonFactory.h>
 #include <SofaPython3/Sofa/Core/Binding_Base.h>
 #include <SofaPython3/Sofa/Core/Binding_BaseContext.h>
@@ -52,7 +52,7 @@ void moduleAddHookeSeratMapping(py::module &m) {
 
     // Explicit instantiation for Vec3Types
     using Strain2RigidCosseratMapping = Strain2RigidCosseratMapping<Vec3Types, Rigid3Types, Rigid3Types>;
-    py::class_<Strain2RigidCosseratMapping, HookeSeratBaseMapping<Vec3Types, Rigid3Types, Rigid3Types>, py_shared_ptr<Strain2RigidCosseratMapping>> c3(m, "HookeSeratDiscretMapping3");
+    py::class_<Strain2RigidCosseratMapping, CosseratGeometryMapping<Vec3Types, Rigid3Types, Rigid3Types>, py_shared_ptr<Strain2RigidCosseratMapping>> c3(m, "HookeSeratDiscretMapping3");
 
     PythonFactory::registerType<Strain2RigidCosseratMapping>(
         [](sofa::core::objectmodel::Base *object) {
