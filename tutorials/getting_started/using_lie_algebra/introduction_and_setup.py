@@ -199,8 +199,8 @@ def createScene(root_node):
     # Define beam geometry parameters
     beam_geometry_params = BeamGeometryParameters(
         beam_length=10.0,  # Total beam length
-        nb_section=4,  # Number of sections for physics
-        nb_frames=5,  # Number of frames for visualization
+        nb_section=3,  # Number of sections for physics
+        nb_frames=6,  # Number of frames for visualization
     )
 
     # Create geometry object - this automatically calculates all the geometry!
@@ -222,7 +222,7 @@ def createScene(root_node):
     # to give the beam a slight initial bend. This helps visualize the
     # beam's orientation and response to forces.
     custom_bending_states = [
-        [0.0, 0.0, 0.1] for _ in range(beam_geometry_params.nb_section)
+        [0.0, 0.4, 0.0] for _ in range(beam_geometry_params.nb_section)
     ]
 
     # Create cosserat state using the geometry object
