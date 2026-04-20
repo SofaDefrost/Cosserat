@@ -85,6 +85,7 @@ namespace Cosserat::mapping {
 		msg_info() << "HookeSeratDiscretMapping initialized with liegroups SE(3) integration";
 	}
 
+	/*********************start debugging **************************/
 	template<class TIn1, class TIn2, class TOut>
 	void
 	HookeSeratDiscretMapping<TIn1, TIn2, TOut>::apply(const sofa::core::MechanicalParams * /* mparams */,
@@ -101,6 +102,9 @@ namespace Cosserat::mapping {
 		if (this->d_componentState.getValue() != sofa::core::objectmodel::ComponentState::Valid)
 			return;
 
+		if (d_debug.getValue())
+			std::cout << " ########## Apply Function ########" << std::endl;
+		
 		// Get input data
 		const sofa::VecCoord_t<In1> &strainState = dataVecIn1Pos[0]->getValue();
 		const sofa::VecCoord_t<In2> &rigidBase = dataVecIn2Pos[0]->getValue();
@@ -162,6 +166,9 @@ namespace Cosserat::mapping {
 			// frame*gX(x)
 			current_frame = current_frame * m_frameProperties[i].getTransformation();
 
+			if(d_debug.getValue())
+				std::cout << "Frame  : " << i << " = " << current_frame << std::endl;
+				
 			// Save current rigid frame transformation into frame's properties
 			m_frameProperties[i].setTransformation(current_frame);
 
@@ -300,6 +307,9 @@ namespace Cosserat::mapping {
 
 		// Base node velocity (transformed from SOFA frame)
 		node_velocities[0] = base_projector * base_vel_local;
+		if (d_debug.getValue())
+    		std::cout << "Base local Velocity :" << node_velocities[0].transpose() << std::endl;
+
 
 		for (size_t i = 1; i < m_section_properties.size(); ++i) {
 			const auto &section = m_section_properties[i];
@@ -322,10 +332,10 @@ namespace Cosserat::mapping {
 
 			// Propagate velocity: η_i = Ad_{g_i^{-1}} * (η_{i-1} + T_i * ξ̇_i)
 			// where Ad_{g_i^{-1}} is the inverse adjoint (transpose for SE(3))
-			node_velocities[i] = section.getAdjoint().transpose() * (node_velocities[i - 1] + tang_adj * strain_vel_i);
+			node_velocities[i] = section.getAdjoint() * (node_velocities[i - 1] + tang_adj * strain_vel_i);
 
 			if (d_debug.getValue()) {
-				msg_info() << "Node velocity [" << i << "]: " << node_velocities[i].transpose();
+				std::cout << "Node velocity [" << i << "]: " << node_velocities[i].transpose()<<"\n";
 			}
 		}
 
@@ -358,7 +368,7 @@ namespace Cosserat::mapping {
 
 			// Compute frame velocity: η_frame = Ad_{g_frame^{-1}} * (η_node + T_frame * ξ̇_frame)
 			TangentVector eta_frame =
-					frame.getAdjoint().transpose() * (node_velocities[section_idx] + tang_adj * frame_strain_vel);
+					frame.getAdjoint() * (node_velocities[section_idx] + tang_adj * frame_strain_vel);
 
 			// Project to output frame (convert from local to SOFA global frame)
 			AdjointMatrix frame_projector =
@@ -371,7 +381,7 @@ namespace Cosserat::mapping {
 			}
 
 			if (d_debug.getValue()) {
-				msg_info() << "Frame velocity [" << i << "]: " << output_vel.transpose();
+				std::cout << "Frame velocity [" << i << "]: " << output_vel.transpose() <<"\n";
 			}
 		}
 
@@ -408,7 +418,7 @@ namespace Cosserat::mapping {
 		const sofa::VecCoord_t<Out> &framePositions =
 				this->m_frames->read(sofa::core::vec_id::read_access::position)->getValue();
 		const sofa::VecCoord_t<In1> &strainState =
-				m_strain_state->read(sofa::core::vec_id::read_access::position)->getValue();
+				this->m_strain_state->read(sofa::core::vec_id::read_access::position)->getValue();
 
 		// Initialize output forces
 		strainForces.resize(strainState.size());
@@ -639,18 +649,88 @@ namespace Cosserat::mapping {
 		dataMatOut2Const[0]->endEdit();
 	}
 
+	// template<class TIn1, class TIn2, class TOut>
+	// void HookeSeratDiscretMapping<TIn1, TIn2, TOut>::draw(const sofa::core::visual::VisualParams *vparams) {
+	// 	if (!vparams->displayFlags().getShowMappings())
+	// 		return;
+
+	// 	// Draw implementation similar to DiscreteCosseratMapping
+	// 	// This would include beam visualization with colormap
+	// 	if (d_drawMapBeam.getValue()) {
+	// 		// Draw colored beam based on deformation
+	// 		// Implementation would depend on specific visualization requirements
+	// 	}
+	// }
+
 	template<class TIn1, class TIn2, class TOut>
 	void HookeSeratDiscretMapping<TIn1, TIn2, TOut>::draw(const sofa::core::visual::VisualParams *vparams) {
-		if (!vparams->displayFlags().getShowMappings())
+		if (!vparams->displayFlags().getShowMechanicalMappings())
 			return;
 
-		// Draw implementation similar to DiscreteCosseratMapping
-		// This would include beam visualization with colormap
-		if (d_drawMapBeam.getValue()) {
-			// Draw colored beam based on deformation
-			// Implementation would depend on specific visualization requirements
+		// draw cable
+		typedef sofa::type::RGBAColor RGBAColor;
+
+		const auto stateLifeCycle = vparams->drawTool()->makeStateLifeCycle();
+
+		const sofa::DataVecCoord_t<Out> *xfromData = this->m_frames->read(sofa::core::vec_id::read_access::position);
+		const sofa::VecCoord_t<Out> xData = xfromData->getValue();
+		vector<sofa::type::Vec3> positions;
+		vector<sofa::type::Quat<SReal>> Orientation;
+		positions.clear();
+		Orientation.clear();
+		unsigned int sz = xData.size();
+		for (unsigned int i = 0; i < sz; i++) {
+			positions.push_back(xData[i].getCenter());
+			Orientation.push_back(xData[i].getOrientation());
 		}
+
+		// Get access articulated
+		const sofa::DataVecCoord_t<In1> *artiData = this->m_strain_state->read(sofa::core::vec_id::read_access::position);
+		const sofa::VecCoord_t<In1> xPos = artiData->getValue();
+
+		RGBAColor drawColor = d_color.getValue();
+		// draw each segment of the beam as a cylinder.
+		for (unsigned int i = 0; i < sz - 1; i++)
+			vparams->drawTool()->drawCylinder(positions[i], positions[i + 1], d_radius.getValue(), drawColor);
+
+		// Define color map
+		SReal min = d_min.getValue();
+		SReal max = d_max.getValue();
+		sofa::helper::ColorMap::evaluator<SReal> _eval = m_colorMap.getEvaluator(min, max);
+
+		glLineWidth(d_radius.getValue());
+		glBegin(GL_LINES);
+		if (d_drawMapBeam.getValue()) {
+			sofa::type::RGBAColor _color = d_color.getValue();
+			RGBAColor colorL = RGBAColor(_color[0], _color[1], _color[2], _color[3]);
+			glColor4f(colorL[0], colorL[1], colorL[2], colorL[3]);
+			for (unsigned int i = 0; i < sz - 1; i++) {
+				vparams->drawTool()->drawLine(positions[i], positions[i + 1], colorL);
+			}
+		} else {
+			int j = 0;
+			vector<int> index = d_index.getValue();
+			for (unsigned int i = 0; i < sz - 1; i++) {
+				j = m_indices_vectors[i] - 1; // to get the articulation on which the frame is related to
+				RGBAColor color = _eval(xPos[j][d_deformationAxis.getValue()]);
+				vparams->drawTool()->drawLine(positions[i], positions[i + 1], color);
+			}
+		}
+		glLineWidth(1);
+		if (!vparams->displayFlags().getShowMappings())
+			if (!d_debug.getValue())
+				return;
+
+		// Debug output if needed
+		if (this->f_printLog.getValue()) {
+			displayOutputFrames(xData, "draw - rendering frames");
+		}
+
+		glEnd();
 	}
+
+
+
 
 	template<class TIn1, class TIn2, class TOut>
 	void HookeSeratDiscretMapping<TIn1, TIn2, TOut>::computeBBox(const sofa::core::ExecParams *params,

@@ -190,6 +190,7 @@ namespace Cosserat::mapping {
 			// Fill with
 
 			SectionInfo node(length, strain_0, i, SE3Type::computeIdentity());
+			node.setIndices(i);
 			node.setStrain(strain[i]);
 			m_section_properties.push_back(node);
 		}
