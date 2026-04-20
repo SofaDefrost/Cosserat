@@ -85,6 +85,7 @@ namespace Cosserat::mapping {
 		msg_info() << "HookeSeratDiscretMapping initialized with liegroups SE(3) integration";
 	}
 
+	/*********************start debugging **************************/
 	template<class TIn1, class TIn2, class TOut>
 	void
 	HookeSeratDiscretMapping<TIn1, TIn2, TOut>::apply(const sofa::core::MechanicalParams * /* mparams */,
@@ -101,6 +102,9 @@ namespace Cosserat::mapping {
 		if (this->d_componentState.getValue() != sofa::core::objectmodel::ComponentState::Valid)
 			return;
 
+		if (d_debug.getValue())
+			std::cout << " ########## Apply Function ########" << std::endl;
+		
 		// Get input data
 		const sofa::VecCoord_t<In1> &strainState = dataVecIn1Pos[0]->getValue();
 		const sofa::VecCoord_t<In2> &rigidBase = dataVecIn2Pos[0]->getValue();
@@ -162,6 +166,9 @@ namespace Cosserat::mapping {
 			// frame*gX(x)
 			current_frame = current_frame * m_frameProperties[i].getTransformation();
 
+			if(d_debug.getValue())
+				std::cout << "Frame  : " << i << " = " << current_frame << std::endl;
+				
 			// Save current rigid frame transformation into frame's properties
 			m_frameProperties[i].setTransformation(current_frame);
 
@@ -300,6 +307,9 @@ namespace Cosserat::mapping {
 
 		// Base node velocity (transformed from SOFA frame)
 		node_velocities[0] = base_projector * base_vel_local;
+		if (d_debug.getValue())
+    		std::cout << "Base local Velocity :" << node_velocities[0].transpose() << std::endl;
+
 
 		for (size_t i = 1; i < m_section_properties.size(); ++i) {
 			const auto &section = m_section_properties[i];
@@ -322,10 +332,10 @@ namespace Cosserat::mapping {
 
 			// Propagate velocity: η_i = Ad_{g_i^{-1}} * (η_{i-1} + T_i * ξ̇_i)
 			// where Ad_{g_i^{-1}} is the inverse adjoint (transpose for SE(3))
-			node_velocities[i] = section.getAdjoint().transpose() * (node_velocities[i - 1] + tang_adj * strain_vel_i);
+			node_velocities[i] = section.getAdjoint() * (node_velocities[i - 1] + tang_adj * strain_vel_i);
 
 			if (d_debug.getValue()) {
-				msg_info() << "Node velocity [" << i << "]: " << node_velocities[i].transpose();
+				std::cout << "Node velocity [" << i << "]: " << node_velocities[i].transpose()<<"\n";
 			}
 		}
 
@@ -358,7 +368,7 @@ namespace Cosserat::mapping {
 
 			// Compute frame velocity: η_frame = Ad_{g_frame^{-1}} * (η_node + T_frame * ξ̇_frame)
 			TangentVector eta_frame =
-					frame.getAdjoint().transpose() * (node_velocities[section_idx] + tang_adj * frame_strain_vel);
+					frame.getAdjoint() * (node_velocities[section_idx] + tang_adj * frame_strain_vel);
 
 			// Project to output frame (convert from local to SOFA global frame)
 			AdjointMatrix frame_projector =
@@ -371,7 +381,7 @@ namespace Cosserat::mapping {
 			}
 
 			if (d_debug.getValue()) {
-				msg_info() << "Frame velocity [" << i << "]: " << output_vel.transpose();
+				std::cout << "Frame velocity [" << i << "]: " << output_vel.transpose() <<"\n";
 			}
 		}
 

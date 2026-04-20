@@ -22,6 +22,10 @@
 #include <sofa/helper/ColorMap.h>
 
 namespace Cosserat::mapping {
+	namespace{
+		using Mat3x6 = sofa::type::Mat<3, 6, SReal>;
+		using Mat6x6 = sofa::type::Mat6x6;
+	}
 
 	/**
 	 * @brief Discrete implementation of HookeSeratBaseMapping using liegroups library
