@@ -77,44 +77,44 @@ jobs:
         run: |
           # Create or update mkdocs.yml if needed
           if [ ! -f "./mkdocs.yml" ]; then
-            cat > mkdocs.yml << EOF
-            site_name: Cosserat Plugin Documentation
-            site_description: Documentation for the Cosserat Plugin for SOFA Framework
-            site_author: SOFA Community
-            repo_url: https://github.com/SofaDefrost/plugin.Cosserat
-            theme:
-              name: material
-              palette:
-                primary: indigo
-                accent: indigo
-            markdown_extensions:
-              - pymdownx.arithmatex
-              - pymdownx.betterem
-              - pymdownx.caret
-              - pymdownx.critic
-              - pymdownx.details
-              - pymdownx.emoji
-              - pymdownx.highlight
-              - pymdownx.inlinehilite
-              - pymdownx.keys
-              - pymdownx.mark
-              - pymdownx.smartsymbols
-              - pymdownx.superfences
-              - pymdownx.tabbed
-              - pymdownx.tasklist
-              - pymdownx.tilde
-            nav:
-              - Home: index.md
-              - API Reference: 
-                - Lie Groups: src/Cosserat/liegroups/Readme.md
-                - Force Fields: src/Cosserat/forcefield/README.md
-                - Mappings: src/Cosserat/mapping/README.md
-                - Constraints: src/Cosserat/constraint/README.md
-                - Engines: src/Cosserat/engine/README.md
-              - Tutorials: tutorial/tuto_scenes/
-              - Examples: examples/
-              - Mathematics: docs/text/math_foundations.md
-            EOF
+            cat > mkdocs.yml << 'EOF'
+          site_name: Cosserat Plugin Documentation
+          site_description: Documentation for the Cosserat Plugin for SOFA Framework
+          site_author: SOFA Community
+          repo_url: https://github.com/SofaDefrost/plugin.Cosserat
+          theme:
+            name: material
+            palette:
+              primary: indigo
+              accent: indigo
+          markdown_extensions:
+            - pymdownx.arithmatex
+            - pymdownx.betterem
+            - pymdownx.caret
+            - pymdownx.critic
+            - pymdownx.details
+            - pymdownx.emoji
+            - pymdownx.highlight
+            - pymdownx.inlinehilite
+            - pymdownx.keys
+            - pymdownx.mark
+            - pymdownx.smartsymbols
+            - pymdownx.superfences
+            - pymdownx.tabbed
+            - pymdownx.tasklist
+            - pymdownx.tilde
+          nav:
+            - Home: index.md
+            - API Reference: 
+              - Lie Groups: src/Cosserat/liegroups/Readme.md
+              - Force Fields: src/Cosserat/forcefield/README.md
+              - Mappings: src/Cosserat/mapping/README.md
+              - Constraints: src/Cosserat/constraint/README.md
+              - Engines: src/Cosserat/engine/README.md
+            - Tutorials: tutorial/tuto_scenes/
+            - Examples: examples/
+            - Mathematics: docs/text/math_foundations.md
+          EOF
           fi
           
           # Build MkDocs site for tutorials and guides
