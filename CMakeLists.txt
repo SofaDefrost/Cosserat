@@ -47,8 +47,8 @@ set(HEADER_FILES
   ${SRC_ROOT_DIR}/types.h
   ${SRC_ROOT_DIR}/mapping/HookeSeratBaseMapping.h
   ${SRC_ROOT_DIR}/mapping/HookeSeratBaseMapping.inl
-  ${SRC_ROOT_DIR}/mapping/HookeSeratDiscretMapping.h
-  ${SRC_ROOT_DIR}/mapping/HookeSeratDiscretMapping.inl
+  ${SRC_ROOT_DIR}/mapping/Strain2RigidCosseratMapping.h
+  ${SRC_ROOT_DIR}/mapping/Strain2RigidCosseratMapping.inl
   ${SRC_ROOT_DIR}/mapping/BaseCosseratMapping.h
   ${SRC_ROOT_DIR}/mapping/BaseCosseratMapping.inl
   ${SRC_ROOT_DIR}/mapping/DiscreteCosseratMapping.h
@@ -86,7 +86,7 @@ set(SOURCE_FILES
     ${SRC_ROOT_DIR}/initCosserat.cpp
     ${SRC_ROOT_DIR}/mapping/BaseCosseratMapping.cpp
     ${SRC_ROOT_DIR}/mapping/HookeSeratBaseMapping.cpp
-    ${SRC_ROOT_DIR}/mapping/HookeSeratDiscretMapping.cpp
+    ${SRC_ROOT_DIR}/mapping/Strain2RigidCosseratMapping.cpp
     ${SRC_ROOT_DIR}/mapping/DiscreteCosseratMapping.cpp
     # ${SRC_ROOT_DIR}/mapping/DiscreteDynamicCosseratMapping.cpp
     ${SRC_ROOT_DIR}/engine/ProjectionEngine.cpp
@@ -95,8 +95,8 @@ set(SOURCE_FILES
     ${SRC_ROOT_DIR}/engine/PointsManager.cpp
     ${SRC_ROOT_DIR}/forcefield/standard/BaseBeamForceField.cpp
     ${SRC_ROOT_DIR}/forcefield/standard/BeamHookeLawForceField.cpp
-    ${SRC_ROOT_DIR}/forcefield/rigid/BeamHookeLawForceFieldRigid.cpp
     ${SRC_ROOT_DIR}/forcefield/base/HookeSeratBaseForceField.cpp
+    ${SRC_ROOT_DIR}/forcefield/rigid/BeamHookeLawForceFieldRigid.cpp
     ${SRC_ROOT_DIR}/forcefield/standard/HookeSeratPCSForceField.cpp
     ${SRC_ROOT_DIR}/forcefield/experimental/CosseratInternalActuation.cpp
     ${SRC_ROOT_DIR}/constraint/CosseratSlidingConstraint.cpp

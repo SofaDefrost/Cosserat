@@ -15,22 +15,22 @@
  * You should have received a copy of the GNU Lesser General Public License    *
  * along with this program. If not, see <http://www.gnu.org/licenses/>.        *
  ******************************************************************************/
-#define SOFA_COSSERAT_CPP_HookeSeratDiscretMapping
-#include <Cosserat/mapping/HookeSeratDiscretMapping.inl>
+#define SOFA_COSSERAT_CPP_Strain2RigidCosseratMapping
+#include <Cosserat/mapping/Strain2RigidCosseratMapping.inl>
 #include <sofa/core/ObjectFactory.h>
 #include <sofa/defaulttype/VecTypes.h>
 
 namespace Cosserat::mapping {
-	template class SOFA_COSSERAT_API HookeSeratDiscretMapping<
+	template class SOFA_COSSERAT_API Strain2RigidCosseratMapping<
 			sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types>;
-	// template class SOFA_COSSERAT_API HookeSeratDiscretMapping<
+	// template class SOFA_COSSERAT_API Strain2RigidCosseratMapping<
 	// 		sofa::defaulttype::Vec6Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types>;
 
 } // namespace Cosserat::mapping
 
 namespace Cosserat {
 	// Register in the Factory
-	void registerHookeSeratDiscretMapping(sofa::core::ObjectFactory *factory) {
+	void registerStrain2RigidCosseratMapping(sofa::core::ObjectFactory *factory) {
 		factory->registerObjects(
 				sofa::core::ObjectRegistrationData(
 						"This component facilitates the creation of Hooke Serat Discrete Mapping in SOFA simulations. "
@@ -42,10 +42,10 @@ namespace Cosserat {
 						"Like any mapping, it updates the positions and velocities of the outputs based on the inputs. "
 						"Additionally, forces applied to the outputs are propagated back to the inputs, ensuring "
 						"bidirectional coupling.")
-						.add<mapping::HookeSeratDiscretMapping<sofa::defaulttype::Vec3Types,
+						.add<mapping::Strain2RigidCosseratMapping<sofa::defaulttype::Vec3Types,
 															   sofa::defaulttype::Rigid3Types,
 															   sofa::defaulttype::Rigid3Types>>(true));
-		// .add<mapping::HookeSeratDiscretMapping<sofa::defaulttype::Vec6Types,
+		// .add<mapping::Strain2RigidCosseratMapping<sofa::defaulttype::Vec6Types,
 		// 									   sofa::defaulttype::Rigid3Types,
 		// 									   sofa::defaulttype::Rigid3Types>>());
 	}

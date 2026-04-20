@@ -39,9 +39,10 @@ namespace Cosserat::mapping {
 	 * @tparam TOut The output type for the mapping (frames)
 	 */
 	template<class TIn1, class TIn2, class TOut>
-	class HookeSeratDiscretMapping : public HookeSeratBaseMapping<TIn1, TIn2, TOut> {
+	class Strain2RigidCosseratMapping : public HookeSeratBaseMapping<TIn1, TIn2, TOut> {
 	public:
-		SOFA_CLASS(SOFA_TEMPLATE3(HookeSeratDiscretMapping, TIn1, TIn2, TOut),
+		SOFA_CLASS(SOFA_TEMPLATE3(Strain2RigidCosseratMapping
+	, TIn1, TIn2, TOut),
 				   SOFA_TEMPLATE3(HookeSeratBaseMapping, TIn1, TIn2, TOut));
 
 		using In1 = TIn1;
@@ -170,15 +171,17 @@ namespace Cosserat::mapping {
 							   const sofa::type::vector<OutDeriv> &outputVel, const std::string &context = "") const;
 
 	protected:
-		HookeSeratDiscretMapping();
-		~HookeSeratDiscretMapping() override = default;
+		Strain2RigidCosseratMapping
+();
+		~Strain2RigidCosseratMapping
+() override = default;
 	};
 
-#if !defined(SOFA_COSSERAT_CPP_HookeSeratDiscretMapping)
-	extern template class SOFA_COSSERAT_API HookeSeratDiscretMapping<
+#if !defined(SOFA_COSSERAT_CPP_Strain2RigidCosseratMappin)
+	extern template class SOFA_COSSERAT_API Strain2RigidCosseratMapping<
 			sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types>;
 	// Vec6 instantiation is currently disabled
-	// extern template class SOFA_COSSERAT_API HookeSeratDiscretMapping<
+	// extern template class SOFA_COSSERAT_API Strain2RigidCosseratMapping<
 	// 		sofa::defaulttype::Vec6Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types>;
 #endif
 

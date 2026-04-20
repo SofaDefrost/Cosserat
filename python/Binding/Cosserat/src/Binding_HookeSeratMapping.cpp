@@ -51,12 +51,12 @@ void moduleAddHookeSeratMapping(py::module &m) {
 
 
     // Explicit instantiation for Vec3Types
-    using HookeSeratDiscretMapping3 = HookeSeratDiscretMapping<Vec3Types, Rigid3Types, Rigid3Types>;
-    py::class_<HookeSeratDiscretMapping3, HookeSeratBaseMapping<Vec3Types, Rigid3Types, Rigid3Types>, py_shared_ptr<HookeSeratDiscretMapping3>> c3(m, "HookeSeratDiscretMapping3");
+    using Strain2RigidCosseratMapping = Strain2RigidCosseratMapping<Vec3Types, Rigid3Types, Rigid3Types>;
+    py::class_<Strain2RigidCosseratMapping, HookeSeratBaseMapping<Vec3Types, Rigid3Types, Rigid3Types>, py_shared_ptr<Strain2RigidCosseratMapping>> c3(m, "HookeSeratDiscretMapping3");
 
-    PythonFactory::registerType<HookeSeratDiscretMapping3>(
+    PythonFactory::registerType<Strain2RigidCosseratMapping>(
         [](sofa::core::objectmodel::Base *object) {
-            return py::cast(dynamic_cast<HookeSeratDiscretMapping3 *>(object));
+            return py::cast(dynamic_cast<Strain2RigidCosseratMapping *>(object));
         });
 
 

@@ -51,7 +51,7 @@ namespace Cosserat {
 	extern void registerCosseratInternalActuation(sofa::core::ObjectFactory *factory);
 	extern void registerDifferenceMultiMapping(sofa::core::ObjectFactory *factory);
 	extern void registerDiscreteCosseratMapping(sofa::core::ObjectFactory *factory);
-	extern void registerHookeSeratDiscretMapping(sofa::core::ObjectFactory *factory);
+	extern void registerStrain2RigidCosseratMapping(sofa::core::ObjectFactory *factory);
 
 	// extern void registerDiscretDynamicCosseratMapping(sofa::core::ObjectFactory *factory);
 	extern void registerLegendrePolynomialsMapping(sofa::core::ObjectFactory *factory);
@@ -103,7 +103,7 @@ namespace Cosserat {
 		registerCosseratInternalActuation(factory);
 		registerDifferenceMultiMapping(factory);
 		registerDiscreteCosseratMapping(factory);
-		registerHookeSeratDiscretMapping(factory);
+		registerStrain2RigidCosseratMapping(factory);
 		// registerDiscretDynamicCosseratMapping(factory);
 		registerLegendrePolynomialsMapping(factory);
 		registerRigidDistanceMapping(factory);

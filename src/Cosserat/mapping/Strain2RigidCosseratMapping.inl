@@ -17,7 +17,7 @@
  ******************************************************************************/
 #pragma once
 
-#include <Cosserat/mapping/HookeSeratDiscretMapping.h>
+#include <Cosserat/mapping/Strain2RigidCosseratMapping.h>
 #include <sofa/core/Multi2Mapping.inl>
 #include <sofa/core/objectmodel/BaseContext.h>
 #include <sofa/core/visual/VisualParams.h>
@@ -40,7 +40,7 @@ namespace Cosserat::mapping {
 	using namespace sofa::component::cosserat::liegroups;
 
 	template<class TIn1, class TIn2, class TOut>
-	HookeSeratDiscretMapping<TIn1, TIn2, TOut>::HookeSeratDiscretMapping() :
+	Strain2RigidCosseratMapping<TIn1, TIn2, TOut>::Strain2RigidCosseratMapping() :
 		Inherit(), d_deformationAxis(initData(&d_deformationAxis, (int) 1, "deformationAxis",
 											  "the axis in which we want to show the deformation.\n")),
 		d_max(initData(&d_max, (SReal) 1.0e-2, "max", "the maximum of the deformation.\n")),
@@ -63,7 +63,7 @@ namespace Cosserat::mapping {
 		// Register callback for updating frame transformations when geometry changes
 		this->addUpdateCallback("updateFrames", {&d_curv_abs_section, &d_curv_abs_frames, &d_debug},
 								[this](const sofa::core::DataTracker &t) {
-									msg_info() << "HookeSeratDiscretMapping updateFrames callback called";
+									msg_info() << "Strain2RigidCosseratMapping updateFrames callback called";
 									SOFA_UNUSED(t);
 									std::cout << "====> Update Callback <====" << std::endl;
 									const sofa::VecCoord_t<In1> &strain_state =
@@ -77,23 +77,23 @@ namespace Cosserat::mapping {
 	}
 
 	template<class TIn1, class TIn2, class TOut>
-	void HookeSeratDiscretMapping<TIn1, TIn2, TOut>::doBaseCosseratInit() {
+	void Strain2RigidCosseratMapping<TIn1, TIn2, TOut>::doBaseCosseratInit() {
 		// Initialize colormap for visualization
 		m_colorMap.setColorScheme("Blue to Red");
 		m_colorMap.reinit();
 
-		msg_info() << "HookeSeratDiscretMapping initialized with liegroups SE(3) integration";
+		msg_info() << "Strain2RigidCosseratMapping initialized with liegroups SE(3) integration";
 	}
 
 	/*********************start debugging **************************/
 	template<class TIn1, class TIn2, class TOut>
 	void
-	HookeSeratDiscretMapping<TIn1, TIn2, TOut>::apply(const sofa::core::MechanicalParams * /* mparams */,
+	Strain2RigidCosseratMapping<TIn1, TIn2, TOut>::apply(const sofa::core::MechanicalParams * /* mparams */,
 													  const vector<sofa::DataVecCoord_t<Out> *> &dataVecOutPos,
 													  const vector<const sofa::DataVecCoord_t<In1> *> &dataVecIn1Pos,
 													  const vector<const sofa::DataVecCoord_t<In2> *> &dataVecIn2Pos) {
 
-		msg_info("HookeSeratDiscretMapping") << "HookeSeratDiscretMapping::apply called";
+		msg_info("Strain2RigidCosseratMapping") << "Strain2RigidCosseratMapping::apply called";
 
 		if (dataVecOutPos.empty() || dataVecIn1Pos.empty() || dataVecIn2Pos.empty())
 			return;
@@ -209,7 +209,7 @@ namespace Cosserat::mapping {
 	}
 
 	template<class TIn1, class TIn2, class TOut>
-	void HookeSeratDiscretMapping<TIn1, TIn2, TOut>::updateFrameTransformations(
+	void Strain2RigidCosseratMapping<TIn1, TIn2, TOut>::updateFrameTransformations(
 			const sofa::type::vector<Coord1> &vec_of_strains) {
 
 		auto nb_node = vec_of_strains.size();
@@ -261,7 +261,7 @@ namespace Cosserat::mapping {
 
 	template<class TIn1, class TIn2, class TOut>
 	void
-	HookeSeratDiscretMapping<TIn1, TIn2, TOut>::applyJ(const sofa::core::MechanicalParams * /* mparams */,
+	Strain2RigidCosseratMapping<TIn1, TIn2, TOut>::applyJ(const sofa::core::MechanicalParams * /* mparams */,
 													   const vector<sofa::DataVecDeriv_t<Out> *> &dataVecOutVel,
 													   const vector<const sofa::DataVecDeriv_t<In1> *> &dataVecIn1Vel,
 													   const vector<const sofa::DataVecDeriv_t<In2> *> &dataVecIn2Vel) {
@@ -273,7 +273,7 @@ namespace Cosserat::mapping {
 			return;
 
 		if (d_debug.getValue())
-			std::cout << " ########## HookeSeratDiscretMapping ApplyJ Function ########" << std::endl;
+			std::cout << " ########## Strain2RigidCosseratMapping ApplyJ Function ########" << std::endl;
 
 		const sofa::VecDeriv_t<In1> &strain_vel = dataVecIn1Vel[0]->getValue();
 		const sofa::VecDeriv_t<In2> &base_vel = dataVecIn2Vel[0]->getValue();
@@ -394,7 +394,7 @@ namespace Cosserat::mapping {
 	}
 
 	template<class TIn1, class TIn2, class TOut>
-	void HookeSeratDiscretMapping<TIn1, TIn2, TOut>::applyJT(
+	void Strain2RigidCosseratMapping<TIn1, TIn2, TOut>::applyJT(
 			const sofa::core::MechanicalParams * /*mparams*/,
 			const vector<sofa::DataVecDeriv_t<In1> *> &dataVecOut1Force,
 			const vector<sofa::DataVecDeriv_t<In2> *> &dataVecOut2Force,
@@ -407,7 +407,7 @@ namespace Cosserat::mapping {
 			return;
 
 		if (d_debug.getValue())
-			std::cout << " ########## HookeSeratDiscretMapping ApplyJT Force Function ########" << std::endl;
+			std::cout << " ########## Strain2RigidCosseratMapping ApplyJT Force Function ########" << std::endl;
 
 		const sofa::VecDeriv_t<Out> &inputForces = dataVecInForce[0]->getValue();
 		sofa::VecDeriv_t<In1> &strainForces = *dataVecOut1Force[0]->beginEdit();
@@ -567,7 +567,7 @@ namespace Cosserat::mapping {
 	}
 
 	template<class TIn1, class TIn2, class TOut>
-	void HookeSeratDiscretMapping<TIn1, TIn2, TOut>::applyJT(
+	void Strain2RigidCosseratMapping<TIn1, TIn2, TOut>::applyJT(
 			const sofa::core::ConstraintParams * /*cparams*/,
 			const vector<sofa::DataMatrixDeriv_t<In1> *> &dataMatOut1Const,
 			const vector<sofa::DataMatrixDeriv_t<In2> *> &dataMatOut2Const,
@@ -580,7 +580,7 @@ namespace Cosserat::mapping {
 			return;
 
 		if (d_debug.getValue())
-			std::cout << " ########## HookeSeratDiscretMapping ApplyJT Constraint Function ########" << std::endl;
+			std::cout << " ########## Strain2RigidCosseratMapping ApplyJT Constraint Function ########" << std::endl;
 
 		// Prepare input and output data matrices
 		sofa::MatrixDeriv_t<In1> &out1 = *dataMatOut1Const[0]->beginEdit();
@@ -650,7 +650,7 @@ namespace Cosserat::mapping {
 	}
 
 	// template<class TIn1, class TIn2, class TOut>
-	// void HookeSeratDiscretMapping<TIn1, TIn2, TOut>::draw(const sofa::core::visual::VisualParams *vparams) {
+	// void Strain2RigidCosseratMapping<TIn1, TIn2, TOut>::draw(const sofa::core::visual::VisualParams *vparams) {
 	// 	if (!vparams->displayFlags().getShowMappings())
 	// 		return;
 
@@ -663,7 +663,7 @@ namespace Cosserat::mapping {
 	// }
 
 	template<class TIn1, class TIn2, class TOut>
-	void HookeSeratDiscretMapping<TIn1, TIn2, TOut>::draw(const sofa::core::visual::VisualParams *vparams) {
+	void Strain2RigidCosseratMapping<TIn1, TIn2, TOut>::draw(const sofa::core::visual::VisualParams *vparams) {
 		if (!vparams->displayFlags().getShowMechanicalMappings())
 			return;
 
@@ -733,7 +733,7 @@ namespace Cosserat::mapping {
 
 
 	template<class TIn1, class TIn2, class TOut>
-	void HookeSeratDiscretMapping<TIn1, TIn2, TOut>::computeBBox(const sofa::core::ExecParams *params,
+	void Strain2RigidCosseratMapping<TIn1, TIn2, TOut>::computeBBox(const sofa::core::ExecParams *params,
 																 bool onlyVisible) {
 		// Compute bounding box for visualization
 		// Implementation would calculate the extent of all frames
@@ -742,7 +742,7 @@ namespace Cosserat::mapping {
 
 	// Debug display functions implementation
 	template<class TIn1, class TIn2, class TOut>
-	void HookeSeratDiscretMapping<TIn1, TIn2, TOut>::displayStrainState(const sofa::type::vector<Coord1> &strainState,
+	void Strain2RigidCosseratMapping<TIn1, TIn2, TOut>::displayStrainState(const sofa::type::vector<Coord1> &strainState,
 																		const std::string &context) const {
 
 		std::cout << "\n=== STRAIN STATE DEBUG" << (context.empty() ? "" : " (" + context + ")") << " ===\n";
@@ -768,7 +768,7 @@ namespace Cosserat::mapping {
 	}
 
 	template<class TIn1, class TIn2, class TOut>
-	void HookeSeratDiscretMapping<TIn1, TIn2, TOut>::displayRigidState(
+	void Strain2RigidCosseratMapping<TIn1, TIn2, TOut>::displayRigidState(
 			const sofa::type::vector<sofa::Coord_t<In2>> &rigidState, const std::string &context) const {
 
 		std::cout << "\n=== RIGID STATE DEBUG" << (context.empty() ? "" : " (" + context + ")") << " ===\n";
@@ -789,7 +789,7 @@ namespace Cosserat::mapping {
 
 	template<class TIn1, class TIn2, class TOut>
 	void
-	HookeSeratDiscretMapping<TIn1, TIn2, TOut>::displayOutputFrames(const sofa::type::vector<OutCoord> &outputFrames,
+	Strain2RigidCosseratMapping<TIn1, TIn2, TOut>::displayOutputFrames(const sofa::type::vector<OutCoord> &outputFrames,
 																	const std::string &context) const {
 
 		std::cout << "\n=== OUTPUT FRAMES DEBUG" << (context.empty() ? "" : " (" + context + ")") << " ===\n";
@@ -815,7 +815,7 @@ namespace Cosserat::mapping {
 	}
 
 	template<class TIn1, class TIn2, class TOut>
-	void HookeSeratDiscretMapping<TIn1, TIn2, TOut>::displaySectionProperties(const std::string &context) const {
+	void Strain2RigidCosseratMapping<TIn1, TIn2, TOut>::displaySectionProperties(const std::string &context) const {
 
 		std::cout << "\n=== SECTION PROPERTIES DEBUG" << (context.empty() ? "" : " (" + context + ")") << " ===\n";
 		std::cout << "Section properties size: " << m_section_properties.size() << std::endl;
@@ -841,7 +841,7 @@ namespace Cosserat::mapping {
 	}
 
 	template<class TIn1, class TIn2, class TOut>
-	void HookeSeratDiscretMapping<TIn1, TIn2, TOut>::displayFrameProperties(const std::string &context) const {
+	void Strain2RigidCosseratMapping<TIn1, TIn2, TOut>::displayFrameProperties(const std::string &context) const {
 
 		std::cout << "\n=== FRAME PROPERTIES DEBUG" << (context.empty() ? "" : " (" + context + ")") << " ===\n";
 		std::cout << "Frame properties size: " << m_frameProperties.size() << std::endl;
@@ -886,7 +886,7 @@ namespace Cosserat::mapping {
 	}
 
 	template<class TIn1, class TIn2, class TOut>
-	void HookeSeratDiscretMapping<TIn1, TIn2, TOut>::displaySE3Transform(const SE3Types &transform,
+	void Strain2RigidCosseratMapping<TIn1, TIn2, TOut>::displaySE3Transform(const SE3Types &transform,
 																		 const std::string &name) const {
 
 		std::cout << "\n=== SE3 TRANSFORM DEBUG: " << name << " ===\n";
@@ -915,7 +915,7 @@ namespace Cosserat::mapping {
 	}
 
 	template<class TIn1, class TIn2, class TOut>
-	void HookeSeratDiscretMapping<TIn1, TIn2, TOut>::displayMappingState(const std::string &context) const {
+	void Strain2RigidCosseratMapping<TIn1, TIn2, TOut>::displayMappingState(const std::string &context) const {
 
 		std::cout << "\n=== MAPPING STATE DEBUG" << (context.empty() ? "" : " (" + context + ")") << " ===\n";
 		std::cout << "Base index: " << d_baseIndex.getValue() << std::endl;
@@ -960,7 +960,7 @@ namespace Cosserat::mapping {
 	}
 
 	template<class TIn1, class TIn2, class TOut>
-	void HookeSeratDiscretMapping<TIn1, TIn2, TOut>::displayVelocities(
+	void Strain2RigidCosseratMapping<TIn1, TIn2, TOut>::displayVelocities(
 			const sofa::type::vector<Deriv1> &strainVel, const sofa::type::vector<sofa::Deriv_t<In2>> &baseVel,
 			const sofa::type::vector<OutDeriv> &outputVel, const std::string &context) const {
 
