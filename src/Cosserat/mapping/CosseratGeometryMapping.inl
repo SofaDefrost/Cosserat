@@ -227,8 +227,8 @@ namespace Cosserat::mapping {
 
 	template<class TIn1, class TIn2, class TOut>
 void CosseratGeometryMapping<TIn1, TIn2, TOut>::computeTangExpImplementation(const double& curv_abs,
-	const TangentVector & strain, const AdjointMatrix &adjoint_matrix, AdjointMatrix & tang_adjoint_matrix)
-	{
+	const TangentVector & strain, AdjointMatrix & tang_adjoint_matrix)
+	{//construction de ad_xi à l'interieur de la fonction comme fait dans BCM
 		SReal theta = Vector3(strain(0), strain(1), strain(2)).norm();
 		//old method
 		//Matrix3 tilde_k = SO3Type::buildAntisymmetric(Vector3(strain_i(0), strain_i(1), strain_i(2)));// getTildeMatrix(Vec3(strain_i(0), strain_i(1), strain_i(2)));
@@ -242,12 +242,17 @@ void CosseratGeometryMapping<TIn1, TIn2, TOut>::computeTangExpImplementation(con
 		//@todo : compare the result of these two methods for computing
 		//@todo : adjoint matrix;
 
+		Matrix3 tilde_k = getTildeMatrix(Vector3(strain(0), strain(1), strain(2)));
+		Matrix3 tilde_q = getTildeMatrix(Vector3(strain(3), strain(4), strain(5)));
+		AdjointMatrix ad_Xi = AdjointMatrix::Zero();
+		buildAdjoint(tilde_k, tilde_q, ad_Xi); // construction de ad_Xi
+
 		tang_adjoint_matrix = AdjointMatrix::Zero();
 		AdjointMatrix Id6 = AdjointMatrix::Identity();
 
 		if (theta <= std::numeric_limits<double>::epsilon()) {
 			double scalar0 = std::pow(curv_abs, 2) / 2.0;
-			tang_adjoint_matrix = curv_abs * Id6 + scalar0 * adjoint_matrix;
+			tang_adjoint_matrix = curv_abs * Id6 + scalar0 * ad_Xi;
 		} else {
 			double scalar1 = (4.0 - 4.0 * cos(curv_abs * theta) -
 							  curv_abs * theta * sin(curv_abs * theta)) /
@@ -264,11 +269,42 @@ void CosseratGeometryMapping<TIn1, TIn2, TOut>::computeTangExpImplementation(con
 							  3.0 * sin(curv_abs * theta)) /
 							 (2.0 * theta * theta * theta * theta * theta);
 
-			tang_adjoint_matrix = curv_abs * Id6 + scalar1 * adjoint_matrix + scalar2 * adjoint_matrix * adjoint_matrix +
-				  scalar3 * adjoint_matrix * adjoint_matrix * adjoint_matrix +
-				  scalar4 * adjoint_matrix * adjoint_matrix * adjoint_matrix * adjoint_matrix;
+			tang_adjoint_matrix = curv_abs * Id6 + scalar1 * ad_Xi + scalar2 * ad_Xi * ad_Xi +
+				  scalar3 * ad_Xi * ad_Xi * ad_Xi +
+				  scalar4 * ad_Xi * ad_Xi * ad_Xi * ad_Xi;
 		}
 	}
+
+	template <class TIn1, class TIn2, class TOut>
+auto CosseratGeometryMapping<TIn1, TIn2, TOut>::buildAdjoint(const Matrix3 &A,
+                                                         const Matrix3 &B,
+                                                         AdjointMatrix &Adjoint) -> void 
+{
+	Adjoint.setZero();
+    for (unsigned int i = 0; i < 3; ++i)
+    {
+        for (int j = 0; j < 3; ++j)
+        {
+            Adjoint(i, j) = A(i, j);
+            Adjoint(i + 3, j + 3) = A(i, j);
+            Adjoint(i + 3, j) = B(i, j);
+        }
+    }
+}
+
+template <class TIn1, class TIn2, class TOut>
+auto CosseratGeometryMapping<TIn1, TIn2, TOut>::getTildeMatrix(const Vector3 &u)
+-> Matrix3 {
+    Matrix3 tild = Matrix3::Zero();
+    tild(0, 1) = -u[2];
+    tild(0, 2) = u[1];
+    tild(1, 2) = -u[0];
+
+    tild(1, 0) = -tild(0, 1);
+    tild(2, 0) = -tild(0, 2);
+    tild(2, 1) = -tild(1, 2);
+    return tild;
+}
 
 
 	template<class TIn1, class TIn2, class TOut>
@@ -285,7 +321,6 @@ void CosseratGeometryMapping<TIn1, TIn2, TOut>::updateTangExpSE3() {
 			computeTangExpImplementation(
 				node_info.getLength(),
 				node_info.getStrainsVec(),
-				node_info.getAdjoint(),
 				tang_matrix);
 			node_info.setTanAdjointMatrix(tang_matrix);
 			if (d_debug.getValue()) {
@@ -302,7 +337,6 @@ void CosseratGeometryMapping<TIn1, TIn2, TOut>::updateTangExpSE3() {
 			computeTangExpImplementation(
 				frame_info.getDistanceToNearestBeamNode(),
 				frame_strain,
-				frame_info.getAdjoint(),
 				tang_matrix);
 			frame_info.setTanAdjointMatrix(tang_matrix);
 			if (d_debug.getValue()) {

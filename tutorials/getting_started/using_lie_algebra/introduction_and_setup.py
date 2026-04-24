@@ -146,7 +146,7 @@ def _add_cosserat_frame_v2(
 
     print(f"Creating Cosserat frame node: {node_name}")
     cosserat_in_sofa_frame_node.addObject(
-        "HookeSeratDiscretMapping",
+        "Strain2RigidCosseratMapping",
         curv_abs_input=geometry.curv_abs_sections,  # Use geometry data
         curv_abs_output=geometry.curv_abs_frames,  # Use geometry data
         name="cosseratMapping",
