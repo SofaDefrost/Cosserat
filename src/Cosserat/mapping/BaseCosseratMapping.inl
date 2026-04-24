@@ -293,6 +293,8 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::computeAdjoint(const Frame &frame,
     buildAdjoint(R, tilde_u_R, adjoint);
 }
 
+
+
 template <class TIn1, class TIn2, class TOut>
 void BaseCosseratMapping<TIn1, TIn2, TOut>::computeCoAdjoint(const Frame &frame,
                                                              Mat6x6 &co_adjoint) {
@@ -590,6 +592,7 @@ auto BaseCosseratMapping<TIn1, TIn2, TOut>::buildCoAdjoint(const Mat3x3 &A,
             coAdjoint[i][j + 3] = B[i][j];
         }
     }
+    
 }
 
 template <class TIn1, class TIn2, class TOut>

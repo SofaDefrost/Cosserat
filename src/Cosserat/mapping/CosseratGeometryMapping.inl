@@ -280,7 +280,7 @@ auto CosseratGeometryMapping<TIn1, TIn2, TOut>::buildAdjoint(const Matrix3 &A,
                                                          const Matrix3 &B,
                                                          AdjointMatrix &Adjoint) -> void 
 {
-	Adjoint.setZero();
+	Adjoint = AdjointMatrix::Zero();
     for (unsigned int i = 0; i < 3; ++i)
     {
         for (int j = 0; j < 3; ++j)

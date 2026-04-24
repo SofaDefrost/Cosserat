@@ -166,20 +166,14 @@ namespace Cosserat::mapping {
 
 		// Exploitation de computeAdjoint() avec cache pour les performances
 		const AdjointMatrix &getAdjoint() const {
-			if (!adjoint_computed_) {
-				adjoint_ = gX_.computeAdjoint();
-				coAdjoint_ = adjoint_.transpose();
-				adjoint_computed_ = true;
-			}
+			adjoint_ = gX_.computeAdjoint();
+
 			return adjoint_;
 		}
 
 		const AdjointMatrix &getCoAdjoint() const {
-			if (!adjoint_computed_) {
-				adjoint_ = getAdjoint(); // Compute adjoint and co-adjoint matrix
-				coAdjoint_ = adjoint_.transpose();
-				return coAdjoint_;
-			}
+			coAdjoint_ = gX_.computeCoAdjoint();
+
 			return coAdjoint_;
 		}
 
@@ -346,20 +340,14 @@ namespace Cosserat::mapping {
 		}
 
 		const AdjointMatrix &getAdjoint() const {
-			if (!adjoint_computed_) {
-				adjoint_ = transformation_.computeAdjoint();
-				coAdjoint_ = adjoint_.transpose();
-				adjoint_computed_ = true;
-			}
+			adjoint_ = transformation_.computeAdjoint();
+			
 			return adjoint_;
 		}
 
 		const AdjointMatrix &getCoAdjoint() const {
-			if (!adjoint_computed_) {
-				adjoint_ = getAdjoint(); // Compute adjoint and co-adjoint matrix
-				coAdjoint_ = adjoint_.transpose();
-				return coAdjoint_;
-			}
+			coAdjoint_ = transformation_.computeCoAdjoint();
+
 			return coAdjoint_;
 		}
 

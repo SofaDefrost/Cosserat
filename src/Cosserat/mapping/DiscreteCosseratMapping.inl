@@ -317,8 +317,8 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJT(
 
   if (d_debug.getValue())
     std::cout << " ########## ApplyJT force Function ########" << std::endl;
+  
   const sofa::VecDeriv_t<Out> &in = dataVecInForce[0]->getValue();
-
   sofa::VecDeriv_t<In1> &out1 = *dataVecOut1Force[0]->beginEdit();
   sofa::VecDeriv_t<In2> &out2 = *dataVecOut2Force[0]->beginEdit();
   const auto baseIndex = d_baseIndex.getValue();
@@ -331,10 +331,20 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJT(
   vector<Vec6> local_F_Vec;
   local_F_Vec.clear();
 
-  out1.resize(x1from.size());
+  //out1.resize(x1from.size());
+	
+  std::cout<<"Strain forces before the loop: [" ;
+	for(auto i : out1)
+			std::cout<< "[" << i <<"] ";
+	std::cout<<std::endl;
 
   // convert the input from Deriv type to vec6 type, for the purpose of the
   // matrix vector multiplication
+
+  std::cout<<"Input Forces: [" ;
+	for(auto i : in)
+			std::cout<< "[" << i <<"] ";
+	std::cout<<std::endl;
 
   for (unsigned int var = 0; var < in.size(); ++var) {
     Vec6 vec;
@@ -366,6 +376,17 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJT(
 
     // std::cout<<"##############################"<<std::endl;
   }
+
+		std::cout<<"localForces: [ ";
+		for(int i=0; i<in.size(); i++){
+			std::cout<<"[ ";
+			for(int j=0; j<6; j++){
+				std::cout<< local_F_Vec[i][j]<<" ";
+			}
+			std::cout<<"]"<<std::endl;
+		}
+		std::cout<<"]"<<std::endl;
+
   //ajout2
   // std::cout<<"Out of force transformation loop"<<std::endl;
   // std::cout<<"Local forces size: "<<local_F_Vec.size()<<std::endl;
@@ -401,8 +422,8 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJT(
     std::cout<< "=== s: " << s << " frameExpo: "<< m_framesExponentialSE3Vectors[s] << std::endl;        
     std::cout<< "=== s: " << s << " frame: "<< frame[s] << std::endl;   
     
-    std::cout<<"CoAdjoint matrix frame:"<<std::endl;
-    std::cout<<coAdjoint<<std::endl;
+    // std::cout<<"CoAdjoint matrix frame:"<<std::endl;
+    // std::cout<<coAdjoint<<std::endl;
 
     Vec6 node_F_Vec = coAdjoint * local_F_Vec[s];
     Mat6x6 temp =
@@ -410,13 +431,13 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJT(
     // applyJ (here we transpose)
     temp.transpose();
 
-		std::cout << "Exponential Tangent Matrix (transpose) frame"<<std::endl;
-		std::cout << temp <<std::endl;    
+		// std::cout << "Exponential Tangent Matrix (transpose) frame"<<std::endl;
+		// std::cout << temp <<std::endl;    
     
+    //std::cout<<"currentLocalForce: " <<node_F_Vec<<std::endl;
     Vec3 f = matB_trans * temp * node_F_Vec;
-    // std::cout<<"Strain force "<<s<<": "<<f<<std::endl;
-		
-
+		//std::cout<<"Force to add to strainForces cI: "<< f << std::endl;
+    
     if (index != m_indicesVectors[s]) {
       index--;
       // bring F_tot to the reference of the new beam
@@ -426,18 +447,18 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJT(
       
       F_tot = coAdjoint * F_tot;
 			
-      std::cout<<"CoAdjoint Matrix section: " <<coAdjoint <<std::endl;            
-      std::cout<<"Total force : "<<F_tot<<std::endl;
+      // std::cout<<"CoAdjoint Matrix section: " <<coAdjoint <<std::endl;            
+      // std::cout<<"Total force : "<<F_tot<<std::endl;
       
       Mat6x6 temp = m_nodesTangExpVectors[index];
       temp.transpose();
 
 
-			std::cout<<"Tangent Exp (transpose) section"<< temp<<std::endl; 
+			// std::cout<<"Tangent Exp (transpose) section"<< temp<<std::endl; 
 
       // apply F_tot to the new beam
       Vec3 temp_f = matB_trans * temp * F_tot;
-
+      // std::cout<<"Force to add to strainForces lI: "<< temp_f << std::endl;
       // Add accumulated force to strain output
       out1[index - 1] += temp_f;
     }
@@ -449,6 +470,11 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJT(
     F_tot += node_F_Vec;
     out1[m_indicesVectors[s] - 1] += f;
   }
+  std::cout<<"Strain forces after the loop: [" ;
+	for(auto i : out1)
+			std::cout<< "[" << i <<"] ";
+	std::cout<<std::endl;
+
 
   auto frame0 = Frame(frame[0].getCenter(), frame[0].getOrientation());
   Mat6x6 M = this->buildProjector(frame0);
@@ -457,6 +483,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJT(
 
 		
   std::cout << "Node forces " << out1 << std::endl;
+  std::cout << "base index: " << baseIndex << std::endl;
   std::cout << "base Force: " << out2[baseIndex] << std::endl;
 
   if (d_debug.getValue()) {
