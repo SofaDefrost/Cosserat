@@ -1,4 +1,4 @@
-# HookeSeratBaseMapping - Incremental Improvement Plan
+# CosseratGeometryMapping - Incremental Improvement Plan
 
 **Branch:** `feature/hookeserat-incremental-improvements`
 **Status:** Step 0 - Baseline Established
@@ -8,7 +8,7 @@
 
 ## Overview
 
-This document outlines the incremental improvement plan for `HookeSeratBaseMapping`. After removing untested advanced features, we're rebuilding with **proper validation at each step**.
+This document outlines the incremental improvement plan for `CosseratGeometryMapping`. After removing untested advanced features, we're rebuilding with **proper validation at each step**.
 
 ---
 
@@ -24,7 +24,7 @@ This plan addresses critical bugs, performance issues, and design improvements i
 
 ### 1.1 Fix Tangent Adjoint Storage Bug 🔴
 
-**File**: [HookeSeratBaseMapping.inl](file:///Users/yadagolo/travail/plugin/plugin.Cosserat/src/Cosserat/mapping/HookeSeratBaseMapping.inl#L274-L310)
+**File**: [CosseratGeometryMapping.inl](file:///Users/yadagolo/travail/plugin/plugin.Cosserat/src/Cosserat/mapping/CosseratGeometryMapping.inl#L274-L310)
 
 **Problem**: Computed tangent adjoint matrices are set on local copies, not stored objects.
 
@@ -42,7 +42,7 @@ auto frame_info = m_frameProperties[i];
 auto& frame_info = m_frameProperties[i];
 ```
 
-**Testing**: Verify matrices are stored by checking values after [updateTangExpSE3()](file:///Users/yadagolo/travail/plugin/plugin.Cosserat/src/Cosserat/mapping/HookeSeratBaseMapping.inl#273-311) call.
+**Testing**: Verify matrices are stored by checking values after [updateTangExpSE3()](file:///Users/yadagolo/travail/plugin/plugin.Cosserat/src/Cosserat/mapping/CosseratGeometryMapping.inl#273-311) call.
 
 ---
 
@@ -168,7 +168,7 @@ for (unsigned int i = 0; i < frame_count; i++) {
 
 ### 2.2 Optimize Debug Output 🟡
 
-**File**: [HookeSeratBaseMapping.inl](file:///Users/yadagolo/travail/plugin/plugin.Cosserat/src/Cosserat/mapping/HookeSeratBaseMapping.inl#L290-L305)
+**File**: [CosseratGeometryMapping.inl](file:///Users/yadagolo/travail/plugin/plugin.Cosserat/src/Cosserat/mapping/CosseratGeometryMapping.inl#L290-L305)
 
 **Changes**:
 
@@ -336,7 +336,7 @@ TEST(HookeSeratDiscretMapping, SmallTheta) {
 **Strategy**:
 
 - Save reference outputs for known configurations
-- Run [validateJacobianAccuracy()](file:///Users/yadagolo/travail/plugin/plugin.Cosserat/src/Cosserat/mapping/HookeSeratBaseMapping.h#583-644) in CI/CD
+- Run [validateJacobianAccuracy()](file:///Users/yadagolo/travail/plugin/plugin.Cosserat/src/Cosserat/mapping/CosseratGeometryMapping.h#583-644) in CI/CD
 - Log numerical errors over time
 
 ---

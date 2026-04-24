@@ -1,4 +1,4 @@
-#include <Cosserat/mapping/HookeSeratBaseMapping.h>
+#include <Cosserat/mapping/CosseratGeometryMapping.h>
 #include <cmath>
 #include <gtest/gtest.h>
 #include <liegroups/SE3.h>
@@ -9,7 +9,7 @@ using namespace sofa::component::cosserat::liegroups;
 using namespace Cosserat::mapping;
 
 // Concrete implementation for testing
-class TestHookeSeratMapping : public HookeSeratBaseMapping<sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types,
+class TestHookeSeratMapping : public CosseratGeometryMapping<sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types,
 														   sofa::defaulttype::Rigid3Types> {
 public:
 	using In1 = sofa::defaulttype::Vec3Types;
@@ -43,9 +43,9 @@ public:
 				  sofa::core::ConstMultiVecDerivId /* outForce */) override {}
 
 	// Expose protected methods for testing
-	using HookeSeratBaseMapping::computeTangExpImplementation;
-	using HookeSeratBaseMapping::generateSectionTrajectory;
-	using HookeSeratBaseMapping::validateJacobianAccuracy;
+	using CosseratGeometryMapping::computeTangExpImplementation;
+	using CosseratGeometryMapping::generateSectionTrajectory;
+	using CosseratGeometryMapping::validateJacobianAccuracy;
 };
 
 class HookeSeratComprehensiveTest : public ::testing::Test {
@@ -123,7 +123,7 @@ TEST_F(HookeSeratComprehensiveTest, InterpolationAccuracy) {
 
 				// Actually, looking at SectionInfo implementation (not visible here but inferred),
 				// it likely stores the starting frame or the relative transform?
-				// The `generateSectionTrajectory` implementation in `HookeSeratBaseMapping.h` does:
+				// The `generateSectionTrajectory` implementation in `CosseratGeometryMapping.h` does:
 				// SE3Type local_transform = section.getLocalTransformation(t);
 				// trajectory.emplace_back(..., local_transform);
 

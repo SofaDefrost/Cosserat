@@ -1,5 +1,5 @@
-#include <Cosserat/mapping/HookeSeratBaseMapping.h>
-#include <Cosserat/mapping/HookeSeratBaseMapping.inl>
+#include <Cosserat/mapping/CosseratGeometryMapping.h>
+#include <Cosserat/mapping/CosseratGeometryMapping.inl>
 #include <gtest/gtest.h>
 #include <liegroups/SE3.h>
 #include <sofa/defaulttype/RigidTypes.h>
@@ -10,7 +10,7 @@ using namespace sofa::component::cosserat::liegroups;
 
 // Concrete subclass for testing
 class ConcreteHookeSeratMapping
-	: public HookeSeratBaseMapping<sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types,
+	: public CosseratGeometryMapping<sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types,
 								   sofa::defaulttype::Rigid3Types> {
 public:
 	using In1 = sofa::defaulttype::Vec3Types;

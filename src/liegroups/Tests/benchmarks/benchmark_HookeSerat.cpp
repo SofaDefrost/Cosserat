@@ -1,4 +1,4 @@
-#include <Cosserat/mapping/HookeSeratBaseMapping.h>
+#include <Cosserat/mapping/CosseratGeometryMapping.h>
 #include <benchmark/benchmark.h>
 #include <liegroups/SE3.h>
 #include <sofa/defaulttype/RigidTypes.h>
@@ -8,11 +8,11 @@ using namespace sofa::component::cosserat::liegroups;
 using namespace Cosserat::mapping;
 
 class ConcreteHookeSeratMapping
-	: public HookeSeratBaseMapping<sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types,
+	: public CosseratGeometryMapping<sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types,
 								   sofa::defaulttype::Rigid3Types> {
 public:
 	void doBaseCosseratInit() override {}
-	using HookeSeratBaseMapping::computeTangExpImplementation;
+	using CosseratGeometryMapping::computeTangExpImplementation;
 };
 
 static void BM_JacobianComputation(benchmark::State &state) {
