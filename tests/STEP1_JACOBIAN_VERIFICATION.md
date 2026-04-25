@@ -84,10 +84,6 @@ All tests must pass for Step 1 to be considered complete:
 - [ ] Consistency passes
 - [ ] PerformanceBenchmark passes (< 10μs)
 
-## Known Issues
-
-None currently.
-
 ## Next Steps
 
 After all tests pass:

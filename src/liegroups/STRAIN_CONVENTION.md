@@ -283,6 +283,5 @@ Voir :
 
 ---
 
-**Créé** : 23 Décembre 2025  
-**Auteur** : Warp AI Agent  
+**Créé** : 23 Décembre 2025
 **Version** : 1.0

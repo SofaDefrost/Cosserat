@@ -16,7 +16,8 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.        *
  ******************************************************************************/
 
-#include <Cosserat/mapping/HookeSeratDiscretMapping.h>
+#include <Cosserat/mapping/Strain2RigidCosseratMapping.h>
+#include <Cosserat/mapping/Strain2RigidCosseratMapping.cpp>
 #include <gtest/gtest.h>
 #include <sofa/component/statecontainer/MechanicalObject.h>
 #include <sofa/core/MechanicalParams.h>
@@ -36,11 +37,11 @@ using namespace sofa::simulation;
 using namespace sofa::component::statecontainer;
 
 /**
- * @brief Test fixture for HookeSeratDiscretMapping
+ * @brief Test fixture for Strain2RigidCosseratMapping
  */
-class HookeSeratDiscretMappingTest : public ::testing::Test {
+class Strain2RigidCosseratMappingTest : public ::testing::Test {
    protected:
-    using Mapping = HookeSeratDiscretMapping<Vec3Types, Rigid3Types, Rigid3Types>;
+    using Mapping = Strain2RigidCosseratMapping<Vec3Types, Rigid3Types, Rigid3Types>;
     using StrainMO = MechanicalObject<Vec3Types>;
     using RigidMO = MechanicalObject<Rigid3Types>;
 
@@ -124,7 +125,7 @@ class HookeSeratDiscretMappingTest : public ::testing::Test {
 /**
  * @brief Test basic initialization
  */
-TEST_F(HookeSeratDiscretMappingTest, Initialization) {
+TEST_F(Strain2RigidCosseratMappingTest, Initialization) {
     setupStraightBeam(5);
 
     EXPECT_NE(mapping, nullptr);
@@ -135,7 +136,7 @@ TEST_F(HookeSeratDiscretMappingTest, Initialization) {
 /**
  * @brief Test apply() with zero strain (straight beam)
  */
-TEST_F(HookeSeratDiscretMappingTest, ApplyZeroStrain) {
+TEST_F(Strain2RigidCosseratMappingTest, ApplyZeroStrain) {
     setupStraightBeam(5);
 
     // Apply mapping
@@ -166,7 +167,7 @@ TEST_F(HookeSeratDiscretMappingTest, ApplyZeroStrain) {
 /**
  * @brief Test applyJ() with finite differences
  */
-TEST_F(HookeSeratDiscretMappingTest, JacobianFiniteDifference) {
+TEST_F(Strain2RigidCosseratMappingTest, JacobianFiniteDifference) {
     setupStraightBeam(3);
 
     const double epsilon = 1e-7;
@@ -257,7 +258,7 @@ TEST_F(HookeSeratDiscretMappingTest, JacobianFiniteDifference) {
 /**
  * @brief Test applyJT() is transpose of applyJ()
  */
-TEST_F(HookeSeratDiscretMappingTest, JacobianTranspose) {
+TEST_F(Strain2RigidCosseratMappingTest, JacobianTranspose) {
     setupStraightBeam(3);
 
     sofa::core::MechanicalParams mparams;
@@ -285,7 +286,7 @@ TEST_F(HookeSeratDiscretMappingTest, JacobianTranspose) {
 /**
  * @brief Test with curved beam (non-zero strain)
  */
-TEST_F(HookeSeratDiscretMappingTest, CurvedBeam) {
+TEST_F(Strain2RigidCosseratMappingTest, CurvedBeam) {
     setupStraightBeam(5);
 
     // Set constant curvature (bending in y-direction)
@@ -322,7 +323,7 @@ TEST_F(HookeSeratDiscretMappingTest, CurvedBeam) {
 /**
  * @brief Test validateJacobianAccuracy method
  */
-TEST_F(HookeSeratDiscretMappingTest, ValidateJacobianAccuracy) {
+TEST_F(Strain2RigidCosseratMappingTest, ValidateJacobianAccuracy) {
     setupStraightBeam(3);
 
     // This test verifies the built-in numerical validation

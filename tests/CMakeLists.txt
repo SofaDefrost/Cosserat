@@ -11,7 +11,7 @@ set(
 )
 
 set(SOURCE_FILES
-    unit/HookeSeratDiscretMappingTest.cpp
+    unit/Strain2RigidCosseratMappingTest.cpp
 )
 
     add_executable(${PROJECT_NAME} ${HEADER_FILES} ${SOURCE_FILES})

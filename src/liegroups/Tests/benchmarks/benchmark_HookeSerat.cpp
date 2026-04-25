@@ -7,7 +7,7 @@
 using namespace sofa::component::cosserat::liegroups;
 using namespace Cosserat::mapping;
 
-class ConcreteHookeSeratMapping
+class ConcreteStrain2RigidCosseratMapping
 	: public CosseratGeometryMapping<sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types,
 								   sofa::defaulttype::Rigid3Types> {
 public:
@@ -16,24 +16,24 @@ public:
 };
 
 static void BM_JacobianComputation(benchmark::State &state) {
-	ConcreteHookeSeratMapping::TangentVector strain;
+	ConcreteStrain2RigidCosseratMapping::TangentVector strain;
 	strain << 0.1, 0.2, 0.3, 1.0, 0.1, 0.0;
 	double curv_abs = 1.0;
 
-	ConcreteHookeSeratMapping::AdjointMatrix adjoint = ConcreteHookeSeratMapping::AdjointMatrix::Identity();
-	ConcreteHookeSeratMapping::AdjointMatrix result;
+	ConcreteStrain2RigidCosseratMapping::AdjointMatrix adjoint = ConcreteStrain2RigidCosseratMapping::AdjointMatrix::Identity();
+	ConcreteStrain2RigidCosseratMapping::AdjointMatrix result;
 
 	for (auto _: state) {
-		ConcreteHookeSeratMapping::computeTangExpImplementation(curv_abs, strain, adjoint, result);
+		ConcreteStrain2RigidCosseratMapping::computeTangExpImplementation(curv_abs, strain, adjoint, result);
 	}
 }
 BENCHMARK(BM_JacobianComputation);
 
 static void BM_TrajectoryGeneration(benchmark::State &state) {
-	ConcreteHookeSeratMapping mapping;
+	ConcreteStrain2RigidCosseratMapping mapping;
 	SectionInfo section;
 	section.setLength(1.0);
-	ConcreteHookeSeratMapping::TangentVector strain;
+	ConcreteStrain2RigidCosseratMapping::TangentVector strain;
 	strain << 0.1, 0.0, 0.0, 1.0, 0.0, 0.0;
 	section.setStrainsVec(strain);
 	mapping.addSection(section);

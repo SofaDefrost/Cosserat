@@ -9,7 +9,7 @@ using namespace Cosserat::mapping;
 using namespace sofa::component::cosserat::liegroups;
 
 // Concrete subclass for testing
-class ConcreteHookeSeratMapping
+class ConcreteStrain2RigidCosseratMapping
 	: public CosseratGeometryMapping<sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types,
 								   sofa::defaulttype::Rigid3Types> {
 public:
@@ -40,7 +40,7 @@ protected:
 	using TangentVector = typename SE3Type::TangentVector;
 	using Vector3 = typename SE3Type::Vector3;
 
-	ConcreteHookeSeratMapping mapping;
+	ConcreteStrain2RigidCosseratMapping mapping;
 
 	void SetUp() override {
 		// Clear any existing data
