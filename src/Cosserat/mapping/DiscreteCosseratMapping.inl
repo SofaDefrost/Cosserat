@@ -102,6 +102,8 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::apply(
   if (dataVecOutPos.empty() || dataVecIn1Pos.empty() || dataVecIn2Pos.empty())
     return;
 
+  std::cout << "====== In Apply Function =======" << std::endl;
+
   // Checking the componentState, to trigger a callback if other data fields (specifically
   // d_curv_abs_section and d_curv_abs_frames) were changed dynamically
   if (this->d_componentState.getValue() != sofa::core::objectmodel::ComponentState::Valid)
@@ -109,12 +111,27 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::apply(
   /// Do Apply
   // We need only one input In model and input Root model (if present)
   const sofa::VecCoord_t<In1> &in1 = dataVecIn1Pos[0]->getValue();
-  const sofa::VecCoord_t<In2> &in2 = dataVecIn2Pos[0]->getValue();
+  const sofa::VecCoord_t<In2> &in2 = dataVecIn2Pos[0]->getValue();  
 
   const auto sz = d_curv_abs_frames.getValue().size();
   sofa::VecCoord_t<Out> &out = *dataVecOutPos[0]->beginEdit(); // frames states
   out.resize(sz);
   const auto baseIndex = d_baseIndex.getValue();
+
+
+	std::cout<<"rigidBase (In2) : ";
+	for(int j=0; j<6; j++){
+		std::cout<<in2[baseIndex][j]<<" ";
+	}
+	std::cout<<std::endl;
+	std::cout<<"strainState (In1) : ";
+	for(int i=0; i<in1.size(); i++){
+		for(int j=0; j<6; j++){
+			std::cout<<in1[i][j]<<" ";
+		}
+		std::cout<<std::endl;
+	}
+	std::cout<<std::endl;
 
   // update the Exponential matrices according to new deformation
   // Here we update m_framesExponentialSE3Vectors & m_nodesExponentialSE3Vectors
@@ -125,6 +142,9 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::apply(
   /* Apply the transformation to go from cossserat to SOFA frame*/
   const auto frame0 =
       Frame(In2::getCPos(in2[baseIndex]), In2::getCRot(in2[baseIndex]));
+    
+  std::cout<<"Base Frame: "<<std::endl;
+	std::cout<<frame0<<std::endl;
 
   // Cache the printLog value out of the loop, otherwise it will trigger a graph
   // update at every iteration.
@@ -133,7 +153,9 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::apply(
   //for (int k = 0; k< m_indicesVectors.size(); k++)
   // std::cout << "indice vecteur :"<< m_indicesVectors << std::endl;
 
+  std::cout<<"Apply transformations to compute output frames"<<std::endl;
   for (unsigned int i = 0; i < sz; i++) {
+    std::cout<<"i = "<<i<<std::endl;
     auto frame = frame0;
     for (unsigned int u = 0; u < m_indicesVectors[i]; u++) {
       frame *=
@@ -141,6 +163,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::apply(
     }
     frame *= m_framesExponentialSE3Vectors[i]; // frame*gX(x)
 
+    std::cout<<"Frame: "<<frame<<std::endl;
     // This is a lazy printing approach, so there is no time consuming action in
     // the core of the loop.
     msg_info_when(doPrintLog) << "Frame  : " << i << " = " << frame;
@@ -161,6 +184,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::apply(
     msg_info() << tmp.str();
   }
 
+  std::cout<<"=================Exit apply==================="<<std::endl;
   // TODO(dmarchal:2024/06/13): This looks a suspicious design pattern,
   // elaborate more on the purpose of m_indexInput and how to use it.
   m_indexInput = 0;
@@ -214,11 +238,27 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJ(
     return;
   if (d_debug.getValue())
     std::cout << " ########## ApplyJ Function ########" << std::endl;
+
+  std::cout<<"====== In ApplyJ function ========"<<std::endl;
   const sofa::VecDeriv_t<In1> &in1_vel = dataVecIn1Vel[0]->getValue();
   const sofa::VecDeriv_t<In2> &in2_vel = dataVecIn2Vel[0]->getValue();
   sofa::VecDeriv_t<Out> &out_vel = *dataVecOutVel[0]->beginEdit();
   const auto baseIndex = d_baseIndex.getValue();
 
+	std::cout<<"base_vel (In2) : ";
+	for(int j=0; j<6; j++){
+		std::cout<<in2_vel[baseIndex][j]<<" ";
+	}
+	std::cout<<std::endl;
+	std::cout<<"strain_vel (In1) : ";
+	for(int i=0; i<in1_vel.size(); i++){
+		for(int j=0; j<6; j++){
+			std::cout<<in1_vel[i][j]<<" ";
+		}
+		std::cout<<std::endl;
+	}
+	std::cout<<std::endl;
+  
   // Curv abscissa of nodes and frames
   sofa::helper::ReadAccessor<sofa::Data<vector<double>>> curv_abs_section =
       d_curv_abs_section;
@@ -240,34 +280,47 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJ(
     baseVelocity[u] = in2_vel[baseIndex][u];
 
   // Apply the local transform i.e. from SOFA's frame to Cosserat's frame
+  std::cout<<"Apply the local transform i.e. from SOFA's frame to Cosserat's frame"<<std::endl;
+
   const sofa::VecCoord_t<In2> &xfrom2Data =
       m_rigid_base->read(sofa::core::vec_id::read_access::position)->getValue();
   auto TInverse = Frame(xfrom2Data[baseIndex].getCenter(),
                                  xfrom2Data[baseIndex].getOrientation()).inversed();
   Mat6x6 P = this->buildProjector(TInverse);
+  std::cout<<"Base Projection Matrix"<<std::endl;
+  std::cout<< P <<std::endl;
   Vec6 baseLocalVelocity =
       P * baseVelocity; // This is the base velocity in Locale frame
   m_nodesVelocityVectors.push_back(baseLocalVelocity);
+  std::cout << "Base local Velocity :" << baseLocalVelocity << std::endl;
   if (d_debug.getValue())
     std::cout << "Base local Velocity :" << baseLocalVelocity << std::endl;
 
   // Compute velocity at nodes
+  std::cout<<"Compute velocity at nodes"<<std::endl;
   for (unsigned int i = 1; i < curv_abs_section.size(); i++) {
+    std::cout<<"i = "<<i<<std::endl;
     auto Trans = m_nodesExponentialSE3Vectors[i].inversed();
     TangentTransform Adjoint;
     Adjoint.clear();
     this->computeAdjoint(Trans, Adjoint);
-
+		std::cout<<"Adjoint inverse"<<std::endl;
+    std::cout<< Adjoint <<std::endl;
+    std::cout<<"Tangent adjoint: "<<std::endl;
+		std::cout<<m_nodesTangExpVectors[i]<<std::endl;		
     /// The null vector is replace by the linear velocity in Vec6Type
     Vec6 Xi_dot = Vec6(in1_vel[i - 1], Vec3(0.0, 0.0, 0.0));
+    std::cout<<"Xi_dot: "<<Xi_dot<<std::endl;
 
     Vec6 eta_node_i = Adjoint * (m_nodesVelocityVectors[i - 1] +
                                  m_nodesTangExpVectors[i] * Xi_dot);
     m_nodesVelocityVectors.push_back(eta_node_i);
+    std::cout << "Node velocity : " << i << " = " << eta_node_i << std::endl;
     if (d_debug.getValue())
       std::cout << "Node velocity : " << i << " = " << eta_node_i << std::endl;
   }
 
+  std::cout<<"Compute velocity at each output frame"<<std::endl;
   const sofa::VecCoord_t<Out> &out =
       m_global_frames->read(sofa::core::vec_id::read_access::position)->getValue();
   auto sz = curv_abs_frames.size();
@@ -278,6 +331,10 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJ(
         Adjoint; ///< the class insure that the constructed adjoint is zeroed.
     Adjoint.clear();
     this->computeAdjoint(Trans, Adjoint);
+    std::cout<<"Adjoint inverse: "<<std::endl;
+		std::cout<<Adjoint<<std::endl;
+    std::cout<<"Tangent adjoint: "<<std::endl;
+		std::cout<<m_framesTangExpVectors[i]<<std::endl;
     Vec6 frame_Xi_dot;
 
     for (auto u = 0; u < 3; u++) {
@@ -290,15 +347,19 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJ(
 
     auto T = Frame(out[i].getCenter(), out[i].getOrientation());
     Mat6x6 Proj = this->buildProjector(T);
-
+    std::cout<<"Projection Matrix: "<<std::endl;
+		std::cout<<Proj<<std::endl;
     out_vel[i] = Proj * eta_frame_i;
-
+    std::cout << "Frame velocity : " << i << " = " << eta_frame_i
+                << std::endl;
     if (d_debug.getValue())
       std::cout << "Frame velocity : " << i << " = " << eta_frame_i
                 << std::endl;
   }
   dataVecOutVel[0]->endEdit();
   m_indexInput = 0;
+
+  std::cout<<"=================Exit applyJ==================="<<std::endl;
 }
 
 template <class TIn1, class TIn2, class TOut>
@@ -318,6 +379,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJT(
   if (d_debug.getValue())
     std::cout << " ########## ApplyJT force Function ########" << std::endl;
   
+  std::cout<<"======= In applyJT function =========="<<std::endl;
   const sofa::VecDeriv_t<Out> &in = dataVecInForce[0]->getValue();
   sofa::VecDeriv_t<In1> &out1 = *dataVecOut1Force[0]->beginEdit();
   sofa::VecDeriv_t<In2> &out2 = *dataVecOut2Force[0]->beginEdit();
@@ -330,8 +392,11 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJT(
   const sofa::VecCoord_t<In1> x1from = x1fromData->getValue();
   vector<Vec6> local_F_Vec;
   local_F_Vec.clear();
-
-  //out1.resize(x1from.size());
+  
+  out1.resize(x1from.size());
+  for(auto& force : out1){
+			force.clear();
+		}
 	
   std::cout<<"Strain forces before the loop: [" ;
 	for(auto i : out1)
@@ -422,8 +487,8 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJT(
     std::cout<< "=== s: " << s << " frameExpo: "<< m_framesExponentialSE3Vectors[s] << std::endl;        
     std::cout<< "=== s: " << s << " frame: "<< frame[s] << std::endl;   
     
-    // std::cout<<"CoAdjoint matrix frame:"<<std::endl;
-    // std::cout<<coAdjoint<<std::endl;
+    std::cout<<"CoAdjoint matrix frame:"<<std::endl;
+    std::cout<<coAdjoint<<std::endl;
 
     Vec6 node_F_Vec = coAdjoint * local_F_Vec[s];
     Mat6x6 temp =
@@ -493,6 +558,8 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJT(
 
   dataVecOut1Force[0]->endEdit();
   dataVecOut2Force[0]->endEdit();
+
+  std::cout<<"=================Exit applyJT==================="<<std::endl;
 }
 
 template <class TIn1, class TIn2, class TOut>

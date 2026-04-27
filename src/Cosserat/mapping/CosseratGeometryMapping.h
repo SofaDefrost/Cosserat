@@ -332,6 +332,8 @@ namespace Cosserat::mapping {
 		void setKappa(const TangentVector &k) { kappa_ = k; }
 
 		const SE3Type &getTransformation() const { return transformation_; }
+		SE3Type getInverseTransformation() const { return transformation_.inverse(); }
+
 		void setTransformation(const SE3Type &transform) {
 			transformation_ = transform;
 
