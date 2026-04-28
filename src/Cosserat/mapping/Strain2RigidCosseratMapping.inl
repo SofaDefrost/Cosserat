@@ -234,8 +234,9 @@ namespace Cosserat::mapping {
 	void Strain2RigidCosseratMapping<TIn1, TIn2, TOut>::updateFrameTransformations(
 			const sofa::type::vector<Coord1> &vec_of_strains) {
 
-		auto nb_node = vec_of_strains.size();
+		// S'assurer que m_section_properties et m_frameProperties sont bien initialisés à zero
 
+		auto nb_node = vec_of_strains.size();
 		// Update node properties with current strain values
 		for (size_t i = 0; i < nb_node; ++i) {
 			// Extract strain components based on input type
@@ -302,6 +303,9 @@ namespace Cosserat::mapping {
 		const sofa::VecDeriv_t<In2> &base_vel = dataVecIn2Vel[0]->getValue();
 		sofa::VecDeriv_t<Out> &frame_vel = *dataVecOutVel[0]->beginEdit();
 
+		const sofa::VecCoord_t<Out> &framePositions =
+				this->m_frames->read(sofa::core::vec_id::read_access::position)->getValue();
+
 		// Debug input velocities if enabled
 		if (d_debug.getValue()) {
 			displayVelocities(strain_vel, base_vel, frame_vel, "applyJ - input");
@@ -310,6 +314,9 @@ namespace Cosserat::mapping {
 		const auto base_index = d_baseIndex.getValue();
 		const auto frame_count = d_curv_abs_frames.getValue().size();
 		frame_vel.resize(frame_count);
+		for (auto &vel : frame_vel){
+			vel.clear();
+		}
 
 		std::cout<<"base_vel (In2) : ";
 		for(int j=0; j<6; j++){
@@ -336,12 +343,21 @@ namespace Cosserat::mapping {
 			base_vel_local[u] = base_vel[base_index][u];
 
 		// 2.2 Apply the local transform from SOFA's frame to Cosserat's frame
-		const SE3Types base_sofa_pos = m_frameProperties[0].getTransformation().inverse();
 		std::cout<<"Apply the local transform i.e. from SOFA's frame to Cosserat's frame"<<std::endl;
 
-		AdjointMatrix base_projector = base_sofa_pos.buildProjectionMatrix(base_sofa_pos.rotation().matrix());
+		auto frame0 = framePositions[0];		
+		Vector3 trans0(frame0.getCenter()[0], frame0.getCenter()[1], frame0.getCenter()[2]);
+		const auto &quat0 = frame0.getOrientation();
+		Eigen::Quaternion<double> rot0(quat0[3], quat0[0], quat0[1], quat0[2]);
+			
+		SE3Types absoluteFrame0(SE3Types::SO3Type(rot0), trans0);
+		SE3Types absoluteFrame0_inv = absoluteFrame0.inverse();
+		//projection de la force globale dans le repère local
+		AdjointMatrix base_projector = absoluteFrame0_inv.buildProjectionMatrix(absoluteFrame0_inv.rotation().matrix());
 		std::cout<<"Base Projection Matrix"<<std::endl;
   		std::cout<< base_projector <<std::endl;
+
+
 		// 3. Compute velocity at each section node
 		std::vector<TangentVector> node_velocities;
 		node_velocities.resize(m_section_properties.size());
@@ -416,7 +432,7 @@ namespace Cosserat::mapping {
 					}
 				}
 			}
-
+			// @appa : Pb trouvé, ici utilisé les positions absolues
 			// Compute frame velocity: η_frame = Ad_{g_frame^{-1}} * (η_node + T_frame * ξ̇_frame)
 			auto g_inv = frame.getInverseTransformation();
 			AdjointMatrix Ad_gm1 = g_inv.computeAdjoint();
@@ -428,9 +444,17 @@ namespace Cosserat::mapping {
 					Ad_gm1 * (node_velocities[section_idx] + tang_adj * frame_strain_vel);
 
 			// Project to output frame (convert from local to SOFA global frame)
-			AdjointMatrix frame_projector =
-					frame.getTransformation().buildProjectionMatrix(frame.getTransformation().rotation().matrix());
-			
+			const auto &pos = framePositions[i]; //utiliser framePositions (position dans le repère monde au lieu de frameProperties qui est expo. ds strain)
+				// std::cout<<"=> frame "<<pos<<std::endl;
+				
+			Vector3 translation(pos.getCenter()[0], pos.getCenter()[1], pos.getCenter()[2]);
+			const auto &quat = pos.getOrientation();
+			Eigen::Quaternion<double> rotation(quat[3], quat[0], quat[1], quat[2]);
+				
+			SE3Types absoluteFrame(SE3Types::SO3Type(rotation), translation);
+			//projection de la force globale dans le repère local
+			AdjointMatrix frame_projector = absoluteFrame.buildProjectionMatrix(absoluteFrame.rotation().matrix());
+
 			std::cout<<"Projection Matrix: "<<std::endl;
 			std::cout<<frame_projector<<std::endl;
 			
@@ -489,9 +513,6 @@ namespace Cosserat::mapping {
 
 		// Initialize output forces
 		strainForces.resize(strainState.size());
-		for(auto& force : strainForces){
-			force.clear();
-		}
 
 		std::cout<<"Strain forces before the loop: [";
 		for(auto i : strainForces)
@@ -568,6 +589,7 @@ namespace Cosserat::mapping {
 		Eigen::Matrix<double, 3, 6> matB_trans = Eigen::Matrix<double, 3, 6>::Zero();
 		for (int k=0; k<3; k++)
 			matB_trans(k, k) = 1.0;
+		
 
 		for (auto s = sz; s--;) {
 
@@ -610,25 +632,24 @@ namespace Cosserat::mapping {
 				// std::cout<<"Total force : "<<totalForce.transpose()<<std::endl;
 				
 				// //ajout 
-				AdjointMatrix temp = section.getTangAdjointMatrix().transpose();
+				AdjointMatrix tempSection = section.getTangAdjointMatrix().transpose();
 				// std::cout<<"Tangent Exp (transpose) section"<< std::endl; std::cout<< temp<<std::endl;
 
 				// apply F_tot to the new beam
-				Vector3 temp_f = matB_trans * temp * totalForce;
+				Vector3 temp_f = matB_trans * tempSection * totalForce;
 				// std::cout<<"Force to add to strainForces lI: "<< temp_f << std::endl;
 								
-				// Add accumulated force to strain output
-				for (int j=0; j<3; j++)
+				// Add accumulated force to strain outpute
+				for (int j=0; j<3; j++){
 					strainForces[lastSectionIndex-1][j] +=temp_f[j];
-				
+				}
 				
 			}
 
 			totalForce += currentLocalForce;
-			for (int j=0; j<f.size(); j++){
+			for (int j=0; j<3; j++){
 					strainForces[currentSectionIndex-1][j] +=f[j];
 			}
-
 		}
 
 		std::cout<<"Strain forces after the loop: [";
@@ -636,7 +657,7 @@ namespace Cosserat::mapping {
 				std::cout<< "[" << i <<"] ";
 		std::cout<<std::endl;
 
-
+		
 		auto frame0 = framePositions[0];		
 		Vector3 trans0(frame0.getCenter()[0], frame0.getCenter()[1], frame0.getCenter()[2]);
 		const auto &quat0 = frame0.getOrientation();
@@ -650,8 +671,8 @@ namespace Cosserat::mapping {
 		TangentVector toAdd = TangentVector::Zero();
 		toAdd = M * totalForce;
 		
-		// for (int j=0; j<6; j++)
-		// 		baseForces[baseIndex][j] +=toAdd[j];	
+		for (int j=0; j<6; j++)
+				baseForces[baseIndex][j] +=toAdd[j];	
 		
 
 		std::cout << "Node forces " << strainForces<< std::endl;

@@ -326,6 +326,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJ(
   auto sz = curv_abs_frames.size();
   out_vel.resize(sz);
   for (unsigned int i = 0; i < sz; i++) {
+    std::cout<<"i = "<<i<<std::endl;
     auto Trans = m_framesExponentialSE3Vectors[i].inversed();
     TangentTransform
         Adjoint; ///< the class insure that the constructed adjoint is zeroed.
@@ -394,9 +395,6 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJT(
   local_F_Vec.clear();
   
   out1.resize(x1from.size());
-  for(auto& force : out1){
-			force.clear();
-		}
 	
   std::cout<<"Strain forces before the loop: [" ;
 	for(auto i : out1)
