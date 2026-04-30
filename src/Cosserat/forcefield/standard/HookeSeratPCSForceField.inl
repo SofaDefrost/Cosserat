@@ -163,8 +163,6 @@ namespace sofa::component::forcefield {
 		SOFA_UNUSED(d_v);
 		SOFA_UNUSED(mparams);
 
-		// std::cout<<"======== In addForce function ========"<<std::endl;
-
 		if (!this->getMState()) {
 			msg_info("HookeSeratPCSForceField") << "No Mechanical State found, no force will be computed...";
 			compute_df = false;
@@ -188,17 +186,7 @@ namespace sofa::component::forcefield {
 		Vector3 rest_strain = Vector3::Zero();
 		Vector3 strain = Vector3::Zero();
 		Vector3 _f = Vector3::Zero();
-		
-		// std::cout<<"K section matrix: "<<std::endl;
 
-		// for(int i=0; i<3; i++){
-		// 	std::cout<<"[";
-		// 	for(int j=0; j<3; j++){
-		// 		std::cout<<m_K_section(i, j)<<" ";
-				
-		// 	}
-		// 	std::cout<<"]"<<std::endl;
-		// }
 
 		if (!d_variantSections.getValue()) {
 			// @todo: use multithread
@@ -208,10 +196,6 @@ namespace sofa::component::forcefield {
 				current_strain = Vector3::Map(x[i].data());
 				rest_strain = Vector3::Map(x0[i].data());
 				strain = current_strain - rest_strain;
-
-				// std::cout<<"i = "<<i<<std::endl;
-				// std::cout<<"d_strain: "<<strain.transpose()<<std::endl;
-				// std::cout<<"d_length"<<this->d_length.getValue()[i]<<std::endl;
 
 				_f = (m_K_section * strain) * this->d_length.getValue()[i];
 
@@ -231,24 +215,16 @@ namespace sofa::component::forcefield {
 			}
 		}
 
-		// for(int i=0; i<f.size(); i++){
-		// 	std::cout<<"Force at ["<<i<<"]: "<<f[i]<<std::endl;
-		// }
-
-
 		// Debug output if needed
 		// displayForces(f, "addForce - computed forces");
 		// displaySectionMatrix(m_K_section, "addForce - K section matrix");
 
 		d_f.endEdit();
-		// std::cout<<"======== Exit addForce ========"<<std::endl;
 	}
 
 	template<typename DataTypes>
 	void HookeSeratPCSForceField<DataTypes>::addDForce(const MechanicalParams *mparams, DataVecDeriv &d_df,
 													   const DataVecDeriv &d_dx) {
-
-		// std::cout<<"======== In addDForce function ========="<<std::endl;
 
 		if (!compute_df)
 			return;
@@ -259,16 +235,11 @@ namespace sofa::component::forcefield {
 		Vector3 d_strain = Vector3::Zero();
 		Vector3 _df= Vector3::Zero();
 
-		// std::cout<<"kFactor = "<<kFactor<<std::endl;
 		df.resize(dx.size());
 		if (!d_variantSections.getValue()) {
 
 			for (unsigned int i = 0; i < dx.size(); i++) {
 				d_strain = Vector3::Map(dx[i].data());
-				// std::cout<<"i = "<<i<<std::endl;
-				// std::cout<<"d_strain: "<<d_strain.transpose()<<std::endl;
-				// std::cout<<"d_length"<<this->d_length.getValue()[i]<<std::endl;
-
 				_df = (m_K_section * d_strain) * kFactor * this->d_length.getValue()[i];
 				for (unsigned int j = 0; j < 3; j++)
 					df[i][j] -= _df[j];
@@ -289,20 +260,12 @@ namespace sofa::component::forcefield {
 
 		// Debug output if needed
 		// displayDForces(df, "addDForce - computed differential forces");
-		
-		// for(int i=0; i<df.size(); i++){
-		// 	std::cout<<"Diff. Force at ["<<i<<"]: "<<df[i]<<std::endl;
-		// }
-
-		// std::cout<<"======== Exit addDForce ========"<<std::endl;
-
 	}
 
 	template<typename DataTypes>
 	double HookeSeratPCSForceField<DataTypes>::getPotentialEnergy(const MechanicalParams *mparams,
 																  const DataVecCoord &d_x) const {
 		
-		// std::cout<<"======== In getPotentialEnergy function ========="<<std::endl;																	
 																	
 		SOFA_UNUSED(mparams);
 		if (!this->getMState())
@@ -330,11 +293,6 @@ namespace sofa::component::forcefield {
 				energy += 0.5 * strain.dot(K * strain) * this->d_length.getValue()[i];
 			}
 		}
-
-		// std::cout<<"Energy: "<<energy<<std::endl;
-		// std::cout<<"======== Exit getPotentialEnergy ========"<<std::endl;
-
-
 		return energy;
 	}
 
@@ -342,7 +300,6 @@ namespace sofa::component::forcefield {
 	template<typename DataTypes>
 	void HookeSeratPCSForceField<DataTypes>::addKToMatrix(const MechanicalParams *mparams,
 														  const MultiMatrixAccessor *matrix) {
-		// std::cout<<"======== In addKToMatrix function ========"<<std::endl;
 
 		MultiMatrixAccessor::MatrixRef mref = matrix->getMatrix(this->mstate);
 		BaseMatrix *mat = mref.matrix;
@@ -365,18 +322,6 @@ namespace sofa::component::forcefield {
 
 		// Debug output if needed
 	    // displayKMatrix(matrix, "addKToMatrix - global K matrix");
-		
-		// std::cout<<"Global Matrix: "<<std::endl;
-
-		// for (int i = 0; i < mat->rows(); i++) {
-		// 	std::cout << "[";
-		// 	for (int j = 0; j < mat->cols(); j++) {
-		// 		std::cout << mat->element(i, j) << " ";
-		// 	}
-		// 	std::cout << "]" << std::endl;
-		// }
-
-		// std::cout<<"======== Exit addKToMatrix ========"<<std::endl;
 
 	}
 
