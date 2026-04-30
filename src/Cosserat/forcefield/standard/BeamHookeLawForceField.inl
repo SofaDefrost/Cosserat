@@ -71,7 +71,8 @@ namespace sofa::component::forcefield {
 		d_GA(initData(&d_GA, "GA", "The inertia parameter, GA")),
 		d_EA(initData(&d_EA, "EA", "The inertia parameter, EA")),
 		d_EI(initData(&d_EI, "EI", "The inertia parameter, EI")) {
-		compute_df = false;
+
+		compute_df = true;//@appa: initialize compute_df at true (by default)
 	}
 
 	template<typename DataTypes>
@@ -86,7 +87,7 @@ namespace sofa::component::forcefield {
 	   recalculating the properties related to the cross-section of the beams. It
 	   calculates the area moment of inertia (Iy and Iz), the polar moment of
 	   inertia (J), and the cross-sectional area (A). These calculations depend on
-	   the chosen cross-section shape, either circular or rectangular. T he formulas
+	   the chosen cross-section shape, either circular or rectangular. The formulas
 	   used for these calculations are based on standard equations for these
 	   properties.*/
 	template<typename DataTypes>
@@ -153,6 +154,8 @@ namespace sofa::component::forcefield {
 		SOFA_UNUSED(d_v);
 		SOFA_UNUSED(mparams);
 
+		// std::cout<<"======== In addForce function ========"<<std::endl;
+
 		if (!this->getMState()) {
 			msg_info("BeamHookeLawForceField") << "No Mechanical State found, no force will be computed..." << "\n";
 			compute_df = false;
@@ -172,53 +175,92 @@ namespace sofa::component::forcefield {
 			return;
 		}
 
+		// std::cout<<"K section matrix: "<<std::endl;
+
+		// for(int i=0; i<3; i++){
+		// 	std::cout<<"[";
+		// 	for(int j=0; j<3; j++){
+		// 		std::cout<<m_K_section[i][j]<<" ";
+				
+		// 	}
+		// 	std::cout<<"]"<<std::endl;
+		// }
+		
 		if (!d_variantSections.getValue())
 			// @todo: use multithread
-			for (unsigned int i = 0; i < x.size(); i++)
+			for (unsigned int i = 0; i < x.size(); i++){
 				// Using the correct matrix type for the datatype
 				// For Vec3Types, m_K_section should be Mat33
+				// std::cout<<"i = "<<i<<std::endl;
+				// std::cout<<"d_strain: "<<(x[i] - x0[i])<<std::endl;
+				// std::cout<<"d_length"<<this->d_length.getValue()[i]<<std::endl;
 				f[i] -= (m_K_section * (x[i] - x0[i])) * this->d_length.getValue()[i];
+			}
 		else
 			// @todo: use multithread
 			for (unsigned int i = 0; i < x.size(); i++)
 				f[i] -= (m_K_sectionList[i] * (x[i] - x0[i])) * this->d_length.getValue()[i];
 
-		// Debug output if needed
+		// for(int i=0; i<f.size(); i++){
+		// 	std::cout<<"Force at ["<<i<<"]: "<<f[i]<<std::endl;
+		// }
 
-			displayForces(f, "addForce - computed forces");
-			displaySectionMatrix(m_K_section, "addForce - K section matrix");
+		// Debug output if needed
+		// displayForces(f, "addForce - computed forces");
+		// displaySectionMatrix(m_K_section, "addForce - K section matrix");
 
 
 		d_f.endEdit();
+		// std::cout<<"======== Exit addForce ========"<<std::endl;
+
 	}
 
 	template<typename DataTypes>
 	void BeamHookeLawForceField<DataTypes>::addDForce(const MechanicalParams *mparams, DataVecDeriv &d_df,
 													  const DataVecDeriv &d_dx) {
+		// std::cout<<"======== In addDForce function ========="<<std::endl;
+
 		if (!compute_df)
 			return;
 
 		WriteAccessor<DataVecDeriv> df = d_df;
 		ReadAccessor<DataVecDeriv> dx = d_dx;
 		Real kFactor = (Real) mparams->kFactorIncludingRayleighDamping(this->rayleighStiffness.getValue());
+		
+		// std::cout<<"kFactor = "<<kFactor<<std::endl;
 
 		df.resize(dx.size());
 		if (!d_variantSections.getValue())
-			for (unsigned int i = 0; i < dx.size(); i++)
+			for (unsigned int i = 0; i < dx.size(); i++){
+				// std::cout<<"i = "<<i<<std::endl;
+				// std::cout<<"d_strain: "<<dx[i]<<std::endl;
+				// std::cout<<"d_length"<<this->d_length.getValue()[i]<<std::endl;
+
 				df[i] -= (m_K_section * dx[i]) * kFactor * this->d_length.getValue()[i];
+			}
+				
 		else
 			for (unsigned int i = 0; i < dx.size(); i++)
 				df[i] -= (m_K_sectionList[i] * dx[i]) * kFactor * this->d_length.getValue()[i];
 
 
 		// Debug output if needed
-		displayDForces(df, "addDForce - computed differential forces");
+		// displayDForces(df, "addDForce - computed differential forces");
+		
+		// for(int i=0; i<df.size(); i++){
+		// 	std::cout<<"Diff. Force at ["<<i<<"]: "<<df[i]<<std::endl;
+		// }
+
+		// std::cout<<"======== Exit addDForce ========"<<std::endl;
+		
 
 	}
 
 	template<typename DataTypes>
 	double BeamHookeLawForceField<DataTypes>::getPotentialEnergy(const MechanicalParams *mparams,
 																 const DataVecCoord &d_x) const {
+		
+		// std::cout<<"======== In getPotentialEnergy function ========="<<std::endl;																	
 		SOFA_UNUSED(mparams);
 		if (!this->getMState())
 			return 0.0;
@@ -246,7 +288,9 @@ namespace sofa::component::forcefield {
 				energy += 0.5 * dot(strain, K * strain) * this->d_length.getValue()[i];
 			}
 		}
-
+		
+		// std::cout<<"Energy: "<<energy<<std::endl;
+		// std::cout<<"======== Exit getPotentialEnergy ========"<<std::endl;
 		return energy;
 	}
 
@@ -254,6 +298,8 @@ namespace sofa::component::forcefield {
 	template<typename DataTypes>
 	void BeamHookeLawForceField<DataTypes>::addKToMatrix(const MechanicalParams *mparams,
 														 const MultiMatrixAccessor *matrix) {
+		// std::cout<<"======== In addKToMatrix function ========"<<std::endl;
+
 		MultiMatrixAccessor::MatrixRef mref = matrix->getMatrix(this->mstate);
 		BaseMatrix *mat = mref.matrix;
 		unsigned int offset = mref.offset;
@@ -274,7 +320,19 @@ namespace sofa::component::forcefield {
 		}
 
 		// Debug output if needed
-		displayKMatrix(matrix, "addKToMatrix - global K matrix");
+		//displayKMatrix(matrix, "addKToMatrix - global K matrix");
+		
+		// std::cout<<"Global Matrix: "<<std::endl;
+
+		// for (int i = 0; i < mat->rows(); i++) {
+		// 	std::cout << "[";
+		// 	for (int j = 0; j < mat->cols(); j++) {
+		// 		std::cout << mat->element(i, j) << " ";
+		// 	}
+		// 	std::cout << "]" << std::endl;
+		// }
+
+		// std::cout<<"======== Exit addKToMatrix ========"<<std::endl;
 
 	}
 

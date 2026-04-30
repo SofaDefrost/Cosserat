@@ -233,6 +233,7 @@ template <class TIn1, class TIn2, class TOut>
 void BaseCosseratMapping<TIn1, TIn2, TOut>::updateExponentialSE3(
         const vector<Coord1> &strain_state)
 {
+    // std::cout<<"========= In updateExponentialSE3 ========="<<std::endl;
     auto curv_abs_frames = getReadAccessor(d_curv_abs_frames);
 
     m_framesExponentialSE3Vectors.clear();
@@ -240,10 +241,16 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::updateExponentialSE3(
     m_nodesLogarithmSE3Vectors.clear();
 
     const auto sz = curv_abs_frames.size();
+    // std::cout<<">>> Frame"<<std::endl;
+	// std::cout<<" "<<std::endl;
+    
+    // std::cout<<"curv_abs_frames.size() = "<<sz<<std::endl;
     // Compute exponential at each frame point
+    // std::cout<<"[Loop]: Compute exponential at each frame point"<<std::endl;
     for (auto i = 0; i < sz; ++i)
     {
-      Frame g_X_frame_i;
+        // std::cout<<"i = "<<i <<std::endl;
+        Frame g_X_frame_i;
 
         const Coord1 strain_n =
             strain_state[m_indicesVectors[i] - 1]; // Cosserat reduce coordinates (strain)
@@ -251,27 +258,41 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::updateExponentialSE3(
         // the size varies from 3 to 6
         // The distance between the frame node and the closest beam node toward the base
         const SReal sub_section_length = m_framesLengthVectors[i];
+        // std::cout<<"sub section length = "<<sub_section_length<<std::endl;
         computeExponentialSE3(sub_section_length, strain_n, g_X_frame_i);
+        // std::cout<<"to add to framesExpSE3: "<<g_X_frame_i <<std::endl;
         m_framesExponentialSE3Vectors.push_back(g_X_frame_i);
-
+        
         msg_info()
                 << "_________________" << i << "_________________________" << msgendl
                 << "x :" << sub_section_length << "; strain :" << strain_n << msgendl
                 << "m_framesExponentialSE3Vectors :" << g_X_frame_i;
     }
 
+    // std::cout<<">>> Section"<<std::endl;
+    // std::cout<<" "<<std::endl;
+    // std::cout<<"strain: ["<<std::endl;
+	// for(auto str : strain_state){
+	// 	std::cout<<"["<< str <<"] ";
+	// }
+	// std::cout<<"]"<<std::endl;
+    
     // Compute the exponential on the nodes
     m_nodesExponentialSE3Vectors.push_back(
         Frame(Vec3(0.0, 0.0, 0.0),
                           Quat(0., 0., 0., 1.))); // The first node.
     //todo : merge this section with the previous one
+    // std::cout<<"Nb. node = "<<strain_state.size()<<std::endl;
+    // std::cout<<"[Loop]: Compute the exponential on the nodes"<<std::endl;
     for (unsigned int j = 0; j < strain_state.size(); ++j)
     {
+        // std::cout<<"i = "<<j<<std::endl; 
         Coord1 strain_n = strain_state[j];
         const SReal section_length = m_beamLengthVectors[j];
-
+        // std::cout<<"section length = "<<section_length<<std::endl;
         Frame g_X_node_j;
         computeExponentialSE3(section_length, strain_n, g_X_node_j);
+        // std::cout<<"To add to nodeExpSE3: "<< g_X_node_j<< std::endl;
         m_nodesExponentialSE3Vectors.push_back(g_X_node_j);
 
         msg_info()
@@ -280,6 +301,7 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::updateExponentialSE3(
                 << "_________________Beam Node Expo___________________";
 
     }
+    // std::cout<<"=================Exit updateExponentialSE3 ================"<<std::endl;
 }
 
 template <class TIn1, class TIn2, class TOut>

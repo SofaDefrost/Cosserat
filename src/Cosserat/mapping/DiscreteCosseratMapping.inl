@@ -102,7 +102,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::apply(
   if (dataVecOutPos.empty() || dataVecIn1Pos.empty() || dataVecIn2Pos.empty())
     return;
 
-  std::cout << "====== In Apply Function =======" << std::endl;
+  // std::cout << "====== In Apply Function =======" << std::endl;
 
   // Checking the componentState, to trigger a callback if other data fields (specifically
   // d_curv_abs_section and d_curv_abs_frames) were changed dynamically
@@ -119,19 +119,19 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::apply(
   const auto baseIndex = d_baseIndex.getValue();
 
 
-	std::cout<<"rigidBase (In2) : ";
-	for(int j=0; j<6; j++){
-		std::cout<<in2[baseIndex][j]<<" ";
-	}
-	std::cout<<std::endl;
-	std::cout<<"strainState (In1) : ";
-	for(int i=0; i<in1.size(); i++){
-		for(int j=0; j<6; j++){
-			std::cout<<in1[i][j]<<" ";
-		}
-		std::cout<<std::endl;
-	}
-	std::cout<<std::endl;
+	// std::cout<<"rigidBase (In2) : ";
+	// for(int j=0; j<6; j++){
+	// 	std::cout<<in2[baseIndex][j]<<" ";
+	// }
+	// std::cout<<std::endl;
+	// std::cout<<"strainState (In1) : ";
+	// for(int i=0; i<in1.size(); i++){
+	// 	for(int j=0; j<in1[i].size(); j++){
+	// 		std::cout<<in1[i][j]<<" ";
+	// 	}
+	// 	std::cout<<std::endl;
+	// }
+	// std::cout<<std::endl;
 
   // update the Exponential matrices according to new deformation
   // Here we update m_framesExponentialSE3Vectors & m_nodesExponentialSE3Vectors
@@ -143,8 +143,8 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::apply(
   const auto frame0 =
       Frame(In2::getCPos(in2[baseIndex]), In2::getCRot(in2[baseIndex]));
     
-  std::cout<<"Base Frame: "<<std::endl;
-	std::cout<<frame0<<std::endl;
+  // std::cout<<"Base Frame: "<<std::endl;
+	// std::cout<<frame0<<std::endl;
 
   // Cache the printLog value out of the loop, otherwise it will trigger a graph
   // update at every iteration.
@@ -153,9 +153,9 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::apply(
   //for (int k = 0; k< m_indicesVectors.size(); k++)
   // std::cout << "indice vecteur :"<< m_indicesVectors << std::endl;
 
-  std::cout<<"Apply transformations to compute output frames"<<std::endl;
+  // std::cout<<"Apply transformations to compute output frames"<<std::endl;
   for (unsigned int i = 0; i < sz; i++) {
-    std::cout<<"i = "<<i<<std::endl;
+    // std::cout<<"i = "<<i<<std::endl;
     auto frame = frame0;
     for (unsigned int u = 0; u < m_indicesVectors[i]; u++) {
       frame *=
@@ -163,7 +163,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::apply(
     }
     frame *= m_framesExponentialSE3Vectors[i]; // frame*gX(x)
 
-    std::cout<<"Frame: "<<frame<<std::endl;
+    // std::cout<<"Frame: "<<frame<<std::endl;
     // This is a lazy printing approach, so there is no time consuming action in
     // the core of the loop.
     msg_info_when(doPrintLog) << "Frame  : " << i << " = " << frame;
@@ -184,7 +184,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::apply(
     msg_info() << tmp.str();
   }
 
-  std::cout<<"=================Exit apply==================="<<std::endl;
+  // std::cout<<"=================Exit apply==================="<<std::endl;
   // TODO(dmarchal:2024/06/13): This looks a suspicious design pattern,
   // elaborate more on the purpose of m_indexInput and how to use it.
   m_indexInput = 0;
@@ -239,25 +239,25 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJ(
   if (d_debug.getValue())
     std::cout << " ########## ApplyJ Function ########" << std::endl;
 
-  std::cout<<"====== In ApplyJ function ========"<<std::endl;
+  // std::cout<<"====== In ApplyJ function ========"<<std::endl;
   const sofa::VecDeriv_t<In1> &in1_vel = dataVecIn1Vel[0]->getValue();
   const sofa::VecDeriv_t<In2> &in2_vel = dataVecIn2Vel[0]->getValue();
   sofa::VecDeriv_t<Out> &out_vel = *dataVecOutVel[0]->beginEdit();
   const auto baseIndex = d_baseIndex.getValue();
 
-	std::cout<<"base_vel (In2) : ";
-	for(int j=0; j<6; j++){
-		std::cout<<in2_vel[baseIndex][j]<<" ";
-	}
-	std::cout<<std::endl;
-	std::cout<<"strain_vel (In1) : ";
-	for(int i=0; i<in1_vel.size(); i++){
-		for(int j=0; j<6; j++){
-			std::cout<<in1_vel[i][j]<<" ";
-		}
-		std::cout<<std::endl;
-	}
-	std::cout<<std::endl;
+	// std::cout<<"base_vel (In2) : ";
+	// for(int j=0; j<6; j++){
+	// 	std::cout<<in2_vel[baseIndex][j]<<" ";
+	// }
+	// std::cout<<std::endl;
+	// std::cout<<"strain_vel (In1) : ";
+	// for(int i=0; i<in1_vel.size(); i++){
+	// 	for(int j=0; j<6; j++){
+	// 		std::cout<<in1_vel[i][j]<<" ";
+	// 	}
+	// 	std::cout<<std::endl;
+	// }
+	// std::cout<<std::endl;
   
   // Curv abscissa of nodes and frames
   sofa::helper::ReadAccessor<sofa::Data<vector<double>>> curv_abs_section =
@@ -280,62 +280,61 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJ(
     baseVelocity[u] = in2_vel[baseIndex][u];
 
   // Apply the local transform i.e. from SOFA's frame to Cosserat's frame
-  std::cout<<"Apply the local transform i.e. from SOFA's frame to Cosserat's frame"<<std::endl;
+  // std::cout<<"Apply the local transform i.e. from SOFA's frame to Cosserat's frame"<<std::endl;
 
   const sofa::VecCoord_t<In2> &xfrom2Data =
       m_rigid_base->read(sofa::core::vec_id::read_access::position)->getValue();
   auto TInverse = Frame(xfrom2Data[baseIndex].getCenter(),
                                  xfrom2Data[baseIndex].getOrientation()).inversed();
   Mat6x6 P = this->buildProjector(TInverse);
-  std::cout<<"Base Projection Matrix"<<std::endl;
-  std::cout<< P <<std::endl;
+  // std::cout<<"Base Projection Matrix"<<std::endl;
+  // std::cout<< P <<std::endl;
   Vec6 baseLocalVelocity =
       P * baseVelocity; // This is the base velocity in Locale frame
   m_nodesVelocityVectors.push_back(baseLocalVelocity);
-  std::cout << "Base local Velocity :" << baseLocalVelocity << std::endl;
+  // std::cout << "Base local Velocity :" << baseLocalVelocity << std::endl;
   if (d_debug.getValue())
     std::cout << "Base local Velocity :" << baseLocalVelocity << std::endl;
 
   // Compute velocity at nodes
-  std::cout<<"Compute velocity at nodes"<<std::endl;
+  // std::cout<<"Compute velocity at nodes"<<std::endl;
   for (unsigned int i = 1; i < curv_abs_section.size(); i++) {
-    std::cout<<"i = "<<i<<std::endl;
+    // std::cout<<"i = "<<i<<std::endl;
     auto Trans = m_nodesExponentialSE3Vectors[i].inversed();
     TangentTransform Adjoint;
     Adjoint.clear();
     this->computeAdjoint(Trans, Adjoint);
-		std::cout<<"Adjoint inverse"<<std::endl;
-    std::cout<< Adjoint <<std::endl;
-    std::cout<<"Tangent adjoint: "<<std::endl;
-		std::cout<<m_nodesTangExpVectors[i]<<std::endl;		
+		// std::cout<<"Adjoint inverse"<<std::endl;
+    // std::cout<< Adjoint <<std::endl;
+    // std::cout<<"Tangent adjoint: "<<std::endl;
+		// std::cout<<m_nodesTangExpVectors[i]<<std::endl;		
     /// The null vector is replace by the linear velocity in Vec6Type
     Vec6 Xi_dot = Vec6(in1_vel[i - 1], Vec3(0.0, 0.0, 0.0));
-    std::cout<<"Xi_dot: "<<Xi_dot<<std::endl;
+    // std::cout<<"Xi_dot: "<<Xi_dot<<std::endl;
 
     Vec6 eta_node_i = Adjoint * (m_nodesVelocityVectors[i - 1] +
                                  m_nodesTangExpVectors[i] * Xi_dot);
     m_nodesVelocityVectors.push_back(eta_node_i);
-    std::cout << "Node velocity : " << i << " = " << eta_node_i << std::endl;
+    // std::cout << "Node velocity : " << i << " = " << eta_node_i << std::endl;
     if (d_debug.getValue())
       std::cout << "Node velocity : " << i << " = " << eta_node_i << std::endl;
   }
 
-  std::cout<<"Compute velocity at each output frame"<<std::endl;
+  // std::cout<<"Compute velocity at each output frame"<<std::endl;
   const sofa::VecCoord_t<Out> &out =
       m_global_frames->read(sofa::core::vec_id::read_access::position)->getValue();
   auto sz = curv_abs_frames.size();
   out_vel.resize(sz);
   for (unsigned int i = 0; i < sz; i++) {
-    std::cout<<"i = "<<i<<std::endl;
+    // std::cout<<"i = "<<i<<std::endl;
     auto Trans = m_framesExponentialSE3Vectors[i].inversed();
-    TangentTransform
-        Adjoint; ///< the class insure that the constructed adjoint is zeroed.
+    TangentTransform Adjoint; ///< the class insure that the constructed adjoint is zeroed.
     Adjoint.clear();
     this->computeAdjoint(Trans, Adjoint);
-    std::cout<<"Adjoint inverse: "<<std::endl;
-		std::cout<<Adjoint<<std::endl;
-    std::cout<<"Tangent adjoint: "<<std::endl;
-		std::cout<<m_framesTangExpVectors[i]<<std::endl;
+    // std::cout<<"Adjoint inverse: "<<std::endl;
+		// std::cout<<Adjoint<<std::endl;
+    // std::cout<<"Tangent adjoint: "<<std::endl;
+		// std::cout<<m_framesTangExpVectors[i]<<std::endl;
     Vec6 frame_Xi_dot;
 
     for (auto u = 0; u < 3; u++) {
@@ -348,11 +347,10 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJ(
 
     auto T = Frame(out[i].getCenter(), out[i].getOrientation());
     Mat6x6 Proj = this->buildProjector(T);
-    std::cout<<"Projection Matrix: "<<std::endl;
-		std::cout<<Proj<<std::endl;
+    // std::cout<<"Projection Matrix: "<<std::endl;
+		// std::cout<<Proj<<std::endl;
     out_vel[i] = Proj * eta_frame_i;
-    std::cout << "Frame velocity : " << i << " = " << eta_frame_i
-                << std::endl;
+    // std::cout << "Frame velocity : " << i << " = " << eta_frame_i  << std::endl;
     if (d_debug.getValue())
       std::cout << "Frame velocity : " << i << " = " << eta_frame_i
                 << std::endl;
@@ -360,7 +358,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJ(
   dataVecOutVel[0]->endEdit();
   m_indexInput = 0;
 
-  std::cout<<"=================Exit applyJ==================="<<std::endl;
+  // std::cout<<"=================Exit applyJ==================="<<std::endl;
 }
 
 template <class TIn1, class TIn2, class TOut>
@@ -380,7 +378,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJT(
   if (d_debug.getValue())
     std::cout << " ########## ApplyJT force Function ########" << std::endl;
   
-  std::cout<<"======= In applyJT function =========="<<std::endl;
+  // std::cout<<"======= In applyJT function =========="<<std::endl;
   const sofa::VecDeriv_t<Out> &in = dataVecInForce[0]->getValue();
   sofa::VecDeriv_t<In1> &out1 = *dataVecOut1Force[0]->beginEdit();
   sofa::VecDeriv_t<In2> &out2 = *dataVecOut2Force[0]->beginEdit();
@@ -396,18 +394,18 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJT(
   
   out1.resize(x1from.size());
 	
-  std::cout<<"Strain forces before the loop: [" ;
-	for(auto i : out1)
-			std::cout<< "[" << i <<"] ";
-	std::cout<<std::endl;
+  // std::cout<<"Strain forces before the loop: [" ;
+	// for(auto i : out1)
+	// 		std::cout<< "[" << i <<"] ";
+	// std::cout<<std::endl;
 
   // convert the input from Deriv type to vec6 type, for the purpose of the
   // matrix vector multiplication
 
-  std::cout<<"Input Forces: [" ;
-	for(auto i : in)
-			std::cout<< "[" << i <<"] ";
-	std::cout<<std::endl;
+  // std::cout<<"Input Forces: [" ;
+	// for(auto i : in)
+	// 		std::cout<< "[" << i <<"] ";
+	// std::cout<<std::endl;
 
   for (unsigned int var = 0; var < in.size(); ++var) {
     Vec6 vec;
@@ -440,15 +438,15 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJT(
     // std::cout<<"##############################"<<std::endl;
   }
 
-		std::cout<<"localForces: [ ";
-		for(int i=0; i<in.size(); i++){
-			std::cout<<"[ ";
-			for(int j=0; j<6; j++){
-				std::cout<< local_F_Vec[i][j]<<" ";
-			}
-			std::cout<<"]"<<std::endl;
-		}
-		std::cout<<"]"<<std::endl;
+		// std::cout<<"localForces: [ ";
+		// for(int i=0; i<in.size(); i++){
+		// 	std::cout<<"[ ";
+		// 	for(int j=0; j<6; j++){
+		// 		std::cout<< local_F_Vec[i][j]<<" ";
+		// 	}
+		// 	std::cout<<"]"<<std::endl;
+		// }
+		// std::cout<<"]"<<std::endl;
 
   //ajout2
   // std::cout<<"Out of force transformation loop"<<std::endl;
@@ -461,7 +459,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJT(
   // Compute output forces
   auto sz = m_indicesVectors.size();
   //ajout4
-  std::cout<<"Section count: "<<sz<<std::endl;
+  // std::cout<<"Section count: "<<sz<<std::endl;
   auto index = m_indicesVectors[sz - 1];
   m_totalBeamForceVectors.clear();
   m_totalBeamForceVectors.resize(sz);
@@ -482,11 +480,11 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJT(
         m_framesExponentialSE3Vectors[s],
         coAdjoint); // m_framesExponentialSE3Vectors[s] computed in apply
 
-    std::cout<< "=== s: " << s << " frameExpo: "<< m_framesExponentialSE3Vectors[s] << std::endl;        
-    std::cout<< "=== s: " << s << " frame: "<< frame[s] << std::endl;   
+    // std::cout<< "=== s: " << s << " frameExpo: "<< m_framesExponentialSE3Vectors[s] << std::endl;        
+    // std::cout<< "=== s: " << s << " frame: "<< frame[s] << std::endl;   
     
-    std::cout<<"CoAdjoint matrix frame:"<<std::endl;
-    std::cout<<coAdjoint<<std::endl;
+    // std::cout<<"CoAdjoint matrix frame:"<<std::endl;
+    // std::cout<<coAdjoint<<std::endl;
 
     Vec6 node_F_Vec = coAdjoint * local_F_Vec[s];
     Mat6x6 temp =
@@ -533,21 +531,21 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJT(
     F_tot += node_F_Vec;
     out1[m_indicesVectors[s] - 1] += f;
   }
-  std::cout<<"Strain forces after the loop: [" ;
-	for(auto i : out1)
-			std::cout<< "[" << i <<"] ";
-	std::cout<<std::endl;
+  // std::cout<<"Strain forces after the loop: [" ;
+	// for(auto i : out1)
+	// 		std::cout<< "[" << i <<"] ";
+	// std::cout<<std::endl;
 
 
   auto frame0 = Frame(frame[0].getCenter(), frame[0].getOrientation());
   Mat6x6 M = this->buildProjector(frame0);
-  std::cout<<"Proj Mat 0: "<<"\n"<<M <<std::endl;
+  // std::cout<<"Proj Mat 0: "<<"\n"<<M <<std::endl;
   out2[baseIndex] += M * F_tot;
 
 		
-  std::cout << "Node forces " << out1 << std::endl;
-  std::cout << "base index: " << baseIndex << std::endl;
-  std::cout << "base Force: " << out2[baseIndex] << std::endl;
+  // std::cout << "Node forces " << out1 << std::endl;
+  // std::cout << "base index: " << baseIndex << std::endl;
+  // std::cout << "base Force: " << out2[baseIndex] << std::endl;
 
   if (d_debug.getValue()) {
     std::cout << "Node forces " << out1 << std::endl;
@@ -557,7 +555,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJT(
   dataVecOut1Force[0]->endEdit();
   dataVecOut2Force[0]->endEdit();
 
-  std::cout<<"=================Exit applyJT==================="<<std::endl;
+  // std::cout<<"=================Exit applyJT==================="<<std::endl;
 }
 
 template <class TIn1, class TIn2, class TOut>
@@ -566,6 +564,9 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJT(
     const vector<sofa::DataMatrixDeriv_t<In1> *> &dataMatOut1Const,
     const vector<sofa::DataMatrixDeriv_t<In2> *> &dataMatOut2Const,
     const vector<const sofa::DataMatrixDeriv_t<Out> *> &dataMatInConst) {
+
+  // std::cout<<"====== In applyJTC function ======"<<std::endl;
+
   if (dataMatOut1Const.empty() || dataMatOut2Const.empty() ||
       dataMatInConst.empty())
     return;
@@ -628,23 +629,35 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJT(
     NodesInvolved.clear();
     while (colIt != colItEnd) {
       int childIndex = colIt.index();
+      // std::cout<<"Frame Index: "<<childIndex<<std::endl;
 
       const sofa::Deriv_t<Out> valueConst_ = colIt.val();
       Vec6 valueConst;
       for (unsigned j = 0; j < 6; j++)
         valueConst[j] = valueConst_[j];
 
+      // std::cout<<"Constraint Value = "<<valueConst<<std::endl;
+
       int indexBeam = m_indicesVectors[childIndex];
+
+      // std::cout<<"Section index: "<<indexBeam<<std::endl;
 
       const auto _T = Frame(frame[childIndex].getCenter(),
                                frame[childIndex].getOrientation());
       Mat6x6 P_trans = (this->buildProjector(_T));
+      // std::cout<<"Projection Matrix: "<<std::endl;
+			// std::cout<<P_trans<<std::endl;
+      
       P_trans.transpose();
 
       Mat6x6 co_adjoint;
         this->computeCoAdjoint(
           m_framesExponentialSE3Vectors[childIndex],
           co_adjoint); // m_framesExponentialSE3Vectors[s] computed in apply
+
+      // std::cout<<"CoAdjoint Matrix: " <<std::endl;
+      // std::cout<<co_adjoint <<std::endl;  
+      
       Mat6x6 temp =
           m_framesTangExpVectors[childIndex]; // m_framesTangExpVectors[s]
       // computed in applyJ
@@ -655,8 +668,18 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJT(
           co_adjoint * P_trans *
           valueConst; // constraint direction in local frame of the beam.
 
+      // std::cout<<"Local Force: "<<std::endl;
+      // for (size_t i = 0; i < local_F.size(); ++i) {
+      //   std::cout<<"Force "<<i<<": "<<local_F[i]<<std::endl;
+      // }
+
+      // std::cout<<"Tangent Exp (transpose, frame)"<< std::endl;
+      // std::cout<<temp<<std::endl; 
+
       Vec3 f = matB_trans * temp *
                local_F; // constraint direction in the strain space.
+      
+      // std::cout<<"constraint dir. in the strain space: " << f <<std::endl;
 
       o1.addCol(indexBeam - 1, f);
       std::tuple<int, Vec6> test = std::make_tuple(indexBeam, local_F);
@@ -714,40 +737,56 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJT(
                   << " force :" << get<1>(NodesInvolvedCompressed[i]) << "\n ";
     }
 
+    // std::cout<<"After sort and compress of NodeInvolved" << std::endl;
     for (unsigned n = 0; n < NodesInvolvedCompressed.size(); n++) {
+      // std::cout<<"n = "<<n<<std::endl;
       std::tuple<int, Vec6> test = NodesInvolvedCompressed[n];
       int numNode = std::get<0>(test);
       int i = numNode;
       Vec6 CumulativeF = std::get<1>(test);
 
+      // std::cout<<"CumulativeF : "<< CumulativeF<<std::endl;
       while (i > 0) {
         // cumulate on beam frame
+        // std::cout<<"i = "<<i<<std::endl;
         Mat6x6 coAdjoint;
         this->computeCoAdjoint(
             m_nodesExponentialSE3Vectors[i - 1],
             coAdjoint); // m_nodesExponentialSE3Vectors computed in apply
+        
+        // std::cout<<"CoAdjoint Matrix (section): "<<std::endl;
+				// std::cout<<coAdjoint<<std::endl;
         CumulativeF = coAdjoint * CumulativeF;
         // transfer to strain space (local coordinates)
         Mat6x6 temp = m_nodesTangExpVectors[i - 1];
         temp.transpose();
+        // std::cout<<"Tangent Exp Matrix (transpose, section): "<<std::endl;
+				// std::cout<<temp<<std::endl;
+        
         Vec3 temp_f = matB_trans * temp * CumulativeF;
-
+        
+        // std::cout<<"temp_f: "<<temp_f<<std::endl;
         if (i > 1)
           o1.addCol(i - 2, temp_f);
         i--;
       }
-    const auto frame0 =
-          Frame(frame[0].getCenter(), frame[0].getOrientation());
-    const Mat6x6 M = this->buildProjector(frame0);
+      const auto frame0 =
+            Frame(frame[0].getCenter(), frame[0].getOrientation());
+      const Mat6x6 M = this->buildProjector(frame0);
 
-      const Vec6 base_force = M * CumulativeF;
-      o2.addCol(d_baseIndex.getValue(), base_force);
+        const Vec6 base_force = M * CumulativeF;
+
+        // std::cout<<"Base Force: "<<base_force<<std::endl;
+        o2.addCol(d_baseIndex.getValue(), base_force);
     }
   }
 
   //"""END ARTICULATION SYSTEM MAPPING"""
   dataMatOut1Const[0]->endEdit();
   dataMatOut2Const[0]->endEdit();
+
+  // std::cout<<"=================Exit applyJTC==================="<<std::endl;
+
 }
 
 template <class TIn1, class TIn2, class TOut>
