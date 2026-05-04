@@ -7,11 +7,11 @@
 
 ---
 
-## 📋 Overview
+## Overview
 
 This document provides a comprehensive summary of the Python unit test suite created for the Cosserat plugin's Python bindings. The test suite ensures that C++ components are properly exposed to Python via pybind11 and function correctly in various scenarios.
 
-## 🎯 Objectives
+## Objectives
 
 The primary goals of this test suite are to:
 
@@ -21,7 +21,7 @@ The primary goals of this test suite are to:
 4. **Enable CI/CD Integration**: Provide automated testing capabilities for continuous integration
 5. **Support Development**: Help developers quickly identify binding issues during development
 
-## 📁 Files Created
+##  Files Created
 
 ### Core Test Files
 
@@ -38,7 +38,7 @@ The primary goals of this test suite are to:
 |------|---------|----------|
 | `CMakeLists.txt` | Added Python test integration | Enables `ctest` execution of Python tests |
 
-## 🧪 Test Suite Architecture
+##   Test Suite Architecture
 
 ### Test Classes Overview
 
@@ -153,7 +153,7 @@ except ImportError:
 | **CMake Integration** | `ctest -R CosseratPythonBindings` | CI/CD and build system integration |
 | **Dependency Check** | `./run_python_tests.py --check-deps` | Environment validation |
 
-## 📊 Test Results and Metrics
+##  Test Results and Metrics
 
 ### Current Test Statistics
 
@@ -185,7 +185,7 @@ Test Outcome: Mixed pass/skip based on availability
 Success Rate: 100% for available components
 ```
 
-## 🚀 Usage Examples
+## Usage Examples
 
 ### Basic Usage
 
@@ -229,7 +229,7 @@ python3 unit/test_cosserat_bindings.py
 ctest --output-on-failure
 ```
 
-## 🛡️ Quality Assurance Features
+##  Quality Assurance Features
 
 ### Robustness Measures
 
@@ -241,14 +241,14 @@ ctest --output-on-failure
 
 ### Testing Best Practices Implemented
 
-- ✅ **Independent Tests**: Each test can run standalone
-- ✅ **Deterministic Results**: Tests produce consistent outcomes
-- ✅ **Fast Execution**: Tests complete in under 5 seconds
-- ✅ **Clear Documentation**: Every test method has descriptive docstrings
-- ✅ **Proper Assertions**: Specific assertions for different failure modes
-- ✅ **Resource Management**: Automatic cleanup of SOFA scenes
+-  **Independent Tests**: Each test can run standalone
+-  **Deterministic Results**: Tests produce consistent outcomes
+-  **Fast Execution**: Tests complete in under 5 seconds
+-  **Clear Documentation**: Every test method has descriptive docstrings
+-  **Proper Assertions**: Specific assertions for different failure modes
+-  **Resource Management**: Automatic cleanup of SOFA scenes
 
-## 🔍 Troubleshooting Guide
+## Troubleshooting Guide
 
 ### Common Issues and Solutions
 
@@ -273,7 +273,7 @@ python3 -c "import Sofa; print(Sofa.Core.SofaInfo.version)"
 python3 -c "import Sofa.Cosserat; print('Cosserat bindings available')"
 ```
 
-## 📈 Future Enhancements
+## Future Enhancements
 
 ### Planned Improvements
 
@@ -317,7 +317,7 @@ class TestNewComponent(unittest.TestCase):
             self.skipTest("Method not available")
 ```
 
-## 📋 Maintenance and Support
+## Maintenance and Support
 
 ### Maintenance Schedule
 
@@ -333,16 +333,16 @@ class TestNewComponent(unittest.TestCase):
 - **Troubleshooting**: Built-in diagnostic messages
 - **Community**: SOFA Framework forums and documentation
 
-## 🎉 Conclusion
+## Conclusion
 
 The Cosserat Python bindings test suite provides a robust, comprehensive testing framework that:
 
-- ✅ **Validates** all major Python binding functionality
-- ✅ **Handles** missing dependencies gracefully
-- ✅ **Integrates** seamlessly with existing build systems
-- ✅ **Supports** both development and production environments
-- ✅ **Provides** clear documentation and troubleshooting guides
-- ✅ **Enables** continuous integration and automated testing
+-  **Validates** all major Python binding functionality
+-  **Handles** missing dependencies gracefully
+-  **Integrates** seamlessly with existing build systems
+-  **Supports** both development and production environments
+-  **Provides** clear documentation and troubleshooting guides
+-  **Enables** continuous integration and automated testing
 
 The test suite is production-ready and will help ensure the reliability and correctness of the Cosserat plugin's Python bindings as the project evolves.
 

@@ -48,18 +48,18 @@ try:
     # Test mapping classes availability
     try:
         # Check if the mapping classes are available
-        mapping3_class = getattr(Cosserat, 'HookeSeratDiscretMapping3', None)
-        mapping6_class = getattr(Cosserat, 'HookeSeratDiscretMapping6', None)
+        mapping3_class = getattr(Cosserat, 'Strain2RigidCosseratMapping3', None)
+        mapping6_class = getattr(Cosserat, 'Strain2RigidCosseratMapping6', None)
         
         if mapping3_class:
-            print("✓ HookeSeratDiscretMapping3 class is available")
+            print("✓ Strain2RigidCosseratMapping3 class is available")
         else:
-            print("✗ HookeSeratDiscretMapping3 class not found")
+            print("✗ Strain2RigidCosseratMapping3 class not found")
             
         if mapping6_class:
-            print("✓ HookeSeratDiscretMapping6 class is available")
+            print("✓ Strain2RigidCosseratMapping6 class is available")
         else:
-            print("✗ HookeSeratDiscretMapping6 class not found")
+            print("✗ Strain2RigidCosseratMapping6 class not found")
             
     except Exception as e:
         print(f"✗ Mapping classes test failed: {e}")

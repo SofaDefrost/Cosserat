@@ -4,7 +4,7 @@ This guide explains the progression through the Cosserat plugin tutorials and de
 
 ## Tutorial Progression
 
-### 🌟 Tutorial 01: Basic Cosserat Beam
+### Tutorial 01: Basic Cosserat Beam
 **File:** `getting_started/tutorial_01_basic_beam.py`
 
 **What you'll learn:**
@@ -31,7 +31,7 @@ beam_geometry = CosseratGeometry(beam_geometry_params)
 _add_cosserat_state(root_node, beam_geometry, custom_bending_states)
 ```
 
-### 🚀 Tutorial 02: Cosserat Beam with Forces
+###  Tutorial 02: Cosserat Beam with Forces
 **File:** `getting_started/tutorial_02_with_forces.py`
 
 **What you'll learn:**
@@ -56,7 +56,7 @@ frame_node = _add_cosserat_frame(base_node, bending_node, beam_geometry, beam_ma
 frame_node.addObject('ConstantForceField', indices=[tip_index], forces=[force_vector])
 ```
 
-### 🎮 Tutorial 03: Interactive Cosserat Beam
+### Tutorial 03: Interactive Cosserat Beam
 **File:** `getting_started/tutorial_03_interaction.py`
 
 **What you'll learn:**
@@ -92,21 +92,21 @@ beam = solver_node.addChild(CosseratBase(parent=solver_node, params=Params))
 ### When to Use Each API
 
 #### Use CosseratBase (Tutorial 03) when:
-- ✅ You want a complete beam quickly
-- ✅ Standard physics parameters work for you
-- ✅ You're prototyping or learning
-- ✅ You need collision detection (built-in)
+-  You want a complete beam quickly
+-  Standard physics parameters work for you
+-  You're prototyping or learning
+-  You need collision detection (built-in)
 
 #### Use CosseratGeometry + functions (Tutorials 01-02) when:
-- ✅ You want to understand the beam construction process
-- ✅ You need custom force fields or solvers
-- ✅ You're building educational content
-- ✅ You want modular, reusable code
+-  You want to understand the beam construction process
+-  You need custom force fields or solvers
+-  You're building educational content
+-  You want modular, reusable code
 
 #### Use manual calculations when:
-- ✅ You need complete control over every parameter
-- ✅ You're doing research with non-standard setups
-- ✅ You're extending the plugin with new features
+-  You need complete control over every parameter
+-  You're doing research with non-standard setups
+-  You're extending the plugin with new features
 
 ## Code Evolution Showcase
 
@@ -154,22 +154,14 @@ beam = solver_node.addChild(CosseratBase(parent=solver_node, params=Params))
 # Done! Complete beam with physics, visualization, and interaction ready.
 ```
 
-## Migration Benefits
+## Features
 
-### Before Reorganization:
-- ❌ Manual geometry calculations prone to errors
-- ❌ Code scattered across multiple directories
-- ❌ Inconsistent import patterns
-- ❌ Hard to find and reuse functionality
-- ❌ No clear learning progression
-
-### After Reorganization:
-- ✅ Automatic geometry calculations with `CosseratGeometry`
-- ✅ Clean Python package structure
-- ✅ Consistent, simple imports: `from cosserat import ...`
-- ✅ Clear API progression from simple to complex
-- ✅ Comprehensive documentation and examples
-- ✅ Backward compatibility maintained
+-  Automatic geometry calculations with `CosseratGeometry`
+-  Python package structure
+-  Consistent, simple imports: `from cosserat import ...`
+-  Clear API progression from simple to complex
+-  Comprehensive documentation and examples
+-  Backward compatibility maintained
 
 ## Next Steps
 

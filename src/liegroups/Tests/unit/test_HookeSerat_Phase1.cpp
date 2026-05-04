@@ -1,5 +1,5 @@
-#include <Cosserat/mapping/HookeSeratBaseMapping.h>
-#include <Cosserat/mapping/HookeSeratBaseMapping.inl>
+#include <Cosserat/mapping/CosseratGeometryMapping.h>
+#include <Cosserat/mapping/CosseratGeometryMapping.inl>
 #include <gtest/gtest.h>
 #include <liegroups/SE3.h>
 #include <sofa/defaulttype/RigidTypes.h>
@@ -9,8 +9,8 @@ using namespace Cosserat::mapping;
 using namespace sofa::component::cosserat::liegroups;
 
 // Concrete subclass for testing
-class ConcreteHookeSeratMapping
-	: public HookeSeratBaseMapping<sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types,
+class ConcreteStrain2RigidCosseratMapping
+	: public CosseratGeometryMapping<sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types,
 								   sofa::defaulttype::Rigid3Types> {
 public:
 	using In1 = sofa::defaulttype::Vec3Types;
@@ -40,7 +40,7 @@ protected:
 	using TangentVector = typename SE3Type::TangentVector;
 	using Vector3 = typename SE3Type::Vector3;
 
-	ConcreteHookeSeratMapping mapping;
+	ConcreteStrain2RigidCosseratMapping mapping;
 
 	void SetUp() override {
 		// Clear any existing data

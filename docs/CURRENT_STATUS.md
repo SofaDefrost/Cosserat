@@ -1,4 +1,4 @@
-# HookeSeratBaseMapping - Current Status
+# CosseratGeometryMapping - Current Status
 
 **Branch:** `feature/hookeserat-incremental-improvements`  
 **Date:** 2025-11-26  
@@ -8,7 +8,7 @@
 
 ## What This Branch Contains
 
-This branch represents a **clean, stable baseline** for HookeSeratBaseMapping after:
+This branch represents a **clean, stable baseline** for CosseratGeometryMapping after:
 
 1. Fixing all CRTP template parameter errors
 2. Removing untested advanced features
@@ -65,8 +65,8 @@ All these features were removed because they were **not properly tested**:
 
 ```
 src/Cosserat/mapping/
-  ├── HookeSeratBaseMapping.h       # Base class (cleaned up)
-  ├── HookeSeratBaseMapping.inl     # Implementation
+  ├── CosseratGeometryMapping.h       # Base class (cleaned up)
+  ├── CosseratGeometryMapping.inl     # Implementation
   ├── HookeSeratDiscretMapping.h    # Concrete implementation
   └── HookeSeratDiscretMapping.inl
 
@@ -91,7 +91,7 @@ docs/
 - `RealSpace.h` - Correct template parameters
 - `Bundle.h` - Correct template parameters  
 - `SE3.h` - Added `actionDimension()` method
-- `HookeSeratBaseMapping.h` - Clean compilation
+- `CosseratGeometryMapping.h` - Clean compilation
 
 ⚠️ **Remaining compilation issues:**
 

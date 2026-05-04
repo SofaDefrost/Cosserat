@@ -806,7 +806,7 @@ namespace Cosserat::mapping {
 		// This method is used to log the completion of the geometry update process.
 		void logCompletionInfo() const {
 			if constexpr (ENABLE_GEOMETRY_LOGGING) { // Constante de compilation
-				std::cout << "HookeSeratBaseMapping updateGeometryInfo completed: m_indices_vectors: "
+				std::cout << "CosseratGeometryMapping updateGeometryInfo completed: m_indices_vectors: "
 						  << m_indices_vectors.size() << std::endl;
 				std::cout << " elements m_frames_length_vectors: " << m_frames_length_vectors.size() << " elements"
 						  << std::endl;

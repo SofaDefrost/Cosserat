@@ -2,7 +2,7 @@
 
 ## Overview
 
-This test suite verifies the correctness of the `computeTangExpImplementation()` method in `HookeSeratBaseMapping`.
+This test suite verifies the correctness of the `computeTangExpImplementation()` method in `CosseratGeometryMapping`.
 
 ## Test File
 
@@ -83,10 +83,6 @@ All tests must pass for Step 1 to be considered complete:
 - [ ] ScalingProperties passes
 - [ ] Consistency passes
 - [ ] PerformanceBenchmark passes (< 10μs)
-
-## Known Issues
-
-None currently.
 
 ## Next Steps
 

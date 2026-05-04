@@ -6,8 +6,8 @@
  * by comparing with numerical finite differences and checking mathematical properties.
  */
 
-#include <Cosserat/mapping/HookeSeratBaseMapping.h>
-#include <Cosserat/mapping/HookeSeratBaseMapping.inl>
+#include <Cosserat/mapping/CosseratGeometryMapping.h>
+#include <Cosserat/mapping/CosseratGeometryMapping.inl>
 #include <Eigen/Dense>
 #include <cmath>
 #include <gtest/gtest.h>
@@ -31,7 +31,7 @@ protected:
 	using Matrix3 = typename SE3Type::Matrix3;
 
 	// Use actual SOFA types for the mapping
-	using MappingType = HookeSeratBaseMapping<sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types,
+	using MappingType = CosseratGeometryMapping<sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types,
 											  sofa::defaulttype::Rigid3Types>;
 
 	void SetUp() override { tolerance_ = 1e-6; }

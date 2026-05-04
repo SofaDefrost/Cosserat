@@ -1,5 +1,5 @@
 #include <Cosserat/mapping/BeamStateEstimator.h>
-#include <Cosserat/mapping/HookeSeratBaseMapping.h>
+#include <Cosserat/mapping/CosseratGeometryMapping.h>
 #include <gtest/gtest.h>
 #include <liegroups/GaussianOnManifold.h>
 #include <sofa/defaulttype/RigidTypes.h>
@@ -59,8 +59,8 @@ TEST(BeamStateEstimatorTest, Prediction) {
 }
 
 // Test BeamTopology
-class ConcreteHookeSeratMapping
-	: public HookeSeratBaseMapping<sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types,
+class ConcreteStrain2RigidCosseratMapping
+	: public CosseratGeometryMapping<sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types,
 								   sofa::defaulttype::Rigid3Types> {
 public:
 	using In1 = sofa::defaulttype::Vec3Types;
@@ -95,7 +95,7 @@ public:
 };
 
 TEST(BeamTopologyTest, Structure) {
-	ConcreteHookeSeratMapping mapping;
+	ConcreteStrain2RigidCosseratMapping mapping;
 
 	// Create a Y-shape topology: 0 -> 1, 0 -> 2
 	BeamTopology topology;
