@@ -34,7 +34,14 @@
 #include <cassert>
 #include <string>
 
-namespace Cosserat::Mapping {
+namespace Cosserat::mapping {
+
+	using sofa::core::objectmodel::BaseContext;
+	using sofa::helper::AdvancedTimer;
+	using sofa::helper::WriteAccessor;
+	using sofa::type::RGBAColor;
+	using sofa::type::vector;
+	using namespace sofa::component::cosserat::liegroups;
 
     template<class TIn1, class TIn2, class TOut>
     Frames2StrainCosseratMapping<TIn1, TIn2, TOut>::Frames2StrainCosseratMapping():
@@ -78,6 +85,38 @@ namespace Cosserat::Mapping {
 		msg_info() << "Frames2StrainCosseratMapping initialized";
 	}    
 
+	template<class TIn1, class TIn2, class TOut>
+	void Frames2StrainCosseratMapping<TIn1, TIn2, TOut>::init() {
+		// Initialize pointers to nullptr
+		msg_info("Frames2StrainCosseratMapping") << "Initializing Frames2StrainCosseratMapping...";
+
+		m_frames = nullptr;
+		m_rigid_base = nullptr;
+		m_strain_state = nullptr;
+
+		// Check if all required models are present
+		if (this->fromModels1.empty()) {
+			msg_error() << "Input1 (frames) not found";
+			return;
+		}
+
+		if (this->fromModels2.empty()) {
+			msg_error() << "Input2 (rigid base) not found";
+			return;
+		}
+
+		if (this->toModels.empty()) {
+			msg_error() << "Output (strain) missing";
+			return;
+		}
+
+		// Assign mechanical states
+		m_frames = this->fromModels1[0];
+		m_rigid_base = this->fromModels2[0];
+		m_strain_state = this->toModels[0];
+
+	}
+
     //===================================================
     //apply() function implementation (début)
 
@@ -87,6 +126,9 @@ namespace Cosserat::Mapping {
 													  const vector<sofa::DataVecCoord_t<Out> *> &dataVecOutPos,
 													  const vector<const sofa::DataVecCoord_t<In1> *> &dataVecIn1Pos,
 													  const vector<const sofa::DataVecCoord_t<In2> *> &dataVecIn2Pos) {
+
+
+		std::cout<<"========In apply function========"<<std::endl;
 
 		msg_info("Frames2StrainCosseratMapping") << "Frames2StrainCosseratMapping::apply called";
 		
@@ -106,7 +148,7 @@ namespace Cosserat::Mapping {
 		const sofa::VecCoord_t<In2> &rigidBase = dataVecIn2Pos[0]->getValue(); // Rigid base
 
         //Output: strain (to evaluate)
-        auto nbSections = m_section_properties.size() - 1; //m_section_properties[0] =noode base
+        const auto nbSections = m_section_properties.size();
 		sofa::VecCoord_t<Out> &strains = *dataVecOutPos[0]->beginEdit();
         strains.resize(nbSections);
 
@@ -127,7 +169,35 @@ namespace Cosserat::Mapping {
         // for each frame (except the base frame), compute  g(L_{n-1}).inverse * g(X) = g_rel
         // then compute the strain  => strain_n = log(g_rel)/(X-L_{n-1})
     
+		SE3Types g_prev = g_base;
+		SE3Types g_curr;
+		for(unsigned int i=0; i<nbSections; i++){
+			
+			const auto& frame = frames[i+1];
+			Vector3 translation(frame.getCenter()[0], frame.getCenter()[1], frame.getCenter()[2]);
+
+			// Convert SOFA quaternion to Eigen quaternion (SOFA: x,y,z,w; Eigen: w,x,y,z)
+			const auto &quat = base_rigid.getOrientation();
+			Eigen::Quaternion<double> rotation(quat[3], quat[0], quat[1], quat[2]);
+
+			// Create SE3 transformation
+			g_curr = SE3Types(SE3Types::SO3Type(rotation), translation);
+
+			SE3Types g_rel = g_prev.computeInverse()*g_curr;
+
+			TangentVector xi = g_rel.computeLog(); // find dx = L_{n} - L_{n-1}
+
+			std::cout<<"xi: "<< xi <<std::endl;
+
+			for(int j=0; j<3; j++){
+				strains[i][j] = xi[j];
+			}
+
+			g_prev = g_curr;
+			
+		}
     
+		dataVecOutPos[0]->endEdit();
     
     }
 

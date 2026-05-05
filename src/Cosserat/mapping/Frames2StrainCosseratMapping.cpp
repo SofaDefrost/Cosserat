@@ -26,6 +26,9 @@
 
 namespace Cosserat::mapping {
 	template class SOFA_COSSERAT_API Frames2StrainCosseratMapping<
-			sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Vec3Types;
-
+			sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Vec3Types>;
+	
+	// ça ne résoud pas le pb
+	// template class SOFA_COSSERAT_API CosseratGeometryMapping<
+	// 		sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Vec3Types>;
 } // namespace Cosserat::mapping
