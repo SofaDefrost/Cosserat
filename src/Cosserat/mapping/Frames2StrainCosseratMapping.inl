@@ -250,6 +250,71 @@ namespace Cosserat::mapping {
 
 
 	template<class TIn1, class TIn2, class TOut>
-	void Frames2StrainCosseratMapping<TIn1, TIn2, TOut>::draw(const sofa::core::visual::VisualParams *vparams) {}
+	void Frames2StrainCosseratMapping<TIn1, TIn2, TOut>::draw(const sofa::core::visual::VisualParams *vparams) {
+		if(!vparams->displayFlags().getShowMechanicalMappings())
+			return;
+
+		// draw cable
+		typedef sofa::type::RGBAColor RGBAColor;
+
+		const auto stateLifeCycle = vparams->drawTool()->makeStateLifeCycle();
+
+		//Strain (Output)
+		const::sofa::DataVecCoord_t<Out> *artiData = this->m_frames->read(sofa::core::vec_id::read_access::position);
+		const::sofa::VecCoord_t<Out> xPos = artiData->getValue();
+
+		//Frames (In1)
+		const sofa::DataVecCoord_t<In1> *xfromData = this->m_strain_state->read(sofa::core::vec_id::read_access::position);
+		const sofa::VecCoord_t<In1> xData = xfromData->getValue();
+		vector<sofa::type::Vec3> positions;
+		vector<sofa::type::Quat<SReal>> Orientation;
+		positions.clear();
+		Orientation.clear();
+		unsigned int sz = xData.size();
+		for (unsigned int i = 0; i < sz; i++) {
+			positions.push_back(xData[i].getCenter());
+			Orientation.push_back(xData[i].getOrientation());
+		}
+
+		RGBAColor drawColor = d_color.getValue();
+		// draw each segment of the beam as a cylinder.
+		for (unsigned int i = 0; i < sz - 1; i++)
+			vparams->drawTool()->drawCylinder(positions[i], positions[i + 1], d_radius.getValue(), drawColor);
+
+		// Define color map
+		SReal min = d_min.getValue();
+		SReal max = d_max.getValue();
+		sofa::helper::ColorMap::evaluator<SReal> _eval = m_colorMap.getEvaluator(min, max);
+
+		glLineWidth(d_radius.getValue());
+		glBegin(GL_LINES);
+		if (d_drawMapBeam.getValue()) {
+			sofa::type::RGBAColor _color = d_color.getValue();
+			RGBAColor colorL = RGBAColor(_color[0], _color[1], _color[2], _color[3]);
+			glColor4f(colorL[0], colorL[1], colorL[2], colorL[3]);
+			for (unsigned int i = 0; i < sz - 1; i++) {
+				vparams->drawTool()->drawLine(positions[i], positions[i + 1], colorL);
+			}
+		} else {
+			int j = 0;
+			vector<int> index = d_index.getValue();
+			for (unsigned int i = 0; i < sz - 1; i++) {
+				j = m_indices_vectors[i] - 1; // to get the articulation on which the frame is related to
+				RGBAColor color = _eval(xPos[j][d_deformationAxis.getValue()]);
+				vparams->drawTool()->drawLine(positions[i], positions[i + 1], color);
+			}
+		}
+		glLineWidth(1);
+		if (!vparams->displayFlags().getShowMappings())
+			if (!d_debug.getValue())
+				return;
+
+		// // Debug output if needed
+		// if (this->f_printLog.getValue()) {
+		// 	displayOutputFrames(xData, "draw - rendering frames");
+		// }
+
+		glEnd();				
+	}
 
 }
