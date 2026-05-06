@@ -20,11 +20,10 @@ static void BM_JacobianComputation(benchmark::State &state) {
 	strain << 0.1, 0.2, 0.3, 1.0, 0.1, 0.0;
 	double curv_abs = 1.0;
 
-	ConcreteStrain2RigidCosseratMapping::AdjointMatrix adjoint = ConcreteStrain2RigidCosseratMapping::AdjointMatrix::Identity();
 	ConcreteStrain2RigidCosseratMapping::AdjointMatrix result;
 
 	for (auto _: state) {
-		ConcreteStrain2RigidCosseratMapping::computeTangExpImplementation(curv_abs, strain, adjoint, result);
+		ConcreteStrain2RigidCosseratMapping::computeTangExpImplementation(curv_abs, strain, result);
 	}
 }
 BENCHMARK(BM_JacobianComputation);
