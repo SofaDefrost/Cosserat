@@ -19,7 +19,8 @@
  *                                                                             *
  * Contact information: contact@sofa-framework.org                             *
  ******************************************************************************/
-#pragma once
+//@appa
+ #pragma once
 
 #include <Cosserat/config.h>
 #include <Cosserat/mapping/CosseratGeometryMapping.h>

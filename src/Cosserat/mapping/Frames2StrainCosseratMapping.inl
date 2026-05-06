@@ -19,6 +19,7 @@
  *                                                                             *
  * Contact information: contact@sofa-framework.org                             *
  ******************************************************************************/
+//@appa
 #pragma once
 
 #include <Cosserat/mapping/Frames2StrainCosseratMapping.h>
@@ -205,6 +206,8 @@ namespace Cosserat::mapping {
 		}
     
 		dataVecOutPos[0]->endEdit();
+
+		std::cout<<"========End apply========"<<std::endl;
     
     }
 
@@ -214,6 +217,44 @@ namespace Cosserat::mapping {
 														const sofa::type::vector<sofa::DataVecDeriv_t<Out> *> &dataVecOutVel,
 														const sofa::type::vector<const sofa::DataVecDeriv_t<In1> *> &dataVecIn1Vel,
 														const sofa::type::vector<const sofa::DataVecDeriv_t<In2> *> &dataVecIn2Vel){
+    
+		std::cout<<"========In applyJ function========"<<std::endl;
+															
+    	if (dataVecOutVel.empty() || dataVecIn1Vel.empty() || dataVecIn2Vel.empty())
+			return;
+
+		if (this->d_componentState.getValue() != sofa::core::objectmodel::ComponentState::Valid)
+			return;
+
+		if (d_debug.getValue())
+			std::cout << " ########## Frames2StrainCosseratMapping ApplyJ Function ########" << std::endl;
+															
+		const sofa::VecDeriv_t<In1> &frame_vel = dataVecIn1Vel[0]->getValue();
+		const sofa::VecDeriv_t<In2> &base_vel = dataVecIn2Vel[0]->getValue();
+		sofa::VecDeriv_t<Out> &strain_vel = *dataVecOutVel[0]->beginEdit();
+
+		const sofa::VecCoord_t<Out> &strainPos =
+				this->m_frames->read(sofa::core::vec_id::read_access::position)->getValue();
+
+
+		const auto base_index = d_base_index.getValue();
+		const auto frame_count = d_curv_abs_section.getValue().size();
+		strain_vel.resize(frame_count);
+		for (auto &vel : strain_vel){
+			vel.clear();
+		}
+
+		//Obtenir la formulation mathématique qui permet de trouver la vitesse des strains 
+		//à partir de la vitesse des frames g(X)
+
+
+
+
+
+
+
+
+		std::cout<<"========End applyJ========"<<std::endl;
 
 	}
 

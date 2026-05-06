@@ -126,7 +126,6 @@ namespace Cosserat::mapping {
 
 	}
 
-	/*********************start debugging **************************/
 	template<class TIn1, class TIn2, class TOut>
 	void
 	Strain2RigidCosseratMapping<TIn1, TIn2, TOut>::apply(const sofa::core::MechanicalParams * /* mparams */,
