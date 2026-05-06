@@ -71,7 +71,8 @@ namespace sofa::component::forcefield {
 		d_GA(initData(&d_GA, "GA", "The inertia parameter, GA")),
 		d_EA(initData(&d_EA, "EA", "The inertia parameter, EA")),
 		d_EI(initData(&d_EI, "EI", "The inertia parameter, EI")) {
-		compute_df = false;
+
+		compute_df = true;//@appa: initialize compute_df at true (by default)
 	}
 
 	template<typename DataTypes>
@@ -86,7 +87,7 @@ namespace sofa::component::forcefield {
 	   recalculating the properties related to the cross-section of the beams. It
 	   calculates the area moment of inertia (Iy and Iz), the polar moment of
 	   inertia (J), and the cross-sectional area (A). These calculations depend on
-	   the chosen cross-section shape, either circular or rectangular. T he formulas
+	   the chosen cross-section shape, either circular or rectangular. The formulas
 	   used for these calculations are based on standard equations for these
 	   properties.*/
 	template<typename DataTypes>
@@ -153,6 +154,7 @@ namespace sofa::component::forcefield {
 		SOFA_UNUSED(d_v);
 		SOFA_UNUSED(mparams);
 
+
 		if (!this->getMState()) {
 			msg_info("BeamHookeLawForceField") << "No Mechanical State found, no force will be computed..." << "\n";
 			compute_df = false;
@@ -171,22 +173,23 @@ namespace sofa::component::forcefield {
 			compute_df = false;
 			return;
 		}
-
+		
 		if (!d_variantSections.getValue())
 			// @todo: use multithread
-			for (unsigned int i = 0; i < x.size(); i++)
+			for (unsigned int i = 0; i < x.size(); i++){
 				// Using the correct matrix type for the datatype
 				// For Vec3Types, m_K_section should be Mat33
 				f[i] -= (m_K_section * (x[i] - x0[i])) * this->d_length.getValue()[i];
+			}
 		else
 			// @todo: use multithread
 			for (unsigned int i = 0; i < x.size(); i++)
 				f[i] -= (m_K_sectionList[i] * (x[i] - x0[i])) * this->d_length.getValue()[i];
 
-		// Debug output if needed
 
-			displayForces(f, "addForce - computed forces");
-			displaySectionMatrix(m_K_section, "addForce - K section matrix");
+		// Debug output if needed
+		// displayForces(f, "addForce - computed forces");
+		// displaySectionMatrix(m_K_section, "addForce - K section matrix");
 
 
 		d_f.endEdit();
@@ -195,30 +198,33 @@ namespace sofa::component::forcefield {
 	template<typename DataTypes>
 	void BeamHookeLawForceField<DataTypes>::addDForce(const MechanicalParams *mparams, DataVecDeriv &d_df,
 													  const DataVecDeriv &d_dx) {
+
 		if (!compute_df)
 			return;
 
 		WriteAccessor<DataVecDeriv> df = d_df;
 		ReadAccessor<DataVecDeriv> dx = d_dx;
 		Real kFactor = (Real) mparams->kFactorIncludingRayleighDamping(this->rayleighStiffness.getValue());
-
+		
 		df.resize(dx.size());
 		if (!d_variantSections.getValue())
-			for (unsigned int i = 0; i < dx.size(); i++)
+			for (unsigned int i = 0; i < dx.size(); i++){
 				df[i] -= (m_K_section * dx[i]) * kFactor * this->d_length.getValue()[i];
+			}
+				
 		else
 			for (unsigned int i = 0; i < dx.size(); i++)
 				df[i] -= (m_K_sectionList[i] * dx[i]) * kFactor * this->d_length.getValue()[i];
 
 
 		// Debug output if needed
-		displayDForces(df, "addDForce - computed differential forces");
-
+		// displayDForces(df, "addDForce - computed differential forces");
 	}
 
 	template<typename DataTypes>
 	double BeamHookeLawForceField<DataTypes>::getPotentialEnergy(const MechanicalParams *mparams,
 																 const DataVecCoord &d_x) const {
+		
 		SOFA_UNUSED(mparams);
 		if (!this->getMState())
 			return 0.0;
@@ -246,7 +252,6 @@ namespace sofa::component::forcefield {
 				energy += 0.5 * dot(strain, K * strain) * this->d_length.getValue()[i];
 			}
 		}
-
 		return energy;
 	}
 
@@ -254,6 +259,7 @@ namespace sofa::component::forcefield {
 	template<typename DataTypes>
 	void BeamHookeLawForceField<DataTypes>::addKToMatrix(const MechanicalParams *mparams,
 														 const MultiMatrixAccessor *matrix) {
+
 		MultiMatrixAccessor::MatrixRef mref = matrix->getMatrix(this->mstate);
 		BaseMatrix *mat = mref.matrix;
 		unsigned int offset = mref.offset;
@@ -274,7 +280,7 @@ namespace sofa::component::forcefield {
 		}
 
 		// Debug output if needed
-		displayKMatrix(matrix, "addKToMatrix - global K matrix");
+		//displayKMatrix(matrix, "addKToMatrix - global K matrix");
 
 	}
 

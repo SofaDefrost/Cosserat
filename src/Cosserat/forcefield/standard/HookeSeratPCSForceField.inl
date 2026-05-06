@@ -96,7 +96,7 @@ namespace sofa::component::forcefield {
 	   recalculating the properties related to the cross-section of the beams. It
 	   calculates the area moment of inertia (Iy and Iz), the polar moment of
 	   inertia (J), and the cross-sectional area (A). These calculations depend on
-	   the chosen cross-section shape, either circular or rectangular. T he formulas
+	   the chosen cross-section shape, either circular or rectangular. The formulas
 	   used for these calculations are based on standard equations for these
 	   properties.*/
 	template<typename DataTypes>
@@ -182,22 +182,28 @@ namespace sofa::component::forcefield {
 			return;
 		}
 
+		Vector3 current_strain = Vector3::Zero();
+		Vector3 rest_strain = Vector3::Zero();
+		Vector3 strain = Vector3::Zero();
+		Vector3 _f = Vector3::Zero();
+
+
 		if (!d_variantSections.getValue()) {
 			// @todo: use multithread
 			for (unsigned int i = 0; i < x.size(); i++) {
 				// Using the correct matrix type for the datatype
 				// For Vec3Types, m_K_section should be Mat33
-				Vector3 current_strain = Vector3::Map(x[i].data());
-				Vector3 rest_strain = Vector3::Map(x0[i].data());
-				Vector3 strain = current_strain - rest_strain;
-				Vector3 _f = (m_K_section * strain) * this->d_length.getValue()[i];
+				current_strain = Vector3::Map(x[i].data());
+				rest_strain = Vector3::Map(x0[i].data());
+				strain = current_strain - rest_strain;
+
+				_f = (m_K_section * strain) * this->d_length.getValue()[i];
 
 				for (unsigned int j = 0; j < 3; j++)
 					f[i][j] -= _f[j];
 			}
 		} else {
 			// @todo: use multithread
-			Vector3 current_strain, rest_strain, strain, _f;
 
 			for (unsigned int i = 0; i < x.size(); i++) {
 				current_strain = Vector3::Map(x[i].data());
@@ -210,9 +216,8 @@ namespace sofa::component::forcefield {
 		}
 
 		// Debug output if needed
-		displayForces(f, "addForce - computed forces");
-		displaySectionMatrix(m_K_section, "addForce - K section matrix");
-
+		// displayForces(f, "addForce - computed forces");
+		// displaySectionMatrix(m_K_section, "addForce - K section matrix");
 
 		d_f.endEdit();
 	}
@@ -220,13 +225,16 @@ namespace sofa::component::forcefield {
 	template<typename DataTypes>
 	void HookeSeratPCSForceField<DataTypes>::addDForce(const MechanicalParams *mparams, DataVecDeriv &d_df,
 													   const DataVecDeriv &d_dx) {
+
 		if (!compute_df)
 			return;
 
 		WriteAccessor<DataVecDeriv> df = d_df;
 		ReadAccessor<DataVecDeriv> dx = d_dx;
 		Real kFactor = (Real) mparams->kFactorIncludingRayleighDamping(this->rayleighStiffness.getValue());
-		Vector3 d_strain, _df;
+		Vector3 d_strain = Vector3::Zero();
+		Vector3 _df= Vector3::Zero();
+
 		df.resize(dx.size());
 		if (!d_variantSections.getValue()) {
 
@@ -244,18 +252,21 @@ namespace sofa::component::forcefield {
 		else
 			for (unsigned int i = 0; i < dx.size(); i++) {
 				d_strain = Vector3::Map(dx[i].data());
-				_df = (m_K_sectionList[i] * d_strain) * this->d_length.getValue()[i];
+				_df = (m_K_sectionList[i] * d_strain) * kFactor * this->d_length.getValue()[i]; //@appa: kFactor was missing
 				for (unsigned int j = 0; j < 3; j++)
 					df[i][j] -= _df[j];
 			}
 
+
 		// Debug output if needed
-		displayDForces(df, "addDForce - computed differential forces");
+		// displayDForces(df, "addDForce - computed differential forces");
 	}
 
 	template<typename DataTypes>
 	double HookeSeratPCSForceField<DataTypes>::getPotentialEnergy(const MechanicalParams *mparams,
 																  const DataVecCoord &d_x) const {
+		
+																	
 		SOFA_UNUSED(mparams);
 		if (!this->getMState())
 			return 0.0;
@@ -282,7 +293,6 @@ namespace sofa::component::forcefield {
 				energy += 0.5 * strain.dot(K * strain) * this->d_length.getValue()[i];
 			}
 		}
-
 		return energy;
 	}
 
@@ -290,6 +300,7 @@ namespace sofa::component::forcefield {
 	template<typename DataTypes>
 	void HookeSeratPCSForceField<DataTypes>::addKToMatrix(const MechanicalParams *mparams,
 														  const MultiMatrixAccessor *matrix) {
+
 		MultiMatrixAccessor::MatrixRef mref = matrix->getMatrix(this->mstate);
 		BaseMatrix *mat = mref.matrix;
 		unsigned int offset = mref.offset;
@@ -310,7 +321,8 @@ namespace sofa::component::forcefield {
 		}
 
 		// Debug output if needed
-	        displayKMatrix(matrix, "addKToMatrix - global K matrix");
+	    // displayKMatrix(matrix, "addKToMatrix - global K matrix");
+
 	}
 
 	template<typename DataTypes>

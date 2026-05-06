@@ -166,20 +166,14 @@ namespace Cosserat::mapping {
 
 		// Exploitation de computeAdjoint() avec cache pour les performances
 		const AdjointMatrix &getAdjoint() const {
-			if (!adjoint_computed_) {
-				adjoint_ = gX_.computeAdjoint();
-				coAdjoint_ = adjoint_.transpose();
-				adjoint_computed_ = true;
-			}
+			adjoint_ = gX_.computeAdjoint();
+
 			return adjoint_;
 		}
 
 		const AdjointMatrix &getCoAdjoint() const {
-			if (!adjoint_computed_) {
-				adjoint_ = getAdjoint(); // Compute adjoint and co-adjoint matrix
-				coAdjoint_ = adjoint_.transpose();
-				return coAdjoint_;
-			}
+			coAdjoint_ = gX_.computeCoAdjoint();
+
 			return coAdjoint_;
 		}
 
@@ -338,6 +332,8 @@ namespace Cosserat::mapping {
 		void setKappa(const TangentVector &k) { kappa_ = k; }
 
 		const SE3Type &getTransformation() const { return transformation_; }
+		SE3Type getInverseTransformation() const { return transformation_.inverse(); }
+
 		void setTransformation(const SE3Type &transform) {
 			transformation_ = transform;
 
@@ -346,20 +342,14 @@ namespace Cosserat::mapping {
 		}
 
 		const AdjointMatrix &getAdjoint() const {
-			if (!adjoint_computed_) {
-				adjoint_ = transformation_.computeAdjoint();
-				coAdjoint_ = adjoint_.transpose();
-				adjoint_computed_ = true;
-			}
+			adjoint_ = transformation_.computeAdjoint();
+			
 			return adjoint_;
 		}
 
 		const AdjointMatrix &getCoAdjoint() const {
-			if (!adjoint_computed_) {
-				adjoint_ = getAdjoint(); // Compute adjoint and co-adjoint matrix
-				coAdjoint_ = adjoint_.transpose();
-				return coAdjoint_;
-			}
+			coAdjoint_ = transformation_.computeCoAdjoint();
+
 			return coAdjoint_;
 		}
 
@@ -604,7 +594,7 @@ namespace Cosserat::mapping {
 				// We need to compute it from scratch to verify the stored one or just verify the computation method
 				AdjointMatrix adjoint = section.getAdjoint();
 				AdjointMatrix analytical_jac;
-				computeTangExpImplementation(curv_abs, strain, adjoint, analytical_jac);
+				computeTangExpImplementation(curv_abs, strain, analytical_jac);
 
 				// Numerical Jacobian (Finite Differences)
 				AdjointMatrix numerical_jac = AdjointMatrix::Zero();
@@ -699,7 +689,6 @@ namespace Cosserat::mapping {
 		void updateTangExpSE3();
 		// void computeTangExp(double &x, const TangentVector &k, AdjointMatrix &TgX);
 		static void computeTangExpImplementation(const double &curv_abs, const TangentVector &strain,
-												 const AdjointMatrix &adjoint_matrix,
 												 AdjointMatrix &tang_adjoint_matrix);
 
 		// Performance methods
@@ -711,6 +700,11 @@ namespace Cosserat::mapping {
 			// Clear any caches if implemented
 			// computation_cache_.clear();
 		}
+		
+    	static Matrix3 getTildeMatrix(const Vector3& u);
+    	static void buildAdjoint(const Matrix3& A,
+                             const Matrix3& B,
+                             AdjointMatrix& Adjoint);
 
 	private:
 		/**

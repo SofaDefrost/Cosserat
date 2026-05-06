@@ -27,6 +27,8 @@ stiffness_param: float = 1.0e10
 beam_radius: float = 1.0
 
 def add_mini_header(root_node):
+    root_node.addObject('RequiredPlugin', name='Sofa.Component.Mapping.NonLinear') # Needed to use components [RigidMapping]  
+    root_node.addObject('RequiredPlugin', name='Sofa.GL.Component.Rendering3D') # Needed to use components [OglModel]  
     root_node.addObject("RequiredPlugin", pluginName="Sofa.Component.Mass")
     root_node.addObject("RequiredPlugin", pluginName="Sofa.Component.SolidMechanics.Spring")
     root_node.addObject("RequiredPlugin", pluginName="Sofa.Component.StateContainer")
@@ -36,9 +38,9 @@ def add_mini_header(root_node):
     # Configure scene
     root_node.addObject(
         "VisualStyle",
-        displayFlags="showBehaviorModels showCollisionModels showMechanicalMappings",
+        displayFlags="showVisualModels showCollisionModels showMechanicalMappings", #showBehaviourModels
     )
-
+    root_node.addObject("DefaultAnimationLoop")
 
 
 def _add_rigid_base(p_node, node_name="rigid_base", positions=None):
@@ -122,6 +124,7 @@ def _add_cosserat_frame(
         output=frames_mo.getLinkPath(),
         debug=0,
         radius=beam_radius,
+        color=[0.0, 0.0, 1.0, 1.0], #blue
     )
     return cosserat_in_sofa_frame_node
 
@@ -146,7 +149,7 @@ def _add_cosserat_frame_v2(
 
     print(f"Creating Cosserat frame node: {node_name}")
     cosserat_in_sofa_frame_node.addObject(
-        "HookeSeratDiscretMapping",
+        "Strain2RigidCosseratMapping",
         curv_abs_input=geometry.curv_abs_sections,  # Use geometry data
         curv_abs_output=geometry.curv_abs_frames,  # Use geometry data
         name="cosseratMapping",
@@ -155,6 +158,7 @@ def _add_cosserat_frame_v2(
         output=frames_mo.getLinkPath(),
         debug=0,
         radius=beam_radius,
+        color=[1.0, 0.0, 0.0, 1.0], #red
     )
     return cosserat_in_sofa_frame_node
 

@@ -19,14 +19,14 @@ import os
 import sys
 
 # Add the python package to the path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "python"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "..", "python"))
 
 from cosserat import BeamGeometryParameters, CosseratGeometry
 
 from introduction_and_setup import (_add_cosserat_frame, _add_cosserat_state,
                                     _add_rigid_base, add_mini_header)
 
-v_damping_param: float =  0  # Damping parameter for dynamics
+v_damping_param: float =  8e-1  # Damping parameter for dynamics
 
 def createScene(root_node):
     """Create a Cosserat beam scene with forces and dynamics."""
@@ -46,15 +46,15 @@ def createScene(root_node):
         firstOrder="0",
         rayleighStiffness="0.0",
         rayleighMass="0.0",
-        vdamping=0.0,  # Damping parameter for dynamics
+        vdamping=v_damping_param,  # Damping parameter for dynamics
     )
     solver_node.addObject("SparseLDLSolver", template="CompressedRowSparseMatrixMat3x3d", name="solver")
 
     # === NEW APPROACH: Use CosseratGeometry with more sections for smoother dynamics ===
     beam_geometry_params = BeamGeometryParameters(
-        beam_length=9.0,  # Same beam length
-        nb_section=3,  # 30 sections for good physics resolution
-        nb_frames=3,  # 30 frames for smooth visualization
+        beam_length=15.0,  # Same beam length
+        nb_section=30,  # 30 sections for good physics resolution
+        nb_frames=30,  # 30 frames for smooth visualization
     )
 
     # Create geometry object
