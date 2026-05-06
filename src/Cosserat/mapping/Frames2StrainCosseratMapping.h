@@ -14,34 +14,34 @@
  *                                                                             *
  * You should have received a copy of the GNU Lesser General Public License    *
  * along with this program. If not, see <http://www.gnu.org/licenses/>.        *
+ *******************************************************************************
+ * Authors: The SOFA Team and external contributors (see Authors.txt)          *
+ *                                                                             *
+ * Contact information: contact@sofa-framework.org                             *
  ******************************************************************************/
-#pragma once
+//@appa
+ #pragma once
 
 #include <Cosserat/config.h>
 #include <Cosserat/mapping/CosseratGeometryMapping.h>
 #include <sofa/helper/ColorMap.h>
 
-namespace Cosserat::mapping {
+namespace Cosserat::mapping{
 	namespace{
 		using Mat3x6 = sofa::type::Mat<3, 6, SReal>;
 		using Mat6x6 = sofa::type::Mat6x6;
 	}
 
-	/**
-	 * @brief Discrete implementation of CosseratGeometryMapping using liegroups library
-	 *
-	 * This class provides a concrete implementation of the Cosserat rod mapping
-	 * using the liegroups library for SE(3) operations, with discrete exponential
-	 * integration along the rod.
-	 *
-	 * @tparam TIn1 The first input type for the mapping (strain state)
-	 * @tparam TIn2 The second input type for the mapping (rigid base)
-	 * @tparam TOut The output type for the mapping (frames)
-	 */
+    /**
+     * @tparam TIn1 The first input type for the mapping (frames)
+     * @tparam TIn2 The second input type for the mapping (rigid base)
+     * @tparam TOut the output type for the mapping (frames)
+     */
+
 	template<class TIn1, class TIn2, class TOut>
-	class Strain2RigidCosseratMapping : public CosseratGeometryMapping<TIn1, TIn2, TOut> {
+	class Frames2StrainCosseratMapping : public CosseratGeometryMapping<TIn1, TIn2, TOut> {
 	public:
-		SOFA_CLASS(SOFA_TEMPLATE3(Strain2RigidCosseratMapping
+		SOFA_CLASS(SOFA_TEMPLATE3(Frames2StrainCosseratMapping
 	, TIn1, TIn2, TOut),
 				   SOFA_TEMPLATE3(CosseratGeometryMapping, TIn1, TIn2, TOut));
 
@@ -60,17 +60,8 @@ namespace Cosserat::mapping {
 		// using FrameInfo = typename FrameInfo;
 		using SE3Types = sofa::component::cosserat::liegroups::SE3<double>;
 		using Vector3 = typename SE3Types::Vector3;
-		using TangentVector = typename SE3Types::TangentVector;
+		using TangentVector = typename SE3Types::TangentVector; 
 
-	public:
-		/**
-		 * @brief Helper method for manually setting linked models (useful for unit tests)
-		 */
-		void setModels(sofa::core::State<In1> *strain, sofa::core::State<In2> *base, sofa::core::State<Out> *frames) {
-			this->m_strain_state = strain;
-			this->m_rigid_base = base;
-			this->m_frames = frames;
-		}
 
 	public:
 		//////////////////////////////////////////////////////////////////////
@@ -123,8 +114,8 @@ namespace Cosserat::mapping {
 					 const sofa::type::vector<sofa::DataMatrixDeriv_t<In1> *> &dataMatOut1Const,
 					 const sofa::type::vector<sofa::DataMatrixDeriv_t<In2> *> &dataMatOut2Const,
 					 const sofa::type::vector<const sofa::DataMatrixDeriv_t<Out> *> &dataMatInConst) override;
-		/// @}
-		//////////////////////////////////////////////////////////////////////
+		// // /// @}
+		// // //////////////////////////////////////////////////////////////////////
 
 		void computeBBox(const sofa::core::ExecParams *params, bool onlyVisible) override;
 
@@ -143,47 +134,26 @@ namespace Cosserat::mapping {
 		using CosseratGeometryMapping<TIn1, TIn2, TOut>::m_indices_vectors;
 		using CosseratGeometryMapping<TIn1, TIn2, TOut>::m_indices_vectors_draw;
 		using CosseratGeometryMapping<TIn1, TIn2, TOut>::m_beam_length_vectors;
-		using CosseratGeometryMapping<TIn1, TIn2, TOut>::m_strain_state;
-		using CosseratGeometryMapping<TIn1, TIn2, TOut>::m_rigid_base;
 		using CosseratGeometryMapping<TIn1, TIn2, TOut>::m_frames;
+		using CosseratGeometryMapping<TIn1, TIn2, TOut>::m_rigid_base;
+		using CosseratGeometryMapping<TIn1, TIn2, TOut>::m_strain_state;
 		//////////////////////////////////////////////////////////////////////////////
 
 		sofa::helper::ColorMap m_colorMap;
-
-		/**
-		 * @brief Updates frame transformations using liegroups SE(3) exponential map
-		 * @param vec_of_strains Current strain values
-		 */
-		void updateFrameTransformations(const sofa::type::vector<Coord1> &vec_of_strains);
+	
 
 
-		// Debug display functions
-		void displayStrainState(const sofa::type::vector<Coord1> &strainState, const std::string &context = "") const;
-		void displayRigidState(const sofa::type::vector<sofa::Coord_t<In2>> &rigidState,
-							   const std::string &context = "") const;
-		void displayOutputFrames(const sofa::type::vector<OutCoord> &outputFrames,
-								 const std::string &context = "") const;
-		void displaySectionProperties(const std::string &context = "") const;
-		void displayFrameProperties(const std::string &context = "") const;
-		void displaySE3Transform(const SE3Types &transform, const std::string &name = "Transform") const;
-		void displayMappingState(const std::string &context = "") const;
-		void displayVelocities(const sofa::type::vector<Deriv1> &strainVel,
-							   const sofa::type::vector<sofa::Deriv_t<In2>> &baseVel,
-							   const sofa::type::vector<OutDeriv> &outputVel, const std::string &context = "") const;
-
-	protected:
-		Strain2RigidCosseratMapping
+    protected:
+		Frames2StrainCosseratMapping
 ();
-		~Strain2RigidCosseratMapping
+		~Frames2StrainCosseratMapping
 () override = default;
-	};
+    };
 
-#if !defined(SOFA_COSSERAT_CPP_Strain2RigidCosseratMappin)
-	extern template class SOFA_COSSERAT_API Strain2RigidCosseratMapping<
-			sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types>;
-	// Vec6 instantiation is currently disabled
-	// extern template class SOFA_COSSERAT_API Strain2RigidCosseratMapping<
-	// 		sofa::defaulttype::Vec6Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types>;
-#endif
-
-} // namespace Cosserat::mapping
+    #if !defined(SOFA_COSSERAT_CPP_Frames2StrainCosseratMapping)
+    extern template class SOFA_COSSERAT_API Frames2StrainCosseratMapping<
+            sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Vec3Types>;
+	
+	
+    #endif
+}// namespace Cosserat::mapping

@@ -152,8 +152,8 @@ namespace sofa::component::cosserat::liegroups {
 
 			const Vector3 rho = V_inv * m_translation;
 			TangentVector result;
-			result.template head<3>() = rho;
-			result.template tail<3>() = phi;
+			result.template head<3>() = phi;
+			result.template tail<3>() = rho;
 			return result;
 		}
 

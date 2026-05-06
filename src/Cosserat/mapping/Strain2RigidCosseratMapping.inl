@@ -86,7 +86,46 @@ namespace Cosserat::mapping {
 		msg_info() << "Strain2RigidCosseratMapping initialized with liegroups SE(3) integration";
 	}
 
-	/*********************start debugging **************************/
+	template<class TIn1, class TIn2, class TOut>
+	void Strain2RigidCosseratMapping<TIn1, TIn2, TOut>::initialization() {	
+			// Get the initial configuration g(X):frames and initialize FrameInfo objects
+		if (m_frames) {
+			auto xfromData = m_frames->read(sofa::core::vec_id::read_access::position);
+			const auto &xfrom = xfromData->getValue();
+
+			// Initialize frame properties using the initial frame states
+			const auto frame_count = xfrom.size();
+
+			m_frameProperties.clear();
+			m_frameProperties.reserve(frame_count);
+
+			for (size_t i = 0; i < frame_count; ++i) {
+				// Convert SOFA coordinates to SE3 transformations
+				const auto &frame_i = xfrom[i];
+				Vector3 translation(frame_i.getCenter()[0], frame_i.getCenter()[1], frame_i.getCenter()[2]);
+
+				// Convert quaternion to rotation matrix
+				const auto &quat = frame_i.getOrientation();
+				SO3Type rotation;
+				// Convert SOFA quaternion to our SO3 representation
+				// SOFA quaternions use [x, y, z, w] order, Eigen uses [w, x, y, z]
+				Eigen::Quaternion<double> eigenQuat(quat[3], quat[0], quat[1], quat[2]);
+				rotation = SO3Type(eigenQuat.toRotationMatrix());
+
+				SE3Type gXi(rotation, translation);
+
+			// Frame info initialized
+
+				// Create FrameInfo with initial transformation
+				// Length and kappa will be set later in initializeFrameProperties
+				FrameInfo frameInfo;
+				frameInfo.setTransformation(gXi);
+				m_frameProperties.push_back(frameInfo);
+			}
+		}
+
+	}
+
 	template<class TIn1, class TIn2, class TOut>
 	void
 	Strain2RigidCosseratMapping<TIn1, TIn2, TOut>::apply(const sofa::core::MechanicalParams * /* mparams */,
