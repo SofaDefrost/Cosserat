@@ -61,19 +61,17 @@ namespace Cosserat::mapping{
 		using Vector3 = typename SE3Types::Vector3;
 		using TangentVector = typename SE3Types::TangentVector; 
     
-        
-	public://@appa: pb with init function in CosseratGeometryMapping
-		void init() override;//this is a virtual method, that is overriding a virtual method of the base class.
 
 	public:
 		/**
 		 * @brief Helper method for manually setting linked models (useful for unit tests)
 		 */
-		void setModels(sofa::core::State<In1> *frames, sofa::core::State<In2> *base, sofa::core::State<Out> *strain) {
-			this->m_frames = frames;
-			this->m_rigid_base = base;
-			this->m_strain_state = strain;
-		}
+		// void setModels(sofa::core::State<In1> *frames, sofa::core::State<In2> *base, sofa::core::State<Out> *strain) {
+		// 	//@appa: make a good correspondance 
+		// 	this->m_strain_state = frames; //(In1-> frames - Rigid3)
+		// 	this->m_rigid_base = base;//(In2-> base - Rigid3)
+		// 	this->m_frames = strain;////(Out-> strain - Vec3)
+		// }
 
 	public:
 		//////////////////////////////////////////////////////////////////////
@@ -94,8 +92,9 @@ namespace Cosserat::mapping{
 		//////////////////////////////////////////////////////////////////////
 		/// @name Inherited from BaseObject
 		/// @{
+		void initialization() override;
 		void doBaseCosseratInit() override;
-		void draw(const sofa::core::visual::VisualParams *vparams) override;
+		// void draw(const sofa::core::visual::VisualParams *vparams) override;
 		/// @}
 		//////////////////////////////////////////////////////////////////////
 
@@ -107,28 +106,25 @@ namespace Cosserat::mapping{
 				   const sofa::type::vector<const sofa::DataVecCoord_t<In1> *> &dataVecIn1Pos,
 				   const sofa::type::vector<const sofa::DataVecCoord_t<In2> *> &dataVecIn2Pos) override;
 
-		void applyJ(const sofa::core::MechanicalParams *mparams,
-					const sofa::type::vector<sofa::DataVecDeriv_t<Out> *> &dataVecOutVel,
-					const sofa::type::vector<const sofa::DataVecDeriv_t<In1> *> &dataVecIn1Vel,
-					const sofa::type::vector<const sofa::DataVecDeriv_t<In2> *> &dataVecIn2Vel) override;
+		// void applyJ(const sofa::core::MechanicalParams *mparams,
+		// 			const sofa::type::vector<sofa::DataVecDeriv_t<Out> *> &dataVecOutVel,
+		// 			const sofa::type::vector<const sofa::DataVecDeriv_t<In1> *> &dataVecIn1Vel,
+		// 			const sofa::type::vector<const sofa::DataVecDeriv_t<In2> *> &dataVecIn2Vel) override;
 
-		void applyJT(const sofa::core::MechanicalParams *mparams,
-					 const sofa::type::vector<sofa::DataVecDeriv_t<In1> *> &dataVecOut1Force,
-					 const sofa::type::vector<sofa::DataVecDeriv_t<In2> *> &dataVecOut2RootForce,
-					 const sofa::type::vector<const sofa::DataVecDeriv_t<Out> *> &dataVecInForce) override;
+		// void applyJT(const sofa::core::MechanicalParams *mparams,
+		// 			 const sofa::type::vector<sofa::DataVecDeriv_t<In1> *> &dataVecOut1Force,
+		// 			 const sofa::type::vector<sofa::DataVecDeriv_t<In2> *> &dataVecOut2RootForce,
+		// 			 const sofa::type::vector<const sofa::DataVecDeriv_t<Out> *> &dataVecInForce) override;
 
-		void applyDJT(const sofa::core::MechanicalParams * /*mparams*/, sofa::core::MultiVecDerivId /*inForce*/,
-					  sofa::core::ConstMultiVecDerivId /*outForce*/) override {}
+		// /// Support for constraints
+		// void applyJT(const sofa::core::ConstraintParams *cparams,
+		// 			 const sofa::type::vector<sofa::DataMatrixDeriv_t<In1> *> &dataMatOut1Const,
+		// 			 const sofa::type::vector<sofa::DataMatrixDeriv_t<In2> *> &dataMatOut2Const,
+		// 			 const sofa::type::vector<const sofa::DataMatrixDeriv_t<Out> *> &dataMatInConst) override;
+		// /// @}
+		// //////////////////////////////////////////////////////////////////////
 
-		/// Support for constraints
-		void applyJT(const sofa::core::ConstraintParams *cparams,
-					 const sofa::type::vector<sofa::DataMatrixDeriv_t<In1> *> &dataMatOut1Const,
-					 const sofa::type::vector<sofa::DataMatrixDeriv_t<In2> *> &dataMatOut2Const,
-					 const sofa::type::vector<const sofa::DataMatrixDeriv_t<Out> *> &dataMatInConst) override;
-		/// @}
-		//////////////////////////////////////////////////////////////////////
-
-		void computeBBox(const sofa::core::ExecParams *params, bool onlyVisible) override;
+		// void computeBBox(const sofa::core::ExecParams *params, bool onlyVisible) override;
 
 	public:
 		////////////////////////// Inherited attributes ////////////////////////////
@@ -145,18 +141,13 @@ namespace Cosserat::mapping{
 		using CosseratGeometryMapping<TIn1, TIn2, TOut>::m_indices_vectors;
 		using CosseratGeometryMapping<TIn1, TIn2, TOut>::m_indices_vectors_draw;
 		using CosseratGeometryMapping<TIn1, TIn2, TOut>::m_beam_length_vectors;
-		// using CosseratGeometryMapping<TIn1, TIn2, TOut>::m_frames;
-		// using CosseratGeometryMapping<TIn1, TIn2, TOut>::m_rigid_base;
-		// using CosseratGeometryMapping<TIn1, TIn2, TOut>::m_strain_state;
+		using CosseratGeometryMapping<TIn1, TIn2, TOut>::m_frames;
+		using CosseratGeometryMapping<TIn1, TIn2, TOut>::m_rigid_base;
+		using CosseratGeometryMapping<TIn1, TIn2, TOut>::m_strain_state;
 		//////////////////////////////////////////////////////////////////////////////
 
 		sofa::helper::ColorMap m_colorMap;
 	
-
-	protected:
-    	sofa::core::State<In1>* m_frames = nullptr;
-		sofa::core::State<In2>* m_rigid_base = nullptr;
-		sofa::core::State<Out>* m_strain_state = nullptr;
 
 
     protected:

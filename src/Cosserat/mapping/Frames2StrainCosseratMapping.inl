@@ -86,39 +86,52 @@ namespace Cosserat::mapping {
 	}    
 
 	template<class TIn1, class TIn2, class TOut>
-	void Frames2StrainCosseratMapping<TIn1, TIn2, TOut>::init() {
+	void Frames2StrainCosseratMapping<TIn1, TIn2, TOut>::initialization(){
 		// Initialize pointers to nullptr
-		msg_info("Frames2StrainCosseratMapping") << "Initializing Frames2StrainCosseratMapping...";
+		// msg_info("Frames2StrainCosseratMapping") << "Initializing Frames2StrainCosseratMapping...";
 
-		m_frames = nullptr;
-		m_rigid_base = nullptr;
-		m_strain_state = nullptr;
+		// m_frames = nullptr;
+		// m_rigid_base = nullptr;
+		// m_strain_state = nullptr;
 
-		// Check if all required models are present
-		if (this->fromModels1.empty()) {
-			msg_error() << "Input1 (frames) not found";
-			return;
+		// // Check if all required models are present
+		// if (this->fromModels1.empty()) {
+		// 	msg_error() << "Input1 (frames) not found";
+		// 	return;
+		// }
+
+		// if (this->fromModels2.empty()) {
+		// 	msg_error() << "Input2 (rigid base) not found";
+		// 	return;
+		// }
+
+		// if (this->toModels.empty()) {
+		// 	msg_error() << "Output (strain) missing";
+		// 	return;
+		// }
+
+		// // Assign mechanical states
+		// m_frames = this->fromModels1[0];
+		// m_rigid_base = this->fromModels2[0];
+		// m_strain_state = this->toModels[0];
+
+		if(m_frames){
+			auto xfromData = m_frames->read(sofa::core::vec_id::read_access::position);
+			const auto &xfrom = xfromData->getValue();
+
+			// Initialize frame properties using the initial frame states
+			const auto frame_count = xfrom.size();
+
+			m_frameProperties.clear();
+			m_frameProperties.reserve(frame_count);
+
+			for(size_t i=0; i<frame_count; i++){
+				m_frameProperties.emplace_back();
+			}
 		}
-
-		if (this->fromModels2.empty()) {
-			msg_error() << "Input2 (rigid base) not found";
-			return;
-		}
-
-		if (this->toModels.empty()) {
-			msg_error() << "Output (strain) missing";
-			return;
-		}
-
-		// Assign mechanical states
-		m_frames = this->fromModels1[0];
-		m_rigid_base = this->fromModels2[0];
-		m_strain_state = this->toModels[0];
 
 	}
 
-    //===================================================
-    //apply() function implementation (début)
 
 	template<class TIn1, class TIn2, class TOut>
 	void
@@ -201,6 +214,44 @@ namespace Cosserat::mapping {
     
     }
 
+	// template<class TIn1, class TIn2, class TOut>	
+	// void 
+	// Frames2StrainCosseratMapping<TIn1, TIn2, TOut>::applyJ(const sofa::core::MechanicalParams *mparams,
+	// 													const sofa::type::vector<sofa::DataVecDeriv_t<Out> *> &dataVecOutVel,
+	// 													const sofa::type::vector<const sofa::DataVecDeriv_t<In1> *> &dataVecIn1Vel,
+	// 													const sofa::type::vector<const sofa::DataVecDeriv_t<In2> *> &dataVecIn2Vel){
+
+	// }
+
+	// template<class TIn1, class TIn2, class TOut>
+	// void 
+	// Frames2StrainCosseratMapping<TIn1, TIn2, TOut>::applyJT(const sofa::core::MechanicalParams *mparams,
+	// 				 										const sofa::type::vector<sofa::DataVecDeriv_t<In1> *> &dataVecOut1Force,
+	// 				 										const sofa::type::vector<sofa::DataVecDeriv_t<In2> *> &dataVecOut2RootForce,
+	// 				 										const sofa::type::vector<const sofa::DataVecDeriv_t<Out> *> &dataVecInForce){
+
+	// }
+
+	// template<class TIn1, class TIn2, class TOut>
+	// void 
+	// Frames2StrainCosseratMapping<TIn1, TIn2, TOut>::applyJT(const sofa::core::ConstraintParams *cparams,
+	// 														const sofa::type::vector<sofa::DataMatrixDeriv_t<In1> *> &dataMatOut1Const,
+	// 				 										const sofa::type::vector<sofa::DataMatrixDeriv_t<In2> *> &dataMatOut2Const,
+	// 				 										const sofa::type::vector<const sofa::DataMatrixDeriv_t<Out> *> &dataMatInConst){
+
+	// }
+		
+
+	// template<class TIn1, class TIn2, class TOut>
+	// void 
+	// Frames2StrainCosseratMapping<TIn1, TIn2, TOut>::computeBBox(const sofa::core::ExecParams *params,
+	// 															bool onlyVisible) {
+		
+	// 	// Compute bounding box for visualization
+	// 	// Implementation would calculate the extent of all frames
+	// 	Inherit::computeBBox(params, onlyVisible);																	
+
+	// }
 
 
 }
