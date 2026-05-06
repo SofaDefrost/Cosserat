@@ -27,8 +27,24 @@
 namespace Cosserat::mapping {
 	template class SOFA_COSSERAT_API Frames2StrainCosseratMapping<
 			sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Vec3Types>;
-	
-	// ça ne résoud pas le pb
-	// template class SOFA_COSSERAT_API CosseratGeometryMapping<
-	// 		sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Vec3Types>;
+	// template class SOFA_COSSERAT_API Frames2StrainCosseratMapping<
+	// 		sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Vec6Types>;
 } // namespace Cosserat::mapping
+
+namespace Cosserat{
+	// Register in the Factory
+	void registerFrames2StrainCosseratMapping(sofa::core::ObjectFactory* factory)
+	{
+		factory->registerObjects(
+				sofa::core::ObjectRegistrationData(
+						"This component computes Cosserat strains from input frames and rigid base. "
+						"It takes two mechanical" 
+						"objects as inputs; the rigid base of the beam (with 6 degree of freedom) and the frames (Rigid3) "
+						"in global coordinates." 
+						"Using these inputs, the component computes and outputs the strains (Vec3) of the beam.")
+						.add<mapping::Frames2StrainCosseratMapping<sofa::defaulttype::Rigid3Types, 
+																sofa::defaulttype::Rigid3Types, 
+																sofa::defaulttype::Vec3Types>>(true));
+			//.add< mapping::Frames2StrainCosseratMapping< sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Vec6Types> >());
+	}
+}// namespace Cosserat

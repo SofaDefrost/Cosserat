@@ -87,33 +87,6 @@ namespace Cosserat::mapping {
 
 	template<class TIn1, class TIn2, class TOut>
 	void Frames2StrainCosseratMapping<TIn1, TIn2, TOut>::initialization(){
-		// Initialize pointers to nullptr
-		// msg_info("Frames2StrainCosseratMapping") << "Initializing Frames2StrainCosseratMapping...";
-
-		// m_frames = nullptr;
-		// m_rigid_base = nullptr;
-		// m_strain_state = nullptr;
-
-		// // Check if all required models are present
-		// if (this->fromModels1.empty()) {
-		// 	msg_error() << "Input1 (frames) not found";
-		// 	return;
-		// }
-
-		// if (this->fromModels2.empty()) {
-		// 	msg_error() << "Input2 (rigid base) not found";
-		// 	return;
-		// }
-
-		// if (this->toModels.empty()) {
-		// 	msg_error() << "Output (strain) missing";
-		// 	return;
-		// }
-
-		// // Assign mechanical states
-		// m_frames = this->fromModels1[0];
-		// m_rigid_base = this->fromModels2[0];
-		// m_strain_state = this->toModels[0];
 
 		if(m_frames){
 			auto xfromData = m_frames->read(sofa::core::vec_id::read_access::position);
@@ -161,7 +134,7 @@ namespace Cosserat::mapping {
 		const sofa::VecCoord_t<In2> &rigidBase = dataVecIn2Pos[0]->getValue(); // Rigid base
 
         //Output: strain (to evaluate)
-        const auto nbSections = m_section_properties.size();
+        const auto nbSections = m_section_properties.size()-1;
 		sofa::VecCoord_t<Out> &strains = *dataVecOutPos[0]->beginEdit();
         strains.resize(nbSections);
 
@@ -182,23 +155,44 @@ namespace Cosserat::mapping {
         // for each frame (except the base frame), compute  g(L_{n-1}).inverse * g(X) = g_rel
         // then compute the strain  => strain_n = log(g_rel)/(X-L_{n-1})
     
+		std::cout<<"g_base: "<<g_base<<std::endl;
+
 		SE3Types g_prev = g_base;
 		SE3Types g_curr;
+		std::cout<<"g_curr: "<<g_curr<<std::endl;
+
+		Vector3 diff = Vector3::Zero();
+		double dx = 0.;
+		TangentVector xi = TangentVector::Zero();
+
 		for(unsigned int i=0; i<nbSections; i++){
-			
+			std::cout<<"i: "<<i<<std::endl;
+
 			const auto& frame = frames[i+1];
-			Vector3 translation(frame.getCenter()[0], frame.getCenter()[1], frame.getCenter()[2]);
+			std::cout<<"frame: "<<frame<<std::endl;
+
+			Vector3 curr_translation(frame.getCenter()[0], frame.getCenter()[1], frame.getCenter()[2]);
+
+			Vector3 prev_translation(frames[i].getCenter()[0], frames[i].getCenter()[1], frames[i].getCenter()[2]);
 
 			// Convert SOFA quaternion to Eigen quaternion (SOFA: x,y,z,w; Eigen: w,x,y,z)
-			const auto &quat = base_rigid.getOrientation();
-			Eigen::Quaternion<double> rotation(quat[3], quat[0], quat[1], quat[2]);
+			const auto &quat = frame.getOrientation();
+			Eigen::Quaternion<double> curr_rotation(quat[3], quat[0], quat[1], quat[2]);
 
 			// Create SE3 transformation
-			g_curr = SE3Types(SE3Types::SO3Type(rotation), translation);
+			g_curr = SE3Types(SE3Types::SO3Type(curr_rotation), curr_translation);
+			std::cout<<"g_frame: "<<g_curr<<std::endl;
+			std::cout<<"g_prev: "<<g_prev<<std::endl;
+			std::cout<<"g_prev^{-1}: "<<g_prev.computeInverse()<<std::endl;
 
 			SE3Types g_rel = g_prev.computeInverse()*g_curr;
+			std::cout<<"g_rel: "<<g_rel<<std::endl;
 
-			TangentVector xi = g_rel.computeLog(); // find dx = L_{n} - L_{n-1}
+
+			// find dx = L_{n} - L_{n-1}
+			diff = curr_translation - prev_translation;
+			dx = diff.norm();
+			xi = g_rel.computeLog()/dx; 
 
 			std::cout<<"xi: "<< xi <<std::endl;
 
@@ -214,44 +208,48 @@ namespace Cosserat::mapping {
     
     }
 
-	// template<class TIn1, class TIn2, class TOut>	
-	// void 
-	// Frames2StrainCosseratMapping<TIn1, TIn2, TOut>::applyJ(const sofa::core::MechanicalParams *mparams,
-	// 													const sofa::type::vector<sofa::DataVecDeriv_t<Out> *> &dataVecOutVel,
-	// 													const sofa::type::vector<const sofa::DataVecDeriv_t<In1> *> &dataVecIn1Vel,
-	// 													const sofa::type::vector<const sofa::DataVecDeriv_t<In2> *> &dataVecIn2Vel){
+	template<class TIn1, class TIn2, class TOut>	
+	void 
+	Frames2StrainCosseratMapping<TIn1, TIn2, TOut>::applyJ(const sofa::core::MechanicalParams *mparams,
+														const sofa::type::vector<sofa::DataVecDeriv_t<Out> *> &dataVecOutVel,
+														const sofa::type::vector<const sofa::DataVecDeriv_t<In1> *> &dataVecIn1Vel,
+														const sofa::type::vector<const sofa::DataVecDeriv_t<In2> *> &dataVecIn2Vel){
 
-	// }
+	}
 
-	// template<class TIn1, class TIn2, class TOut>
-	// void 
-	// Frames2StrainCosseratMapping<TIn1, TIn2, TOut>::applyJT(const sofa::core::MechanicalParams *mparams,
-	// 				 										const sofa::type::vector<sofa::DataVecDeriv_t<In1> *> &dataVecOut1Force,
-	// 				 										const sofa::type::vector<sofa::DataVecDeriv_t<In2> *> &dataVecOut2RootForce,
-	// 				 										const sofa::type::vector<const sofa::DataVecDeriv_t<Out> *> &dataVecInForce){
+	template<class TIn1, class TIn2, class TOut>
+	void 
+	Frames2StrainCosseratMapping<TIn1, TIn2, TOut>::applyJT(const sofa::core::MechanicalParams *mparams,
+					 										const sofa::type::vector<sofa::DataVecDeriv_t<In1> *> &dataVecOut1Force,
+					 										const sofa::type::vector<sofa::DataVecDeriv_t<In2> *> &dataVecOut2RootForce,
+					 										const sofa::type::vector<const sofa::DataVecDeriv_t<Out> *> &dataVecInForce){
 
-	// }
+	}
 
-	// template<class TIn1, class TIn2, class TOut>
-	// void 
-	// Frames2StrainCosseratMapping<TIn1, TIn2, TOut>::applyJT(const sofa::core::ConstraintParams *cparams,
-	// 														const sofa::type::vector<sofa::DataMatrixDeriv_t<In1> *> &dataMatOut1Const,
-	// 				 										const sofa::type::vector<sofa::DataMatrixDeriv_t<In2> *> &dataMatOut2Const,
-	// 				 										const sofa::type::vector<const sofa::DataMatrixDeriv_t<Out> *> &dataMatInConst){
 
-	// }
+	template<class TIn1, class TIn2, class TOut>
+	void 
+	Frames2StrainCosseratMapping<TIn1, TIn2, TOut>::applyJT(const sofa::core::ConstraintParams *cparams,
+															const sofa::type::vector<sofa::DataMatrixDeriv_t<In1> *> &dataMatOut1Const,
+					 										const sofa::type::vector<sofa::DataMatrixDeriv_t<In2> *> &dataMatOut2Const,
+					 										const sofa::type::vector<const sofa::DataMatrixDeriv_t<Out> *> &dataMatInConst){
+
+	}
 		
 
-	// template<class TIn1, class TIn2, class TOut>
-	// void 
-	// Frames2StrainCosseratMapping<TIn1, TIn2, TOut>::computeBBox(const sofa::core::ExecParams *params,
-	// 															bool onlyVisible) {
+	template<class TIn1, class TIn2, class TOut>
+	void 
+	Frames2StrainCosseratMapping<TIn1, TIn2, TOut>::computeBBox(const sofa::core::ExecParams *params,
+																bool onlyVisible) {
 		
-	// 	// Compute bounding box for visualization
-	// 	// Implementation would calculate the extent of all frames
-	// 	Inherit::computeBBox(params, onlyVisible);																	
+		// Compute bounding box for visualization
+		// Implementation would calculate the extent of all frames
+		Inherit::computeBBox(params, onlyVisible);																	
 
-	// }
+	}
 
+
+	template<class TIn1, class TIn2, class TOut>
+	void Frames2StrainCosseratMapping<TIn1, TIn2, TOut>::draw(const sofa::core::visual::VisualParams *vparams) {}
 
 }
