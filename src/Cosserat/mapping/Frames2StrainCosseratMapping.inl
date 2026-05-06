@@ -237,7 +237,7 @@ namespace Cosserat::mapping {
 				this->m_frames->read(sofa::core::vec_id::read_access::position)->getValue();
 
 
-		const auto base_index = d_base_index.getValue();
+		const auto base_index = d_baseIndex.getValue();
 		const auto frame_count = d_curv_abs_section.getValue().size();
 		strain_vel.resize(frame_count);
 		for (auto &vel : strain_vel){
