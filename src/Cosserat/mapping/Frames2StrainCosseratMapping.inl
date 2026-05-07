@@ -233,23 +233,99 @@ namespace Cosserat::mapping {
 		const sofa::VecDeriv_t<In2> &base_vel = dataVecIn2Vel[0]->getValue();
 		sofa::VecDeriv_t<Out> &strain_vel = *dataVecOutVel[0]->beginEdit();
 
-		const sofa::VecCoord_t<Out> &strainPos =
+		const sofa::VecCoord_t<Out> &strain =
 				this->m_frames->read(sofa::core::vec_id::read_access::position)->getValue();
-
+	
+		const sofa::DataVecCoord_t<In1> *x1fromData =
+     		 	m_strain_state->read(sofa::core::vec_id::read_access::position);
+		const sofa::VecCoord_t<In1> framePositions = x1fromData->getValue();				
 
 		const auto base_index = d_baseIndex.getValue();
-		const auto frame_count = d_curv_abs_section.getValue().size();
-		strain_vel.resize(frame_count);
+		const auto section_count = d_curv_abs_section.getValue().size() - 1; //Pourquoi d_curv_abs_section donne le nombre de section + 1 (@appa: enlever 1)
+		std::cout<<"Nb. section: "<<section_count<<std::endl;
+
+		strain_vel.resize(section_count);
 		for (auto &vel : strain_vel){
 			vel.clear();
 		}
 
 		//Obtenir la formulation mathématique qui permet de trouver la vitesse des strains 
 		//à partir de la vitesse des frames g(X)
+		//Utiliser la fonction updateTangExpSE3, pour calculer la tangente exponentielle 
+		//à partir des strains que l'on vient d'évaluer grâce à la fonction apply()
+		// strain_vel[i] = TangExp.inverse()*(Ad_g *frame_vel[i] - frame_vel[i-1])
+
+		// 1. Compute current tangent exponential SE3 matrices
+		this->updateTangExpSE3();
+
+		// 2. Compute the base velocity in SE(3) tangent space
+		// 2.1 Convert base velocity to se(3) tangent vector
+		TangentVector base_vel_local = TangentVector::Zero();
+		for (auto u = 0; u < 6; u++)
+			base_vel_local[u] = base_vel[base_index][u];
+
+		std::cout<<"Strain : [ ";
+		for(auto v : strain)
+			std::cout<<"["<<v<<"] ";
+		std::cout<<"]"<<std::endl;
 
 
+		std::cout<<"Frame Positions : [ ";
+		for(auto v : framePositions)
+			std::cout<<"["<<v<<"] ";
+		std::cout<<"]"<<std::endl;
+
+		std::cout<<"Base Velocity: ["<<base_vel_local.transpose()<<"]"<<std::endl;
+
+		std::cout<<"Frames Velocity: [ ";
+		for(auto v : frame_vel)
+			std::cout<<"["<<v<<"] ";
+		std::cout<<"]"<<std::endl;
 
 
+		std::cout<<"Strain Velocity: [ ";
+		for(auto v : strain_vel)
+			std::cout<<"["<<v<<"] ";
+		std::cout<<"]"<<std::endl;		
+
+
+		// 2.2 Apply the local transform from SOFA's frame to Cosserat's frame
+
+		// auto frame0 = framePositions[0];		
+		// Vector3 trans0(frame0.getCenter()[0], frame0.getCenter()[1], frame0.getCenter()[2]);
+		// const auto &quat0 = frame0.getOrientation();
+		// Eigen::Quaternion<double> rot0(quat0[3], quat0[0], quat0[1], quat0[2]);
+			
+		// SE3Types absoluteFrame0(SE3Types::SO3Type(rot0), trans0);
+		// SE3Types absoluteFrame0_inv = absoluteFrame0.inverse();
+		// //projection globale dans le repère local
+		// AdjointMatrix base_projector = absoluteFrame0_inv.buildProjectionMatrix(absoluteFrame0_inv.rotation().matrix());
+
+
+		// // 3. Compute velocity at each section node
+		// std::vector<TangentVector> node_velocities;
+		// node_velocities.resize(m_section_properties.size());
+
+		// // Base node velocity (transformed from SOFA frame)
+		// node_velocities[0] = base_projector * base_vel_local;		
+
+    	// std::cout << "Base local Velocity :" << node_velocities[0].transpose() << std::endl;
+
+
+		// for (size_t i = 0; i < section_count + 1; ++i) {
+		// 	const auto &frame = m_frameProperties[i];
+		// 	AdjointMatrix tang_adj = frame.getTangAdjointMatrix();
+		// 	//I want to take the inverse of the tang_adj (find a way to do it)
+
+		// 	TangentVector frame_vel_i = TangentVector::Zero();
+
+		// 	for (int j = 0; j < 6; ++j) {
+		// 		frame_vel_i[j] = frame_vel[i][j];
+		// 	}
+
+		// 	// auto Ad_g = frame.getAdjoint();
+		// 	// TangentVector xi_dot = tang_adj.inverse()*(Ad_g*frame_vel_i - node_velocities[m_indices_vectors[i]-1])
+		// }
 
 
 

@@ -6,6 +6,20 @@ beam_length: float = 30
 nb_section: int = 3
 section_length: float = beam_length/float(nb_section)
 
+
+import os
+import sys
+
+# Add the python package to the path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "..", "python"))
+
+
+from cosserat import BeamGeometryParameters, CosseratGeometry
+
+from introduction_and_setup import (_add_cosserat_frame, _add_cosserat_state,
+                                    _add_rigid_base)
+
+
 def createScene(root):
     root.gravity = [0., 0., 0.]
     
@@ -79,7 +93,30 @@ def createScene(root):
                         radius=beam_radius)
     
 
-    return root
+    ################### Tige 2 ####################
+    # Define beam geometry parameters
+    beam_geometry_params = BeamGeometryParameters(
+        beam_length=beam_length,  # Total beam length
+        nb_section=nb_section,  # Number of sections for physics
+        nb_frames=nb_section,  # Number of frames for visualization
+    )
 
+    # Create geometry object - this automatically calculates all the geometry!
+    beam_geometry = CosseratGeometry(beam_geometry_params)
+
+    base_node = _add_rigid_base(root, node_name="rigid_base")
+    custom_bending_states = [
+        [0.0, 0., 0.1] for _ in range(beam_geometry_params.nb_section)
+    ]
+
+    # Create cosserat state using the geometry object
+    bending_node = _add_cosserat_state(root, beam_geometry, node_name="c_state_1",
+                                       custom_bending_states=custom_bending_states)
+    _add_cosserat_frame(base_node, bending_node, beam_geometry, node_name="frame_1", beam_mass=0.0)
+    
+
+
+
+    return root
 
 
