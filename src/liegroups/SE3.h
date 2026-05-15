@@ -9,6 +9,8 @@
 #include "SO3.h"
 #include "Types.h"
 
+// correction en suivant la convention: strain = [angular_str, linear_strain]
+
 namespace sofa::component::cosserat::liegroups {
 
 	/**
@@ -160,8 +162,20 @@ namespace sofa::component::cosserat::liegroups {
 			const Matrix3 R = m_rotation.matrix();
 			Ad.template block<3, 3>(0, 0) = R;
 			Ad.template block<3, 3>(3, 3) = R;
-			Ad.template block<3, 3>(0, 3) = SO3Type::computeHat(m_translation) * R;
+			
+			Ad.template block<3, 3>(3, 0) = SO3Type::computeHat(m_translation) * R;
 			return Ad;
+		}
+
+
+		AdjointMatrix computeCoAdjoint() const {
+			AdjointMatrix coAd = AdjointMatrix::Zero();
+			const Matrix3 R = m_rotation.matrix();
+			coAd.template block<3, 3>(0, 0) = R;
+			coAd.template block<3, 3>(3, 3) = R;
+			
+			coAd.template block<3, 3>(0, 3) = SO3Type::computeHat(m_translation) * R;
+			return coAd;
 		}
 
 		// ========== CRTP Interface Implementations ==========

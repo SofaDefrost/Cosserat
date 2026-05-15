@@ -26,6 +26,20 @@ from cosserat import (BeamGeometryParameters, BeamPhysicsBaseParameters,
 stiffness_param: float = 1.0e10
 beam_radius: float = 1.0
 
+def add_mini_header(root_node):
+    root_node.addObject("RequiredPlugin", pluginName="Sofa.Component.Mass")
+    root_node.addObject("RequiredPlugin", pluginName="Sofa.Component.SolidMechanics.Spring")
+    root_node.addObject("RequiredPlugin", pluginName="Sofa.Component.StateContainer")
+    root_node.addObject("RequiredPlugin", pluginName="Sofa.Component.Visual")
+    root_node.addObject("RequiredPlugin", pluginName="Cosserat")
+
+    # Configure scene
+    root_node.addObject(
+        "VisualStyle",
+        displayFlags="showBehaviorModels showCollisionModels showMechanicalMappings",
+    )
+    root_node.addObject("DefaultAnimationLoop")
+
 
 def _add_rigid_base(p_node, node_name="rigid_base", positions=None):
     """Create a rigid base node for the beam."""
@@ -111,19 +125,6 @@ def _add_cosserat_frame(
     )
     return cosserat_in_sofa_frame_node
 
-def add_mini_header(root_node):
-    root_node.addObject("RequiredPlugin", pluginName="Sofa.Component.Mass")
-    root_node.addObject("RequiredPlugin", pluginName="Sofa.Component.SolidMechanics.Spring")
-    root_node.addObject("RequiredPlugin", pluginName="Sofa.Component.StateContainer")
-    root_node.addObject("RequiredPlugin", pluginName="Sofa.Component.Visual")
-    root_node.addObject("RequiredPlugin", pluginName="Cosserat")
-
-    # Configure scene
-    root_node.addObject(
-        "VisualStyle",
-        displayFlags="showBehaviorModels showCollisionModels showMechanicalMappings",
-    )
-    root_node.addObject("DefaultAnimationLoop")
 
 
 def createScene(root_node):
@@ -137,9 +138,9 @@ def createScene(root_node):
     # === NEW APPROACH: Use CosseratGeometry ===
     # Define beam geometry parameters
     beam_geometry_params = BeamGeometryParameters(
-        beam_length=30.0,  # Total beam length
+        beam_length=10.0,  # Total beam length
         nb_section=3,  # Number of sections for physics
-        nb_frames=3,  # Number of frames for visualization
+        nb_frames=6,  # Number of frames for visualization
     )
 
     # Create geometry object - this automatically calculates all the geometry!

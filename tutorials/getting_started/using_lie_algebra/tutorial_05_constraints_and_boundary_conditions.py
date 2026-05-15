@@ -16,11 +16,11 @@ import os
 import sys
 
 # Add the python package to the path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "python"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "..", "python"))
 
 from cosserat import BeamGeometryParameters, CosseratGeometry
 
-from introduction_and_setup import (_add_cosserat_frame, _add_cosserat_state,
+from introduction_and_setup import (_add_cosserat_frame_v2, _add_cosserat_state_v2,
                                     _add_rigid_base, add_mini_header, stiffness_param)
 
 v_damping_param: float = 0.4  # Damping parameter for dynamics
@@ -60,7 +60,7 @@ def createScene(root_node):
 
     # Create the beam nodes
     base_node = _add_rigid_base(solver_node)
-    bending_node = _add_cosserat_state(solver_node, beam_geometry)
+    bending_node = _add_cosserat_state_v2(solver_node, beam_geometry)
     frame_node = base_node.addChild("frame_node")
     bending_node.addChild(frame_node)
 
@@ -83,13 +83,13 @@ def createScene(root_node):
     frame_node.addObject("RestShapeSpringsForceField", 
         name="fixed_end", 
         stiffness=stiffness_param, 
-        angularStiffness=0.,
+        angularStiffness=stiffness_param,
         points=tip_frame_index,
         mstate="@FramesMO",
         template="Rigid3d")
 
     frame_node.addObject(
-        "DiscreteCosseratMapping",
+        "Strain2RigidCosseratMapping",
         curv_abs_input=beam_geometry.curv_abs_sections,  # Use geometry data
         curv_abs_output=beam_geometry.curv_abs_frames,  # Use geometry data
         name="cosseratMapping",

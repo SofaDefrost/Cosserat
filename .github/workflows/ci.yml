@@ -14,6 +14,8 @@ jobs:
   build-and-test:
     name: Run on ${{ matrix.os }} with SOFA ${{ matrix.sofa_branch }}
     runs-on: ${{ matrix.os }}
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     strategy:
       fail-fast: false
       matrix:
@@ -33,7 +35,7 @@ jobs:
           sofa_with_sofapython3: 'true'
 
       - name: Checkout source code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           path: ${{ env.WORKSPACE_SRC_PATH }}
 
@@ -78,13 +80,13 @@ jobs:
           echo "artifact_name=$artifact_name" >> $env:GITHUB_OUTPUT
 
       - name: Create artifact
-        uses: actions/upload-artifact@v4.4.0
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.sanitize.outputs.artifact_name }}
           path: ${{ env.WORKSPACE_INSTALL_PATH }}
 
       - name: Install artifact
-        uses: actions/download-artifact@v4.1.7
+        uses: actions/download-artifact@v4
         with:
           name: ${{ steps.sanitize.outputs.artifact_name }}
           path: ${{ env.WORKSPACE_ARTIFACT_PATH }}
@@ -134,7 +136,7 @@ jobs:
       continue-on-error: true
       steps:
         - name: Get artifacts
-          uses: actions/download-artifact@v4.1.7
+          uses: actions/download-artifact@v4
           with:
             path: artifacts
 

@@ -15,7 +15,9 @@ EPSILON = np.finfo(float).eps
 DEGREES_TO_RADIANS = np.pi / 180.0
 
 
-def compute_theta(curve_abscissa: float, transformation_matrix: np.ndarray) -> float:
+def compute_theta(
+        curve_abscissa: float,
+        transformation_matrix: np.ndarray) -> float:
     """
     Compute the rotation angle parameter from a transformation matrix.
 
@@ -34,6 +36,7 @@ def compute_theta(curve_abscissa: float, transformation_matrix: np.ndarray) -> f
 
     trace = np.trace(transformation_matrix)
 
+    # Todo: Verifier pourquoi on divise deux fois par 1./curve_abscissa
     if curve_abscissa <= EPSILON:
         return 0.0
     else:
@@ -49,8 +52,10 @@ def compute_theta(curve_abscissa: float, transformation_matrix: np.ndarray) -> f
                 raise e
 
 
-def compute_logmap(curve_abscissa: float, transformation_matrix: np.ndarray,
-                  verbose: bool = False) -> np.ndarray:
+def compute_logmap(
+        curve_abscissa: float,
+        transformation_matrix: np.ndarray,
+        verbose: bool = False) -> np.ndarray:
     """
     Compute the logarithmic map for a given transformation matrix.
 
@@ -81,7 +86,8 @@ def compute_logmap(curve_abscissa: float, transformation_matrix: np.ndarray,
 
     try:
         if abs(theta) <= EPSILON:
-            xi_hat = (1.0/curve_abscissa) * (transformation_matrix - identity_matrix)
+            xi_hat = (1.0 / curve_abscissa) * \
+                (transformation_matrix - identity_matrix)
         else:
             # Pre-compute common terms to improve efficiency
             arc_param = curve_abscissa * theta
@@ -91,47 +97,65 @@ def compute_logmap(curve_abscissa: float, transformation_matrix: np.ndarray,
             cos_2theta = np.cos(2.0 * arc_param)
 
             # Factor 1/(sin(θ/2))³ * 1/cos(θ/2)
-            scale_factor = 0.125 * (1.0 / np.sin(arc_param/2.0)**3) * (1.0 / np.cos(arc_param/2.0))
+            scale_factor = (
+                0.125
+                * (1.0 / np.sin(arc_param / 2.0) ** 3)
+                * (1.0 / np.cos(arc_param / 2.0))
+            )
 
             # Pre-compute transformation matrix powers
             g_squared = np.dot(transformation_matrix, transformation_matrix)
             g_cubed = np.dot(g_squared, transformation_matrix)
 
             # Complex terms
-            term1 = (arc_param * cos_2theta - sin_value)
-            term2 = (arc_param * cos_value + 2.0 * arc_param * cos_2theta - sin_value - sin_2theta)
-            term3 = (2.0 * arc_param * cos_value + arc_param * cos_2theta - sin_value - sin_2theta)
-            term4 = (arc_param * cos_value - sin_value)
+            term1 = arc_param * cos_2theta - sin_value
+            term2 = (
+                arc_param * cos_value
+                + 2.0 * arc_param * cos_2theta
+                - sin_value
+                - sin_2theta
+            )
+            term3 = (
+                2.0 * arc_param * cos_value
+                + arc_param * cos_2theta
+                - sin_value
+                - sin_2theta
+            )
+            term4 = arc_param * cos_value - sin_value
 
             # Construct the matrix
             xi_hat = (1.0 / curve_abscissa) * (
-                scale_factor * (
-                    term1 * identity_matrix -
-                    term2 * transformation_matrix +
-                    term3 * g_squared -
-                    term4 * g_cubed
+                scale_factor
+                * (
+                    term1 * identity_matrix
+                    - term2 * transformation_matrix
+                    + term3 * g_squared
+                    - term4 * g_cubed
                 )
             )
 
         if verbose:
-            print('-----------------------------------')
-            print(f'The xi_hat matrix is: \n {xi_hat}')
-            print('-----------------------------------')
+            print("-----------------------------------")
+            print(f"The xi_hat matrix is: \n {xi_hat}")
+            print("-----------------------------------")
 
         # Extract the twist vector components
-        twist_vector = np.array([
-            xi_hat[2, 1],   # ω_x
-            xi_hat[0, 2],   # ω_y
-            xi_hat[1, 0],   # ω_z
-            xi_hat[0, 3],   # v_x
-            xi_hat[1, 3],   # v_y
-            xi_hat[2, 3]    # v_z
-        ])
+        twist_vector = np.array(
+            [
+                xi_hat[2, 1],  # ω_x
+                xi_hat[0, 2],  # ω_y
+                xi_hat[1, 0],  # ω_z
+                xi_hat[0, 3],  # v_x
+                xi_hat[1, 3],  # v_y
+                xi_hat[2, 3],  # v_z
+            ]
+        )
 
         return twist_vector
 
     except Exception as e:
         raise RuntimeError(f"Error computing logarithmic map: {str(e)}")
+
 
 def debug_matrix(matrix, label="Matrix"):
     """
@@ -144,12 +168,12 @@ def debug_matrix(matrix, label="Matrix"):
     print(f"\n{label} Debug Info:")
     print(f"  Type: {type(matrix)}")
 
-    if hasattr(matrix, 'shape'):
+    if hasattr(matrix, "shape"):
         print(f"  Shape: {matrix.shape}")
     else:
         print("  Shape: Not applicable (not a numpy array)")
 
-    if hasattr(matrix, 'dtype'):
+    if hasattr(matrix, "dtype"):
         print(f"  Dtype: {matrix.dtype}")
 
     # If it's a tuple or list, show length and first element type
@@ -157,12 +181,14 @@ def debug_matrix(matrix, label="Matrix"):
         print(f"  Length: {len(matrix)}")
         if len(matrix) > 0:
             print(f"  First element type: {type(matrix[0])}")
-            if hasattr(matrix[0], 'shape'):
+            if hasattr(matrix[0], "shape"):
                 print(f"  First element shape: {matrix[0].shape}")
 
 
-def compute_logmap_scipy(curve_abscissa: float, transformation_matrix: np.ndarray,
-                         disp: bool = False) -> np.ndarray:
+def compute_logmap_scipy(
+        curve_abscissa: float,
+        transformation_matrix: np.ndarray,
+        disp: bool = False) -> np.ndarray:
     """
     Compute the logarithmic map using SciPy's implementation.
 
@@ -193,23 +219,29 @@ def compute_logmap_scipy(curve_abscissa: float, transformation_matrix: np.ndarra
             print("=== Starting SciPy matrix logarithm computation ===")
             print(f"Input matrix shape: {transformation_matrix.shape}")
             print(f"Input matrix type: {type(transformation_matrix)}")
-            if hasattr(transformation_matrix, 'dtype'):
+            if hasattr(transformation_matrix, "dtype"):
                 print(f"Input matrix dtype: {transformation_matrix.dtype}")
 
         # Step 1: Validate input matrix structure
         if not isinstance(transformation_matrix, np.ndarray):
             if disp:
-                print(f"Warning: Input is not a numpy array, converting from {type(transformation_matrix)}")
+                print(
+                    f"Warning: Input is not a numpy array, converting from {type(transformation_matrix)}")
             # Convert to numpy array if it's not already
             transformation_matrix = np.asarray(transformation_matrix)
 
         # Step 2: Verify matrix shape and dimensions
-        if transformation_matrix.ndim != 2 or transformation_matrix.shape != (4, 4):
-            raise ValueError(f"Expected 4x4 matrix, got shape {transformation_matrix.shape}")
+        if transformation_matrix.ndim != 2 or transformation_matrix.shape != (
+                4,
+                4):
+            raise ValueError(
+                f"Expected 4x4 matrix, got shape {transformation_matrix.shape}"
+            )
 
         # Step 3: Defensive conversion to ensure we have a proper numpy array
         try:
-            # First try converting with np.asarray_chkfinite to catch NaN/Inf values
+            # First try converting with np.asarray_chkfinite to catch NaN/Inf
+            # values
             matrix_safe = np.asarray_chkfinite(transformation_matrix)
             if disp:
                 print("Matrix passed finite check")
@@ -232,10 +264,15 @@ def compute_logmap_scipy(curve_abscissa: float, transformation_matrix: np.ndarra
 
         # Add a small amount to diagonal for numerical stability
         stabilized_matrix = matrix_np.copy()
-        np.fill_diagonal(stabilized_matrix, np.diag(stabilized_matrix) + EPSILON)
+        np.fill_diagonal(
+            stabilized_matrix,
+            np.diag(stabilized_matrix) +
+            EPSILON)
 
         if disp:
-            print(f"Stabilized matrix determinant: {np.linalg.det(stabilized_matrix)}")
+            print(
+                f"Stabilized matrix determinant: {
+                    np.linalg.det(stabilized_matrix)}")
             print(f"Stabilized matrix shape: {stabilized_matrix.shape}")
             print(f"Stabilized matrix dtype: {stabilized_matrix.dtype}")
             # Print first few elements to verify content
@@ -256,7 +293,11 @@ def compute_logmap_scipy(curve_abscissa: float, transformation_matrix: np.ndarra
             if isinstance(result, tuple):
                 log_matrix = result[0]  # Extract the matrix part
                 if disp:
-                    print(f"Extracted matrix from tuple, shape: {log_matrix.shape if hasattr(log_matrix, 'shape') else 'unknown'}")
+                    print(
+                        f"Extracted matrix from tuple, shape: {
+                            log_matrix.shape if hasattr(
+                                log_matrix,
+                                'shape') else 'unknown'}")
             else:
                 log_matrix = result
 
@@ -286,14 +327,16 @@ def compute_logmap_scipy(curve_abscissa: float, transformation_matrix: np.ndarra
                 print(f"Scaled log matrix shape: {scaled_log_matrix.shape}")
 
             # Extract the twist vector components
-            twist_vector = np.array([
-                scaled_log_matrix[2, 1],   # ω_x
-                scaled_log_matrix[0, 2],   # ω_y
-                scaled_log_matrix[1, 0],   # ω_z
-                scaled_log_matrix[0, 3],   # v_x
-                scaled_log_matrix[1, 3],   # v_y
-                scaled_log_matrix[2, 3]    # v_z
-            ])
+            twist_vector = np.array(
+                [
+                    scaled_log_matrix[2, 1],  # ω_x
+                    scaled_log_matrix[0, 2],  # ω_y
+                    scaled_log_matrix[1, 0],  # ω_z
+                    scaled_log_matrix[0, 3],  # v_x
+                    scaled_log_matrix[1, 3],  # v_y
+                    scaled_log_matrix[2, 3],  # v_z
+                ]
+            )
 
             if disp:
                 print(f"Twist vector: {twist_vector}")
@@ -304,19 +347,26 @@ def compute_logmap_scipy(curve_abscissa: float, transformation_matrix: np.ndarra
         except Exception as e:
             if disp:
                 print(f"SciPy matrix logarithm computation failed: {e}")
-            raise RuntimeError(f"SciPy matrix logarithm computation failed: {e}")
+            raise RuntimeError(
+                f"SciPy matrix logarithm computation failed: {e}")
 
     except Exception as e:
         import traceback
+
         error_trace = traceback.format_exc()
-        error_message = f"Error in compute_logmap_scipy: {str(e)}\n{error_trace}"
+        error_message = f"Error in compute_logmap_scipy: {
+            str(e)}\n{error_trace}"
         print(error_message)  # Print for debugging
         raise RuntimeError(error_message)
 
 
-def compare_results(result1: np.ndarray, result2: np.ndarray,
-                   tolerance: float = 1e-6, verbose: bool = True,
-                   description: str = "") -> bool:
+def compare_results(
+    result1: np.ndarray,
+    result2: np.ndarray,
+    tolerance: float = 1e-6,
+    verbose: bool = True,
+    description: str = "",
+) -> bool:
     """
     Compare two result vectors to check if they are approximately equal.
 
@@ -355,14 +405,15 @@ def compare_results(result1: np.ndarray, result2: np.ndarray,
     # Compute relative difference for non-zero elements
     # Use a larger epsilon to avoid division by very small numbers
     comparison_epsilon = max(EPSILON * 100, 1e-10)
-    mask = (np.abs(result2) > comparison_epsilon)
+    mask = np.abs(result2) > comparison_epsilon
 
     if np.any(mask):
         rel_diff = np.zeros_like(abs_diff, dtype=np.float64)
         rel_diff[mask] = abs_diff[mask] / np.abs(result2[mask])
         max_rel_diff = np.max(rel_diff)
     else:
-        # If all reference values are near zero, only consider absolute difference
+        # If all reference values are near zero, only consider absolute
+        # difference
         max_rel_diff = 0.0
 
     # Check if results are equal within tolerance
@@ -386,8 +437,9 @@ def compare_results(result1: np.ndarray, result2: np.ndarray,
     return is_equal
 
 
-def create_test_transformation(angle_degrees: float,
-                              translation: float) -> np.ndarray:
+def create_test_transformation(
+        angle_degrees: float,
+        translation: float) -> np.ndarray:
     """
     Create a test transformation matrix with rotation around Z axis
     and translation along X axis.
@@ -403,7 +455,7 @@ def create_test_transformation(angle_degrees: float,
     transform = np.zeros((4, 4), dtype=float)
     transform[0:3, 0:3] = rotation_matrix_z(angle_radians)
     transform[0, 3] = translation  # Translation along X-axis
-    transform[3, 3] = 1.0          # Homogeneous component
+    transform[3, 3] = 1.0  # Homogeneous component
 
     return transform
 
@@ -438,50 +490,58 @@ def run_validation_tests() -> None:
     - Results match within expected tolerance
     - Results match theoretical expectations
     """
-    print("\n" + "="*50)
+    print("\n" + "=" * 50)
     print("=== Running Validation Tests ===")
-    print("="*50)
+    print("=" * 50)
 
     try:
         # Test case 1: Small rotation
         angle1 = 5.0
         abscissa1 = 2.0
         transform1 = create_test_transformation(angle1, abscissa1)
-        print("\n" + "-"*50)
+        print("\n" + "-" * 50)
         print(f"Test 1: {angle1}° rotation, {abscissa1} abscissa")
-        print("-"*50)
+        print("-" * 50)
         try:
             result1_custom = compute_logmap(abscissa1, transform1)
             print(f"Custom implementation result: {result1_custom[:3]}")
         except Exception as e:
             print(f"Custom implementation failed: {e}")
             import traceback
+
             traceback.print_exc()
             result1_custom = None
 
         try:
             # Set disp=True for debugging information
             print("\n--- SciPy Implementation Debug Output (Test 1) ---")
-            result1_scipy = compute_logmap_scipy(abscissa1, transform1, disp=True)
+            result1_scipy = compute_logmap_scipy(
+                abscissa1, transform1, disp=True)
             print("--- End SciPy Debug Output ---")
             print(f"SciPy implementation result:  {result1_scipy[:3]}")
         except Exception as e:
             print(f"SciPy implementation failed: {str(e)}")
             import traceback
+
             traceback.print_exc()
             import traceback
+
             traceback.print_exc()
             result1_scipy = None
 
         if result1_custom is not None and result1_scipy is not None:
-            compare_results(result1_custom, result1_scipy, tolerance=1e-5,
-                          description="custom vs SciPy for small rotation")
+            compare_results(
+                result1_custom,
+                result1_scipy,
+                tolerance=1e-5,
+                description="custom vs SciPy for small rotation",
+            )
         abscissa2 = 4.0
         transform2 = create_test_transformation(angle2, abscissa2)
 
-        print("\n" + "-"*50)
+        print("\n" + "-" * 50)
         print(f"Test 2: {angle2}° rotation, {abscissa2} abscissa")
-        print("-"*50)
+        print("-" * 50)
         try:
             result2_custom = compute_logmap(abscissa2, transform2)
             print(f"Custom implementation result: {result2_custom[:3]}")
@@ -492,27 +552,33 @@ def run_validation_tests() -> None:
         try:
             # Add more verbose output for debugging
             print("\n--- SciPy Implementation Debug Output (Test 2) ---")
-            result2_scipy = compute_logmap_scipy(abscissa2, transform2, disp=True)
+            result2_scipy = compute_logmap_scipy(
+                abscissa2, transform2, disp=True)
             print("--- End SciPy Debug Output ---")
             print(f"SciPy implementation result:  {result2_scipy[:3]}")
         except Exception as e:
             print(f"SciPy implementation failed: {str(e)}")
             import traceback
+
             traceback.print_exc()
             result2_scipy = None
 
         if result2_custom is not None and result2_scipy is not None:
-            compare_results(result2_custom, result2_scipy, tolerance=1e-5,
-                           description="custom vs SciPy for medium rotation")
+            compare_results(
+                result2_custom,
+                result2_scipy,
+                tolerance=1e-5,
+                description="custom vs SciPy for medium rotation",
+            )
 
         # Test case 3: Large rotation
         angle3 = 85.0
         abscissa3 = 10.0
         transform3 = create_test_transformation(angle3, abscissa3)
 
-        print("\n" + "-"*50)
+        print("\n" + "-" * 50)
         print(f"Test 3: {angle3}° rotation, {abscissa3} abscissa")
-        print("-"*50)
+        print("-" * 50)
         try:
             result3_custom = compute_logmap(abscissa3, transform3)
             print(f"Custom implementation result: {result3_custom[:3]}")
@@ -522,27 +588,34 @@ def run_validation_tests() -> None:
 
         try:
             print("\n--- SciPy Implementation Debug Output (Test 3) ---")
-            result3_scipy = compute_logmap_scipy(abscissa3, transform3, disp=True)
+            result3_scipy = compute_logmap_scipy(
+                abscissa3, transform3, disp=True)
             print("--- End SciPy Debug Output ---")
             print(f"SciPy implementation result:  {result3_scipy[:3]}")
         except Exception as e:
             print(f"SciPy implementation failed: {str(e)}")
             import traceback
+
             traceback.print_exc()
             result3_scipy = None
 
         if result3_custom is not None and result3_scipy is not None:
-            compare_results(result3_custom, result3_scipy, tolerance=1e-5,
-                           description="custom vs SciPy for large rotation")
+            compare_results(
+                result3_custom,
+                result3_scipy,
+                tolerance=1e-5,
+                description="custom vs SciPy for large rotation",
+            )
 
         # Test case 4: Edge case - very small angle
         angle4 = 0.1  # Very small angle
         abscissa4 = 1.0
         transform4 = create_test_transformation(angle4, abscissa4)
 
-        print("\n" + "-"*50)
-        print(f"Test 4: {angle4}° rotation (very small angle), {abscissa4} abscissa")
-        print("-"*50)
+        print("\n" + "-" * 50)
+        print(
+            f"Test 4: {angle4}° rotation (very small angle), {abscissa4} abscissa")
+        print("-" * 50)
         try:
             result4_custom = compute_logmap(abscissa4, transform4)
             print(f"Custom implementation result: {result4_custom[:3]}")
@@ -553,11 +626,12 @@ def run_validation_tests() -> None:
                 np.array([0, 0, result4_custom[2]]),
                 np.array([0, 0, expected_omega_z]),
                 tolerance=1e-5,
-                description="custom implementation vs theoretical for very small angle"
+                description="custom implementation vs theoretical for very small angle",
             )
         except Exception as e:
             print(f"Custom implementation failed: {e}")
             import traceback
+
             traceback.print_exc()
 
         # Test case 5: Edge case - special angle π/2 (90 degrees)
@@ -565,9 +639,10 @@ def run_validation_tests() -> None:
         abscissa5 = 1.0
         transform5 = create_test_transformation(angle5, abscissa5)
 
-        print("\n" + "-"*50)
-        print(f"Test 5: {angle5}° rotation (right angle), {abscissa5} abscissa")
-        print("-"*50)
+        print("\n" + "-" * 50)
+        print(
+            f"Test 5: {angle5}° rotation (right angle), {abscissa5} abscissa")
+        print("-" * 50)
         try:
             result5_custom = compute_logmap(abscissa5, transform5)
             print(f"Custom implementation result: {result5_custom[:3]}")
@@ -578,11 +653,12 @@ def run_validation_tests() -> None:
                 np.array([0, 0, result5_custom[2]]),
                 np.array([0, 0, expected_omega_z]),
                 tolerance=1e-5,
-                description="custom implementation vs theoretical for right angle"
+                description="custom implementation vs theoretical for right angle",
             )
         except Exception as e:
             print(f"Custom implementation failed: {e}")
             import traceback
+
             traceback.print_exc()
 
         # Reference values for validation
@@ -591,17 +667,30 @@ def run_validation_tests() -> None:
         # NOTE: MATLAB's convention is different - angles may be represented differently
         # Some angles may be normalized to [-π, π] range
         reference_values = [
-            (20.0, 4.0, 0.349065847542556),       # MATLAB reference from original code (20° rotation)
-            (45.0, 5.0, 0.785398163397448),       # π/4 rotation (45° rotation)
-            (90.0, 10.0, 0.785398163397448),      # π/4 rotation (90° rotation over length 10)
-            (-90.0, 10.0, -0.785398163397448)     # -π/4 rotation (negative angle test)
+            (
+                20.0,
+                4.0,
+                0.349065847542556,
+            ),  # MATLAB reference from original code (20° rotation)
+            (45.0, 5.0, 0.785398163397448),  # π/4 rotation (45° rotation)
+            (
+                90.0,
+                10.0,
+                0.785398163397448,
+            ),  # π/4 rotation (90° rotation over length 10)
+            # -π/4 rotation (negative angle test)
+            (-90.0, 10.0, -0.785398163397448),
         ]
-        for i, (ref_angle, ref_abscissa, ref_omega_z) in enumerate(reference_values):
+        for i, (ref_angle, ref_abscissa, ref_omega_z) in enumerate(
+                reference_values):
             transform_ref = create_test_transformation(ref_angle, ref_abscissa)
 
-            print("\n" + "-"*50)
-            print(f"Reference {i+1}: {ref_angle}° rotation, {ref_abscissa} abscissa")
-            print("-"*50)
+            print("\n" + "-" * 50)
+            print(
+                f"Reference {
+                    i +
+                    1}: {ref_angle}° rotation, {ref_abscissa} abscissa")
+            print("-" * 50)
             print(f"Expected ω_z (MATLAB format): {ref_omega_z}")
 
             try:
@@ -610,9 +699,11 @@ def run_validation_tests() -> None:
                 print(f"Custom implementation ω_z: {result_ref_custom[2]}")
 
                 # For MATLAB comparison - MATLAB already includes the scaling by abscissa
-                # Our implementation scales by 1/abscissa, so we need to multiply by abscissa to compare
+                # Our implementation scales by 1/abscissa, so we need to
+                # multiply by abscissa to compare
                 scaled_result = result_ref_custom[2] * ref_abscissa
-                print(f"Scaled custom ω_z (for MATLAB comparison): {scaled_result}")
+                print(
+                    f"Scaled custom ω_z (for MATLAB comparison): {scaled_result}")
 
                 # IMPORTANT: MATLAB reference values are already in radians
                 print(f"MATLAB reference ω_z: {ref_omega_z}")
@@ -620,54 +711,69 @@ def run_validation_tests() -> None:
                 # Higher tolerance for MATLAB comparison due to different approaches
                 # Note: reference values are directly comparable (no need to scale ref_omega_z)
                 # For MATLAB reference comparison, we need to be careful about scaling and angle wrapping
-                # For the 90° rotation over length 10 case, MATLAB normalized the angle
+                # For the 90° rotation over length 10 case, MATLAB normalized
+                # the angle
                 matlab_ref = ref_omega_z
 
-                # Compute appropriate tolerance - larger angles may need larger tolerances
+                # Compute appropriate tolerance - larger angles may need larger
+                # tolerances
                 angle_tolerance = max(1e-5, abs(ref_angle) * 1e-6)
 
                 # Special case handling for MATLAB's representation of angles
                 if abs(ref_angle) == 90.0 and ref_abscissa == 10.0:
                     # MATLAB uses angle normalization for the 90° case
                     # MATLAB might represent this as π/4 (due to scaling and normalization)
-                    # Our result is 90° / 10 = 9° per unit length = π/20 * 10 = π/2 (scaled)
+                    # Our result is 90° / 10 = 9° per unit length = π/20 * 10 =
+                    # π/2 (scaled)
                     print("Special case - 90° rotation: MATLAB uses normalized value")
                     # Check if we need to adjust for angle normalization
                     if abs(scaled_result) > np.pi:
                         normalized_result = normalize_angle(scaled_result)
-                        print(f"Normalizing angle from {scaled_result} to {normalized_result}")
+                        print(
+                            f"Normalizing angle from {scaled_result} to {normalized_result}")
                         scaled_result = normalized_result
 
-                    angle_tolerance = 1e-2  # Use a larger tolerance for this special case
+                    angle_tolerance = (
+                        1e-2  # Use a larger tolerance for this special case
+                    )
 
-                print(f"Using tolerance: {angle_tolerance} for angle comparison")
+                print(
+                    f"Using tolerance: {angle_tolerance} for angle comparison")
 
                 compare_results(
                     np.array([0.0, 0.0, scaled_result]),
                     np.array([0.0, 0.0, matlab_ref]),
                     tolerance=angle_tolerance,
-                    description=f"custom result vs MATLAB reference for {ref_angle}° rotation"
+                    description=f"custom result vs MATLAB reference for {ref_angle}° rotation",
                 )
                 # Also verify against theoretical angle (in radians)
                 theoretical_omega_z = ref_angle * DEGREES_TO_RADIANS / ref_abscissa
-                print(f"Theoretical ω_z (scaled): {theoretical_omega_z * ref_abscissa}")
+                print(
+                    f"Theoretical ω_z (scaled): {
+                        theoretical_omega_z *
+                        ref_abscissa}")
                 compare_results(
                     np.array([0.0, 0.0, scaled_result]),
                     np.array([0.0, 0.0, theoretical_omega_z * ref_abscissa]),
                     tolerance=1e-5,
-                    description=f"custom result vs theoretical for {ref_angle}° rotation"
+                    description=f"custom result vs theoretical for {ref_angle}° rotation",
                 )
 
             except Exception as e:
-                print(f"Custom implementation failed on reference {i+1}: {e}")
+                print(
+                    f"Custom implementation failed on reference {
+                        i + 1}: {e}")
                 import traceback
+
                 traceback.print_exc()
     except Exception as e:
         print(f"Validation tests failed: {e}")
         import traceback
+
         traceback.print_exc()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     """
     Main entry point for the script.
 
@@ -676,9 +782,9 @@ if __name__ == '__main__':
     2. Computing the logarithmic map using different methods
     3. Comparing results
     """
-    print("="*50)
+    print("=" * 50)
     print("=== Logarithmic Map Computation ===")
-    print("="*50)
+    print("=" * 50)
 
     # Define parameters
     curve_abscissa = 4.0  # Arc length parameter
@@ -686,13 +792,17 @@ if __name__ == '__main__':
 
     # Create transformation matrix
     transformation_matrix = create_test_transformation(20.0, curve_abscissa)
-    print(f"Transformation matrix (rotation part):\n{transformation_matrix[0:3, 0:3]}")
-    print(f"Transformation matrix (translation part): {transformation_matrix[0:3, 3]}")
+    print(
+        f"Transformation matrix (rotation part):\n{transformation_matrix[0:3, 0:3]}")
+    print(
+        f"Transformation matrix (translation part): {transformation_matrix[0:3, 3]}")
 
     try:
         # Compute logarithmic map using custom implementation
         print("\n=== Custom Implementation ===")
-        twist_vector = compute_logmap(curve_abscissa, transformation_matrix, verbose=True)
+        twist_vector = compute_logmap(
+            curve_abscissa, transformation_matrix, verbose=True
+        )
         print(f"Angular velocity vector (ω): {twist_vector[0:3]}")
         print(f"Linear velocity vector (v): {twist_vector[3:6]}")
 
@@ -700,7 +810,9 @@ if __name__ == '__main__':
         print("\n=== SciPy Implementation ===")
         try:
             print("\n--- Main SciPy Implementation Debug Output ---")
-            twist_vector_scipy = compute_logmap_scipy(curve_abscissa, transformation_matrix, disp=True)
+            twist_vector_scipy = compute_logmap_scipy(
+                curve_abscissa, transformation_matrix, disp=True
+            )
             print("--- End Main SciPy Debug Output ---")
             print(f"Angular velocity vector (ω): {twist_vector_scipy[0:3]}")
             print(f"Linear velocity vector (v): {twist_vector_scipy[3:6]}")
@@ -710,21 +822,25 @@ if __name__ == '__main__':
                 twist_vector,
                 twist_vector_scipy,
                 tolerance=1e-6,
-                description="custom vs SciPy implementations"
+                description="custom vs SciPy implementations",
             )
         except Exception as e:
             print(f"SciPy implementation failed: {e}")
             import traceback
+
             traceback.print_exc()
 
         # Compare with MATLAB reference (for validation)
         print("\n=== MATLAB Reference ===")
-        matlab_reference = np.array([0.0, 0.0, 0.349065847542556])  # ω components from MATLAB
+        matlab_reference = np.array(
+            [0.0, 0.0, 0.349065847542556]
+        )  # ω components from MATLAB
         print(f"MATLAB reference (ω): {matlab_reference}")
 
         # IMPORTANT: MATLAB convention is different - their result is already in radians
         # Our implementation returns the value divided by curve_abscissa
-        # So we need to multiply by curve_abscissa to compare with MATLAB values
+        # So we need to multiply by curve_abscissa to compare with MATLAB
+        # values
         scaled_omega = twist_vector[2] * curve_abscissa
         print(f"Scaled custom result (ω): {scaled_omega}")
 
@@ -733,7 +849,7 @@ if __name__ == '__main__':
             np.array([0.0, 0.0, scaled_omega]),
             matlab_reference,  # No need to scale the reference, it's already in the right format
             tolerance=1e-5,
-            description="custom implementation vs MATLAB reference"
+            description="custom implementation vs MATLAB reference",
         )
 
         # Verify that the angle matches theoretical expectations
@@ -744,6 +860,7 @@ if __name__ == '__main__':
     except Exception as e:
         print(f"Error in main computation: {e}")
         import traceback
+
         traceback.print_exc()
 
     # Run validation tests
