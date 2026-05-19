@@ -99,6 +99,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::apply(
     const vector<const sofa::DataVecCoord_t<In1> *> &dataVecIn1Pos,
     const vector<const sofa::DataVecCoord_t<In2> *> &dataVecIn2Pos) {
 
+  std::cout<<"===== In apply function ====="<<std::endl;
   if (dataVecOutPos.empty() || dataVecIn1Pos.empty() || dataVecIn2Pos.empty())
     return;
 
@@ -168,6 +169,8 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::apply(
   // TODO(dmarchal:2024/06/13): This looks a suspicious design pattern,
   // elaborate more on the purpose of m_indexInput and how to use it.
   m_indexInput = 0;
+
+  std::cout<<"===== End apply ====="<<std::endl;
 }
 
 template <class TIn1, class TIn2, class TOut>

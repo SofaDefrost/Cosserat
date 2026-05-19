@@ -89,8 +89,8 @@ namespace Cosserat::mapping {
 	template<class TIn1, class TIn2, class TOut>
 	void Frames2StrainCosseratMapping<TIn1, TIn2, TOut>::initialization(){
 
-		if(m_frames){
-			auto xfromData = m_frames->read(sofa::core::vec_id::read_access::position);
+		if(m_strain_state){
+			auto xfromData = m_strain_state->read(sofa::core::vec_id::read_access::position);
 			const auto &xfrom = xfromData->getValue();
 
 			// Initialize frame properties using the initial frame states
@@ -159,22 +159,19 @@ namespace Cosserat::mapping {
 		std::cout<<"g_base: "<<g_base<<std::endl;
 
 		SE3Types g_prev = g_base;
-		SE3Types g_curr;
+		SE3Types g_curr, g_prev_inverse;
 		std::cout<<"g_curr: "<<g_curr<<std::endl;
 
-		Vector3 diff = Vector3::Zero();
 		double dx = 0.;
 		TangentVector xi = TangentVector::Zero();
-
 		for(unsigned int i=0; i<nbSections; i++){
 			std::cout<<"i: "<<i<<std::endl;
 
 			const auto& frame = frames[i+1];
+			const auto& section = m_section_properties[i+1];
 			std::cout<<"frame: "<<frame<<std::endl;
 
 			Vector3 curr_translation(frame.getCenter()[0], frame.getCenter()[1], frame.getCenter()[2]);
-
-			Vector3 prev_translation(frames[i].getCenter()[0], frames[i].getCenter()[1], frames[i].getCenter()[2]);
 
 			// Convert SOFA quaternion to Eigen quaternion (SOFA: x,y,z,w; Eigen: w,x,y,z)
 			const auto &quat = frame.getOrientation();
@@ -182,17 +179,17 @@ namespace Cosserat::mapping {
 
 			// Create SE3 transformation
 			g_curr = SE3Types(SE3Types::SO3Type(curr_rotation), curr_translation);
+			g_prev_inverse = g_prev.computeInverse();
 			std::cout<<"g_frame: "<<g_curr<<std::endl;
 			std::cout<<"g_prev: "<<g_prev<<std::endl;
-			std::cout<<"g_prev^{-1}: "<<g_prev.computeInverse()<<std::endl;
+			std::cout<<"g_prev^{-1}: "<<g_prev_inverse<<std::endl;
 
-			SE3Types g_rel = g_prev.computeInverse()*g_curr;
+			SE3Types g_rel = g_prev_inverse*g_curr;
 			std::cout<<"g_rel: "<<g_rel<<std::endl;
 
 
 			// find dx = L_{n} - L_{n-1}
-			diff = curr_translation - prev_translation;
-			dx = diff.norm();
+			dx = section.getLength();
 			xi = g_rel.computeLog()/dx; 
 
 			std::cout<<"xi: "<< xi <<std::endl;
@@ -210,6 +207,90 @@ namespace Cosserat::mapping {
 		std::cout<<"========End apply========"<<std::endl;
     
     }
+
+
+	template<class TIn1, class TIn2, class TOut>
+	Matrix3 Frames2StrainCosseratMapping<TIn1, TIn2, TOut>::buildHatMatrix(const Vector3& k){
+		Matrix3 k_hat = Matrix3::Zero();
+
+		k_hat(0, 1) = -k(2);
+		k_hat(0, 2) = k(1);
+		k_hat(1, 2) = -k(0);
+
+		k_hat(1, 0) = -k_hat(0, 1);
+		k_hat(2, 0) = -k_hat(0, 2);
+		k_hat(2, 1) = -k_hat(1, 2);
+
+		return k_hat;
+
+	}
+	template<class TIn1, class TIn2, class TOut>
+	AdjointMatrix Frames2StrainCosseratMapping<TIn1, TIn2, TOut>::compute_adjoint(const TangentVector& Omega){
+		Vector3 k = Vector3::Zero(); //first 3 components of Omega
+		Vector3 q = Vector3::Zero(); //last components
+
+		for(int i=0; i<3; i++){
+			k(i) = Omega(i);
+			q(i) = Omega(i+3);
+		}
+
+		Matrix3 k_hat = buildHatMatrix(k);
+		Matrix3 q_hat = buildHatMatrix(q);
+		
+		AdjointMatrix ad = AdjointMatrix::Zero();
+
+		ad.template block<3,3>(0, 0) = k_hat;
+		ad.template block<3,3>(1, 1) = k_hat;
+		ad.template block<3,3>(1, 0) = q_hat;
+
+		return ad;
+	}
+
+	template<class TIn1, class TIn2, class TOut>
+	AdjointMatrix Frames2StrainCosseratMapping<TIn1, TIn2, TOut>::compute_Adjoint(const Matrix4& g){
+		Vector3 p = Vector3::Zero();
+		Matrix3 rot = Matrix3::Zero();
+		// Vector3 q = Vector3::Zero(); //last components
+
+		for(int i=0; i<3; i++){
+			p(i) = g(i, 3);
+			for(int j=0; j<3; j++){
+				rot(i, j) = g(i, j);
+			}
+		}
+
+		
+		Matrix3 p_hat = buildHatMatrix(p);
+		
+		AdjointMatrix Ad = AdjointMatrix::Zero();
+
+		Ad.template block<3,3>(0, 0) = rot;
+		Ad.template block<3,3>(1, 1) = rot;
+		Ad.template block<3,3>(1, 0) = p_hat;
+
+		return Ad;
+	}
+
+
+
+	template<class TIn1, class TIn2, class TOut>
+	AdjointMatrix Frames2StrainCosseratMapping<TIn1, TIn2, TOut>::computeInverseTangentOperator(const TangentVector& Omega){
+		//computation at order 4
+		//4 Bernouilli nb. : B0=1, B1=-1/2, B2=1/6, B3=0
+
+		AdjointMatrix res = AdjointMatrix::Zero();
+		AdjointMatrix Id6 = AdjointMatrix::Identity();
+		AdjointMatrix adOmega = compute_adjoint(Omega); //Compute adjoint
+		AdjointMatrix adOmega2 = adOmega * adOmega;
+		AdjointMatrix adOmega3 = adOmega2 * adOmega;
+
+		double B0=1., B1=-1./2., B2=1./6., B3=0.;
+
+		res = B0*Id6 + B1*adOmega + (1./2.)*B2*adOmega2 + (1./6.)*B3*adOmega3;
+
+		return res;
+
+	}
 
 	template<class TIn1, class TIn2, class TOut>	
 	void 
@@ -249,14 +330,6 @@ namespace Cosserat::mapping {
 			vel.clear();
 		}
 
-		//Obtenir la formulation mathématique qui permet de trouver la vitesse des strains 
-		//à partir de la vitesse des frames g(X)
-		//Utiliser la fonction updateTangExpSE3, pour calculer la tangente exponentielle 
-		//à partir des strains que l'on vient d'évaluer grâce à la fonction apply()
-		// strain_vel[i] = TangExp.inverse()*(Ad_g *frame_vel[i] - frame_vel[i-1])
-
-		// 1. Compute current tangent exponential SE3 matrices
-		this->updateTangExpSE3();
 
 		// 2. Compute the base velocity in SE(3) tangent space
 		// 2.1 Convert base velocity to se(3) tangent vector
@@ -264,72 +337,79 @@ namespace Cosserat::mapping {
 		for (auto u = 0; u < 6; u++)
 			base_vel_local[u] = base_vel[base_index][u];
 
-		std::cout<<"Strain : [ ";
-		for(auto v : strain)
-			std::cout<<"["<<v<<"] ";
-		std::cout<<"]"<<std::endl;
+		// std::cout<<"Strain : [ ";
+		// for(auto v : strain)
+		// 	std::cout<<"["<<v<<"] ";
+		// std::cout<<"]"<<std::endl;
 
 
-		std::cout<<"Frame Positions : [ ";
-		for(auto v : framePositions)
-			std::cout<<"["<<v<<"] ";
-		std::cout<<"]"<<std::endl;
+		// std::cout<<"Frame Positions : [ ";
+		// for(auto v : framePositions)
+		// 	std::cout<<"["<<v<<"] ";
+		// std::cout<<"]"<<std::endl;
 
-		std::cout<<"Base Velocity: ["<<base_vel_local.transpose()<<"]"<<std::endl;
+		// std::cout<<"Base Velocity: ["<<base_vel_local.transpose()<<"]"<<std::endl;
 
-		std::cout<<"Frames Velocity: [ ";
-		for(auto v : frame_vel)
-			std::cout<<"["<<v<<"] ";
-		std::cout<<"]"<<std::endl;
-
-
-		std::cout<<"Strain Velocity: [ ";
-		for(auto v : strain_vel)
-			std::cout<<"["<<v<<"] ";
-		std::cout<<"]"<<std::endl;		
+		// std::cout<<"Frames Velocity: [ ";
+		// for(auto v : frame_vel)
+		// 	std::cout<<"["<<v<<"] ";
+		// std::cout<<"]"<<std::endl;
 
 
-		// 2.2 Apply the local transform from SOFA's frame to Cosserat's frame
+		// std::cout<<"Strain Velocity: [ ";
+		// for(auto v : strain_vel)
+		// 	std::cout<<"["<<v<<"] ";
+		// std::cout<<"]"<<std::endl;		
 
-		// auto frame0 = framePositions[0];		
-		// Vector3 trans0(frame0.getCenter()[0], frame0.getCenter()[1], frame0.getCenter()[2]);
-		// const auto &quat0 = frame0.getOrientation();
-		// Eigen::Quaternion<double> rot0(quat0[3], quat0[0], quat0[1], quat0[2]);
-			
-		// SE3Types absoluteFrame0(SE3Types::SO3Type(rot0), trans0);
-		// SE3Types absoluteFrame0_inv = absoluteFrame0.inverse();
-		// //projection globale dans le repère local
-		// AdjointMatrix base_projector = absoluteFrame0_inv.buildProjectionMatrix(absoluteFrame0_inv.rotation().matrix());
+		//À COMPLÉTER
 
+		// compute the Jacobians J1 and J2
+		// Omega = Log(ga^-1gb
+		// J1 = 1/h dexp^-1_{-Omega)} Ad_{exp(-Omega)}
+		// J2 = 1/h dexp^-1_{Omega}
+		AdjointMatrix J1 = AdjointMatrix::Zero();
+		AdjointMatrix J2 = AdjointMatrix::Zero();
 
-		// // 3. Compute velocity at each section node
-		// std::vector<TangentVector> node_velocities;
-		// node_velocities.resize(m_section_properties.size());
+		TangentVector strain_i = TangentVector::Zero();
+		TangentVector Omega_i = TangentVector::Zero();
+		// strain_i(3) = 1.;
+		double dx = 0.;
+		AdjointMatrix dexp_inv = AdjointMatrix::Zero();
+		for(int i=0; i<section_count; i++){
+			const auto &section = m_section_properties[i+1];
+			dx = section.getLength();
 
-		// // Base node velocity (transformed from SOFA frame)
-		// node_velocities[0] = base_projector * base_vel_local;		
+			for(int j=0; j<3; j++)
+				strain_i[j] = strain[i][j];
 
-    	// std::cout << "Base local Velocity :" << node_velocities[0].transpose() << std::endl;
+			Omega_i = dx*strain_i;
+			// std::cout<<"Omega["<<i<<"]: "<<Omega_i.transpose()<<std::endl;
+			// std::cout<<"dx["<<i<<"]: "<<dx<<std::endl;
+			dexp_inv = computeInverseTangentOperator(Omega_i);
+			J2 = (1./dx)*dexp_inv;
 
+			SE3Types g = SE3Types::expCosserat(strain_i, -dx); // = exp(-Omega_i)
+			AdjointMatrix Adg = g.computeAdjoint();
+			J1 = -(1./dx)*dexp_inv*Adg;
 
-		// for (size_t i = 0; i < section_count + 1; ++i) {
-		// 	const auto &frame = m_frameProperties[i];
-		// 	AdjointMatrix tang_adj = frame.getTangAdjointMatrix();
-		// 	//I want to take the inverse of the tang_adj (find a way to do it)
+			TangentVector eta_a = TangentVector::Zero();
+			TangentVector eta_b = TangentVector::Zero();
 
-		// 	TangentVector frame_vel_i = TangentVector::Zero();
+			for(int u=0; u<6; u++){
+				eta_a[u] = frame_vel[i][u];
+				eta_b[u] = frame_vel[i+1][u];
+			}
 
-		// 	for (int j = 0; j < 6; ++j) {
-		// 		frame_vel_i[j] = frame_vel[i][j];
-		// 	}
+			TangentVector output_vel = J1*eta_a + J2*eta_b;
 
-		// 	// auto Ad_g = frame.getAdjoint();
-		// 	// TangentVector xi_dot = tang_adj.inverse()*(Ad_g*frame_vel_i - node_velocities[m_indices_vectors[i]-1])
-		// }
+			for(int k=0; k<3; k++){
+				strain_vel[i][k] = output_vel[k];
+			}
 
+			std::cout << "Strain velocity [" << i << "]: " << output_vel.transpose() <<"\n";
+		}
 
-
-
+		dataVecOutVel[0]->endEdit();
 		std::cout<<"========End applyJ========"<<std::endl;
 
 	}

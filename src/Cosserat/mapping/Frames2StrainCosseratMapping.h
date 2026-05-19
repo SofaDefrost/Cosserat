@@ -119,6 +119,12 @@ namespace Cosserat::mapping{
 
 		void computeBBox(const sofa::core::ExecParams *params, bool onlyVisible) override;
 
+		AdjointMatrix computeInverseTangentOperator(const TangentVector&);
+		AdjointMatrix compute_adjoint(const TangentVector&);
+		Matrix3 buildHatMatrix(const Vector3&);
+		AdjointMatrix compute_Adjoint(const Matrix4& g);
+
+
 	public:
 		////////////////////////// Inherited attributes ////////////////////////////
 		/// Bring inherited attributes into the current lookup context
