@@ -124,7 +124,7 @@ def _add_cosserat_frame(
         output=frames_mo.getLinkPath(),
         debug=0,
         radius=beam_radius,
-        color=[0.0, 0.0, 1.0, 1.0], #blue
+        color=[0.0, 0.0, 1.0, 0.45], #blue
     )
     return cosserat_in_sofa_frame_node
 
@@ -157,8 +157,8 @@ def _add_cosserat_frame_v2(
         input2=p_node.cosserat_base_mo.getLinkPath(),
         output=frames_mo.getLinkPath(),
         debug=0,
-        radius=beam_radius,
-        color=[1.0, 0.0, 0.0, 1.0], #red
+        radius=0.5,
+        color=[1.0, 0.0, 0.0, 0.5], #red
     )
     return cosserat_in_sofa_frame_node
 
