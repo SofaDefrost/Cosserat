@@ -54,25 +54,7 @@ def createScene(root):
     #*******frames***********
     section_curv_abs = [i*section_length for i in range(nb_section+1)]
     frame_curv_abs = section_curv_abs
-    # # frame_positions = [[0., 0., 0., 0., 0., 0., 1.],
-    # #                    [0.99833417, 0.04995835, 0., 0., 0., 0.04997917, 0.99875026]] #from scipy avec 1 section de longueur 1
-
-    # S2R results
-    ###### Pour une section ######
-    # #Frame  : 0 = -0 -0 -0 0 0 0 1
-    # #Frame  : 1 = 0.998334 0.0499583 -0 0 0 0.0499792 0.99875
-    # frame_positions = [[0., 0., 0., 0., 0., 0., 1.],
-    #                    [0.998334, 0.0499583, 0., 0., 0., 0.0499792, 0.99875]]    
-
-    ##### Pour deux sections ######
-    # Frame  : 0 = -0 -0 -0 0 0 0 1
-    # Frame  : 1 = 0.998334 0.0499583 -0 0 0 0.0499792 0.99875
-    # Frame  : 2 = 1.98669 0.199334 -0 0 0 0.0998334 0.995004    
-
-    # frame_positions = [[0., 0., 0., 0., 0., 0., 1.],
-    #                    [0.998334, 0.0499583, 0., 0., 0., 0.0499792, 0.99875],
-    #                    [1.98669, 0.199334, 0., 0., 0., 0.0998334, 0.995004]]    
-
+    
     ##### Pour trois sections ######
     # Frame  : 0 = -0 -0 -0 0 0 0 1
     # Frame  : 1 = 0.998334 0.0499583 -0 0 0 0.0499792 0.99875
