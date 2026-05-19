@@ -362,7 +362,6 @@ namespace Cosserat::mapping {
 		// std::cout<<"]"<<std::endl;		
 
 		//À COMPLÉTER
-
 		// compute the Jacobians J1 and J2
 		// Omega = Log(ga^-1gb
 		// J1 = 1/h dexp^-1_{-Omega)} Ad_{exp(-Omega)}
@@ -395,9 +394,16 @@ namespace Cosserat::mapping {
 			TangentVector eta_a = TangentVector::Zero();
 			TangentVector eta_b = TangentVector::Zero();
 
-			for(int u=0; u<6; u++){
-				eta_a[u] = frame_vel[i][u];
-				eta_b[u] = frame_vel[i+1][u];
+			if(i == 0){
+				eta_a = base_vel_local;
+				for(int u=0; u<6; u++){
+					eta_b[u] = frame_vel[i][u];
+				}
+			} else{
+				for(int u=0; u<6; u++){
+					eta_a[u] = frame_vel[i][u];
+					eta_b[u] = frame_vel[i+1][u];
+				}
 			}
 
 			TangentVector output_vel = J1*eta_a + J2*eta_b;
