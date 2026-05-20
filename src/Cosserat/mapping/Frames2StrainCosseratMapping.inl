@@ -156,20 +156,20 @@ namespace Cosserat::mapping {
         // for each frame (except the base frame), compute  g(L_{n-1}).inverse * g(X) = g_rel
         // then compute the strain  => strain_n = log(g_rel)/(X-L_{n-1})
     
-		std::cout<<"g_base: "<<g_base<<std::endl;
+		// std::cout<<"g_base: "<<g_base<<std::endl;
 
 		SE3Types g_prev = g_base;
 		SE3Types g_curr, g_prev_inverse;
-		std::cout<<"g_curr: "<<g_curr<<std::endl;
+		// std::cout<<"g_curr: "<<g_curr<<std::endl;
 
 		double dx = 0.;
 		TangentVector xi = TangentVector::Zero();
 		for(unsigned int i=0; i<nbSections; i++){
-			std::cout<<"i: "<<i<<std::endl;
+			// std::cout<<"i: "<<i<<std::endl;
 
 			const auto& frame = frames[i+1];
 			const auto& section = m_section_properties[i+1];
-			std::cout<<"frame: "<<frame<<std::endl;
+			// std::cout<<"frame: "<<frame<<std::endl;
 
 			Vector3 curr_translation(frame.getCenter()[0], frame.getCenter()[1], frame.getCenter()[2]);
 
@@ -180,19 +180,17 @@ namespace Cosserat::mapping {
 			// Create SE3 transformation
 			g_curr = SE3Types(SE3Types::SO3Type(curr_rotation), curr_translation);
 			g_prev_inverse = g_prev.computeInverse();
-			std::cout<<"g_frame: "<<g_curr<<std::endl;
-			std::cout<<"g_prev: "<<g_prev<<std::endl;
-			std::cout<<"g_prev^{-1}: "<<g_prev_inverse<<std::endl;
+			// std::cout<<"g_frame: "<<g_curr<<std::endl;
+			// std::cout<<"g_prev: "<<g_prev<<std::endl;
+			// std::cout<<"g_prev^{-1}: "<<g_prev_inverse<<std::endl;
 
 			SE3Types g_rel = g_prev_inverse*g_curr;
-			std::cout<<"g_rel: "<<g_rel<<std::endl;
+			// std::cout<<"g_rel: "<<g_rel<<std::endl;
 
 
 			// find dx = L_{n} - L_{n-1}
 			dx = section.getLength();
 			xi = g_rel.computeLog()/dx; 
-
-			std::cout<<"xi: "<< xi <<std::endl;
 
 			for(int j=0; j<3; j++){
 				strains[i][j] = xi[j];
@@ -201,7 +199,14 @@ namespace Cosserat::mapping {
 			g_prev = g_curr;
 			
 		}
-    
+
+		std::cout<<"Strains computed: "<<std::endl;
+		std::cout<<"[ ";
+		for(auto z : strains){
+				std::cout<<"["<<z<<"] ";
+		}    
+		std::cout<<"]"<<std::endl;
+
 		dataVecOutPos[0]->endEdit();
 
 		std::cout<<"========End apply========"<<std::endl;
@@ -240,38 +245,13 @@ namespace Cosserat::mapping {
 		AdjointMatrix ad = AdjointMatrix::Zero();
 
 		ad.template block<3,3>(0, 0) = k_hat;
-		ad.template block<3,3>(1, 1) = k_hat;
-		ad.template block<3,3>(1, 0) = q_hat;
+		ad.template block<3,3>(3, 3) = k_hat;
+		ad.template block<3,3>(3, 0) = q_hat;
 
+		// std::cout<<"Adjoint Matrix: "<<std::endl;
+		// std::cout<< ad <<std::endl;
 		return ad;
 	}
-
-	template<class TIn1, class TIn2, class TOut>
-	AdjointMatrix Frames2StrainCosseratMapping<TIn1, TIn2, TOut>::compute_Adjoint(const Matrix4& g){
-		Vector3 p = Vector3::Zero();
-		Matrix3 rot = Matrix3::Zero();
-		// Vector3 q = Vector3::Zero(); //last components
-
-		for(int i=0; i<3; i++){
-			p(i) = g(i, 3);
-			for(int j=0; j<3; j++){
-				rot(i, j) = g(i, j);
-			}
-		}
-
-		
-		Matrix3 p_hat = buildHatMatrix(p);
-		
-		AdjointMatrix Ad = AdjointMatrix::Zero();
-
-		Ad.template block<3,3>(0, 0) = rot;
-		Ad.template block<3,3>(1, 1) = rot;
-		Ad.template block<3,3>(1, 0) = p_hat;
-
-		return Ad;
-	}
-
-
 
 	template<class TIn1, class TIn2, class TOut>
 	AdjointMatrix Frames2StrainCosseratMapping<TIn1, TIn2, TOut>::computeInverseTangentOperator(const TangentVector& Omega){
@@ -322,8 +302,8 @@ namespace Cosserat::mapping {
 		const sofa::VecCoord_t<In1> framePositions = x1fromData->getValue();				
 
 		const auto base_index = d_baseIndex.getValue();
-		const auto section_count = d_curv_abs_section.getValue().size() - 1; //Pourquoi d_curv_abs_section donne le nombre de section + 1 (@appa: enlever 1)
-		std::cout<<"Nb. section: "<<section_count<<std::endl;
+		const auto section_count = d_curv_abs_section.getValue().size() - 1;
+		// std::cout<<"Nb. section: "<<section_count<<std::endl;
 
 		strain_vel.resize(section_count);
 		for (auto &vel : strain_vel){
@@ -348,12 +328,12 @@ namespace Cosserat::mapping {
 		// 	std::cout<<"["<<v<<"] ";
 		// std::cout<<"]"<<std::endl;
 
-		// std::cout<<"Base Velocity: ["<<base_vel_local.transpose()<<"]"<<std::endl;
+		std::cout<<"Base Velocity: ["<<base_vel_local.transpose()<<"]"<<std::endl;
 
-		// std::cout<<"Frames Velocity: [ ";
-		// for(auto v : frame_vel)
-		// 	std::cout<<"["<<v<<"] ";
-		// std::cout<<"]"<<std::endl;
+		std::cout<<"Frames Velocity: [ ";
+		for(auto v : frame_vel)
+			std::cout<<"["<<v<<"] ";
+		std::cout<<"]"<<std::endl;
 
 
 		// std::cout<<"Strain Velocity: [ ";
@@ -366,38 +346,33 @@ namespace Cosserat::mapping {
 		// Omega = Log(ga^-1gb
 		// J1 = 1/h dexp^-1_{-Omega)} Ad_{exp(-Omega)}
 		// J2 = 1/h dexp^-1_{Omega}
-		AdjointMatrix J1 = AdjointMatrix::Zero();
-		AdjointMatrix J2 = AdjointMatrix::Zero();
 
-		TangentVector strain_i = TangentVector::Zero();
-		TangentVector Omega_i = TangentVector::Zero();
-		// strain_i(3) = 1.;
-		double dx = 0.;
-		AdjointMatrix dexp_inv = AdjointMatrix::Zero();
 		for(int i=0; i<section_count; i++){
 			const auto &section = m_section_properties[i+1];
-			dx = section.getLength();
+			double dx = section.getLength();
+
+			TangentVector strain_i = TangentVector::Zero();
 
 			for(int j=0; j<3; j++)
 				strain_i[j] = strain[i][j];
 
-			Omega_i = dx*strain_i;
+			TangentVector Omega_i = dx*strain_i;
 			// std::cout<<"Omega["<<i<<"]: "<<Omega_i.transpose()<<std::endl;
 			// std::cout<<"dx["<<i<<"]: "<<dx<<std::endl;
-			dexp_inv = computeInverseTangentOperator(Omega_i);
-			J2 = (1./dx)*dexp_inv;
+			AdjointMatrix dexp_inv = computeInverseTangentOperator(Omega_i);
+			AdjointMatrix J2 = (1./dx)*dexp_inv;
 
 			SE3Types g = SE3Types::expCosserat(strain_i, -dx); // = exp(-Omega_i)
 			AdjointMatrix Adg = g.computeAdjoint();
-			J1 = -(1./dx)*dexp_inv*Adg;
+			AdjointMatrix J1 = -(1./dx)*dexp_inv*Adg;
 
 			TangentVector eta_a = TangentVector::Zero();
 			TangentVector eta_b = TangentVector::Zero();
 
-			if(i == 0){
+			if(i == 0){//@appa: vitesse frame0 == base velocity ?? supposons que oui
 				eta_a = base_vel_local;
 				for(int u=0; u<6; u++){
-					eta_b[u] = frame_vel[i][u];
+					eta_b[u] = frame_vel[i+1][u];
 				}
 			} else{
 				for(int u=0; u<6; u++){
@@ -422,20 +397,137 @@ namespace Cosserat::mapping {
 
 	template<class TIn1, class TIn2, class TOut>
 	void 
-	Frames2StrainCosseratMapping<TIn1, TIn2, TOut>::applyJT(const sofa::core::MechanicalParams *mparams,
+	Frames2StrainCosseratMapping<TIn1, TIn2, TOut>::applyJT(const sofa::core::MechanicalParams * /*mparams*/,
 					 										const sofa::type::vector<sofa::DataVecDeriv_t<In1> *> &dataVecOut1Force,
-					 										const sofa::type::vector<sofa::DataVecDeriv_t<In2> *> &dataVecOut2RootForce,
+					 										const sofa::type::vector<sofa::DataVecDeriv_t<In2> *> &dataVecOut2Force,
 					 										const sofa::type::vector<const sofa::DataVecDeriv_t<Out> *> &dataVecInForce){
 
+		std::cout<<"====== In applyJT function ======="<<std::endl;
+		if (dataVecOut1Force.empty() || dataVecInForce.empty() || dataVecOut2Force.empty())
+			return;
+
+		if (this->d_componentState.getValue() != sofa::core::objectmodel::ComponentState::Valid)
+			return;
+
+		if (d_debug.getValue())
+			std::cout << " ########## Frames2StrainCosseratMapping ApplyJT Force Function ########" << std::endl;
+
+
+
+		const sofa::VecDeriv_t<Out> &strainForces = dataVecInForce[0]->getValue();
+		sofa::VecDeriv_t<In1> &frameForces = *dataVecOut1Force[0]->beginEdit();
+		sofa::VecDeriv_t<In2> &baseForces = *dataVecOut2Force[0]->beginEdit();
+		const auto baseIndex = d_baseIndex.getValue();
+
+		// Get current strain of each section
+		const sofa::VecCoord_t<Out> &strainState =
+				this->m_frames->read(sofa::core::vec_id::read_access::position)->getValue();
+
+		const sofa::DataVecCoord_t<In1> *x1fromData =
+     		 	m_strain_state->read(sofa::core::vec_id::read_access::position);
+		const sofa::VecCoord_t<In1> framePositions = x1fromData->getValue();	
+
+		
+		// Initialize output forces
+		frameForces.resize(framePositions.size());
+		// for(auto& f : frameForces){
+		// 	f.clear();
+		// }
+		baseForces[baseIndex].clear();
+
+		std::cout<<"Strain forces: "<<std::endl;
+		for(auto v : strainForces){
+			std::cout<< v <<std::endl;
+		}
+
+
+		const auto section_count = d_curv_abs_section.getValue().size() - 1;
+
+		for(unsigned int i=0; i<section_count; i++){
+			const auto& section = m_section_properties[i+1];
+
+			double dx = section.getLength(); //section length
+
+			//get current strain of the section
+			TangentVector strain_i = TangentVector::Zero();
+
+			for(int j=0; j<3; j++){
+				strain_i[j] = strainState[i][j];
+			}
+
+			TangentVector Omega_i = dx * strain_i;
+
+			//construct Jacobians
+			AdjointMatrix dexp_inv = computeInverseTangentOperator(Omega_i);
+			AdjointMatrix J2 = (1./dx)*dexp_inv;
+
+			SE3Types g = SE3Types::expCosserat(strain_i, -dx); // = exp(-Omega_i)
+			AdjointMatrix Adg = g.computeAdjoint();
+			AdjointMatrix J1 = -(1./dx)*dexp_inv*Adg;
+
+			// posons lambda tq strain force (i) = lambda
+
+			TangentVector lambda = TangentVector::Zero();
+
+			for(int j=0; j<3; j++){
+				lambda[j] = strainForces[i][j];
+			}
+
+			TangentVector fa = J1.transpose() * lambda; //a (b): extremite gauche (droite) de la section
+			TangentVector fb = J2.transpose() * lambda;
+
+			std::cout<<"Section "<< i<<": lambda=["<<lambda.transpose()<<"]"<<std::endl;
+        	std::cout<<"  fa=["<< fa.transpose()<<"], fb=["<<fb.transpose()<<"]"<<std::endl;
+			
+			// if(i==0){
+			// 	for(int k=0; k<6; k++){
+			// 		baseForces[baseIndex][k] += fa[k]; 
+			// 	}
+			// }
+			// else{
+			// 	for(int k=0; k<6; k++){
+			// 		frameForces[i][k] += fa[k]; 
+			// 	}				
+			// }
+			
+			// for(int k=0; k<6; k++){
+			// 	frameForces[i+1][k] += fb[k];
+			// }
+
+			for(int k=0; k<6; k++){
+				if(i==0){
+					baseForces[baseIndex][k] +=fa[k];
+				}
+				else{
+					frameForces[i][k] +=fa[k];
+				}
+				frameForces[i+1][k] +=fb[k];
+			}
+		}
+
+
+		std::cout << "Frame forces accumulated: " << std::endl;
+		for(int j=0; j<frameForces.size(); j++){
+			std::cout<<"  frame "<< j <<" : "<< frameForces[j] << std::endl;
+		}
+    	std::cout << "base Force: " << baseForces[baseIndex] << std::endl;
+
+		dataVecOut1Force[0]->endEdit();
+		dataVecOut2Force[0]->endEdit();		
+		
+		std::cout<<"====== End applyJT ======="<<std::endl;
+			
 	}
 
 
 	template<class TIn1, class TIn2, class TOut>
 	void 
-	Frames2StrainCosseratMapping<TIn1, TIn2, TOut>::applyJT(const sofa::core::ConstraintParams *cparams,
+	Frames2StrainCosseratMapping<TIn1, TIn2, TOut>::applyJT(const sofa::core::ConstraintParams * /*cparams*/,
 															const sofa::type::vector<sofa::DataMatrixDeriv_t<In1> *> &dataMatOut1Const,
 					 										const sofa::type::vector<sofa::DataMatrixDeriv_t<In2> *> &dataMatOut2Const,
 					 										const sofa::type::vector<const sofa::DataMatrixDeriv_t<Out> *> &dataMatInConst){
+
+		//@TODO																
 
 	}
 		

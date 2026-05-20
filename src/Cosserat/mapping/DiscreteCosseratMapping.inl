@@ -262,7 +262,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJ(
 
   if (d_debug.getValue())
     std::cout << "Base local Velocity :" << baseLocalVelocity << std::endl;
-
+  
   // Compute velocity at nodes
   for (unsigned int i = 1; i < curv_abs_section.size(); i++) {
     auto Trans = m_nodesExponentialSE3Vectors[i].inversed();
@@ -307,6 +307,8 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJ(
     if (d_debug.getValue())
       std::cout << "Frame velocity : " << i << " = " << eta_frame_i
                 << std::endl;
+
+    std::cout << "Frame velocity : " << i << " = " << eta_frame_i << std::endl;            
   }
   dataVecOutVel[0]->endEdit();
   m_indexInput = 0;
