@@ -131,8 +131,11 @@ public:
         Scalar s0,
         Scalar ds)
     {
-        const TangentVector sigma = ds * strain(s0 + ds * Scalar(0.5));
-        return g0.compose(SE3Type::computeExp(sigma));
+        // Use expCosserat (not computeExp) to include the Cosserat reference
+        // elongation correction (+1 in ρx) that buildXiHat applies.
+        // This keeps Midpoint consistent with the Euler method.
+        const TangentVector strain_mid = strain(s0 + ds * Scalar(0.5));
+        return g0.compose(SE3Type::expCosserat(strain_mid, ds));
     }
 
     /**
@@ -182,7 +185,15 @@ public:
         // non-commutative algebras)
         const TangentVector comm = (ds * ds / Scalar(12)) * lieBracket(k1, k4);
 
-        const TangentVector sigma = rk4_avg + comm;
+        TangentVector sigma = rk4_avg + comm;
+
+        // Cosserat reference elongation correction:
+        // expCosserat() via buildXiHat() adds 1 to ρx (index 3), encoding the
+        // nominal elongation of the rod at rest. Since sigma is a combined
+        // tangent vector (not a raw strain), we add the ds-scaled correction
+        // directly so the result is consistent with integrateEuler().
+        sigma[3] += ds;
+
         return g0.compose(SE3Type::computeExp(sigma));
     }
 
