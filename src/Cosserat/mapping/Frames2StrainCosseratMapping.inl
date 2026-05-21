@@ -134,10 +134,19 @@ namespace Cosserat::mapping {
 		const sofa::VecCoord_t<In1> &frames = dataVecIn1Pos[0]->getValue(); // frames positions
 		const sofa::VecCoord_t<In2> &rigidBase = dataVecIn2Pos[0]->getValue(); // Rigid base
 
+		std::cout<<"(in) Rigid base: "<<rigidBase<<std::endl;
+
+		for(int i=0; i<frames.size();i++){
+			std::cout<<"(in) Frame ["<<i<<"]: "<<frames[i]<<std::endl;
+		}
+
         //Output: strain (to evaluate)
         const auto nbSections = m_section_properties.size()-1;
 		sofa::VecCoord_t<Out> &strains = *dataVecOutPos[0]->beginEdit();
         strains.resize(nbSections);
+		for(auto &s : strains){
+			s.clear();
+		}
 
 		const auto baseIndex = d_baseIndex.getValue();
         
@@ -159,27 +168,30 @@ namespace Cosserat::mapping {
 		// std::cout<<"g_base: "<<g_base<<std::endl;
 
 		SE3Types g_prev = g_base;
-		SE3Types g_curr, g_prev_inverse;
+		// SE3Types g_curr, g_prev_inverse;
 		// std::cout<<"g_curr: "<<g_curr<<std::endl;
 
-		double dx = 0.;
-		TangentVector xi = TangentVector::Zero();
+		// double dx = 0.;
+		// TangentVector xi = TangentVector::Zero();
+		std::cout<<"--- in the loop to compute strains ---"<<std::endl;
 		for(unsigned int i=0; i<nbSections; i++){
-			// std::cout<<"i: "<<i<<std::endl;
+			std::cout<<" i: "<<i<<std::endl;
 
 			const auto& frame = frames[i+1];
 			const auto& section = m_section_properties[i+1];
-			// std::cout<<"frame: "<<frame<<std::endl;
+			double dx = section.getLength();
 
-			Vector3 curr_translation(frame.getCenter()[0], frame.getCenter()[1], frame.getCenter()[2]);
+			std::cout<<"frame ["<<i+1<<"]: "<<frame<<std::endl;
+
+			Vector3 translation(frame.getCenter()[0], frame.getCenter()[1], frame.getCenter()[2]);
 
 			// Convert SOFA quaternion to Eigen quaternion (SOFA: x,y,z,w; Eigen: w,x,y,z)
 			const auto &quat = frame.getOrientation();
-			Eigen::Quaternion<double> curr_rotation(quat[3], quat[0], quat[1], quat[2]);
+			Eigen::Quaternion<double> rotation(quat[3], quat[0], quat[1], quat[2]);
 
 			// Create SE3 transformation
-			g_curr = SE3Types(SE3Types::SO3Type(curr_rotation), curr_translation);
-			g_prev_inverse = g_prev.computeInverse();
+			SE3Types g_curr = SE3Types(SE3Types::SO3Type(rotation), translation);
+			SE3Types g_prev_inverse = g_prev.computeInverse();
 			// std::cout<<"g_frame: "<<g_curr<<std::endl;
 			// std::cout<<"g_prev: "<<g_prev<<std::endl;
 			// std::cout<<"g_prev^{-1}: "<<g_prev_inverse<<std::endl;
@@ -189,8 +201,8 @@ namespace Cosserat::mapping {
 
 
 			// find dx = L_{n} - L_{n-1}
-			dx = section.getLength();
-			xi = g_rel.computeLog()/dx; 
+			TangentVector xi = g_rel.computeLog()/dx; 
+			std::cout<<"xi ["<< i <<"]: "<<xi.transpose()<<std::endl;
 
 			for(int j=0; j<3; j++){
 				strains[i][j] = xi[j];
@@ -199,13 +211,11 @@ namespace Cosserat::mapping {
 			g_prev = g_curr;
 			
 		}
+		std::cout<<"--- outside the loop ---"<<std::endl;
 
-		std::cout<<"Strains computed: "<<std::endl;
-		std::cout<<"[ ";
-		for(auto z : strains){
-				std::cout<<"["<<z<<"] ";
+		for(int i=0; i<strains.size(); i++){
+				std::cout<<"(out) Strain ["<<i<<"] :" << strains[i]<<std::endl;
 		}    
-		std::cout<<"]"<<std::endl;
 
 		dataVecOutPos[0]->endEdit();
 
@@ -306,9 +316,9 @@ namespace Cosserat::mapping {
 		// std::cout<<"Nb. section: "<<section_count<<std::endl;
 
 		strain_vel.resize(section_count);
-		for (auto &vel : strain_vel){
-			vel.clear();
-		}
+		// for (auto &vel : strain_vel){
+		// 	vel.clear();
+		// }
 
 
 		// 2. Compute the base velocity in SE(3) tangent space
@@ -328,12 +338,12 @@ namespace Cosserat::mapping {
 		// 	std::cout<<"["<<v<<"] ";
 		// std::cout<<"]"<<std::endl;
 
-		std::cout<<"Base Velocity: ["<<base_vel_local.transpose()<<"]"<<std::endl;
+		std::cout<<"(in) Base Velocity : ["<<base_vel_local.transpose()<<"]"<<std::endl;
 
-		std::cout<<"Frames Velocity: [ ";
-		for(auto v : frame_vel)
-			std::cout<<"["<<v<<"] ";
-		std::cout<<"]"<<std::endl;
+	
+								
+		for(int i=0; i<frame_vel.size(); i++)
+			std::cout<<"(in) Frame velocity ["<<i<<"]: "<<frame_vel[i]<<std::endl;
 
 
 		// std::cout<<"Strain Velocity: [ ";
@@ -341,7 +351,7 @@ namespace Cosserat::mapping {
 		// 	std::cout<<"["<<v<<"] ";
 		// std::cout<<"]"<<std::endl;		
 
-		//À COMPLÉTER
+		//
 		// compute the Jacobians J1 and J2
 		// Omega = Log(ga^-1gb
 		// J1 = 1/h dexp^-1_{-Omega)} Ad_{exp(-Omega)}
@@ -387,7 +397,7 @@ namespace Cosserat::mapping {
 				strain_vel[i][k] = output_vel[k];
 			}
 
-			std::cout << "Strain velocity [" << i << "]: " << output_vel.transpose() <<"\n";
+			std::cout << "(out) Strain velocity [" << i << "]: " << output_vel.transpose() <<"\n";
 		}
 
 		dataVecOutVel[0]->endEdit();
@@ -430,10 +440,10 @@ namespace Cosserat::mapping {
 		
 		// Initialize output forces
 		frameForces.resize(framePositions.size());
-		// for(auto& f : frameForces){
+		// for(auto& f : frameForces){ 
 		// 	f.clear();
 		// }
-		baseForces[baseIndex].clear();
+		// baseForces[baseIndex].clear();
 
 		std::cout<<"Strain forces: "<<std::endl;
 		for(auto v : strainForces){
@@ -475,24 +485,6 @@ namespace Cosserat::mapping {
 
 			TangentVector fa = J1.transpose() * lambda; //a (b): extremite gauche (droite) de la section
 			TangentVector fb = J2.transpose() * lambda;
-
-			std::cout<<"Section "<< i<<": lambda=["<<lambda.transpose()<<"]"<<std::endl;
-        	std::cout<<"  fa=["<< fa.transpose()<<"], fb=["<<fb.transpose()<<"]"<<std::endl;
-			
-			// if(i==0){
-			// 	for(int k=0; k<6; k++){
-			// 		baseForces[baseIndex][k] += fa[k]; 
-			// 	}
-			// }
-			// else{
-			// 	for(int k=0; k<6; k++){
-			// 		frameForces[i][k] += fa[k]; 
-			// 	}				
-			// }
-			
-			// for(int k=0; k<6; k++){
-			// 	frameForces[i+1][k] += fb[k];
-			// }
 
 			for(int k=0; k<6; k++){
 				if(i==0){
