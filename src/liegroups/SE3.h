@@ -133,6 +133,17 @@ namespace sofa::component::cosserat::liegroups {
 			return SE3(R, V * rho);
 		}
 
+		/**
+		 * @brief Logarithmic map from SE(3) to se(3).
+		 *
+		 * Returns ξ = [φ(head<3>), ρ(tail<3>)] ∈ se(3) such that computeExp(ξ) == *this.
+		 *
+		 * Convention (Cosserat, matches computeExp):
+		 *   head<3>() = φ  — angular part  (rotation axis-angle)
+		 *   tail<3>() = ρ  — linear part   (V⁻¹ · t)
+		 *
+		 * where V = I + (1-cos θ)/θ · K + (θ-sin θ)/θ² · K² is the left Jacobian.
+		 */
 		TangentVector computeLog() const {
 			const Vector3 phi = m_rotation.log();
 			const Scalar angle = phi.norm();
@@ -152,8 +163,8 @@ namespace sofa::component::cosserat::liegroups {
 
 			const Vector3 rho = V_inv * m_translation;
 			TangentVector result;
-			result.template head<3>() = rho;
-			result.template tail<3>() = phi;
+			result.template head<3>() = phi;  // angular first — consistent with computeExp()
+			result.template tail<3>() = rho;  // linear second
 			return result;
 		}
 
@@ -186,11 +197,14 @@ namespace sofa::component::cosserat::liegroups {
 			return tangent;
 		}
 
+		/**
+		 * @brief Logarithmic map — thin wrapper around computeLog() for CRTP callers.
+		 *
+		 * Returns [φ(head<3>), ρ(tail<3>)] = [angular, V⁻¹·t].
+		 * Consistent with computeExp().
+		 */
 		TangentVector log() const {
-			TangentVector tangent;
-			tangent.template head<3>() = m_rotation.log();
-			tangent.template tail<3>() = m_rotation.inverse().act(m_translation);
-			return tangent;
+			return computeLog();
 		}
 
 		AdjointMatrix ad(const TangentVector &v) {
