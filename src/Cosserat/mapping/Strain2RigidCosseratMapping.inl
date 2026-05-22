@@ -460,53 +460,11 @@ namespace Cosserat::mapping {
 		const sofa::VecCoord_t<Out> &framePositions =
 				this->m_frames->read(sofa::core::vec_id::read_access::position)->getValue();
 		
-		const sofa::DataVecCoord_t<In1> *x1fromData =
-     		 	m_strain_state->read(sofa::core::vec_id::read_access::position);
-		const sofa::VecCoord_t<In1> strainState = x1fromData->getValue();
-
 		// Initialize output forces to zero before accumulation.
+		// Size = number of sections = m_bodyJacobian.size() (built in apply()).
 		// resize() may not zero-initialise existing elements on repeated calls.
-		strainForces.resize(strainState.size());
+		strainForces.resize(static_cast<size_t>(m_bodyJacobian.size()));
 		for (auto &f : strainForces) f.clear();
-
-		// Convert input forces from global frame to local frame and accumulate
-		vector<TangentVector> localForces;
-		auto tab_size = inputForces.size();
-		localForces.clear();
-
-
-		for (size_t i = 0; i < tab_size; ++i) {
-			// Convert SOFA force to SE(3) tangent vector
-			TangentVector frameForce = TangentVector::Zero();
-			for (unsigned j = 0; j < 6; j++) {
-				frameForce[j] = inputForces[i][j];
-			}
-
-			// Transform from global SOFA frame to local beam frame 
-			const auto &pos = framePositions[i]; 
-			Vector3 translation(pos.getCenter()[0], pos.getCenter()[1], pos.getCenter()[2]);
-			const auto &quat = pos.getOrientation();
-			Eigen::Quaternion<double> rotation(quat[3], quat[0], quat[1], quat[2]);
-				
-			SE3Types absoluteFrame(SE3Types::SO3Type(rotation), translation);
-			AdjointMatrix P_trans = absoluteFrame.buildProjectionMatrix(absoluteFrame.rotation().matrix());
-			TangentVector localForce = P_trans.transpose() * frameForce;
-							
-			localForces.push_back(localForce);			
-		}
-
-		// Process forces following the beam structure (similar to DiscreteCosseratMapping)
-		auto sz = m_indices_vectors.size();
-
-		if (sz == 0 || localForces.empty()) {
-			dataVecOut1Force[0]->endEdit();
-			dataVecOut2Force[0]->endEdit();
-			return;
-		}
-		
-
-		auto lastSectionIndex = m_indices_vectors[sz - 1];
-		TangentVector totalForce = TangentVector::Zero();
 
 		// B^T : selects NStrainDOF active strain DOFs from the 6D body-twist.
 		// Vec3Types → [I_3 | 0_3] (angular only, 3 DOF).
@@ -517,57 +475,98 @@ namespace Cosserat::mapping {
 		MatB matB_trans = MatB::Zero();
 		for (int k = 0; k < NStrainDOF; k++) matB_trans(k, k) = 1.0;
 
-		// Process frames in reverse order to accumulate forces.
-		// Implements §4 (applyJT VecDeriv) backward co-adjoint recurrence.
-		for (auto s = sz; s--;) {
+		// ── Phase 0: project each frame force from SOFA global frame to body frame ──
+		const size_t tab_size = inputForces.size();
+		const size_t sz       = m_indices_vectors.size();
 
-			int currentSectionIndex = m_indices_vectors[s];
-			const FrameInfo &frame = m_frameProperties[s];
-
-			// Transport force from frame s into the strain space of its section.
-			// f = B^T · J_local^T · Ad_{g_frame^{-T}} · w_frame
-			const AdjointMatrix coAdjoint = frame.getCoAdjoint();
-			const TangentVector currentLocalForce = coAdjoint * localForces[s];
-			const Eigen::Matrix<double, 6, 6> temp = frame.getTangAdjointMatrix().transpose();
-			const Eigen::Matrix<double, NStrainDOF, 1> f = matB_trans * temp * currentLocalForce;
-
-			// Handle section change — propagate accumulated force to the next section.
-			if (lastSectionIndex != currentSectionIndex) {
-				lastSectionIndex--;
-				const SectionInfo &section = m_section_properties[lastSectionIndex];
-				// Co-adjoint transport: f_{k} = Ad_{g_k^{-T}} · f_{k+1}
-				const AdjointMatrix sectionCoAdj = section.getCoAdjoint();
-				totalForce = sectionCoAdj * totalForce;
-
-				const Eigen::Matrix<double, 6, 6> tempSection = section.getTangAdjointMatrix().transpose();
-				const Eigen::Matrix<double, NStrainDOF, 1> temp_f = matB_trans * tempSection * totalForce;
-
-				for (int j = 0; j < NStrainDOF; j++)
-					strainForces[lastSectionIndex - 1][j] += temp_f[j];
-			}
-
-			totalForce += currentLocalForce;
-			for (int j = 0; j < NStrainDOF; j++)
-				strainForces[currentSectionIndex - 1][j] += f[j];
+		if (sz == 0 || tab_size == 0) {
+			dataVecOut1Force[0]->endEdit();
+			dataVecOut2Force[0]->endEdit();
+			return;
 		}
-		
-		auto frame0 = framePositions[0];		
-		Vector3 trans0(frame0.getCenter()[0], frame0.getCenter()[1], frame0.getCenter()[2]);
-		const auto &quat0 = frame0.getOrientation();
-		Eigen::Quaternion<double> rot0(quat0[3], quat0[0], quat0[1], quat0[2]);
-			
-		SE3Types absoluteFrame0(SE3Types::SO3Type(rot0), trans0);
-		AdjointMatrix M = absoluteFrame0.buildProjectionMatrix(absoluteFrame0.rotation().matrix());
 
-		TangentVector toAdd = TangentVector::Zero();
-		toAdd = M * totalForce;
-		
-		for (int j=0; j<6; j++)
-				baseForces[baseIndex][j] +=toAdd[j];	
+		vector<TangentVector> localForces;
+		localForces.reserve(tab_size);
+		for (size_t i = 0; i < tab_size; ++i) {
+			TangentVector frameForce = TangentVector::Zero();
+			for (unsigned j = 0; j < 6; j++) frameForce[j] = inputForces[i][j];
+
+			const auto &pos = framePositions[i];
+			Vector3 translation(pos.getCenter()[0], pos.getCenter()[1], pos.getCenter()[2]);
+			const auto &quat = pos.getOrientation();
+			Eigen::Quaternion<double> rotation(quat[3], quat[0], quat[1], quat[2]);
+			SE3Types absoluteFrame(SE3Types::SO3Type(rotation), translation);
+			AdjointMatrix P_trans = absoluteFrame.buildProjectionMatrix(absoluteFrame.rotation().matrix());
+			localForces.push_back(P_trans.transpose() * frameForce);
+		}
+
+		// ── Phase 1: per-frame direct contributions ────────────────────────────────
+		//
+		// For each frame i in section s (1-based):
+		//   w_body_i = Ad_{g_frame_i^{-T}} · w_local_i   (co-adjoint pull-back)
+		//
+		//   a) Direct frame strain force (J_frame^T term):
+		//         strainForces[s-1] += B^T · J_frame_i^T · w_body_i
+		//
+		//   b) Aggregated node wrench:
+		//         external_wrenches[s-1] += w_body_i
+		//
+		// external_wrenches[k] is then fed into CosseratBodyJacobian::applyTranspose()
+		// which handles the section-to-section backward propagation.
+		//
+		// Duality proof (2-section example in docs/impro_mapping.md §A2).
+		const int N_bj = m_bodyJacobian.size();  // number of sections
+		std::vector<WrenchType> external_wrenches(static_cast<size_t>(N_bj + 1), WrenchType::Zero());
+
+		for (size_t i = 0; i < sz; ++i) {
+			const int s1  = m_indices_vectors[i];  // section index, 1-based
+			const int nidx = s1 - 1;               // node index, 0-based
+
+			const FrameInfo &frame = m_frameProperties[i];
+			const TangentVector w_body = frame.getCoAdjoint() * localForces[i];
+
+			// a) Direct strain force for this frame's section
+			const Eigen::Matrix<double, NStrainDOF, 1> f =
+				matB_trans * frame.getTangAdjointMatrix().transpose() * w_body;
+			for (int j = 0; j < NStrainDOF; j++)
+				strainForces[s1 - 1][j] += f[j];
+
+			// b) Aggregate node wrench (bounds-checked)
+			if (nidx >= 0 && nidx < N_bj + 1)
+				external_wrenches[nidx] = WrenchType(external_wrenches[nidx].data() + w_body);
+		}
+
+		// ── Phase 2: section-to-section backward transport via CosseratBodyJacobian ──
+		//
+		// strain_bj[k] = J_section_k^T · Ad_{g_k^{-T}} · (sum of downstream wrenches)
+		// base_wrench   = accumulated root wrench
+		//
+		// These section contributions are ADDED to strainForces — they are distinct
+		// from the direct J_frame^T contributions computed in Phase 1.
+		WrenchType base_wrench_out;
+		const auto strain_bj = m_bodyJacobian.applyTranspose(external_wrenches, base_wrench_out);
+
+		for (int k = 0; k < N_bj; ++k) {
+			const Eigen::Matrix<double, NStrainDOF, 1> sf = matB_trans * strain_bj[k].data();
+			for (int j = 0; j < NStrainDOF; j++)
+				strainForces[k][j] += sf[j];
+		}
+
+		// ── Phase 3: project root wrench back to SOFA convention ──────────────────
+		const auto &frame0 = framePositions[0];
+		const Vector3 trans0(frame0.getCenter()[0], frame0.getCenter()[1], frame0.getCenter()[2]);
+		const auto &quat0 = frame0.getOrientation();
+		SE3Types absoluteFrame0(
+			SE3Types::SO3Type(Eigen::Quaternion<double>(quat0[3], quat0[0], quat0[1], quat0[2])),
+			trans0);
+		const AdjointMatrix M = absoluteFrame0.buildProjectionMatrix(absoluteFrame0.rotation().matrix());
+		const TangentVector base_force_sofa = M * base_wrench_out.data();
+		for (int j = 0; j < 6; j++)
+			baseForces[baseIndex][j] += base_force_sofa[j];
 
 		if (d_debug.getValue()) {
-			msg_info() << "Strain forces from " << inputForces.size() << " input forces"
-			           << " | base force: [" << totalForce.transpose() << "]"
+			msg_info() << "applyJT | frames=" << tab_size
+			           << " | base wrench: [" << base_wrench_out.data().transpose() << "]"
 			           << " | base index: " << baseIndex;
 		}
 
