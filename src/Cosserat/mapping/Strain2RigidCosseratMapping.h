@@ -18,8 +18,12 @@
 #pragma once
 
 #include <Cosserat/config.h>
+#include <Cosserat/mapping/BeamStateEstimator.h>
 #include <Cosserat/mapping/CosseratGeometryMapping.h>
+#include <liegroups/BezierSE3.h>
 #include <liegroups/CosseratBodyJacobian.h>
+#include <liegroups/CosseratUncertaintyPropagator.h>
+#include <liegroups/GaussianOnManifold.h>
 #include <liegroups/LieGroupIntegrators.h>
 #include <sofa/helper/ColorMap.h>
 
@@ -60,13 +64,16 @@ namespace Cosserat::mapping {
 
 		// using SectionProperties = typename CosseratGeometryMapping<TIn1,TIn2,TOut>::SectionProperties;
 		// using FrameInfo = typename FrameInfo;
-		using SE3Types      = sofa::component::cosserat::liegroups::SE3<double>;
-		using Vector3       = typename SE3Types::Vector3;
-		using TangentVector = typename SE3Types::TangentVector;
-		using BodyJacobian  = sofa::component::cosserat::liegroups::CosseratBodyJacobian<double>;
-		using TwistType     = sofa::component::cosserat::liegroups::Twist<double>;
-		using WrenchType    = sofa::component::cosserat::liegroups::Wrench<double>;
-		using SE3Integrator = sofa::component::cosserat::liegroups::SE3Integrator<double>;
+		using SE3Types               = sofa::component::cosserat::liegroups::SE3<double>;
+		using Vector3                = typename SE3Types::Vector3;
+		using TangentVector          = typename SE3Types::TangentVector;
+		using BodyJacobian           = sofa::component::cosserat::liegroups::CosseratBodyJacobian<double>;
+		using TwistType              = sofa::component::cosserat::liegroups::Twist<double>;
+		using WrenchType             = sofa::component::cosserat::liegroups::Wrench<double>;
+		using SE3Integrator          = sofa::component::cosserat::liegroups::SE3Integrator<double>;
+		using BezierSE3Type          = sofa::component::cosserat::liegroups::BezierSE3<double>;
+		using UncertaintyPropagator  = sofa::component::cosserat::liegroups::CosseratUncertaintyPropagator<double>;
+		using GaussianSE3Type        = sofa::component::cosserat::liegroups::GaussianOnManifold<SE3Types>;
 
 	public:
 		/**
@@ -100,6 +107,18 @@ namespace Cosserat::mapping {
 		/// identical results. The option unlocks higher accuracy when combined with
 		/// Legendre polynomial strain parameterisations.
 		sofa::Data<int> d_integrationMethod;
+
+		/// Number of samples per section for the smoothed centerline path.
+		/// Used by computeSmoothedPath() and the draw() visualization.
+		/// 1 = section endpoints only (same as the discrete simulation).
+		/// Higher values → smoother rendered rod, more Bézier evaluations.
+		sofa::Data<int> d_smoothPathSamples;
+
+		/// Isotropic strain noise level σ² used by computeUncertainties().
+		/// Σ_ξ = σ² · I₆ for each rod section.
+		/// Units: [1/m]² (strain = curvature/elongation per unit length).
+		/// 0 disables uncertainty propagation (returns zero covariances).
+		sofa::Data<double> d_strainNoiseLevel;
 		/// @}
 		//////////////////////////////////////////////////////////////////////
 
@@ -143,6 +162,68 @@ namespace Cosserat::mapping {
 
 		void computeBBox(const sofa::core::ExecParams *params, bool onlyVisible) override;
 
+		//////////////////////////////////////////////////////////////////////
+		/// @name BezierSE3 utilities
+		/// @{
+
+		/**
+		 * @brief Build a smooth centerline path through the computed section poses.
+		 *
+		 * Constructs a piecewise-cubic Bézier curve (C1-continuous) in SE(3)
+		 * through the current section node poses, then samples it uniformly.
+		 *
+		 * For each consecutive pair of node poses (g_k, g_{k+1}):
+		 *   - Two inner control poses are placed at ⅓ and ⅔ of the geodesic,
+		 *     giving a degree-3 segment with C1 continuity at junctions.
+		 *   - The curve is sampled at `samplesPerSection` arc-length steps.
+		 *
+		 * This path is geometrically smoother than the piecewise-exponential
+		 * result from apply(), and is useful for:
+		 *   - High-quality visualization (draw())
+		 *   - Reference trajectory for CosseratILQRController
+		 *   - Shape comparison / error analysis
+		 *
+		 * @note apply() must have been called first (node poses come from
+		 *       m_section_properties built by updateFrameTransformations()).
+		 *
+		 * @param rigidBase        Current rigid base transformation (In2 input).
+		 * @param samplesPerSection Number of uniform samples per section
+		 *                         (default = d_smoothPathSamples.getValue()).
+		 * @return Vector of SE3 poses along the centerline, from base to tip.
+		 */
+		[[nodiscard]] std::vector<SE3Types>
+		computeSmoothedPath(const sofa::type::vector<sofa::Coord_t<In2>> &rigidBase,
+		                    int samplesPerSection = -1) const;
+
+		/// @}
+		//////////////////////////////////////////////////////////////////////
+
+		//////////////////////////////////////////////////////////////////////
+		/// @name Uncertainty propagation
+		/// @{
+
+		/**
+		 * @brief Propagate pose uncertainty along the rod using CosseratUncertaintyPropagator.
+		 *
+		 * Starting from the base with zero initial covariance, propagates a
+		 * Gaussian distribution over SE(3) through each rod section.  The
+		 * strain noise covariance is taken as σ²·I₆ where σ² = d_strainNoiseLevel.
+		 *
+		 * Returns N+1 Gaussian distributions: [base, after-sec-0, …, after-sec-N-1].
+		 * Each Gaussian carries a 6×6 covariance in the body-frame tangent space.
+		 *
+		 * @note apply() must have been called first so that m_section_properties
+		 *       is populated with current strains and lengths.
+		 *
+		 * @param rigidBase  Current rigid base transformation (In2 input).
+		 * @return           N+1 Gaussian SE(3) distributions, root to tip.
+		 */
+		[[nodiscard]] std::vector<GaussianSE3Type>
+		computeUncertainties(const sofa::type::vector<sofa::Coord_t<In2>> &rigidBase) const;
+
+		/// @}
+		//////////////////////////////////////////////////////////////////////
+
 	public:
 		////////////////////////// Inherited attributes ////////////////////////////
 		/// Bring inherited attributes into the current lookup context
@@ -175,6 +256,18 @@ namespace Cosserat::mapping {
 		 * - applyJT uses m_bodyJacobian.applyTranspose() for the node-level backward pass.
 		 */
 		BodyJacobian m_bodyJacobian;
+
+		/**
+		 * @brief Left-invariant EKF estimator for the rod base pose.
+		 *
+		 * Updated by the host SOFA component or an external observer via:
+		 *   m_stateEstimator.predict(strain, length, strain_cov)
+		 *   m_stateEstimator.update(measurement, R)
+		 *
+		 * computeUncertainties() uses its current mean as the base pose for
+		 * full-rod uncertainty propagation via UncertaintyPropagator.
+		 */
+		BeamStateEstimator m_stateEstimator;
 
 		/**
 		 * @brief Updates frame transformations using liegroups SE(3) exponential map
