@@ -66,7 +66,7 @@ namespace Cosserat::mapping {
 									msg_info() << "Strain2RigidCosseratMapping updateFrames callback called";
 									SOFA_UNUSED(t);
 									this->updateGeometryInfo();
-									std::cout << "====> Update Callback <====" << std::endl;
+									msg_info_when(d_debug.getValue()) << "updateFrames callback triggered";
 									const sofa::VecCoord_t<In1> &strain_state =
 											m_strain_state->read(sofa::core::vec_id::read_access::position)->getValue();
 
@@ -103,10 +103,8 @@ namespace Cosserat::mapping {
 		if (this->d_componentState.getValue() != sofa::core::objectmodel::ComponentState::Valid)
 			return;
 
-		if (d_debug.getValue())
-			std::cout << " ########## Apply Function ########" << std::endl;
-		
-		
+		msg_info_when(d_debug.getValue()) << "===== apply =====";
+
 		// Get input data
 		const sofa::VecCoord_t<In1> &strainState = dataVecIn1Pos[0]->getValue();
 		const sofa::VecCoord_t<In2> &rigidBase = dataVecIn2Pos[0]->getValue();
@@ -124,10 +122,9 @@ namespace Cosserat::mapping {
 			displaySectionProperties("apply - before update");
 		}
 
-		// Update frame transformations using liegroups SE(3) exponential map
-		// update the Exponential matrices according to new deformation
-		// Here we update m_framesExponentialSE3Vectors & m_nodesExponentialSE3Vectors
-		// Which are the homogeneous matrices of the frames: name g(X), beam's configuration
+		// Recompute all local SE(3) exponentials from current strain state.
+		// Fills m_section_properties[k].getTransformation() = expCosserat(ξ_k, L_k)
+		// and m_frameProperties[i].getTransformation() = expCosserat(ξ, d_i) for each frame.
 		updateFrameTransformations(strainState);
 
 		// Get base frame transformation from rigid input
@@ -145,33 +142,38 @@ namespace Cosserat::mapping {
 		// Cache the printLog value out of the loop
 		bool doPrintLog = this->f_printLog.getValue();
 
-		// Apply transformations to compute output frames
+		// Pre-compute cumulative node poses in O(N) — avoids restarting from base_frame
+		// for every output frame, which would cost O(F·N) overall.
+		//
+		//   node_poses[0] = base_frame                              (before any section)
+		//   node_poses[k] = base_frame · g_0 · g_1 · … · g_{k-1}  (after k sections)
+		//
+		// where g_j = m_section_properties[j].getTransformation().
+		// Allocate n_sections+1 so that related_beam_idx == n_sections is safe
+		// (mirrors the original assert: related_beam_idx <= m_section_properties.size()).
+		const size_t n_sections = m_section_properties.size();
+		std::vector<SE3Types> node_poses(n_sections + 1);
+		node_poses[0] = base_frame;
+		for (size_t j = 1; j <= n_sections; ++j)
+			node_poses[j] = node_poses[j - 1] * m_section_properties[j - 1].getTransformation();
+
+		// Apply transformations to compute output frames — O(F) with pre-computed poses.
 		for (unsigned int i = 0; i < frame_count; i++) {
 			// Bounds checking
 			assert(i < m_frameProperties.size() && "Frame index out of bounds");
 			assert(i < output_frames.size() && "Output frames index out of bounds");
 
-			// Start with the base frame
-			auto current_frame = base_frame;
-
-			// Apply section transformations up to the frame
+			// Each frame sits inside a section; related_beam_idx is the number of
+			// full sections accumulated before reaching the frame's origin node.
 			const auto related_beam_idx = m_frameProperties[i].get_related_beam_index_();
-			assert(related_beam_idx <= m_section_properties.size() && "Invalid beam index");
+			assert(related_beam_idx <= n_sections && "Invalid beam index");
 
-			for (unsigned int j = 0; j < related_beam_idx; j++) {
-				assert(j < m_section_properties.size() && "Section index out of bounds");
-				// Compose with section transformation
-				//// frame = gX(L_0)*...*gX(L_{n-1})
-				current_frame = current_frame * m_section_properties[j].getTransformation();
-			}
+			// G_frame = node_poses[related_beam_idx] · g_frame(x)
+			// where g_frame(x) = expCosserat(ξ, distance_to_nearest_node)
+			const SE3Types current_frame =
+				node_poses[related_beam_idx] * m_frameProperties[i].getTransformation();
 
-			// Apply additional frame transformation
-			// frame*gX(x)
-			current_frame = current_frame * m_frameProperties[i].getTransformation();
-			// std::cout<<"Frame: "<<current_frame<<std::endl;
-
-			if(d_debug.getValue())
-				std::cout << "Frame  : " << i << " = " << current_frame << std::endl;
+			msg_info_when(d_debug.getValue()) << "Frame " << i << " = " << current_frame;
 				
 			// Save current rigid frame transformation into frame's properties
 			//m_frameProperties[i].setTransformation(current_frame);
@@ -275,8 +277,7 @@ namespace Cosserat::mapping {
 		if (this->d_componentState.getValue() != sofa::core::objectmodel::ComponentState::Valid)
 			return;
 
-		if (d_debug.getValue())
-			std::cout << " ########## Strain2RigidCosseratMapping ApplyJ Function ########" << std::endl;
+		msg_info_when(d_debug.getValue()) << "===== applyJ =====";
 
 		const sofa::VecDeriv_t<In1> &strain_vel = dataVecIn1Vel[0]->getValue();
 		const sofa::VecDeriv_t<In2> &base_vel = dataVecIn2Vel[0]->getValue();
@@ -325,8 +326,7 @@ namespace Cosserat::mapping {
 
 		// Base node velocity (transformed from SOFA frame)
 		node_velocities[0] = base_projector * base_vel_local;
-		if (d_debug.getValue())
-    		std::cout << "Base local Velocity :" << node_velocities[0].transpose() << std::endl;
+		msg_info_when(d_debug.getValue()) << "Base local velocity: " << node_velocities[0].transpose();
 
 		for (size_t i = 1; i < m_section_properties.size(); ++i) {
 			const auto &section = m_section_properties[i];
@@ -343,9 +343,7 @@ namespace Cosserat::mapping {
 			// where Ad_{g_i^{-1}} is the inverse adjoint (transpose for SE(3))
 			auto Ad_gim1 = section.inverse().getAdjoint();
 			node_velocities[i] = Ad_gim1 * (node_velocities[i - 1] + tang_adj * strain_vel_i);
-			if (d_debug.getValue()) {
-				std::cout << "Node velocity [" << i << "]: " << node_velocities[i].transpose()<<"\n";
-			}
+			msg_info_when(d_debug.getValue()) << "Node velocity [" << i << "]: " << node_velocities[i].transpose();
 		}
 
 		// 4. Compute velocity at each output frame
@@ -353,26 +351,26 @@ namespace Cosserat::mapping {
 			const auto &frame = m_frameProperties[i];
 			const auto &tang_adj = frame.getTangAdjointMatrix();
 
-			// Get the section index this frame belongs to
-			int section_idx = (i < m_indices_vectors.size()) ? m_indices_vectors[i] - 1 : 0;
+			// Get the section node index this frame belongs to (1-based → 0-based).
+			// Clamp to a valid range to avoid out-of-bounds access.
+			const int section_idx = [&]() {
+				int idx = (i < m_indices_vectors.size()) ? static_cast<int>(m_indices_vectors[i]) - 1 : 0;
+				if (idx < 0 || idx >= static_cast<int>(node_velocities.size())) idx = 0;
+				return idx;
+			}();
 
-			// Ensure valid section index
-			if (section_idx < 0 || section_idx >= static_cast<int>(node_velocities.size())) {
-				section_idx = 0;
-			}
-
-			// Extract frame strain velocity (same as section strain)
+			// Extract frame strain velocity (same DOFs as the parent section).
 			TangentVector frame_strain_vel = TangentVector::Zero();
-			for (int j = 0; j < 3; ++j) {
-				frame_strain_vel[j] = strain_vel[m_indices_vectors[i]-1][j]; //@appa: replace section_idx by m_indices_vectors[i]-1
-			}
+			for (int j = 0; j < 3; ++j)
+				frame_strain_vel[j] = strain_vel[section_idx][j];
 
-			// Compute frame velocity: η_frame = Ad_{g_frame^{-1}} * (η_node + T_frame * ξ̇_frame)
-			auto g_inv = frame.getInverseTransformation(); //@appa: take the inverse of gx
-			AdjointMatrix Ad_gm1 = g_inv.computeAdjoint();
+			// Compute frame velocity: η_frame = Ad_{g_frame^{-1}} · (η_node + T_frame · ξ̇_frame)
+			// See docs/mapping_explanation.md §3 — applyJ recurrence.
+			const auto g_inv = frame.getInverseTransformation();
+			const AdjointMatrix Ad_gm1 = g_inv.computeAdjoint();
 
-			TangentVector eta_frame =
-					Ad_gm1 * (node_velocities[m_indices_vectors[i]-1] + tang_adj * frame_strain_vel);
+			const TangentVector eta_frame =
+					Ad_gm1 * (node_velocities[section_idx] + tang_adj * frame_strain_vel);
 
 			// Project to output frame (convert from local to SOFA global frame)
 			const auto &pos = framePositions[i]; 
@@ -390,9 +388,7 @@ namespace Cosserat::mapping {
 			for (int k = 0; k < 6; ++k) {
 				frame_vel[i][k] = output_vel[k];
 			}
-			if (d_debug.getValue()) {
-				std::cout << "Frame velocity [" << i << "]: " << output_vel.transpose() <<"\n";
-			}
+			msg_info_when(d_debug.getValue()) << "Frame velocity [" << i << "]: " << output_vel.transpose();
 		}
 
 		// Debug output velocities if enabled
@@ -416,8 +412,7 @@ namespace Cosserat::mapping {
 		if (this->d_componentState.getValue() != sofa::core::objectmodel::ComponentState::Valid)
 			return;
 
-		if (d_debug.getValue())
-			std::cout << " ########## Strain2RigidCosseratMapping ApplyJT Force Function ########" << std::endl;
+		msg_info_when(d_debug.getValue()) << "===== applyJT (VecDeriv) =====";
 
 
 
@@ -434,8 +429,10 @@ namespace Cosserat::mapping {
      		 	m_strain_state->read(sofa::core::vec_id::read_access::position);
 		const sofa::VecCoord_t<In1> strainState = x1fromData->getValue();
 
-		// Initialize output forces
+		// Initialize output forces to zero before accumulation.
+		// resize() may not zero-initialise existing elements on repeated calls.
 		strainForces.resize(strainState.size());
+		for (auto &f : strainForces) f.clear();
 
 		// Convert input forces from global frame to local frame and accumulate
 		vector<TangentVector> localForces;
@@ -476,50 +473,47 @@ namespace Cosserat::mapping {
 		auto lastSectionIndex = m_indices_vectors[sz - 1];
 		TangentVector totalForce = TangentVector::Zero();
 
-		Eigen::Matrix<double, 3, 6> matB_trans = Eigen::Matrix<double, 3, 6>::Zero();
-		for (int k=0; k<3; k++)
-			matB_trans(k, k) = 1.0;
-		
-		// Process frames in reverse order to accumulate forces
+		// B^T : selects NStrainDOF active strain DOFs from the 6D body-twist.
+		// Vec3Types → [I_3 | 0_3] (angular only, 3 DOF).
+		// Vec6Types → I_6 (angular + linear, 6 DOF).
+		// See docs/mapping_explanation.md §12.6
+		static constexpr int NStrainDOF = static_cast<int>(Coord1::total_size);
+		using MatB = Eigen::Matrix<double, NStrainDOF, 6>;
+		MatB matB_trans = MatB::Zero();
+		for (int k = 0; k < NStrainDOF; k++) matB_trans(k, k) = 1.0;
+
+		// Process frames in reverse order to accumulate forces.
+		// Implements §4 (applyJT VecDeriv) backward co-adjoint recurrence.
 		for (auto s = sz; s--;) {
 
 			int currentSectionIndex = m_indices_vectors[s];
 			const FrameInfo &frame = m_frameProperties[s];
-		
-			AdjointMatrix coAdjoint = frame.getCoAdjoint();
-			
-			
-			TangentVector currentLocalForce = coAdjoint * localForces[s];
-			
-			AdjointMatrix temp = frame.getTangAdjointMatrix().transpose();
-			
-			Vector3 f = matB_trans * temp * currentLocalForce;
 
-			// Handle section change - propagate accumulated force
+			// Transport force from frame s into the strain space of its section.
+			// f = B^T · J_local^T · Ad_{g_frame^{-T}} · w_frame
+			const AdjointMatrix coAdjoint = frame.getCoAdjoint();
+			const TangentVector currentLocalForce = coAdjoint * localForces[s];
+			const Eigen::Matrix<double, 6, 6> temp = frame.getTangAdjointMatrix().transpose();
+			const Eigen::Matrix<double, NStrainDOF, 1> f = matB_trans * temp * currentLocalForce;
+
+			// Handle section change — propagate accumulated force to the next section.
 			if (lastSectionIndex != currentSectionIndex) {
 				lastSectionIndex--;
-				// Transform accumulated force to new section reference
-				
 				const SectionInfo &section = m_section_properties[lastSectionIndex];
-				AdjointMatrix coAdjoint = section.getCoAdjoint();
-				totalForce = coAdjoint * totalForce;
+				// Co-adjoint transport: f_{k} = Ad_{g_k^{-T}} · f_{k+1}
+				const AdjointMatrix sectionCoAdj = section.getCoAdjoint();
+				totalForce = sectionCoAdj * totalForce;
 
-				AdjointMatrix tempSection = section.getTangAdjointMatrix().transpose();
+				const Eigen::Matrix<double, 6, 6> tempSection = section.getTangAdjointMatrix().transpose();
+				const Eigen::Matrix<double, NStrainDOF, 1> temp_f = matB_trans * tempSection * totalForce;
 
-				// apply F_tot to the new beam
-				Vector3 temp_f = matB_trans * tempSection * totalForce;
-								
-				// Add accumulated force to strain outpute
-				for (int j=0; j<3; j++){
-					strainForces[lastSectionIndex-1][j] +=temp_f[j];
-				}
-				
+				for (int j = 0; j < NStrainDOF; j++)
+					strainForces[lastSectionIndex - 1][j] += temp_f[j];
 			}
 
 			totalForce += currentLocalForce;
-			for (int j=0; j<3; j++){
-					strainForces[currentSectionIndex-1][j] +=f[j];
-			}
+			for (int j = 0; j < NStrainDOF; j++)
+				strainForces[currentSectionIndex - 1][j] += f[j];
 		}
 		
 		auto frame0 = framePositions[0];		
@@ -537,9 +531,9 @@ namespace Cosserat::mapping {
 				baseForces[baseIndex][j] +=toAdd[j];	
 
 		if (d_debug.getValue()) {
-			std::cout << "Strain forces computed from " << inputForces.size() << " input forces" << std::endl;
-			std::cout << "Total base force: [" << totalForce.transpose() << "]" << std::endl;
-			std::cout << "Applied to base index: " << baseIndex << std::endl;
+			msg_info() << "Strain forces from " << inputForces.size() << " input forces"
+			           << " | base force: [" << totalForce.transpose() << "]"
+			           << " | base index: " << baseIndex;
 		}
 
 		dataVecOut1Force[0]->endEdit();
@@ -561,8 +555,7 @@ namespace Cosserat::mapping {
 		if (this->d_componentState.getValue() != sofa::core::objectmodel::ComponentState::Valid)
 			return;
 
-		if (d_debug.getValue())
-			std::cout << " ########## Strain2RigidCosseratMapping ApplyJT Constraint Function ########" << std::endl;
+		msg_info_when(d_debug.getValue()) << "===== applyJT (MatrixDeriv) =====";
 
 		
 		// Prepare input and output data matrices
@@ -570,20 +563,20 @@ namespace Cosserat::mapping {
 		sofa::MatrixDeriv_t<In2> &out2 = *dataMatOut2Const[0]->beginEdit();
 		const sofa::MatrixDeriv_t<Out> &in = dataMatInConst[0]->getValue();
 
-		// Get current positions to compute transformations
+		// Get current frame positions (needed for projection matrices).
 		const sofa::VecCoord_t<Out> &framePositions =
 				this->m_frames->read(sofa::core::vec_id::read_access::position)->getValue();
-		
-		const sofa::DataVecCoord_t<In1> *x1fromData =
-     		 	m_strain_state->read(sofa::core::vec_id::read_access::position);
-		const sofa::VecCoord_t<In1> strainState = x1fromData->getValue();
 
-		Eigen::Matrix<double, 3, 6> matB_trans = Eigen::Matrix<double, 3, 6>::Zero();
-		for (int k=0; k<3; k++)
-			matB_trans(k, k) = 1.0;
+		// B^T : selects NStrainDOF active strain DOFs from the 6D body-twist.
+		// Vec3Types → [I_3 | 0_3] (3 DOF angular); Vec6Types → I_6 (6 DOF).
+		// See docs/mapping_explanation.md §12.6
+		static constexpr int NStrainDOF = static_cast<int>(Coord1::total_size);
+		using MatB = Eigen::Matrix<double, NStrainDOF, 6>;
+		MatB matB_trans = MatB::Zero();
+		for (int k = 0; k < NStrainDOF; k++) matB_trans(k, k) = 1.0;
 
 		vector<std::tuple<int, TangentVector>> NodesInvolved;
-  		vector<std::tuple<int, TangentVector>> NodesInvolvedCompressed;
+		vector<std::tuple<int, TangentVector>> NodesInvolvedCompressed;
 		// Process constraints
 		for (auto rowIt = in.begin(); rowIt != in.end(); ++rowIt) {
 			auto colIt = rowIt.begin();
@@ -618,101 +611,87 @@ namespace Cosserat::mapping {
 				
 				const FrameInfo &frame = m_frameProperties[frameIndex];
 			
-				AdjointMatrix coAdjoint = frame.getCoAdjoint();
+				const AdjointMatrix coAdjoint = frame.getCoAdjoint();
 
-				TangentVector localForce = coAdjoint * P_trans.transpose() * constraintValue; // constraint direction in local frame of the beam.
+				// Local force: ℓ_c^s = Ad_{g_s^{-T}} · P_s^T · δ_c^s
+				// (constraint direction pulled back to the body frame of element b_s)
+				const TangentVector localForce = coAdjoint * P_trans.transpose() * constraintValue;
 
+				// Project into strain space: f = B^T · J_local^T · ℓ_c^s
+				const Eigen::Matrix<double, 6, 6> temp = frame.getTangAdjointMatrix().transpose();
+				const Eigen::Matrix<double, NStrainDOF, 1> f = matB_trans * temp * localForce;
 
-				AdjointMatrix temp = frame.getTangAdjointMatrix().transpose();
+				sofa::Deriv_t<In1> f_out;
+				for (int k = 0; k < NStrainDOF; k++) f_out[k] = f[k];
+				o1.addCol(sectionIndex - 1, f_out);
 
-				Vector3 f = matB_trans * temp * localForce; // constraint direction in the strain space.
-				
-				sofa::type::Vec3 f_trans (f[0], f[1], f[2]);
-				
-				o1.addCol(sectionIndex-1, f_trans);
-
-				std::tuple<int, TangentVector> test = std::make_tuple(sectionIndex, localForce);
-				
-				NodesInvolved.push_back(test);
+				NodesInvolved.emplace_back(sectionIndex, localForce);
 				colIt++;
 			}
 
-			// sort the Nodes Invoved by decreasing order
+			// Sort by decreasing node index so that same-node entries are adjacent.
 			std::sort(
-				begin(NodesInvolved), end(NodesInvolved),
-				[](std::tuple<int, TangentVector> const &t1, std::tuple<int, TangentVector> const &t2) {
-				return std::get<0>(t1) > std::get<0>(t2); // custom compare function
+				NodesInvolved.begin(), NodesInvolved.end(),
+				[](const std::tuple<int, TangentVector> &a, const std::tuple<int, TangentVector> &b) {
+					return std::get<0>(a) > std::get<0>(b);
 				});
 
+			// Merge consecutive entries that share the same node index (group-by).
+			// Replaces the previous fragile while+break pattern.
 			NodesInvolvedCompressed.clear();
-			for (unsigned n = 0; n < NodesInvolved.size(); n++) {
-				std::tuple<int, TangentVector> test_i = NodesInvolved[n];
-				int numNode_i = std::get<0>(test_i);
-				TangentVector cumulativeF = std::get<1>(test_i);
-
-				if (n < NodesInvolved.size() - 1) {
-					std::tuple<int, TangentVector> test_i1 = NodesInvolved[n + 1];
-					int numNode_i1 = std::get<0>(test_i1);
-
-					while (numNode_i == numNode_i1) {
-					cumulativeF += std::get<1>(test_i1);
-					//// This was if ((n!=NodesInvolved.size()-2)||(n==0)) before and I
-					/// change it to
-					/// if ((n!=NodesInvolved.size()-1)||(n==0)) since the code can't
-					/// leave the will loop
-					if ((n != NodesInvolved.size() - 1) || (n == 0)) {
-						n++;
-						break;
+			{
+				size_t n = 0;
+				while (n < NodesInvolved.size()) {
+					int currentNode = std::get<0>(NodesInvolved[n]);
+					TangentVector cumulativeF = std::get<1>(NodesInvolved[n]);
+					++n;
+					while (n < NodesInvolved.size() && std::get<0>(NodesInvolved[n]) == currentNode) {
+						cumulativeF += std::get<1>(NodesInvolved[n]);
+						++n;
 					}
-					test_i1 = NodesInvolved[n + 1];
-					numNode_i1 = std::get<0>(test_i1);
-					}
+					NodesInvolvedCompressed.emplace_back(currentNode, cumulativeF);
 				}
-				NodesInvolvedCompressed.push_back(
-					std::make_tuple(numNode_i, cumulativeF));
-    		}
+			}
 
-			for(unsigned n = 0; n < NodesInvolvedCompressed.size(); n++){
-				std::tuple<int, TangentVector> test = NodesInvolvedCompressed[n];
-				int i = std::get<0>(test);
-				TangentVector CumulativeF = std::get<1>(test);
+			// Pre-compute the base-frame projector once per constraint row.
+			// (frame0 does not change during the backward loop below.)
+			const auto &frame0    = framePositions[0];
+			const Vector3 trans0(frame0.getCenter()[0], frame0.getCenter()[1], frame0.getCenter()[2]);
+			const auto   &quat0   = frame0.getOrientation();
+			const SE3Types absoluteFrame0(
+				SE3Types::SO3Type(Eigen::Quaternion<double>(quat0[3], quat0[0], quat0[1], quat0[2])),
+				trans0);
+			const AdjointMatrix M_base =
+				absoluteFrame0.buildProjectionMatrix(absoluteFrame0.rotation().matrix());
+			const unsigned int baseIdx = d_baseIndex.getValue();
 
-				while(i>0){
-					const SectionInfo &section = m_section_properties[i-1];
-					AdjointMatrix coAdjoint = section.getCoAdjoint();
+			// Backward co-adjoint propagation toward the root.
+			// Implements §4 backward recurrence: f_{k-1} = Ad_{g_k^{-T}} · f_k
+			for (const auto &[startNode, startForce] : NodesInvolvedCompressed) {
+				int i = startNode;
+				TangentVector CumulativeF = startForce;
 
-					CumulativeF = coAdjoint * CumulativeF;
-					// transfer to strain space (local coordinates)
-					AdjointMatrix tempSection = section.getTangAdjointMatrix().transpose();
-					
-					Vector3 temp_f = matB_trans * tempSection * CumulativeF;
+				while (i > 0) {
+					const SectionInfo &section = m_section_properties[i - 1];
+					// Transport: f_{i-1} = Ad_{g_i^{-T}} · f_i
+					CumulativeF = section.getCoAdjoint() * CumulativeF;
+					// Project into strain space: q_{i-1} = B^T · J_{i-1}^T · f_{i-1}
+					const Eigen::Matrix<double, 6, 6> tempSection = section.getTangAdjointMatrix().transpose();
+					const Eigen::Matrix<double, NStrainDOF, 1> temp_f = matB_trans * tempSection * CumulativeF;
 
-					sofa::type::Vec3 temp_f_trans (temp_f[0], temp_f[1], temp_f[2]);
-
-					if(i>1){
-						o1.addCol(i-2, temp_f_trans);
+					if (i > 1) {
+						sofa::Deriv_t<In1> temp_f_out;
+						for (int k = 0; k < NStrainDOF; k++) temp_f_out[k] = temp_f[k];
+						o1.addCol(i - 2, temp_f_out);
 					}
 					i--;
 				}
-				
-				const auto frame0 = framePositions[0];		
-				Vector3 trans0(frame0.getCenter()[0], frame0.getCenter()[1], frame0.getCenter()[2]);
-				const auto &quat0 = frame0.getOrientation();
-				Eigen::Quaternion<double> rot0(quat0[3], quat0[0], quat0[1], quat0[2]);
-					
-				SE3Types absoluteFrame0(SE3Types::SO3Type(rot0), trans0);
-				AdjointMatrix M = absoluteFrame0.buildProjectionMatrix(absoluteFrame0.rotation().matrix());
 
-				TangentVector base_force = M * CumulativeF;
-
-
+				// Project accumulated wrench to base-frame SOFA convention.
+				const TangentVector base_force = M_base * CumulativeF;
 				sofa::type::Vec6 base_force_trans;
-				for (int k = 0; k < 6; ++k) {
-					base_force_trans[k] = base_force[k];
-				}
-
-				o2.addCol(d_baseIndex.getValue(), base_force_trans);
-
+				for (int k = 0; k < 6; ++k) base_force_trans[k] = base_force[k];
+				o2.addCol(baseIdx, base_force_trans);
 			}
 		
 		}

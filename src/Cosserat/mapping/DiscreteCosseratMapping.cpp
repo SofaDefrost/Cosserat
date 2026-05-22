@@ -155,8 +155,11 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>:: applyJT(
     Vec6 F_tot; F_tot.clear();
     m_totalBeamForceVectors.push_back(F_tot);
 
+    // Vec6Types has 6 active DOFs (both angular and linear strain), so matB_trans
+    // must be the full 6×6 identity — not the 3×6 angular-only selector used in
+    // the Vec3Types specialisation.
     TangentTransform matB_trans; matB_trans.clear();
-    for(unsigned int k=0; k<3; k++) matB_trans[k][k] = 1.0;
+    for(unsigned int k=0; k<6; k++) matB_trans[k][k] = 1.0;
 
     for (auto s = sz ; s-- ; ) {
         TangentTransform coAdjoint;
@@ -217,8 +220,9 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>::applyJT(
         m_strain_state->read(sofa::core::vec_id::read_access::position);
     const sofa::VecCoord_t<In1> x1from = x1fromData->getValue();
 
+    // Vec6Types has 6 active DOFs: matB_trans = I_6 (full identity, not 3-row selector).
     TangentTransform matB_trans; matB_trans.clear();
-    for(unsigned int k=0; k<3; k++) matB_trans[k][k] = 1.0;
+    for(unsigned int k=0; k<6; k++) matB_trans[k][k] = 1.0;
 
     vector< std::tuple<int,Vec6> > NodesInvolved;
     vector< std::tuple<int,Vec6> > NodesInvolvedCompressed;
