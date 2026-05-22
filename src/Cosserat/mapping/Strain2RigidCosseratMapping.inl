@@ -58,7 +58,14 @@ namespace Cosserat::mapping {
 							 "This parameter defines the index of the rigid "
 							 "base of Cosserat models, 0 by default this can"
 							 "take another value if the rigid base is given "
-							 "by another body.")) {
+							 "by another body.")),
+		d_integrationMethod(initData(&d_integrationMethod, 0, "integrationMethod",
+							 "Integration method for the Cosserat ODE g'(s)=g(s)·hat(ξ(s)).\n"
+							 "0 = Euler (order 1, identical to expCosserat — default)\n"
+							 "1 = Midpoint (order 2, RKMK2)\n"
+							 "2 = RKMK4 (order 4, Magnus expansion)\n"
+							 "For piecewise-constant strain all methods are equivalent.\n"
+							 "Use RKMK4 with Legendre-polynomial strain fields.")) {
 
 		// Register callback for updating frame transformations when geometry changes
 		this->addUpdateCallback("updateFrames", {&d_curv_abs_section, &d_curv_abs_frames, &d_debug},
@@ -214,6 +221,45 @@ namespace Cosserat::mapping {
 		dataVecOutPos[0]->endEdit();
 	}
 
+	/**
+	 * @brief Compute a single-element SE(3) transform from strain + length.
+	 *
+	 * Dispatches to the integrator selected by d_integrationMethod:
+	 *   0 → Euler    (= expCosserat, order 1, backward-compatible default)
+	 *   1 → Midpoint (order 2, RKMK2)
+	 *   2 → RKMK4    (order 4, Magnus expansion)
+	 *
+	 * For piecewise-constant strain the three methods return identical results.
+	 * The RKMK4 path becomes strictly superior when a varying strain field is
+	 * passed (e.g. Legendre polynomial parameterisation).
+	 *
+	 * @param strain  6D strain vector ξ ∈ se(3) (Cosserat convention)
+	 * @param length  Arc-length of the element
+	 * @return        Local SE(3) step g = Exp(length · hat(ξ))
+	 */
+	template<class TIn1, class TIn2, class TOut>
+	typename Strain2RigidCosseratMapping<TIn1, TIn2, TOut>::SE3Types
+	Strain2RigidCosseratMapping<TIn1, TIn2, TOut>::computeSectionSE3(
+			const TangentVector &strain,
+			double length) const
+	{
+		// Constant strain field: the lambda always returns the same value.
+		// For non-constant strains (future work), replace with a proper function.
+		const auto strain_field = [&strain](double /*s*/) -> TangentVector { return strain; };
+
+		const SE3Types g0 = SE3Types::computeIdentity();
+		switch (d_integrationMethod.getValue()) {
+			case 1:
+				return SE3Integrator::integrateMidpoint(g0, strain_field, 0.0, length);
+			case 2:
+				return SE3Integrator::integrateRKMK4(g0, strain_field, 0.0, length);
+			case 0:
+			default:
+				// Euler / expCosserat — exact for piecewise-constant strain.
+				return SE3Integrator::integrateEuler(g0, strain_field, 0.0, length);
+		}
+	}
+
 	template<class TIn1, class TIn2, class TOut>
 	void Strain2RigidCosseratMapping<TIn1, TIn2, TOut>::updateFrameTransformations(
 			const sofa::type::vector<Coord1> &vec_of_strains) {
@@ -243,8 +289,12 @@ namespace Cosserat::mapping {
 			// Change input and give as input of the function m_section_properties[i]
 			// SE3Types _gx = computeSE3Exponential(m_section_properties[i+1].getLength(),
 
-			auto section_length = m_section_properties[i + 1].getLength();
-			SE3Types _gx = SE3Types::expCosserat(strain, section_length);
+			// Integrate g'(s)=g(s)·hat(ξ) over this element using the selected method.
+			// For constant strain (current standard use), all methods give the same
+			// result as expCosserat(). RKMK4 becomes strictly superior with a
+			// varying strain field (Legendre polynomial parameterisation).
+			const double section_length = m_section_properties[i + 1].getLength();
+			SE3Types _gx = computeSectionSE3(strain, section_length);
 			m_section_properties[i + 1].setTransformation(_gx);
 		}
 
@@ -270,9 +320,11 @@ namespace Cosserat::mapping {
 			if (i < m_indices_vectors.size()) {
 				int sectionIndex = m_frameProperties[i].get_related_beam_index_();
 				if (sectionIndex >= 0 && sectionIndex < static_cast<int>(vec_of_strains.size() + 1)) {
-					// Compute frame transformation at its specific position
-					SE3Types frame_gx = SE3Types::expCosserat(m_section_properties[sectionIndex].getStrainsVec(),
-															  m_frameProperties[i].getDistanceToNearestBeamNode());
+					// Compute the partial SE(3) step from the section node to this frame.
+					// Uses the same integration method as sections (d_integrationMethod).
+					SE3Types frame_gx = computeSectionSE3(
+						m_section_properties[sectionIndex].getStrainsVec(),
+						m_frameProperties[i].getDistanceToNearestBeamNode());
 					m_frameProperties[i].setTransformation(frame_gx);
 				}
 			}

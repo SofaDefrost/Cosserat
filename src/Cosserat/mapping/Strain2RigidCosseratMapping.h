@@ -20,6 +20,7 @@
 #include <Cosserat/config.h>
 #include <Cosserat/mapping/CosseratGeometryMapping.h>
 #include <liegroups/CosseratBodyJacobian.h>
+#include <liegroups/LieGroupIntegrators.h>
 #include <sofa/helper/ColorMap.h>
 
 namespace Cosserat::mapping {
@@ -65,6 +66,7 @@ namespace Cosserat::mapping {
 		using BodyJacobian  = sofa::component::cosserat::liegroups::CosseratBodyJacobian<double>;
 		using TwistType     = sofa::component::cosserat::liegroups::Twist<double>;
 		using WrenchType    = sofa::component::cosserat::liegroups::Wrench<double>;
+		using SE3Integrator = sofa::component::cosserat::liegroups::SE3Integrator<double>;
 
 	public:
 		/**
@@ -88,6 +90,16 @@ namespace Cosserat::mapping {
 		sofa::Data<sofa::type::RGBAColor> d_color;
 		sofa::Data<sofa::type::vector<int>> d_index;
 		sofa::Data<unsigned int> d_baseIndex;
+
+		/// Integration method for the Cosserat ODE  g'(s) = g(s)·hat(ξ(s)).
+		/// 0 = Euler (order 1, equivalent to expCosserat — default for backward compat.)
+		/// 1 = Midpoint (order 2, RKMK2)
+		/// 2 = RKMK4   (order 4, Magnus expansion — recommended for non-constant strains)
+		///
+		/// For piecewise-constant strains (current standard use), all methods give
+		/// identical results. The option unlocks higher accuracy when combined with
+		/// Legendre polynomial strain parameterisations.
+		sofa::Data<int> d_integrationMethod;
 		/// @}
 		//////////////////////////////////////////////////////////////////////
 
@@ -169,6 +181,15 @@ namespace Cosserat::mapping {
 		 * @param vec_of_strains Current strain values
 		 */
 		void updateFrameTransformations(const sofa::type::vector<Coord1> &vec_of_strains);
+
+		/**
+		 * @brief Single-element SE(3) integration, method chosen by d_integrationMethod.
+		 *
+		 * @param strain  6D body-frame strain vector
+		 * @param length  Element arc-length
+		 * @return        Local SE(3) step (not composed with previous elements)
+		 */
+		[[nodiscard]] SE3Types computeSectionSE3(const TangentVector &strain, double length) const;
 
 
 		// Debug display functions
