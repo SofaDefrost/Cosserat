@@ -19,6 +19,7 @@
 
 #include <Cosserat/config.h>
 #include <Cosserat/mapping/CosseratGeometryMapping.h>
+#include <liegroups/CosseratBodyJacobian.h>
 #include <sofa/helper/ColorMap.h>
 
 namespace Cosserat::mapping {
@@ -58,9 +59,12 @@ namespace Cosserat::mapping {
 
 		// using SectionProperties = typename CosseratGeometryMapping<TIn1,TIn2,TOut>::SectionProperties;
 		// using FrameInfo = typename FrameInfo;
-		using SE3Types = sofa::component::cosserat::liegroups::SE3<double>;
-		using Vector3 = typename SE3Types::Vector3;
+		using SE3Types      = sofa::component::cosserat::liegroups::SE3<double>;
+		using Vector3       = typename SE3Types::Vector3;
 		using TangentVector = typename SE3Types::TangentVector;
+		using BodyJacobian  = sofa::component::cosserat::liegroups::CosseratBodyJacobian<double>;
+		using TwistType     = sofa::component::cosserat::liegroups::Twist<double>;
+		using WrenchType    = sofa::component::cosserat::liegroups::Wrench<double>;
 
 	public:
 		/**
@@ -148,6 +152,17 @@ namespace Cosserat::mapping {
 		//////////////////////////////////////////////////////////////////////////////
 
 		sofa::helper::ColorMap m_colorMap;
+
+		/**
+		 * @brief Body Jacobian of the rod — centralises applyJ / applyJT kinematics.
+		 *
+		 * Built by updateFrameTransformations() after each configuration update.
+		 * Sections are stored 0-indexed (section k ↔ m_section_properties[k+1]).
+		 *
+		 * - applyJ  uses m_bodyJacobian.applyForward()  for the node-level propagation.
+		 * - applyJT uses m_bodyJacobian.applyTranspose() for the node-level backward pass.
+		 */
+		BodyJacobian m_bodyJacobian;
 
 		/**
 		 * @brief Updates frame transformations using liegroups SE(3) exponential map

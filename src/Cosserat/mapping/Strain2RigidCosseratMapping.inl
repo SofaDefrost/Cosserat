@@ -248,6 +248,23 @@ namespace Cosserat::mapping {
 			m_section_properties[i + 1].setTransformation(_gx);
 		}
 
+		// ── Rebuild CosseratBodyJacobian ─────────────────────────────────────────
+		// After all section exponentials have been computed, cache the result in
+		// m_bodyJacobian so that applyJ / applyJT can call applyForward() /
+		// applyTranspose() without re-doing the section-level recurrence.
+		//
+		// Convention: body Jacobian section k  ↔  m_section_properties[k+1]
+		//             (index 0 in section_properties is the fixed base, not a section)
+		m_bodyJacobian.clear();
+		m_bodyJacobian.reserve(static_cast<int>(nb_node));
+		for (size_t i = 0; i < nb_node; ++i) {
+			m_bodyJacobian.pushSection(
+				m_section_properties[i + 1].getTransformation(),
+				m_section_properties[i + 1].getTangAdjointMatrix()
+			);
+		}
+		// ─────────────────────────────────────────────────────────────────────────
+
 		// Update frame properties based on their position within sections
 		for (size_t i = 0; i < m_frameProperties.size(); ++i) {
 			if (i < m_indices_vectors.size()) {
@@ -320,31 +337,46 @@ namespace Cosserat::mapping {
 		AdjointMatrix base_projector = absoluteFrame0_inv.buildProjectionMatrix(absoluteFrame0_inv.rotation().matrix());
 
 
-		// 3. Compute velocity at each section node
-		std::vector<TangentVector> node_velocities;
-		node_velocities.resize(m_section_properties.size());
+		// ── 3. Forward propagation via CosseratBodyJacobian ─────────────────────
+		//
+		// Replaces the manual section-level recurrence:
+		//   η_k = Ad_{g_k⁻¹} · (η_{k-1} + J_local_k · ξ̇_k)
+		//
+		// m_bodyJacobian was built by updateFrameTransformations() earlier in
+		// apply(), so section transforms and tangent-exp matrices are up-to-date.
+		//
+		// Strain DOF count is resolved at compile time (Vec3 → 3, Vec6 → 6).
+		static constexpr int NStrainDOF_J = static_cast<int>(Coord1::total_size);
 
-		// Base node velocity (transformed from SOFA frame)
-		node_velocities[0] = base_projector * base_vel_local;
-		msg_info_when(d_debug.getValue()) << "Base local velocity: " << node_velocities[0].transpose();
-
-		for (size_t i = 1; i < m_section_properties.size(); ++i) {
-			const auto &section = m_section_properties[i];
-			const auto &tang_adj = section.getTangAdjointMatrix();
-
-			// Extract strain velocity for this section
-			TangentVector strain_vel_i = TangentVector::Zero();
-			
-			for (int j = 0; j < 3; ++j) {
-				strain_vel_i[j] = strain_vel[i - 1][j];
+		// Build one TwistType per section from the input strain velocities.
+		const int N_sections = m_bodyJacobian.size();
+		std::vector<TwistType> strain_rates(static_cast<size_t>(N_sections), TwistType::Zero());
+		for (int k = 0; k < N_sections; ++k) {
+			TangentVector sv = TangentVector::Zero();
+			if (k < static_cast<int>(strain_vel.size())) {
+				for (int j = 0; j < NStrainDOF_J; ++j)
+					sv[j] = strain_vel[k][j];
 			}
-
-			// Propagate velocity: η_i = Ad_{g_i^{-1}} * (η_{i-1} + T_i * ξ̇_i)
-			// where Ad_{g_i^{-1}} is the inverse adjoint (transpose for SE(3))
-			auto Ad_gim1 = section.inverse().getAdjoint();
-			node_velocities[i] = Ad_gim1 * (node_velocities[i - 1] + tang_adj * strain_vel_i);
-			msg_info_when(d_debug.getValue()) << "Node velocity [" << i << "]: " << node_velocities[i].transpose();
+			strain_rates[k] = TwistType(sv);
 		}
+
+		// Forward pass: returns N+1 twists [η_0, η_1, …, η_N]
+		//   η_0 = base_projector · v_base   (root body twist)
+		//   η_k = Ad_{g_k⁻¹} · (η_{k-1} + J_local_k · ξ̇_k)
+		const TwistType base_twist(base_projector * base_vel_local);
+		const auto body_twists = m_bodyJacobian.applyForward(strain_rates, base_twist);
+
+		// Unpack into std::vector<TangentVector> for the frame-level step below.
+		// body_twists[0] = root, body_twists[k] = after k sections.
+		std::vector<TangentVector> node_velocities(body_twists.size());
+		for (size_t i = 0; i < body_twists.size(); ++i)
+			node_velocities[i] = body_twists[i].data();
+
+		if (d_debug.getValue()) {
+			for (size_t i = 0; i < node_velocities.size(); ++i)
+				msg_info() << "Node velocity [" << i << "]: " << node_velocities[i].transpose();
+		}
+		// ─────────────────────────────────────────────────────────────────────────
 
 		// 4. Compute velocity at each output frame
 		for (size_t i = 0; i < frame_count; ++i) {
@@ -360,9 +392,12 @@ namespace Cosserat::mapping {
 			}();
 
 			// Extract frame strain velocity (same DOFs as the parent section).
+			// NStrainDOF_J is resolved at compile time (Vec3 → 3, Vec6 → 6).
 			TangentVector frame_strain_vel = TangentVector::Zero();
-			for (int j = 0; j < 3; ++j)
-				frame_strain_vel[j] = strain_vel[section_idx][j];
+			if (section_idx < static_cast<int>(strain_vel.size())) {
+				for (int j = 0; j < NStrainDOF_J; ++j)
+					frame_strain_vel[j] = strain_vel[section_idx][j];
+			}
 
 			// Compute frame velocity: η_frame = Ad_{g_frame^{-1}} · (η_node + T_frame · ξ̇_frame)
 			// See docs/mapping_explanation.md §3 — applyJ recurrence.
