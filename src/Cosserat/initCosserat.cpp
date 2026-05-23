@@ -57,6 +57,10 @@ extern void registerStrain2RigidCosseratMapping(sofa::core::ObjectFactory *facto
 extern void registerLegendrePolynomialsMapping(sofa::core::ObjectFactory *factory);
 extern void registerRigidDistanceMapping(sofa::core::ObjectFactory *factory);
 
+namespace controller {
+extern void registerCosseratILQRController(sofa::core::ObjectFactory *factory);
+} // namespace controller
+
 extern "C" {
 SOFA_COSSERAT_API void initExternalModule();
 SOFA_COSSERAT_API const char *getModuleLicense();
@@ -108,6 +112,7 @@ void registerObjects(sofa::core::ObjectFactory *factory) {
     // registerDiscretDynamicCosseratMapping(factory);
     registerLegendrePolynomialsMapping(factory);
     registerRigidDistanceMapping(factory);
+    controller::registerCosseratILQRController(factory);
 }
 
 const char *getModuleLicense() { return "LGPL"; }
