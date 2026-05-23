@@ -85,6 +85,24 @@ namespace Cosserat::mapping {
 			this->m_frames = frames;
 		}
 
+		/**
+		 * @brief Read-only access to the body Jacobian (for CosseratILQRController).
+		 *
+		 * Valid after each call to apply() / updateFrameTransformations().
+		 * The Jacobian is rebuilt from scratch each configuration update.
+		 */
+		[[nodiscard]] const BodyJacobian &getBodyJacobian() const { return m_bodyJacobian; }
+
+		/**
+		 * @brief Read-only access to the strain mechanical state.
+		 */
+		[[nodiscard]] sofa::core::State<In1> *getStrainState() const { return this->m_strain_state; }
+
+		/**
+		 * @brief Read-only access to the output frames mechanical state.
+		 */
+		[[nodiscard]] sofa::core::State<Out> *getFramesState() const { return this->m_frames; }
+
 	public:
 		//////////////////////////////////////////////////////////////////////
 		/// @name Data Fields
