@@ -50,6 +50,19 @@ Requirements
 import Sofa
 import numpy as np
 
+# ── Bindings pybind11 ─────────────────────────────────────────────────────────
+#  L'import du module 'Cosserat' enregistre le downcast SOFA Python3 qui permet
+#  d'appeler state.getPositions(), ff.getNodalForces(), etc. sur les proxies.
+#  Il est chargé automatiquement via RequiredPlugin('Cosserat'), mais un import
+#  explicite garantit la disponibilité avant le premier accès Python.
+try:
+    import Cosserat as _CosseratModule   # noqa — enregistre le downcast
+    _HAVE_BINDINGS = True
+except ImportError:
+    _HAVE_BINDINGS = False
+    print("[WARNING] Module pybind11 'Cosserat' non trouvé. "
+          "Compiler avec -DCOSSERAT_WITH_PYTHON_BINDINGS=ON.")
+
 try:
     from LieGroups import SO3          # pybind11 module (LieGroups)
     _HAVE_SO3 = True

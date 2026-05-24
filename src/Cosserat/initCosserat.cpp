@@ -53,6 +53,7 @@ extern void registerDifferenceMultiMapping(sofa::core::ObjectFactory *factory);
 extern void registerDiscreteCosseratMapping(sofa::core::ObjectFactory *factory);
 extern void registerStrain2RigidCosseratMapping(sofa::core::ObjectFactory *factory);
 extern void registerStaggeredCosseratMapping(sofa::core::ObjectFactory *factory);
+extern void registerPainlessBeamForceField(sofa::core::ObjectFactory *factory);
 
 // extern void registerDiscretDynamicCosseratMapping(sofa::core::ObjectFactory *factory);
 extern void registerLegendrePolynomialsMapping(sofa::core::ObjectFactory *factory);
@@ -111,6 +112,7 @@ void registerObjects(sofa::core::ObjectFactory *factory) {
     registerDiscreteCosseratMapping(factory);
     registerStrain2RigidCosseratMapping(factory);
     registerStaggeredCosseratMapping(factory);
+    registerPainlessBeamForceField(factory);
     // registerDiscretDynamicCosseratMapping(factory);
     registerLegendrePolynomialsMapping(factory);
     registerRigidDistanceMapping(factory);
