@@ -45,6 +45,7 @@ extern void registerPointsManager(sofa::core::ObjectFactory *factory);
 extern void registerProjectionEngine(sofa::core::ObjectFactory *factory);
 extern void registerCosseratTopologyBuilder(sofa::core::ObjectFactory *factory);
 extern void registerCosseratIntrinsicState(sofa::core::ObjectFactory *factory);
+extern void registerPainlessBeamForceField(sofa::core::ObjectFactory *factory);
 extern void registerBeamHookeLawForceField(sofa::core::ObjectFactory *factory);
 extern void registerBeamHookeLawForceFieldRigid(sofa::core::ObjectFactory *factory);
 extern void registerHookeSeratPCSForceField(sofa::core::ObjectFactory *factory);
@@ -56,6 +57,10 @@ extern void registerStrain2RigidCosseratMapping(sofa::core::ObjectFactory *facto
 // extern void registerDiscretDynamicCosseratMapping(sofa::core::ObjectFactory *factory);
 extern void registerLegendrePolynomialsMapping(sofa::core::ObjectFactory *factory);
 extern void registerRigidDistanceMapping(sofa::core::ObjectFactory *factory);
+
+namespace controller {
+extern void registerCosseratILQRController(sofa::core::ObjectFactory *factory);
+} // namespace controller
 
 extern "C" {
 SOFA_COSSERAT_API void initExternalModule();
@@ -97,6 +102,7 @@ void registerObjects(sofa::core::ObjectFactory *factory) {
     registerProjectionEngine(factory);
     registerCosseratTopologyBuilder(factory);
     registerCosseratIntrinsicState(factory);
+    registerPainlessBeamForceField(factory);
     registerBeamHookeLawForceField(factory);
     registerBeamHookeLawForceFieldRigid(factory);
 
@@ -108,6 +114,7 @@ void registerObjects(sofa::core::ObjectFactory *factory) {
     // registerDiscretDynamicCosseratMapping(factory);
     registerLegendrePolynomialsMapping(factory);
     registerRigidDistanceMapping(factory);
+    controller::registerCosseratILQRController(factory);
 }
 
 const char *getModuleLicense() { return "LGPL"; }

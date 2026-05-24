@@ -42,6 +42,14 @@ class CosseratIntrinsicState : public sofa::core::behavior::BaseMechanicalState 
     const sofa::type::vector<SO3> &getOrientations() const { return d_orientations.getValue(); }
     size_t getNbSegments() const { return d_orientations.getValue().size(); }
 
+    /**
+     * @brief Returns the rest lengths of the N segments, computed at init().
+     *
+     * rest_lengths[i] = ||x_{i+1} - x_i|| in the reference configuration.
+     * Used by PainlessBeamForceField to normalise strains.
+     */
+    const std::vector<double> &getRestLengths() const { return rest_lengths; }
+
     // Virtual methods from BaseMechanicalState
     unsigned int getSpaceDimensions() const override { return 3; }
     unsigned int getDoFCount() const override { return getPositions().size(); }
@@ -54,9 +62,19 @@ class CosseratIntrinsicState : public sofa::core::behavior::BaseMechanicalState 
     sofa::type::Vec3d getLinearStrain(size_t i);
 
     /**
-     * @brief Computes the angular strain at node i.
-     * @param i Node index (1 to N-1). For i=0 and i=N, returns (0,0,0).
-     * @return Torsion and bending strain vector.
+     * @brief Computes the angular strain (curvature + torsion) at node i.
+     *
+     * Staggered convention (Romanyà-Serrasolsas et al., SIGGRAPH 2025):
+     * @code
+     *   Omega_i = log(R_{i-1}^T * R_i) / h_dual
+     *   h_dual  = (rest_lengths[i-1] + rest_lengths[i]) / 2
+     * @endcode
+     * where @c h_dual is the length of the dual edge connecting the midpoints of
+     * segments i-1 and i.  For uniform spacing h_dual = h.
+     *
+     * @param i Node index (1 to N-1).  Returns (0,0,0) for i=0 and i=N
+     *          (boundary strains are enforced at the ForceField level).
+     * @return Angular strain vector in the body frame [torsion, bending_y, bending_z].
      */
     sofa::type::Vec3d getAngularStrain(size_t i);
 

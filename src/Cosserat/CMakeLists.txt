@@ -20,6 +20,7 @@ set(HEADER_FILES
     constraint/UnilateralPlaneConstraint.inl
     engine/CosseratTopologyBuilder.h
     engine/CosseratIntrinsicState.h
+    engine/PainlessBeamForceField.h
 )
 
 set(SOURCE_FILES
@@ -32,6 +33,7 @@ set(SOURCE_FILES
     constraint/UnilateralPlaneConstraint.cpp
     engine/CosseratTopologyBuilder.cpp
     engine/CosseratIntrinsicState.cpp
+    engine/PainlessBeamForceField.cpp
 )
 
 find_package(SofaFramework REQUIRED)

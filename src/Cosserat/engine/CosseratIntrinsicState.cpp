@@ -73,9 +73,21 @@ void CosseratIntrinsicState::updateStrainsCache() {
 
     cached_angular_strains.assign(N + 1, Vec3d(0.0, 0.0, 0.0));
     for (size_t i = 1; i < N; ++i) {
-        SO3 relative_R = R[i - 1].inverse() * R[i];
-        SO3::TangentVector omega = relative_R.log();
-        cached_angular_strains[i] = Vec3d(omega.x(), omega.y(), omega.z());
+        // Angular strain (curvature + torsion) at node i, staggered convention:
+        //   Omega_i = log(R_{i-1}^T * R_i) / h_dual
+        // where h_dual is the length of the dual edge connecting the midpoints of
+        // segments i-1 and i:
+        //   h_dual = (h_{i-1} + h_i) / 2
+        // For a uniform beam all h_i are equal so h_dual = h; the general case
+        // requires averaging the two adjacent segment lengths.
+        // Boundary strains (i=0 and i=N) remain zero (clamped/free BCs applied
+        // at the ForceField level, not here).
+        const double h_dual = (rest_lengths[i - 1] + rest_lengths[i]) * 0.5;
+        if (h_dual > 1e-12) {
+            SO3 relative_R = R[i - 1].inverse() * R[i];
+            SO3::TangentVector omega = relative_R.log();
+            cached_angular_strains[i] = Vec3d(omega.x(), omega.y(), omega.z()) / h_dual;
+        }
     }
 }
 
