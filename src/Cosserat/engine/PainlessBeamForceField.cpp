@@ -316,20 +316,29 @@ void PainlessBeamForceField::computeDForcesFromData(double kFactor) {
 
 void PainlessBeamForceField::addForce(
     const sofa::core::MechanicalParams* /*mparams*/,
-    sofa::core::MultiVecDerivId /*f*/,
-    sofa::core::ConstMultiVecCoordId /*x*/,
-    sofa::core::ConstMultiVecDerivId /*v*/) {
+    sofa::core::MultiVecDerivId        /*fId*/,
+    sofa::core::ConstMultiVecCoordId   /*x*/,
+    sofa::core::ConstMultiVecDerivId   /*v*/) {
 
     if (!l_state.get()) return;
 
+    // ── Compute elastic forces and torques into Data fields ───────────────────
+    //
+    // Results are stored in d_nodalForces (N+1 Vec3, world frame) and
+    // d_segmentTorques (N Vec3, body frame). They are read by:
+    //   • The Python explicit-Euler integrator (operational path).
+    //   • addKToMatrix / addDForce (tangent stiffness path).
+    //
+    // Integration with SOFA's implicit ODE solvers (EulerImplicitSolver) via
+    // MultiVecDerivId requires CosseratIntrinsicState to implement typed
+    // VecDeriv read/write accessors (i.e. become MechanicalState<DataTypes>).
+    // This is planned as a future extension.
+    //
     VecVec3d& f_nodes  = *d_nodalForces.beginEdit();
     VecVec3d& tau_segs = *d_segmentTorques.beginEdit();
     computeForcesAndTorques(f_nodes, tau_segs);
     d_nodalForces.endEdit();
     d_segmentTorques.endEdit();
-
-    // TODO(solver-integration): write f_nodes / tau_segs into MultiVecDerivId 'f'
-    // once CosseratIntrinsicState exposes standard write(VecDerivId) accessors.
 }
 
 void PainlessBeamForceField::addDForce(

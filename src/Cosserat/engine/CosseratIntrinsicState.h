@@ -50,9 +50,39 @@ class CosseratIntrinsicState : public sofa::core::behavior::BaseMechanicalState 
      */
     const std::vector<double> &getRestLengths() const { return rest_lengths; }
 
-    // Virtual methods from BaseMechanicalState
+    // ── BaseMechanicalState interface ────────────────────────────────────────
+    //
+    // DOF layout (flat index k):
+    //   k ∈ [0,     N]   → position of node      k          (Vec3, 3 scalars)
+    //   k ∈ [N+1, 2N+1)  → orientation of segment k-(N+1)   (so3,  3 scalars)
+    //
+    // Total DOF count = (N+1) + N = 2N+1
+    // Total scalar size = 3 × (2N+1)
+    //
     unsigned int getSpaceDimensions() const override { return 3; }
-    unsigned int getDoFCount() const override { return getPositions().size(); }
+
+    /**
+     * @brief Total number of DOFs: (N+1) node positions + N segment orientations.
+     *
+     * Used by SOFA solvers to size the global displacement / force vectors
+     * and the tangent stiffness matrix.  Each DOF lives in R³ (tangent space
+     * of SO3 for orientations, plain R³ for positions).
+     */
+    unsigned int getDoFCount() const override {
+        return static_cast<unsigned int>(
+            getPositions().size() + getOrientations().size()
+        );
+    }
+
+    /**
+     * @brief Dimension of each coordinate DOF = 3 (both Vec3 and so3 ∈ R³).
+     */
+    unsigned int getCoordDimension() const override { return 3; }
+
+    /**
+     * @brief Dimension of each velocity/deriv DOF = 3 (tangent space is R³).
+     */
+    unsigned int getDerivDimension() const override { return 3; }
 
     /**
      * @brief Computes the linear strain on segment i.
