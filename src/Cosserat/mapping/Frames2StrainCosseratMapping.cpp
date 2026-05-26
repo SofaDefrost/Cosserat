@@ -28,8 +28,8 @@
 namespace Cosserat::mapping {
 	template class SOFA_COSSERAT_API Frames2StrainCosseratMapping<
 			sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Vec3Types>;
-	// template class SOFA_COSSERAT_API Frames2StrainCosseratMapping<
-	// 		sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Vec6Types>;
+	template class SOFA_COSSERAT_API Frames2StrainCosseratMapping<
+			sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Vec6Types>;
 } // namespace Cosserat::mapping
 
 namespace Cosserat{
@@ -45,7 +45,9 @@ namespace Cosserat{
 						"Using these inputs, the component computes and outputs the strains (Vec3) of the beam.")
 						.add<mapping::Frames2StrainCosseratMapping<sofa::defaulttype::Rigid3Types, 
 																sofa::defaulttype::Rigid3Types, 
-																sofa::defaulttype::Vec3Types>>(true));
-			//.add< mapping::Frames2StrainCosseratMapping< sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Vec6Types> >());
+																sofa::defaulttype::Vec3Types>>(true)
+						.add< mapping::Frames2StrainCosseratMapping< sofa::defaulttype::Rigid3Types, 
+																sofa::defaulttype::Rigid3Types, 
+																sofa::defaulttype::Vec6Types> >());
 	}
 }// namespace Cosserat

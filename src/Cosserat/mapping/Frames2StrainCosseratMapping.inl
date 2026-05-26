@@ -212,7 +212,7 @@ namespace Cosserat::mapping {
 				
 				TangentVector xi = g_rel.computeLog()/dx;
 
-				for(int j=0; j<3; j++){
+				for(int j=0; j<6; j++){
 					strains[i][j] = xi[j];
 				}
 
@@ -237,15 +237,10 @@ namespace Cosserat::mapping {
 
 	template<class TIn1, class TIn2, class TOut>
 	Matrix3 Frames2StrainCosseratMapping<TIn1, TIn2, TOut>::buildHatMatrix(const Vector3& k){
-		Matrix3 k_hat = Matrix3::Zero();
-
-		k_hat(0, 1) = -k(2);
-		k_hat(0, 2) = k(1);
-		k_hat(1, 2) = -k(0);
-
-		k_hat(1, 0) = -k_hat(0, 1);
-		k_hat(2, 0) = -k_hat(0, 2);
-		k_hat(2, 1) = -k_hat(1, 2);
+		Matrix3 k_hat;
+    	k_hat<< 0., -k(2),  k(1),
+              	k(2), 0., -k(0),
+             	-k(1), k(0), 0.;
 
 		return k_hat;
 
@@ -373,7 +368,7 @@ namespace Cosserat::mapping {
 
 			TangentVector strain_i = TangentVector::Zero();
 
-			for(int j=0; j<3; j++)
+			for(int j=0; j<6; j++)
 				strain_i[j] = strain[i][j];
 
 			TangentVector Omega_i = dx*strain_i;
@@ -409,7 +404,7 @@ namespace Cosserat::mapping {
 
 			TangentVector output_vel = J1*eta_a + J2*eta_b;
 			
-			for(int k=0; k<3; k++){
+			for(int k=0; k<6; k++){
 				strain_vel[i][k] = output_vel[k];
 			}
 
@@ -456,16 +451,6 @@ namespace Cosserat::mapping {
 		
 		// Initialize output forces
 		frameForces.resize(framePositions.size());
-
-		// for(int i=0; i<frameForces.size(); i++){
-		// 	for(int j=0; j<frameForces[i].size(); j++){
-		// 		frameForces[i][j] = 0.;
-		// 	}
-		// }
-
-		// for(int i=0; i<baseForces[baseIndex].size(); i++){
-		// 	baseForces[baseIndex][i] = 0.;
-		// }
 											
 		std::cout<<"(in) Strain forces: "<<std::endl;
 		for(auto v : strainForces){
@@ -493,8 +478,7 @@ namespace Cosserat::mapping {
 
 			//get current strain of the section
 			TangentVector strain_i = TangentVector::Zero();
-
-			for(int j=0; j<3; j++){
+			for(int j=0; j<6; j++){
 				strain_i[j] = strainState[i][j];
 			}
 
@@ -503,10 +487,8 @@ namespace Cosserat::mapping {
 			// std::cout<<"Omega_i: "<< Omega_i.transpose()<<std::endl;
 
 
-			//construct Jacobians
+			//compute Jacobians
 			AdjointMatrix dexp_inv = computeInverseTangentOperator(Omega_i);
-			// std::cout<<"dexp_inv :"<<std::endl;
-			std::cout<<dexp_inv<<std::endl;
 
 			AdjointMatrix J2 = dexp_inv / dx;
 
@@ -518,20 +500,23 @@ namespace Cosserat::mapping {
 
 			TangentVector lambda = TangentVector::Zero();
 
-			for(int j=0; j<3; j++){
+			for(int j=0; j<6; j++){
 				lambda[j] = strainForces[i][j];
 			}
 
+			//@appa: multiplication par dx déjà fait dans le forcefield
 			TangentVector fa = J1.transpose() * lambda; //a (b): extremite gauche (droite) de la section
 			TangentVector fb = J2.transpose() * lambda;
 
+			//@appa: Comme le frame 0 n'est attaché à la base actuellement, voici la version à adopter			
 			for(int k=0; k<6; k++){
-				if(i==0){
-					baseForces[baseIndex][k] +=fa[k];
-				}
-				else{
-					frameForces[i][k] +=fa[k];
-				}
+				// if(i==0){
+				// 	baseForces[baseIndex][k] += fa[k];
+				// }
+				// else{
+				// 	frameForces[i-1][k] +=fa[k];
+				// }
+				frameForces[i][k] +=fa[k];
 				frameForces[i+1][k] +=fb[k];
 			}
 		}

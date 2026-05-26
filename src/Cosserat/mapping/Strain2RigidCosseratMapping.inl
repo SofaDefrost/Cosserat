@@ -609,8 +609,8 @@ namespace Cosserat::mapping {
 		TangentVector toAdd = TangentVector::Zero();
 		toAdd = M * totalForce;
 		
-		for (int j=0; j<6; j++)
-				baseForces[baseIndex][j] +=toAdd[j];	
+		// for (int j=0; j<6; j++)
+		// 		baseForces[baseIndex][j] +=toAdd[j];	
 
 		if (d_debug.getValue()) {
 			std::cout << "Strain forces computed from " << inputForces.size() << " input forces" << std::endl;
