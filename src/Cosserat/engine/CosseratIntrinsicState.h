@@ -6,7 +6,7 @@
 #include <sofa/type/Vec.h>
 #include <sofa/type/Mat.h>
 #include <sofa/type/vector.h>
-#include <sofa/core/objectmodel/SingleLink.h>
+#include <sofa/core/objectmodel/Link.h>
 #include <sofa/component/topology/container/dynamic/EdgeSetTopologyContainer.h>
 
 namespace sofa::component::cosserat::engine {

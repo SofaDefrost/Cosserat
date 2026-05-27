@@ -6,7 +6,7 @@
 #include <sofa/core/behavior/BaseForceField.h>
 #include <sofa/core/behavior/MultiMatrixAccessor.h>
 #include <sofa/core/objectmodel/Data.h>
-#include <sofa/core/objectmodel/SingleLink.h>
+#include <sofa/core/objectmodel/Link.h>
 #include <sofa/type/Mat.h>
 #include <sofa/type/Vec.h>
 #include <sofa/type/vector.h>

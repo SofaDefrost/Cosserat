@@ -332,7 +332,5 @@ TEST_F(Strain2RigidCosseratMappingTest, ValidateJacobianAccuracy) {
     EXPECT_TRUE(isValid) << "Jacobian accuracy validation should pass";
 }
 
-int main(int argc, char **argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
-}
+// No main() here — Sofa.Testing links SofaGTestMain which provides
+// main() + sofa::simulation::graph::init() + sofa::simulation::graph::cleanup().

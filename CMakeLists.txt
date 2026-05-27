@@ -107,6 +107,10 @@ set(SOURCE_FILES
     ${SRC_ROOT_DIR}/constraint/CosseratNeedleSlidingConstraint.cpp
     # Lie-group controllers
     ${SRC_ROOT_DIR}/controller/CosseratILQRController.cpp
+    # Painless / Staggered Cosserat — TODO: enable once SOFA v26 API migration done
+    # ${SRC_ROOT_DIR}/engine/CosseratTopologyBuilder.cpp
+    # ${SRC_ROOT_DIR}/engine/CosseratIntrinsicState.cpp
+    # ${SRC_ROOT_DIR}/engine/PainlessBeamForceField.cpp
 )
 
 sofa_find_package(SoftRobots QUIET)

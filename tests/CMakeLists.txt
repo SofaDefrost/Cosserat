@@ -13,6 +13,7 @@ set(
 set(SOURCE_FILES
     unit/Strain2RigidCosseratMappingTest.cpp
     unit/LiegroupsIntegrationTest.cpp
+    unit/DiscreteCosseratMappingApplyDJTTest.cpp
 )
 
     add_executable(${PROJECT_NAME} ${HEADER_FILES} ${SOURCE_FILES})

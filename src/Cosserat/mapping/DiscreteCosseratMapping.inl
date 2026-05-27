@@ -22,6 +22,7 @@
 #pragma once
 #include <Cosserat/mapping/DiscreteCosseratMapping.h>
 
+#include <sofa/core/MechanicalParams.h>
 #include <sofa/core/Multi2Mapping.inl>
 #include <sofa/core/behavior/MechanicalState.h>
 #include <sofa/core/objectmodel/BaseContext.h>
@@ -718,6 +719,172 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::draw(
     if (!d_debug.getValue())
       return;
   glEnd();
+}
+
+// =============================================================================
+// applyDJT — geometric stiffness of the Cosserat mapping (Vec3Types template)
+// =============================================================================
+//
+// Computes the directional derivative of J(q)^T f_x w.r.t. q, holding f_x
+// (current child frame wrenches) constant.  This is the K_G contribution from
+// the mapping level; without it the Newton solver only sees the material
+// stiffness pulled back through J (the J^T K_material J term), and may need
+// many more iterations under large rotations.
+//
+// Formula (see docs/geometric_stiffness_mapping.md §5):
+//
+//   For each section k (0-indexed strain):
+//
+//   (a) Frame direct term  — variation of coAd(F_s) when ξ_k changes:
+//       δf_k += kFactor · B^T · T_s^T · ad(v_s)^T · node_F_s
+//       with v_s = T_frames[s] · B · δξ_k,  node_F_s = coAd(F_s^{-1}) f_s
+//
+//   (b) Node transport term — variation of coAd(E_{k+1}) in the chain:
+//       δf_k += kFactor · B^T · T_node[k+1]^T · ad(v_k)^T · F_tot_k
+//       with v_k = T_nodes[k+1] · B · δξ_k
+//
+// What is T?
+//   T_k = J_R(ξ_k L_k) · L_k  is the right Jacobian of the exponential map,
+//   scaled by the section length.  It maps a strain increment δξ_k to the
+//   local velocity twist:  v_k = T_k · B · δξ_k ∈ se(3).
+//   For an undeformed beam (ξ_k → 0): T_k → L_k · I₆.
+//   See docs/geometric_stiffness_mapping.md §6 for the full explanation.
+//
+// Both terms neglect the variation of T itself (∂T/∂ξ, a third-order tensor);
+// this is the standard approximation in Cosserat beam FEM
+// (Simo & Vu-Quoc 1986, Cardona & Géradin 1988).
+//
+// For Vec3Types: B = [I₃|0] (angular strains only), output force is Vec3.
+// For Vec6Types: B = I₆ (full strains), overridden in .cpp.
+//
+template <class TIn1, class TIn2, class TOut>
+void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyDJT(
+    const sofa::core::MechanicalParams* mparams,
+    sofa::core::MultiVecDerivId          inForce,
+    sofa::core::ConstMultiVecDerivId     /*outForce*/)
+{
+    if (this->d_componentState.getValue() !=
+        sofa::core::objectmodel::ComponentState::Valid)
+        return;
+
+    const SReal kFactor = mparams->kFactor();
+    if (kFactor == 0.0)
+        return;
+
+    // ---- Inputs --------------------------------------------------------------
+    // δξ : strain displacement (In1 space)
+    const sofa::VecDeriv_t<In1>& dx =
+        mparams->readDx(m_strain_state)->getValue();
+
+    // f_x : current child wrenches (Out space, held constant)
+    const sofa::VecDeriv_t<Out>& childF =
+        mparams->readF(m_global_frames)->getValue();
+
+    // ---- Output parent force (In1 space, accumulate +=) ----------------------
+    sofa::Data<sofa::VecDeriv_t<In1>>& out1Data =
+        *inForce[m_strain_state].write();
+    sofa::VecDeriv_t<In1>& out1 = *out1Data.beginEdit();
+
+    // ---- Frame positions (for projector to local frame) ----------------------
+    const sofa::VecCoord_t<Out>& frames =
+        m_global_frames->read(sofa::core::vec_id::read_access::position)->getValue();
+
+    // ---- Ensure tangent exponentials are up-to-date --------------------------
+    // (applyJ already calls updateTangExpSE3; guard against standalone calls)
+    const sofa::VecCoord_t<In1>& strains =
+        m_strain_state->read(sofa::core::vec_id::read_access::position)->getValue();
+    this->updateTangExpSE3(strains);
+
+    // ---- Step 1: convert child forces to local beam frame -------------------
+    const auto sz = m_indicesVectors.size();
+    vector<Vec6> local_F(sz);
+    for (unsigned int s = 0; s < sz; ++s) {
+        Vec6 vec;
+        for (unsigned j = 0; j < 6; j++) vec[j] = childF[s][j];
+        auto T = Frame(frames[s].getCenter(), frames[s].getOrientation());
+        Mat6x6 P = this->buildProjector(T);
+        P.transpose();            // buildProjector gives P; we need P^T
+        local_F[s] = P * vec;
+    }
+
+    // ---- matB: angular-only selector for Vec3Types --------------------------
+    // B^T maps Vec3 → Vec6 as [δξ; 0,0,0].
+    // matB_trans = B (3×6), so matB_trans * (6-vec) → Vec3
+    Mat3x6 matB_trans;
+    matB_trans.clear();
+    for (unsigned int k = 0; k < 3; k++) matB_trans[k][k] = 1.0;
+
+    // ---- Step 2: backward sweep identical to applyJT ------------------------
+    auto index = m_indicesVectors[sz - 1];
+    Vec6 F_tot;
+    F_tot.clear();
+
+    for (auto s = sz; s--;) {
+        // Transport frame wrench to beam frame: node_F = coAd(F_s^{-1}) f_s
+        Mat6x6 coAdj_frame;
+        this->computeCoAdjoint(m_framesExponentialSE3Vectors[s], coAdj_frame);
+        const Vec6 node_F = coAdj_frame * local_F[s];
+
+        // 0-indexed section that owns this frame
+        const unsigned int k_s = m_indicesVectors[s] - 1;
+
+        // ---- (a) Direct frame geometric contribution -------------------------
+        // δf_k += B^T · T_s^T · ad(v_s)^T · node_F
+        // where v_s = T_frames[s] · [δξ_{k_s}; 0,0,0]
+        {
+            const Vec6 xi_dot(dx[k_s][0], dx[k_s][1], dx[k_s][2],
+                              0., 0., 0.);                 // embed angular δξ
+            const Vec6 v_s = m_framesTangExpVectors[s] * xi_dot;
+
+            Mat6x6 adv;
+            this->computeAdjoint(v_s, adv);   // adv = ad(v_s)
+            adv.transpose();                   // adv = ad(v_s)^T
+            const Vec6 adT_node_F = adv * node_F;
+
+            Mat6x6 Ts = m_framesTangExpVectors[s];
+            Ts.transpose();
+            const Vec3 delta_f =
+                static_cast<SReal>(kFactor) * (matB_trans * (Ts * adT_node_F));
+            out1[k_s] += delta_f;
+        }
+
+        // ---- Section boundary: transport accumulated F_tot ------------------
+        if (index != m_indicesVectors[s]) {
+            index--;   // 1-indexed node that separates sections
+
+            // Transport (same as applyJT)
+            Mat6x6 coAdj_node;
+            this->computeCoAdjoint(m_nodesExponentialSE3Vectors[index], coAdj_node);
+            F_tot = coAdj_node * F_tot;
+
+            // 0-indexed section for this node: index-1
+            const unsigned int k_node = index - 1;
+
+            // ---- (b) Node transport geometric contribution ------------------
+            // δf_{k_node} += B^T · T_node^T · ad(v_node)^T · F_tot
+            // where v_node = T_nodes[index] · [δξ_{k_node}; 0,0,0]
+            {
+                const Vec6 xi_dot(dx[k_node][0], dx[k_node][1], dx[k_node][2],
+                                  0., 0., 0.);
+                const Vec6 v_node = m_nodesTangExpVectors[index] * xi_dot;
+
+                Mat6x6 adv;
+                this->computeAdjoint(v_node, adv);
+                adv.transpose();
+                const Vec6 adT_F = adv * F_tot;
+
+                Mat6x6 T_node = m_nodesTangExpVectors[index];
+                T_node.transpose();
+                const Vec3 delta_f =
+                    static_cast<SReal>(kFactor) * (matB_trans * (T_node * adT_F));
+                out1[k_node] += delta_f;
+            }
+        }
+
+        F_tot += node_F;   // accumulate (same order as applyJT)
+    }
+
+    out1Data.endEdit();
 }
 
 } // namespace Cosserat::mapping

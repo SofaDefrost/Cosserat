@@ -5,7 +5,7 @@
 
 #include <sofa/core/objectmodel/BaseObject.h>
 #include <sofa/core/objectmodel/Data.h>
-#include <sofa/core/objectmodel/SingleLink.h>
+#include <sofa/core/objectmodel/Link.h>
 #include <sofa/core/visual/VisualParams.h>
 #include <sofa/defaulttype/RigidTypes.h>
 #include <sofa/type/RGBAColor.h>

@@ -44,8 +44,8 @@
 
 // ── Cosserat mapping / controller ─────────────────────────────────────────────
 #include <Cosserat/mapping/BeamStateEstimator.h>
+// Only include header — .cpp symbols come from libCosserat (no duplicate with Strain2RigidCosseratMappingTest)
 #include <Cosserat/mapping/Strain2RigidCosseratMapping.h>
-#include <Cosserat/mapping/Strain2RigidCosseratMapping.cpp>
 #include <Cosserat/controller/CosseratILQRController.h>
 #include <Cosserat/controller/CosseratILQRController.cpp>
 
@@ -59,6 +59,7 @@
 #include <sofa/simulation/Node.h>
 #include <sofa/simulation/Simulation.h>
 #include <sofa/simulation/graph/DAGSimulation.h>
+#include <sofa/simulation/graph/init.h>
 
 using namespace sofa::component::cosserat::liegroups;
 using namespace sofa::defaulttype;
@@ -75,17 +76,18 @@ using BodyJacD      = CosseratBodyJacobian<double>;
 using PropagatorD   = CosseratUncertaintyPropagator<double>;
 using GaussianSE3d  = GaussianOnManifold<SE3d>;
 
-using Vec6d = Eigen::Matrix<double, 6, 1>;
-using Mat6d = Eigen::Matrix<double, 6, 6>;
+// Use EigVec6d to avoid ambiguity with sofa::type::EigVec6d pulled in by SOFA includes
+using EigVec6d = Eigen::Matrix<double, 6, 1>;
+using EigMat6d = Eigen::Matrix<double, 6, 6>;
 
 /** Build a simple N-section body Jacobian with constant strain and unit length. */
-static BodyJacD buildJacobian(int N, const Vec6d &strain) {
+static BodyJacD buildJacobian(int N, const EigVec6d &strain) {
     BodyJacD bj;
     bj.reserve(N);
     for (int k = 0; k < N; ++k) {
         const SE3d g = SE3d::expCosserat(strain, 1.0);
         // Tangent-exp matrix T = I₆ for zero strain (small-angle approx)
-        const Mat6d T = Mat6d::Identity();
+        const EigMat6d T = EigMat6d::Identity();
         bj.pushSection(g, T);
     }
     return bj;
@@ -98,7 +100,7 @@ static BodyJacD buildJacobian(int N, const Vec6d &strain) {
 class BodyJacobianTest : public ::testing::Test {
 protected:
     static constexpr int N = 4;
-    Vec6d strain = Vec6d::Zero();  // straight rod
+    EigVec6d strain = EigVec6d::Zero();  // straight rod
 };
 
 /**
@@ -114,14 +116,14 @@ TEST_F(BodyJacobianTest, VirtualPowerDuality) {
     // Random strain rates (one per section)
     std::vector<TwistD> strain_rates(N);
     for (int k = 0; k < N; ++k) {
-        Vec6d v; v << 0.1*k, -0.05*k, 0.03*(k+1), 0.0, 0.0, 0.0;
+        EigVec6d v; v << 0.1*k, -0.05*k, 0.03*(k+1), 0.0, 0.0, 0.0;
         strain_rates[k] = TwistD(v);
     }
 
     // Random external wrenches (N+1: one at each node including base)
     std::vector<WrenchD> ext_w(N + 1);
     for (int k = 0; k <= N; ++k) {
-        Vec6d w; w << 0.2*(k+1), -0.1*k, 0.05, 0.3, 0.0, -0.1;
+        EigVec6d w; w << 0.2*(k+1), -0.1*k, 0.05, 0.3, 0.0, -0.1;
         ext_w[k] = WrenchD(w);
     }
 
@@ -257,7 +259,7 @@ TEST_F(SE3IntegratorTest, MultiStepMatchesSingleStep) {
 // ═════════════════════════════════════════════════════════════════════════════
 
 TEST(TwistWrenchTest, RoundTrip) {
-    Vec6d v; v << 1.0, 2.0, 3.0, 4.0, 5.0, 6.0;
+    EigVec6d v; v << 1.0, 2.0, 3.0, 4.0, 5.0, 6.0;
 
     const TwistD  t(v);
     const WrenchD w(v);
@@ -276,8 +278,8 @@ TEST(TwistWrenchTest, Zero) {
  * should equal the explicit inner product.
  */
 TEST(TwistWrenchTest, VirtualPower) {
-    Vec6d tv; tv << 1.0, 0.0, 0.0, 0.0, 1.0, 0.0;
-    Vec6d wv; wv << 0.0, 1.0, 0.0, 1.0, 0.0, 1.0;
+    EigVec6d tv; tv << 1.0, 0.0, 0.0, 0.0, 1.0, 0.0;
+    EigVec6d wv; wv << 0.0, 1.0, 0.0, 1.0, 0.0, 1.0;
     const TwistD  t(tv);
     const WrenchD w(wv);
 
@@ -291,13 +293,13 @@ TEST(TwistWrenchTest, VirtualPower) {
  */
 TEST(TwistWrenchTest, AdjointMapsTwist) {
     // π/2 rotation around z
-    Vec6d xi_rot; xi_rot << 0.0, 0.0, M_PI/2.0, 0.0, 0.0, 0.0;
+    EigVec6d xi_rot; xi_rot << 0.0, 0.0, M_PI/2.0, 0.0, 0.0, 0.0;
     const SE3d g = SE3d::computeExp(xi_rot);
-    const Mat6d Ad = g.computeAdjoint();
+    const EigMat6d Ad = g.computeAdjoint();
 
     // A twist along x rotated by π/2 should become a twist along y
-    Vec6d t_in; t_in << 1.0, 0.0, 0.0, 0.0, 0.0, 0.0;
-    const Vec6d t_out = Ad * t_in;
+    EigVec6d t_in; t_in << 1.0, 0.0, 0.0, 0.0, 0.0, 0.0;
+    const EigVec6d t_out = Ad * t_in;
 
     EXPECT_NEAR(t_out[0],  0.0, 1e-10);
     EXPECT_NEAR(t_out[1],  1.0, 1e-10);
@@ -310,7 +312,7 @@ TEST(TwistWrenchTest, AdjointMapsTwist) {
 
 TEST(BezierSE3Test, LinearCurveInterpolatesEndpoints) {
     const SE3d g0 = SE3d::computeIdentity();
-    Vec6d xi; xi << 0.0, 0.0, 0.0, 1.0, 0.0, 0.0;  // 1m translation
+    EigVec6d xi; xi << 0.0, 0.0, 0.0, 1.0, 0.0, 0.0;  // 1m translation
     const SE3d g1 = SE3d::computeExp(xi);
 
     BezierSE3<double> curve({g0, g1});
@@ -326,7 +328,7 @@ TEST(BezierSE3Test, LinearCurveInterpolatesEndpoints) {
 
 TEST(BezierSE3Test, CubicCurveInterpolatesEndpoints) {
     const SE3d g0 = SE3d::computeIdentity();
-    Vec6d xi; xi << 0.3, 0.1, 0.0, 2.0, 0.0, 0.0;
+    EigVec6d xi; xi << 0.3, 0.1, 0.0, 2.0, 0.0, 0.0;
     const SE3d g3 = g0.compose(SE3d::computeExp(xi));
     // Build cubic via makePiecewiseCubicPath
     const auto segments = makePiecewiseCubicPath(std::vector<SE3d>{g0, g3});
@@ -339,7 +341,7 @@ TEST(BezierSE3Test, CubicCurveInterpolatesEndpoints) {
 
 TEST(BezierSE3Test, SampleCountIsCorrect) {
     const SE3d g0 = SE3d::computeIdentity();
-    Vec6d xi; xi << 0.1, 0.0, 0.0, 1.0, 0.0, 0.0;
+    EigVec6d xi; xi << 0.1, 0.0, 0.0, 1.0, 0.0, 0.0;
     const SE3d g1 = g0.compose(SE3d::computeExp(xi));
 
     BezierSE3<double> curve({g0, g1});
@@ -349,7 +351,7 @@ TEST(BezierSE3Test, SampleCountIsCorrect) {
 
 TEST(BezierSE3Test, ArcLengthPositive) {
     const SE3d g0 = SE3d::computeIdentity();
-    Vec6d xi; xi << 0.0, 0.0, 0.0, 1.0, 0.0, 0.0;
+    EigVec6d xi; xi << 0.0, 0.0, 0.0, 1.0, 0.0, 0.0;
     const SE3d g1 = g0.compose(SE3d::computeExp(xi));
     BezierSE3<double> curve({g0, g1});
     EXPECT_GT(curve.arcLength(50), 0.0);
@@ -379,7 +381,7 @@ protected:
 TEST_F(BeamStateEstimatorTest, PredictIncreasesUncertainty) {
     const double trace_before = estimator.getEstimate().getCovariance().trace();
 
-    Vec6d strain = Vec6d::Zero();
+    EigVec6d strain = EigVec6d::Zero();
     estimator.predict(strain, 1.0, 1e-4 * I6);
 
     const double trace_after = estimator.getEstimate().getCovariance().trace();
@@ -390,7 +392,7 @@ TEST_F(BeamStateEstimatorTest, PredictIncreasesUncertainty) {
  * After N predict steps, trace should be monotonically non-decreasing.
  */
 TEST_F(BeamStateEstimatorTest, PredictMonotonicallGrowsCovariance) {
-    Vec6d strain; strain << 0.1, 0.0, 0.0, 0.0, 0.0, 0.0;
+    EigVec6d strain; strain << 0.1, 0.0, 0.0, 0.0, 0.0, 0.0;
     double prev_trace = 0.0;
     for (int k = 0; k < 5; ++k) {
         estimator.predict(strain, 0.2, 1e-5 * I6);
@@ -407,7 +409,7 @@ TEST_F(BeamStateEstimatorTest, PredictMonotonicallGrowsCovariance) {
  */
 TEST_F(BeamStateEstimatorTest, UpdateWithExactMeasurementZeroInnovation) {
     // First inflate covariance with a predict step
-    estimator.predict(Vec6d::Zero(), 1.0, 1e-2 * I6);
+    estimator.predict(EigVec6d::Zero(), 1.0, 1e-2 * I6);
 
     const double trace_before = estimator.getEstimate().getCovariance().trace();
     const SE3d   mean_before  = estimator.getEstimate().getMean();
@@ -430,7 +432,7 @@ TEST_F(BeamStateEstimatorTest, UpdateWithExactMeasurementZeroInnovation) {
  */
 TEST_F(BeamStateEstimatorTest, PredictAlongRodReturnsPlusOneGaussians) {
     constexpr int N = 4;
-    std::vector<Vec6d>  strains(N, Vec6d::Zero());
+    std::vector<EigVec6d>  strains(N, EigVec6d::Zero());
     std::vector<double> lengths(N, 0.25);
 
     const auto gaussians = estimator.predictAlongRod(strains, lengths, 1e-5 * I6);
@@ -441,7 +443,7 @@ TEST_F(BeamStateEstimatorTest, PredictAlongRodReturnsPlusOneGaussians) {
  * getEstimationConfidence() = trace of covariance.
  */
 TEST_F(BeamStateEstimatorTest, ConfidenceEqualsCovarianceTrace) {
-    estimator.predict(Vec6d::Zero(), 0.5, 1e-3 * I6);
+    estimator.predict(EigVec6d::Zero(), 0.5, 1e-3 * I6);
     const double conf  = estimator.getEstimationConfidence();
     const double trace = estimator.getEstimate().getCovariance().trace();
     EXPECT_NEAR(conf, trace, 1e-14);
@@ -458,9 +460,9 @@ TEST(UncertaintyPropagatorTest, PropagateAlongRodSizeN1) {
     constexpr int N = 3;
     std::vector<PropagatorD::Section> secs(N);
     for (auto &s : secs) {
-        s.strain     = Vec6d::Zero();
+        s.strain     = EigVec6d::Zero();
         s.length     = 1.0;
-        s.strain_cov = 1e-4 * Mat6d::Identity();
+        s.strain_cov = 1e-4 * EigMat6d::Identity();
     }
 
     const auto result = PropagatorD::propagateAlongRod(base_g, secs);
@@ -474,9 +476,9 @@ TEST(UncertaintyPropagatorTest, CovarianceGrowsFromBaseToTip) {
     constexpr int N = 5;
     std::vector<PropagatorD::Section> secs(N);
     for (auto &s : secs) {
-        s.strain     = Vec6d::Zero();
+        s.strain     = EigVec6d::Zero();
         s.length     = 0.2;
-        s.strain_cov = 1e-3 * Mat6d::Identity();
+        s.strain_cov = 1e-3 * EigMat6d::Identity();
     }
 
     const auto result = PropagatorD::propagateAlongRod(base_g, secs);
@@ -495,9 +497,9 @@ TEST(UncertaintyPropagatorTest, ZeroNoiseLeavesZeroCovariance) {
     GaussianSE3d base_g(base, Eigen::Matrix<double,6,6>::Zero());
 
     PropagatorD::Section sec;
-    sec.strain     = Vec6d::Zero();
+    sec.strain     = EigVec6d::Zero();
     sec.length     = 1.0;
-    sec.strain_cov = Mat6d::Zero();  // no noise
+    sec.strain_cov = EigMat6d::Zero();  // no noise
 
     const auto result = PropagatorD::propagateStep(base_g, sec);
     EXPECT_LT(result.getCovariance().norm(), 1e-14)
@@ -505,7 +507,7 @@ TEST(UncertaintyPropagatorTest, ZeroNoiseLeavesZeroCovariance) {
 }
 
 TEST(UncertaintyPropagatorTest, TipConfidenceRadiiPositive) {
-    GaussianSE3d g(SE3d::computeIdentity(), 1e-2 * Mat6d::Identity());
+    GaussianSE3d g(SE3d::computeIdentity(), 1e-2 * EigMat6d::Identity());
     const auto radii = PropagatorD::tipConfidenceRadii(g);
     EXPECT_EQ(radii.size(), 3);
     for (int i = 0; i < 3; ++i)
@@ -557,16 +559,15 @@ protected:
 
         strainState->resize(N);
         {
-            auto w = *strainState->write(sofa::core::vec_id::write_access::position);
-            for (int k = 0; k < N; ++k) w.beginEdit()->at(k) = Vec3Types::Coord(0,0,0);
-            w.endEdit();
+            sofa::helper::WriteAccessor<sofa::Data<Vec3Types::VecCoord>> w =
+                *strainState->write(sofa::core::vec_id::write_access::position);
+            for (int k = 0; k < N; ++k) w[k] = Vec3Types::Coord(0,0,0);
         }
         rigidBase->resize(1);
         {
-            auto w = *rigidBase->write(sofa::core::vec_id::write_access::position);
-            w.beginEdit()->at(0) = Rigid3Types::Coord(
-                Vec3(0,0,0), Quat<SReal>(0,0,0,1));
-            w.endEdit();
+            sofa::helper::WriteAccessor<sofa::Data<Rigid3Types::VecCoord>> w =
+                *rigidBase->write(sofa::core::vec_id::write_access::position);
+            w[0] = Rigid3Types::Coord(Vec3(0,0,0), Quat<SReal>(0,0,0,1));
         }
         outputFrames->resize(N + 1);
 
@@ -662,9 +663,5 @@ TEST_F(ILQRControllerTest, ManipulabilityPositive) {
 // main
 // ═════════════════════════════════════════════════════════════════════════════
 
-int main(int argc, char **argv) {
-    sofa::simulation::setSimulation(
-        new sofa::simulation::graph::DAGSimulation());
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
-}
+// No main() here — Sofa.Testing provides main + graph::init().
+// Removed to avoid duplicate _main and duplicate Cosserat register symbols.

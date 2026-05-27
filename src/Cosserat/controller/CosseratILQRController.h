@@ -22,7 +22,7 @@
 
 #include <sofa/core/objectmodel/BaseObject.h>
 #include <sofa/core/objectmodel/Event.h>
-#include <sofa/core/objectmodel/SingleLink.h>
+#include <sofa/core/objectmodel/Link.h>
 #include <sofa/simulation/AnimateBeginEvent.h>
 
 namespace Cosserat::controller {

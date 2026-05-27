@@ -43,8 +43,9 @@ extern void registerCosseratNeedleSlidingConstraint(sofa::core::ObjectFactory *f
 extern void registerCosseratSlidingConstraint(sofa::core::ObjectFactory *factory);
 extern void registerPointsManager(sofa::core::ObjectFactory *factory);
 extern void registerProjectionEngine(sofa::core::ObjectFactory *factory);
-extern void registerCosseratTopologyBuilder(sofa::core::ObjectFactory *factory);
-extern void registerCosseratIntrinsicState(sofa::core::ObjectFactory *factory);
+// TODO(painless): re-enable once SOFA v26 API migration complete
+// extern void registerCosseratTopologyBuilder(sofa::core::ObjectFactory *factory);
+// extern void registerCosseratIntrinsicState(sofa::core::ObjectFactory *factory);
 extern void registerBeamHookeLawForceField(sofa::core::ObjectFactory *factory);
 extern void registerBeamHookeLawForceFieldRigid(sofa::core::ObjectFactory *factory);
 extern void registerHookeSeratPCSForceField(sofa::core::ObjectFactory *factory);
@@ -52,8 +53,9 @@ extern void registerCosseratInternalActuation(sofa::core::ObjectFactory *factory
 extern void registerDifferenceMultiMapping(sofa::core::ObjectFactory *factory);
 extern void registerDiscreteCosseratMapping(sofa::core::ObjectFactory *factory);
 extern void registerStrain2RigidCosseratMapping(sofa::core::ObjectFactory *factory);
-extern void registerStaggeredCosseratMapping(sofa::core::ObjectFactory *factory);
-extern void registerPainlessBeamForceField(sofa::core::ObjectFactory *factory);
+// TODO(painless): re-enable once SOFA v26 API migration complete
+// extern void registerStaggeredCosseratMapping(sofa::core::ObjectFactory *factory);
+// extern void registerPainlessBeamForceField(sofa::core::ObjectFactory *factory);
 
 // extern void registerDiscretDynamicCosseratMapping(sofa::core::ObjectFactory *factory);
 extern void registerLegendrePolynomialsMapping(sofa::core::ObjectFactory *factory);
@@ -101,8 +103,8 @@ void registerObjects(sofa::core::ObjectFactory *factory) {
     registerCosseratSlidingConstraint(factory);
     registerPointsManager(factory);
     registerProjectionEngine(factory);
-    registerCosseratTopologyBuilder(factory);
-    registerCosseratIntrinsicState(factory);
+    // registerCosseratTopologyBuilder(factory);  // TODO(painless)
+    // registerCosseratIntrinsicState(factory);    // TODO(painless)
     registerBeamHookeLawForceField(factory);
     registerBeamHookeLawForceFieldRigid(factory);
 
@@ -111,8 +113,8 @@ void registerObjects(sofa::core::ObjectFactory *factory) {
     registerDifferenceMultiMapping(factory);
     registerDiscreteCosseratMapping(factory);
     registerStrain2RigidCosseratMapping(factory);
-    registerStaggeredCosseratMapping(factory);
-    registerPainlessBeamForceField(factory);
+    // registerStaggeredCosseratMapping(factory);  // TODO(painless)
+    // registerPainlessBeamForceField(factory);    // TODO(painless)
     // registerDiscretDynamicCosseratMapping(factory);
     registerLegendrePolynomialsMapping(factory);
     registerRigidDistanceMapping(factory);
