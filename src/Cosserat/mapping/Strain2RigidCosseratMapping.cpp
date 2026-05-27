@@ -44,9 +44,9 @@ namespace Cosserat {
 						"bidirectional coupling.")
 						.add<mapping::Strain2RigidCosseratMapping<sofa::defaulttype::Vec3Types,
 															   sofa::defaulttype::Rigid3Types,
-															   sofa::defaulttype::Rigid3Types>>(true));
-		// .add<mapping::Strain2RigidCosseratMapping<sofa::defaulttype::Vec6Types,
-		// 									   sofa::defaulttype::Rigid3Types,
-		// 									   sofa::defaulttype::Rigid3Types>>());
+															   sofa::defaulttype::Rigid3Types>>(true)
+		.add<mapping::Strain2RigidCosseratMapping<sofa::defaulttype::Vec6Types,
+											   sofa::defaulttype::Rigid3Types,
+											   sofa::defaulttype::Rigid3Types>>());
 	}
 } // namespace Cosserat
