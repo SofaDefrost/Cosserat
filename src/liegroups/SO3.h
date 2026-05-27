@@ -691,6 +691,10 @@ namespace sofa::component::cosserat::liegroups {
 		}
 	};
 
+// ── Convenience type aliases ──────────────────────────────────────────────────
+using SO3d = SO3<double>;
+using SO3f = SO3<float>;
+
 } // namespace sofa::component::cosserat::liegroups
 
 // #endif // SOFA_COMPONENT_COSSERAT_LIEGROUPS_SO3_H

@@ -96,7 +96,12 @@ class PainlessBeamForceField : public sofa::core::behavior::BaseForceField {
     sofa::core::objectmodel::Data<double> d_EIz;  ///< Bending stiffness E·Iz
 
     // ── Link to the mechanical state ───────────────────────────────────────────
-    sofa::core::objectmodel::SingleLink<CosseratIntrinsicState> l_state;
+    sofa::core::objectmodel::SingleLink<
+        PainlessBeamForceField,
+        CosseratIntrinsicState,
+        sofa::core::objectmodel::BaseLink::FLAG_STOREPATH |
+        sofa::core::objectmodel::BaseLink::FLAG_STRONGLINK
+    > l_state;
 
     // ── Force/torque outputs ───────────────────────────────────────────────────
     /// Elastic forces on N+1 position DOFs (world frame).
@@ -122,20 +127,23 @@ class PainlessBeamForceField : public sofa::core::behavior::BaseForceField {
     void reinit() override;
 
     // ── BaseForceField interface ───────────────────────────────────────────────
+    //
+    // Signatures match sofa::core::behavior::BaseForceField (SOFA v24+):
+    //   addForce(mparams, fId)        — state read/write via MultiVecDerivId
+    //   addDForce(mparams, dfId)      — differential force
+    //   getPotentialEnergy(mparams)   — scalar energy
+    //   addKToMatrix(mparams, matrix) — sparse stiffness assembly
+    //
     void addForce(const sofa::core::MechanicalParams* mparams,
-                  sofa::core::MultiVecDerivId f,
-                  sofa::core::ConstMultiVecCoordId x,
-                  sofa::core::ConstMultiVecDerivId v) override;
+                  sofa::core::MultiVecDerivId fId) override;
 
     void addDForce(const sofa::core::MechanicalParams* mparams,
-                   sofa::core::MultiVecDerivId df,
-                   sofa::core::ConstMultiVecDerivId dx) override;
+                   sofa::core::MultiVecDerivId dfId) override;
 
     void addKToMatrix(const sofa::core::MechanicalParams* mparams,
                       const sofa::core::behavior::MultiMatrixAccessor* matrix) override;
 
-    SReal getPotentialEnergy(const sofa::core::MechanicalParams* mparams,
-                             sofa::core::ConstMultiVecCoordId x) const override;
+    SReal getPotentialEnergy(const sofa::core::MechanicalParams* mparams) const override;
 
     // ── Direct Python/C++ API ──────────────────────────────────────────────────
 

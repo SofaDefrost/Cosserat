@@ -59,17 +59,25 @@ class CosseratIntrinsicState : public sofa::core::behavior::BaseMechanicalState 
     // Total DOF count = (N+1) + N = 2N+1
     // Total scalar size = 3 × (2N+1)
     //
-    unsigned int getSpaceDimensions() const override { return 3; }
+
+    /**
+     * @brief Spatial dimension of each DOF = 3.
+     *
+     * Not a virtual from BaseMechanicalState (which has no getSpaceDimensions()
+     * in SOFA v24+); provided as a helper for internal use.
+     */
+    unsigned int getSpaceDimensions() const { return 3; }
 
     /**
      * @brief Total number of DOFs: (N+1) node positions + N segment orientations.
      *
+     * Implements BaseState::getSize().
      * Used by SOFA solvers to size the global displacement / force vectors
      * and the tangent stiffness matrix.  Each DOF lives in R³ (tangent space
      * of SO3 for orientations, plain R³ for positions).
      */
-    unsigned int getDoFCount() const override {
-        return static_cast<unsigned int>(
+    sofa::Size getSize() const override {
+        return static_cast<sofa::Size>(
             getPositions().size() + getOrientations().size()
         );
     }
@@ -77,12 +85,12 @@ class CosseratIntrinsicState : public sofa::core::behavior::BaseMechanicalState 
     /**
      * @brief Dimension of each coordinate DOF = 3 (both Vec3 and so3 ∈ R³).
      */
-    unsigned int getCoordDimension() const override { return 3; }
+    sofa::Size getCoordDimension() const override { return 3; }
 
     /**
      * @brief Dimension of each velocity/deriv DOF = 3 (tangent space is R³).
      */
-    unsigned int getDerivDimension() const override { return 3; }
+    sofa::Size getDerivDimension() const override { return 3; }
 
     /**
      * @brief Computes the linear strain on segment i.
@@ -128,8 +136,10 @@ private:
     unsigned int last_orientations_counter = 0;
 
     // As a custom state, it is important to implement resize/clear methods if needed by solvers.
-    void resize(unsigned int count) override {
-        // Unclear how this translates to N and N+1, just a stub for now.
+    // sofa::Size = uint32_t — matches BaseState::resize(Size).
+    void resize(sofa::Size /*count*/) override {
+        // Stub: staggered DOF layout (N+1 nodes + N orientations) is
+        // initialised by init(); solvers should not resize directly.
     }
 };
 

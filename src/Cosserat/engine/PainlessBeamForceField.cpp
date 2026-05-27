@@ -213,7 +213,7 @@ void PainlessBeamForceField::computeDForces(
         if (h[i] < 1e-12) continue;
 
         // Build R_i as 3×3 SOFA matrix
-        const auto rot_e = R[i].toRotationMatrix();   // Eigen::Matrix3d
+        const auto rot_e = R[i].matrix();   // Eigen::Matrix3d
         Mat3x3d R_sofa;
         for (int r = 0; r < 3; ++r)
             for (int c = 0; c < 3; ++c)
@@ -316,9 +316,7 @@ void PainlessBeamForceField::computeDForcesFromData(double kFactor) {
 
 void PainlessBeamForceField::addForce(
     const sofa::core::MechanicalParams* /*mparams*/,
-    sofa::core::MultiVecDerivId        /*fId*/,
-    sofa::core::ConstMultiVecCoordId   /*x*/,
-    sofa::core::ConstMultiVecDerivId   /*v*/) {
+    sofa::core::MultiVecDerivId        /*fId*/) {
 
     if (!l_state.get()) return;
 
@@ -343,8 +341,7 @@ void PainlessBeamForceField::addForce(
 
 void PainlessBeamForceField::addDForce(
     const sofa::core::MechanicalParams* mparams,
-    sofa::core::MultiVecDerivId        /*df*/,
-    sofa::core::ConstMultiVecDerivId   /*dx*/) {
+    sofa::core::MultiVecDerivId        /*dfId*/) {
 
     SOFA_UNUSED(mparams);
 
@@ -390,7 +387,7 @@ void PainlessBeamForceField::addKToMatrix(
     for (size_t i = 0; i < N; ++i) {
         if (h[i] < 1e-12) continue;
 
-        const auto rot_e = R[i].toRotationMatrix();
+        const auto rot_e = R[i].matrix();
         Mat3x3d R_sofa;
         for (int r = 0; r < 3; ++r)
             for (int c = 0; c < 3; ++c)
@@ -481,8 +478,7 @@ void PainlessBeamForceField::addKToMatrix(
 }
 
 SReal PainlessBeamForceField::getPotentialEnergy(
-    const sofa::core::MechanicalParams* /*mparams*/,
-    sofa::core::ConstMultiVecCoordId   /*x*/) const {
+    const sofa::core::MechanicalParams* /*mparams*/) const {
     if (!l_state.get()) return 0.0;
     VecVec3d f_tmp, tau_tmp;
     return computeForcesAndTorques(f_tmp, tau_tmp);

@@ -155,7 +155,7 @@ R.quaternion()        → 4-numpy  [qx, qy, qz, qw]  (SOFA convention)
         // ── Conversions ─────────────────────────────────────────────────────────
         .def("toRotationMatrix",
              [](const lg::SO3<double>& self) -> Eigen::Matrix3d {
-                 return self.toRotationMatrix();
+                 return self.matrix();  // SO3::matrix() returns the 3×3 rotation matrix
              },
              "3×3 rotation matrix as numpy array (row-major).")
         .def("quaternion",
