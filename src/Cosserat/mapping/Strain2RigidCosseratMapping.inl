@@ -78,17 +78,17 @@ namespace Cosserat::mapping {
 							 "Set to 0 to disable (returns zero covariances).\n"
 							 "Used by computeUncertainties().")) {
 
-		// Register callback for updating frame transformations when geometry changes
+		// Callback: re-run geometry initialisation whenever curvilinear abscissas change
+		// at runtime (e.g. from a scene script or GUI tweak).  The heavy per-step
+		// recomputation is done in apply(); this is only triggered on Data change.
 		this->addUpdateCallback("updateFrames", {&d_curv_abs_section, &d_curv_abs_frames, &d_debug},
 								[this](const sofa::core::DataTracker &t) {
-									msg_info() << "Strain2RigidCosseratMapping updateFrames callback called";
 									SOFA_UNUSED(t);
 									this->updateGeometryInfo();
-									msg_info_when(d_debug.getValue()) << "updateFrames callback triggered";
+									msg_info_when(d_debug.getValue())
+										<< "updateFrames callback: geometry re-initialised";
 									const sofa::VecCoord_t<In1> &strain_state =
 											m_strain_state->read(sofa::core::vec_id::read_access::position)->getValue();
-
-									// This is also done in apply() So, no really need here !!!
 									this->updateFrameTransformations(strain_state);
 									return sofa::core::objectmodel::ComponentState::Valid;
 								},
@@ -104,15 +104,12 @@ namespace Cosserat::mapping {
 		msg_info() << "Strain2RigidCosseratMapping initialized with liegroups SE(3) integration";
 	}
 
-	/*********************start debugging **************************/
 	template<class TIn1, class TIn2, class TOut>
 	void
 	Strain2RigidCosseratMapping<TIn1, TIn2, TOut>::apply(const sofa::core::MechanicalParams * /* mparams */,
 													  const vector<sofa::DataVecCoord_t<Out> *> &dataVecOutPos,
 													  const vector<const sofa::DataVecCoord_t<In1> *> &dataVecIn1Pos,
 													  const vector<const sofa::DataVecCoord_t<In2> *> &dataVecIn2Pos) {
-
-		msg_info("Strain2RigidCosseratMapping") << "Strain2RigidCosseratMapping::apply called";
 
 		if (dataVecOutPos.empty() || dataVecIn1Pos.empty() || dataVecIn2Pos.empty())
 			return;
@@ -378,10 +375,7 @@ namespace Cosserat::mapping {
 			vel.clear();
 		}
 
-		// 1. Compute current tangent exponential SE3 matrices
-		this->updateTangExpSE3();
-
-		// 2. Compute the base velocity in SE(3) tangent space
+		// 1. Compute the base velocity in SE(3) tangent space
 		// 2.1 Convert base velocity to se(3) tangent vector
 		TangentVector base_vel_local = TangentVector::Zero();
 		for (auto u = 0; u < 6; u++)

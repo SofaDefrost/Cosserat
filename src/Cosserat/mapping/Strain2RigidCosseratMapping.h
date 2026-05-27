@@ -167,6 +167,32 @@ namespace Cosserat::mapping {
 					 const sofa::type::vector<sofa::DataVecDeriv_t<In2> *> &dataVecOut2RootForce,
 					 const sofa::type::vector<const sofa::DataVecDeriv_t<Out> *> &dataVecInForce) override;
 
+		/**
+		 * @brief Geometric stiffness contribution K_G · δξ.
+		 *
+		 * Computes ∂/∂ξ [J(ξ)ᵀ f_x] · δξ with the child wrenches f_x held
+		 * constant (frozen at the current configuration), and accumulates the
+		 * result into the input (strain) force vector with weight `kFactor`.
+		 *
+		 * Two contributions are assembled:
+		 *  - **(a) Frame direct term** — the dependency of each output-frame
+		 *    co-adjoint on the local strain via the tangent-exponential matrix:
+		 *      δf_k += kFactor · Bᵀ · J_frame^T · ad(J_frame · B·δξ_k)ᵀ · w_body_k
+		 *  - **(b) Section transport term** — the dependency of the accumulated
+		 *    downstream wrench on the local SE(3) transport (backward sweep):
+		 *      δf_k += kFactor · Bᵀ · J_local_k^T · ad(J_local_k · B·δξ_k)ᵀ · F_tot_k
+		 *
+		 * where B = [I_m | 0] is the selector for the m active strain DOFs
+		 * (m = 3 for Vec3Types, 6 for Vec6Types).
+		 *
+		 * The implementation uses `TwistType::smallAdjoint()` from the liegroups
+		 * library and `CosseratBodyJacobian` for the backward wrench sweep.
+		 *
+		 * @param mparams   Mechanical parameters; kFactor is read from here.
+		 * @param inForce   Multi-vec id for the strain force (in/out, += semantics).
+		 * @param outForce  Multi-vec id for the child wrenches (read-only, unused
+		 *                  because we read directly from m_frames).
+		 */
 		void applyDJT(const sofa::core::MechanicalParams* mparams,
 					  sofa::core::MultiVecDerivId          inForce,
 					  sofa::core::ConstMultiVecDerivId     outForce) override;
