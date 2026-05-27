@@ -15,10 +15,8 @@ from introduction_and_setup import (_add_cosserat_frame_v2, _add_cosserat_state,
                                     _add_rigid_base, add_mini_header)
 
 v_damping_param: float =  8e-1  # Damping parameter for dynamics
-beam_length :float = 15.0
-nb_section : int = 2
-nb_frame : int = 5
-dist_frame: float = beam_length/float(nb_frame)
+beam_length :float = 5.0
+nb_section : int = 1
 section_length: float = beam_length/float(nb_section)
 stiffness_param: float = 1.e10
 
@@ -30,12 +28,14 @@ def createScene(root_node):
     root_node.addObject('RequiredPlugin', pluginName='Sofa.Component.ODESolver.Backward') # Needed to use components [EulerImplicitSolver]  
     root_node.addObject('RequiredPlugin', name='Sofa.Component.LinearSolver.Iterative') # Needed to use components [CGLinearSolver]  
     root_node.addObject('RequiredPlugin', name='Sofa.Component.MechanicalLoad') # Needed to use components [ConstantForceField]  
-   
+    root_node.addObject('RequiredPlugin', name='Sofa.Component.Constraint.Projective') # Needed to use components [FixedProjectiveConstraint]
+    
     # Add gravity
     root_node.gravity = [0, -9.81, 0]  # Add gravity!
 
+    root_node.dt = 0.001
     # Configure time integration and solver
-    solver_node = root_node.addChild("solver_1")
+    solver_node = root_node.addChild("solver")
 
     solver_node.addObject(
         "EulerImplicitSolver",
@@ -46,7 +46,7 @@ def createScene(root_node):
     )
     solver_node.addObject("CGLinearSolver", iterations=25, tolerance=1e-7, threshold=1e-7)
 
-    # # 1. rigid base
+    # 1. rigid base (Pas utiliser du tout/ seulement considérer comme second entrée du Frames2StrainCosseratMapping)
     base_node = solver_node.addChild("rigid_base")
     base_node.addObject("MechanicalObject", template="Rigid3d", name="cosserat_base_mo", 
                         position=[0., 0., 0., 0., 0., 0., 1.], showIndices="1", showObject="1", showObjectScale=0.1)
@@ -54,19 +54,18 @@ def createScene(root_node):
                          external_points="0", mstate="@cosserat_base_mo", points="0", template="Rigid3d")
     
     # 2. Frame node
-    frame_positions = [[i*dist_frame, 0., 0., 0., 0., 0., 1.] for i in range(nb_frame+1)]    
-
-    frame_node = base_node.addChild("frame_node")
-    # base_node.addChild(frame_node)
+    frame_positions = [[i*section_length, 0., 0., 0., 0., 0., 1.] for i in range(nb_section+1)] 
+      
+    frame_node = solver_node.addChild("frame_node")
     frames_mo = frame_node.addObject("MechanicalObject", template="Rigid3d",
                                     name="FramesMO", position=frame_positions, 
                                     showIndices="1", showObject="1", showObjectScale=0.8)
-    frame_node.addObject("UniformMass", totalMass=0.0)
+    # frame_node.addObject("FixedProjectiveConstraint", indices="0")
+    frame_node.addObject("UniformMass", totalMass=1.0)
 
-    # # 3. Strain node
-    strain_node = base_node.addChild("strain_node")
-    frame_node.addChild(strain_node)
-    strain_node.addObject("MechanicalObject", template="Vec3d", name="strain_state", position=[[0., 0., 0.1] for _ in range(nb_section)])
+    # 3. Strain node
+    strain_node = frame_node.addChild("strain_node")
+    strain_node.addObject("MechanicalObject", template="Vec6d", name="strain_state", position=[[0., 0., 0., 0, 0, 0] for _ in range(nb_section)])
         
     strain_node.addObject("BeamHookeLawForceField",
                            crossSectionShape="circular", 
@@ -85,6 +84,6 @@ def createScene(root_node):
                         debug=0,
                         radius=0.5,
                         color=[0., 1., 0., 0.5])   
-
+ 
 
     return root_node

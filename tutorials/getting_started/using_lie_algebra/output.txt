@@ -1,0 +1,143 @@
+[INFO]    [runSofa] PluginRepository paths = /home/defrost/sofa/build/master/lib:/home/defrost/sofa/build/master/plugins
+[INFO]    [runSofa] DataRepository paths = /home/defrost/sofa/src/share:/home/defrost/sofa/src/examples:/home/defrost/sofa/build/master:/home/defrost/sofa/build/master:/home/defrost/sofa/build/master
+[INFO]    [runSofa] runSofaDataRepository paths = /home/defrost/sofa/src/applications/projects/runSofa/resources:/home/defrost/sofa/build/master
+[INFO]    [GUIManager] Registered batch as a GUI.
+[INFO]    [runSofa] Loading automatically plugin list in /home/defrost/sofa/build/master/lib/plugin_list.conf.default
+[DEPRECATED] [PluginManager] /home/defrost/sofa/build/master/lib/plugin_list.conf.default file is using a deprecated syntax (version information missing). Please update it in the near future.
+[INFO]    [SofaPython3] Initializing with python version 3.12.3 (main, Mar 23 2026, 19:04:32) [GCC 13.3.0]
+[INFO]    [SofaPython3] Registering a scene loader for [.py, .py3, .pyscn, .py3scn] files.
+[INFO]    [SofaPython3] Initializing python
+<string>:2: DeprecationWarning: scipy.misc is deprecated and will be removed in 2.0.0
+[INFO]    [SofaPython3] Added '/home/defrost/sofa/build/master/external_directories/fetched/Cosserat/examples/python3/' to sys.path
+[INFO]    [SofaPython3] Added '/home/defrost/sofa/build/master/lib/python3/site-packages' to sys.path
+---------------------------------------
+Checking SOFA_ROOT and SOFAPYTHON3_ROOT
+Warning: environment variable SOFA_ROOT is empty. Trying to guess it.
+Warning: cannot guess SOFA_ROOT Loading SOFA libraries will likely fail and/or SOFA won't find its resources.
+---------------------------------------
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofaPython3.so
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofa.Component.ODESolver.Forward.so
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofa.Component.ODESolver.Backward.so
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofa.Component.ODESolver.so
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofa.Component.IO.Mesh.so
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofa.Component.IO.so
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofa.Component.Playback.so
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofa.Component.SceneUtility.so
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofa.Component.Topology.Container.Constant.so
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofa.Component.Topology.Container.Dynamic.so
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofa.Component.Topology.Container.Grid.so
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofa.Component.Topology.Container.so
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofa.Component.Topology.Mapping.so
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofa.Component.Topology.Utility.so
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofa.Component.Topology.so
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofa.Component.Visual.so
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofa.Component.LinearSystem.so
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofa.Component.LinearSolver.Iterative.so
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofa.Component.LinearSolver.Ordering.so
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofa.Component.LinearSolver.Direct.so
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofa.Component.LinearSolver.Preconditioner.so
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofa.Component.LinearSolver.so
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofa.Component.Mass.so
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofa.Component.Diffusion.so
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofa.Component.Mapping.Linear.so
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofa.Component.Mapping.NonLinear.so
+[DEPRECATED] [Sofa.Component.Mapping.MappedMatrix] This plugin is deprecated and will be removed in the future.
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofa.Component.Mapping.MappedMatrix.so
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofa.Component.Mapping.so
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofa.Component.StateContainer.so
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofa.Component.SolidMechanics.Spring.so
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofa.Component.SolidMechanics.FEM.Elastic.so
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofa.Component.SolidMechanics.FEM.HyperElastic.so
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofa.Component.SolidMechanics.FEM.NonUniform.so
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofa.Component.SolidMechanics.FEM.so
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofa.Component.SolidMechanics.TensorMass.so
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofa.Component.SolidMechanics.so
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofa.Component.Constraint.Lagrangian.Model.so
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofa.Component.Constraint.Lagrangian.Correction.so
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofa.Component.Constraint.Lagrangian.Solver.so
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofa.Component.Constraint.Lagrangian.so
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofa.Component.Constraint.Projective.so
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofa.Component.Constraint.so
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofa.Component.AnimationLoop.so
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofa.Component.MechanicalLoad.so
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofa.Component.Collision.Geometry.so
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofa.Component.Collision.Detection.Algorithm.so
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofa.Component.Collision.Detection.Intersection.so
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofa.Component.Collision.Detection.so
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofa.Component.Collision.Response.Mapper.so
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofa.Component.Collision.Response.Contact.so
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofa.Component.Collision.Response.so
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofa.Component.Collision.so
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofa.Component.Setting.so
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofa.Component.Controller.so
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofa.Component.Engine.Analyze.so
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofa.Component.Engine.Generate.so
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofa.Component.Engine.Select.so
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofa.Component.Engine.Transform.so
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofa.Component.Engine.so
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofa.Component.Haptics.so
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofa.Component.so
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofa.GL.Component.Rendering2D.so
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofa.GL.Component.Rendering3D.so
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofa.GL.Component.Engine.so
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofa.GL.Component.Shader.so
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofa.GL.Component.so
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofa.GUI.Component.so
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofa.GUI.Batch.so
+[INFO]    [GUIManager] Registered glfw as a GUI.
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofaGLFW.so
+[INFO]    [MainAdditionGUIRegistry] Registered GUI "Camera"
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofaImGui.Camera.so
+[INFO]    [GUIManager] Registered imgui as a GUI.
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofaImGui.so
+[INFO]    [SofaCUDA] C++ standard = 202002
+[INFO]    [SofaCUDA] CUDA: 1 device(s) found.
+[INFO]    [SofaCUDA] CUDA:  0 : "Quadro M2200", 3981/4031 MB, 64 cores at 1.036 GHz, revision 5.2
+[INFO]    [SofaCUDA] , timeout enabled
+[INFO]    [SofaCUDA] CUDA: Using device 0 : "Quadro M2200"
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSofaCUDA.so
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libMultiThreading.so
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libSTLIB.so
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libCosserat.so
+[INFO]    [PluginManager] Loaded plugin: /home/defrost/sofa/build/master/lib/libVolumetricRendering.so
+[INFO]    [PluginManager] 76 plugins have been loaded from /home/defrost/sofa/build/master/lib/plugin_list.conf.default
+[INFO]    [CosseratGeometryMappingng] CosseratGeometryMapping constructor called  !!!
+[INFO]    [SceneCheckerVisitor] Validating node "root" with checks: [SceneCheckCollisionResponse, SceneCheckDeprecatedComponents, SceneCheckDuplicatedName, SceneCheckEmptyNodeName, SceneCheckMapping, SceneCheckMissingRequiredPlugin, SceneCheckUsingAlias, SceneCheckMultithreading]
+[WARNING] [SceneCheckDuplicatedName]   
+- Found duplicated names ['RequiredPlugin', ] in node '/'  
+Nodes with similar names at the same level in your scene can crash certain operations, please rename them
+[INFO]    [SceneCheckerVisitor] Finished validating node "root".
+[INFO]    [BaseBeamForceField] Solid circular cross-section: r=0.5
+[INFO]    [CosseratGeometryMapping] Initializing CosseratGeometryMapping...
+HookeSeratBaseMapping updateGeometryInfo completed: m_indices_vectors: 2
+ elements m_frames_length_vectors: 2 elements
+========In apply function========
+[INFO]    [Frames2StrainCosseratMapping] Frames2StrainCosseratMapping::apply called
+HookeSeratBaseMapping updateGeometryInfo completed: m_indices_vectors: 2
+ elements m_frames_length_vectors: 2 elements
+====> Update Callback <====
+(in) Rigid base: 0 0 0 0 0 0 1
+(in) Frame [0]: 0 0 0 0 0 0 1
+(in) Frame [1]: 5 0 0 0 0 0 1
+g_rel: SE3(R=SO3(quat=[1, 0, 0, 0]), t=[5, 0, 0])
+(out) Strain [0] :0 0 0 1 0 0
+========End apply========
+========In applyJ function========
+========End applyJ========
+========In apply function========
+[INFO]    [Frames2StrainCosseratMapping] Frames2StrainCosseratMapping::apply called
+(in) Rigid base: 0 0 0 0 0 0 1
+(in) Frame [0]: 0 0 0 0 0 0 1
+(in) Frame [1]: 5 0 0 0 0 0 1
+g_rel: SE3(R=SO3(quat=[1, 0, 0, 0]), t=[5, 0, 0])
+(out) Strain [0] :0 0 0 1 0 0
+========End apply========
+========In applyJ function========
+========End applyJ========
+[INFO]    [BaseViewer] There is no camera in this scene, I created one. To remove this error message, add a camera in your scene.
+[INFO]    [ImGuiGUIEngine] Fetching settings from /home/defrost/.config/SOFA/config/imgui/settings.ini
+[INFO]    [PluginManager] 0 plugins have been loaded from /home/defrost/.config/SOFA/config/loadedPlugins.ini
+[INFO]    [SofaPython3.Simulation] Sofa.Simulation unload()
+[INFO]    [SofaPython3] Clearing Sofa.Core cache...
+[INFO]    [SofaPython3.Core] Sofa.Core unload()
+[INFO]    [SofaPython3.Helper] Sofa.Helper unload()
