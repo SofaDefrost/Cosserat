@@ -141,13 +141,13 @@ namespace sofa::component::cosserat::liegroups {
 			if (angle < Types<Scalar>::epsilon()) {
 				V_inv = Matrix3::Identity() - Scalar(0.5) * SO3Type::computeHat(phi);
 			} else {
-				const Vector3 axis = phi / angle;
-				const Matrix3 K = SO3Type::computeHat(axis);
+				// const Vector3 axis = phi / angle; //@appa: correction here (error if division with angle)
+				const Matrix3 phiHat = SO3Type::computeHat(phi);
 				const Scalar sin_angle = std::sin(angle);
 				const Scalar cos_angle = std::cos(angle);
-				V_inv = Matrix3::Identity() - Scalar(0.5) * K +
-						(Scalar(2) * sin_angle - angle * (Scalar(1) + cos_angle)) /
-								(Scalar(2) * angle * angle * sin_angle) * K * K;
+				V_inv = Matrix3::Identity() - Scalar(0.5) * phiHat +
+						((Scalar(2) * sin_angle - angle * (Scalar(1) + cos_angle)) /
+								(Scalar(2) * angle * angle * sin_angle)) * phiHat * phiHat;
 			}
 
 			const Vector3 rho = V_inv * m_translation;
@@ -708,7 +708,7 @@ namespace sofa::component::cosserat::liegroups {
 			// So the tangent vector representing the spatial derivative of the frame is indeed [1+rho.x, rho.y, rho.z].
 			// I will keep it as is, assuming 'rho' passed here is the strain (deviation).
 
-			xi_hat(0, 3) = 1.0 + rho.x();
+			xi_hat(0, 3) = rho.x();
 			xi_hat(1, 3) = rho.y();
 			xi_hat(2, 3) = rho.z();
 
