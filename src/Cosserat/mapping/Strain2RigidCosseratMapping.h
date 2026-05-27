@@ -167,8 +167,9 @@ namespace Cosserat::mapping {
 					 const sofa::type::vector<sofa::DataVecDeriv_t<In2> *> &dataVecOut2RootForce,
 					 const sofa::type::vector<const sofa::DataVecDeriv_t<Out> *> &dataVecInForce) override;
 
-		void applyDJT(const sofa::core::MechanicalParams * /*mparams*/, sofa::core::MultiVecDerivId /*inForce*/,
-					  sofa::core::ConstMultiVecDerivId /*outForce*/) override {}
+		void applyDJT(const sofa::core::MechanicalParams* mparams,
+					  sofa::core::MultiVecDerivId          inForce,
+					  sofa::core::ConstMultiVecDerivId     outForce) override;
 
 		/// Support for constraints
 		void applyJT(const sofa::core::ConstraintParams *cparams,

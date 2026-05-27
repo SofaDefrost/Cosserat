@@ -18,6 +18,7 @@
 #pragma once
 
 #include <Cosserat/mapping/Strain2RigidCosseratMapping.h>
+#include <sofa/core/MechanicalParams.h>
 #include <sofa/core/Multi2Mapping.inl>
 #include <sofa/core/objectmodel/BaseContext.h>
 #include <sofa/core/visual/VisualParams.h>
@@ -1288,5 +1289,194 @@ namespace Cosserat::mapping {
 
 		std::cout << "==========================\n";
 	}
+
+// =============================================================================
+// applyDJT — geometric stiffness of the Cosserat mapping (liegroups variant)
+// =============================================================================
+//
+// Computes the directional derivative of J(q)^T f_x w.r.t. q, holding f_x
+// (current child frame wrenches) constant.  This is the geometric stiffness K_G
+// contribution at the mapping level.
+//
+// Formula (see DiscreteCosseratMapping::applyDJT doc for the scalar derivation):
+//
+//   For each section k (0-indexed strain DOF):
+//
+//   (a) Frame direct term — variation of the frame co-adjoint when ξ_k changes:
+//       δf_k += kFactor · B^T · J_frame^T · ad(v_s)^T · w_body_s
+//       with v_s = J_frame_s · B · δξ_k,   w_body_s = coAdj_frame · P^T · f_s
+//
+//   (b) Section transport term — variation of Ad_{g_k^{-1}} in the backward chain:
+//       δf_k += kFactor · B^T · J_local_k^T · ad(v_k)^T · F_tot_k
+//       with v_k = J_local_k · B · δξ_k,   F_tot_k = Ad_{g_k^{-1}}^T · f_{k+1}
+//
+// Both terms neglect the variation of J itself (∂J/∂ξ, a third-order tensor);
+// this is the standard approximation in Cosserat beam FEM
+// (Simo & Vu-Quoc 1986, Cardona & Géradin 1988).
+//
+// Uses the liegroups API:
+//   - m_bodyJacobian.getLocalJacobian(k)    → J_local_k
+//   - m_bodyJacobian.getAdjointInverse(k)   → Ad_{g_k^{-1}}
+//   - frame.getTangAdjointMatrix()          → J_frame_s
+//   - frame.getCoAdjoint()                  → Ad_{g_frame_s^{-T}}
+//   - TwistType(v).smallAdjoint()           → ad(v) 6×6
+//
+template<class TIn1, class TIn2, class TOut>
+void Strain2RigidCosseratMapping<TIn1, TIn2, TOut>::applyDJT(
+    const sofa::core::MechanicalParams* mparams,
+    sofa::core::MultiVecDerivId          inForce,
+    sofa::core::ConstMultiVecDerivId     /*outForce*/)
+{
+    if (this->d_componentState.getValue() !=
+        sofa::core::objectmodel::ComponentState::Valid)
+        return;
+
+    const SReal kFactor = mparams->kFactor();
+    if (kFactor == 0.0)
+        return;
+
+    // ── Inputs ────────────────────────────────────────────────────────────────
+    // δξ : strain displacement (In1 space)
+    const sofa::VecDeriv_t<In1>& dx =
+        mparams->readDx(m_strain_state)->getValue();
+
+    // f_x : current child wrenches (Out space, held constant)
+    const sofa::VecDeriv_t<Out>& childF =
+        mparams->readF(m_frames)->getValue();
+
+    // ── Output parent force (In1 space, accumulate +=) ────────────────────────
+    sofa::Data<sofa::VecDeriv_t<In1>>& out1Data =
+        *inForce[m_strain_state].write();
+    sofa::VecDeriv_t<In1>& out1 = *out1Data.beginEdit();
+
+    // ── Frame positions (for projector to SOFA frame) ─────────────────────────
+    const sofa::VecCoord_t<Out>& framePositions =
+        m_frames->read(sofa::core::vec_id::read_access::position)->getValue();
+
+    // ── B : active strain selector ─────────────────────────────────────────────
+    // Vec3Types → [I_3 | 0_3]  (angular only, 3 DOF)
+    // Vec6Types → I_6          (full strains, 6 DOF)
+    static constexpr int NStrainDOF = static_cast<int>(Coord1::total_size);
+    using MatB = Eigen::Matrix<double, NStrainDOF, 6>;
+    MatB matB = MatB::Zero();
+    for (int j = 0; j < NStrainDOF; j++) matB(j, j) = 1.0;
+
+    // ── Sizes and early-exit guard ────────────────────────────────────────────
+    const size_t tab_size = childF.size();
+    const size_t sz       = m_indices_vectors.size();
+    const int    N_bj     = m_bodyJacobian.size();  // number of sections
+
+    if (sz == 0 || tab_size == 0 || N_bj == 0) {
+        out1Data.endEdit();
+        return;
+    }
+
+    // ── Step 1: project each frame wrench to the body (Cosserat) frame ────────
+    // Identical to applyJT Phase 0.
+    vector<WrenchType> localForces;
+    localForces.reserve(tab_size);
+    for (size_t i = 0; i < tab_size; ++i) {
+        TangentVector frameForce = TangentVector::Zero();
+        for (unsigned j = 0; j < 6; j++) frameForce[j] = childF[i][j];
+
+        const auto& pos = framePositions[i];
+        const SE3Types absoluteFrame(
+            SE3Types::SO3Type(Eigen::Quaternion<double>(
+                pos.getOrientation()[3], pos.getOrientation()[0],
+                pos.getOrientation()[1], pos.getOrientation()[2])),
+            Vector3(pos.getCenter()[0], pos.getCenter()[1], pos.getCenter()[2]));
+        // P(R)^T : SOFA global → Cosserat body frame (dual projection)
+        localForces.emplace_back(
+            absoluteFrame.buildProjectionMatrix(absoluteFrame.rotation().matrix()).transpose()
+            * frameForce);
+    }
+
+    // ── Step 2: per-frame geometric contribution — term (a) ───────────────────
+    //
+    // For each frame s in section k_s:
+    //   w_body_s = coAdj_frame · localForces[s]          (body-frame wrench)
+    //   v_s      = J_frame_s · B · δξ_{k_s}              (frame velocity twist)
+    //   δf_{k_s} += kFactor · B^T · J_frame_s^T · ad(v_s)^T · w_body_s
+    //
+    // We also aggregate external_wrenches[k_s] for the backward pass (term b).
+    using Matrix6 = typename BodyJacobian::Matrix6;
+    using Vector6 = typename BodyJacobian::Vector6;
+
+    std::vector<WrenchType> external_wrenches(
+        static_cast<size_t>(N_bj + 1), WrenchType::Zero());
+
+    for (size_t i = 0; i < sz; ++i) {
+        const int s1  = m_indices_vectors[i];  // section index, 1-based
+        const int k_s = s1 - 1;                // section index, 0-based
+
+        const FrameInfo& frame = m_frameProperties[i];
+
+        // w_body_s = coAdj_frame · P^T · f_s
+        const WrenchType w_body(frame.getCoAdjoint() * localForces[i].data());
+
+        // Aggregate for the section-level backward pass
+        if (k_s >= 0 && k_s < N_bj + 1)
+            external_wrenches[k_s] =
+                WrenchType(external_wrenches[k_s].data() + w_body.data());
+
+        // ── term (a) ──────────────────────────────────────────────────────────
+        if (k_s < static_cast<int>(dx.size())) {
+            // Embed NStrainDOF active DOFs into full 6D strain
+            TangentVector xi_dot = TangentVector::Zero();
+            for (int j = 0; j < NStrainDOF; j++) xi_dot[j] = dx[k_s][j];
+
+            const Matrix6& J_f = frame.getTangAdjointMatrix();
+            const TangentVector v_s = J_f * xi_dot;
+
+            // ad(v_s)^T — using Twist::smallAdjoint()
+            const Matrix6 adT = TwistType(v_s).smallAdjoint().transpose();
+
+            // δf_{k_s} += kFactor · B^T · J_frame^T · ad(v_s)^T · w_body_s
+            const Eigen::Matrix<double, NStrainDOF, 1> delta_f =
+                static_cast<double>(kFactor) * (matB * J_f.transpose() * adT * w_body.data());
+            for (int j = 0; j < NStrainDOF; j++)
+                out1[k_s][j] += static_cast<SReal>(delta_f[j]);
+        }
+    }
+
+    // ── Step 3: section transport geometric contribution — term (b) ────────────
+    //
+    // Backward sweep (dual of CosseratBodyJacobian::applyTranspose).
+    // When δξ_k perturbs section k, the transport matrix Ad_{g_k^{-1}} changes:
+    //   v_k      = J_local_k · B · δξ_k          (section velocity twist)
+    //   F_tot_k  = Ad_{g_k^{-1}}^T · f_{k+1}     (transported downstream wrench)
+    //   δf_k    += kFactor · B^T · J_local_k^T · ad(v_k)^T · F_tot_k
+    {
+        Vector6 acc = external_wrenches[N_bj].data();  // f_N = w_N (tip)
+
+        for (int k = N_bj - 1; k >= 0; --k) {
+            const Matrix6& Ad_inv_k   = m_bodyJacobian.getAdjointInverse(k);
+            const Matrix6& J_local_k  = m_bodyJacobian.getLocalJacobian(k);
+
+            // F_tot_k = Ad_{g_k^{-1}}^T · f_{k+1}  (transported downstream wrench)
+            const Vector6 F_tot = Ad_inv_k.transpose() * acc;
+
+            // ── term (b) ──────────────────────────────────────────────────────
+            if (k < static_cast<int>(dx.size())) {
+                TangentVector xi_dot = TangentVector::Zero();
+                for (int j = 0; j < NStrainDOF; j++) xi_dot[j] = dx[k][j];
+
+                const TangentVector v_k = J_local_k * xi_dot;
+                const Matrix6 adT = TwistType(v_k).smallAdjoint().transpose();
+
+                // δf_k += kFactor · B^T · J_local_k^T · ad(v_k)^T · F_tot_k
+                const Eigen::Matrix<double, NStrainDOF, 1> delta_f =
+                    static_cast<double>(kFactor) * (matB * J_local_k.transpose() * adT * F_tot);
+                for (int j = 0; j < NStrainDOF; j++)
+                    out1[k][j] += static_cast<SReal>(delta_f[j]);
+            }
+
+            // Accumulate for next backward step: f_k = w_k + F_tot_k
+            acc = external_wrenches[k].data() + F_tot;
+        }
+    }
+
+    out1Data.endEdit();
+}
 
 } // namespace Cosserat::mapping
