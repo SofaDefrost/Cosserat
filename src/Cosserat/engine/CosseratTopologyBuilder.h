@@ -18,8 +18,8 @@ using SO3 = sofa::component::cosserat::liegroups::SO3<double>;
 struct SO3Types {
     using Coord = SO3;
     using Deriv = SO3::TangentVector;
-    using VecCoord = sofa::helper::vector<Coord>;
-    using VecDeriv = sofa::helper::vector<Deriv>;
+    using VecCoord = sofa::type::vector<Coord>;
+    using VecDeriv = sofa::type::vector<Deriv>;
     using Real = double;
 };
 
@@ -50,10 +50,18 @@ class CosseratTopologyBuilder : public sofa::core::objectmodel::BaseObject {
     sofa::core::objectmodel::Data<double> d_GJ;
 
     // Links to target components
-    sofa::core::objectmodel::SingleLink<CosseratIntrinsicState> l_intrinsicState;
     sofa::core::objectmodel::SingleLink<
-        sofa::component::topology::container::dynamic::EdgeSetTopologyContainer>
-        l_topology;
+        CosseratTopologyBuilder,
+        CosseratIntrinsicState,
+        sofa::core::objectmodel::BaseLink::FLAG_STOREPATH |
+        sofa::core::objectmodel::BaseLink::FLAG_STRONGLINK
+    > l_intrinsicState;
+    sofa::core::objectmodel::SingleLink<
+        CosseratTopologyBuilder,
+        sofa::component::topology::container::dynamic::EdgeSetTopologyContainer,
+        sofa::core::objectmodel::BaseLink::FLAG_STOREPATH |
+        sofa::core::objectmodel::BaseLink::FLAG_STRONGLINK
+    > l_topology;
 };
 
 }  // namespace sofa::component::cosserat::engine

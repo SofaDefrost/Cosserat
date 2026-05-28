@@ -1,23 +1,32 @@
 #pragma once
 
 #include <liegroups/SO3.h>
-#include <sofa/core/behavior/BaseMechanicalState.h>
+#include <sofa/core/objectmodel/BaseObject.h>
 #include <sofa/core/objectmodel/Data.h>
 #include <sofa/type/Vec.h>
 #include <sofa/type/Mat.h>
 #include <sofa/type/vector.h>
 #include <sofa/core/objectmodel/Link.h>
-#include <sofa/component/topology/container/dynamic/EdgeSetTopologyContainer.h>
 
 namespace sofa::component::cosserat::engine {
 
 /**
- * @brief Intrinsic state for a Cosserat beam.
- * Manages positions (N+1 nodes) and orientations (N segments).
+ * @brief Intrinsic state for a staggered Cosserat beam.
+ *
+ * Stores N+1 node positions (Vec3) and N segment orientations (SO3) as
+ * SOFA Data fields.  Time integration is performed externally (Python
+ * explicit-Euler controller on the `painless/python-explicit` branch).
+ *
+ * ## DOF layout
+ *   d_positions    : vector<Vec3d>  size N+1
+ *   d_orientations : vector<SO3>    size N
+ *
+ * Velocities and accelerations (tangent-space, R³) are stored for the
+ * Python integrator but are not connected to SOFA's solver pipeline.
  */
-class CosseratIntrinsicState : public sofa::core::behavior::BaseMechanicalState {
+class CosseratIntrinsicState : public sofa::core::objectmodel::BaseObject {
    public:
-    SOFA_CLASS(CosseratIntrinsicState, sofa::core::behavior::BaseMechanicalState);
+    SOFA_CLASS(CosseratIntrinsicState, sofa::core::objectmodel::BaseObject);
 
     using Vec3d = sofa::type::Vec3d;
     using SO3 = sofa::component::cosserat::liegroups::SO3<double>;
@@ -49,48 +58,6 @@ class CosseratIntrinsicState : public sofa::core::behavior::BaseMechanicalState 
      * Used by PainlessBeamForceField to normalise strains.
      */
     const std::vector<double> &getRestLengths() const { return rest_lengths; }
-
-    // ── BaseMechanicalState interface ────────────────────────────────────────
-    //
-    // DOF layout (flat index k):
-    //   k ∈ [0,     N]   → position of node      k          (Vec3, 3 scalars)
-    //   k ∈ [N+1, 2N+1)  → orientation of segment k-(N+1)   (so3,  3 scalars)
-    //
-    // Total DOF count = (N+1) + N = 2N+1
-    // Total scalar size = 3 × (2N+1)
-    //
-
-    /**
-     * @brief Spatial dimension of each DOF = 3.
-     *
-     * Not a virtual from BaseMechanicalState (which has no getSpaceDimensions()
-     * in SOFA v24+); provided as a helper for internal use.
-     */
-    unsigned int getSpaceDimensions() const { return 3; }
-
-    /**
-     * @brief Total number of DOFs: (N+1) node positions + N segment orientations.
-     *
-     * Implements BaseState::getSize().
-     * Used by SOFA solvers to size the global displacement / force vectors
-     * and the tangent stiffness matrix.  Each DOF lives in R³ (tangent space
-     * of SO3 for orientations, plain R³ for positions).
-     */
-    sofa::Size getSize() const override {
-        return static_cast<sofa::Size>(
-            getPositions().size() + getOrientations().size()
-        );
-    }
-
-    /**
-     * @brief Dimension of each coordinate DOF = 3 (both Vec3 and so3 ∈ R³).
-     */
-    sofa::Size getCoordDimension() const override { return 3; }
-
-    /**
-     * @brief Dimension of each velocity/deriv DOF = 3 (tangent space is R³).
-     */
-    sofa::Size getDerivDimension() const override { return 3; }
 
     /**
      * @brief Computes the linear strain on segment i.
@@ -135,12 +102,6 @@ private:
     unsigned int last_positions_counter = 0;
     unsigned int last_orientations_counter = 0;
 
-    // As a custom state, it is important to implement resize/clear methods if needed by solvers.
-    // sofa::Size = uint32_t — matches BaseState::resize(Size).
-    void resize(sofa::Size /*count*/) override {
-        // Stub: staggered DOF layout (N+1 nodes + N orientations) is
-        // initialised by init(); solvers should not resize directly.
-    }
 };
 
 }  // namespace sofa::component::cosserat::engine

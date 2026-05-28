@@ -57,7 +57,12 @@ class StaggeredCosseratMapping : public sofa::core::objectmodel::BaseObject {
     using SO3      = sofa::component::cosserat::liegroups::SO3<double>;
 
     // ── Link to the staggered mechanical state ─────────────────────────────────
-    sofa::core::objectmodel::SingleLink<CosseratIntrinsicState> l_state;
+    sofa::core::objectmodel::SingleLink<
+        StaggeredCosseratMapping,
+        sofa::component::cosserat::engine::CosseratIntrinsicState,
+        sofa::core::objectmodel::BaseLink::FLAG_STOREPATH |
+        sofa::core::objectmodel::BaseLink::FLAG_STRONGLINK
+    > l_state;
 
     // ── Computed output frames ──────────────────────────────────────────────────
     /// Rigid3d frames at the N+1 node positions (orientation interpolated).

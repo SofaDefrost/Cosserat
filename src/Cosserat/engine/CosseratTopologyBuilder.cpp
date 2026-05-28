@@ -1,5 +1,6 @@
 #include <Cosserat/engine/CosseratTopologyBuilder.h>
 #include <sofa/core/ObjectFactory.h>
+#include <sofa/core/topology/BaseMeshTopology.h>
 
 namespace Cosserat {
 void registerCosseratTopologyBuilder(sofa::core::ObjectFactory *factory) {
@@ -43,7 +44,11 @@ void CosseratTopologyBuilder::init() {
     CosseratBeamGeometryEngine::buildConfiguration(length, sections, curvatures_vector,
                                                    nodes_vector, frames_vector, edges_vector);
 
-    msg_assert(nodes_vector.size() == frames_vector.size() + 1, "Size(X) = Size(R) + 1");
+    if (nodes_vector.size() != frames_vector.size() + 1) {
+        msg_error() << "Geometry inconsistency: expected Size(X) = Size(R) + 1, got "
+                    << nodes_vector.size() << " vs " << frames_vector.size();
+        return;
+    }
 
     // Calculate stiffness parameters
     double ea, ga, eiy, eiz, gj;
@@ -55,20 +60,27 @@ void CosseratTopologyBuilder::init() {
     d_EIz.setValue(eiz);
     d_GJ.setValue(gj);
 
-    // Transfer to SOFA
+    // Transfer positions and orientations to CosseratIntrinsicState
     if (l_intrinsicState.get()) {
-        l_intrinsicState.get()->d_positions.write().assign(nodes_vector.begin(),
-                                                           nodes_vector.end());
-        l_intrinsicState.get()->d_orientations.write().assign(frames_vector.begin(),
-                                                              frames_vector.end());
+        sofa::type::vector<sofa::type::Vec3d> positions(nodes_vector.begin(), nodes_vector.end());
+        sofa::type::vector<SO3> orientations(frames_vector.begin(), frames_vector.end());
+        l_intrinsicState.get()->d_positions.setValue(positions);
+        l_intrinsicState.get()->d_orientations.setValue(orientations);
     } else {
-        msg_warning() << "CosseratIntrinsicState link not set.";
+        msg_warning() << "CosseratIntrinsicState link not set — skipping DOF initialisation.";
     }
 
     if (l_topology.get()) {
-        l_topology.get()->d_edges.write().assign(edges_vector.begin(), edges_vector.end());
+        // Build edge connectivity as SOFA topology edges (unsigned int pairs)
+        using TopoEdge = sofa::component::topology::container::dynamic::EdgeSetTopologyContainer::Edge;
+        sofa::type::vector<TopoEdge> topo_edges;
+        topo_edges.reserve(edges_vector.size());
+        for (const auto& e : edges_vector) {
+            topo_edges.push_back(TopoEdge{e.first, e.second});
+        }
+        l_topology.get()->d_edge.setValue(topo_edges);
     } else {
-        msg_warning() << "EdgeSetTopologyContainer link not set.";
+        msg_warning() << "EdgeSetTopologyContainer link not set — skipping edge initialisation.";
     }
 }
 

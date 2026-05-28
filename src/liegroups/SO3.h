@@ -695,6 +695,30 @@ namespace sofa::component::cosserat::liegroups {
 using SO3d = SO3<double>;
 using SO3f = SO3<float>;
 
+// ── Stream operators (required by sofa::type::vector<SO3>) ───────────────────
+
+/**
+ * @brief Output operator: writes as quaternion "(x y z w)".
+ */
+template <typename Scalar>
+inline std::ostream& operator<<(std::ostream& os, const SO3<Scalar>& R) {
+    const auto& q = R.quaternion();
+    return os << q.x() << " " << q.y() << " " << q.z() << " " << q.w();
+}
+
+/**
+ * @brief Input operator: reads quaternion "x y z w" and normalises.
+ */
+template <typename Scalar>
+inline std::istream& operator>>(std::istream& is, SO3<Scalar>& R) {
+    Scalar x{}, y{}, z{}, w{1};
+    is >> x >> y >> z >> w;
+    typename SO3<Scalar>::Quaternion q(w, x, y, z);
+    q.normalize();
+    R = SO3<Scalar>(q);
+    return is;
+}
+
 } // namespace sofa::component::cosserat::liegroups
 
 // #endif // SOFA_COMPONENT_COSSERAT_LIEGROUPS_SO3_H

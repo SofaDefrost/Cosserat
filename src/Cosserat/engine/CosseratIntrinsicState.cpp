@@ -25,7 +25,7 @@ CosseratIntrinsicState::CosseratIntrinsicState()
                                       "Angular accelerations of segments in tangent space")) {}
 
 void CosseratIntrinsicState::init() {
-    BaseMechanicalState::init();
+    BaseObject::init();
 
     const auto& pos = d_positions.getValue();
     const auto& R = d_orientations.getValue();
@@ -109,7 +109,8 @@ sofa::type::Vec3d CosseratIntrinsicState::getAngularStrain(size_t i) {
 
 sofa::type::Mat3x3d CosseratIntrinsicState::getInverseLieJacobian(const sofa::type::Vec3d& omega) {
     double theta2 = omega.norm2();
-    sofa::type::Mat3x3d I = sofa::type::Mat3x3d::identity();
+    sofa::type::Mat3x3d I;
+    I.identity();
     
     sofa::type::Mat3x3d W;
     W[0][0] = 0.0;        W[0][1] = -omega.z(); W[0][2] = omega.y();

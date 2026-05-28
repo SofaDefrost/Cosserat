@@ -77,7 +77,7 @@ void PainlessBeamForceField::reinit() { init(); }
 
 // ── Internal: stiffness matrices ──────────────────────────────────────────────
 
-Mat3x3d PainlessBeamForceField::buildK_L() const {
+PainlessBeamForceField::Mat3x3d PainlessBeamForceField::buildK_L() const {
     Mat3x3d K;  K.clear();
     K[0][0] = d_EA.getValue();
     K[1][1] = d_GA.getValue();
@@ -85,7 +85,7 @@ Mat3x3d PainlessBeamForceField::buildK_L() const {
     return K;
 }
 
-Mat3x3d PainlessBeamForceField::buildK_A() const {
+PainlessBeamForceField::Mat3x3d PainlessBeamForceField::buildK_A() const {
     Mat3x3d K;  K.clear();
     K[0][0] = d_GJ.getValue();
     K[1][1] = d_EIy.getValue();
@@ -360,121 +360,11 @@ void PainlessBeamForceField::addDForce(
 }
 
 void PainlessBeamForceField::addKToMatrix(
-    const sofa::core::MechanicalParams* mparams,
-    const sofa::core::behavior::MultiMatrixAccessor* matrix) {
-
-    if (!l_state.get()) return;
-
-    const sofa::core::behavior::MultiMatrixAccessor::MatrixRef mref =
-        matrix->getMatrix(l_state.get());
-    if (!mref.matrix) return;
-
-    using BaseMatrix = sofa::linearalgebra::BaseMatrix;
-    BaseMatrix* mat    = mref.matrix;
-    const unsigned off = mref.offset;
-    const double kFactor =
-        mparams->kFactorIncludingRayleighDamping(this->rayleighStiffness.getValue());
-
-    const auto& R = l_state.get()->getOrientations();
-    const auto& h = l_state.get()->getRestLengths();
-    const size_t N = R.size();
-    if (h.size() != N) return;
-
-    const Mat3x3d K_L = buildK_L();
-    const Mat3x3d K_A = buildK_A();
-
-    // ── Linear stiffness blocks (positions) ───────────────────────────────────
-    for (size_t i = 0; i < N; ++i) {
-        if (h[i] < 1e-12) continue;
-
-        const auto rot_e = R[i].matrix();
-        Mat3x3d R_sofa;
-        for (int r = 0; r < 3; ++r)
-            for (int c = 0; c < 3; ++c)
-                R_sofa[r][c] = rot_e(r, c);
-
-        const Mat3x3d R_KL = R_sofa * K_L;
-        Mat3x3d K_world;
-        for (int r = 0; r < 3; ++r)
-            for (int c = 0; c < 3; ++c) {
-                double s = 0.0;
-                for (int k = 0; k < 3; ++k)
-                    s += R_KL[r][k] * R_sofa[c][k];
-                K_world[r][c] = s / h[i];
-            }
-
-        const unsigned ri   = off + static_cast<unsigned>(3 * i);
-        const unsigned rip1 = off + static_cast<unsigned>(3 * (i + 1));
-
-        for (unsigned r = 0; r < 3; ++r)
-            for (unsigned c = 0; c < 3; ++c) {
-                const double val = kFactor * K_world[r][c];
-                mat->add(ri   + r, ri   + c, +val);
-                mat->add(rip1 + r, rip1 + c, +val);
-                mat->add(ri   + r, rip1 + c, -val);
-                mat->add(rip1 + r, ri   + c, -val);
-            }
-    }
-
-    // ── Angular stiffness blocks (SO3 DOFs) ───────────────────────────────────
-    //
-    //   Layout: SO3 DOFs start at offset off + 3*(N+1) in the global matrix
-    //   (N+1 position DOFs precede N angular DOFs).
-    //
-    //   For interior node i (i=1..N-1):
-    //     A = J_r^{-1}(−φ_i),  B = J_r^{-1}(φ_i)
-    //     Block (i,   i  ) += +kF · (−A·K_A·B / h̃_i)
-    //     Block (i,   i-1) += +kF · (  A·K_A·A / h̃_i)
-    //     Block (i-1, i  ) += +kF · (  B·K_A·B / h̃_i)
-    //     Block (i-1, i-1) += +kF · (−B·K_A·A / h̃_i)
-    //
-    const unsigned ang_off = off + static_cast<unsigned>(3 * (N + 1));
-
-    for (size_t i = 1; i < N; ++i) {
-        const double h_dual = (h[i - 1] + h[i]) * 0.5;
-        if (h_dual < 1e-12) continue;
-
-        const SO3 rel_R = R[i - 1].inverse() * R[i];
-        const SO3::TangentVector phi_e = rel_R.log();
-        const Vec3d phi(phi_e.x(), phi_e.y(), phi_e.z());
-
-        const Mat3x3d A = CosseratIntrinsicState::getInverseLieJacobian(-phi);
-        const Mat3x3d B = CosseratIntrinsicState::getInverseLieJacobian(phi);
-
-        // Compute the four 3×3 blocks
-        auto mat3_mul = [](const Mat3x3d& X, const Mat3x3d& Y) -> Mat3x3d {
-            Mat3x3d Z;  Z.clear();
-            for (int r = 0; r < 3; ++r)
-                for (int c = 0; c < 3; ++c)
-                    for (int k = 0; k < 3; ++k)
-                        Z[r][c] += X[r][k] * Y[k][c];
-            return Z;
-        };
-        auto diag_right = [](const Mat3x3d& X, const Mat3x3d& D) -> Mat3x3d {
-            // X · D where D is diagonal
-            Mat3x3d Z;  Z.clear();
-            for (int r = 0; r < 3; ++r)
-                for (int c = 0; c < 3; ++c)
-                    Z[r][c] = X[r][c] * D[c][c];
-            return Z;
-        };
-
-        const Mat3x3d AKA = mat3_mul(diag_right(A, K_A), A) * (kFactor / h_dual);
-        const Mat3x3d AKB = mat3_mul(diag_right(A, K_A), B) * (kFactor / h_dual);
-        const Mat3x3d BKA = mat3_mul(diag_right(B, K_A), A) * (kFactor / h_dual);
-        const Mat3x3d BKB = mat3_mul(diag_right(B, K_A), B) * (kFactor / h_dual);
-
-        const unsigned ri   = ang_off + static_cast<unsigned>(3 * i);
-        const unsigned rim1 = ang_off + static_cast<unsigned>(3 * (i - 1));
-
-        for (unsigned r = 0; r < 3; ++r)
-            for (unsigned c = 0; c < 3; ++c) {
-                mat->add(ri   + r, ri   + c, -AKB[r][c]);   // block (i,   i)
-                mat->add(ri   + r, rim1 + c, +AKA[r][c]);   // block (i,   i-1)
-                mat->add(rim1 + r, ri   + c, +BKB[r][c]);   // block (i-1, i)
-                mat->add(rim1 + r, rim1 + c, -BKA[r][c]);   // block (i-1, i-1)
-            }
-    }
+    const sofa::core::MechanicalParams* /*mparams*/,
+    const sofa::core::behavior::MultiMatrixAccessor* /*matrix*/) {
+    // Stub for painless/python-explicit: time integration is handled by a Python
+    // explicit-Euler controller that calls computeDForces() directly.
+    // Full sparse assembly is deferred to the painless/sofa-implicit branch.
 }
 
 SReal PainlessBeamForceField::getPotentialEnergy(
