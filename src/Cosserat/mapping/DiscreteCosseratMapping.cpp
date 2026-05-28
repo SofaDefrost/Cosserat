@@ -84,7 +84,7 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>:: applyJ(
 
         Vec6 node_Xi_dot;
         for (unsigned int u =0; u<6; u++)
-            node_Xi_dot(i) = in1_vel[i-1][u];
+            node_Xi_dot(u) = in1_vel[i-1][u];
 
         Vec6 eta_node_i = Adjoint * (m_nodesVelocityVectors[i-1] + m_nodesTangExpVectors[i] *node_Xi_dot );
         m_nodesVelocityVectors.push_back(eta_node_i);

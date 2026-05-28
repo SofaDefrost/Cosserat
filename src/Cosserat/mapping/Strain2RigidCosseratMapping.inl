@@ -516,6 +516,11 @@ namespace Cosserat::mapping {
 		auto tab_size = inputForces.size();
 		localForces.clear();
 
+		std::cout<<"(in) Frames forces: "<<std::endl;
+		for(auto v : inputForces){
+			std::cout<< v <<std::endl;
+		}
+
 
 		for (size_t i = 0; i < tab_size; ++i) {
 			// Convert SOFA force to SE(3) tangent vector
@@ -609,8 +614,8 @@ namespace Cosserat::mapping {
 		TangentVector toAdd = TangentVector::Zero();
 		toAdd = M * totalForce;
 		
-		// for (int j=0; j<6; j++)
-		// 		baseForces[baseIndex][j] +=toAdd[j];	
+		for (int j=0; j<6; j++)
+				baseForces[baseIndex][j] +=toAdd[j];	
 
 		if (d_debug.getValue()) {
 			std::cout << "Strain forces computed from " << inputForces.size() << " input forces" << std::endl;
@@ -618,10 +623,17 @@ namespace Cosserat::mapping {
 			std::cout << "Applied to base index: " << baseIndex << std::endl;
 		}
 
+		std::cout << "(out) Strain forces: " << std::endl;
+		for(int j=0; j<strainForces.size(); j++){
+			std::cout<<"  (out) strain "<< j <<" : "<< strainForces[j] << std::endl;
+		}
+    	std::cout << "(out)base Force: " << baseForces[baseIndex] << std::endl;
+
+
 		dataVecOut1Force[0]->endEdit();
 		dataVecOut2Force[0]->endEdit();
 
-		std::cout<<"========End applyJ========"<<std::endl;
+		std::cout<<"========End applyJT========"<<std::endl;
 
 	}
 

@@ -319,41 +319,39 @@ namespace Cosserat::mapping {
 
 		const auto base_index = d_baseIndex.getValue();
 		const auto section_count = d_curv_abs_section.getValue().size() - 1;
-		// std::cout<<"Nb. section: "<<section_count<<std::endl;
 
 		strain_vel.resize(section_count);
-		// for (auto &vel : strain_vel){
-		// 	vel.clear();
-		// }
 
 
-		// 2. Compute the base velocity in SE(3) tangent space
-		// 2.1 Convert base velocity to se(3) tangent vector
+
+		// Compute the base velocity in SE(3) tangent space
+		//    Convert base velocity to se(3) tangent vector
 		TangentVector base_vel_local = TangentVector::Zero();
 		for (auto u = 0; u < 6; u++)
 			base_vel_local[u] = base_vel[base_index][u];
 
-		// std::cout<<"Strain : [ ";
-		// for(auto v : strain)
-		// 	std::cout<<"["<<v<<"] ";
-		// std::cout<<"]"<<std::endl;
-
-
-		// std::cout<<"Frame Positions : [ ";
-		// for(auto v : framePositions)
-		// 	std::cout<<"["<<v<<"] ";
-		// std::cout<<"]"<<std::endl;
 
 		std::cout<<"(in) Base Velocity : ["<<base_vel_local.transpose()<<"]"<<std::endl;
 				
 		for(int i=0; i<frame_vel.size(); i++)
 			std::cout<<"(in) Frame velocity ["<<i<<"]: "<<frame_vel[i]<<std::endl;
 
+		
+		//compute transformation of each frame
+		std::vector<SE3Types> g_frames(framePositions.size());
 
-		// std::cout<<"Strain Velocity: [ ";
-		// for(auto v : strain_vel)
-		// 	std::cout<<"["<<v<<"] ";
-		// std::cout<<"]"<<std::endl;		
+		for(unsigned int i=0; i<framePositions.size(); i++){
+
+			const auto& frame = framePositions[i];
+
+			Vector3 translation(frame.getCenter()[0], frame.getCenter()[1], frame.getCenter()[2]);
+
+			// Convert SOFA quaternion to Eigen quaternion (SOFA: x,y,z,w; Eigen: w,x,y,z)
+			const auto &quat = frame.getOrientation();
+			Eigen::Quaternion<double> rotation(quat[3], quat[0], quat[1], quat[2]);
+
+			g_frames[i] =SE3Types(SE3Types::SO3Type(rotation), translation);
+		}
 
 		//
 		// compute the Jacobians J1 and J2
@@ -371,8 +369,6 @@ namespace Cosserat::mapping {
 				strain_i[j] = strain[i][j];
 
 			TangentVector Omega_i = dx*strain_i;
-			// std::cout<<"Omega["<<i<<"]: "<<Omega_i.transpose()<<std::endl;
-			// std::cout<<"dx["<<i<<"]: "<<dx<<std::endl;
 			AdjointMatrix dexp_inv = computeInverseTangentOperator(Omega_i);
 			AdjointMatrix J2 = (1./dx)*dexp_inv;
 
@@ -383,28 +379,33 @@ namespace Cosserat::mapping {
 			TangentVector eta_a = TangentVector::Zero();
 			TangentVector eta_b = TangentVector::Zero();
 
-			// if(i == 0){//@appa: vitesse frame0 == base velocity ??
-			// 	eta_a = base_vel_local;
-			// 	for(int u=0; u<6; u++){
-			// 		eta_b[u] = frame_vel[i+1][u];
-			// 	}
-			// } else{
-			// 	for(int u=0; u<6; u++){
-			// 		eta_a[u] = frame_vel[i][u];
-			// 		eta_b[u] = frame_vel[i+1][u];
-			// 	}
-			// }
+			
 
 			//@appa: Comme le frame 0 n'est attaché à la base actuellement, voici la version à adoopter
-			for(int u=0; u<3; u++){ // frame_vel = [linear_velocity, angular_velocity]
-				eta_a[u] = frame_vel[i][u+3]; //angular part
-				eta_b[u] = frame_vel[i+1][u+3];
+			// for(int u=0; u<3; u++){ // frame_vel = [linear_velocity, angular_velocity]
+			// 	eta_a[u] = frame_vel[i][u+3]; //angular part
+			// 	eta_b[u] = frame_vel[i+1][u+3];
 
-				eta_a[u+3] = frame_vel[i][u]; // linear part
-				eta_b[u+3] = frame_vel[i+1][u];
+			// 	eta_a[u+3] = frame_vel[i][u]; // linear part
+			// 	eta_b[u+3] = frame_vel[i+1][u];
 
 				
-			}			
+			// }			
+
+			//Projection (global -> local)
+			//frame a
+			SE3Types ga_inv = g_frames[i].inverse();
+			AdjointMatrix a_projector = ga_inv.buildProjectionMatrix(ga_inv.rotation().matrix());
+			TangentVector vela_global(frame_vel[i][0], frame_vel[i][1], frame_vel[i][2], frame_vel[i][3], frame_vel[i][4], frame_vel[i][5]);
+			
+			eta_a = a_projector * vela_global;
+
+			// idem pour le frame b
+			SE3Types gb_inv = g_frames[i+1].inverse();
+			AdjointMatrix b_projector = gb_inv.buildProjectionMatrix(gb_inv.rotation().matrix());
+			TangentVector velb_global(frame_vel[i+1][0], frame_vel[i+1][1], frame_vel[i+1][2], frame_vel[i+1][3], frame_vel[i+1][4], frame_vel[i+1][5]);
+			
+			eta_b = b_projector * velb_global;
 
 			TangentVector output_vel = J1*eta_a + J2*eta_b;
 			
@@ -427,119 +428,153 @@ namespace Cosserat::mapping {
 					 										const sofa::type::vector<sofa::DataVecDeriv_t<In2> *> &dataVecOut2Force,
 					 										const sofa::type::vector<const sofa::DataVecDeriv_t<Out> *> &dataVecInForce){
 
-		// std::cout<<"====== In applyJT function ======="<<std::endl;
-		// if (dataVecOut1Force.empty() || dataVecInForce.empty() || dataVecOut2Force.empty())
-		// 	return;
+		std::cout<<"====== In applyJT function ======="<<std::endl;
+		if (dataVecOut1Force.empty() || dataVecInForce.empty() || dataVecOut2Force.empty())
+			return;
 
-		// if (this->d_componentState.getValue() != sofa::core::objectmodel::ComponentState::Valid)
-		// 	return;
+		if (this->d_componentState.getValue() != sofa::core::objectmodel::ComponentState::Valid)
+			return;
 
-		// if (d_debug.getValue())
-		// 	std::cout << " ########## Frames2StrainCosseratMapping ApplyJT Force Function ########" << std::endl;
+		if (d_debug.getValue())
+			std::cout << " ########## Frames2StrainCosseratMapping ApplyJT Force Function ########" << std::endl;
 
 
 
-		// const sofa::VecDeriv_t<Out> &strainForces = dataVecInForce[0]->getValue();
-		// sofa::VecDeriv_t<In1> &frameForces = *dataVecOut1Force[0]->beginEdit();
-		// sofa::VecDeriv_t<In2> &baseForces = *dataVecOut2Force[0]->beginEdit();
-		// const auto baseIndex = d_baseIndex.getValue();
+		const sofa::VecDeriv_t<Out> &strainForces = dataVecInForce[0]->getValue();
+		sofa::VecDeriv_t<In1> &frameForces = *dataVecOut1Force[0]->beginEdit();
+		sofa::VecDeriv_t<In2> &baseForces = *dataVecOut2Force[0]->beginEdit();
+		const auto baseIndex = d_baseIndex.getValue();
 
-		// // Get current strain of each section
-		// const sofa::VecCoord_t<Out> &strainState =
-		// 		this->m_frames->read(sofa::core::vec_id::read_access::position)->getValue();
+		// Get current strain of each section
+		const sofa::VecCoord_t<Out> &strainState =
+				this->m_frames->read(sofa::core::vec_id::read_access::position)->getValue();
 
-		// const sofa::DataVecCoord_t<In1> *x1fromData =
-     	// 	 	m_strain_state->read(sofa::core::vec_id::read_access::position);
-		// const sofa::VecCoord_t<In1> framePositions = x1fromData->getValue();	
+		const sofa::DataVecCoord_t<In1> *x1fromData =
+     		 	m_strain_state->read(sofa::core::vec_id::read_access::position);
+		const sofa::VecCoord_t<In1> framePositions = x1fromData->getValue();	
 
 		
-		// // Initialize output forces
-		// frameForces.resize(framePositions.size());
+		// Initialize output forces
+		frameForces.resize(framePositions.size());
 											
-		// std::cout<<"(in) Strain forces: "<<std::endl;
-		// for(auto v : strainForces){
-		// 	std::cout<< v <<std::endl;
-		// }
+		std::cout<<"(in) Strain forces: "<<std::endl;
+		for(auto v : strainForces){
+			std::cout<< v <<std::endl;
+		}
 
-		// // std::cout<<"-- Before the computation --"<<std::endl;
+		//compute transformation of each frame
+		std::vector<SE3Types> g_frames(framePositions.size());
 
-		// // std::cout << "(out) Frame forces: " << std::endl;
-		// // for(int j=0; j<frameForces.size(); j++){
-		// // 	std::cout<<"  (out) frame "<< j <<" : "<< frameForces[j] << std::endl;
-		// // }
-    	// // std::cout << "(out)base Force: " << baseForces[baseIndex] << std::endl;
+		for(unsigned int i=0; i<framePositions.size(); i++){
 
+			const auto& frame = framePositions[i];
 
-		// const auto section_count = d_curv_abs_section.getValue().size() - 1;
+			Vector3 translation(frame.getCenter()[0], frame.getCenter()[1], frame.getCenter()[2]);
 
-		// for(unsigned int i=0; i<section_count; i++){
-		// 	// std::cout<<"## Section "<<i <<std::endl;
+			// Convert SOFA quaternion to Eigen quaternion (SOFA: x,y,z,w; Eigen: w,x,y,z)
+			const auto &quat = frame.getOrientation();
+			Eigen::Quaternion<double> rotation(quat[3], quat[0], quat[1], quat[2]);
 
-		// 	const auto& section = m_section_properties[i+1];
-
-		// 	double dx = section.getLength(); //section length
+			g_frames[i] =SE3Types(SE3Types::SO3Type(rotation), translation);
+		}
 
 
-		// 	//get current strain of the section
-		// 	TangentVector strain_i = TangentVector::Zero();
-		// 	for(int j=0; j<6; j++){
-		// 		strain_i[j] = strainState[i][j];
-		// 	}
+		const auto section_count = d_curv_abs_section.getValue().size() - 1;
 
-		// 	TangentVector Omega_i = dx * strain_i;
+		for(unsigned int i=0; i<section_count; i++){
+			// std::cout<<"## Section "<<i <<std::endl;
 
-		// 	// std::cout<<"Omega_i: "<< Omega_i.transpose()<<std::endl;
+			const auto& section = m_section_properties[i+1];
+
+			double dx = section.getLength(); //section length
 
 
-		// 	//compute Jacobians
-		// 	AdjointMatrix dexp_inv = computeInverseTangentOperator(Omega_i);
+			//get current strain of the section
+			TangentVector strain_i = TangentVector::Zero();
+			for(int j=0; j<6; j++){
+				strain_i[j] = strainState[i][j];
+			}
 
-		// 	AdjointMatrix J2 = dexp_inv / dx;
+			TangentVector Omega_i = dx * strain_i;
 
-		// 	SE3Types g = SE3Types::expCosserat(strain_i, -dx); // = exp(-Omega_i)
-		// 	AdjointMatrix Adg = g.computeAdjoint();
-		// 	AdjointMatrix J1 = -dexp_inv*Adg / dx;
+			// std::cout<<"Omega_i: "<< Omega_i.transpose()<<std::endl;
 
-		// 	// posons lambda tq strain force (i) = lambda
 
-		// 	TangentVector lambda = TangentVector::Zero();
+			//compute Jacobians
+			AdjointMatrix dexp_inv = computeInverseTangentOperator(Omega_i);
 
-		// 	for(int j=0; j<6; j++){
-		// 		lambda[j] = strainForces[i][j];
-		// 	}
+			AdjointMatrix J2 = dexp_inv / dx;
 
-		// 	//@appa: multiplication par dx déjà fait dans le forcefield
-		// 	TangentVector fa = J1.transpose() * lambda; //a (b): extremite gauche (droite) de la section
-		// 	TangentVector fb = J2.transpose() * lambda;
+			SE3Types g = SE3Types::expCosserat(strain_i, -dx); // = exp(-Omega_i)
+			AdjointMatrix Adg = g.computeAdjoint();
+			AdjointMatrix J1 = -dexp_inv*Adg / dx;
 
-		// 	//@appa: Comme le frame 0 n'est attaché à la base actuellement, voici la version à adopter			
-		// 	for(int k=0; k<3; k++){
-		// 		// if(i==0){
-		// 		// 	baseForces[baseIndex][k] += fa[k];
-		// 		// }
-		// 		// else{
-		// 		// 	frameForces[i-1][k] +=fa[k];
-		// 		// }
-		// 		frameForces[i][k] +=fa[k+3]; //linear part
-		// 		frameForces[i+1][k] +=fb[k+3];
+			// std::cout<<"Jacobians: "<<std::endl;
+			// std::cout<<"J1: "<<std::endl;
+			// std::cout<<J1<<std::endl;
+			// std::cout<<"J2: "<<std::endl;
+			// std::cout<<J2<<std::endl;
+			// posons lambda tq strain force (i) = lambda
 
-		// 		frameForces[i][k+3] +=fa[k]; //angular part
-		// 		frameForces[i+1][k+3] +=fb[k];
-		// 	}
-		// }
+			TangentVector lambda = TangentVector::Zero();
+
+			for(int j=0; j<6; j++){
+				lambda[j] = strainForces[i][j];
+			}
+
+			//@appa: multiplication par dx déjà fait dans le forcefield
+			TangentVector fa_local = J1.transpose() * lambda; //a (b): extremite gauche (droite) de la section
+			TangentVector fb_local = J2.transpose() * lambda;
+
+			// std::cout<<"fa_local: "<<fa_local.transpose()<<std::endl;
+			// std::cout<<"fb_local: "<<fb_local.transpose()<<std::endl;
+
+
+			// //@appa: Comme le frame 0 n'est attaché à la base actuellement, voici la version à adopter			
+			// for(int k=0; k<3; k++){
+			// 	frameForces[i][k] +=fa[k+3]; //linear part
+			// 	frameForces[i+1][k] +=fb[k+3];
+
+			// 	frameForces[i][k+3] +=fa[k]; //angular part
+			// 	frameForces[i+1][k+3] +=fb[k];
+			// }
+
+			//Projection (local -> global)
+			//frame a
+			SE3Types ga = g_frames[i];
+			AdjointMatrix a_projector = ga.buildProjectionMatrix(ga.rotation().matrix());
+			TangentVector fa_global = a_projector * fa_local;
+			
+
+			// idem pour le frame b
+			SE3Types gb = g_frames[i+1];
+			AdjointMatrix b_projector = gb.buildProjectionMatrix(gb.rotation().matrix());
+			TangentVector fb_global = b_projector * fb_local;
+
+
+			std::cout<<"fa_global: "<<fa_global.transpose()<<std::endl;
+			std::cout<<"fb_global: "<<fb_global.transpose()<<std::endl;
+
+			for(int k=0; k<6; k++){
+				frameForces[i][k] +=fa_global[k];
+				frameForces[i+1][k] +=fb_global[k];
+			}
+
+
+		}
 		
-		// // std::cout<<"-- End of the computation --"<<std::endl;
+		// std::cout<<"-- End of the computation --"<<std::endl;
 
-		// std::cout << "(out) Frame forces: " << std::endl;
-		// for(int j=0; j<frameForces.size(); j++){
-		// 	std::cout<<"  (out) frame "<< j <<" : "<< frameForces[j] << std::endl;
-		// }
-    	// std::cout << "(out)base Force: " << baseForces[baseIndex] << std::endl;
+		std::cout << "(out) Frame forces: " << std::endl;
+		for(int j=0; j<frameForces.size(); j++){
+			std::cout<<"  (out) frame "<< j <<" : "<< frameForces[j] << std::endl;
+		}
+    	std::cout << "(out)base Force: " << baseForces[baseIndex] << std::endl;
 
-		// dataVecOut1Force[0]->endEdit();
-		// dataVecOut2Force[0]->endEdit();		
+		dataVecOut1Force[0]->endEdit();
+		dataVecOut2Force[0]->endEdit();		
 		
-		// std::cout<<"====== End applyJT ======="<<std::endl;
+		std::cout<<"====== End applyJT ======="<<std::endl;
 			
 	}
 
