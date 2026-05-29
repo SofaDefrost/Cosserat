@@ -105,18 +105,18 @@ class StaggeredIntegrator(Sofa.Core.Controller):
     # ── Animation step ────────────────────────────────────────────────────────
 
     def onAnimateBeginEvent(self, event):
-        dt = self.getContext().dt
+        dt = float(self.getContext().dt.value)
 
         # Read current positions
         try:
-            pos = list(self.state.d_positions.value)
+            pos = list(self.state.positions.value)
         except Exception as e:
             print(f"[StaggeredIntegrator] Cannot read positions: {e}")
             return
 
         # Read elastic forces produced by PainlessBeamForceField
         try:
-            f_elastic = list(self.forcefield.d_nodalForces.value)
+            f_elastic = list(self.forcefield.nodalForces.value)
         except Exception as e:
             # ForceField has not yet computed forces — skip this step
             return
@@ -156,7 +156,7 @@ class StaggeredIntegrator(Sofa.Core.Controller):
             flat = []
             for p in new_pos:
                 flat.extend(p)
-            self.state.d_positions.value = flat
+            self.state.positions.value = flat
         except Exception as e:
             print(f"[StaggeredIntegrator] Cannot write positions: {e}")
 
@@ -204,11 +204,13 @@ def createScene(rootNode):
     beamNode.addObject('EdgeSetTopologyModifier')
 
     # ── CosseratIntrinsicState ─────────────────────────────────────────────────
-    # Initial configuration: straight beam along X
+    # Initial configuration: straight beam along X, N identity SO3 rotations
     node_positions_str = ' '.join(f'{i * h:.6f} 0 0' for i in range(Np))
+    identity_orientations_str = ' '.join(['0 0 0'] * N)
     state = beamNode.addObject('CosseratIntrinsicState',
                                name='state',
                                positions=node_positions_str,
+                               orientations=identity_orientations_str,
                                template='Vec3d')
 
     # ── CosseratTopologyBuilder ────────────────────────────────────────────────
@@ -219,20 +221,20 @@ def createScene(rootNode):
                        radius=RADIUS,
                        youngModulus=YOUNG_MOD,
                        shearModulus=SHEAR_MOD,
-                       l_intrinsicState='@state',
-                       l_topology='@topology')
+                       intrinsicState='@state',
+                       topology='@topology')
 
     # ── PainlessBeamForceField ─────────────────────────────────────────────────
     # Stiffness parameters will be read from CosseratTopologyBuilder outputs
     # via the linked intrinsic state (the builder writes EA, GA, etc. to it).
     forcefield = beamNode.addObject('PainlessBeamForceField',
                                     name='ff',
-                                    l_state='@state')
+                                    state='@state')
 
     # ── StaggeredCosseratMapping ───────────────────────────────────────────────
     beamNode.addObject('StaggeredCosseratMapping',
                        name='mapping',
-                       l_state='@state',
+                       state='@state',
                        drawBeam=True,
                        drawFrames=True,
                        drawRadius=RADIUS,

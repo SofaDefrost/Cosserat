@@ -63,7 +63,13 @@ void CosseratTopologyBuilder::init() {
     // Transfer positions and orientations to CosseratIntrinsicState
     if (l_intrinsicState.get()) {
         sofa::type::vector<sofa::type::Vec3d> positions(nodes_vector.begin(), nodes_vector.end());
-        sofa::type::vector<SO3> orientations(frames_vector.begin(), frames_vector.end());
+        // d_orientations stores rotation vectors ω = log(R) ∈ ℝ³ (SOFA-accessible from Python)
+        sofa::type::vector<sofa::type::Vec3d> orientations;
+        orientations.reserve(frames_vector.size());
+        for (const auto& R : frames_vector) {
+            const auto omega = R.log();
+            orientations.emplace_back(omega.x(), omega.y(), omega.z());
+        }
         l_intrinsicState.get()->d_positions.setValue(positions);
         l_intrinsicState.get()->d_orientations.setValue(orientations);
     } else {

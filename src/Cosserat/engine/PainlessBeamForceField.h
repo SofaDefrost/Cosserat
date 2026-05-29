@@ -6,7 +6,9 @@
 #include <sofa/core/behavior/BaseForceField.h>
 #include <sofa/core/behavior/MultiMatrixAccessor.h>
 #include <sofa/core/objectmodel/Data.h>
+#include <sofa/core/objectmodel/Event.h>
 #include <sofa/core/objectmodel/Link.h>
+#include <sofa/simulation/AnimateBeginEvent.h>
 #include <sofa/type/Mat.h>
 #include <sofa/type/Vec.h>
 #include <sofa/type/vector.h>
@@ -125,6 +127,7 @@ class PainlessBeamForceField : public sofa::core::behavior::BaseForceField {
 
     void init() override;
     void reinit() override;
+    void handleEvent(sofa::core::objectmodel::Event* e) override;
 
     // ── BaseForceField interface ───────────────────────────────────────────────
     //
@@ -146,6 +149,17 @@ class PainlessBeamForceField : public sofa::core::behavior::BaseForceField {
     SReal getPotentialEnergy(const sofa::core::MechanicalParams* mparams) const override;
 
     // ── Direct Python/C++ API ──────────────────────────────────────────────────
+
+    /**
+     * @brief Compute elastic forces and torques and store them in d_nodalForces
+     *        and d_segmentTorques.
+     *
+     * Equivalent to addForce() but callable without the SOFA pipeline
+     * (no MechanicalState required).  The Python explicit-Euler integrator
+     * must call this every step before reading getNodalForces() /
+     * getSegmentTorques().
+     */
+    void computeAndStoreForces();
 
     /**
      * @brief Compute differential forces from explicit displacement vectors.

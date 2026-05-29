@@ -30,18 +30,18 @@ Or headless:
 """
 
 import Sofa
-import math
 
 # ── Scene parameters ──────────────────────────────────────────────────────────
-BEAM_LENGTH  = 1.0    # m
-N_SEGMENTS   = 5      # number of segments  →  N+1 = 6 nodes
-RADIUS       = 0.02   # m (for visualisation)
-YOUNG_MOD    = 1.0e8  # Pa
-SHEAR_MOD    = 3.3e7  # Pa  (≈ E / (2*(1+0.5)))
-DT           = 0.01   # s
+BEAM_LENGTH = 1.0  # m
+N_SEGMENTS = 5  # number of segments  →  N+1 = 6 nodes
+RADIUS = 0.02  # m (for visualisation)
+YOUNG_MOD = 1.0e8  # Pa
+SHEAR_MOD = 3.3e7  # Pa  (≈ E / (2*(1+0.5)))
+DT = 0.01  # s
 
 
 # ── Validation helper ─────────────────────────────────────────────────────────
+
 
 def _almost_equal(a, b, tol=1e-9):
     return abs(a - b) < tol
@@ -56,13 +56,17 @@ def _check_node_frames(node_frames, h, N, tol=1e-9):
         expected_pos = [i * h, 0.0, 0.0]
         for j, (got, exp) in enumerate(zip(frame[:3], expected_pos)):
             if not _almost_equal(got, exp, tol):
-                errors.append(f"  node[{i}] pos[{j}]: got {got:.6f}, expected {exp:.6f}")
+                errors.append(
+                    f"  node[{i}] pos[{j}]: got {got:.6f}, expected {exp:.6f}"
+                )
         # Orientation: identity quaternion (x=0, y=0, z=0, w=1)
         quat = frame[3:]  # [qx, qy, qz, qw]
         id_q = [0.0, 0.0, 0.0, 1.0]
         for j, (got, exp) in enumerate(zip(quat, id_q)):
             if not _almost_equal(got, exp, tol):
-                errors.append(f"  node[{i}] quat[{j}]: got {got:.6f}, expected {exp:.6f}")
+                errors.append(
+                    f"  node[{i}] quat[{j}]: got {got:.6f}, expected {exp:.6f}"
+                )
     return errors
 
 
@@ -81,11 +85,14 @@ def _check_segment_frames(seg_frames, h, N, tol=1e-9):
         id_q = [0.0, 0.0, 0.0, 1.0]
         for j, (got, exp) in enumerate(zip(quat, id_q)):
             if not _almost_equal(got, exp, tol):
-                errors.append(f"  seg[{i}] quat[{j}]: got {got:.6f}, expected {exp:.6f}")
+                errors.append(
+                    f"  seg[{i}] quat[{j}]: got {got:.6f}, expected {exp:.6f}"
+                )
     return errors
 
 
 # ── SOFA Controller ───────────────────────────────────────────────────────────
+
 
 class GeometryValidator(Sofa.Core.Controller):
     """
@@ -95,10 +102,10 @@ class GeometryValidator(Sofa.Core.Controller):
 
     def __init__(self, *args, **kwargs):
         Sofa.Core.Controller.__init__(self, *args, **kwargs)
-        self.mapping  = kwargs['mapping']
-        self.h        = kwargs['h']
-        self.N        = kwargs['N']
-        self._done    = False
+        self.mapping = kwargs["mapping"]
+        self.h = kwargs["h"]
+        self.N = kwargs["N"]
+        self._done = False
 
     def onAnimateEndEvent(self, event):
         if self._done:
@@ -110,8 +117,8 @@ class GeometryValidator(Sofa.Core.Controller):
         print("=" * 60)
 
         try:
-            node_frames = self.mapping.d_nodeFrames.value
-            seg_frames  = self.mapping.d_segmentFrames.value
+            node_frames = self.mapping.nodeFrames.value
+            seg_frames = self.mapping.segmentFrames.value
         except Exception as e:
             print(f"  [ERROR] Cannot read mapping output: {e}")
             return
@@ -122,17 +129,21 @@ class GeometryValidator(Sofa.Core.Controller):
 
         print("  Node frames (centre, quat):")
         for i, f in enumerate(node_frames):
-            print(f"    node[{i}]  pos=({f[0]:.4f}, {f[1]:.4f}, {f[2]:.4f})"
-                  f"  quat=({f[3]:.4f}, {f[4]:.4f}, {f[5]:.4f}, {f[6]:.4f})")
+            print(
+                f"    node[{i}]  pos=({f[0]:.4f}, {f[1]:.4f}, {f[2]:.4f})"
+                f"  quat=({f[3]:.4f}, {f[4]:.4f}, {f[5]:.4f}, {f[6]:.4f})"
+            )
 
         print("\n  Segment frames (midpoint, quat):")
         for i, f in enumerate(seg_frames):
-            print(f"    seg[{i}]   pos=({f[0]:.4f}, {f[1]:.4f}, {f[2]:.4f})"
-                  f"  quat=({f[3]:.4f}, {f[4]:.4f}, {f[5]:.4f}, {f[6]:.4f})")
+            print(
+                f"    seg[{i}]   pos=({f[0]:.4f}, {f[1]:.4f}, {f[2]:.4f})"
+                f"  quat=({f[3]:.4f}, {f[4]:.4f}, {f[5]:.4f}, {f[6]:.4f})"
+            )
 
         # Numerical validation
         node_errors = _check_node_frames(node_frames, self.h, self.N)
-        seg_errors  = _check_segment_frames(seg_frames, self.h, self.N)
+        seg_errors = _check_segment_frames(seg_frames, self.h, self.N)
 
         all_errors = node_errors + seg_errors
         print()
@@ -147,64 +158,81 @@ class GeometryValidator(Sofa.Core.Controller):
 
 # ── Scene builder ─────────────────────────────────────────────────────────────
 
+
 def createScene(rootNode):
-    h  = BEAM_LENGTH / N_SEGMENTS   # segment rest length
-    Np = N_SEGMENTS + 1             # number of nodes
+    h = BEAM_LENGTH / N_SEGMENTS  # segment rest length
+    Np = N_SEGMENTS + 1  # number of nodes
 
     # ── Plugins ───────────────────────────────────────────────────────────────
-    rootNode.addObject('RequiredPlugin', name='CosseratPlugin',
-                       pluginName='Cosserat')
-    rootNode.addObject('RequiredPlugin', name='SofaBaseTopology',
-                       pluginName='SofaBaseTopology')
+
+    #    "Cosserat",
+    #    "Sofa.Component.AnimationLoop",
+    #    "Sofa.Component.LinearSolver.Iterative",
+    #    "Sofa.Component.LinearSolver.Direct",
+
+    rootNode.addObject("RequiredPlugin", pluginName=["Cosserat"])
 
     # ── Display ───────────────────────────────────────────────────────────────
-    rootNode.addObject('VisualStyle',
-                       displayFlags='showVisualModels showBehaviorModels')
-    rootNode.gravity.value = [0., 0., 0.]
-    rootNode.dt.value      = DT
-    rootNode.addObject('DefaultAnimationLoop')
+    rootNode.addObject("VisualStyle", displayFlags="showVisualModels")
+    rootNode.gravity.value = [0.0, 0.0, 0.0]
+    rootNode.dt.value = DT
+    rootNode.addObject("DefaultAnimationLoop")
 
     # ── Beam node ─────────────────────────────────────────────────────────────
-    beamNode = rootNode.addChild('straightBeam')
+    beamNode = rootNode.addChild("straightBeam")
 
     # ── Topology ──────────────────────────────────────────────────────────────
-    beamNode.addObject('EdgeSetTopologyContainer', name='topology')
-    beamNode.addObject('EdgeSetTopologyModifier')
+    beamNode.addObject("EdgeSetTopologyContainer", name="topology")
+    beamNode.addObject("EdgeSetTopologyModifier")
 
     # ── CosseratIntrinsicState ─────────────────────────────────────────────────
     # Positions: N+1 nodes along X, orientations: N identity SO3 (default)
-    node_positions_str = ' '.join(
-        f'{i * h:.6f} 0 0' for i in range(Np)
+    # node_positions_str = []
+    # for i in range(Np):
+    # node_positions_str.append([i * 0.2, 0, 0])
+
+    node_positions_str = " ".join(f"{i * h:0.6f} 0 0" for i in range(Np))
+    # N identity SO3 elements — format "x y z w" per element (our operator>>)
+    # Identity quaternion = (x=0, y=0, z=0, w=1)
+    identity_orientations_str = " ".join(["0 0 0"] * N_SEGMENTS)
+
+    print(f"Nodes positions  : {node_positions_str}")
+    print(f"Segment SO3 count: {N_SEGMENTS}")
+    state = beamNode.addObject(
+        "CosseratIntrinsicState",
+        name="state",
+        positions=node_positions_str,
+        orientations=identity_orientations_str,
+        template="Vec3d",
     )
-    state = beamNode.addObject('CosseratIntrinsicState',
-                               name='state',
-                               positions=node_positions_str,
-                               template='Vec3d')
 
     # ── CosseratTopologyBuilder ────────────────────────────────────────────────
-    beamNode.addObject('CosseratTopologyBuilder',
-                       name='builder',
-                       totalLength=BEAM_LENGTH,
-                       nbSections=N_SEGMENTS,
-                       radius=RADIUS,
-                       youngModulus=YOUNG_MOD,
-                       shearModulus=SHEAR_MOD,
-                       l_intrinsicState='@state',
-                       l_topology='@topology')
+    beamNode.addObject(
+        "CosseratTopologyBuilder",
+        name="builder",
+        totalLength=BEAM_LENGTH,
+        nbSections=N_SEGMENTS,
+        radius=RADIUS,
+        youngModulus=YOUNG_MOD,
+        shearModulus=SHEAR_MOD,
+        intrinsicState="@state",
+        topology="@topology",
+    )
 
     # ── StaggeredCosseratMapping ───────────────────────────────────────────────
-    mapping = beamNode.addObject('StaggeredCosseratMapping',
-                                 name='mapping',
-                                 l_state='@state',
-                                 drawBeam=True,
-                                 drawFrames=True,
-                                 drawRadius=RADIUS,
-                                 color='0.2 0.5 0.9 0.85')
+    mapping = beamNode.addObject(
+        "StaggeredCosseratMapping",
+        name="mapping",
+        state="@state",
+        drawBeam=True,
+        drawFrames=True,
+        drawRadius=RADIUS,
+        color="0.2 0.5 0.9 0.85",
+    )
 
     # ── Geometry validator ─────────────────────────────────────────────────────
-    rootNode.addObject(GeometryValidator(name='validator',
-                                         mapping=mapping,
-                                         h=h,
-                                         N=N_SEGMENTS))
+    rootNode.addObject(
+        GeometryValidator(name="validator", mapping=mapping, h=h, N=N_SEGMENTS)
+    )
 
     return rootNode

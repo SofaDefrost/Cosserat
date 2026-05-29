@@ -24,12 +24,21 @@ CosseratIntrinsicState::CosseratIntrinsicState()
       d_angularAccelerations(initData(&d_angularAccelerations, "angularAccelerations",
                                       "Angular accelerations of segments in tangent space")) {}
 
+sofa::type::vector<CosseratIntrinsicState::SO3>
+CosseratIntrinsicState::getOrientations() const {
+    const auto& omegas = d_orientations.getValue();
+    sofa::type::vector<SO3> Rs(omegas.size());
+    for (size_t i = 0; i < omegas.size(); ++i)
+        Rs[i] = SO3::exp(SO3::TangentVector(omegas[i].x(), omegas[i].y(), omegas[i].z()));
+    return Rs;
+}
+
 void CosseratIntrinsicState::init() {
     BaseObject::init();
 
     const auto& pos = d_positions.getValue();
-    const auto& R = d_orientations.getValue();
-    size_t nbSections = R.size();
+    const auto& omegas = d_orientations.getValue();
+    size_t nbSections = omegas.size();
 
     rest_lengths.clear();
     rest_lengths.reserve(nbSections);
@@ -58,9 +67,14 @@ void CosseratIntrinsicState::updateStrainsCache() {
 
     if (!dirty) return;
 
-    const auto& pos = d_positions.getValue();
-    const auto& R = d_orientations.getValue();
-    size_t N = R.size();
+    const auto& pos    = d_positions.getValue();
+    const auto& omegas = d_orientations.getValue();
+    size_t N = omegas.size();
+
+    // Convert stored rotation vectors → SO3 once for this cache update
+    std::vector<SO3> R(N);
+    for (size_t i = 0; i < N; ++i)
+        R[i] = SO3::exp(SO3::TangentVector(omegas[i].x(), omegas[i].y(), omegas[i].z()));
 
     cached_linear_strains.assign(N, Vec3d(0.0, 0.0, 0.0));
     for (size_t i = 0; i < N; ++i) {
@@ -75,13 +89,7 @@ void CosseratIntrinsicState::updateStrainsCache() {
     for (size_t i = 1; i < N; ++i) {
         // Angular strain (curvature + torsion) at node i, staggered convention:
         //   Omega_i = log(R_{i-1}^T * R_i) / h_dual
-        // where h_dual is the length of the dual edge connecting the midpoints of
-        // segments i-1 and i:
-        //   h_dual = (h_{i-1} + h_i) / 2
-        // For a uniform beam all h_i are equal so h_dual = h; the general case
-        // requires averaging the two adjacent segment lengths.
-        // Boundary strains (i=0 and i=N) remain zero (clamped/free BCs applied
-        // at the ForceField level, not here).
+        // Boundary strains (i=0 and i=N) remain zero (clamped/free BCs).
         const double h_dual = (rest_lengths[i - 1] + rest_lengths[i]) * 0.5;
         if (h_dual > 1e-12) {
             SO3 relative_R = R[i - 1].inverse() * R[i];

@@ -39,7 +39,7 @@ import Sofa
 import numpy as np
 
 try:
-    from LieGroups import SO3
+    from Sofa.LieGroups import SO3
     _HAVE_SO3 = True
 except ImportError:
     _HAVE_SO3 = False
@@ -237,7 +237,7 @@ class LargeDeformationIntegrator(Sofa.Core.Controller):
     # ── Animation step ────────────────────────────────────────────────────────
 
     def onAnimateBeginEvent(self, event):
-        dt = float(self.getContext().dt)
+        dt = float(self.getContext().dt.value)
         self._step += 1
 
         try:
@@ -308,11 +308,14 @@ def createScene(rootNode):
     beamNode.addObject('EdgeSetTopologyContainer', name='topology')
     beamNode.addObject('EdgeSetTopologyModifier')
 
-    # Initial positions (will be overwritten by controller at init)
+    # Initial positions and identity SO3 elements
+    # (will be overwritten by controller at init for non-trivial shapes)
     node_pos_str = ' '.join(f'{i*h:.6f} 0 0' for i in range(N + 1))
+    identity_orientations_str = ' '.join(['0 0 0'] * N)
     state = beamNode.addObject('CosseratIntrinsicState',
                                name='state',
                                positions=node_pos_str,
+                               orientations=identity_orientations_str,
                                template='Vec3d')
 
     beamNode.addObject('CosseratTopologyBuilder',
@@ -322,16 +325,16 @@ def createScene(rootNode):
                        radius=RADIUS,
                        youngModulus=YOUNG_MOD,
                        shearModulus=SHEAR_MOD,
-                       l_intrinsicState='@state',
-                       l_topology='@topology')
+                       intrinsicState='@state',
+                       topology='@topology')
 
     ff = beamNode.addObject('PainlessBeamForceField',
                             name='ff',
-                            l_state='@state')
+                            state='@state')
 
     beamNode.addObject('StaggeredCosseratMapping',
                        name='mapping',
-                       l_state='@state',
+                       state='@state',
                        drawBeam=True,
                        drawFrames=True,
                        drawRadius=RADIUS,

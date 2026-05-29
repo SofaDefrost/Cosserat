@@ -31,12 +31,24 @@ class CosseratIntrinsicState : public sofa::core::objectmodel::BaseObject {
     using Vec3d = sofa::type::Vec3d;
     using SO3 = sofa::component::cosserat::liegroups::SO3<double>;
 
+    /**
+     * @brief SOFA template name for factory lookup.
+     *
+     * Registers this component under the "Vec3d" template so that Python scenes
+     * can use `template="Vec3d"` when calling `node.addObject("CosseratIntrinsicState", ...)`.
+     */
+    static std::string templateName(const CosseratIntrinsicState* = nullptr) {
+        return "Vec3d";
+    }
+
     CosseratIntrinsicState();
     virtual ~CosseratIntrinsicState() = default;
 
     // Data containers
     sofa::core::objectmodel::Data<sofa::type::vector<Vec3d>> d_positions;
-    sofa::core::objectmodel::Data<sofa::type::vector<SO3>> d_orientations;
+    /// Orientations stored as rotation vectors ω = log(R) ∈ ℝ³ (SOFA-accessible from Python).
+    /// Identity rotation = [0, 0, 0].  Convert to SO3 via SO3::exp(ω).
+    sofa::core::objectmodel::Data<sofa::type::vector<Vec3d>> d_orientations;
 
     // Velocity and acceleration in tangent space
     sofa::core::objectmodel::Data<sofa::type::vector<Vec3d>> d_velocities;  // R3 for nodes
@@ -47,8 +59,11 @@ class CosseratIntrinsicState : public sofa::core::objectmodel::BaseObject {
         d_angularAccelerations;  // R3 (so3) for segments
 
     // Secure accessors
-    const sofa::type::vector<Vec3d> &getPositions() const { return d_positions.getValue(); }
-    const sofa::type::vector<SO3> &getOrientations() const { return d_orientations.getValue(); }
+    const sofa::type::vector<Vec3d>& getPositions() const { return d_positions.getValue(); }
+
+    /// Returns segment orientations as SO3 objects (converted from stored rotation vectors).
+    sofa::type::vector<SO3> getOrientations() const;
+
     size_t getNbSegments() const { return d_orientations.getValue().size(); }
 
     /**

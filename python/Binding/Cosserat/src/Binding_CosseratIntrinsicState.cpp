@@ -114,7 +114,7 @@ getNbSegments()                 → int
         // ── Orientations (as SO3 list) ─────────────────────────────────────────
         .def("getOrientations",
              [](CIS& self) -> std::vector<SO3> {
-                 const auto& R = self.getOrientations();
+                 const auto R = self.getOrientations();
                  return std::vector<SO3>(R.begin(), R.end());
              },
              "Segment orientations as a list of SO3 objects (length N).")
@@ -123,8 +123,10 @@ getNbSegments()                 → int
              [](CIS& self, const std::vector<SO3>& R_list) {
                  auto& data = *self.d_orientations.beginEdit();
                  data.resize(R_list.size());
-                 for (size_t i = 0; i < R_list.size(); ++i)
-                     data[i] = R_list[i];
+                 for (size_t i = 0; i < R_list.size(); ++i) {
+                     const auto omega = R_list[i].log();
+                     data[i] = sofa::type::Vec3d(omega.x(), omega.y(), omega.z());
+                 }
                  self.d_orientations.endEdit();
              },
              py::arg("orientations"),
@@ -133,7 +135,7 @@ getNbSegments()                 → int
         // ── Orientations (as quaternion array) ────────────────────────────────
         .def("getOrientationsQuat",
              [](CIS& self) -> Eigen::MatrixXd {
-                 const auto& R = self.getOrientations();
+                 const auto R = self.getOrientations();  // returns vector<SO3> by value
                  Eigen::MatrixXd q(static_cast<Eigen::Index>(R.size()), 4);
                  for (Eigen::Index i = 0; i < static_cast<Eigen::Index>(R.size()); ++i) {
                      const auto& ei_q = R[static_cast<size_t>(i)].quaternion();
@@ -153,7 +155,8 @@ getNbSegments()                 → int
                  data.resize(static_cast<size_t>(q.rows()));
                  for (Eigen::Index i = 0; i < q.rows(); ++i) {
                      Eigen::Quaterniond eq(q(i,3), q(i,0), q(i,1), q(i,2));
-                     data[static_cast<size_t>(i)] = SO3(eq.normalized());
+                     const auto omega = SO3(eq.normalized()).log();
+                     data[static_cast<size_t>(i)] = sofa::type::Vec3d(omega.x(), omega.y(), omega.z());
                  }
                  self.d_orientations.endEdit();
              },
@@ -215,6 +218,12 @@ getDfAngles()      → numpy (N, 3)
 getNodalForces()   → numpy (N+1, 3)   (filled by addForce / the animation loop)
 getSegmentTorques()→ numpy (N, 3)
 )doc")
+
+        // ── Direct force computation (Python explicit integrator) ─────────────
+        .def("computeAndStoreForces",
+             &PBFF::computeAndStoreForces,
+             "Compute elastic forces/torques and store in d_nodalForces / "
+             "d_segmentTorques.  Call this every step before getNodalForces().")
 
         // ── Direct differential force computation (Python Euler integrator) ────
         .def("computeDForcesFromData",

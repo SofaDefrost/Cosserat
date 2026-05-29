@@ -696,26 +696,41 @@ using SO3d = SO3<double>;
 using SO3f = SO3<float>;
 
 // ── Stream operators (required by sofa::type::vector<SO3>) ───────────────────
+//
+// Serialisation format: rotation vector ω ∈ so(3) ≅ ℝ³  (3 scalars)
+//
+//   write : ω = log(R)          (axis * angle, zero for identity)
+//   read  : R = exp(ω)
+//
+// This is the natural parametrisation for a Lie group element:
+//   • minimal (3 parameters for 3 DOF)
+//   • identity = "0 0 0"
+//   • consistent with the log/exp API already used throughout the codebase
+//   • independent of the internal quaternion representation
 
 /**
- * @brief Output operator: writes as quaternion "(x y z w)".
+ * @brief Output operator: writes the SO3 element as its rotation vector ω = log(R) ∈ ℝ³.
+ *
+ * Format: "ωx ωy ωz"   (space-separated doubles)
+ * Identity rotation:  "0 0 0"
  */
 template <typename Scalar>
 inline std::ostream& operator<<(std::ostream& os, const SO3<Scalar>& R) {
-    const auto& q = R.quaternion();
-    return os << q.x() << " " << q.y() << " " << q.z() << " " << q.w();
+    const auto omega = R.log();   // TangentVector = Eigen::Vector3<Scalar>
+    return os << omega.x() << " " << omega.y() << " " << omega.z();
 }
 
 /**
- * @brief Input operator: reads quaternion "x y z w" and normalises.
+ * @brief Input operator: reads a rotation vector ω ∈ ℝ³ and constructs R = exp(ω).
+ *
+ * Format: "ωx ωy ωz"
+ * Identity rotation:  "0 0 0"
  */
 template <typename Scalar>
 inline std::istream& operator>>(std::istream& is, SO3<Scalar>& R) {
-    Scalar x{}, y{}, z{}, w{1};
-    is >> x >> y >> z >> w;
-    typename SO3<Scalar>::Quaternion q(w, x, y, z);
-    q.normalize();
-    R = SO3<Scalar>(q);
+    Scalar wx{}, wy{}, wz{};
+    is >> wx >> wy >> wz;
+    R = SO3<Scalar>::exp(typename SO3<Scalar>::TangentVector(wx, wy, wz));
     return is;
 }
 

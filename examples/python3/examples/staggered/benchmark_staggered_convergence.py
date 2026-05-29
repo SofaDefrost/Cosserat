@@ -55,7 +55,7 @@ import argparse
 
 # ── Imports pybind11 ──────────────────────────────────────────────────────────
 try:
-    from Cosserat import CosseratIntrinsicState, PainlessBeamForceField
+    from Sofa.Cosserat import CosseratIntrinsicState, PainlessBeamForceField
     _HAVE_COSSERAT = True
 except ImportError:
     _HAVE_COSSERAT = False
@@ -64,7 +64,7 @@ except ImportError:
     print("  → Lancer depuis le répertoire de build SOFA")
 
 try:
-    from LieGroups import SO3
+    from Sofa.LieGroups import SO3
     _HAVE_SO3 = True
 except ImportError:
     _HAVE_SO3 = False

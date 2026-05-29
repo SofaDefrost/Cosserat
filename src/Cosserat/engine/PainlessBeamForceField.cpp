@@ -71,9 +71,17 @@ void PainlessBeamForceField::init() {
                << d_GA.getValue() << ")  "
                << "K_A=diag(" << d_GJ.getValue() << ", " << d_EIy.getValue() << ", "
                << d_EIz.getValue() << ")";
+
+    // Enable automatic force update every animation step (for Python integrator)
+    this->f_listening.setValue(true);
 }
 
 void PainlessBeamForceField::reinit() { init(); }
+
+void PainlessBeamForceField::handleEvent(sofa::core::objectmodel::Event* e) {
+    if (sofa::simulation::AnimateBeginEvent::checkEventType(e))
+        computeAndStoreForces();
+}
 
 // ── Internal: stiffness matrices ──────────────────────────────────────────────
 
@@ -136,6 +144,17 @@ double PainlessBeamForceField::computeForcesAndTorques(
 
         f_nodes[i]     += f_world;
         f_nodes[i + 1] -= f_world;
+
+        // ── Torque on segment i from linear strain (coupling positions → SO3) ──
+        //
+        //   τ_linear_i = dx_body × f_body    (body frame of segment i)
+        //
+        // Derived from  δE_i = ξ · (dx_body × f_body)  under right perturbation
+        // R_i → R_i exp(ε ξ).  This term drives R_i to follow the deformed beam
+        // direction; without it SO3 DOFs are decoupled from position dynamics and
+        // bending stiffness (EI/GJ) never activates.
+        const SO3::Vector tau_lin = dx_body.cross(f_body);
+        tau_segs[i] += Vec3d(tau_lin.x(), tau_lin.y(), tau_lin.z());
 
         energy += 0.5 * h[i] * (Gamma_i * KL_Gamma);
     }
@@ -332,6 +351,15 @@ void PainlessBeamForceField::addForce(
     // VecDeriv read/write accessors (i.e. become MechanicalState<DataTypes>).
     // This is planned as a future extension.
     //
+    VecVec3d& f_nodes  = *d_nodalForces.beginEdit();
+    VecVec3d& tau_segs = *d_segmentTorques.beginEdit();
+    computeForcesAndTorques(f_nodes, tau_segs);
+    d_nodalForces.endEdit();
+    d_segmentTorques.endEdit();
+}
+
+void PainlessBeamForceField::computeAndStoreForces() {
+    if (!l_state.get()) return;
     VecVec3d& f_nodes  = *d_nodalForces.beginEdit();
     VecVec3d& tau_segs = *d_segmentTorques.beginEdit();
     computeForcesAndTorques(f_nodes, tau_segs);

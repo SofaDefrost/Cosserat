@@ -64,7 +64,7 @@ import sys
 #  getNodalForces(), etc.
 #
 try:
-    import Cosserat as _CosseratModule   # noqa — enregistre le downcast SOFA
+    from Sofa import Cosserat as _CosseratModule   # noqa — enregistre le downcast SOFA
     _HAVE_BINDINGS = True
 except ImportError:
     _HAVE_BINDINGS = False
@@ -72,7 +72,7 @@ except ImportError:
           "Compiler avec -DCOSSERAT_WITH_PYTHON_BINDINGS=ON.")
 
 try:
-    from LieGroups import SO3
+    from Sofa.LieGroups import SO3
     _HAVE_SO3 = True
 except ImportError:
     _HAVE_SO3 = False
@@ -224,7 +224,7 @@ class StaggeredValidationController(Sofa.Core.Controller):
             self._converged = True
             return
 
-        dt = float(self.getContext().dt)
+        dt = float(self.getContext().dt.value)
 
         # ── Lecture de l'état ──────────────────────────────────────────────────
         if not _HAVE_BINDINGS:
@@ -323,8 +323,13 @@ def createScene(rootNode):
                        edges=' '.join(f'{i} {i+1}' for i in range(N)))
     beamNode.addObject('EdgeSetTopologyModifier')
 
+    node_pos_str = ' '.join(f'{i*h:.6f} 0 0' for i in range(Np))
+    identity_orientations_str = ' '.join(['0 0 0'] * N)
     state = beamNode.addObject('CosseratIntrinsicState',
-                               name='state')
+                               name='state',
+                               positions=node_pos_str,
+                               orientations=identity_orientations_str,
+                               template='Vec3d')
 
     beamNode.addObject('CosseratTopologyBuilder',
                        name='builder',
@@ -333,16 +338,16 @@ def createScene(rootNode):
                        radius=RADIUS,
                        youngModulus=YOUNG_MOD,
                        shearModulus=SHEAR_MOD,
-                       l_intrinsicState='@state',
-                       l_topology='@topology')
+                       intrinsicState='@state',
+                       topology='@topology')
 
     ff = beamNode.addObject('PainlessBeamForceField',
                             name='ff',
-                            l_state='@state')
+                            state='@state')
 
     beamNode.addObject('StaggeredCosseratMapping',
                        name='mapping',
-                       l_state='@state',
+                       state='@state',
                        drawBeam=True,
                        drawFrames=True,
                        drawRadius=RADIUS * 1.5,
