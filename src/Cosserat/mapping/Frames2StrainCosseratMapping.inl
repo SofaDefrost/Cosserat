@@ -321,7 +321,10 @@ namespace Cosserat::mapping {
 		const auto section_count = d_curv_abs_section.getValue().size() - 1;
 
 		strain_vel.resize(section_count);
-
+		for (auto &vel : strain_vel){
+			vel.clear();
+		}
+										
 
 
 		// Compute the base velocity in SE(3) tangent space
@@ -378,19 +381,7 @@ namespace Cosserat::mapping {
 
 			TangentVector eta_a = TangentVector::Zero();
 			TangentVector eta_b = TangentVector::Zero();
-
-			
-
-			//@appa: Comme le frame 0 n'est attaché à la base actuellement, voici la version à adoopter
-			// for(int u=0; u<3; u++){ // frame_vel = [linear_velocity, angular_velocity]
-			// 	eta_a[u] = frame_vel[i][u+3]; //angular part
-			// 	eta_b[u] = frame_vel[i+1][u+3];
-
-			// 	eta_a[u+3] = frame_vel[i][u]; // linear part
-			// 	eta_b[u+3] = frame_vel[i+1][u];
-
-				
-			// }			
+		
 
 			//Projection (global -> local)
 			//frame a
@@ -406,7 +397,7 @@ namespace Cosserat::mapping {
 			TangentVector velb_global(frame_vel[i+1][0], frame_vel[i+1][1], frame_vel[i+1][2], frame_vel[i+1][3], frame_vel[i+1][4], frame_vel[i+1][5]);
 			
 			eta_b = b_projector * velb_global;
-
+			
 			TangentVector output_vel = J1*eta_a + J2*eta_b;
 			
 			for(int k=0; k<6; k++){
@@ -420,6 +411,9 @@ namespace Cosserat::mapping {
 		std::cout<<"========End applyJ========"<<std::endl;
 
 	}
+
+
+
 
 	template<class TIn1, class TIn2, class TOut>
 	void 
@@ -456,7 +450,7 @@ namespace Cosserat::mapping {
 		
 		// Initialize output forces
 		frameForces.resize(framePositions.size());
-											
+
 		std::cout<<"(in) Strain forces: "<<std::endl;
 		for(auto v : strainForces){
 			std::cout<< v <<std::endl;
@@ -499,15 +493,13 @@ namespace Cosserat::mapping {
 
 			// std::cout<<"Omega_i: "<< Omega_i.transpose()<<std::endl;
 
-
 			//compute Jacobians
 			AdjointMatrix dexp_inv = computeInverseTangentOperator(Omega_i);
-
-			AdjointMatrix J2 = dexp_inv / dx;
+			AdjointMatrix J2 = (1./dx)*dexp_inv;
 
 			SE3Types g = SE3Types::expCosserat(strain_i, -dx); // = exp(-Omega_i)
-			AdjointMatrix Adg = g.computeAdjoint();
-			AdjointMatrix J1 = -dexp_inv*Adg / dx;
+			AdjointMatrix AdgT = g.computeAdjoint().transpose();
+			AdjointMatrix J1_transpose = -(1./dx) * AdgT * dexp_inv.transpose();
 
 			// std::cout<<"Jacobians: "<<std::endl;
 			// std::cout<<"J1: "<<std::endl;
@@ -523,33 +515,24 @@ namespace Cosserat::mapping {
 			}
 
 			//@appa: multiplication par dx déjà fait dans le forcefield
-			TangentVector fa_local = J1.transpose() * lambda; //a (b): extremite gauche (droite) de la section
+			TangentVector fa_local = J1_transpose * lambda; //a (b): extremite gauche (droite) de la section
 			TangentVector fb_local = J2.transpose() * lambda;
 
 			// std::cout<<"fa_local: "<<fa_local.transpose()<<std::endl;
 			// std::cout<<"fb_local: "<<fb_local.transpose()<<std::endl;
 
 
-			// //@appa: Comme le frame 0 n'est attaché à la base actuellement, voici la version à adopter			
-			// for(int k=0; k<3; k++){
-			// 	frameForces[i][k] +=fa[k+3]; //linear part
-			// 	frameForces[i+1][k] +=fb[k+3];
-
-			// 	frameForces[i][k+3] +=fa[k]; //angular part
-			// 	frameForces[i+1][k+3] +=fb[k];
-			// }
-
 			//Projection (local -> global)
 			//frame a
 			SE3Types ga = g_frames[i];
 			AdjointMatrix a_projector = ga.buildProjectionMatrix(ga.rotation().matrix());
-			TangentVector fa_global = a_projector * fa_local;
+			TangentVector fa_global = a_projector.transpose().inverse() * fa_local;
 			
 
 			// idem pour le frame b
 			SE3Types gb = g_frames[i+1];
 			AdjointMatrix b_projector = gb.buildProjectionMatrix(gb.rotation().matrix());
-			TangentVector fb_global = b_projector * fb_local;
+			TangentVector fb_global = b_projector.transpose().inverse() * fb_local;
 
 
 			std::cout<<"fa_global: "<<fa_global.transpose()<<std::endl;
@@ -572,7 +555,7 @@ namespace Cosserat::mapping {
     	std::cout << "(out)base Force: " << baseForces[baseIndex] << std::endl;
 
 		dataVecOut1Force[0]->endEdit();
-		dataVecOut2Force[0]->endEdit();		
+		dataVecOut2Force[0]->endEdit();
 		
 		std::cout<<"====== End applyJT ======="<<std::endl;
 			
