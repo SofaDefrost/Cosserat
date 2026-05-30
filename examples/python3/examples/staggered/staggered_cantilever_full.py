@@ -193,22 +193,125 @@ class StaggeredFullIntegrator(Sofa.Core.Controller):
         tau_el = np.array(self.ff.segmentTorques.value).reshape(-1, 3)
 
         if f_el.shape[0] != self.N + 1:
+            print(f"  [integrator] ERROR: f_el.shape={f_el.shape}, expected ({self.N+1}, 3)"
+                  f" — ff.nodalForces not filled yet?")
             return
 
-        # ── Debug print every 200 steps ───────────────────────────────────────
+        # ── First-step sanity checks ──────────────────────────────────────────
+        if not hasattr(self, '_first_step_done'):
+            self._first_step_done = True
+            print("\n── [integrator] FIRST STEP SANITY CHECK ──────────────────────────────")
+            print(f"  pos shape      : {pos.shape}   (expected ({self.N+1}, 3))")
+            print(f"  f_el shape     : {f_el.shape}   (expected ({self.N+1}, 3))")
+            print(f"  tau_el shape   : {tau_el.shape}  (expected ({self.N}, 3))")
+            print(f"  max|f_el|      : {np.linalg.norm(f_el, axis=1).max():.4e} N"
+                  f"  [0 at rest → no spring force at t=0]")
+            print(f"  max|tau_el|    : {np.linalg.norm(tau_el, axis=1).max():.4e} N·m"
+                  f"  [0 at rest — expected]")
+            print(f"  dt             : {dt:.4e} s")
+            print(f"  m/node         : {self.m:.4e} kg")
+            print(f"  I/seg          : {self.I:.4e} kg·m²")
+            print(f"  g_eff          : {self.g_coeff * GRAVITY_Y:.2f} m/s²")
+            print(f"  SO3 active     : {self._has_so3}")
+            # Stability pre-check (worst case, using max tau from step 1)
+            max_tau0 = np.linalg.norm(tau_el, axis=1).max()
+            if max_tau0 > 0:
+                alpha0 = max_tau0 / self.I
+                print(f"  Predicted α    : {alpha0:.3e} rad/s²"
+                      f"   Δω/step={alpha0*dt:.3e} rad/s")
+            print("── End first-step check ────────────────────────────────────────────\n")
+
+        # ── Debug print every 50 steps ────────────────────────────────────────
         if not hasattr(self, '_step'):
             self._step = 0
         self._step += 1
-        if self._step % 200 == 1:
-            tip   = pos[-1]
-            f_tip = f_el[-1]
-            tau_mid = tau_el[self.N // 2] if tau_el.shape[0] > 0 else np.zeros(3)
+
+        DEBUG_FREQ      = 1     # print summary every N steps  (réduit à 1 pour debug)
+        DEBUG_FREQ_FULL = 1     # print full per-segment table every N steps
+
+        if self._step % DEBUG_FREQ == 0:
+            tip     = pos[-1]
+            tip_def = np.linalg.norm(tip - self._rest_pos[-1])
+            f_tip   = f_el[-1]
+
+            # Angular velocity profile
+            ang_norms = np.linalg.norm(self._vel_ang, axis=1)  # (N,)
+            max_ang   = ang_norms.max()
+            argmax_ang = int(ang_norms.argmax())
+
+            # Torque profile
+            tau_norms = np.linalg.norm(tau_el, axis=1) if tau_el.shape[0] > 0 else np.zeros(self.N)
+            max_tau   = tau_norms.max()
+            argmax_tau = int(tau_norms.argmax())
+
+            # Force profile
+            f_norms   = np.linalg.norm(f_el, axis=1)
+            max_f_node = f_norms.max()
+
+            # Velocity profile
+            vel_norms = np.linalg.norm(self._vel_pos, axis=1)  # (N+1,)
+            max_vel   = vel_norms.max()
+
+            # Stability estimate: for SO3 Euler to be stable we need
+            # dt² * |tau| / I_seg < ~2 * |vel_ang|  (otherwise it's blowing up)
+            if max_ang > 1e-30:
+                stab_ratio = (max_tau / self.I) * dt / max_ang
+            else:
+                stab_ratio = float('inf') if max_tau > 1e-30 else 0.0
+
             so3_status = "ACTIVE" if self._has_so3 else "DISABLED"
-            ang_norm = np.linalg.norm(self._vel_ang)
-            print(f"  step={self._step:5d}  tip=({tip[0]:.4f},{tip[1]:.4f},{tip[2]:.4f})"
-                  f"  |f_tip|={np.linalg.norm(f_tip):.3e}"
-                  f"  |tau_mid|={np.linalg.norm(tau_mid):.3e}"
-                  f"  SO3={so3_status}  |vel_ang|={ang_norm:.3e}")
+
+            print(f"\n── [step {self._step:5d}  t={self._step * dt:.4f} s] "
+                  f"SO3={so3_status} ──────────────────────────────────────")
+            print(f"  Tip position   : ({tip[0]:.5f}, {tip[1]:.5f}, {tip[2]:.5f}) m"
+                  f"  |deflection|={tip_def*100:.3f} cm")
+            print(f"  |f_tip|        : {np.linalg.norm(f_tip):.4e} N"
+                  f"   max|f_node|={max_f_node:.4e} N  (at node {int(f_norms.argmax())})")
+            print(f"  max|tau_el|    : {max_tau:.4e} N·m  (at seg {argmax_tau})")
+            print(f"  max|vel_ang|   : {max_ang:.4e} rad/s  (at seg {argmax_ang})")
+            print(f"  max|vel_pos|   : {max_vel:.4e} m/s")
+            print(f"  Stability ratio: |α|·dt / |ω| = {stab_ratio:.3f}"
+                  f"  [>>1 → SO3 blowing up, should stay <1]")
+            # Alpha (angular acceleration) this step
+            if max_ang > 1e-30:
+                alpha_est = max_tau / self.I
+                print(f"  max|alpha|     : {alpha_est:.4e} rad/s²"
+                      f"   Δω_this_step={alpha_est*dt:.4e} rad/s"
+                      f"   (I_seg={self.I:.3e} kg·m²)")
+            print(f"  Damping factors: pos={DAMPING_POS}  ang={DAMPING_ANG}")
+            print(f"  g_eff          : {self.g_coeff * GRAVITY_Y:.2f} m/s²")
+
+            # Check SO3 state: are rotation vectors growing?
+            if self._has_so3:
+                omegas = np.array(self.state.orientations.value).reshape(-1, 3)
+                omega_norms = np.linalg.norm(omegas, axis=1)
+                max_rot_vec = omega_norms.max()
+                print(f"  max|ω_seg|     : {max_rot_vec:.4e} rad"
+                      f"   (identity=0, warning if >π/2≈1.57 rad)")
+                if max_rot_vec > np.pi / 2:
+                    print(f"  ⚠  LARGE ROTATION — segment may have flipped!")
+                if max_rot_vec > np.pi:
+                    print(f"  ✗  ROTATION > π — log(R) singularity risk!")
+
+        # ── Full per-segment table ─────────────────────────────────────────────
+        if self._step % DEBUG_FREQ_FULL == 0:
+            print(f"\n  ── Per-segment detail (step {self._step}) ──────────────────")
+            print(f"  {'seg':>4}  {'|tau_el|':>12}  {'|vel_ang|':>12}  {'rot_vec_norm':>14}"
+                  f"  {'f_node_i+1':>14}")
+            for i in range(self.N):
+                tau_i = tau_el[i] if tau_el.shape[0] > i else np.zeros(3)
+                v_ang_i = self._vel_ang[i]
+                if self._has_so3:
+                    omegas = np.array(self.state.orientations.value).reshape(-1, 3)
+                    rot_norm = np.linalg.norm(omegas[i])
+                else:
+                    rot_norm = 0.0
+                f_next = np.linalg.norm(f_el[i + 1]) if i + 1 < f_el.shape[0] else 0.0
+                print(f"  {i:>4}  {np.linalg.norm(tau_i):>12.4e}"
+                      f"  {np.linalg.norm(v_ang_i):>12.4e}"
+                      f"  {rot_norm:>14.4e}"
+                      f"  {f_next:>14.4e}")
+            print(f"  ── End per-segment ─────────────────────────────────────────\n")
 
         # ── Integrate node positions (explicit Euler) ─────────────────────────
         g_eff = self.g_coeff * GRAVITY_Y
@@ -232,12 +335,37 @@ class StaggeredFullIntegrator(Sofa.Core.Controller):
             R_list = [SO3.exp(omegas[i]) for i in range(self.N)]
 
             new_R = list(R_list)
+            ang_diverge = False
             for i in range(1, self.N):  # segment 0 clamped
                 tau_i = tau_el[i]
                 alpha = tau_i / self.I
-                self._vel_ang[i] = self._vel_ang[i] * DAMPING_ANG + alpha * dt
+                delta_omega = alpha * dt          # angular velocity increment this step
+                self._vel_ang[i] = self._vel_ang[i] * DAMPING_ANG + delta_omega
                 dR = SO3.exp(self._vel_ang[i] * dt)
                 new_R[i] = R_list[i] * dR
+
+                # ── Per-segment divergence check ───────────────────────────────
+                vel_ang_norm = np.linalg.norm(self._vel_ang[i])
+                delta_omega_norm = np.linalg.norm(delta_omega)
+                new_rot_norm = np.linalg.norm(np.array(new_R[i].log()))
+
+                if self._step % DEBUG_FREQ == 0:
+                    print(f"    SO3 seg {i:2d}: "
+                          f"|tau|={np.linalg.norm(tau_i):.3e}"
+                          f"  |alpha|={np.linalg.norm(alpha):.3e}"
+                          f"  |Δω|={delta_omega_norm:.3e}"
+                          f"  |vel_ang|={vel_ang_norm:.3e}"
+                          f"  |log(R)|={new_rot_norm:.3e}")
+
+                # Divergence alarm: angular velocity increment > current velocity
+                if delta_omega_norm > 10.0 * vel_ang_norm + 1e-10:
+                    ang_diverge = True
+
+            if ang_diverge and self._step % DEBUG_FREQ == 0:
+                print(f"  ⚠  DIVERGENCE DETECTED: angular increment >> current velocity"
+                      f" (step {self._step}) — tau too large for I_seg={self.I:.2e} kg·m²"
+                      f" and dt={dt:.1e} s")
+                print(f"     → Try I_seg *= 100 or reduce DT to ~{dt/10:.1e} s")
 
             # Write back as rotation vectors (log of each SO3)
             new_omegas = [list(new_R[i].log()) for i in range(self.N)]
@@ -299,7 +427,30 @@ def createScene(rootNode):
         topology="@topology",
     )
 
-    ff = beamNode.addObject("PainlessBeamForceField", name="ff", state="@state")
+    # ── Stiffness parameters (circular cross-section) ─────────────────────────
+    # Computed here explicitly so the force field gets the correct values.
+    # CosseratTopologyBuilder also computes these, but there is currently no
+    # automatic link between the two components — linking EA="@builder.EA" etc.
+    # would work but requires SOFA Data-engine propagation to be set up first.
+    import math as _math
+    _A   = _math.pi * RADIUS**2              # cross-section area
+    _I_y = _math.pi * RADIUS**4 / 4.0       # second moment of area (bending)
+    _J   = _math.pi * RADIUS**4 / 2.0       # polar moment (torsion)
+    _EA  = YOUNG_MOD * _A
+    _GA  = SHEAR_MOD * _A
+    _EIy = YOUNG_MOD * _I_y
+    _EIz = YOUNG_MOD * _I_y
+    _GJ  = SHEAR_MOD * _J
+
+    print(f"\n  [scene] PainlessBeamForceField stiffness parameters:")
+    print(f"    EA  = {_EA:.4e} N")
+    print(f"    GA  = {_GA:.4e} N")
+    print(f"    EIy = {_EIy:.4e} N·m²")
+    print(f"    EIz = {_EIz:.4e} N·m²")
+    print(f"    GJ  = {_GJ:.4e} N·m²")
+
+    ff = beamNode.addObject("PainlessBeamForceField", name="ff", state="@state",
+                            EA=_EA, GA=_GA, EIy=_EIy, EIz=_EIz, GJ=_GJ)
 
     beamNode.addObject(
         "StaggeredCosseratMapping",

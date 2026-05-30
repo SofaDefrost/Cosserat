@@ -225,11 +225,23 @@ def createScene(rootNode):
                        topology='@topology')
 
     # ── PainlessBeamForceField ─────────────────────────────────────────────────
-    # Stiffness parameters will be read from CosseratTopologyBuilder outputs
-    # via the linked intrinsic state (the builder writes EA, GA, etc. to it).
+    # Stiffness parameters computed explicitly from cross-section geometry.
+    # CosseratTopologyBuilder does NOT auto-link its outputs to PainlessBeamForceField,
+    # so we compute and pass them here to avoid using wrong constructor defaults.
+    _A   = math.pi * RADIUS**2
+    _I_y = math.pi * RADIUS**4 / 4.0
+    _J   = math.pi * RADIUS**4 / 2.0
+    _EA  = YOUNG_MOD * _A
+    _GA  = SHEAR_MOD * _A
+    _EIy = YOUNG_MOD * _I_y
+    _EIz = YOUNG_MOD * _I_y
+    _GJ  = SHEAR_MOD * _J
+    print(f"\n  [scene] PainlessBeamForceField stiffness:")
+    print(f"    EA={_EA:.3e} N   GA={_GA:.3e} N   EIy={_EIy:.3e} N·m²   GJ={_GJ:.3e} N·m²")
     forcefield = beamNode.addObject('PainlessBeamForceField',
                                     name='ff',
-                                    state='@state')
+                                    state='@state',
+                                    EA=_EA, GA=_GA, EIy=_EIy, EIz=_EIz, GJ=_GJ)
 
     # ── StaggeredCosseratMapping ───────────────────────────────────────────────
     beamNode.addObject('StaggeredCosseratMapping',

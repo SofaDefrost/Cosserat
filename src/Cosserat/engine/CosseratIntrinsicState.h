@@ -114,8 +114,10 @@ private:
     std::vector<sofa::type::Vec3d> cached_linear_strains;
     std::vector<sofa::type::Vec3d> cached_angular_strains;
     std::vector<double> rest_lengths;
-    unsigned int last_positions_counter = 0;
+    unsigned int last_positions_counter    = 0;
     unsigned int last_orientations_counter = 0;
+    /// Count of cache recomputations (for sparse debug prints in updateStrainsCache).
+    mutable int cache_update_count_ = 0;
 
 };
 

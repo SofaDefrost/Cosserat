@@ -187,12 +187,24 @@ class PainlessBeamForceField : public sofa::core::behavior::BaseForceField {
                         VecVec3d&       df_pos,
                         VecVec3d&       df_ang) const;
 
+    // ── Debug controls ─────────────────────────────────────────────────────────
+    /// Print detailed diagnostics every N calls to computeAndStoreForces().
+    /// 0 = disabled.  Default 100.
+    sofa::core::objectmodel::Data<int> d_printEvery;
+
+    /// When true, also print per-segment details (Gamma, Omega, f, tau) each
+    /// time the summary is printed.  Default false (summary only).
+    sofa::core::objectmodel::Data<bool> d_printPerSegment;
+
    private:
     Mat3x3d buildK_L() const;
     Mat3x3d buildK_A() const;
 
     double computeForcesAndTorques(VecVec3d& f_nodes,
                                    VecVec3d& tau_segs) const;
+
+    /// Monotonically increasing call counter for computeAndStoreForces().
+    mutable int m_step = 0;
 };
 
 }  // namespace sofa::component::cosserat::engine
