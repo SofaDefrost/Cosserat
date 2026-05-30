@@ -35,30 +35,36 @@ Running
   runSofa staggered_large_deformation.py
 """
 
-import Sofa
 import numpy as np
+import Sofa
 
 try:
     from Sofa.LieGroups import SO3
+
     _HAVE_SO3 = True
 except ImportError:
     _HAVE_SO3 = False
     print("[WARNING] LieGroups module not found — SO3 integration disabled.")
 
-# ── Parameters ────────────────────────────────────────────────────────────────
-BEAM_LENGTH    = 1.0      # m
-N_SEGMENTS     = 10
-RADIUS         = 0.01     # m
-YOUNG_MOD      = 2.0e5    # Pa
-SHEAR_MOD      = 6.7e4    # Pa  (≈ E/3)
-DENSITY        = 500.0    # kg/m³
-DT             = 2e-4     # s
-DAMPING        = 0.97     # per-step velocity damping (≈ Rayleigh α)
+# ── Debug printing ────────────────────────────────────────────────────────────
+DEBUG_FREQ      = 100   # print summary every N steps  (set to 1 for every step)
+DEBUG_FREQ_FULL = 500   # print per-segment table every N steps
 
-INITIAL_SHAPE  = 'arc'   # 'arc' | 'helix' | 'twist'
+# ── Parameters ────────────────────────────────────────────────────────────────
+BEAM_LENGTH = 1.0  # m
+N_SEGMENTS = 10
+RADIUS = 0.01  # m
+YOUNG_MOD = 2.0e5  # Pa
+SHEAR_MOD = 6.7e4  # Pa  (≈ E/3)
+DENSITY = 500.0  # kg/m³
+DT = 2e-4  # s
+DAMPING = 0.97  # per-step velocity damping (≈ Rayleigh α)
+
+INITIAL_SHAPE = "arc"  # 'arc' | 'helix' | 'twist'
 
 
 # ── Geometry helpers ──────────────────────────────────────────────────────────
+
 
 def build_arc_state(N, L):
     """
@@ -67,29 +73,31 @@ def build_arc_state(N, L):
     Positions along a circle of radius R = 2L/π so that arc length = L.
     Segment orientations: tangent = X, normal = Y → rotation around Z by θ_i.
     """
-    R_arc   = 2.0 * L / np.pi              # radius giving arc-length = L
-    theta   = np.pi / 2.0                  # total arc angle (quarter circle)
-    h       = L / N
+    R_arc = 2.0 * L / np.pi  # radius giving arc-length = L
+    theta = np.pi / 2.0  # total arc angle (quarter circle)
+    h = L / N
 
-    positions    = np.zeros((N + 1, 3))
-    quats        = np.zeros((N, 4))        # [qx, qy, qz, qw]
+    positions = np.zeros((N + 1, 3))
+    quats = np.zeros((N, 4))  # [qx, qy, qz, qw]
 
     for i in range(N + 1):
-        s  = i * h
-        th = s / R_arc                     # angle traversed
+        s = i * h
+        th = s / R_arc  # angle traversed
         positions[i] = [R_arc * np.sin(th), R_arc * (1.0 - np.cos(th)), 0.0]
 
     for i in range(N):
         s_mid = (i + 0.5) * h
-        th    = s_mid / R_arc
+        th = s_mid / R_arc
         # Rotation around Z by angle th: tangent aligned with local arc direction
         angle = th
-        axis  = np.array([0., 0., 1.])
-        half  = angle / 2.0
-        quats[i] = [axis[0]*np.sin(half),
-                    axis[1]*np.sin(half),
-                    axis[2]*np.sin(half),
-                    np.cos(half)]
+        axis = np.array([0.0, 0.0, 1.0])
+        half = angle / 2.0
+        quats[i] = [
+            axis[0] * np.sin(half),
+            axis[1] * np.sin(half),
+            axis[2] * np.sin(half),
+            np.cos(half),
+        ]
 
     return positions, quats
 
@@ -100,42 +108,46 @@ def build_helix_state(N, L):
 
     Uses a helix with pitch p = L/4 and radius r_helix = L/(4π).
     """
-    turns    = 1.0
-    pitch    = L / (turns * 2.0 * np.pi)
-    r_helix  = L / (turns * 2.0 * np.pi * 2.0)    # small radius
-    h        = L / N
+    turns = 1.0
+    pitch = L / (turns * 2.0 * np.pi)
+    r_helix = L / (turns * 2.0 * np.pi * 2.0)  # small radius
+    h = L / N
 
     positions = np.zeros((N + 1, 3))
-    quats     = np.zeros((N, 4))
+    quats = np.zeros((N, 4))
 
     for i in range(N + 1):
         t = i * h / L * (turns * 2.0 * np.pi)
-        positions[i] = [r_helix * np.cos(t) - r_helix,
-                        r_helix * np.sin(t),
-                        pitch * t / (2.0 * np.pi)]
+        positions[i] = [
+            r_helix * np.cos(t) - r_helix,
+            r_helix * np.sin(t),
+            pitch * t / (2.0 * np.pi),
+        ]
 
     for i in range(N):
-        t     = (i + 0.5) * h / L * (turns * 2.0 * np.pi)
+        t = (i + 0.5) * h / L * (turns * 2.0 * np.pi)
         # Frenet–Serret: tangent direction
-        tang  = np.array([-r_helix * np.sin(t),
-                           r_helix * np.cos(t),
-                           pitch / (2.0 * np.pi)])
+        tang = np.array(
+            [-r_helix * np.sin(t), r_helix * np.cos(t), pitch / (2.0 * np.pi)]
+        )
         tang /= np.linalg.norm(tang)
         # Align X-axis of body frame with tangent
-        e1    = np.array([1., 0., 0.])
-        axis  = np.cross(e1, tang)
-        s     = np.linalg.norm(axis)
-        c     = np.dot(e1, tang)
+        e1 = np.array([1.0, 0.0, 0.0])
+        axis = np.cross(e1, tang)
+        s = np.linalg.norm(axis)
+        c = np.dot(e1, tang)
         if s < 1e-10:
-            quats[i] = [0., 0., 0., 1.]
+            quats[i] = [0.0, 0.0, 0.0, 1.0]
         else:
             axis /= s
             angle = np.arctan2(s, c)
-            half  = angle / 2.0
-            quats[i] = [axis[0]*np.sin(half),
-                        axis[1]*np.sin(half),
-                        axis[2]*np.sin(half),
-                        np.cos(half)]
+            half = angle / 2.0
+            quats[i] = [
+                axis[0] * np.sin(half),
+                axis[1] * np.sin(half),
+                axis[2] * np.sin(half),
+                np.cos(half),
+            ]
 
     return positions, quats
 
@@ -146,215 +158,334 @@ def build_twist_state(N, L):
 
     Max twist = π/2 (90°) at the free end → only GJ is stressed.
     """
-    h         = L / N
+    h = L / N
     positions = np.zeros((N + 1, 3))
-    quats     = np.zeros((N, 4))
+    quats = np.zeros((N, 4))
 
     for i in range(N + 1):
-        positions[i] = [i * h, 0., 0.]
+        positions[i] = [i * h, 0.0, 0.0]
 
     max_angle = np.pi / 2.0
     for i in range(N):
         angle = max_angle * (i + 0.5) / N
-        half  = angle / 2.0
+        half = angle / 2.0
         # Rotation around X
-        quats[i] = [np.sin(half), 0., 0., np.cos(half)]
+        quats[i] = [np.sin(half), 0.0, 0.0, np.cos(half)]
 
     return positions, quats
 
 
 def get_initial_state(shape, N, L):
-    if shape == 'helix':
+    if shape == "helix":
         return build_helix_state(N, L)
-    elif shape == 'twist':
+    elif shape == "twist":
         return build_twist_state(N, L)
     else:
         return build_arc_state(N, L)
 
 
+def _quat_to_rotvec(q):
+    """Convert quaternion [qx, qy, qz, qw] to rotation vector (axis × angle)."""
+    qx, qy, qz, qw = float(q[0]), float(q[1]), float(q[2]), float(q[3])
+    qw = np.clip(qw, -1.0, 1.0)
+    angle = 2.0 * np.arccos(abs(qw))
+    sin_half = np.sin(angle / 2.0)
+    if sin_half < 1e-10:
+        return np.zeros(3)
+    axis = np.array([qx, qy, qz]) / sin_half
+    if qw < 0:
+        axis = -axis   # keep angle in [0, π]
+    return axis * angle
+
+
 # ── Controller ────────────────────────────────────────────────────────────────
+
 
 class LargeDeformationIntegrator(Sofa.Core.Controller):
     """
     Explicit Euler integrator on R³ × SO(3) with energy monitoring.
     No gravity — only elastic relaxation from the prescribed initial state.
+
+    Data access: uses SOFA Data `.value` fields (not pybind11 get/set methods)
+    because the Cosserat pybind11 module may not downcast correctly at runtime.
+
+    Event ordering:
+      - onAnimateBeginEvent : applies prescribed initial shape (first step only).
+      - onAnimateEndEvent   : integrates (PainlessBeamForceField has already
+                              computed forces at AnimateBeginEvent).
     """
 
     def __init__(self, *args, **kwargs):
         Sofa.Core.Controller.__init__(self, *args, **kwargs)
-        self.state   = kwargs['state']
-        self.ff      = kwargs['ff']
-        self.N       = kwargs['N']
-        self.m       = kwargs['mass_per_node']
-        self.I       = kwargs['inertia_per_seg']
+        self.state   = kwargs["state"]
+        self.ff      = kwargs["ff"]
+        self.N       = kwargs["N"]
+        self.m       = kwargs["mass_per_node"]
+        self.I       = kwargs["inertia_per_seg"]
         self.damping = DAMPING
 
-        self._vel_pos = np.zeros((self.N + 1, 3))
-        self._vel_ang = np.zeros((self.N, 3))
-        self._step    = 0
+        self._vel_pos    = np.zeros((self.N + 1, 3))
+        self._vel_ang    = np.zeros((self.N, 3))
+        self._step       = 0
+        self._initialized = False   # True after first step applies deformed shape
+
+        h = BEAM_LENGTH / self.N
+        self._rest_pos = np.array([[i * h, 0.0, 0.0] for i in range(self.N + 1)])
 
     # ── Keyboard ──────────────────────────────────────────────────────────────
 
     def onKeypressedEvent(self, event):
-        key = event['key']
-        if key == '+':
+        key = event["key"]
+        if key == "+":
             self.damping = min(self.damping + 0.005, 1.0)
             print(f"  Damping = {self.damping:.3f}")
-        elif key == '-':
+        elif key == "-":
             self.damping = max(self.damping - 0.005, 0.80)
             print(f"  Damping = {self.damping:.3f}")
-        elif key == 'i':
-            self._init_state()
-        elif key == 'p':
-            self._print_energy()
+        elif key == "i":
+            self._apply_initial_shape()
+            self._vel_pos[:] = 0.0
+            self._vel_ang[:] = 0.0
+            self._step = 0
+        elif key == "p":
+            self._print_state()
 
-    def _init_state(self):
+    # ── Helpers ───────────────────────────────────────────────────────────────
+
+    def _apply_initial_shape(self):
+        """Write prescribed deformed configuration to SOFA Data fields."""
         pos, quats = get_initial_state(INITIAL_SHAPE, self.N, BEAM_LENGTH)
-        self.state.setPositions(pos)
+        self.state.positions.value = pos.tolist()
+
         if _HAVE_SO3:
-            R_list = [SO3.from_quat_array(quats[i]) for i in range(self.N)]
-            self.state.setOrientations(R_list)
+            # Convert quaternions → rotation vectors → write to orientations
+            rot_vecs = [_quat_to_rotvec(quats[i]).tolist() for i in range(self.N)]
+            self.state.orientations.value = rot_vecs
         else:
-            self.state.setOrientationsQuat(quats)
-        self._vel_pos[:] = 0.
-        self._vel_ang[:] = 0.
-        self._step = 0
-        print(f"  [init] Shape '{INITIAL_SHAPE}' applied.")
+            # Fallback: store rotation vectors directly (identity if SO3 unavailable)
+            self.state.orientations.value = [[0.0, 0.0, 0.0]] * self.N
 
-    def _print_energy(self):
-        try:
-            f   = self.ff.getNodalForces()
-            tau = self.ff.getSegmentTorques()
-            # Approximate kinetic energy from velocities
-            KE_pos = 0.5 * self.m * np.sum(self._vel_pos**2)
-            KE_ang = 0.5 * self.I * np.sum(self._vel_ang**2)
-            print(f"  Step {self._step:6d}  KE_pos={KE_pos:.4e}  KE_ang={KE_ang:.4e}"
-                  f"  |f_tip|={np.linalg.norm(f[-1]):.4e}"
-                  f"  |τ_mid|={np.linalg.norm(tau[self.N//2]):.4e}")
-        except Exception as e:
-            print(f"  [energy] {e}")
+        print(f"  [init] Shape '{INITIAL_SHAPE}' applied via Data .value fields.")
+        if _HAVE_SO3:
+            # Print first few rotation vectors for sanity check
+            omegas = np.array(self.state.orientations.value).reshape(-1, 3)
+            norms = np.linalg.norm(omegas, axis=1)
+            print(f"  [init] |ω_seg| : min={norms.min():.3f}  max={norms.max():.3f} rad"
+                  f"  [0=identity, π/2=90°, π=180°]")
 
-    # ── Animation step ────────────────────────────────────────────────────────
+    def _print_state(self):
+        pos    = np.array(self.state.positions.value).reshape(-1, 3)
+        f_el   = np.array(self.ff.nodalForces.value).reshape(-1, 3)
+        tau_el = np.array(self.ff.segmentTorques.value).reshape(-1, 3)
+        tip    = pos[-1]
+        tip_def = np.linalg.norm(tip - self._rest_pos[-1])
+        KE_pos = 0.5 * self.m * np.sum(np.linalg.norm(self._vel_pos, axis=1)**2)
+        KE_ang = 0.5 * self.I * np.sum(np.linalg.norm(self._vel_ang, axis=1)**2)
+        print(f"  Step {self._step:6d}  t={self._step * DT:.4f} s")
+        print(f"  Tip  : ({tip[0]:.5f}, {tip[1]:.5f}, {tip[2]:.5f}) m"
+              f"   |tip-rest|={tip_def*100:.3f} cm")
+        print(f"  KE   : pos={KE_pos:.4e} J  ang={KE_ang:.4e} J"
+              f"  total={KE_pos+KE_ang:.4e} J")
+        print(f"  max|f_el|  : {np.linalg.norm(f_el, axis=1).max():.4e} N")
+        print(f"  max|tau_el|: {np.linalg.norm(tau_el, axis=1).max():.4e} N·m")
+
+    # ── Animation steps ───────────────────────────────────────────────────────
 
     def onAnimateBeginEvent(self, event):
+        # Apply prescribed initial shape on the very first AnimateBeginEvent.
+        # PainlessBeamForceField may fire at the same event — on the NEXT step,
+        # forces are guaranteed to come from the deformed configuration.
+        if not self._initialized:
+            self._initialized = True
+            self._apply_initial_shape()
+
+    def onAnimateEndEvent(self, event):
+        # PainlessBeamForceField::handleEvent (AnimateBeginEvent) has already
+        # computed forces from the current configuration — integrate here.
         dt = float(self.getContext().dt.value)
+
+        # ── Read via SOFA Data fields ─────────────────────────────────────────
+        pos    = np.array(self.state.positions.value).reshape(-1, 3)
+        f_el   = np.array(self.ff.nodalForces.value).reshape(-1, 3)
+        tau_el = np.array(self.ff.segmentTorques.value).reshape(-1, 3)
+
+        if pos.shape[0] != self.N + 1 or f_el.shape[0] != self.N + 1:
+            return
+
+        # ── First-step sanity check ───────────────────────────────────────────
+        if self._step == 0:
+            print("\n── [large-deform integrator] FIRST STEP SANITY CHECK ──────────────")
+            print(f"  pos shape   : {pos.shape}  (expected ({self.N+1}, 3))")
+            print(f"  f_el shape  : {f_el.shape}  (expected ({self.N+1}, 3))")
+            print(f"  tau_el shape: {tau_el.shape}  (expected ({self.N}, 3))")
+            max_f   = np.linalg.norm(f_el, axis=1).max()
+            max_tau = np.linalg.norm(tau_el, axis=1).max()
+            print(f"  max|f_el|   : {max_f:.4e} N   max|tau_el|: {max_tau:.4e} N·m")
+            print(f"  dt={dt:.2e} s  m={self.m:.3e} kg  I={self.I:.3e} kg·m²")
+            print(f"  SO3: {'ACTIVE' if _HAVE_SO3 else 'DISABLED'}")
+            if max_f < 1e-10 and max_tau < 1e-10:
+                print(f"  ⚠  All forces zero — initial shape may not have been applied yet.")
+                print(f"     (Normal on step 1 if AnimateBegin ordering puts init before FF.)")
+            print("── End first-step check ─────────────────────────────────────────────\n")
+
         self._step += 1
 
-        try:
-            pos = self.state.getPositions()
-        except Exception:
-            return
-
-        try:
-            f_el   = self.ff.getNodalForces()
-            tau_el = self.ff.getSegmentTorques()
-        except Exception:
-            return
-
-        if f_el.shape[0] != self.N + 1:
-            return
-
-        # ── Positions (nodes 1..N clamped at 0) ───────────────────────────────
+        # ── Integrate positions (nodes 1..N, node 0 clamped) ─────────────────
         new_pos = pos.copy()
         for i in range(1, self.N + 1):
-            acc = f_el[i] / self.m
+            acc           = f_el[i] / self.m
             self._vel_pos[i] = self._vel_pos[i] * self.damping + acc * dt
-            new_pos[i] = pos[i] + self._vel_pos[i] * dt
-        self.state.setPositions(new_pos)
+            new_pos[i]    = pos[i] + self._vel_pos[i] * dt
+        self.state.positions.value = new_pos.tolist()
 
-        # ── SO3 orientations (segments 1..N-1, segment 0 clamped) ─────────────
+        # ── Integrate SO3 orientations (segments 1..N-1, segment 0 clamped) ──
         if _HAVE_SO3:
-            R_list = self.state.getOrientations()
+            omegas = np.array(self.state.orientations.value).reshape(-1, 3)
+            R_list = [SO3.exp(omegas[i]) for i in range(self.N)]
             new_R  = list(R_list)
             for i in range(1, self.N):
-                alpha  = tau_el[i] / self.I
+                alpha            = tau_el[i] / self.I
                 self._vel_ang[i] = self._vel_ang[i] * self.damping + alpha * dt
-                dR     = SO3.exp(self._vel_ang[i] * dt)
-                new_R[i] = R_list[i] * dR
-            self.state.setOrientations(new_R)
+                dR               = SO3.exp(self._vel_ang[i] * dt)
+                new_R[i]         = R_list[i] * dR
+            self.state.orientations.value = [list(new_R[i].log()) for i in range(self.N)]
 
-        # Print progress every 500 steps
-        if self._step % 500 == 0:
-            self._print_energy()
+        # ── Debug summary ─────────────────────────────────────────────────────
+        if self._step % DEBUG_FREQ == 0:
+            tip     = new_pos[-1]
+            tip_def = np.linalg.norm(tip - self._rest_pos[-1])
+            f_norms = np.linalg.norm(f_el, axis=1)
+            t_norms = np.linalg.norm(tau_el, axis=1)
+            v_norms = np.linalg.norm(self._vel_pos, axis=1)
+            w_norms = np.linalg.norm(self._vel_ang, axis=1)
+            KE_pos  = 0.5 * self.m * np.sum(v_norms**2)
+            KE_ang  = 0.5 * self.I * np.sum(w_norms**2)
+
+            print(f"\n── [step {self._step:5d}  t={self._step * dt:.4f} s] ──────────────────────────")
+            print(f"  Tip     : ({tip[0]:.5f}, {tip[1]:.5f}, {tip[2]:.5f}) m"
+                  f"   |tip-rest|={tip_def*100:.3f} cm")
+            print(f"  max|f_el|  : {f_norms.max():.4e} N  (node {int(f_norms.argmax())})")
+            print(f"  max|tau_el|: {t_norms.max():.4e} N·m  (seg {int(t_norms.argmax())})")
+            print(f"  max|vel_pos|: {v_norms.max():.4e} m/s  max|vel_ang|: {w_norms.max():.4e} rad/s")
+            print(f"  KE  : pos={KE_pos:.4e} J  ang={KE_ang:.4e} J  total={KE_pos+KE_ang:.4e} J"
+                  f"  [should decrease]")
+            print(f"  Damping = {self.damping:.3f}")
+
+            if _HAVE_SO3:
+                cur_omegas = np.array(self.state.orientations.value).reshape(-1, 3)
+                rot_norms  = np.linalg.norm(cur_omegas, axis=1)
+                print(f"  max|ω_seg| : {rot_norms.max():.4e} rad"
+                      f"   [0=identity, warning if >π/2=1.57]")
+                if rot_norms.max() > np.pi / 2:
+                    print(f"  ⚠  LARGE ROTATION — segment may have flipped!")
+                if rot_norms.max() > np.pi:
+                    print(f"  ✗  ROTATION > π — log(R) singularity risk!")
+
+        if self._step % DEBUG_FREQ_FULL == 0:
+            print(f"\n  ── Per-segment detail (step {self._step}) ────────────────────")
+            print(f"  {'seg':>4}  {'|tau_el|':>12}  {'|vel_ang|':>12}  {'|ω_seg|':>10}  {'|f_el|':>12}")
+            cur_omegas = np.array(self.state.orientations.value).reshape(-1, 3) if _HAVE_SO3 else np.zeros((self.N, 3))
+            for i in range(self.N):
+                tau_n = np.linalg.norm(tau_el[i]) if i < tau_el.shape[0] else 0.0
+                vel_n = np.linalg.norm(self._vel_ang[i])
+                rot_n = np.linalg.norm(cur_omegas[i])
+                f_n   = np.linalg.norm(f_el[i + 1]) if i + 1 < f_el.shape[0] else 0.0
+                print(f"  {i:>4}  {tau_n:>12.4e}  {vel_n:>12.4e}  {rot_n:>10.4e}  {f_n:>12.4e}")
+            print(f"  ── End per-segment ───────────────────────────────────────────\n")
 
 
 # ── Scene ─────────────────────────────────────────────────────────────────────
 
+
 def createScene(rootNode):
-    N  = N_SEGMENTS
-    h  = BEAM_LENGTH / N
+    N = N_SEGMENTS
+    h = BEAM_LENGTH / N
 
-    vol      = np.pi * RADIUS**2 * BEAM_LENGTH
+    vol = np.pi * RADIUS**2 * BEAM_LENGTH
     mass_tot = vol * DENSITY
-    m_node   = mass_tot / (N + 1)
-    I_seg    = m_node * (h**2 / 12.0 + RADIUS**2 / 4.0)
+    m_node = mass_tot / (N + 1)
+    I_seg = m_node * (h**2 / 12.0 + RADIUS**2 / 4.0)
 
-    rootNode.addObject('RequiredPlugin', name='CosseratPlugin',
-                       pluginName='Cosserat')
-    rootNode.addObject('RequiredPlugin', name='SofaBaseTopology',
-                       pluginName='SofaBaseTopology')
-    rootNode.addObject('VisualStyle',
-                       displayFlags='showVisualModels showBehaviorModels')
-    rootNode.gravity.value = [0., 0., 0.]
-    rootNode.dt.value      = DT
-    rootNode.addObject('DefaultAnimationLoop')
-    rootNode.addObject('DefaultVisualManagerLoop')
-    rootNode.addObject('InteractiveCamera',
-                       position=[0.5, 0.5, 2.5],
-                       lookAt=[0.5, 0.2, 0.],
-                       fieldOfView=45)
+    rootNode.addObject("RequiredPlugin", pluginName=["Cosserat"])
+    rootNode.addObject(
+        "VisualStyle", displayFlags="showVisualModels showBehaviorModels"
+    )
+    rootNode.gravity.value = [0.0, 0.0, 0.0]
+    rootNode.dt.value = DT
+    rootNode.addObject("DefaultAnimationLoop")
+    rootNode.addObject("DefaultVisualManagerLoop")
+    rootNode.addObject(
+        "InteractiveCamera",
+        position=[0.5, 0.5, 2.5],
+        lookAt=[0.5, 0.2, 0.0],
+        fieldOfView=45,
+    )
 
-    beamNode = rootNode.addChild('relaxBeam')
-    beamNode.addObject('EdgeSetTopologyContainer', name='topology')
-    beamNode.addObject('EdgeSetTopologyModifier')
+    beamNode = rootNode.addChild("relaxBeam")
+    beamNode.addObject("EdgeSetTopologyContainer", name="topology")
+    beamNode.addObject("EdgeSetTopologyModifier")
 
     # Initial positions and identity SO3 elements
     # (will be overwritten by controller at init for non-trivial shapes)
-    node_pos_str = ' '.join(f'{i*h:.6f} 0 0' for i in range(N + 1))
-    identity_orientations_str = ' '.join(['0 0 0'] * N)
-    state = beamNode.addObject('CosseratIntrinsicState',
-                               name='state',
-                               positions=node_pos_str,
-                               orientations=identity_orientations_str,
-                               template='Vec3d')
+    node_pos_str = " ".join(f"{i * h:.6f} 0 0" for i in range(N + 1))
+    identity_orientations_str = " ".join(["0 0 0"] * N)
+    state = beamNode.addObject(
+        "CosseratIntrinsicState",
+        name="state",
+        positions=node_pos_str,
+        orientations=identity_orientations_str,
+        template="Vec3d",
+    )
 
-    beamNode.addObject('CosseratTopologyBuilder',
-                       name='builder',
-                       totalLength=BEAM_LENGTH,
-                       nbSections=N,
-                       radius=RADIUS,
-                       youngModulus=YOUNG_MOD,
-                       shearModulus=SHEAR_MOD,
-                       intrinsicState='@state',
-                       topology='@topology')
+    beamNode.addObject(
+        "CosseratTopologyBuilder",
+        name="builder",
+        totalLength=BEAM_LENGTH,
+        nbSections=N,
+        radius=RADIUS,
+        youngModulus=YOUNG_MOD,
+        shearModulus=SHEAR_MOD,
+        intrinsicState="@state",
+        topology="@topology",
+    )
 
     # Stiffness parameters from cross-section geometry (explicit — no auto-link to TopologyBuilder)
-    _A   = np.pi * RADIUS**2
+    _A = np.pi * RADIUS**2
     _I_y = np.pi * RADIUS**4 / 4.0
-    _J   = np.pi * RADIUS**4 / 2.0
-    _EA  = YOUNG_MOD * _A
-    _GA  = SHEAR_MOD * _A
+    _J = np.pi * RADIUS**4 / 2.0
+    _EA = YOUNG_MOD * _A
+    _GA = SHEAR_MOD * _A
     _EIy = YOUNG_MOD * _I_y
     _EIz = YOUNG_MOD * _I_y
-    _GJ  = SHEAR_MOD * _J
+    _GJ = SHEAR_MOD * _J
     print(f"\n  [scene] PainlessBeamForceField stiffness:")
-    print(f"    EA={_EA:.3e} N   GA={_GA:.3e} N   EIy={_EIy:.3e} N·m²   GJ={_GJ:.3e} N·m²")
-    ff = beamNode.addObject('PainlessBeamForceField',
-                            name='ff',
-                            state='@state',
-                            EA=_EA, GA=_GA, EIy=_EIy, EIz=_EIz, GJ=_GJ)
+    print(
+        f"    EA={_EA:.3e} N   GA={_GA:.3e} N   EIy={_EIy:.3e} N·m²   GJ={_GJ:.3e} N·m²"
+    )
+    ff = beamNode.addObject(
+        "PainlessBeamForceField",
+        name="ff",
+        state="@state",
+        EA=_EA,
+        GA=_GA,
+        EIy=_EIy,
+        EIz=_EIz,
+        GJ=_GJ,
+    )
 
-    beamNode.addObject('StaggeredCosseratMapping',
-                       name='mapping',
-                       state='@state',
-                       drawBeam=True,
-                       drawFrames=True,
-                       drawRadius=RADIUS,
-                       drawAxisLength=0.04,
-                       color='0.9 0.4 0.1 0.9')
+    beamNode.addObject(
+        "StaggeredCosseratMapping",
+        name="mapping",
+        state="@state",
+        drawBeam=True,
+        drawFrames=True,
+        drawRadius=RADIUS,
+        drawAxisLength=0.04,
+        color="0.9 0.4 0.1 0.9",
+    )
 
     ctrl = LargeDeformationIntegrator(
-        name='ctrl',
+        name="ctrl",
         state=state,
         ff=ff,
         N=N,
@@ -363,18 +494,8 @@ def createScene(rootNode):
     )
     rootNode.addObject(ctrl)
 
-    # Apply initial deformed shape after scene is built
-    # (can't call setOrientations before the state is init'd by SOFA)
-    # The controller will apply it on first AnimateBegin.
-    # We trigger it via a one-shot flag:
-    _orig_begin = ctrl.onAnimateBeginEvent
-
-    def _first_step(event):
-        ctrl._init_state()
-        ctrl.onAnimateBeginEvent = _orig_begin
-        _orig_begin(event)
-
-    ctrl.onAnimateBeginEvent = _first_step
+    # NOTE: the initial deformed shape is applied via ctrl._initialized flag
+    # on the first onAnimateBeginEvent (before integration in onAnimateEndEvent).
 
     print("\n" + "=" * 62)
     print(f"  Staggered Cosserat — Large deformation relaxation")
@@ -383,7 +504,8 @@ def createScene(rootNode):
     print(f"  L={BEAM_LENGTH} m  N={N}  h={h:.4f} m")
     print(f"  E={YOUNG_MOD:.2e} Pa   G={SHEAR_MOD:.2e} Pa")
     print(f"  SO3: {'ACTIVE' if _HAVE_SO3 else 'DISABLED'}")
-    print(f"  Keys: [+]/[-] damping | [i] re-init | [p] print energy")
+    print(f"  Debug: summary every {DEBUG_FREQ} steps, full table every {DEBUG_FREQ_FULL} steps.")
+    print(f"  Keys: [+]/[-] damping | [i] re-init | [p] print state")
     print("=" * 62 + "\n")
 
     return rootNode
