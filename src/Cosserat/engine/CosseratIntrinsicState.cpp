@@ -190,21 +190,38 @@ sofa::type::Vec3d CosseratIntrinsicState::getAngularStrain(size_t i) {
     return sofa::type::Vec3d(0.0, 0.0, 0.0);
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// J_r⁻¹(ω) — right Lie Jacobian inverse of SO(3)
+//
+// NOTE — duplication intentionnelle :
+//   La même formule existe dans `sofa::component::cosserat::liegroups::SO3
+//   ::computeRightJacobianInverse` (fichier src/liegroups/SO3.inl). Cette copie
+//   locale est conservée pour éviter les conversions Eigen ↔ sofa::type::Mat3x3d
+//   à chaque appel depuis `PainlessBeamForceField` (chemin chaud, called dans la
+//   boucle de force à chaque step). Toute correction de l'une DOIT être répercutée
+//   dans l'autre — les deux retournent EXACTEMENT la même fonction.
+//
+// Formule (Solà 2018, eq. 144) :
+//   J_r⁻¹(ω) = I + ½ [ω]× + c(θ) [ω]×²
+//   c(θ) = 1/θ² − (1+cos θ)/(2θ sin θ)
+//   c(θ) → 1/12 quand θ → 0 (Taylor à l'ordre 3 inclus : c ≈ 1/12 + θ²/720)
+// ─────────────────────────────────────────────────────────────────────────────
 sofa::type::Mat3x3d CosseratIntrinsicState::getInverseLieJacobian(const sofa::type::Vec3d& omega) {
     double theta2 = omega.norm2();
     sofa::type::Mat3x3d I;
     I.identity();
-    
+
     sofa::type::Mat3x3d W;
     W[0][0] = 0.0;        W[0][1] = -omega.z(); W[0][2] = omega.y();
     W[1][0] = omega.z();  W[1][1] = 0.0;        W[1][2] = -omega.x();
     W[2][0] = -omega.y(); W[2][1] = omega.x();  W[2][2] = 0.0;
-    
+
     sofa::type::Mat3x3d W2 = W * W;
 
-    if (theta2 < 1e-12) {
-        // Taylor expansion for small theta
-        return I + W * 0.5 + W2 * (1.0 / 12.0);
+    if (theta2 < 1e-8) {
+        // 3rd-order Taylor expansion : c(θ) ≈ 1/12 + θ²/720
+        const double c = 1.0/12.0 + theta2 / 720.0;
+        return I + W * 0.5 + W2 * c;
     }
 
     double theta = std::sqrt(theta2);

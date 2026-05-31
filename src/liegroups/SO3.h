@@ -121,34 +121,34 @@ namespace sofa::component::cosserat::liegroups {
 
 		/**
 		 * @brief Logarithmic map from SO(3) to Lie algebra so(3).
+		 * Thin wrapper around computeLog() — no longer a code duplicate.
 		 * @return Angular velocity vector in ℝ³.
 		 */
-		TangentVector log() const {
-			// Extract angle-axis representation
-			Eigen::AngleAxis<Scalar> aa(m_quat);
-			const Scalar theta = aa.angle();
-
-			if (theta < Types<Scalar>::epsilon()) {
-				// For small rotations, use first-order approximation
-				return Vector(m_quat.x() * Scalar(2), m_quat.y() * Scalar(2), m_quat.z() * Scalar(2));
-			}
-
-			return aa.axis() * theta;
-		}
+		TangentVector log() const { return computeLog(); }
 
 		/**
 		 * @brief Computes the logarithmic map from SO(3) to Lie algebra so(3).
 		 * This is a CRTP-required method.
+		 *
+		 * For small rotations (θ < ε) we use the first-order quaternion approximation
+		 *   ω ≈ 2 · (qx, qy, qz)
+		 * which is valid as long as qw ≥ 0 (the case ensured by Eigen::AngleAxis(quat)
+		 * normalising the quaternion onto the qw ≥ 0 hemisphere at construction).
+		 *
 		 * @return Angular velocity vector in ℝ³.
 		 */
 		TangentVector computeLog() const {
-			// Extract angle-axis representation
+			// Extract angle-axis representation. Eigen::AngleAxis(quat) returns
+			// angle ∈ [0, π] (handles the antipodal quaternion automatically).
 			Eigen::AngleAxis<Scalar> aa(m_quat);
 			const Scalar theta = aa.angle();
 
 			if (theta < Types<Scalar>::epsilon()) {
-				// For small rotations, use first-order approximation
-				return Vector(m_quat.x() * Scalar(2), m_quat.y() * Scalar(2), m_quat.z() * Scalar(2));
+				// First-order approximation. Use the SIGN of qw to remain on the
+				// correct hemisphere (Eigen does it for the general branch via
+				// aa.axis(), but here we bypass it).
+				const Scalar s = (m_quat.w() >= Scalar(0)) ? Scalar(2) : Scalar(-2);
+				return Vector(m_quat.x() * s, m_quat.y() * s, m_quat.z() * s);
 			}
 
 			return aa.axis() * theta;
