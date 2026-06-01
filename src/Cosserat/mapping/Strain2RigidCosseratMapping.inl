@@ -401,8 +401,13 @@ namespace Cosserat::mapping {
 			// Extract strain velocity for this section
 			TangentVector strain_vel_i = TangentVector::Zero();
 			
-			for (int j = 0; j < 3; ++j) {
-				strain_vel_i[j] = strain_vel[i - 1][j];
+			if constexpr (std::is_same_v<Deriv1, sofa::type::Vec3>){ 
+				for (int j = 0; j < 3; ++j)
+					strain_vel_i[j] = strain_vel[i - 1][j];
+			}
+			else{
+				for (int j = 0; j < 6; ++j)
+					strain_vel_i[j] = strain_vel[i - 1][j];
 			}
 
 			// Propagate velocity: η_i = Ad_{g_i^{-1}} * (η_{i-1} + T_i * ξ̇_i)
@@ -429,8 +434,14 @@ namespace Cosserat::mapping {
 
 			// Extract frame strain velocity (same as section strain)
 			TangentVector frame_strain_vel = TangentVector::Zero();
-			for (int j = 0; j < 3; ++j) {
-				frame_strain_vel[j] = strain_vel[m_indices_vectors[i]-1][j]; //@appa: replace section_idx by m_indices_vectors[i]-1
+
+			if constexpr (std::is_same_v<Deriv1, sofa::type::Vec3>){
+				for (int j = 0; j < 3; ++j) 
+					frame_strain_vel[j] = strain_vel[m_indices_vectors[i]-1][j]; //@appa: replace section_idx by m_indices_vectors[i]-1
+			}
+			else{
+				for (int j = 0; j < 6; ++j) 
+					frame_strain_vel[j] = strain_vel[m_indices_vectors[i]-1][j];
 			}
 
 			// Compute frame velocity: η_frame = Ad_{g_frame^{-1}} * (η_node + T_frame * ξ̇_frame)
@@ -557,8 +568,9 @@ namespace Cosserat::mapping {
 		TangentVector totalForce = TangentVector::Zero();
 
 		//@todo : Fixe here, the size of B depend on strain size 
-		Eigen::Matrix<double, 3, 6> matB_trans = Eigen::Matrix<double, 3, 6>::Zero();
-		for (int k=0; k<3; k++)
+		constexpr int N = std::is_same_v<Deriv1, sofa::type::Vec3> ? 3 : 6;
+		Eigen::Matrix<double, N, 6> matB_trans = Eigen::Matrix<double, N, 6>::Zero();
+		for (int k=0; k<N; k++)
 			matB_trans(k, k) = 1.0;
 		
 		// Process frames in reverse order to accumulate forces
@@ -574,7 +586,7 @@ namespace Cosserat::mapping {
 			
 			AdjointMatrix temp = frame.getTangAdjointMatrix().transpose();
 			
-			Vector3 f = matB_trans * temp * currentLocalForce;
+			Eigen::Matrix<double, N, 1>  f = matB_trans * temp * currentLocalForce;
 
 			// Handle section change - propagate accumulated force
 			if (lastSectionIndex != currentSectionIndex) {
@@ -588,17 +600,17 @@ namespace Cosserat::mapping {
 				AdjointMatrix tempSection = section.getTangAdjointMatrix().transpose();
 
 				// apply F_tot to the new beam
-				Vector3 temp_f = matB_trans * tempSection * totalForce;
+				Eigen::Matrix<double, N, 1>  temp_f = matB_trans * tempSection * totalForce;
 								
 				// Add accumulated force to strain outpute
-				for (int j=0; j<3; j++){
+				for (int j=0; j<N; j++){
 					strainForces[lastSectionIndex-1][j] +=temp_f[j];
 				}
 				
 			}
 
 			totalForce += currentLocalForce;
-			for (int j=0; j<3; j++){
+			for (int j=0; j<N; j++){
 					strainForces[currentSectionIndex-1][j] +=f[j];
 			}
 		}
@@ -645,170 +657,178 @@ namespace Cosserat::mapping {
 			const vector<const sofa::DataMatrixDeriv_t<Out> *> &dataMatInConst) {
 
 
-		// if (dataMatOut1Const.empty() || dataMatOut2Const.empty() || dataMatInConst.empty())
-		// 	return;
+		if (dataMatOut1Const.empty() || dataMatOut2Const.empty() || dataMatInConst.empty())
+			return;
 
-		// if (this->d_componentState.getValue() != sofa::core::objectmodel::ComponentState::Valid)
-		// 	return;
+		if (this->d_componentState.getValue() != sofa::core::objectmodel::ComponentState::Valid)
+			return;
 
-		// if (d_debug.getValue())
-		// 	std::cout << " ########## Strain2RigidCosseratMapping ApplyJT Constraint Function ########" << std::endl;
+		if (d_debug.getValue())
+			std::cout << " ########## Strain2RigidCosseratMapping ApplyJT Constraint Function ########" << std::endl;
 
 		
-		// // Prepare input and output data matrices
-		// sofa::MatrixDeriv_t<In1> &out1 = *dataMatOut1Const[0]->beginEdit();
-		// sofa::MatrixDeriv_t<In2> &out2 = *dataMatOut2Const[0]->beginEdit();
-		// const sofa::MatrixDeriv_t<Out> &in = dataMatInConst[0]->getValue();
+		// Prepare input and output data matrices
+		sofa::MatrixDeriv_t<In1> &out1 = *dataMatOut1Const[0]->beginEdit();
+		sofa::MatrixDeriv_t<In2> &out2 = *dataMatOut2Const[0]->beginEdit();
+		const sofa::MatrixDeriv_t<Out> &in = dataMatInConst[0]->getValue();
 
-		// // Get current positions to compute transformations
-		// const sofa::VecCoord_t<Out> &framePositions =
-		// 		this->m_frames->read(sofa::core::vec_id::read_access::position)->getValue();
+		// Get current positions to compute transformations
+		const sofa::VecCoord_t<Out> &framePositions =
+				this->m_frames->read(sofa::core::vec_id::read_access::position)->getValue();
 		
-		// const sofa::DataVecCoord_t<In1> *x1fromData =
-     	// 	 	m_strain_state->read(sofa::core::vec_id::read_access::position);
-		// const sofa::VecCoord_t<In1> strainState = x1fromData->getValue();
+		const sofa::DataVecCoord_t<In1> *x1fromData =
+     		 	m_strain_state->read(sofa::core::vec_id::read_access::position);
+		const sofa::VecCoord_t<In1> strainState = x1fromData->getValue();
 
-		// Eigen::Matrix<double, 3, 6> matB_trans = Eigen::Matrix<double, 3, 6>::Zero();
-		// for (int k=0; k<3; k++)
-		// 	matB_trans(k, k) = 1.0;
+		
+		constexpr int N = std::is_same_v<Deriv1, sofa::type::Vec3> ? 3 : 6;
+		Eigen::Matrix<double, N, 6> matB_trans = Eigen::Matrix<double, N, 6>::Zero();
+		for (int k=0; k<N; k++)
+			matB_trans(k, k) = 1.0;
 
-		// vector<std::tuple<int, TangentVector>> NodesInvolved;
-  		// vector<std::tuple<int, TangentVector>> NodesInvolvedCompressed;
-		// // Process constraints
-		// for (auto rowIt = in.begin(); rowIt != in.end(); ++rowIt) {
-		// 	auto colIt = rowIt.begin();
-		// 	if (colIt == rowIt.end())
-		// 		continue;
+		vector<std::tuple<int, TangentVector>> NodesInvolved;
+  		vector<std::tuple<int, TangentVector>> NodesInvolvedCompressed;
+		// Process constraints
+		for (auto rowIt = in.begin(); rowIt != in.end(); ++rowIt) {
+			auto colIt = rowIt.begin();
+			if (colIt == rowIt.end())
+				continue;
 
-		// 	typename sofa::MatrixDeriv_t<In1>::RowIterator o1 = out1.writeLine(rowIt.index());
-		// 	typename sofa::MatrixDeriv_t<In2>::RowIterator o2 = out2.writeLine(rowIt.index());
+			typename sofa::MatrixDeriv_t<In1>::RowIterator o1 = out1.writeLine(rowIt.index());
+			typename sofa::MatrixDeriv_t<In2>::RowIterator o2 = out2.writeLine(rowIt.index());
 
-		// 	NodesInvolved.clear();
+			NodesInvolved.clear();
 
-		// 	while (colIt != rowIt.end()) {
-		// 		int frameIndex = colIt.index();
+			while (colIt != rowIt.end()) {
+				int frameIndex = colIt.index();
 
-		// 		TangentVector constraintValue = TangentVector::Zero();
+				TangentVector constraintValue = TangentVector::Zero();
 
-		// 		// Convert constraint value to TangentVector
-		// 		const sofa::Deriv_t<Out> val = colIt.val();
-		// 		for (unsigned int j = 0; j < 6; ++j) {
-		// 			constraintValue[j] = val[j];
-		// 		}
+				// Convert constraint value to TangentVector
+				const sofa::Deriv_t<Out> val = colIt.val();
+				for (unsigned int j = 0; j < 6; ++j) {
+					constraintValue[j] = val[j];
+				}
 
-		// 		int sectionIndex = m_indices_vectors[frameIndex];
+				int sectionIndex = m_indices_vectors[frameIndex];
 
-		// 		auto &pos = framePositions[frameIndex];
-		// 		Vector3 translation(pos.getCenter()[0], pos.getCenter()[1], pos.getCenter()[2]);
-		// 		auto &quat = pos.getOrientation();
-		// 		Eigen::Quaternion<double> rotation(quat[3], quat[0], quat[1], quat[2]);
-		// 		SE3Types absoluteFrame(SE3Types::SO3Type(rotation), translation);
+				auto &pos = framePositions[frameIndex];
+				Vector3 translation(pos.getCenter()[0], pos.getCenter()[1], pos.getCenter()[2]);
+				auto &quat = pos.getOrientation();
+				Eigen::Quaternion<double> rotation(quat[3], quat[0], quat[1], quat[2]);
+				SE3Types absoluteFrame(SE3Types::SO3Type(rotation), translation);
 				
-		// 		AdjointMatrix P_trans = absoluteFrame.buildProjectionMatrix(absoluteFrame.rotation().matrix());
+				AdjointMatrix P_trans = absoluteFrame.buildProjectionMatrix(absoluteFrame.rotation().matrix());
 				
-		// 		const FrameInfo &frame = m_frameProperties[frameIndex];
+				const FrameInfo &frame = m_frameProperties[frameIndex];
 			
-		// 		AdjointMatrix coAdjoint = frame.getCoAdjoint();
+				AdjointMatrix coAdjoint = frame.getCoAdjoint();
 
-		// 		TangentVector localForce = coAdjoint * P_trans.transpose() * constraintValue; // constraint direction in local frame of the beam.
+				TangentVector localForce = coAdjoint * P_trans.transpose() * constraintValue; // constraint direction in local frame of the beam.
 
 
-		// 		AdjointMatrix temp = frame.getTangAdjointMatrix().transpose();
+				AdjointMatrix temp = frame.getTangAdjointMatrix().transpose();
 
-		// 		Vector3 f = matB_trans * temp * localForce; // constraint direction in the strain space.
+				Eigen::Matrix<double, N, 1> f = matB_trans * temp * localForce; // constraint direction in the strain space.
 				
-		// 		sofa::type::Vec3 f_trans (f[0], f[1], f[2]);
+				Deriv1 f_trans;
+				for(int k=0; k<N; k++){
+					f_trans[k] = f[k];
+				}
 				
-		// 		o1.addCol(sectionIndex-1, f_trans);
+				o1.addCol(sectionIndex-1, f_trans);
 
-		// 		std::tuple<int, TangentVector> test = std::make_tuple(sectionIndex, localForce);
+				std::tuple<int, TangentVector> test = std::make_tuple(sectionIndex, localForce);
 				
-		// 		NodesInvolved.push_back(test);
-		// 		colIt++;
-		// 	}
+				NodesInvolved.push_back(test);
+				colIt++;
+			}
 
-		// 	// sort the Nodes Invoved by decreasing order
-		// 	std::sort(
-		// 		begin(NodesInvolved), end(NodesInvolved),
-		// 		[](std::tuple<int, TangentVector> const &t1, std::tuple<int, TangentVector> const &t2) {
-		// 		return std::get<0>(t1) > std::get<0>(t2); // custom compare function
-		// 		});
+			// sort the Nodes Invoved by decreasing order
+			std::sort(
+				begin(NodesInvolved), end(NodesInvolved),
+				[](std::tuple<int, TangentVector> const &t1, std::tuple<int, TangentVector> const &t2) {
+				return std::get<0>(t1) > std::get<0>(t2); // custom compare function
+				});
 
-		// 	NodesInvolvedCompressed.clear();
-		// 	for (unsigned n = 0; n < NodesInvolved.size(); n++) {
-		// 		std::tuple<int, TangentVector> test_i = NodesInvolved[n];
-		// 		int numNode_i = std::get<0>(test_i);
-		// 		TangentVector cumulativeF = std::get<1>(test_i);
+			NodesInvolvedCompressed.clear();
+			for (unsigned n = 0; n < NodesInvolved.size(); n++) {
+				std::tuple<int, TangentVector> test_i = NodesInvolved[n];
+				int numNode_i = std::get<0>(test_i);
+				TangentVector cumulativeF = std::get<1>(test_i);
 
-		// 		if (n < NodesInvolved.size() - 1) {
-		// 			std::tuple<int, TangentVector> test_i1 = NodesInvolved[n + 1];
-		// 			int numNode_i1 = std::get<0>(test_i1);
+				if (n < NodesInvolved.size() - 1) {
+					std::tuple<int, TangentVector> test_i1 = NodesInvolved[n + 1];
+					int numNode_i1 = std::get<0>(test_i1);
 
-		// 			while (numNode_i == numNode_i1) {
-		// 			cumulativeF += std::get<1>(test_i1);
-		// 			//// This was if ((n!=NodesInvolved.size()-2)||(n==0)) before and I
-		// 			/// change it to
-		// 			/// if ((n!=NodesInvolved.size()-1)||(n==0)) since the code can't
-		// 			/// leave the will loop
-		// 			if ((n != NodesInvolved.size() - 1) || (n == 0)) {
-		// 				n++;
-		// 				break;
-		// 			}
-		// 			test_i1 = NodesInvolved[n + 1];
-		// 			numNode_i1 = std::get<0>(test_i1);
-		// 			}
-		// 		}
-		// 		NodesInvolvedCompressed.push_back(
-		// 			std::make_tuple(numNode_i, cumulativeF));
-    	// 	}
+					while (numNode_i == numNode_i1) {
+					cumulativeF += std::get<1>(test_i1);
+					//// This was if ((n!=NodesInvolved.size()-2)||(n==0)) before and I
+					/// change it to
+					/// if ((n!=NodesInvolved.size()-1)||(n==0)) since the code can't
+					/// leave the will loop
+					if ((n != NodesInvolved.size() - 1) || (n == 0)) {
+						n++;
+						break;
+					}
+					test_i1 = NodesInvolved[n + 1];
+					numNode_i1 = std::get<0>(test_i1);
+					}
+				}
+				NodesInvolvedCompressed.push_back(
+					std::make_tuple(numNode_i, cumulativeF));
+    		}
 
-		// 	for(unsigned n = 0; n < NodesInvolvedCompressed.size(); n++){
-		// 		std::tuple<int, TangentVector> test = NodesInvolvedCompressed[n];
-		// 		int i = std::get<0>(test);
-		// 		TangentVector CumulativeF = std::get<1>(test);
+			for(unsigned n = 0; n < NodesInvolvedCompressed.size(); n++){
+				std::tuple<int, TangentVector> test = NodesInvolvedCompressed[n];
+				int i = std::get<0>(test);
+				TangentVector CumulativeF = std::get<1>(test);
 
-		// 		while(i>0){
-		// 			const SectionInfo &section = m_section_properties[i-1];
-		// 			AdjointMatrix coAdjoint = section.getCoAdjoint();
+				while(i>0){
+					const SectionInfo &section = m_section_properties[i-1];
+					AdjointMatrix coAdjoint = section.getCoAdjoint();
 
-		// 			CumulativeF = coAdjoint * CumulativeF;
-		// 			// transfer to strain space (local coordinates)
-		// 			AdjointMatrix tempSection = section.getTangAdjointMatrix().transpose();
+					CumulativeF = coAdjoint * CumulativeF;
+					// transfer to strain space (local coordinates)
+					AdjointMatrix tempSection = section.getTangAdjointMatrix().transpose();
 					
-		// 			Vector3 temp_f = matB_trans * tempSection * CumulativeF;
+					Eigen::Matrix<double, N, 1>  temp_f = matB_trans * tempSection * CumulativeF;
 
-		// 			sofa::type::Vec3 temp_f_trans (temp_f[0], temp_f[1], temp_f[2]);
+					Deriv1 temp_f_trans;
+					for(int k=0; k<N; k++){
+						temp_f_trans[k] = temp_f[k];
+					}
 
-		// 			if(i>1){
-		// 				o1.addCol(i-2, temp_f_trans);
-		// 			}
-		// 			i--;
-		// 		}
+					if(i>1){
+						o1.addCol(i-2, temp_f_trans);
+					}
+					i--;
+				}
 				
-		// 		const auto frame0 = framePositions[0];		
-		// 		Vector3 trans0(frame0.getCenter()[0], frame0.getCenter()[1], frame0.getCenter()[2]);
-		// 		const auto &quat0 = frame0.getOrientation();
-		// 		Eigen::Quaternion<double> rot0(quat0[3], quat0[0], quat0[1], quat0[2]);
+				const auto frame0 = framePositions[0];		
+				Vector3 trans0(frame0.getCenter()[0], frame0.getCenter()[1], frame0.getCenter()[2]);
+				const auto &quat0 = frame0.getOrientation();
+				Eigen::Quaternion<double> rot0(quat0[3], quat0[0], quat0[1], quat0[2]);
 					
-		// 		SE3Types absoluteFrame0(SE3Types::SO3Type(rot0), trans0);
-		// 		AdjointMatrix M = absoluteFrame0.buildProjectionMatrix(absoluteFrame0.rotation().matrix());
+				SE3Types absoluteFrame0(SE3Types::SO3Type(rot0), trans0);
+				AdjointMatrix M = absoluteFrame0.buildProjectionMatrix(absoluteFrame0.rotation().matrix());
 
-		// 		TangentVector base_force = M * CumulativeF;
+				TangentVector base_force = M * CumulativeF;
 
 
-		// 		sofa::type::Vec6 base_force_trans;
-		// 		for (int k = 0; k < 6; ++k) {
-		// 			base_force_trans[k] = base_force[k];
-		// 		}
+				sofa::type::Vec6 base_force_trans;
+				for (int k = 0; k < 6; ++k) {
+					base_force_trans[k] = base_force[k];
+				}
 
-		// 		o2.addCol(d_baseIndex.getValue(), base_force_trans);
+				o2.addCol(d_baseIndex.getValue(), base_force_trans);
 
-		// 	}
+			}
 		
-		// }
+		}
 
-		// dataMatOut1Const[0]->endEdit();
-		// dataMatOut2Const[0]->endEdit();
+		dataMatOut1Const[0]->endEdit();
+		dataMatOut2Const[0]->endEdit();
 
 
 	}

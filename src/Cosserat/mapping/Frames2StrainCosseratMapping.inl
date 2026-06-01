@@ -569,7 +569,121 @@ namespace Cosserat::mapping {
 					 										const sofa::type::vector<sofa::DataMatrixDeriv_t<In2> *> &dataMatOut2Const,
 					 										const sofa::type::vector<const sofa::DataMatrixDeriv_t<Out> *> &dataMatInConst){
 
-		//@TODO																
+		//@TODO		
+		
+		if (dataMatOut1Const.empty() || dataMatOut2Const.empty() || dataMatInConst.empty())
+			return;
+
+		if (this->d_componentState.getValue() != sofa::core::objectmodel::ComponentState::Valid)
+			return;
+
+		if (d_debug.getValue())
+			std::cout << " ########## Frames2StrainCosseratMapping ApplyJT Constraint Function ########" << std::endl;
+
+		
+		// Prepare input and output data matrices
+		sofa::MatrixDeriv_t<In1> &out1 = *dataMatOut1Const[0]->beginEdit(); // frames
+		sofa::MatrixDeriv_t<In2> &out2 = *dataMatOut2Const[0]->beginEdit(); // rigid base
+		const sofa::MatrixDeriv_t<Out> &in = dataMatInConst[0]->getValue(); // strain
+
+		// Get current positions to compute transformations
+		const sofa::DataVecCoord_t<In1> *x1fromData =
+		m_strain_state->read(sofa::core::vec_id::read_access::position);
+		const sofa::VecCoord_t<In1> framePositions = x1fromData->getValue(); 
+
+		// Get current strain of each section
+		const sofa::VecCoord_t<Out> &strainState =
+		this->m_frames->read(sofa::core::vec_id::read_access::position)->getValue();
+
+
+		//compute transformation of each frame
+		std::vector<SE3Types> g_frames(framePositions.size());
+
+		for(unsigned int i=0; i<framePositions.size(); i++){
+
+			const auto& frame = framePositions[i];
+
+			Vector3 translation(frame.getCenter()[0], frame.getCenter()[1], frame.getCenter()[2]);
+
+			// Convert SOFA quaternion to Eigen quaternion (SOFA: x,y,z,w; Eigen: w,x,y,z)
+			const auto &quat = frame.getOrientation();
+			Eigen::Quaternion<double> rotation(quat[3], quat[0], quat[1], quat[2]);
+
+			g_frames[i] =SE3Types(SE3Types::SO3Type(rotation), translation);
+		}
+
+		// Process constraints
+		for(auto rowIt = in.begin(); rowIt != in.end(); ++rowIt){
+		
+			auto colIt = rowIt.begin();
+			if (colIt == rowIt.end())
+			continue; 
+
+			typename sofa::MatrixDeriv_t<In1>::RowIterator o1 = out1.writeLine(rowIt.index());
+			// typename sofa::MatrixDeriv_t<In2>::RowIterator o2 = out2.writeLine(rowIt.inde));
+
+			while(colIt != rowIt.end()){
+				int strainIndex = colIt.index(); //quel strain est constrain
+
+				const auto& section = m_section_properties[strainIndex+1];
+
+				TangentVector strain = TangentVector::Zero(); //strain
+				TangentVector constraintValue = TangentVector::Zero();
+
+
+				// Convert constraint value to TangentVector
+				const sofa::Deriv_t<Out> val = colIt.val();
+				for (unsigned int j = 0; j < 6; ++j) {
+				strain[j] = strainState[strainIndex][j];
+				constraintValue[j] = val[j];
+				}
+
+				//computation of the jacobians
+				double dx = section.getLength();
+				TangentVector Omega = dx * strain;
+
+
+				//compute Jacobians
+				AdjointMatrix dexp_inv = computeInverseTangentOperator(Omega);
+				AdjointMatrix J2 = (1./dx)*dexp_inv;
+
+				SE3Types g = SE3Types::expCosserat(strain, -dx); // = exp(-Omega)
+				AdjointMatrix AdgT = g.computeAdjoint().transpose();
+				AdjointMatrix J1_transpose = -(1./dx) * AdgT * dexp_inv.transpose();
+
+				TangentVector fa_local = J1_transpose * constraintValue; //a (b): extremite gauche (droite) de la section
+				TangentVector fb_local = J2.transpose() * constraintValue;
+
+
+				//Projection (local -> global)
+				//frame a
+				SE3Types ga = g_frames[strainIndex];
+				AdjointMatrix a_projector = ga.buildProjectionMatrix(ga.rotation().matrix());
+				TangentVector fa_global = a_projector.transpose().inverse() * fa_local;
+				
+
+				// idem pour le frame b
+				SE3Types gb = g_frames[strainIndex+1];
+				AdjointMatrix b_projector = gb.buildProjectionMatrix(gb.rotation().matrix());
+				TangentVector fb_global = b_projector.transpose().inverse() * fb_local;
+
+				sofa::type::Vec<6, double> fa_vec, fb_vec;
+
+				for(int k=0; k<6; k++){ 
+				fa_vec[k] = fa_global[k]; 
+				fb_vec[k] = fb_global[k];
+				}
+				
+				o1.addCol(strainIndex, fa_vec); // Impact sur Frame A
+				o1.addCol(strainIndex + 1, fb_vec); // Impact sur Frame B
+				
+				colIt++;
+			}
+
+		}
+
+		dataMatOut1Const[0]->endEdit();
+		dataMatOut2Const[0]->endEdit();														
 
 	}
 		
