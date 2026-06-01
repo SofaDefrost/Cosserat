@@ -12,6 +12,7 @@ class ConcreteStrain2RigidCosseratMapping
 								   sofa::defaulttype::Rigid3Types> {
 public:
 	void doBaseCosseratInit() override {}
+	void initialization() override {}   // 2026-05-31 : added to match new pure virtual in CosseratGeometryMapping
 	using CosseratGeometryMapping::computeTangExpImplementation;
 };
 

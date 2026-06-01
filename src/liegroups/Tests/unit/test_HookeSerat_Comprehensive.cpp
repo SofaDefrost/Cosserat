@@ -17,6 +17,7 @@ public:
 	using Out = sofa::defaulttype::Rigid3Types;
 
 	void doBaseCosseratInit() override {}
+	void initialization() override {}   // 2026-05-31 : added to match new pure virtual in CosseratGeometryMapping
 
 	// Implement pure virtual methods from Multi2Mapping
 	void apply(const sofa::core::MechanicalParams * /* mparams */,
