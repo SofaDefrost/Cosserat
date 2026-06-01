@@ -708,7 +708,7 @@ namespace sofa::component::cosserat::liegroups {
 			// So the tangent vector representing the spatial derivative of the frame is indeed [1+rho.x, rho.y, rho.z].
 			// I will keep it as is, assuming 'rho' passed here is the strain (deviation).
 
-			xi_hat(0, 3) = rho.x();
+			xi_hat(0, 3) = 1 + rho.x();
 			xi_hat(1, 3) = rho.y();
 			xi_hat(2, 3) = rho.z();
 
