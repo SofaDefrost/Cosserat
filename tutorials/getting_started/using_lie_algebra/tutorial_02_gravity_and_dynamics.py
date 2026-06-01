@@ -23,7 +23,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "..", "py
 
 from cosserat import BeamGeometryParameters, CosseratGeometry
 
-from introduction_and_setup import (_add_cosserat_frame, _add_cosserat_state,
+from introduction_and_setup import (_add_cosserat_frame_v2, _add_cosserat_state_v2,
                                     _add_rigid_base, add_mini_header)
 
 v_damping_param: float =  8e-1  # Damping parameter for dynamics
@@ -73,16 +73,16 @@ def createScene(root_node):
     # We start with a slightly bent beam to better visualize the effect of gravity.
     custom_bending_states = []
     for i in range(beam_geometry.get_number_of_sections()):
-        custom_bending_states.append([0, 0.0, 0.])
+        custom_bending_states.append([0, 0, 0])
 
     # Create cosserat state using geometry
-    bending_node = _add_cosserat_state(solver_node, beam_geometry, node_name="cosserat_states",
+    bending_node = _add_cosserat_state_v2(solver_node, beam_geometry, node_name="cosserat_states",
                                        custom_bending_states=custom_bending_states)
 
     # Create cosserat frame with mass (important for dynamics!)
     # The mass is distributed uniformly along the beam. Without mass, the beam
     # would not be affected by gravity.
-    frame_node = _add_cosserat_frame(
+    frame_node = _add_cosserat_frame_v2(
         base_node, bending_node, beam_geometry, beam_mass=5.0
     )
 
