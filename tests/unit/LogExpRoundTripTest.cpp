@@ -33,6 +33,7 @@
 
 #include <Eigen/Core>
 #include <cmath>
+#include <iostream>
 #include <random>
 
 using SO3d = sofa::component::cosserat::liegroups::SO3<double>;
@@ -45,7 +46,7 @@ using Mat3d = Eigen::Matrix<double, 3, 3>;
 namespace {
 
 /** Build a se(3) twist from angular and linear parts (Cosserat convention: φ first). */
-inline Vec6d makeXi(const Vec3d& phi, const Vec3d& rho) {
+inline Vec6d makeXi(const Vec3d &phi, const Vec3d &rho) {
     Vec6d xi;
     xi.head<3>() = phi;
     xi.tail<3>() = rho;
@@ -53,63 +54,62 @@ inline Vec6d makeXi(const Vec3d& phi, const Vec3d& rho) {
 }
 
 /** Frobenius norm of the rotation discrepancy: ‖R₁·R₂ᵀ − I‖. */
-inline double rotationError(const SO3d& a, const SO3d& b) {
+inline double rotationError(const SO3d &a, const SO3d &b) {
     return (a.matrix() * b.matrix().transpose() - Mat3d::Identity()).norm();
 }
 
 /** ‖t₁ − t₂‖₂ on translation parts. */
-inline double translationError(const Vec3d& t1, const Vec3d& t2) {
-    return (t1 - t2).norm();
-}
+inline double translationError(const Vec3d &t1, const Vec3d &t2) { return (t1 - t2).norm(); }
 
 /**
  * Check round-trip on SE3 for a given twist:
  *   ξ → A = exp(ξ) → B = log(A) → A' = exp(B)
  * Verifies both A' ≈ A (group element) and B ≈ ξ (algebra element).
  */
-void assertSE3RoundTrip(const Vec6d& xi_in, double tol_rot, double tol_trans,
-                        double tol_xi, const std::string& label) {
-    const SE3d A     = SE3d::computeExp(xi_in);
+void assertSE3RoundTrip(const Vec6d &xi_in, double tol_rot, double tol_trans, double tol_xi,
+                        const std::string &label) {
+    std::cout << " The xi vector : " << xi_in << std::endl;
+    const SE3d A = SE3d::computeExp(xi_in);
+
+    std::cout << "The matrix A = Exp(xi) :" << A << std::endl;
     const Vec6d xi_out = A.computeLog();
+    std::cout << "Compute log => xi_out : " << xi_out << std::endl;
     const SE3d A_back = SE3d::computeExp(xi_out);
+    std::cout << "A_back" << A_back << std::endl;
 
     // (1) Group element round-trip : A' == A
     const double err_rot = rotationError(A.rotation(), A_back.rotation());
-    EXPECT_LT(err_rot, tol_rot)
-        << label << " — rotation part: ‖A·A'ᵀ − I‖ = " << err_rot;
+    EXPECT_LT(err_rot, tol_rot) << label << " — rotation part: ‖A·A'ᵀ − I‖ = " << err_rot;
+    std::cout << "Error A*inv(A) : " << err_rot << std::endl;
 
     // Translation part : extract from internal storage (not exposed publicly, so
     // we compare via action on origin).
-    const Vec3d t_A      = A.computeAction(Vec3d::Zero());
+    const Vec3d t_A = A.computeAction(Vec3d::Zero());
     const Vec3d t_A_back = A_back.computeAction(Vec3d::Zero());
     const double err_trans = translationError(t_A, t_A_back);
-    EXPECT_LT(err_trans, tol_trans)
-        << label << " — translation part: ‖t_A − t_A'‖ = " << err_trans;
+    EXPECT_LT(err_trans, tol_trans) << label << " — translation part: ‖t_A − t_A'‖ = " << err_trans;
 
     // (2) Algebra round-trip : B == ξ
     const double err_xi = (xi_in - xi_out).norm();
-    EXPECT_LT(err_xi, tol_xi)
-        << label << " — algebra: ‖ξ_out − ξ_in‖ = " << err_xi
-        << "\n    ξ_in  = (" << xi_in.transpose() << ")"
-        << "\n    ξ_out = (" << xi_out.transpose() << ")";
+    EXPECT_LT(err_xi, tol_xi) << label << " — algebra: ‖ξ_out − ξ_in‖ = " << err_xi
+                              << "\n    ξ_in  = (" << xi_in.transpose() << ")"
+                              << "\n    ξ_out = (" << xi_out.transpose() << ")";
 }
 
 /** Same idea for SO3 : ω → R = exp(ω) → ω' = log(R) → R' = exp(ω'). */
-void assertSO3RoundTrip(const Vec3d& omega_in, double tol_rot, double tol_omega,
-                        const std::string& label) {
-    const SO3d R       = SO3d::exp(omega_in);
+void assertSO3RoundTrip(const Vec3d &omega_in, double tol_rot, double tol_omega,
+                        const std::string &label) {
+    const SO3d R = SO3d::exp(omega_in);
     const Vec3d omega_out = R.log();
-    const SO3d R_back  = SO3d::exp(omega_out);
+    const SO3d R_back = SO3d::exp(omega_out);
 
     const double err_rot = rotationError(R, R_back);
-    EXPECT_LT(err_rot, tol_rot)
-        << label << " — ‖R·R'ᵀ − I‖ = " << err_rot;
+    EXPECT_LT(err_rot, tol_rot) << label << " — ‖R·R'ᵀ − I‖ = " << err_rot;
 
     const double err_omega = (omega_in - omega_out).norm();
-    EXPECT_LT(err_omega, tol_omega)
-        << label << " — ‖ω_out − ω_in‖ = " << err_omega
-        << "\n    ω_in  = (" << omega_in.transpose() << ")"
-        << "\n    ω_out = (" << omega_out.transpose() << ")";
+    EXPECT_LT(err_omega, tol_omega) << label << " — ‖ω_out − ω_in‖ = " << err_omega
+                                    << "\n    ω_in  = (" << omega_in.transpose() << ")"
+                                    << "\n    ω_out = (" << omega_out.transpose() << ")";
 }
 
 }  // anonymous namespace
@@ -118,9 +118,7 @@ void assertSO3RoundTrip(const Vec3d& omega_in, double tol_rot, double tol_omega,
 // SO(3) round-trip tests
 // ═════════════════════════════════════════════════════════════════════════════
 
-TEST(SO3LogExpRoundTrip, Identity) {
-    assertSO3RoundTrip(Vec3d::Zero(), 1e-14, 1e-14, "identity");
-}
+TEST(SO3LogExpRoundTrip, Identity) { assertSO3RoundTrip(Vec3d::Zero(), 1e-14, 1e-14, "identity"); }
 
 TEST(SO3LogExpRoundTrip, SmallRotationsTaylorBranch) {
     // |ω| below SMALL_ANGLE_THRESHOLD (1e-4) → first-order quaternion branch
@@ -139,8 +137,7 @@ TEST(SO3LogExpRoundTrip, GeneralBranch) {
     const Vec3d axis = Vec3d(0.5, -0.7, 0.2).normalized();
     for (double theta : {1e-3, 0.1, 0.5, 1.0, 1.5, 2.0, 2.5}) {
         const Vec3d omega = axis * theta;
-        assertSO3RoundTrip(omega, 1e-13, 1e-12,
-                           "general ω θ=" + std::to_string(theta));
+        assertSO3RoundTrip(omega, 1e-13, 1e-12, "general ω θ=" + std::to_string(theta));
     }
 }
 
@@ -152,8 +149,7 @@ TEST(SO3LogExpRoundTrip, NearPiSingularity) {
         // Tolerance scales roughly with √(π-θ) since the V⁻¹ coefficient
         // diverges like 1/(π-θ). A 1e-6 tolerance is generous.
         const Vec3d omega = axis * theta;
-        assertSO3RoundTrip(omega, 1e-6, 1e-6,
-                           "near π ω θ=" + std::to_string(theta));
+        assertSO3RoundTrip(omega, 1e-6, 1e-6, "near π ω θ=" + std::to_string(theta));
     }
 }
 
@@ -168,8 +164,7 @@ TEST(SO3LogExpRoundTrip, RandomStress100) {
         axis.normalize();
         const double theta = dist_angle(rng);
         const Vec3d omega = axis * theta;
-        assertSO3RoundTrip(omega, 1e-12, 1e-11,
-                           "random k=" + std::to_string(k));
+        assertSO3RoundTrip(omega, 1e-12, 1e-11, "random k=" + std::to_string(k));
     }
 }
 
@@ -188,8 +183,7 @@ TEST(SE3LogExpRoundTrip, PureRotationNoTranslation) {
     const Vec3d axis = Vec3d(1.0, 1.0, 1.0).normalized();
     for (double theta : {0.1, 0.5, 1.0, 2.0}) {
         const Vec6d xi = makeXi(axis * theta, Vec3d::Zero());
-        assertSE3RoundTrip(xi, 1e-13, 1e-13, 1e-12,
-                           "pure rotation θ=" + std::to_string(theta));
+        assertSE3RoundTrip(xi, 1e-13, 1e-13, 1e-12, "pure rotation θ=" + std::to_string(theta));
     }
 }
 
@@ -224,8 +218,7 @@ TEST(SE3LogExpRoundTrip, MixedTwistTaylorBranch) {
     const Vec3d axis = Vec3d(0.7, -0.4, 0.6).normalized();
     for (double theta : {1e-6, 1e-5, 1e-4, 0.99e-4}) {
         const Vec6d xi = makeXi(axis * theta, Vec3d(0.3, -0.2, 0.5));
-        assertSE3RoundTrip(xi, 1e-12, 1e-12, 1e-11,
-                           "Taylor branch θ=" + std::to_string(theta));
+        assertSE3RoundTrip(xi, 1e-12, 1e-12, 1e-11, "Taylor branch θ=" + std::to_string(theta));
     }
 }
 
@@ -236,13 +229,13 @@ TEST(SE3LogExpRoundTrip, BranchBoundaryAgreement) {
     const Vec3d axis = Vec3d(1.0, 0.0, 0.0);
     const Vec3d rho(0.5, -1.0, 0.2);
 
-    const Vec6d xi_low  = makeXi(axis * 9.9e-5, rho);
+    const Vec6d xi_low = makeXi(axis * 9.9e-5, rho);
     const Vec6d xi_high = makeXi(axis * 1.01e-4, rho);
 
-    const Vec6d back_low  = SE3d::computeExp(xi_low).computeLog();
+    const Vec6d back_low = SE3d::computeExp(xi_low).computeLog();
     const Vec6d back_high = SE3d::computeExp(xi_high).computeLog();
 
-    EXPECT_LT((xi_low  - back_low).norm(),  1e-11) << "Taylor branch boundary";
+    EXPECT_LT((xi_low - back_low).norm(), 1e-11) << "Taylor branch boundary";
     EXPECT_LT((xi_high - back_high).norm(), 1e-11) << "general branch boundary";
 }
 
@@ -253,13 +246,13 @@ TEST(SE3LogExpRoundTrip, NearPiSingularity) {
     //
     // Tolerance follows the empirical loss-of-precision rate ~ 1/(π-θ).
     const Vec3d axis = Vec3d(0.3, 0.5, -0.4).normalized();
-    struct Case { double theta; double tol; };
-    for (const auto& c : {Case{3.0,         1e-10},
-                          Case{M_PI - 1e-2, 1e-10},
-                          Case{M_PI - 1e-4, 1e-6}}) {
+    struct Case {
+        double theta;
+        double tol;
+    };
+    for (const auto &c : {Case{3.0, 1e-10}, Case{M_PI - 1e-2, 1e-10}, Case{M_PI - 1e-4, 1e-6}}) {
         const Vec6d xi = makeXi(axis * c.theta, Vec3d(0.5, -0.3, 0.2));
-        assertSE3RoundTrip(xi, c.tol, c.tol, c.tol,
-                           "near π θ=" + std::to_string(c.theta));
+        assertSE3RoundTrip(xi, c.tol, c.tol, c.tol, "near π θ=" + std::to_string(c.theta));
     }
 }
 
@@ -277,20 +270,17 @@ TEST(SE3LogExpRoundTrip, RandomStress100) {
         const Vec3d rho(dist_coord(rng), dist_coord(rng), dist_coord(rng));
 
         const Vec6d xi = makeXi(phi, rho);
-        const SE3d A      = SE3d::computeExp(xi);
+        const SE3d A = SE3d::computeExp(xi);
         const Vec6d xi_out = A.computeLog();
         const SE3d A_back = SE3d::computeExp(xi_out);
 
-        const double err_group   = rotationError(A.rotation(), A_back.rotation());
-                                  + translationError(A.computeAction(Vec3d::Zero()),
-                                                     A_back.computeAction(Vec3d::Zero()));
+        const double err_group = rotationError(A.rotation(), A_back.rotation());
+        +translationError(A.computeAction(Vec3d::Zero()), A_back.computeAction(Vec3d::Zero()));
         const double err_algebra = (xi - xi_out).norm();
         if (err_group > 1e-10 || err_algebra > 1e-10) {
             ++failed;
-            ADD_FAILURE() << "random k=" << k
-                          << "  err_group=" << err_group
-                          << "  err_algebra=" << err_algebra
-                          << "  ξ=(" << xi.transpose() << ")";
+            ADD_FAILURE() << "random k=" << k << "  err_group=" << err_group
+                          << "  err_algebra=" << err_algebra << "  ξ=(" << xi.transpose() << ")";
         }
     }
     EXPECT_EQ(failed, 0) << "Number of failed random round-trips";
@@ -309,12 +299,12 @@ TEST(SE3LogExpRoundTrip, RandomStress100) {
  */
 TEST(SE3LogExpRoundTrip, MatrixLevelIdentity_A_equals_exp_log_A) {
     // ── Build A by hand : rotation 30° around (1, 1, 0)/√2, translation t
-    const double angle = M_PI / 6.0;                              // 30°
+    const double angle = M_PI / 6.0;  // 30°
     const Vec3d axis(1.0, 1.0, 0.0);
     const Vec3d axis_n = axis.normalized();
-    const SO3d  R(angle, axis_n);
+    const SO3d R(angle, axis_n);
     const Vec3d t(1.0, 0.5, -0.2);
-    const SE3d  A(R, t);
+    const SE3d A(R, t);
 
     // ── A's 4×4 homogeneous matrix (reference)
     Eigen::Matrix4d M_A = Eigen::Matrix4d::Identity();
@@ -322,8 +312,8 @@ TEST(SE3LogExpRoundTrip, MatrixLevelIdentity_A_equals_exp_log_A) {
     M_A.block<3, 1>(0, 3) = t;
 
     // ── Round-trip : B = log(A), A' = exp(B)
-    const Vec6d B    = A.computeLog();
-    const SE3d  Ap   = SE3d::computeExp(B);
+    const Vec6d B = A.computeLog();
+    const SE3d Ap = SE3d::computeExp(B);
 
     Eigen::Matrix4d M_Ap = Eigen::Matrix4d::Identity();
     M_Ap.block<3, 3>(0, 0) = Ap.matrix().block<3, 3>(0, 0);
@@ -331,9 +321,7 @@ TEST(SE3LogExpRoundTrip, MatrixLevelIdentity_A_equals_exp_log_A) {
 
     // ── A == A' at matrix level
     const double err = (M_A - M_Ap).norm();
-    EXPECT_LT(err, 1e-13)
-        << "‖A − exp(log(A))‖_F = " << err
-        << "\nA   =\n" << M_A
-        << "\nA'  =\n" << M_Ap
-        << "\nlog(A) = " << B.transpose();
+    EXPECT_LT(err, 1e-13) << "‖A − exp(log(A))‖_F = " << err << "\nA   =\n"
+                          << M_A << "\nA'  =\n"
+                          << M_Ap << "\nlog(A) = " << B.transpose();
 }
