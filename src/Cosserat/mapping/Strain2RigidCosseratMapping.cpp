@@ -33,7 +33,7 @@ namespace Cosserat {
 	void registerStrain2RigidCosseratMapping(sofa::core::ObjectFactory *factory) {
 		factory->registerObjects(
 				sofa::core::ObjectRegistrationData(
-						"This component facilitates the creation of Hooke Serat Discrete Mapping in SOFA simulations. "
+						"This component facilitates the creation of Strain2Rigid Mapping in SOFA simulations. "
 						"It takes two mechanical"
 						"objects as inputs: the rigid base of the beam (with 6 degrees of freedom) and the local "
 						"coordinates of the beam. Using "

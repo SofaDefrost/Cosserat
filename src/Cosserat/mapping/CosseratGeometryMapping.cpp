@@ -24,9 +24,13 @@
 #include <sofa/defaulttype/VecTypes.h>
 
 namespace Cosserat::mapping {
+	// for Strain2RigidCosseratMapping
 	template class SOFA_COSSERAT_API CosseratGeometryMapping<sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types,
 														   sofa::defaulttype::Rigid3Types>;
 	// template class SOFA_COSSERAT_API CosseratGeometryMapping<sofa::defaulttype::Vec6Types, sofa::defaulttype::Rigid3Types,
 	// 													   sofa::defaulttype::Rigid3Types>;
 
+	// @appa: for Frames2StrainCosseratMapping
+	template class SOFA_COSSERAT_API CosseratGeometryMapping<sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types,
+															sofa::defaulttype::Vec3Types>;
 } // namespace Cosserat::mapping

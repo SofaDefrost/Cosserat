@@ -144,6 +144,7 @@ namespace Cosserat::mapping {
 		//////////////////////////////////////////////////////////////////////
 		/// @name Inherited from BaseObject
 		/// @{
+		void initialization() override;
 		void doBaseCosseratInit() override;
 		void draw(const sofa::core::visual::VisualParams *vparams) override;
 		/// @}

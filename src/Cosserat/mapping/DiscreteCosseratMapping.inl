@@ -128,6 +128,8 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::apply(
   const auto frame0 =
       Frame(In2::getCPos(in2[baseIndex]), In2::getCRot(in2[baseIndex]));
       
+  std::cout<<"Base frame: "<<frame0<<std::endl;
+
   // Cache the printLog value out of the loop, otherwise it will trigger a graph
   // update at every iteration.
   bool doPrintLog = this->f_printLog.getValue();
@@ -145,6 +147,8 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::apply(
     // This is a lazy printing approach, so there is no time consuming action in
     // the core of the loop.
     msg_info_when(doPrintLog) << "Frame  : " << i << " = " << frame;
+
+    std::cout<< "Frame  : " << i << " = " << frame<<std::endl;
 
     Vec3 origin = frame.getOrigin();
     Quat orientation = frame.getOrientation();
