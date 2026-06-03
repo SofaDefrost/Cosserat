@@ -112,50 +112,107 @@ namespace sofa::component::cosserat::liegroups {
 			return expCosseratGeneral(rho, phi, phi_norm, length);
 		}
 
+		//@appa: from Yinoussa code for the compution of the log
 		static SE3 computeExp(const TangentVector &xi) {
 			const Vector3 rho = xi.template tail<3>();
 			const Vector3 phi = xi.template head<3>();
 
-			const Scalar angle = phi.norm();
-			const SO3Type R = SO3Type::exp(phi);
+			const Scalar angle  = phi.norm();
+			const SO3Type R     = SO3Type::exp(phi);
+			const Matrix3 K_phi = SO3Type::computeHat(phi);   // [φ]× (non normalisé)
 			Matrix3 V;
 
-			if (angle < Types<Scalar>::epsilon()) {
-				V = Matrix3::Identity() + Scalar(0.5) * SO3Type::computeHat(phi);
+			if (angle < Types<Scalar>::SMALL_ANGLE_THRESHOLD) {
+				// 3rd-order Taylor expansion in θ
+				const Scalar theta2 = angle * angle;
+				const Scalar c1 = Scalar(0.5)        - theta2 / Scalar(24);
+				const Scalar c2 = Scalar(1) / Scalar(6) - theta2 / Scalar(120);
+				V = Matrix3::Identity() + c1 * K_phi + c2 * (K_phi * K_phi);
 			} else {
-				const Vector3 axis = phi / angle;
-				const Matrix3 K = SO3Type::computeHat(axis);
-				const Scalar sin_angle = std::sin(angle);
-				const Scalar cos_angle = std::cos(angle);
-				V = Matrix3::Identity() + (Scalar(1) - cos_angle) / angle * K +
-					(angle - sin_angle) / (angle * angle) * K * K;
+				// General case, in terms of [φ]× :
+				//   V = I + (1-cos θ)/θ² · [φ]× + (θ-sin θ)/θ³ · [φ]×²
+				const Scalar theta2 = angle * angle;
+				const Scalar theta3 = theta2 * angle;
+				const Scalar c1 = (Scalar(1) - std::cos(angle)) / theta2;
+				const Scalar c2 = (angle - std::sin(angle))      / theta3;
+				V = Matrix3::Identity() + c1 * K_phi + c2 * (K_phi * K_phi);
 			}
 			return SE3(R, V * rho);
 		}
 
 		TangentVector computeLog() const {
-			const Vector3 phi = m_rotation.log();
-			const Scalar angle = phi.norm();
+			const Vector3 phi   = m_rotation.log();
+			const Scalar  angle = phi.norm();
+			const Matrix3 K_phi = SO3Type::computeHat(phi);   // [φ]× (non normalisé)
 			Matrix3 V_inv;
 
-			if (angle < Types<Scalar>::epsilon()) {
-				V_inv = Matrix3::Identity() - Scalar(0.5) * SO3Type::computeHat(phi);
+			if (angle < Types<Scalar>::SMALL_ANGLE_THRESHOLD) {
+				// 3rd-order Taylor expansion in θ
+				const Scalar theta2 = angle * angle;
+				const Scalar c2 = Scalar(1) / Scalar(12) + theta2 / Scalar(720);
+				V_inv = Matrix3::Identity() - Scalar(0.5) * K_phi + c2 * (K_phi * K_phi);
 			} else {
-				// const Vector3 axis = phi / angle; //@appa: correction here (error if division with angle)
-				const Matrix3 phiHat = SO3Type::computeHat(phi);
-				const Scalar sin_angle = std::sin(angle);
-				const Scalar cos_angle = std::cos(angle);
-				V_inv = Matrix3::Identity() - Scalar(0.5) * phiHat +
-						((Scalar(2) * sin_angle - angle * (Scalar(1) + cos_angle)) /
-								(Scalar(2) * angle * angle * sin_angle)) * phiHat * phiHat;
+				// General case, in terms of [φ]× :
+				//   V⁻¹ = I − ½ [φ]× + c(θ) [φ]×²
+				const Scalar sin_a  = std::sin(angle);
+				const Scalar cos_a  = std::cos(angle);
+				const Scalar theta2 = angle * angle;
+				const Scalar c2 = Scalar(1) / theta2
+				                - (Scalar(1) + cos_a) / (Scalar(2) * angle * sin_a);
+				V_inv = Matrix3::Identity() - Scalar(0.5) * K_phi + c2 * (K_phi * K_phi);
 			}
 
 			const Vector3 rho = V_inv * m_translation;
 			TangentVector result;
-			result.template head<3>() = phi;
-			result.template tail<3>() = rho;
+			result.template head<3>() = phi;  // angular first — consistent with computeExp()
+			result.template tail<3>() = rho;  // linear second
 			return result;
 		}
+
+		// static SE3 computeExp(const TangentVector &xi) {
+		// 	const Vector3 rho = xi.template tail<3>();
+		// 	const Vector3 phi = xi.template head<3>();
+
+		// 	const Scalar angle = phi.norm();
+		// 	const SO3Type R = SO3Type::exp(phi);
+		// 	Matrix3 V;
+
+		// 	if (angle < Types<Scalar>::epsilon()) {
+		// 		V = Matrix3::Identity() + Scalar(0.5) * SO3Type::computeHat(phi);
+		// 	} else {
+		// 		const Vector3 axis = phi / angle;
+		// 		const Matrix3 K = SO3Type::computeHat(axis);
+		// 		const Scalar sin_angle = std::sin(angle);
+		// 		const Scalar cos_angle = std::cos(angle);
+		// 		V = Matrix3::Identity() + (Scalar(1) - cos_angle) / angle * K +
+		// 			(angle - sin_angle) / (angle * angle) * K * K;
+		// 	}
+		// 	return SE3(R, V * rho);
+		// }
+
+		// TangentVector computeLog() const {
+		// 	const Vector3 phi = m_rotation.log();
+		// 	const Scalar angle = phi.norm();
+		// 	Matrix3 V_inv;
+
+		// 	if (angle < Types<Scalar>::epsilon()) {
+		// 		V_inv = Matrix3::Identity() - Scalar(0.5) * SO3Type::computeHat(phi);
+		// 	} else {
+		// 		// const Vector3 axis = phi / angle; //@appa: correction here (error if division with angle)
+		// 		const Matrix3 phiHat = SO3Type::computeHat(phi);
+		// 		const Scalar sin_angle = std::sin(angle);
+		// 		const Scalar cos_angle = std::cos(angle);
+		// 		V_inv = Matrix3::Identity() - Scalar(0.5) * phiHat +
+		// 				((Scalar(2) * sin_angle - angle * (Scalar(1) + cos_angle)) /
+		// 						(Scalar(2) * angle * angle * sin_angle)) * phiHat * phiHat;
+		// 	}
+
+		// 	const Vector3 rho = V_inv * m_translation;
+		// 	TangentVector result;
+		// 	result.template head<3>() = phi;
+		// 	result.template tail<3>() = rho;
+		// 	return result;
+		// }
 
 		AdjointMatrix computeAdjoint() const {
 			AdjointMatrix Ad = AdjointMatrix::Zero();
