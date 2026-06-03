@@ -4,6 +4,7 @@ Remark that in this mapping (same for the DiscreteCosseratMapping) the default e
 but for the force field (BeamHookeLawForceField or HookeSeratPCSForceField) the default elongation is fixed to 1. 
 """
 
+
 import os
 import sys
 
@@ -17,7 +18,7 @@ from basic_functions import (_add_cosserat_frame, _add_cosserat_state,
 
 stiffness_param: float = 1e10
 v_damping_param: float =  8e-1  # Damping parameter for dynamics
-beam_mass: float = 0
+beam_mass: float = 1
 nb_section: int = 8
 beam_length: int = 5
 
@@ -29,7 +30,7 @@ def createScene(root):
     root.addObject("RequiredPlugin", pluginName="SofaValidation")
 
     # Add gravity
-    root.gravity = [0, 0, 0]  # Add gravity!
+    root.gravity = [0, -9.81, 0]  # Add gravity!
 
     # Configure time integration and solver
 
@@ -46,8 +47,8 @@ def createScene(root):
         
     beam_geometry = CosseratGeometry(beam_geometry_params)
 
-    # On génère la liste des indices que l'on veut monitorer (ici, toutes les sections : 0, 1, 2... 7)
-    indices_str = " ".join([str(i) for i in range(nb_section)])
+    # On génère la liste des indices que l'on veut monitorer (0, 1, 2... 7)
+    indices_str = "   ".join([str(i) for i in range(nb_section)])
 
     ## base node
     rigid_base = _add_rigid_base(solver, node_name="rigid_base")
@@ -70,7 +71,6 @@ def createScene(root):
     custom_bending_states = [[0, 0, i*0.1, 1, 0, 0] for i in range(nb_section)]
     strain_node = _add_cosserat_state(rigid_base, frame_node, beam_geometry, custom_bending_states=custom_bending_states)
 
-
     strain_node.addObject("Monitor", name="Monitor_Frames2Strain", template="Vec6d", 
                            listening=True, indices=indices_str, showPositions=True, 
                            ExportPositions=True, ExportVelocities=False, 
@@ -91,12 +91,14 @@ def createScene(root):
     
     bending_node = solver.addChild("bending_node")
     bending_node.addObject("MechanicalObject", template="Vec6d", position=custom_bending_states, name="bending_state")
-    bending_node.addObject("BeamHookeLawForceField",
-                           crossSectionShape="circular", 
-                           length=beam_geometry.section_lengths, 
-                           radius=0.5, 
-                           youngModulus=1.0e3, 
-                           poissonRatio=0.4)
+    bending_node.addObject(
+        "BeamHookeLawForceField",
+        crossSectionShape="circular",
+        length=beam_geometry.section_lengths,  # Use geometry data
+        radius=0.5,
+        youngModulus=1.0e3,
+        poissonRatio=0.4,
+    )    
 
     bending_node.addObject("Monitor", name="Monitor_Strain2Rigid", template="Vec6d", 
                            listening=True, indices=indices_str, showPositions=True, 

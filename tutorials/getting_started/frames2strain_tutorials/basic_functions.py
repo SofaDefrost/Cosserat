@@ -86,13 +86,16 @@ def _add_cosserat_frame(
     return frame_node
 
 
-def _add_cosserat_state(p_node, f_node, geometry: CosseratGeometry, node_name="bending_node"):
+def _add_cosserat_state(p_node, f_node, geometry: CosseratGeometry, custom_bending_states=None, node_name="bending_node"):
     """Create the cosserat coordinate node using CosseratGeometry."""
     bending_node = f_node.addChild(node_name)
 
     bending_states = []
     for i in range(geometry.params.nb_section):
         bending_states.append([0, 0, 0, 1, 0, 0]) # strain à l'équilibre 
+
+    if custom_bending_states is not None:
+        bending_states = custom_bending_states
 
     bending_node.addObject(
         "MechanicalObject",
