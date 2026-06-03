@@ -26,7 +26,7 @@ from basic_functions import (_add_cosserat_frame, _add_cosserat_state,
 
 from force_controller import ForceController
 
-beam_mass: float=0.5
+beam_mass: float=2
 v_damping_param: float=8e-1
 
 def createScene(root_node):
@@ -40,7 +40,7 @@ def createScene(root_node):
     root_node.addObject('RequiredPlugin', name='Sofa.Component.Mapping.NonLinear') # Needed to use components [RigidMapping]      
     root_node.addObject('RequiredPlugin', name='Sofa.Component.MechanicalLoad') # Needed to use components [ConstantForceField]
     
-    root_node.gravity = [0, 0, 0]
+    root_node.gravity = [0, -9.81, 0]
 
     # --- Solver ---
     solver_node = root_node.addChild("solver")
@@ -58,7 +58,7 @@ def createScene(root_node):
     frame_node = _add_cosserat_frame(solver_node, beam_geometry, beam_mass=beam_mass)
 
     ## bending node
-    strain_node = _add_cosserat_state(rigid_base, frame_node, beam_geometry)
+    strain_node = _add_cosserat_state(rigid_base, frame_node, beam_geometry, radius=2)
 
 
     # --- FEM Gripper ---
@@ -87,7 +87,7 @@ def createScene(root_node):
     # === ADD FORCES ===
     # Add a force at the tip of the beam
     # this constance force is used only in the case we are doing force_type 1 or 2
-    force_null = [0.0, 10.0, 0.0, 0.0, 0.0, 0.0]  # No force initially
+    force_null = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]  # No force initially
 
     const_force_node = frame_node.addObject('ConstantForceField', name='constForce', showArrowSize=1.e-8,
                                                  indices=[beam_geometry.get_number_of_frames()], forces=force_null)
@@ -104,7 +104,7 @@ def createScene(root_node):
         name="ForceController",
         forceNode=const_force_node,     # ConstantForceField
         frame_node=frame_node,          # node containing FramesMO
-        force_type=2,                   # Change 1, 2 or 3 to test all force type
+        force_type=1,                   # Change 1, 2 or 3 to test all force type
         tip_controller=controller_state,# a MechanicalObject used to control the beam's tip (for force_type 3)
         geoParams=beam_geometry_params  # geometric params
     ))

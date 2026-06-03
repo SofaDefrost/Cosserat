@@ -115,7 +115,6 @@ namespace Cosserat::mapping {
 													  const vector<const sofa::DataVecCoord_t<In2> *> &dataVecIn2Pos) {
 
 
-		std::cout<<"========In apply function========"<<std::endl;
 
 		msg_info("Frames2StrainCosseratMapping") << "Frames2StrainCosseratMapping::apply called";
 		
@@ -134,11 +133,11 @@ namespace Cosserat::mapping {
 		const sofa::VecCoord_t<In1> &frames = dataVecIn1Pos[0]->getValue(); // frames positions
 		const sofa::VecCoord_t<In2> &rigidBase = dataVecIn2Pos[0]->getValue(); // Rigid base
 
-		std::cout<<"(in) Rigid base: "<<rigidBase<<std::endl;
+		// std::cout<<"(in) Rigid base: "<<rigidBase<<std::endl;
 
-		for(int i=0; i<frames.size();i++){
-			std::cout<<"(in) Frame ["<<i<<"]: "<<frames[i]<<std::endl;
-		}
+		// for(int i=0; i<frames.size();i++){
+		// 	std::cout<<"(in) Frame ["<<i<<"]: "<<frames[i]<<std::endl;
+		// }
 
         //Output: strain (to evaluate)
         const auto nbSections = m_section_properties.size()-1;
@@ -210,14 +209,14 @@ namespace Cosserat::mapping {
 
 				SE3Types g_rel = g_frames[left_frame_idx].computeInverse() * g_frames[right_frame_idx];
 				
-				std::cout<<"g_rel: " << g_rel<<std::endl;
+				// std::cout<<"g_rel: " << g_rel<<std::endl;
 				TangentVector xi = g_rel.computeLog()/dx;
 
 				for(int j=0; j<6; j++){
 					strains[i][j] = xi[j];
 				}
 
-				std::cout<<"(out) Strain ["<<i<<"] :" << strains[i]<<std::endl;
+				// std::cout<<"(out) Strain ["<<i<<"] :" << strains[i]<<std::endl;
 
 			}
 			else{
@@ -230,8 +229,6 @@ namespace Cosserat::mapping {
 
 
 		dataVecOutPos[0]->endEdit();
-
-		std::cout<<"========End apply========"<<std::endl;
     
     }
 
@@ -274,15 +271,27 @@ namespace Cosserat::mapping {
 		//5 Bernouilli nb. : B0=1, B1=-1/2, B2=1/6, B3=0, B4=-1/30
 
 		AdjointMatrix res = AdjointMatrix::Zero();
+		
+		const Vector3 phi = Omega.template head<3>();
+		double theta = phi.norm();
 		AdjointMatrix Id6 = AdjointMatrix::Identity();
 		AdjointMatrix adOmega = compute_adjoint(Omega); //Compute adjoint
 		AdjointMatrix adOmega2 = adOmega * adOmega;
-		AdjointMatrix adOmega3 = adOmega2 * adOmega;
-		AdjointMatrix adOmega4 = adOmega3 * adOmega;
+		AdjointMatrix adOmega4 = adOmega2 * adOmega2;		
+		
+		double B0=1., B1=-1./2., B2=1./6., B4=-1./30.;
 
-		double B0=1., B1=-1./2., B2=1./6., B3=0., B4=-1./30.;
+		
+		if (theta < 1e-4){ //pour de petite deformation
 
-		res = B0*Id6 + B1*adOmega + (1./2.)*B2*adOmega2 + (1./6.)*B3*adOmega3 + (1./24.)*B4*adOmega4;
+			res = B0*Id6 + B1*adOmega + (1./2.)*B2*adOmega2 + (1./24.)*B4*adOmega4;
+		}
+		else{
+			double cot_half = 1.0 / std::tan(theta / 2.0);
+			double c4 = ((theta/2.) * cot_half - 1. + (theta*theta)/12.)/std::pow(theta, 4);
+			
+			res = B0*Id6 + B1*adOmega + (1./2.)*B2*adOmega2 + c4*adOmega4; 
+		}
 
 		return res;
 
@@ -294,9 +303,7 @@ namespace Cosserat::mapping {
 														const sofa::type::vector<sofa::DataVecDeriv_t<Out> *> &dataVecOutVel,
 														const sofa::type::vector<const sofa::DataVecDeriv_t<In1> *> &dataVecIn1Vel,
 														const sofa::type::vector<const sofa::DataVecDeriv_t<In2> *> &dataVecIn2Vel){
-    
-		std::cout<<"========In applyJ function========"<<std::endl;
-															
+    															
     	if (dataVecOutVel.empty() || dataVecIn1Vel.empty() || dataVecIn2Vel.empty())
 			return;
 
@@ -334,10 +341,10 @@ namespace Cosserat::mapping {
 			base_vel_local[u] = base_vel[base_index][u];
 
 
-		std::cout<<"(in) Base Velocity : ["<<base_vel_local.transpose()<<"]"<<std::endl;
+		// std::cout<<"(in) Base Velocity : ["<<base_vel_local.transpose()<<"]"<<std::endl;
 				
-		for(int i=0; i<frame_vel.size(); i++)
-			std::cout<<"(in) Frame velocity ["<<i<<"]: "<<frame_vel[i]<<std::endl;
+		// for(int i=0; i<frame_vel.size(); i++)
+		// 	std::cout<<"(in) Frame velocity ["<<i<<"]: "<<frame_vel[i]<<std::endl;
 
 		
 		//compute transformation of each frame
@@ -404,11 +411,10 @@ namespace Cosserat::mapping {
 				strain_vel[i][k] = output_vel[k];
 			}
 
-			std::cout << "(out) Strain velocity [" << i << "]: " << output_vel.transpose() <<"\n";
+			// std::cout << "(out) Strain velocity [" << i << "]: " << output_vel.transpose() <<"\n";
 		}
 
 		dataVecOutVel[0]->endEdit();
-		std::cout<<"========End applyJ========"<<std::endl;
 
 	}
 
@@ -422,7 +428,6 @@ namespace Cosserat::mapping {
 					 										const sofa::type::vector<sofa::DataVecDeriv_t<In2> *> &dataVecOut2Force,
 					 										const sofa::type::vector<const sofa::DataVecDeriv_t<Out> *> &dataVecInForce){
 
-		std::cout<<"====== In applyJT function ======="<<std::endl;
 		if (dataVecOut1Force.empty() || dataVecInForce.empty() || dataVecOut2Force.empty())
 			return;
 
@@ -451,10 +456,10 @@ namespace Cosserat::mapping {
 		// Initialize output forces
 		frameForces.resize(framePositions.size());
 
-		std::cout<<"(in) Strain forces: "<<std::endl;
-		for(auto v : strainForces){
-			std::cout<< v <<std::endl;
-		}
+		// std::cout<<"(in) Strain forces: "<<std::endl;
+		// for(auto v : strainForces){
+		// 	std::cout<< v <<std::endl;
+		// }
 
 		//compute transformation of each frame
 		std::vector<SE3Types> g_frames(framePositions.size());
@@ -485,8 +490,12 @@ namespace Cosserat::mapping {
 
 			//get current strain of the section
 			TangentVector strain_i = TangentVector::Zero();
+			TangentVector lambda = TangentVector::Zero();
+
+
 			for(int j=0; j<6; j++){
 				strain_i[j] = strainState[i][j];
+				lambda[j] = strainForces[i][j];
 			}
 
 			TangentVector Omega_i = dx * strain_i;
@@ -501,18 +510,6 @@ namespace Cosserat::mapping {
 			AdjointMatrix AdgT = g.computeAdjoint().transpose();
 			AdjointMatrix J1_transpose = -(1./dx) * AdgT * dexp_inv.transpose();
 
-			// std::cout<<"Jacobians: "<<std::endl;
-			// std::cout<<"J1: "<<std::endl;
-			// std::cout<<J1<<std::endl;
-			// std::cout<<"J2: "<<std::endl;
-			// std::cout<<J2<<std::endl;
-			// posons lambda tq strain force (i) = lambda
-
-			TangentVector lambda = TangentVector::Zero();
-
-			for(int j=0; j<6; j++){
-				lambda[j] = strainForces[i][j];
-			}
 
 			//@appa: multiplication par dx déjà fait dans le forcefield
 			TangentVector fa_local = J1_transpose * lambda; //a (b): extremite gauche (droite) de la section
@@ -535,8 +532,8 @@ namespace Cosserat::mapping {
 			TangentVector fb_global = b_projector.transpose().inverse() * fb_local;
 
 
-			std::cout<<"fa_global: "<<fa_global.transpose()<<std::endl;
-			std::cout<<"fb_global: "<<fb_global.transpose()<<std::endl;
+			// std::cout<<"fa_global: "<<fa_global.transpose()<<std::endl;
+			// std::cout<<"fb_global: "<<fb_global.transpose()<<std::endl;
 
 			for(int k=0; k<6; k++){
 				frameForces[i][k] +=fa_global[k];
@@ -546,19 +543,17 @@ namespace Cosserat::mapping {
 
 		}
 		
-		// std::cout<<"-- End of the computation --"<<std::endl;
+		// // std::cout<<"-- End of the computation --"<<std::endl;
 
-		std::cout << "(out) Frame forces: " << std::endl;
-		for(int j=0; j<frameForces.size(); j++){
-			std::cout<<"  (out) frame "<< j <<" : "<< frameForces[j] << std::endl;
-		}
-    	std::cout << "(out)base Force: " << baseForces[baseIndex] << std::endl;
+		// std::cout << "(out) Frame forces: " << std::endl;
+		// for(int j=0; j<frameForces.size(); j++){
+		// 	std::cout<<"  (out) frame "<< j <<" : "<< frameForces[j] << std::endl;
+		// }
+    	// std::cout << "(out)base Force: " << baseForces[baseIndex] << std::endl;
 
 		dataVecOut1Force[0]->endEdit();
 		dataVecOut2Force[0]->endEdit();
-		
-		std::cout<<"====== End applyJT ======="<<std::endl;
-			
+					
 	}
 
 
@@ -634,8 +629,8 @@ namespace Cosserat::mapping {
 				// Convert constraint value to TangentVector
 				const sofa::Deriv_t<Out> val = colIt.val();
 				for (unsigned int j = 0; j < 6; ++j) {
-				strain[j] = strainState[strainIndex][j];
-				constraintValue[j] = val[j];
+					strain[j] = strainState[strainIndex][j];
+					constraintValue[j] = val[j];
 				}
 
 				//computation of the jacobians
@@ -670,8 +665,8 @@ namespace Cosserat::mapping {
 				sofa::type::Vec<6, double> fa_vec, fb_vec;
 
 				for(int k=0; k<6; k++){ 
-				fa_vec[k] = fa_global[k]; 
-				fb_vec[k] = fb_global[k];
+					fa_vec[k] = fa_global[k]; 
+					fb_vec[k] = fb_global[k];
 				}
 				
 				o1.addCol(strainIndex, fa_vec); // Impact sur Frame A

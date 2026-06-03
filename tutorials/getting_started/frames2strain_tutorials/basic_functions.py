@@ -86,7 +86,7 @@ def _add_cosserat_frame(
     return frame_node
 
 
-def _add_cosserat_state(p_node, f_node, geometry: CosseratGeometry, custom_bending_states=None, node_name="bending_node"):
+def _add_cosserat_state(p_node, f_node, geometry: CosseratGeometry, custom_bending_states=None, node_name="bending_node", radius=0.5, youngModulus=1e3, poissonRatio=0.4):
     """Create the cosserat coordinate node using CosseratGeometry."""
     bending_node = f_node.addChild(node_name)
 
@@ -107,9 +107,9 @@ def _add_cosserat_state(p_node, f_node, geometry: CosseratGeometry, custom_bendi
         "BeamHookeLawForceField",
         crossSectionShape="circular",
         length=geometry.section_lengths,  # Use geometry data
-        radius=0.5,
-        youngModulus=1.0e3,
-        poissonRatio=0.4,
+        radius=radius,
+        youngModulus=youngModulus,
+        poissonRatio=poissonRatio,
     )
 
 

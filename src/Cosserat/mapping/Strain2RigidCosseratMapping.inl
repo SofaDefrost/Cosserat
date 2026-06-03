@@ -134,8 +134,6 @@ namespace Cosserat::mapping {
 													  const vector<const sofa::DataVecCoord_t<In2> *> &dataVecIn2Pos) {
 
 
-		std::cout<<"========In apply function========"<<std::endl;
-
 		msg_info("Strain2RigidCosseratMapping") << "Strain2RigidCosseratMapping::apply called";
 
 		if (dataVecOutPos.empty() || dataVecIn1Pos.empty() || dataVecIn2Pos.empty())
@@ -153,11 +151,6 @@ namespace Cosserat::mapping {
 		const sofa::VecCoord_t<In1> &strainState = dataVecIn1Pos[0]->getValue();
 		const sofa::VecCoord_t<In2> &rigidBase = dataVecIn2Pos[0]->getValue();
 
-		std::cout<<"(in) Rigid base: "<<rigidBase<<std::endl;
-
-		for(int i=0; i<strainState.size();i++){
-			std::cout<<"(in) Strain ["<<i<<"]: "<<strainState[i]<<std::endl;
-		}		
 
 		const auto frame_count = d_curv_abs_frames.getValue().size();
 		sofa::VecCoord_t<Out> &output_frames = *dataVecOutPos[0]->beginEdit();
@@ -258,13 +251,7 @@ namespace Cosserat::mapping {
 		}
 
 
-		for(int i=0; i<output_frames.size(); i++){
-				std::cout<<"(out) Frame ["<<i<<"] :" << output_frames[i]<<std::endl;
-		}    
-
 		dataVecOutPos[0]->endEdit();
-
-		std::cout<<"========End apply========"<<std::endl;
 
 	}
 
@@ -326,8 +313,6 @@ namespace Cosserat::mapping {
 													   const vector<const sofa::DataVecDeriv_t<In2> *> &dataVecIn2Vel) {
 
 
-		std::cout<<"========In applyJ function========"<<std::endl;
-
 		if (dataVecOutVel.empty() || dataVecIn1Vel.empty() || dataVecIn2Vel.empty())
 			return;
 
@@ -386,12 +371,6 @@ namespace Cosserat::mapping {
 		node_velocities[0] = base_projector * base_vel_local;
 		if (d_debug.getValue())
     		std::cout << "Base local Velocity :" << node_velocities[0].transpose() << std::endl;
-
-		
-    	std::cout << "(in) Base local Velocity :" << node_velocities[0].transpose() << std::endl;
-
-		for(int i=0; i<strain_vel.size(); i++)
-			std::cout<<"(in) Strain velocity ["<<i<<"]: "<<strain_vel[i]<<std::endl;
 
 		
 		for (size_t i = 1; i < m_section_properties.size(); ++i) {
@@ -471,7 +450,6 @@ namespace Cosserat::mapping {
 				std::cout << "Frame velocity [" << i << "]: " << output_vel.transpose() <<"\n";
 			}
 
-			std::cout << "(out) Frame velocity [" << i << "]: " << output_vel.transpose() <<"\n";
 		}
 
 		// Debug output velocities if enabled
@@ -480,8 +458,6 @@ namespace Cosserat::mapping {
 		}
 
 		dataVecOutVel[0]->endEdit();
-
-		std::cout<<"========End applyJ========"<<std::endl;
 
 	}
 
@@ -492,8 +468,6 @@ namespace Cosserat::mapping {
 			const vector<sofa::DataVecDeriv_t<In2> *> &dataVecOut2Force,
 			const vector<const sofa::DataVecDeriv_t<Out> *> &dataVecInForce) {
 
-
-		std::cout<<"========In applyJT function========"<<std::endl;
 
 		if (dataVecOut1Force.empty() || dataVecInForce.empty() || dataVecOut2Force.empty())
 			return;
@@ -526,11 +500,6 @@ namespace Cosserat::mapping {
 		vector<TangentVector> localForces;
 		auto tab_size = inputForces.size();
 		localForces.clear();
-
-		std::cout<<"(in) Frames forces: "<<std::endl;
-		for(auto v : inputForces){
-			std::cout<< v <<std::endl;
-		}
 
 
 		for (size_t i = 0; i < tab_size; ++i) {
@@ -567,7 +536,6 @@ namespace Cosserat::mapping {
 		auto lastSectionIndex = m_indices_vectors[sz - 1];
 		TangentVector totalForce = TangentVector::Zero();
 
-		//@todo : Fixe here, the size of B depend on strain size 
 		constexpr int N = std::is_same_v<Deriv1, sofa::type::Vec3> ? 3 : 6;
 		Eigen::Matrix<double, N, 6> matB_trans = Eigen::Matrix<double, N, 6>::Zero();
 		for (int k=0; k<N; k++)
@@ -635,17 +603,9 @@ namespace Cosserat::mapping {
 			std::cout << "Applied to base index: " << baseIndex << std::endl;
 		}
 
-		std::cout << "(out) Strain forces: " << std::endl;
-		for(int j=0; j<strainForces.size(); j++){
-			std::cout<<"  (out) strain "<< j <<" : "<< strainForces[j] << std::endl;
-		}
-    	std::cout << "(out)base Force: " << baseForces[baseIndex] << std::endl;
-
 
 		dataVecOut1Force[0]->endEdit();
 		dataVecOut2Force[0]->endEdit();
-
-		std::cout<<"========End applyJT========"<<std::endl;
 
 	}
 
