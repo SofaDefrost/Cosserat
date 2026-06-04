@@ -204,6 +204,51 @@ namespace sofa::component::cosserat::liegroups {
 			return result;
 		}
 
+		// static SE3 computeExp(const TangentVector &xi) {
+		// 	const Vector3 rho = xi.template tail<3>();
+		// 	const Vector3 phi = xi.template head<3>();
+
+		// 	const Scalar angle = phi.norm();
+		// 	const SO3Type R = SO3Type::exp(phi);
+		// 	Matrix3 V;
+
+		// 	if (angle < Types<Scalar>::epsilon()) {
+		// 		V = Matrix3::Identity() + Scalar(0.5) * SO3Type::computeHat(phi);
+		// 	} else {
+		// 		const Vector3 axis = phi / angle;
+		// 		const Matrix3 K = SO3Type::computeHat(axis);
+		// 		const Scalar sin_angle = std::sin(angle);
+		// 		const Scalar cos_angle = std::cos(angle);
+		// 		V = Matrix3::Identity() + (Scalar(1) - cos_angle) / angle * K +
+		// 			(angle - sin_angle) / (angle * angle) * K * K;
+		// 	}
+		// 	return SE3(R, V * rho);
+		// }
+
+		// TangentVector computeLog() const {
+		// 	const Vector3 phi = m_rotation.log();
+		// 	const Scalar angle = phi.norm();
+		// 	Matrix3 V_inv;
+
+		// 	if (angle < Types<Scalar>::epsilon()) {
+		// 		V_inv = Matrix3::Identity() - Scalar(0.5) * SO3Type::computeHat(phi);
+		// 	} else {
+		// 		// const Vector3 axis = phi / angle; //@appa: correction here (error if division with angle)
+		// 		const Matrix3 phiHat = SO3Type::computeHat(phi);
+		// 		const Scalar sin_angle = std::sin(angle);
+		// 		const Scalar cos_angle = std::cos(angle);
+		// 		V_inv = Matrix3::Identity() - Scalar(0.5) * phiHat +
+		// 				((Scalar(2) * sin_angle - angle * (Scalar(1) + cos_angle)) /
+		// 						(Scalar(2) * angle * angle * sin_angle)) * phiHat * phiHat;
+		// 	}
+
+		// 	const Vector3 rho = V_inv * m_translation;
+		// 	TangentVector result;
+		// 	result.template head<3>() = phi;
+		// 	result.template tail<3>() = rho;
+		// 	return result;
+		// }
+
 		AdjointMatrix computeAdjoint() const {
 			AdjointMatrix Ad = AdjointMatrix::Zero();
 			const Matrix3 R = m_rotation.matrix();
@@ -768,7 +813,7 @@ namespace sofa::component::cosserat::liegroups {
 			// So the tangent vector representing the spatial derivative of the frame is indeed [1+rho.x, rho.y, rho.z].
 			// I will keep it as is, assuming 'rho' passed here is the strain (deviation).
 
-			xi_hat(0, 3) = 1.0 + rho.x();
+			xi_hat(0, 3) = 1 + rho.x();
 			xi_hat(1, 3) = rho.y();
 			xi_hat(2, 3) = rho.z();
 

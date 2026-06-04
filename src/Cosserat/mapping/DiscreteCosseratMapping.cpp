@@ -26,13 +26,11 @@
 #include <sofa/defaulttype/RigidTypes.h>
 #include <sofa/core/ObjectFactory.h>
 
-namespace Cosserat::mapping
-{
-using namespace sofa::defaulttype;
+namespace Cosserat::mapping{
 
 
 template <>
-void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>:: applyJ(
+void DiscreteCosseratMapping<sofa::defaulttype::Vec6Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types>:: applyJ(
     const sofa::core::MechanicalParams* /* mparams */, const vector< sofa::DataVecDeriv_t<Out>*>& dataVecOutVel,
     const vector<const sofa::DataVecDeriv_t<In1>*>& dataVecIn1Vel,
     const vector<const sofa::DataVecDeriv_t<In2>*>& dataVecIn2Vel) {
@@ -111,7 +109,7 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>:: applyJ(
 }
 
 template <>
-void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>:: applyJT(
+void DiscreteCosseratMapping<sofa::defaulttype::Vec6Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types>:: applyJT(
     const sofa::core::MechanicalParams* /*mparams*/, const vector< sofa::DataVecDeriv_t<In1>*>& dataVecOut1Force,
     const vector< sofa::DataVecDeriv_t<In2>*>& dataVecOut2Force,
     const vector<const sofa::DataVecDeriv_t<Out>*>& dataVecInForce)  {
@@ -199,7 +197,7 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>:: applyJT(
 }
 
 template <>
-void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>::applyJT(
+void DiscreteCosseratMapping<sofa::defaulttype::Vec6Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types>::applyJT(
     const sofa::core::ConstraintParams*/*cparams*/ , const vector< sofa::DataMatrixDeriv_t<In1>*>&  dataMatOut1Const,
     const vector< sofa::DataMatrixDeriv_t<In2>*>&  dataMatOut2Const ,
     const vector<const sofa::DataMatrixDeriv_t<Out>*>& dataMatInConst)
@@ -379,7 +377,7 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>::applyJT(
 // See docs/geometric_stiffness_mapping.md §5 for the derivation.
 //
 template <>
-void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>::applyDJT(
+void DiscreteCosseratMapping<sofa::defaulttype::Vec6Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types>::applyDJT(
     const sofa::core::MechanicalParams* mparams,
     sofa::core::MultiVecDerivId          inForce,
     sofa::core::ConstMultiVecDerivId     /*outForce*/)
@@ -496,18 +494,16 @@ template class SOFA_COSSERAT_API DiscreteCosseratMapping< sofa::defaulttype::Vec
 
 } // namespace sofa::component::mapping
 
-namespace Cosserat
-{
-// Register in the Factory
-void registerDiscreteCosseratMapping(sofa::core::ObjectFactory* factory)
-{
-    factory->registerObjects(sofa::core::ObjectRegistrationData(
-        "This component facilitates the creation of Cosserat Cables in SOFA simulations. It takes two mechanical"
-        "objects as inputs: the rigid base of the beam (with 6 degrees of freedom) and the local coordinates of the beam. Using "
-        "these inputs, the component computes and outputs the mechanical positions of the beam in global coordinates. "
-        "Like any mapping, it updates the positions and velocities of the outputs based on the inputs. "
-        "Additionally, forces applied to the outputs are propagated back to the inputs, ensuring bidirectional coupling.")
-        .add< mapping::DiscreteCosseratMapping< sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types > >(true)
-        .add< mapping::DiscreteCosseratMapping< sofa::defaulttype::Vec6Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types > >());
-}
+namespace Cosserat{
+    // Register in the Factory
+    void registerDiscreteCosseratMapping(sofa::core::ObjectFactory* factory){
+        factory->registerObjects(sofa::core::ObjectRegistrationData(
+            "This component facilitates the creation of Cosserat Cables in SOFA simulations. It takes two mechanical"
+            "objects as inputs: the rigid base of the beam (with 6 degrees of freedom) and the local coordinates of the beam. Using "
+            "these inputs, the component computes and outputs the mechanical positions of the beam in global coordinates. "
+            "Like any mapping, it updates the positions and velocities of the outputs based on the inputs. "
+            "Additionally, forces applied to the outputs are propagated back to the inputs, ensuring bidirectional coupling.")
+            .add< mapping::DiscreteCosseratMapping< sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types > >(true)
+            .add< mapping::DiscreteCosseratMapping< sofa::defaulttype::Vec6Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types > >());
+    }
 }

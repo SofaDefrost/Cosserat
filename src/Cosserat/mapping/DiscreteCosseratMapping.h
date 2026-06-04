@@ -62,6 +62,13 @@ public:
     typedef TIn2 In2;
     typedef TOut Out;
 
+
+
+    using Coord1 = sofa::Coord_t<In1>;
+    using Deriv1 = sofa::Deriv_t<In1>;
+    using OutCoord = sofa::Coord_t<Out>;
+    using OutDeriv = sofa::Deriv_t<Out>;
+
     //////////////////////////////////////////////////////////////////////
     /// @name Data Fields
     /// @{

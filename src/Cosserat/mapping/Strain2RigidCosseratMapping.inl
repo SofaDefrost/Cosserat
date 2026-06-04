@@ -18,7 +18,6 @@
 #pragma once
 
 #include <Cosserat/mapping/Strain2RigidCosseratMapping.h>
-#include <sofa/core/MechanicalParams.h>
 #include <sofa/core/Multi2Mapping.inl>
 #include <sofa/core/objectmodel/BaseContext.h>
 #include <sofa/core/visual/VisualParams.h>
@@ -59,36 +58,19 @@ namespace Cosserat::mapping {
 							 "This parameter defines the index of the rigid "
 							 "base of Cosserat models, 0 by default this can"
 							 "take another value if the rigid base is given "
-							 "by another body.")),
-		d_integrationMethod(initData(&d_integrationMethod, 0, "integrationMethod",
-							 "Integration method for the Cosserat ODE g'(s)=g(s)·hat(ξ(s)).\n"
-							 "0 = Euler (order 1, identical to expCosserat — default)\n"
-							 "1 = Midpoint (order 2, RKMK2)\n"
-							 "2 = RKMK4 (order 4, Magnus expansion)\n"
-							 "For piecewise-constant strain all methods are equivalent.\n"
-							 "Use RKMK4 with Legendre-polynomial strain fields.")),
-		d_smoothPathSamples(initData(&d_smoothPathSamples, 8, "smoothPathSamples",
-							 "Number of Bezier samples per section for the smoothed centerline.\n"
-							 "Used by computeSmoothedPath() and the smooth-draw visualization.\n"
-							 "1 = section endpoints only (equivalent to discrete simulation).\n"
-							 "Higher values produce a smoother rendered rod.")),
-		d_strainNoiseLevel(initData(&d_strainNoiseLevel, 1.0e-6, "strainNoiseLevel",
-							 "Isotropic strain noise variance σ² for uncertainty propagation.\n"
-							 "Σ_ξ = σ²·I₆ for each rod section (units: [1/m]²).\n"
-							 "Set to 0 to disable (returns zero covariances).\n"
-							 "Used by computeUncertainties().")) {
+							 "by another body.")) {
 
-		// Callback: re-run geometry initialisation whenever curvilinear abscissas change
-		// at runtime (e.g. from a scene script or GUI tweak).  The heavy per-step
-		// recomputation is done in apply(); this is only triggered on Data change.
+		// Register callback for updating frame transformations when geometry changes
 		this->addUpdateCallback("updateFrames", {&d_curv_abs_section, &d_curv_abs_frames, &d_debug},
 								[this](const sofa::core::DataTracker &t) {
+									msg_info() << "Strain2RigidCosseratMapping updateFrames callback called";
 									SOFA_UNUSED(t);
 									this->updateGeometryInfo();
-									msg_info_when(d_debug.getValue())
-										<< "updateFrames callback: geometry re-initialised";
+									std::cout << "====> Update Callback <====" << std::endl;
 									const sofa::VecCoord_t<In1> &strain_state =
 											m_strain_state->read(sofa::core::vec_id::read_access::position)->getValue();
+
+									// This is also done in apply() So, no really need here !!!
 									this->updateFrameTransformations(strain_state);
 									return sofa::core::objectmodel::ComponentState::Valid;
 								},
@@ -105,11 +87,54 @@ namespace Cosserat::mapping {
 	}
 
 	template<class TIn1, class TIn2, class TOut>
+	void Strain2RigidCosseratMapping<TIn1, TIn2, TOut>::initialization() {	
+			// Get the initial configuration g(X):frames and initialize FrameInfo objects
+		if (m_frames) {
+			auto xfromData = m_frames->read(sofa::core::vec_id::read_access::position);
+			const auto &xfrom = xfromData->getValue();
+
+			// Initialize frame properties using the initial frame states
+			const auto frame_count = xfrom.size();
+
+			m_frameProperties.clear();
+			m_frameProperties.reserve(frame_count);
+
+			for (size_t i = 0; i < frame_count; ++i) {
+				// Convert SOFA coordinates to SE3 transformations
+				const auto &frame_i = xfrom[i];
+				Vector3 translation(frame_i.getCenter()[0], frame_i.getCenter()[1], frame_i.getCenter()[2]);
+
+				// Convert quaternion to rotation matrix
+				const auto &quat = frame_i.getOrientation();
+				SO3Type rotation;
+				// Convert SOFA quaternion to our SO3 representation
+				// SOFA quaternions use [x, y, z, w] order, Eigen uses [w, x, y, z]
+				Eigen::Quaternion<double> eigenQuat(quat[3], quat[0], quat[1], quat[2]);
+				rotation = SO3Type(eigenQuat.toRotationMatrix());
+
+				SE3Type gXi(rotation, translation);
+
+			// Frame info initialized
+
+				// Create FrameInfo with initial transformation
+				// Length and kappa will be set later in initializeFrameProperties
+				FrameInfo frameInfo;
+				frameInfo.setTransformation(gXi);
+				m_frameProperties.push_back(frameInfo);
+			}
+		}
+
+	}
+
+	template<class TIn1, class TIn2, class TOut>
 	void
 	Strain2RigidCosseratMapping<TIn1, TIn2, TOut>::apply(const sofa::core::MechanicalParams * /* mparams */,
 													  const vector<sofa::DataVecCoord_t<Out> *> &dataVecOutPos,
 													  const vector<const sofa::DataVecCoord_t<In1> *> &dataVecIn1Pos,
 													  const vector<const sofa::DataVecCoord_t<In2> *> &dataVecIn2Pos) {
+
+
+		msg_info("Strain2RigidCosseratMapping") << "Strain2RigidCosseratMapping::apply called";
 
 		if (dataVecOutPos.empty() || dataVecIn1Pos.empty() || dataVecIn2Pos.empty())
 			return;
@@ -118,11 +143,14 @@ namespace Cosserat::mapping {
 		if (this->d_componentState.getValue() != sofa::core::objectmodel::ComponentState::Valid)
 			return;
 
-		msg_info_when(d_debug.getValue()) << "===== apply =====";
-
+		if (d_debug.getValue())
+			std::cout << " ########## Apply Function ########" << std::endl;
+		
+		
 		// Get input data
 		const sofa::VecCoord_t<In1> &strainState = dataVecIn1Pos[0]->getValue();
 		const sofa::VecCoord_t<In2> &rigidBase = dataVecIn2Pos[0]->getValue();
+
 
 		const auto frame_count = d_curv_abs_frames.getValue().size();
 		sofa::VecCoord_t<Out> &output_frames = *dataVecOutPos[0]->beginEdit();
@@ -137,9 +165,10 @@ namespace Cosserat::mapping {
 			displaySectionProperties("apply - before update");
 		}
 
-		// Recompute all local SE(3) exponentials from current strain state.
-		// Fills m_section_properties[k].getTransformation() = expCosserat(ξ_k, L_k)
-		// and m_frameProperties[i].getTransformation() = expCosserat(ξ, d_i) for each frame.
+		// Update frame transformations using liegroups SE(3) exponential map
+		// update the Exponential matrices according to new deformation
+		// Here we update m_framesExponentialSE3Vectors & m_nodesExponentialSE3Vectors
+		// Which are the homogeneous matrices of the frames: name g(X), beam's configuration
 		updateFrameTransformations(strainState);
 
 		// Get base frame transformation from rigid input
@@ -157,38 +186,33 @@ namespace Cosserat::mapping {
 		// Cache the printLog value out of the loop
 		bool doPrintLog = this->f_printLog.getValue();
 
-		// Pre-compute cumulative node poses in O(N) — avoids restarting from base_frame
-		// for every output frame, which would cost O(F·N) overall.
-		//
-		//   node_poses[0] = base_frame                              (before any section)
-		//   node_poses[k] = base_frame · g_0 · g_1 · … · g_{k-1}  (after k sections)
-		//
-		// where g_j = m_section_properties[j].getTransformation().
-		// Allocate n_sections+1 so that related_beam_idx == n_sections is safe
-		// (mirrors the original assert: related_beam_idx <= m_section_properties.size()).
-		const size_t n_sections = m_section_properties.size();
-		std::vector<SE3Types> node_poses(n_sections + 1);
-		node_poses[0] = base_frame;
-		for (size_t j = 1; j <= n_sections; ++j)
-			node_poses[j] = node_poses[j - 1] * m_section_properties[j - 1].getTransformation();
-
-		// Apply transformations to compute output frames — O(F) with pre-computed poses.
+		// Apply transformations to compute output frames
 		for (unsigned int i = 0; i < frame_count; i++) {
 			// Bounds checking
 			assert(i < m_frameProperties.size() && "Frame index out of bounds");
 			assert(i < output_frames.size() && "Output frames index out of bounds");
 
-			// Each frame sits inside a section; related_beam_idx is the number of
-			// full sections accumulated before reaching the frame's origin node.
+			// Start with the base frame
+			auto current_frame = base_frame;
+
+			// Apply section transformations up to the frame
 			const auto related_beam_idx = m_frameProperties[i].get_related_beam_index_();
-			assert(related_beam_idx <= n_sections && "Invalid beam index");
+			assert(related_beam_idx <= m_section_properties.size() && "Invalid beam index");
 
-			// G_frame = node_poses[related_beam_idx] · g_frame(x)
-			// where g_frame(x) = expCosserat(ξ, distance_to_nearest_node)
-			const SE3Types current_frame =
-				node_poses[related_beam_idx] * m_frameProperties[i].getTransformation();
+			for (unsigned int j = 0; j < related_beam_idx; j++) {
+				assert(j < m_section_properties.size() && "Section index out of bounds");
+				// Compose with section transformation
+				//// frame = gX(L_0)*...*gX(L_{n-1})
+				current_frame = current_frame * m_section_properties[j].getTransformation();
+			}
 
-			msg_info_when(d_debug.getValue()) << "Frame " << i << " = " << current_frame;
+			// Apply additional frame transformation
+			// frame*gX(x)
+			current_frame = current_frame * m_frameProperties[i].getTransformation();
+			// std::cout<<"Frame: "<<current_frame<<std::endl;
+
+			if(d_debug.getValue())
+				std::cout << "Frame  : " << i << " = " << current_frame << std::endl;
 				
 			// Save current rigid frame transformation into frame's properties
 			//m_frameProperties[i].setTransformation(current_frame);
@@ -226,46 +250,9 @@ namespace Cosserat::mapping {
 			displayOutputFrames(output_frames, "apply - output");
 		}
 
+
 		dataVecOutPos[0]->endEdit();
-	}
 
-	/**
-	 * @brief Compute a single-element SE(3) transform from strain + length.
-	 *
-	 * Dispatches to the integrator selected by d_integrationMethod:
-	 *   0 → Euler    (= expCosserat, order 1, backward-compatible default)
-	 *   1 → Midpoint (order 2, RKMK2)
-	 *   2 → RKMK4    (order 4, Magnus expansion)
-	 *
-	 * For piecewise-constant strain the three methods return identical results.
-	 * The RKMK4 path becomes strictly superior when a varying strain field is
-	 * passed (e.g. Legendre polynomial parameterisation).
-	 *
-	 * @param strain  6D strain vector ξ ∈ se(3) (Cosserat convention)
-	 * @param length  Arc-length of the element
-	 * @return        Local SE(3) step g = Exp(length · hat(ξ))
-	 */
-	template<class TIn1, class TIn2, class TOut>
-	typename Strain2RigidCosseratMapping<TIn1, TIn2, TOut>::SE3Types
-	Strain2RigidCosseratMapping<TIn1, TIn2, TOut>::computeSectionSE3(
-			const TangentVector &strain,
-			double length) const
-	{
-		// Constant strain field: the lambda always returns the same value.
-		// For non-constant strains (future work), replace with a proper function.
-		const auto strain_field = [&strain](double /*s*/) -> TangentVector { return strain; };
-
-		const SE3Types g0 = SE3Types::computeIdentity();
-		switch (d_integrationMethod.getValue()) {
-			case 1:
-				return SE3Integrator::integrateMidpoint(g0, strain_field, 0.0, length);
-			case 2:
-				return SE3Integrator::integrateRKMK4(g0, strain_field, 0.0, length);
-			case 0:
-			default:
-				// Euler / expCosserat — exact for piecewise-constant strain.
-				return SE3Integrator::integrateEuler(g0, strain_field, 0.0, length);
-		}
 	}
 
 	template<class TIn1, class TIn2, class TOut>
@@ -297,42 +284,19 @@ namespace Cosserat::mapping {
 			// Change input and give as input of the function m_section_properties[i]
 			// SE3Types _gx = computeSE3Exponential(m_section_properties[i+1].getLength(),
 
-			// Integrate g'(s)=g(s)·hat(ξ) over this element using the selected method.
-			// For constant strain (current standard use), all methods give the same
-			// result as expCosserat(). RKMK4 becomes strictly superior with a
-			// varying strain field (Legendre polynomial parameterisation).
-			const double section_length = m_section_properties[i + 1].getLength();
-			SE3Types _gx = computeSectionSE3(strain, section_length);
+			auto section_length = m_section_properties[i + 1].getLength();
+			SE3Types _gx = SE3Types::expCosserat(strain, section_length);
 			m_section_properties[i + 1].setTransformation(_gx);
 		}
-
-		// ── Rebuild CosseratBodyJacobian ─────────────────────────────────────────
-		// After all section exponentials have been computed, cache the result in
-		// m_bodyJacobian so that applyJ / applyJT can call applyForward() /
-		// applyTranspose() without re-doing the section-level recurrence.
-		//
-		// Convention: body Jacobian section k  ↔  m_section_properties[k+1]
-		//             (index 0 in section_properties is the fixed base, not a section)
-		m_bodyJacobian.clear();
-		m_bodyJacobian.reserve(static_cast<int>(nb_node));
-		for (size_t i = 0; i < nb_node; ++i) {
-			m_bodyJacobian.pushSection(
-				m_section_properties[i + 1].getTransformation(),
-				m_section_properties[i + 1].getTangAdjointMatrix()
-			);
-		}
-		// ─────────────────────────────────────────────────────────────────────────
 
 		// Update frame properties based on their position within sections
 		for (size_t i = 0; i < m_frameProperties.size(); ++i) {
 			if (i < m_indices_vectors.size()) {
 				int sectionIndex = m_frameProperties[i].get_related_beam_index_();
 				if (sectionIndex >= 0 && sectionIndex < static_cast<int>(vec_of_strains.size() + 1)) {
-					// Compute the partial SE(3) step from the section node to this frame.
-					// Uses the same integration method as sections (d_integrationMethod).
-					SE3Types frame_gx = computeSectionSE3(
-						m_section_properties[sectionIndex].getStrainsVec(),
-						m_frameProperties[i].getDistanceToNearestBeamNode());
+					// Compute frame transformation at its specific position
+					SE3Types frame_gx = SE3Types::expCosserat(m_section_properties[sectionIndex].getStrainsVec(),
+															  m_frameProperties[i].getDistanceToNearestBeamNode());
 					m_frameProperties[i].setTransformation(frame_gx);
 				}
 			}
@@ -348,13 +312,15 @@ namespace Cosserat::mapping {
 													   const vector<const sofa::DataVecDeriv_t<In1> *> &dataVecIn1Vel,
 													   const vector<const sofa::DataVecDeriv_t<In2> *> &dataVecIn2Vel) {
 
+
 		if (dataVecOutVel.empty() || dataVecIn1Vel.empty() || dataVecIn2Vel.empty())
 			return;
 
 		if (this->d_componentState.getValue() != sofa::core::objectmodel::ComponentState::Valid)
 			return;
 
-		msg_info_when(d_debug.getValue()) << "===== applyJ =====";
+		if (d_debug.getValue())
+			std::cout << " ########## Strain2RigidCosseratMapping ApplyJ Function ########" << std::endl;
 
 		const sofa::VecDeriv_t<In1> &strain_vel = dataVecIn1Vel[0]->getValue();
 		const sofa::VecDeriv_t<In2> &base_vel = dataVecIn2Vel[0]->getValue();
@@ -375,7 +341,10 @@ namespace Cosserat::mapping {
 			vel.clear();
 		}
 
-		// 1. Compute the base velocity in SE(3) tangent space
+		// 1. Compute current tangent exponential SE3 matrices
+		this->updateTangExpSE3();
+
+		// 2. Compute the base velocity in SE(3) tangent space
 		// 2.1 Convert base velocity to se(3) tangent vector
 		TangentVector base_vel_local = TangentVector::Zero();
 		for (auto u = 0; u < 6; u++)
@@ -394,89 +363,93 @@ namespace Cosserat::mapping {
 		AdjointMatrix base_projector = absoluteFrame0_inv.buildProjectionMatrix(absoluteFrame0_inv.rotation().matrix());
 
 
-		// ── 3. Forward propagation via CosseratBodyJacobian ─────────────────────
-		//
-		// Replaces the manual section-level recurrence:
-		//   η_k = Ad_{g_k⁻¹} · (η_{k-1} + J_local_k · ξ̇_k)
-		//
-		// m_bodyJacobian was built by updateFrameTransformations() earlier in
-		// apply(), so section transforms and tangent-exp matrices are up-to-date.
-		//
-		// Strain DOF count is resolved at compile time (Vec3 → 3, Vec6 → 6).
-		static constexpr int NStrainDOF_J = static_cast<int>(Coord1::total_size);
+		// 3. Compute velocity at each section node
+		std::vector<TangentVector> node_velocities;
+		node_velocities.resize(m_section_properties.size());
 
-		// Build one TwistType per section from the input strain velocities.
-		const int N_sections = m_bodyJacobian.size();
-		std::vector<TwistType> strain_rates(static_cast<size_t>(N_sections), TwistType::Zero());
-		for (int k = 0; k < N_sections; ++k) {
-			TangentVector sv = TangentVector::Zero();
-			if (k < static_cast<int>(strain_vel.size())) {
-				for (int j = 0; j < NStrainDOF_J; ++j)
-					sv[j] = strain_vel[k][j];
+		// Base node velocity (transformed from SOFA frame)
+		node_velocities[0] = base_projector * base_vel_local;
+		if (d_debug.getValue())
+    		std::cout << "Base local Velocity :" << node_velocities[0].transpose() << std::endl;
+
+		
+		for (size_t i = 1; i < m_section_properties.size(); ++i) {
+			const auto &section = m_section_properties[i];
+			const auto &tang_adj = section.getTangAdjointMatrix();
+
+			// Extract strain velocity for this section
+			TangentVector strain_vel_i = TangentVector::Zero();
+			
+			if constexpr (std::is_same_v<Deriv1, sofa::type::Vec3>){ 
+				for (int j = 0; j < 3; ++j)
+					strain_vel_i[j] = strain_vel[i - 1][j];
 			}
-			strain_rates[k] = TwistType(sv);
+			else{
+				for (int j = 0; j < 6; ++j)
+					strain_vel_i[j] = strain_vel[i - 1][j];
+			}
+
+			// Propagate velocity: η_i = Ad_{g_i^{-1}} * (η_{i-1} + T_i * ξ̇_i)
+			// where Ad_{g_i^{-1}} is the inverse adjoint (transpose for SE(3))
+			auto Ad_gim1 = section.inverse().getAdjoint();
+			node_velocities[i] = Ad_gim1 * (node_velocities[i - 1] + tang_adj * strain_vel_i);
+			if (d_debug.getValue()) {
+				std::cout << "Node velocity [" << i << "]: " << node_velocities[i].transpose()<<"\n";
+			}
 		}
 
-		// Forward pass: returns N+1 twists [η_0, η_1, …, η_N]
-		//   η_0 = base_projector · v_base   (root body twist)
-		//   η_k = Ad_{g_k⁻¹} · (η_{k-1} + J_local_k · ξ̇_k)
-		const TwistType base_twist(base_projector * base_vel_local);
-		const auto body_twists = m_bodyJacobian.applyForward(strain_rates, base_twist);
-
-		// body_twists[0] = root twist, body_twists[k] = body twist after k sections.
-		// TwistType carries semantic intent: these are body velocities, not forces.
-		if (d_debug.getValue()) {
-			for (size_t i = 0; i < body_twists.size(); ++i)
-				msg_info() << "Node twist [" << i << "]: " << body_twists[i].data().transpose();
-		}
-		// ─────────────────────────────────────────────────────────────────────────
-
-		// 4. Compute body twist at each output frame, then project to SOFA frame.
-		//
-		// η_frame = Ad_{g_frame^{-1}} · (η_node + J_frame · ξ̇_frame)
-		//   TwistType body_twist_node = body_twists[section_idx]
-		//   TwistType eta_frame       = Ad·(η_node + J_frame·ξ̇_frame)
-		//   TwistType output_twist    = P(R) · eta_frame   (SOFA projection)
+		// 4. Compute velocity at each output frame
 		for (size_t i = 0; i < frame_count; ++i) {
 			const auto &frame = m_frameProperties[i];
 			const auto &tang_adj = frame.getTangAdjointMatrix();
 
-			// Node index this frame depends on (1-based → 0-based, clamped).
-			const int section_idx = [&]() {
-				int idx = (i < m_indices_vectors.size()) ? static_cast<int>(m_indices_vectors[i]) - 1 : 0;
-				if (idx < 0 || idx >= static_cast<int>(body_twists.size())) idx = 0;
-				return idx;
-			}();
+			// Get the section index this frame belongs to
+			int section_idx = (i < m_indices_vectors.size()) ? m_indices_vectors[i] - 1 : 0;
 
-			// ξ̇_frame : strain rate at this frame (from parent section).
-			// NStrainDOF_J is resolved at compile time (Vec3 → 3, Vec6 → 6).
-			TangentVector frame_strain_vel = TangentVector::Zero();
-			if (section_idx < static_cast<int>(strain_vel.size())) {
-				for (int j = 0; j < NStrainDOF_J; ++j)
-					frame_strain_vel[j] = strain_vel[section_idx][j];
+			// Ensure valid section index
+			if (section_idx < 0 || section_idx >= static_cast<int>(node_velocities.size())) {
+				section_idx = 0;
 			}
 
-			// η_frame = Ad_{g_frame^{-1}} · (η_node + J_frame · ξ̇_frame)
-			const TwistType &eta_node = body_twists[section_idx];
-			const AdjointMatrix Ad_gm1 = frame.getInverseTransformation().computeAdjoint();
-			const TwistType eta_frame(Ad_gm1 * (eta_node.data() + tang_adj * frame_strain_vel));
+			// Extract frame strain velocity (same as section strain)
+			TangentVector frame_strain_vel = TangentVector::Zero();
 
-			// Project body twist to SOFA Rigid3 convention (P(R) · η_body).
-			const auto &pos = framePositions[i];
-			const SE3Types absoluteFrame(
-				SE3Types::SO3Type(Eigen::Quaternion<double>(
-					pos.getOrientation()[3], pos.getOrientation()[0],
-					pos.getOrientation()[1], pos.getOrientation()[2])),
-				Vector3(pos.getCenter()[0], pos.getCenter()[1], pos.getCenter()[2]));
-			const TwistType output_twist(
-				absoluteFrame.buildProjectionMatrix(absoluteFrame.rotation().matrix())
-				* eta_frame.data());
+			if constexpr (std::is_same_v<Deriv1, sofa::type::Vec3>){
+				for (int j = 0; j < 3; ++j) 
+					frame_strain_vel[j] = strain_vel[m_indices_vectors[i]-1][j]; //@appa: replace section_idx by m_indices_vectors[i]-1
+			}
+			else{
+				for (int j = 0; j < 6; ++j) 
+					frame_strain_vel[j] = strain_vel[m_indices_vectors[i]-1][j];
+			}
 
-			for (int k = 0; k < 6; ++k)
-				frame_vel[i][k] = output_twist.data()[k];
+			// Compute frame velocity: η_frame = Ad_{g_frame^{-1}} * (η_node + T_frame * ξ̇_frame)
+			auto g_inv = frame.getInverseTransformation(); //@appa: take the inverse of gx
+			AdjointMatrix Ad_gm1 = g_inv.computeAdjoint();
 
-			msg_info_when(d_debug.getValue())
-				<< "Frame twist [" << i << "]: " << output_twist.data().transpose();
+			TangentVector eta_frame =
+					Ad_gm1 * (node_velocities[m_indices_vectors[i]-1] + tang_adj * frame_strain_vel);
+
+			// Project to output frame (convert from local to SOFA global frame)
+			const auto &pos = framePositions[i]; 
+			Vector3 translation(pos.getCenter()[0], pos.getCenter()[1], pos.getCenter()[2]);
+			const auto &quat = pos.getOrientation();
+			Eigen::Quaternion<double> rotation(quat[3], quat[0], quat[1], quat[2]);
+				
+			SE3Types absoluteFrame(SE3Types::SO3Type(rotation), translation);
+			AdjointMatrix frame_projector = absoluteFrame.buildProjectionMatrix(absoluteFrame.rotation().matrix());
+
+			
+			TangentVector output_vel = frame_projector * eta_frame;
+
+			// Convert to SOFA format
+			for (int k = 0; k < 6; ++k) {
+				frame_vel[i][k] = output_vel[k];
+			}
+			if (d_debug.getValue()) {
+				std::cout << "Frame velocity [" << i << "]: " << output_vel.transpose() <<"\n";
+			}
+
 		}
 
 		// Debug output velocities if enabled
@@ -485,6 +458,7 @@ namespace Cosserat::mapping {
 		}
 
 		dataVecOutVel[0]->endEdit();
+
 	}
 
 	template<class TIn1, class TIn2, class TOut>
@@ -494,13 +468,15 @@ namespace Cosserat::mapping {
 			const vector<sofa::DataVecDeriv_t<In2> *> &dataVecOut2Force,
 			const vector<const sofa::DataVecDeriv_t<Out> *> &dataVecInForce) {
 
+
 		if (dataVecOut1Force.empty() || dataVecInForce.empty() || dataVecOut2Force.empty())
 			return;
 
 		if (this->d_componentState.getValue() != sofa::core::objectmodel::ComponentState::Valid)
 			return;
 
-		msg_info_when(d_debug.getValue()) << "===== applyJT (VecDeriv) =====";
+		if (d_debug.getValue())
+			std::cout << " ########## Strain2RigidCosseratMapping ApplyJT Force Function ########" << std::endl;
 
 
 
@@ -513,125 +489,120 @@ namespace Cosserat::mapping {
 		const sofa::VecCoord_t<Out> &framePositions =
 				this->m_frames->read(sofa::core::vec_id::read_access::position)->getValue();
 		
-		// Initialize output forces to zero before accumulation.
-		// Size = number of sections = m_bodyJacobian.size() (built in apply()).
-		// resize() may not zero-initialise existing elements on repeated calls.
-		strainForces.resize(static_cast<size_t>(m_bodyJacobian.size()));
-		for (auto &f : strainForces) f.clear();
+		const sofa::DataVecCoord_t<In1> *x1fromData =
+     		 	m_strain_state->read(sofa::core::vec_id::read_access::position);
+		const sofa::VecCoord_t<In1> strainState = x1fromData->getValue();
 
-		// B^T : selects NStrainDOF active strain DOFs from the 6D body-twist.
-		// Vec3Types → [I_3 | 0_3] (angular only, 3 DOF).
-		// Vec6Types → I_6 (angular + linear, 6 DOF).
-		// See docs/mapping_explanation.md §12.6
-		static constexpr int NStrainDOF = static_cast<int>(Coord1::total_size);
-		using MatB = Eigen::Matrix<double, NStrainDOF, 6>;
-		MatB matB_trans = MatB::Zero();
-		for (int k = 0; k < NStrainDOF; k++) matB_trans(k, k) = 1.0;
+		// Initialize output forces
+		strainForces.resize(strainState.size());
 
-		// ── Phase 0: project each frame force from SOFA global frame to body frame ──
-		const size_t tab_size = inputForces.size();
-		const size_t sz       = m_indices_vectors.size();
+		// Convert input forces from global frame to local frame and accumulate
+		vector<TangentVector> localForces;
+		auto tab_size = inputForces.size();
+		localForces.clear();
 
-		if (sz == 0 || tab_size == 0) {
+
+		for (size_t i = 0; i < tab_size; ++i) {
+			// Convert SOFA force to SE(3) tangent vector
+			TangentVector frameForce = TangentVector::Zero();
+			for (unsigned j = 0; j < 6; j++) {
+				frameForce[j] = inputForces[i][j];
+			}
+
+			// Transform from global SOFA frame to local beam frame 
+			const auto &pos = framePositions[i]; 
+			Vector3 translation(pos.getCenter()[0], pos.getCenter()[1], pos.getCenter()[2]);
+			const auto &quat = pos.getOrientation();
+			Eigen::Quaternion<double> rotation(quat[3], quat[0], quat[1], quat[2]);
+				
+			SE3Types absoluteFrame(SE3Types::SO3Type(rotation), translation);
+			AdjointMatrix P_trans = absoluteFrame.buildProjectionMatrix(absoluteFrame.rotation().matrix());
+			TangentVector localForce = P_trans.transpose() * frameForce;
+							
+			localForces.push_back(localForce);			
+		}
+
+		// Process forces following the beam structure (similar to DiscreteCosseratMapping)
+		auto sz = m_indices_vectors.size();
+
+		if (sz == 0 || localForces.empty()) {
 			dataVecOut1Force[0]->endEdit();
 			dataVecOut2Force[0]->endEdit();
+			// Add error or warning message 
 			return;
 		}
+		
 
-		// Project each SOFA frame wrench to the body Cosserat frame.
-		// WrenchType makes the physical intent explicit: these are co-vectors (forces),
-		// not velocities. Convention: w = [torque, force]^T ∈ se(3)*.
-		vector<WrenchType> localForces;
-		localForces.reserve(tab_size);
-		for (size_t i = 0; i < tab_size; ++i) {
-			TangentVector frameForce = TangentVector::Zero();
-			for (unsigned j = 0; j < 6; j++) frameForce[j] = inputForces[i][j];
+		auto lastSectionIndex = m_indices_vectors[sz - 1];
+		TangentVector totalForce = TangentVector::Zero();
 
-			const auto &pos = framePositions[i];
-			const SE3Types absoluteFrame(
-				SE3Types::SO3Type(Eigen::Quaternion<double>(
-					pos.getOrientation()[3], pos.getOrientation()[0],
-					pos.getOrientation()[1], pos.getOrientation()[2])),
-				Vector3(pos.getCenter()[0], pos.getCenter()[1], pos.getCenter()[2]));
-			// P(R)^T : SOFA global → Cosserat body frame (dual projection)
-			localForces.emplace_back(
-				absoluteFrame.buildProjectionMatrix(absoluteFrame.rotation().matrix()).transpose()
-				* frameForce);
+		constexpr int N = std::is_same_v<Deriv1, sofa::type::Vec3> ? 3 : 6;
+		Eigen::Matrix<double, N, 6> matB_trans = Eigen::Matrix<double, N, 6>::Zero();
+		for (int k=0; k<N; k++)
+			matB_trans(k, k) = 1.0;
+		
+		// Process frames in reverse order to accumulate forces
+		for (auto s = sz; s--;) {
+
+			int currentSectionIndex = m_indices_vectors[s];
+			const FrameInfo &frame = m_frameProperties[s];
+		
+			AdjointMatrix coAdjoint = frame.getCoAdjoint();
+			
+			
+			TangentVector currentLocalForce = coAdjoint * localForces[s];
+			
+			AdjointMatrix temp = frame.getTangAdjointMatrix().transpose();
+			
+			Eigen::Matrix<double, N, 1>  f = matB_trans * temp * currentLocalForce;
+
+			// Handle section change - propagate accumulated force
+			if (lastSectionIndex != currentSectionIndex) {
+				lastSectionIndex--;
+				// Transform accumulated force to new section reference
+				
+				const SectionInfo &section = m_section_properties[lastSectionIndex];
+				AdjointMatrix coAdjoint = section.getCoAdjoint();
+				totalForce = coAdjoint * totalForce;
+
+				AdjointMatrix tempSection = section.getTangAdjointMatrix().transpose();
+
+				// apply F_tot to the new beam
+				Eigen::Matrix<double, N, 1>  temp_f = matB_trans * tempSection * totalForce;
+								
+				// Add accumulated force to strain outpute
+				for (int j=0; j<N; j++){
+					strainForces[lastSectionIndex-1][j] +=temp_f[j];
+				}
+				
+			}
+
+			totalForce += currentLocalForce;
+			for (int j=0; j<N; j++){
+					strainForces[currentSectionIndex-1][j] +=f[j];
+			}
 		}
-
-		// ── Phase 1: per-frame direct contributions ────────────────────────────────
-		//
-		// For each frame i in section s (1-based):
-		//   w_body_i = Ad_{g_frame_i^{-T}} · w_local_i   (co-adjoint pull-back)
-		//
-		//   a) Direct frame strain force (J_frame^T term):
-		//         strainForces[s-1] += B^T · J_frame_i^T · w_body_i
-		//
-		//   b) Aggregated node wrench:
-		//         external_wrenches[s-1] += w_body_i
-		//
-		// external_wrenches[k] is then fed into CosseratBodyJacobian::applyTranspose()
-		// which handles the section-to-section backward propagation.
-		//
-		// Duality proof (2-section example in docs/impro_mapping.md §A2).
-		const int N_bj = m_bodyJacobian.size();  // number of sections
-		std::vector<WrenchType> external_wrenches(static_cast<size_t>(N_bj + 1), WrenchType::Zero());
-
-		for (size_t i = 0; i < sz; ++i) {
-			const int s1   = m_indices_vectors[i];  // section index, 1-based
-			const int nidx = s1 - 1;                // node index, 0-based
-
-			const FrameInfo &frame = m_frameProperties[i];
-
-			// w_body : wrench pulled back through the frame co-adjoint.
-			// WrenchType makes the duality explicit — this is a force co-vector.
-			const WrenchType w_body(frame.getCoAdjoint() * localForces[i].data());
-
-			// a) Direct strain force for this frame's section:
-			//    f = B^T · J_frame^T · w_body
-			const Eigen::Matrix<double, NStrainDOF, 1> f =
-				matB_trans * frame.getTangAdjointMatrix().transpose() * w_body.data();
-			for (int j = 0; j < NStrainDOF; j++)
-				strainForces[s1 - 1][j] += f[j];
-
-			// b) Aggregate node wrench for the body-Jacobian backward pass.
-			if (nidx >= 0 && nidx < N_bj + 1)
-				external_wrenches[nidx] = WrenchType(external_wrenches[nidx].data() + w_body.data());
-		}
-
-		// ── Phase 2: section-to-section backward transport via CosseratBodyJacobian ──
-		//
-		// strain_bj[k] = J_section_k^T · Ad_{g_k^{-T}} · (sum of downstream wrenches)
-		// base_wrench   = accumulated root wrench
-		//
-		// These section contributions are ADDED to strainForces — they are distinct
-		// from the direct J_frame^T contributions computed in Phase 1.
-		WrenchType base_wrench_out;
-		const auto strain_bj = m_bodyJacobian.applyTranspose(external_wrenches, base_wrench_out);
-
-		for (int k = 0; k < N_bj; ++k) {
-			const Eigen::Matrix<double, NStrainDOF, 1> sf = matB_trans * strain_bj[k].data();
-			for (int j = 0; j < NStrainDOF; j++)
-				strainForces[k][j] += sf[j];
-		}
-
-		// ── Phase 3: project root wrench back to SOFA convention ──────────────────
-		const auto &frame0 = framePositions[0];
-		const Vector3 trans0(frame0.getCenter()[0], frame0.getCenter()[1], frame0.getCenter()[2]);
+		
+		auto frame0 = framePositions[0];		
+		Vector3 trans0(frame0.getCenter()[0], frame0.getCenter()[1], frame0.getCenter()[2]);
 		const auto &quat0 = frame0.getOrientation();
-		SE3Types absoluteFrame0(
-			SE3Types::SO3Type(Eigen::Quaternion<double>(quat0[3], quat0[0], quat0[1], quat0[2])),
-			trans0);
-		const AdjointMatrix M = absoluteFrame0.buildProjectionMatrix(absoluteFrame0.rotation().matrix());
-		const WrenchType base_force_sofa(M * base_wrench_out.data());
-		for (int j = 0; j < 6; j++)
-			baseForces[baseIndex][j] += base_force_sofa.data()[j];
+		Eigen::Quaternion<double> rot0(quat0[3], quat0[0], quat0[1], quat0[2]);
+			
+		SE3Types absoluteFrame0(SE3Types::SO3Type(rot0), trans0);
+		AdjointMatrix M = absoluteFrame0.buildProjectionMatrix(absoluteFrame0.rotation().matrix());
+
+		TangentVector toAdd = TangentVector::Zero();
+		toAdd = M * totalForce;
+		
+		for (int j=0; j<6; j++)
+				baseForces[baseIndex][j] +=toAdd[j];	
 
 		if (d_debug.getValue()) {
-			msg_info() << "applyJT | frames=" << tab_size
-			           << " | base wrench: [" << base_wrench_out.data().transpose() << "]"
-			           << " | base index: " << baseIndex;
+			std::cout << "Strain forces computed from " << inputForces.size() << " input forces" << std::endl;
+			std::cout << "Total base force: [" << totalForce.transpose() << "]" << std::endl;
+			std::cout << "Applied to base index: " << baseIndex << std::endl;
 		}
+
 
 		dataVecOut1Force[0]->endEdit();
 		dataVecOut2Force[0]->endEdit();
@@ -652,7 +623,8 @@ namespace Cosserat::mapping {
 		if (this->d_componentState.getValue() != sofa::core::objectmodel::ComponentState::Valid)
 			return;
 
-		msg_info_when(d_debug.getValue()) << "===== applyJT (MatrixDeriv) =====";
+		if (d_debug.getValue())
+			std::cout << " ########## Strain2RigidCosseratMapping ApplyJT Constraint Function ########" << std::endl;
 
 		
 		// Prepare input and output data matrices
@@ -660,23 +632,22 @@ namespace Cosserat::mapping {
 		sofa::MatrixDeriv_t<In2> &out2 = *dataMatOut2Const[0]->beginEdit();
 		const sofa::MatrixDeriv_t<Out> &in = dataMatInConst[0]->getValue();
 
-		// Get current frame positions (needed for projection matrices).
+		// Get current positions to compute transformations
 		const sofa::VecCoord_t<Out> &framePositions =
 				this->m_frames->read(sofa::core::vec_id::read_access::position)->getValue();
+		
+		const sofa::DataVecCoord_t<In1> *x1fromData =
+     		 	m_strain_state->read(sofa::core::vec_id::read_access::position);
+		const sofa::VecCoord_t<In1> strainState = x1fromData->getValue();
 
-		// B^T : selects NStrainDOF active strain DOFs from the 6D body-twist.
-		// Vec3Types → [I_3 | 0_3] (3 DOF angular); Vec6Types → I_6 (6 DOF).
-		// See docs/mapping_explanation.md §12.6
-		static constexpr int NStrainDOF = static_cast<int>(Coord1::total_size);
-		using MatB = Eigen::Matrix<double, NStrainDOF, 6>;
-		MatB matB_trans = MatB::Zero();
-		for (int k = 0; k < NStrainDOF; k++) matB_trans(k, k) = 1.0;
+		
+		constexpr int N = std::is_same_v<Deriv1, sofa::type::Vec3> ? 3 : 6;
+		Eigen::Matrix<double, N, 6> matB_trans = Eigen::Matrix<double, N, 6>::Zero();
+		for (int k=0; k<N; k++)
+			matB_trans(k, k) = 1.0;
 
-		// WrenchType in the tuple: signals that accumulated forces are co-vectors (se(3)*),
-		// not body velocities. Prevents mixing twists and wrenches by mistake.
-		vector<std::tuple<int, WrenchType>> NodesInvolved;
-		vector<std::tuple<int, WrenchType>> NodesInvolvedCompressed;
-
+		vector<std::tuple<int, TangentVector>> NodesInvolved;
+  		vector<std::tuple<int, TangentVector>> NodesInvolvedCompressed;
 		// Process constraints
 		for (auto rowIt = in.begin(); rowIt != in.end(); ++rowIt) {
 			auto colIt = rowIt.begin();
@@ -689,110 +660,129 @@ namespace Cosserat::mapping {
 			NodesInvolved.clear();
 
 			while (colIt != rowIt.end()) {
-				const int frameIndex = colIt.index();
+				int frameIndex = colIt.index();
 
-				// Constraint direction δ in SOFA Rigid3 format — a wrench.
-				WrenchType constraintValue;
-				{
-					const sofa::Deriv_t<Out> val = colIt.val();
-					TangentVector cv = TangentVector::Zero();
-					for (unsigned int j = 0; j < 6; ++j) cv[j] = val[j];
-					constraintValue = WrenchType(cv);
+				TangentVector constraintValue = TangentVector::Zero();
+
+				// Convert constraint value to TangentVector
+				const sofa::Deriv_t<Out> val = colIt.val();
+				for (unsigned int j = 0; j < 6; ++j) {
+					constraintValue[j] = val[j];
 				}
 
-				const int sectionIndex = m_indices_vectors[frameIndex];
+				int sectionIndex = m_indices_vectors[frameIndex];
 
-				const auto &pos = framePositions[frameIndex];
-				const SE3Types absoluteFrame(
-					SE3Types::SO3Type(Eigen::Quaternion<double>(
-						pos.getOrientation()[3], pos.getOrientation()[0],
-						pos.getOrientation()[1], pos.getOrientation()[2])),
-					Vector3(pos.getCenter()[0], pos.getCenter()[1], pos.getCenter()[2]));
-				const AdjointMatrix P_trans =
-					absoluteFrame.buildProjectionMatrix(absoluteFrame.rotation().matrix());
-
+				auto &pos = framePositions[frameIndex];
+				Vector3 translation(pos.getCenter()[0], pos.getCenter()[1], pos.getCenter()[2]);
+				auto &quat = pos.getOrientation();
+				Eigen::Quaternion<double> rotation(quat[3], quat[0], quat[1], quat[2]);
+				SE3Types absoluteFrame(SE3Types::SO3Type(rotation), translation);
+				
+				AdjointMatrix P_trans = absoluteFrame.buildProjectionMatrix(absoluteFrame.rotation().matrix());
+				
 				const FrameInfo &frame = m_frameProperties[frameIndex];
+			
+				AdjointMatrix coAdjoint = frame.getCoAdjoint();
 
-				// Pull back: ℓ = Ad_{g_frame^{-T}} · P^T · δ
-				// (constraint direction expressed in the element body frame)
-				const WrenchType localForce(
-					frame.getCoAdjoint() * P_trans.transpose() * constraintValue.data());
+				TangentVector localForce = coAdjoint * P_trans.transpose() * constraintValue; // constraint direction in local frame of the beam.
 
-				// Direct strain force: f = B^T · J_frame^T · ℓ
-				const Eigen::Matrix<double, NStrainDOF, 1> f =
-					matB_trans * frame.getTangAdjointMatrix().transpose() * localForce.data();
 
-				sofa::Deriv_t<In1> f_out;
-				for (int k = 0; k < NStrainDOF; k++) f_out[k] = f[k];
-				o1.addCol(sectionIndex - 1, f_out);
+				AdjointMatrix temp = frame.getTangAdjointMatrix().transpose();
 
-				NodesInvolved.emplace_back(sectionIndex, localForce);
+				Eigen::Matrix<double, N, 1> f = matB_trans * temp * localForce; // constraint direction in the strain space.
+				
+				Deriv1 f_trans;
+				for(int k=0; k<N; k++){
+					f_trans[k] = f[k];
+				}
+				
+				o1.addCol(sectionIndex-1, f_trans);
+
+				std::tuple<int, TangentVector> test = std::make_tuple(sectionIndex, localForce);
+				
+				NodesInvolved.push_back(test);
 				colIt++;
 			}
 
-			// Sort by decreasing node index so that same-node entries are adjacent.
+			// sort the Nodes Invoved by decreasing order
 			std::sort(
-				NodesInvolved.begin(), NodesInvolved.end(),
-				[](const std::tuple<int, WrenchType> &a, const std::tuple<int, WrenchType> &b) {
-					return std::get<0>(a) > std::get<0>(b);
+				begin(NodesInvolved), end(NodesInvolved),
+				[](std::tuple<int, TangentVector> const &t1, std::tuple<int, TangentVector> const &t2) {
+				return std::get<0>(t1) > std::get<0>(t2); // custom compare function
 				});
 
-			// Merge consecutive entries that share the same node index (group-by).
 			NodesInvolvedCompressed.clear();
-			{
-				size_t n = 0;
-				while (n < NodesInvolved.size()) {
-					int currentNode = std::get<0>(NodesInvolved[n]);
-					WrenchType cumulativeF = std::get<1>(NodesInvolved[n]);
-					++n;
-					while (n < NodesInvolved.size() && std::get<0>(NodesInvolved[n]) == currentNode) {
-						cumulativeF = WrenchType(cumulativeF.data() + std::get<1>(NodesInvolved[n]).data());
-						++n;
+			for (unsigned n = 0; n < NodesInvolved.size(); n++) {
+				std::tuple<int, TangentVector> test_i = NodesInvolved[n];
+				int numNode_i = std::get<0>(test_i);
+				TangentVector cumulativeF = std::get<1>(test_i);
+
+				if (n < NodesInvolved.size() - 1) {
+					std::tuple<int, TangentVector> test_i1 = NodesInvolved[n + 1];
+					int numNode_i1 = std::get<0>(test_i1);
+
+					while (numNode_i == numNode_i1) {
+					cumulativeF += std::get<1>(test_i1);
+					//// This was if ((n!=NodesInvolved.size()-2)||(n==0)) before and I
+					/// change it to
+					/// if ((n!=NodesInvolved.size()-1)||(n==0)) since the code can't
+					/// leave the will loop
+					if ((n != NodesInvolved.size() - 1) || (n == 0)) {
+						n++;
+						break;
 					}
-					NodesInvolvedCompressed.emplace_back(currentNode, cumulativeF);
+					test_i1 = NodesInvolved[n + 1];
+					numNode_i1 = std::get<0>(test_i1);
+					}
 				}
-			}
+				NodesInvolvedCompressed.push_back(
+					std::make_tuple(numNode_i, cumulativeF));
+    		}
 
-			// Pre-compute the base-frame projector once per constraint row.
-			// (frame0 does not change during the backward loop below.)
-			const auto &frame0    = framePositions[0];
-			const Vector3 trans0(frame0.getCenter()[0], frame0.getCenter()[1], frame0.getCenter()[2]);
-			const auto   &quat0   = frame0.getOrientation();
-			const SE3Types absoluteFrame0(
-				SE3Types::SO3Type(Eigen::Quaternion<double>(quat0[3], quat0[0], quat0[1], quat0[2])),
-				trans0);
-			const AdjointMatrix M_base =
-				absoluteFrame0.buildProjectionMatrix(absoluteFrame0.rotation().matrix());
-			const unsigned int baseIdx = d_baseIndex.getValue();
+			for(unsigned n = 0; n < NodesInvolvedCompressed.size(); n++){
+				std::tuple<int, TangentVector> test = NodesInvolvedCompressed[n];
+				int i = std::get<0>(test);
+				TangentVector CumulativeF = std::get<1>(test);
 
-			// Backward co-adjoint propagation toward the root.
-			// Implements §4 backward recurrence: f_{k-1} = Ad_{g_k^{-T}} · f_k
-			// WrenchType throughout: accumulated values are forces, not velocities.
-			for (const auto &[startNode, startForce] : NodesInvolvedCompressed) {
-				int i = startNode;
-				WrenchType cumulativeW = startForce;
+				while(i>0){
+					const SectionInfo &section = m_section_properties[i-1];
+					AdjointMatrix coAdjoint = section.getCoAdjoint();
 
-				while (i > 0) {
-					const SectionInfo &section = m_section_properties[i - 1];
-					// Transport backward: w_{i-1} = Ad_{g_i^{-T}} · w_i
-					cumulativeW = WrenchType(section.getCoAdjoint() * cumulativeW.data());
-					// Strain force: q_{i-1} = B^T · J_{i-1}^T · w_{i-1}
-					const Eigen::Matrix<double, NStrainDOF, 1> temp_f =
-						matB_trans * section.getTangAdjointMatrix().transpose() * cumulativeW.data();
+					CumulativeF = coAdjoint * CumulativeF;
+					// transfer to strain space (local coordinates)
+					AdjointMatrix tempSection = section.getTangAdjointMatrix().transpose();
+					
+					Eigen::Matrix<double, N, 1>  temp_f = matB_trans * tempSection * CumulativeF;
 
-					if (i > 1) {
-						sofa::Deriv_t<In1> temp_f_out;
-						for (int k = 0; k < NStrainDOF; k++) temp_f_out[k] = temp_f[k];
-						o1.addCol(i - 2, temp_f_out);
+					Deriv1 temp_f_trans;
+					for(int k=0; k<N; k++){
+						temp_f_trans[k] = temp_f[k];
+					}
+
+					if(i>1){
+						o1.addCol(i-2, temp_f_trans);
 					}
 					i--;
 				}
+				
+				const auto frame0 = framePositions[0];		
+				Vector3 trans0(frame0.getCenter()[0], frame0.getCenter()[1], frame0.getCenter()[2]);
+				const auto &quat0 = frame0.getOrientation();
+				Eigen::Quaternion<double> rot0(quat0[3], quat0[0], quat0[1], quat0[2]);
+					
+				SE3Types absoluteFrame0(SE3Types::SO3Type(rot0), trans0);
+				AdjointMatrix M = absoluteFrame0.buildProjectionMatrix(absoluteFrame0.rotation().matrix());
 
-				// Project accumulated root wrench to SOFA Rigid3 convention.
-				const WrenchType base_wrench(M_base * cumulativeW.data());
+				TangentVector base_force = M * CumulativeF;
+
+
 				sofa::type::Vec6 base_force_trans;
-				for (int k = 0; k < 6; ++k) base_force_trans[k] = base_wrench.data()[k];
-				o2.addCol(baseIdx, base_force_trans);
+				for (int k = 0; k < 6; ++k) {
+					base_force_trans[k] = base_force[k];
+				}
+
+				o2.addCol(d_baseIndex.getValue(), base_force_trans);
+
 			}
 		
 		}
@@ -803,128 +793,6 @@ namespace Cosserat::mapping {
 
 	}
 
-
-	// ── BezierSE3 smoothed centerline ────────────────────────────────────────────
-
-	template<class TIn1, class TIn2, class TOut>
-	std::vector<typename Strain2RigidCosseratMapping<TIn1, TIn2, TOut>::SE3Types>
-	Strain2RigidCosseratMapping<TIn1, TIn2, TOut>::computeSmoothedPath(
-			const sofa::type::vector<sofa::Coord_t<In2>> &rigidBase,
-			int samplesPerSection) const
-	{
-		if (samplesPerSection < 0)
-			samplesPerSection = d_smoothPathSamples.getValue();
-		if (samplesPerSection < 1) samplesPerSection = 1;
-
-		// ── Rebuild cumulative node poses (same logic as apply()) ──────────────
-		const auto baseIndex = d_baseIndex.getValue();
-		const auto &base_rigid = rigidBase[baseIndex];
-		const Vector3 base_trans(
-			base_rigid.getCenter()[0], base_rigid.getCenter()[1], base_rigid.getCenter()[2]);
-		const auto &bq = base_rigid.getOrientation();
-		const SE3Types base_frame(
-			SE3Types::SO3Type(Eigen::Quaternion<double>(bq[3], bq[0], bq[1], bq[2])),
-			base_trans);
-
-		const size_t n_sections = m_section_properties.size();
-		std::vector<SE3Types> node_poses(n_sections + 1);
-		node_poses[0] = base_frame;
-		for (size_t j = 1; j <= n_sections; ++j)
-			node_poses[j] = node_poses[j - 1] * m_section_properties[j - 1].getTransformation();
-
-		if (n_sections < 1) return {node_poses[0]};
-
-		// ── Build piecewise-cubic Bézier through node poses ───────────────────
-		//
-		// For each consecutive pair (node_poses[k], node_poses[k+1]):
-		//   P0 = node_poses[k]
-		//   P3 = node_poses[k+1]
-		//   P1 = P0 · exp(log(P0⁻¹ · P3) / 3)    (⅓ of the geodesic)
-		//   P2 = P0 · exp(2·log(P0⁻¹ · P3) / 3)  (⅔ of the geodesic)
-		//
-		// This gives C1 continuity at junctions and reduces to the
-		// geodesic (= expCosserat for constant strain) at the section scale.
-		std::vector<SE3Types> path;
-		path.reserve(static_cast<size_t>(n_sections * samplesPerSection + 1));
-
-		for (size_t k = 0; k + 1 < node_poses.size(); ++k) {
-			const SE3Types &P0 = node_poses[k];
-			const SE3Types &P3 = node_poses[k + 1];
-
-			// Geodesic from P0 to P3 in se(3)
-			const TangentVector xi = P0.computeInverse().compose(P3).log();
-			const SE3Types P1 = P0.compose(SE3Types::computeExp(xi / 3.0));
-			const SE3Types P2 = P0.compose(SE3Types::computeExp(2.0 * xi / 3.0));
-
-			// Degree-3 Bézier segment
-			const BezierSE3Type segment({P0, P1, P2, P3});
-
-			// Sample — skip last point except for the final segment
-			//          to avoid duplicating junction poses
-			const int last_sample = (k + 2 == node_poses.size()) ? samplesPerSection : samplesPerSection - 1;
-			for (int s = 0; s <= last_sample; ++s) {
-				const double t = static_cast<double>(s) / static_cast<double>(samplesPerSection);
-				path.push_back(segment.evaluate(t));
-			}
-		}
-		return path;
-	}
-
-	// ─────────────────────────────────────────────────────────────────────────────
-	// computeUncertainties
-	// ─────────────────────────────────────────────────────────────────────────────
-	template<class TIn1, class TIn2, class TOut>
-	std::vector<typename Strain2RigidCosseratMapping<TIn1, TIn2, TOut>::GaussianSE3Type>
-	Strain2RigidCosseratMapping<TIn1, TIn2, TOut>::computeUncertainties(
-			const sofa::type::vector<sofa::Coord_t<In2>> &rigidBase) const
-	{
-		// ── Base pose from rigid input ────────────────────────────────────────
-		const auto baseIndex = d_baseIndex.getValue();
-		const auto &base_rigid = rigidBase[baseIndex];
-		const Vector3 base_trans(
-			base_rigid.getCenter()[0],
-			base_rigid.getCenter()[1],
-			base_rigid.getCenter()[2]);
-		const auto &bq = base_rigid.getOrientation();
-		const SE3Types base_pose(
-			SE3Types::SO3Type(Eigen::Quaternion<double>(bq[3], bq[0], bq[1], bq[2])),
-			base_trans);
-
-		// ── Strain noise covariance (isotropic) ──────────────────────────────
-		const double sigma2 = d_strainNoiseLevel.getValue();
-		using CovMatrix = Eigen::Matrix<double, 6, 6>;
-		const CovMatrix strain_cov = (sigma2 > 0.0)
-			? CovMatrix(sigma2 * CovMatrix::Identity())
-			: CovMatrix::Zero();
-
-		// ── Base Gaussian: exact pose, zero initial uncertainty ───────────────
-		const GaussianSE3Type base_gaussian(base_pose, CovMatrix::Zero());
-
-		// ── Build section descriptors from m_section_properties ──────────────
-		// Convention (same as updateFrameTransformations):
-		//   m_section_properties[0] is the root placeholder (identity, zero length)
-		//   m_section_properties[1..nb_node] hold the real section data
-		// We skip index 0 and propagate through the nb_node real sections.
-		const size_t total = m_section_properties.size();  // = nb_node + 1
-		const size_t nb_node = (total > 0) ? total - 1 : 0;
-		std::vector<UncertaintyPropagator::Section> sections;
-		sections.reserve(nb_node);
-
-		for (size_t k = 1; k <= nb_node; ++k) {
-			const auto &sp = m_section_properties[k];
-			const TangentVector strain = sp.getStrainsVec();
-			const double length = sp.getLength();
-
-			UncertaintyPropagator::Section sec;
-			sec.strain     = strain;
-			sec.length     = length;
-			sec.strain_cov = strain_cov;
-			sections.push_back(sec);
-		}
-
-		// ── Propagate ────────────────────────────────────────────────────────
-		return UncertaintyPropagator::propagateAlongRod(base_gaussian, sections);
-	}
 
 	template<class TIn1, class TIn2, class TOut>
 	void Strain2RigidCosseratMapping<TIn1, TIn2, TOut>::draw(const sofa::core::visual::VisualParams *vparams) {
@@ -953,28 +821,9 @@ namespace Cosserat::mapping {
 		const sofa::VecCoord_t<In1> xPos = artiData->getValue();
 
 		RGBAColor drawColor = d_color.getValue();
-
-		// ── Smooth centerline via BezierSE3 ───────────────────────────────────
-		// When smoothPathSamples > 1, build a piecewise-cubic Bézier curve through
-		// the node poses and draw it as a smooth sequence of cylinders.
-		// When smoothPathSamples == 1, fall back to the discrete output frames.
-		if (d_smoothPathSamples.getValue() > 1) {
-			const sofa::VecCoord_t<In2> &rigidBase =
-				this->m_rigid_base->read(sofa::core::vec_id::read_access::position)->getValue();
-			const auto smoothPath = computeSmoothedPath(rigidBase);
-			for (size_t i = 0; i + 1 < smoothPath.size(); ++i) {
-				const auto &t0 = smoothPath[i].translation();
-				const auto &t1 = smoothPath[i + 1].translation();
-				vparams->drawTool()->drawCylinder(
-					sofa::type::Vec3(t0[0], t0[1], t0[2]),
-					sofa::type::Vec3(t1[0], t1[1], t1[2]),
-					d_radius.getValue(), drawColor);
-			}
-		} else {
-			// Draw each segment of the beam as a cylinder (discrete frames).
-			for (unsigned int i = 0; i < sz - 1; i++)
-				vparams->drawTool()->drawCylinder(positions[i], positions[i + 1], d_radius.getValue(), drawColor);
-		}
+		// draw each segment of the beam as a cylinder.
+		for (unsigned int i = 0; i < sz - 1; i++)
+			vparams->drawTool()->drawCylinder(positions[i], positions[i + 1], d_radius.getValue(), drawColor);
 
 		// Define color map
 		SReal min = d_min.getValue();
@@ -992,7 +841,6 @@ namespace Cosserat::mapping {
 			}
 		} else {
 			int j = 0;
-			vector<int> index = d_index.getValue();
 			for (unsigned int i = 0; i < sz - 1; i++) {
 				j = m_indices_vectors[i] - 1; // to get the articulation on which the frame is related to
 				RGBAColor color = _eval(xPos[j][d_deformationAxis.getValue()]);
@@ -1284,193 +1132,11 @@ namespace Cosserat::mapping {
 		std::cout << "==========================\n";
 	}
 
-// =============================================================================
-// applyDJT — geometric stiffness of the Cosserat mapping (liegroups variant)
-// =============================================================================
-//
-// Computes the directional derivative of J(q)^T f_x w.r.t. q, holding f_x
-// (current child frame wrenches) constant.  This is the geometric stiffness K_G
-// contribution at the mapping level.
-//
-// Formula (see DiscreteCosseratMapping::applyDJT doc for the scalar derivation):
-//
-//   For each section k (0-indexed strain DOF):
-//
-//   (a) Frame direct term — variation of the frame co-adjoint when ξ_k changes:
-//       δf_k += kFactor · B^T · J_frame^T · ad(v_s)^T · w_body_s
-//       with v_s = J_frame_s · B · δξ_k,   w_body_s = coAdj_frame · P^T · f_s
-//
-//   (b) Section transport term — variation of Ad_{g_k^{-1}} in the backward chain:
-//       δf_k += kFactor · B^T · J_local_k^T · ad(v_k)^T · F_tot_k
-//       with v_k = J_local_k · B · δξ_k,   F_tot_k = Ad_{g_k^{-1}}^T · f_{k+1}
-//
-// Both terms neglect the variation of J itself (∂J/∂ξ, a third-order tensor);
-// this is the standard approximation in Cosserat beam FEM
-// (Simo & Vu-Quoc 1986, Cardona & Géradin 1988).
-//
-// Uses the liegroups API:
-//   - m_bodyJacobian.getLocalJacobian(k)    → J_local_k
-//   - m_bodyJacobian.getAdjointInverse(k)   → Ad_{g_k^{-1}}
-//   - frame.getTangAdjointMatrix()          → J_frame_s
-//   - frame.getCoAdjoint()                  → Ad_{g_frame_s^{-T}}
-//   - TwistType(v).smallAdjoint()           → ad(v) 6×6
-//
-template<class TIn1, class TIn2, class TOut>
-void Strain2RigidCosseratMapping<TIn1, TIn2, TOut>::applyDJT(
-    const sofa::core::MechanicalParams* mparams,
-    sofa::core::MultiVecDerivId          inForce,
-    sofa::core::ConstMultiVecDerivId     /*outForce*/)
-{
-    if (this->d_componentState.getValue() !=
-        sofa::core::objectmodel::ComponentState::Valid)
-        return;
-
-    const SReal kFactor = mparams->kFactor();
-    if (kFactor == 0.0)
-        return;
-
-    // ── Inputs ────────────────────────────────────────────────────────────────
-    // δξ : strain displacement (In1 space)
-    const sofa::VecDeriv_t<In1>& dx =
-        mparams->readDx(m_strain_state)->getValue();
-
-    // f_x : current child wrenches (Out space, held constant)
-    const sofa::VecDeriv_t<Out>& childF =
-        mparams->readF(m_frames)->getValue();
-
-    // ── Output parent force (In1 space, accumulate +=) ────────────────────────
-    sofa::Data<sofa::VecDeriv_t<In1>>& out1Data =
-        *inForce[m_strain_state].write();
-    sofa::VecDeriv_t<In1>& out1 = *out1Data.beginEdit();
-
-    // ── Frame positions (for projector to SOFA frame) ─────────────────────────
-    const sofa::VecCoord_t<Out>& framePositions =
-        m_frames->read(sofa::core::vec_id::read_access::position)->getValue();
-
-    // ── B : active strain selector ─────────────────────────────────────────────
-    // Vec3Types → [I_3 | 0_3]  (angular only, 3 DOF)
-    // Vec6Types → I_6          (full strains, 6 DOF)
-    static constexpr int NStrainDOF = static_cast<int>(Coord1::total_size);
-    using MatB = Eigen::Matrix<double, NStrainDOF, 6>;
-    MatB matB = MatB::Zero();
-    for (int j = 0; j < NStrainDOF; j++) matB(j, j) = 1.0;
-
-    // ── Sizes and early-exit guard ────────────────────────────────────────────
-    const size_t tab_size = childF.size();
-    const size_t sz       = m_indices_vectors.size();
-    const int    N_bj     = m_bodyJacobian.size();  // number of sections
-
-    if (sz == 0 || tab_size == 0 || N_bj == 0) {
-        out1Data.endEdit();
-        return;
-    }
-
-    // ── Step 1: project each frame wrench to the body (Cosserat) frame ────────
-    // Identical to applyJT Phase 0.
-    vector<WrenchType> localForces;
-    localForces.reserve(tab_size);
-    for (size_t i = 0; i < tab_size; ++i) {
-        TangentVector frameForce = TangentVector::Zero();
-        for (unsigned j = 0; j < 6; j++) frameForce[j] = childF[i][j];
-
-        const auto& pos = framePositions[i];
-        const SE3Types absoluteFrame(
-            SE3Types::SO3Type(Eigen::Quaternion<double>(
-                pos.getOrientation()[3], pos.getOrientation()[0],
-                pos.getOrientation()[1], pos.getOrientation()[2])),
-            Vector3(pos.getCenter()[0], pos.getCenter()[1], pos.getCenter()[2]));
-        // P(R)^T : SOFA global → Cosserat body frame (dual projection)
-        localForces.emplace_back(
-            absoluteFrame.buildProjectionMatrix(absoluteFrame.rotation().matrix()).transpose()
-            * frameForce);
-    }
-
-    // ── Step 2: per-frame geometric contribution — term (a) ───────────────────
-    //
-    // For each frame s in section k_s:
-    //   w_body_s = coAdj_frame · localForces[s]          (body-frame wrench)
-    //   v_s      = J_frame_s · B · δξ_{k_s}              (frame velocity twist)
-    //   δf_{k_s} += kFactor · B^T · J_frame_s^T · ad(v_s)^T · w_body_s
-    //
-    // We also aggregate external_wrenches[k_s] for the backward pass (term b).
-    using Matrix6 = typename BodyJacobian::Matrix6;
-    using Vector6 = typename BodyJacobian::Vector6;
-
-    std::vector<WrenchType> external_wrenches(
-        static_cast<size_t>(N_bj + 1), WrenchType::Zero());
-
-    for (size_t i = 0; i < sz; ++i) {
-        const int s1  = m_indices_vectors[i];  // section index, 1-based
-        const int k_s = s1 - 1;                // section index, 0-based
-
-        const FrameInfo& frame = m_frameProperties[i];
-
-        // w_body_s = coAdj_frame · P^T · f_s
-        const WrenchType w_body(frame.getCoAdjoint() * localForces[i].data());
-
-        // Aggregate for the section-level backward pass
-        if (k_s >= 0 && k_s < N_bj + 1)
-            external_wrenches[k_s] =
-                WrenchType(external_wrenches[k_s].data() + w_body.data());
-
-        // ── term (a) ──────────────────────────────────────────────────────────
-        if (k_s < static_cast<int>(dx.size())) {
-            // Embed NStrainDOF active DOFs into full 6D strain
-            TangentVector xi_dot = TangentVector::Zero();
-            for (int j = 0; j < NStrainDOF; j++) xi_dot[j] = dx[k_s][j];
-
-            const Matrix6& J_f = frame.getTangAdjointMatrix();
-            const TangentVector v_s = J_f * xi_dot;
-
-            // ad(v_s)^T — using Twist::smallAdjoint()
-            const Matrix6 adT = TwistType(v_s).smallAdjoint().transpose();
-
-            // δf_{k_s} += kFactor · B^T · J_frame^T · ad(v_s)^T · w_body_s
-            const Eigen::Matrix<double, NStrainDOF, 1> delta_f =
-                static_cast<double>(kFactor) * (matB * J_f.transpose() * adT * w_body.data());
-            for (int j = 0; j < NStrainDOF; j++)
-                out1[k_s][j] += static_cast<SReal>(delta_f[j]);
-        }
-    }
-
-    // ── Step 3: section transport geometric contribution — term (b) ────────────
-    //
-    // Backward sweep (dual of CosseratBodyJacobian::applyTranspose).
-    // When δξ_k perturbs section k, the transport matrix Ad_{g_k^{-1}} changes:
-    //   v_k      = J_local_k · B · δξ_k          (section velocity twist)
-    //   F_tot_k  = Ad_{g_k^{-1}}^T · f_{k+1}     (transported downstream wrench)
-    //   δf_k    += kFactor · B^T · J_local_k^T · ad(v_k)^T · F_tot_k
-    {
-        Vector6 acc = external_wrenches[N_bj].data();  // f_N = w_N (tip)
-
-        for (int k = N_bj - 1; k >= 0; --k) {
-            const Matrix6& Ad_inv_k   = m_bodyJacobian.getAdjointInverse(k);
-            const Matrix6& J_local_k  = m_bodyJacobian.getLocalJacobian(k);
-
-            // F_tot_k = Ad_{g_k^{-1}}^T · f_{k+1}  (transported downstream wrench)
-            const Vector6 F_tot = Ad_inv_k.transpose() * acc;
-
-            // ── term (b) ──────────────────────────────────────────────────────
-            if (k < static_cast<int>(dx.size())) {
-                TangentVector xi_dot = TangentVector::Zero();
-                for (int j = 0; j < NStrainDOF; j++) xi_dot[j] = dx[k][j];
-
-                const TangentVector v_k = J_local_k * xi_dot;
-                const Matrix6 adT = TwistType(v_k).smallAdjoint().transpose();
-
-                // δf_k += kFactor · B^T · J_local_k^T · ad(v_k)^T · F_tot_k
-                const Eigen::Matrix<double, NStrainDOF, 1> delta_f =
-                    static_cast<double>(kFactor) * (matB * J_local_k.transpose() * adT * F_tot);
-                for (int j = 0; j < NStrainDOF; j++)
-                    out1[k][j] += static_cast<SReal>(delta_f[j]);
-            }
-
-            // Accumulate for next backward step: f_k = w_k + F_tot_k
-            acc = external_wrenches[k].data() + F_tot;
-        }
-    }
-
-    out1Data.endEdit();
-}
+	// applyDJT — geometric stiffness (not yet implemented; stub to satisfy vtable)
+	template<class TIn1, class TIn2, class TOut>
+	void Strain2RigidCosseratMapping<TIn1, TIn2, TOut>::applyDJT(
+			const sofa::core::MechanicalParams* /*mparams*/,
+			sofa::core::MultiVecDerivId          /*inForce*/,
+			sofa::core::ConstMultiVecDerivId     /*outForce*/) {}
 
 } // namespace Cosserat::mapping

@@ -161,7 +161,6 @@ namespace sofa::component::forcefield {
 
 	// Explicit template Instantiation for Vec3Types
 	template class SOFA_COSSERAT_API BeamHookeLawForceField<Vec3Types>;
-	// template class SOFA_COSSERAT_API BeamHookeLawForceField< sofa::defaulttype::Vec6Types>;
 
 } // namespace sofa::component::forcefield
 
@@ -173,8 +172,8 @@ namespace Cosserat {
 		factory->registerObjects(
 				sofa::core::ObjectRegistrationData(
 						"This component is used to compute internal stress for torsion (along x) and bending (y and z)")
-						.add<sofa::component::forcefield::BeamHookeLawForceField<sofa::defaulttype::Vec3Types>>(true));
-		//.add<sofa::component::forcefield::BeamHookeLawForceField<sofa::defaulttype::Vec6Types>>());
+						.add<sofa::component::forcefield::BeamHookeLawForceField<sofa::defaulttype::Vec3Types>>(true) 
+		.add<sofa::component::forcefield::BeamHookeLawForceField<sofa::defaulttype::Vec6Types>>());
 	}
 
 } // namespace Cosserat

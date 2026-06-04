@@ -21,38 +21,45 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "..", "py
 
 from cosserat import BeamGeometryParameters, CosseratGeometry
 
-from introduction_and_setup import (_add_cosserat_frame_v2, _add_cosserat_state_v2,
+from basic_functions import (_add_cosserat_frame, _add_cosserat_state,
                                     _add_rigid_base, add_mini_header)
 
 from force_controller import ForceController
 
+beam_mass: float=2
+v_damping_param: float=8e-1
 
 def createScene(root_node):
     """Create a scene with a Cosserat beam and an attached FEM object."""
     add_mini_header(root_node)
     root_node.addObject('RequiredPlugin', pluginName='Sofa.Component.IO.Mesh') # Needed to use components [MeshVTKLoader]  
-    root_node.addObject('RequiredPlugin', pluginName='Sofa.Component.LinearSolver.Direct') # Needed to use components [SparseLDLSolver]  
-    root_node.addObject('RequiredPlugin', pluginName='Sofa.Component.ODESolver.Backward') # Needed to use components [EulerImplicitSolver]  
     root_node.addObject('RequiredPlugin', pluginName='Sofa.Component.SolidMechanics.FEM.Elastic') # Needed to use components [TetrahedronFEMForceField]  
     root_node.addObject('RequiredPlugin', pluginName='Sofa.Component.Topology.Container.Dynamic') # Needed to use components [TetrahedronSetTopologyContainer]     
     root_node.addObject('RequiredPlugin', pluginName='Sofa.GL.Component.Rendering3D') # Needed to use components [OglModel]  
     root_node.addObject('RequiredPlugin', pluginName='Sofa.Component.Mapping.Linear') # Needed to use components [IdentityMapping]      
     root_node.addObject('RequiredPlugin', name='Sofa.Component.Mapping.NonLinear') # Needed to use components [RigidMapping]      
     root_node.addObject('RequiredPlugin', name='Sofa.Component.MechanicalLoad') # Needed to use components [ConstantForceField]
+    
     root_node.gravity = [0, -9.81, 0]
 
     # --- Solver ---
     solver_node = root_node.addChild("solver")
-    solver_node.addObject("EulerImplicitSolver", rayleighStiffness="0.0", rayleighMass="0.0", vdamping=0.5)
-    solver_node.addObject("SparseLDLSolver", name="solver", template="CompressedRowSparseMatrixd")
+    solver_node.addObject("EulerImplicitSolver", firstOrder="0", rayleighMass=0.1, rayleighStiffness=0.1, vdamping=v_damping_param)
+    solver_node.addObject("CGLinearSolver", iterations=1000, tolerance=1e-10, threshold=1e-10)
 
     # --- Beam ---
-    beam_geometry_params = BeamGeometryParameters(beam_length=20.0, nb_section=10, nb_frames=10)
+    beam_geometry_params = BeamGeometryParameters(beam_length=8.0, nb_section=10, nb_frames=10)
     beam_geometry = CosseratGeometry(beam_geometry_params)
 
-    base_node = _add_rigid_base(solver_node)
-    bending_node = _add_cosserat_state_v2(solver_node, beam_geometry)
-    frame_node = _add_cosserat_frame_v2(base_node, bending_node, beam_geometry, beam_mass=2.0)
+    ## base node
+    rigid_base = _add_rigid_base(solver_node, node_name="rigid_base")
+    
+    ## frame node
+    frame_node = _add_cosserat_frame(solver_node, beam_geometry, beam_mass=beam_mass)
+
+    ## bending node
+    strain_node = _add_cosserat_state(rigid_base, frame_node, beam_geometry, radius=2)
+
 
     # --- FEM Gripper ---
     fem_node = frame_node.addChild("fem_gripper") # fem_node child node of frame_node (Essential for the futur Mapping)
@@ -97,13 +104,12 @@ def createScene(root_node):
         name="ForceController",
         forceNode=const_force_node,     # ConstantForceField
         frame_node=frame_node,          # node containing FramesMO
-        force_type=2,                   # Change 1, 2 or 3 to test all force type
+        force_type=1,                   # Change 1, 2 or 3 to test all force type
         tip_controller=controller_state,# a MechanicalObject used to control the beam's tip (for force_type 3)
         geoParams=beam_geometry_params  # geometric params
     ))
 
 
-    print("✨ Created a hybrid model: FEM gripper attached to a Cosserat beam. + Force Controller")
 
     return root_node
 

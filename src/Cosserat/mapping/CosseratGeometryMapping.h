@@ -316,8 +316,9 @@ namespace Cosserat::mapping {
 
 		unsigned int get_related_beam_index_() const { return related_beam_index_; }
 		void set_related_beam_index_(unsigned int index) {
-			if (index < 0)
-				throw std::invalid_argument("related_beam_index_ must be non-negative");
+			//@appa: index is unsigned so the condition index < 0 is always false.
+			// if (index < 0)
+			// 	throw std::invalid_argument("related_beam_index_ must be non-negative");
 			related_beam_index_ = index;
 		}
 
@@ -524,6 +525,7 @@ namespace Cosserat::mapping {
 	public:
 		void init() override;
 		virtual void doBaseCosseratInit() = 0;
+		virtual void initialization() = 0; //@appa: New method
 		// void init() override {
 		//     try {
 		//         // Validation des données
