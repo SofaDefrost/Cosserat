@@ -44,9 +44,15 @@ Running with runSofa
 """
 
 import math
+import os
+import sys
 
 import numpy as np
 import Sofa
+
+# ── Helpers partagés (_common.py dans le même dossier) ────────────────────────
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _common import add_painless_beam, mass_per_node
 
 # ── Physical parameters ───────────────────────────────────────────────────────
 BEAM_LENGTH = 1.0  # m
@@ -64,11 +70,7 @@ DEBUG_FREQ      = 50   # print summary every N steps  (set to 1 for every step)
 DEBUG_FREQ_FULL = 200  # print per-node table every N steps
 
 
-def _compute_mass_per_node(length, N, radius, density):
-    """Distribute total beam mass uniformly across N+1 nodes (lumped mass)."""
-    volume = math.pi * radius**2 * length
-    total_mass = volume * density
-    return total_mass / (N + 1)
+# ── Helpers : mass_per_node importé depuis _common.py ─────────────────────────
 
 
 # ── SOFA Controller ───────────────────────────────────────────────────────────
@@ -213,7 +215,7 @@ def createScene(rootNode):
     h = BEAM_LENGTH / N
     Np = N + 1
 
-    mass_per_node = _compute_mass_per_node(BEAM_LENGTH, N, RADIUS, DENSITY)
+    m_node = mass_per_node(BEAM_LENGTH, N, RADIUS, DENSITY)
 
     # ── Plugins ───────────────────────────────────────────────────────────────
     rootNode.addObject("RequiredPlugin", pluginName=["Cosserat"])
@@ -269,32 +271,10 @@ def createScene(rootNode):
         topology="@topology",
     )
 
-    # ── PainlessBeamForceField ─────────────────────────────────────────────────
-    # Stiffness parameters computed explicitly from cross-section geometry.
-    # CosseratTopologyBuilder does NOT auto-link its outputs to PainlessBeamForceField,
-    # so we compute and pass them here to avoid using wrong constructor defaults.
-    _A = math.pi * RADIUS**2
-    _I_y = math.pi * RADIUS**4 / 4.0
-    _J = math.pi * RADIUS**4 / 2.0
-    _EA = YOUNG_MOD * _A
-    _GA = SHEAR_MOD * _A
-    _EIy = YOUNG_MOD * _I_y
-    _EIz = YOUNG_MOD * _I_y
-    _GJ = SHEAR_MOD * _J
-    print(f"\n  [scene] PainlessBeamForceField stiffness:")
-    print(
-        f"    EA={_EA:.3e} N   GA={_GA:.3e} N   EIy={_EIy:.3e} N·m²   GJ={_GJ:.3e} N·m²"
-    )
-    forcefield = beamNode.addObject(
-        "PainlessBeamForceField",
-        name="ff",
-        state="@state",
-        EA=_EA,
-        GA=_GA,
-        EIy=_EIy,
-        EIz=_EIz,
-        GJ=_GJ,
-    )
+    # ── PainlessBeamForceField via _common.add_painless_beam ──────────────────
+    forcefield = add_painless_beam(beamNode, "@state",
+                                   E=YOUNG_MOD, G=SHEAR_MOD, r=RADIUS,
+                                   name="ff")
 
     # ── StaggeredCosseratMapping ───────────────────────────────────────────────
     beamNode.addObject(
@@ -315,7 +295,7 @@ def createScene(rootNode):
             state=state,
             forcefield=forcefield,
             N=N,
-            mass_per_node=mass_per_node,
+            mass_per_node=m_node,
         )
     )
 

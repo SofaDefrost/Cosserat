@@ -48,17 +48,18 @@ Running
 """
 
 import math
+import os
+import sys
 
 import numpy as np
 import Sofa
 
-try:
-    from Sofa.LieGroups import SO3
-
-    _HAVE_SO3 = True
-except ImportError:
-    _HAVE_SO3 = False
-    print("[WARNING] LieGroups module not found — SO3 integration disabled.")
+# ── Helpers partagés (_common.py dans le même dossier) ────────────────────────
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _common import (
+    SO3, HAVE_SO3 as _HAVE_SO3,
+    circular_stiffness, add_painless_beam, mass_per_node, inertia_per_seg,
+)
 
 # ── Physical parameters ───────────────────────────────────────────────────────
 BEAM_LENGTH = 1.0      # m
@@ -89,17 +90,7 @@ def _section_properties(r):
     return A, I_y, J
 
 
-def _inertia_per_seg(L, N, r, rho):
-    h     = L / N
-    vol   = math.pi * r**2 * h
-    mass  = vol * rho
-    return mass * (h**2 / 12.0 + r**2 / 4.0)   # solid cylinder, transverse axis
-
-
-def _mass_per_node(L, N, r, rho):
-    total = math.pi * r**2 * L * rho
-    return total / (N + 1)
-
+# ── Helpers : section_properties, mass_per_node, inertia_per_seg via _common ──
 
 # ── Controller ────────────────────────────────────────────────────────────────
 
@@ -306,16 +297,12 @@ def createScene(rootNode):
     h  = BEAM_LENGTH / N
     Np = N + 1
 
-    # ── Derived quantities ────────────────────────────────────────────────────
+    # ── Derived quantities (via _common.py) ───────────────────────────────────
     A, I_y, J = _section_properties(RADIUS)
-    EA   = YOUNG_MOD  * A
-    GA   = SHEAR_MOD  * A
-    EIy  = YOUNG_MOD  * I_y
-    EIz  = YOUNG_MOD  * I_y
-    GJ   = SHEAR_MOD  * J
+    EA, GA, EIy, EIz, GJ = circular_stiffness(YOUNG_MOD, SHEAR_MOD, RADIUS)
 
-    I_seg  = _inertia_per_seg(BEAM_LENGTH, N, RADIUS, DENSITY)
-    m_node = _mass_per_node(BEAM_LENGTH, N, RADIUS, DENSITY)
+    I_seg  = inertia_per_seg(BEAM_LENGTH, N, RADIUS, DENSITY)
+    m_node = mass_per_node(BEAM_LENGTH, N, RADIUS, DENSITY)
 
     phi_tip_analytical = T_APPLIED * BEAM_LENGTH / GJ
 
@@ -364,13 +351,10 @@ def createScene(rootNode):
         topology="@topology",
     )
 
-    ff = beamNode.addObject(
-        "PainlessBeamForceField",
-        name="ff",
-        state="@state",
-        EA=EA, GA=GA, EIy=EIy, EIz=EIz, GJ=GJ,
-        printEvery=2000,   # C++ summary every 2000 FF calls
-    )
+    ff = add_painless_beam(beamNode, "@state",
+                           E=YOUNG_MOD, G=SHEAR_MOD, r=RADIUS,
+                           name="ff",
+                           printEvery=2000)   # C++ summary every 2000 FF calls
 
     beamNode.addObject(
         "StaggeredCosseratMapping",

@@ -65,19 +65,18 @@ Touche [q] : quitter
 """
 
 import math
+import os
 import sys
 
 import numpy as np
 import Sofa
 
-# ── Chargement du module LieGroups (SO3) ──────────────────────────────────────
-try:
-    from Sofa.LieGroups import SO3
-    _HAVE_SO3 = True
-except ImportError:
-    _HAVE_SO3 = False
-    print("[WARNING] Module 'LieGroups' non trouvé. "
-          "L'intégration SO3 sera désactivée — seule la rigidité EA/GA sera active.")
+# ── Helpers partagés (_common.py dans le même dossier) ────────────────────────
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _common import (
+    SO3, HAVE_SO3 as _HAVE_SO3,
+    add_painless_beam, mass_per_node, inertia_per_seg,
+)
 
 # ── Paramètres physiques (régime petit déplacement Euler-Bernoulli) ───────────
 BEAM_LENGTH  = 0.5         # m
@@ -113,26 +112,8 @@ for arg in sys.argv[1:]:
             pass
 
 
-# ── Helpers ───────────────────────────────────────────────────────────────────
-
-def _mass_per_node(L, N, r, rho):
-    """Masse nodale uniforme (masse totale / (N+1))."""
-    return math.pi * r**2 * L * rho / (N + 1)
-
-
-def _inertia_per_seg(L, N, r, rho):
-    """Moment d'inertie scalaire d'un segment cylindrique (axe transverse)."""
-    L_seg = L / N
-    mass  = math.pi * r**2 * L_seg * rho
-    return mass * (L_seg**2 / 12.0 + r**2 / 4.0)
-
-
-def _circular_stiffness(E, G, r):
-    """Renvoie (EA, GA, EIy, EIz, GJ) pour une section circulaire pleine."""
-    A   = math.pi * r**2
-    I_y = math.pi * r**4 / 4.0
-    J   = math.pi * r**4 / 2.0
-    return E * A, G * A, E * I_y, E * I_y, G * J
+# ── Helpers : importés depuis _common.py ──────────────────────────────────────
+# (mass_per_node, inertia_per_seg, circular_stiffness, add_painless_beam)
 
 
 # ── Contrôleur d'intégration et de validation ─────────────────────────────────
@@ -308,10 +289,8 @@ def createScene(rootNode):
     h  = BEAM_LENGTH / N
     Np = N + 1
 
-    m_node = _mass_per_node(BEAM_LENGTH, N, RADIUS, DENSITY)
-    I_seg  = _inertia_per_seg(BEAM_LENGTH, N, RADIUS, DENSITY)
-
-    EA, GA, EIy, EIz, GJ = _circular_stiffness(YOUNG_MOD, SHEAR_MOD, RADIUS)
+    m_node = mass_per_node(BEAM_LENGTH, N, RADIUS, DENSITY)
+    I_seg  = inertia_per_seg(BEAM_LENGTH, N, RADIUS, DENSITY)
 
     # ── Configuration globale ─────────────────────────────────────────────────
     rootNode.gravity.value = [0., 0., 0.]   # gravité gérée par le contrôleur
@@ -351,14 +330,9 @@ def createScene(rootNode):
                        intrinsicState='@state',
                        topology='@topology')
 
-    print(f"\n  [scene] PainlessBeamForceField stiffness:")
-    print(f"    EA={EA:.3e} N   GA={GA:.3e} N   EIy={EIy:.3e} N·m²"
-          f"   EIz={EIz:.3e} N·m²   GJ={GJ:.3e} N·m²")
-    ff = beamNode.addObject('PainlessBeamForceField',
-                            name='ff',
-                            state='@state',
-                            EA=EA, GA=GA, EIy=EIy, EIz=EIz, GJ=GJ,
-                            printEvery=0)   # silencieux côté C++
+    ff = add_painless_beam(beamNode, "@state",
+                           E=YOUNG_MOD, G=SHEAR_MOD, r=RADIUS,
+                           name="ff", printEvery=0)   # silencieux côté C++
 
     beamNode.addObject('StaggeredCosseratMapping',
                        name='mapping',

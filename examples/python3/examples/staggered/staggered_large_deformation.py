@@ -35,16 +35,19 @@ Running
   runSofa staggered_large_deformation.py
 """
 
+import os
+import sys
+
 import numpy as np
 import Sofa
 
-try:
-    from Sofa.LieGroups import SO3
-
-    _HAVE_SO3 = True
-except ImportError:
-    _HAVE_SO3 = False
-    print("[WARNING] LieGroups module not found — SO3 integration disabled.")
+# ── Helpers partagés (_common.py dans le même dossier) ────────────────────────
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _common import (
+    SO3, HAVE_SO3 as _HAVE_SO3,
+    add_painless_beam, mass_per_node, inertia_per_seg,
+    quat_to_rotvec as _quat_to_rotvec,
+)
 
 # ── Debug printing ────────────────────────────────────────────────────────────
 DEBUG_FREQ = 100  # print summary every N steps  (set to 1 for every step)
@@ -184,18 +187,7 @@ def get_initial_state(shape, N, L):
         return build_arc_state(N, L)
 
 
-def _quat_to_rotvec(q):
-    """Convert quaternion [qx, qy, qz, qw] to rotation vector (axis × angle)."""
-    qx, qy, qz, qw = float(q[0]), float(q[1]), float(q[2]), float(q[3])
-    qw = np.clip(qw, -1.0, 1.0)
-    angle = 2.0 * np.arccos(abs(qw))
-    sin_half = np.sin(angle / 2.0)
-    if sin_half < 1e-10:
-        return np.zeros(3)
-    axis = np.array([qx, qy, qz]) / sin_half
-    if qw < 0:
-        axis = -axis  # keep angle in [0, π]
-    return axis * angle
+# _quat_to_rotvec : importé depuis _common.py (alias de quat_to_rotvec)
 
 
 # ── Controller ────────────────────────────────────────────────────────────────
@@ -439,10 +431,8 @@ def createScene(rootNode):
     N = N_SEGMENTS
     h = BEAM_LENGTH / N
 
-    vol = np.pi * RADIUS**2 * BEAM_LENGTH
-    mass_tot = vol * DENSITY
-    m_node = mass_tot / (N + 1)
-    I_seg = m_node * (h**2 / 12.0 + RADIUS**2 / 4.0)
+    m_node = mass_per_node(BEAM_LENGTH, N, RADIUS, DENSITY)
+    I_seg  = inertia_per_seg(BEAM_LENGTH, N, RADIUS, DENSITY)
 
     rootNode.addObject("RequiredPlugin", pluginName=["Cosserat"])
     rootNode.addObject(
@@ -487,29 +477,10 @@ def createScene(rootNode):
         topology="@topology",
     )
 
-    # Stiffness parameters from cross-section geometry (explicit — no auto-link to TopologyBuilder)
-    _A = np.pi * RADIUS**2
-    _I_y = np.pi * RADIUS**4 / 4.0
-    _J = np.pi * RADIUS**4 / 2.0
-    _EA = YOUNG_MOD * _A
-    _GA = SHEAR_MOD * _A
-    _EIy = YOUNG_MOD * _I_y
-    _EIz = YOUNG_MOD * _I_y
-    _GJ = SHEAR_MOD * _J
-    print(f"\n  [scene] PainlessBeamForceField stiffness:")
-    print(
-        f"    EA={_EA:.3e} N   GA={_GA:.3e} N   EIy={_EIy:.3e} N·m²   GJ={_GJ:.3e} N·m²"
-    )
-    ff = beamNode.addObject(
-        "PainlessBeamForceField",
-        name="ff",
-        state="@state",
-        EA=_EA,
-        GA=_GA,
-        EIy=_EIy,
-        EIz=_EIz,
-        GJ=_GJ,
-    )
+    # ── PainlessBeamForceField via _common.add_painless_beam ──────────────────
+    ff = add_painless_beam(beamNode, "@state",
+                           E=YOUNG_MOD, G=SHEAR_MOD, r=RADIUS,
+                           name="ff")
 
     beamNode.addObject(
         "StaggeredCosseratMapping",

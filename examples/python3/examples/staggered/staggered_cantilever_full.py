@@ -47,35 +47,26 @@ Requirements
                               PainlessBeamForceField)  # python/Binding/Cosserat
 """
 
+import os
+import sys
+
 import numpy as np
 import Sofa
 
-# ── Bindings pybind11 ─────────────────────────────────────────────────────────
-#  L'import du module 'Cosserat' enregistre le downcast SOFA Python3 qui permet
-#  d'appeler state.getPositions(), ff.getNodalForces(), etc. sur les proxies.
-#  Il est chargé automatiquement via RequiredPlugin('Cosserat'), mais un import
-#  explicite garantit la disponibilité avant le premier accès Python.
+# ── Helpers partagés (_common.py dans le même dossier) ────────────────────────
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _common import (
+    SO3, HAVE_SO3 as _HAVE_SO3,
+    add_painless_beam, mass_per_node, inertia_per_seg,
+)
+
+# ── Binding Cosserat (downcast SOFA Python3) ──────────────────────────────────
 try:
     from Sofa import Cosserat as _CosseratModule  # noqa — enregistre le downcast
-
     _HAVE_BINDINGS = True
 except ImportError:
     _HAVE_BINDINGS = False
-    print(
-        "[WARNING] Module pybind11 'Cosserat' non trouvé. "
-        "Compiler avec -DCOSSERAT_WITH_PYTHON_BINDINGS=ON."
-    )
-
-try:
-    from Sofa.LieGroups import SO3  # pybind11 module (Sofa/LieGroups)
-
-    _HAVE_SO3 = True
-except ImportError:
-    _HAVE_SO3 = False
-    print(
-        "[WARNING] LieGroups module not found — SO3 integration disabled. "
-        "Run with the Cosserat plugin compiled with Python bindings."
-    )
+    print("[WARNING] Module pybind11 'Cosserat' non trouvé.")
 
 # ── Physical parameters ───────────────────────────────────────────────────────
 BEAM_LENGTH = 1.0  # m
@@ -90,18 +81,7 @@ DAMPING_ANG = 0.990  # angular velocity damping
 GRAVITY_Y = -9.81  # m/s²
 
 
-def _mass_per_node(L, N, r, rho):
-    total = np.pi * r**2 * L * rho
-    return total / (N + 1)
-
-
-def _inertia_per_seg(L, N, r, rho):
-    """Scalar moment of inertia for a cylindrical segment (rotation about diameter)."""
-    L_seg = L / N
-    vol = np.pi * r**2 * L_seg
-    mass = vol * rho
-    # I = m/12 * L² + m/4 * r²  (solid cylinder, transverse axis)
-    return mass * (L_seg**2 / 12.0 + r**2 / 4.0)
+# ── Helpers : mass_per_node / inertia_per_seg importés depuis _common.py ──────
 
 
 # ── Integrator controller ─────────────────────────────────────────────────────
@@ -380,8 +360,8 @@ def createScene(rootNode):
     h = BEAM_LENGTH / N
     Np = N + 1
 
-    m_node = _mass_per_node(BEAM_LENGTH, N, RADIUS, DENSITY)
-    I_seg = _inertia_per_seg(BEAM_LENGTH, N, RADIUS, DENSITY)
+    m_node = mass_per_node(BEAM_LENGTH, N, RADIUS, DENSITY)
+    I_seg  = inertia_per_seg(BEAM_LENGTH, N, RADIUS, DENSITY)
 
     # ── Plugins ───────────────────────────────────────────────────────────────
     rootNode.addObject("RequiredPlugin", pluginName=["Cosserat"])
@@ -427,30 +407,10 @@ def createScene(rootNode):
         topology="@topology",
     )
 
-    # ── Stiffness parameters (circular cross-section) ─────────────────────────
-    # Computed here explicitly so the force field gets the correct values.
-    # CosseratTopologyBuilder also computes these, but there is currently no
-    # automatic link between the two components — linking EA="@builder.EA" etc.
-    # would work but requires SOFA Data-engine propagation to be set up first.
-    import math as _math
-    _A   = _math.pi * RADIUS**2              # cross-section area
-    _I_y = _math.pi * RADIUS**4 / 4.0       # second moment of area (bending)
-    _J   = _math.pi * RADIUS**4 / 2.0       # polar moment (torsion)
-    _EA  = YOUNG_MOD * _A
-    _GA  = SHEAR_MOD * _A
-    _EIy = YOUNG_MOD * _I_y
-    _EIz = YOUNG_MOD * _I_y
-    _GJ  = SHEAR_MOD * _J
-
-    print(f"\n  [scene] PainlessBeamForceField stiffness parameters:")
-    print(f"    EA  = {_EA:.4e} N")
-    print(f"    GA  = {_GA:.4e} N")
-    print(f"    EIy = {_EIy:.4e} N·m²")
-    print(f"    EIz = {_EIz:.4e} N·m²")
-    print(f"    GJ  = {_GJ:.4e} N·m²")
-
-    ff = beamNode.addObject("PainlessBeamForceField", name="ff", state="@state",
-                            EA=_EA, GA=_GA, EIy=_EIy, EIz=_EIz, GJ=_GJ)
+    # ── Raideurs (section circulaire) via _common.add_painless_beam ───────────
+    ff = add_painless_beam(beamNode, "@state",
+                           E=YOUNG_MOD, G=SHEAR_MOD, r=RADIUS,
+                           name="ff")
 
     beamNode.addObject(
         "StaggeredCosseratMapping",
