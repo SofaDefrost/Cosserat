@@ -18,6 +18,7 @@ public:
 	using Out = sofa::defaulttype::Rigid3Types;
 
 	void doBaseCosseratInit() override {}
+	void initialization() override {}
 
 	// Implement pure virtual methods from Multi2Mapping
 	void applyDJT(const sofa::core::MechanicalParams * /*mparams*/, sofa::core::MultiVecDerivId /*inForce*/,
