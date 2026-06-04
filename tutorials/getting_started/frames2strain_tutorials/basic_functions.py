@@ -25,10 +25,10 @@ def add_mini_header(root_node):
     root_node.addObject("RequiredPlugin", pluginName="Cosserat")
     root_node.addObject('RequiredPlugin', pluginName='Sofa.Component.LinearSolver.Direct') # Needed to use components [SparseLDLSolver]  
     root_node.addObject('RequiredPlugin', pluginName='Sofa.Component.ODESolver.Backward') # Needed to use components [EulerImplicitSolver]  
-    root_node.addObject('RequiredPlugin', name='Sofa.Component.LinearSolver.Iterative') # Needed to use components [CGLinearSolver]  
-    root_node.addObject('RequiredPlugin', name='Sofa.Component.MechanicalLoad') # Needed to use components [ConstantForceField]  
-    root_node.addObject('RequiredPlugin', name='Sofa.Component.Constraint.Projective') # Needed to use components [FixedProjectiveConstraint]
-    
+    root_node.addObject('RequiredPlugin', pluginName='Sofa.Component.LinearSolver.Iterative') # Needed to use components [CGLinearSolver]  
+    root_node.addObject('RequiredPlugin', pluginName='Sofa.Component.MechanicalLoad') # Needed to use components [ConstantForceField]  
+    root_node.addObject('RequiredPlugin', pluginName='Sofa.Component.Constraint.Projective') # Needed to use components [FixedProjectiveConstraint]
+
     # Configure scene
     root_node.addObject(
         "VisualStyle",

@@ -77,7 +77,7 @@ def createScene(root_node):
     # Create bending states with a curve (last section has more bending)
     custom_bending_states = []
     for i in range(beam_geometry.get_number_of_sections()):
-        custom_bending_states.append([0, 0, i*0.1, 0, 0, 0])
+        custom_bending_states.append([0, 0, i*0.1, 1, 0, 0])
 
     # Create cosserat state using geometry
     bending_node = solver_node.addChild("bending_node")

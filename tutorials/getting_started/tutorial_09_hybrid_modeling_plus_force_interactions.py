@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-Tutorial 08: Hybrid Modeling - Combining Cosserat and FEM
-=========================================================
+Tutorial 09: Hybrid Modeling + Force Interactions - Combining Cosserat and FEM
+===============================================================================
 
 This tutorial demonstrates a powerful feature of SOFA: combining different
 physical models in a single simulation. We will attach a 3D deformable

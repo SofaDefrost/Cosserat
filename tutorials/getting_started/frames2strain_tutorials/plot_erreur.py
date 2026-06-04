@@ -15,10 +15,7 @@ strains_s2r = data_strain2rigid[:, 1:] # for Strain2Rigid
 
 
 # On applique la correction sur toutes les sections
-nb_sections = 16
-for i in range(nb_sections):
-    idx_elongation = (i * 6) + 3
-    strains_f2s[:, idx_elongation] -= 1.0  # On retire l'élongation
+nb_sections = 8
 
 
 nb_iterations = len(time)
@@ -34,7 +31,7 @@ plt.ylabel("Erreur")
 plt.title("Erreur entre Frames2Strain et Strain2Rigid")
 plt.legend()
 plt.grid()
-plt.savefig(f"erreur_global{nb_sections}.png", dpi=300)
+plt.savefig(f"erreur_global{nb_sections}_setprecision.png", dpi=300)
 plt.show()
 
 
@@ -63,5 +60,5 @@ plt.ylabel("Max Erreur")
 plt.title("Max Erreur entre Frames2Strain et Strain2Rigid par section")
 plt.xticks(range(nb_sections))
 plt.grid()
-plt.savefig(f"max_erreur_par_section{nb_sections}.png", dpi=300)
+plt.savefig(f"max_erreur_par_section{nb_sections}_setprecision.png", dpi=300)
 plt.show()

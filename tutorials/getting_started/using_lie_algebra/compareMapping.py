@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Tutorial 02: Cosserat Beam with Forces
+Compare Mapping: Cosserat Beam with Forces (DiscreteCosseratMapping vs Strain2RigidCosseratMapping)
 =====================================
 
 This tutorial builds on Tutorial 01 by adding:

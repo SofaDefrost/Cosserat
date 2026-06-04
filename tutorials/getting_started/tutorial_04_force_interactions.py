@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-Tutorial 02: Cosserat Beam with Forces
-=====================================
+Tutorial 04: Cosserat Beam with Force Interactions
+==================================================
 
 This tutorial builds on Tutorial 01 by adding:
 - Gravity forces
-- Applied forces at the beam tip
 - Mass distribution
 - Solver configuration for dynamic simulation
 
