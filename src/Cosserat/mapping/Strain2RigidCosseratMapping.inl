@@ -841,7 +841,6 @@ namespace Cosserat::mapping {
 			}
 		} else {
 			int j = 0;
-			vector<int> index = d_index.getValue();
 			for (unsigned int i = 0; i < sz - 1; i++) {
 				j = m_indices_vectors[i] - 1; // to get the articulation on which the frame is related to
 				RGBAColor color = _eval(xPos[j][d_deformationAxis.getValue()]);

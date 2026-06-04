@@ -784,7 +784,6 @@ namespace Cosserat::mapping {
             }
         } else {
             int j = 0;
-            vector<int> index = d_index.getValue();
             for (unsigned int i = 0; i < sz - 1; i++) {
             j = m_indicesVectorsDraw[i] -
                 1; // to get the articulation on which the frame is related to

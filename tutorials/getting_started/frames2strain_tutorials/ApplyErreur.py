@@ -20,7 +20,7 @@ from basic_functions import (_add_cosserat_frame, _add_cosserat_state,
 stiffness_param: float = 1e10
 v_damping_param: float =  8e-1  # Damping parameter for dynamics
 beam_mass: float = 0
-nb_section: int = 8
+nb_section: int = 16
 beam_length: int = 5
 
 
@@ -32,13 +32,6 @@ def createScene(root):
 
     # Add gravity
     root.gravity = [0, 0, 0]  # Add gravity!
-
-    # Configure time integration and solver
-
-    ## solver node
-    solver = root.addChild("solver_node")
-    solver.addObject("EulerImplicitSolver", firstOrder="0", rayleighMass=0.1, rayleighStiffness=0.1, vdamping=v_damping_param)
-    solver.addObject("CGLinearSolver", iterations=1000, tolerance=1e-10, threshold=1e-10)
 
     beam_geometry_params = BeamGeometryParameters(
         beam_length=beam_length,
@@ -52,21 +45,31 @@ def createScene(root):
     indices_str = "   ".join([str(i) for i in range(nb_section)])
 
     ## base node
-    rigid_base = _add_rigid_base(solver, node_name="rigid_base")
+    rigid_base = _add_rigid_base(root, node_name="rigid_base")
     
     ## frame node
+
     frame_positions = [[0., 0., 0., 0., 0., 0., 1.],
-                    [0.625, 0., 0., 0., 0., 0., 1.],
-                    [1.24959, 0.0195249, 0., 0., 0., 0.0312449, 0.999512],
-                    [1.86931, 0.0973959, 0., 0., 0., 0.0936127, 0.995609],
-                    [2.46888, 0.270615, 0., 0., 0., 0.186403, 0.982473],
-                    [3.01594, 0.569476, 0., 0., 0., 0.307439, 0.951568],
-                    [3.45791, 1.00779, 0., 0., 0., 0.451771, 0.892134],
-                    [3.72582, 1.56841, 0., 0., 0., 0.61015, 0.792286],
-                    [3.75033, 2.18795, 0., 0., 0., 0.767544, 0.640997]]
+                    [0.3125, 0., 0., 0., 0., 0., 1.],
+                    [0.624886, 0.00732288, 0., 0., 0., 0.0234354, 0.999725],
+                    [0.935899, 0.0365661, 0., 0., 0., 0.0702546, 0.997529],
+                    [1.24122, 0.101942, 0., 0., 0., 0.140162, 0.990129],
+                    [1.53158, 0.216235, 0., 0., 0., 0.232235, 0.97266],
+                    [1.79136, 0.388646, 0., 0., 0., 0.344365, 0.938836],
+                    [1.99838, 0.621359, 0., 0., 0., 0.472555, 0.881301],
+                    [2.1259, 0.905121, 0., 0., 0., 0.61015, 0.792286],
+                    [2.14788, 1.21501, 0., 0., 0., 0.747141, 0.664666],
+                    [2.04806, 1.5087, 0., 0., 0., 0.869746, 0.4935],
+                    [1.83185, 1.73036, 0., 0., 0., 0.960575, 0.278022],
+                    [1.53712, 1.82336, 0., 0., 0., 0.999714, 0.023919],
+                    [1.23709, 1.75203, 0., 0., 0., 0.967073, -0.254498],
+                    [1.02703, 1.5272, 0., 0., 0., -0.846182, 0.532893],
+                    [0.990702, 1.22244, 0., 0., 0., -0.629302, 0.777161],
+                    [1.15357, 0.963264, 0., 0., 0., -0.323185, 0.946336]
+                    ]
     
     beam_geometry.frames = frame_positions
-    frame_node = _add_cosserat_frame(solver, beam_geometry, beam_mass=beam_mass)
+    frame_node = _add_cosserat_frame(root, beam_geometry, beam_mass=beam_mass)
 
     ## bending node
     custom_bending_states = [[0, 0, 0, 1, 0, 0] for _ in range(nb_section)]
@@ -102,17 +105,18 @@ def createScene(root):
     #### Beam 2 (Red beam using Strain2RigidCosseratMapping) ####
     
     #Using same beam parameters
+    beam_geometry2 = CosseratGeometry(beam_geometry_params)
 
-    base_node2 = solver.addChild("base_node2")
+    base_node2 = root.addChild("base_node2")
     base_node2.addObject("MechanicalObject", template="Rigid3d", name="base_mo2", 
                         position=[0., 0., 0., 0., 0., 0., 1.], showIndices="1", showObject="1", showObjectScale=0.1)
     
     base_node2.addObject("RestShapeSpringsForceField", name="spring2", stiffness=stiffness_param, angularStiffness=stiffness_param,
                          external_points="0", mstate="@base_mo2", points="0", template="Rigid3d")
         
-    custom_bending_states = [[0, 0, i*0.1, 0, 0, 0] for i in range(nb_section)]
+    custom_bending_states = [[0, 0, i*0.15, 0, 0, 0] for i in range(nb_section)]
     
-    bending_node = solver.addChild("bending_node")
+    bending_node = root.addChild("bending_node")
     bending_node.addObject("MechanicalObject", template="Vec6d", position=custom_bending_states, name="bending_state")
     
 
@@ -128,7 +132,7 @@ def createScene(root):
         "MechanicalObject",
         template="Rigid3d",
         name="FramesMO2",
-        position=beam_geometry.frames,  # Use geometry data
+        position=beam_geometry2.frames,  # Use geometry data
         showIndices=1,
         showObject=1,
         showObjectScale=0.8,
@@ -138,8 +142,8 @@ def createScene(root):
 
     frame_node2.addObject(
         "Strain2RigidCosseratMapping",
-        curv_abs_input=beam_geometry.curv_abs_sections,
-        curv_abs_output=beam_geometry.curv_abs_frames,
+        curv_abs_input=beam_geometry2.curv_abs_sections,
+        curv_abs_output=beam_geometry2.curv_abs_frames,
         name="cosseratMapping2",
         input1=bending_node.bending_state.getLinkPath(),
         input2=base_node2.base_mo2.getLinkPath(),
@@ -149,24 +153,4 @@ def createScene(root):
         color=[1.0, 0.0, 0.0, 0.5], #red
     )
 
-
     return root
-
-# (in) Rigid base: 0 0 0 0 0 0 1
-# (in) Strain [0]: 0 0 0 0 0 0
-# (in) Strain [1]: 0 0 0.1 0 0 0
-# (in) Strain [2]: 0 0 0.2 0 0 0
-# (in) Strain [3]: 0 0 0.3 0 0 0
-# (in) Strain [4]: 0 0 0.4 0 0 0
-# (in) Strain [5]: 0 0 0.5 0 0 0
-# (in) Strain [6]: 0 0 0.6 0 0 0
-# (in) Strain [7]: 0 0 0.7 0 0 0
-# (out) Frame [0] :0 0 0 0 0 0 1
-# (out) Frame [1] :0.625 0 0 0 0 0 1
-# (out) Frame [2] :1.24959 0.0195249 0 0 0 0.0312449 0.999512
-# (out) Frame [3] :1.86931 0.0973959 0 0 0 0.0936127 0.995609
-# (out) Frame [4] :2.46888 0.270615 0 0 0 0.186403 0.982473
-# (out) Frame [5] :3.01594 0.569476 0 0 0 0.307439 0.951568
-# (out) Frame [6] :3.45791 1.00779 0 0 0 0.451771 0.892134
-# (out) Frame [7] :3.72582 1.56841 0 0 0 0.61015 0.792286
-# (out) Frame [8] :3.75033 2.18795 0 0 0 0.767544 0.640997

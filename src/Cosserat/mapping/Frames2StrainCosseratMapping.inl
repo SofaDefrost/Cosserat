@@ -194,7 +194,7 @@ namespace Cosserat::mapping {
 			// Trouver l'indice des frames correspondants
 			int left_frame_idx = -1, right_frame_idx = -1;
 
-			for(int j=0; j<curv_abs_frames.size(); j++){
+			for(size_t j=0; j<curv_abs_frames.size(); j++){
 				if (std::abs(curv_abs_frames[j] - section_start) <1e-12){
 					left_frame_idx = j;
 				}
@@ -564,7 +564,6 @@ namespace Cosserat::mapping {
 					 										const sofa::type::vector<sofa::DataMatrixDeriv_t<In2> *> &dataMatOut2Const,
 					 										const sofa::type::vector<const sofa::DataMatrixDeriv_t<Out> *> &dataMatInConst){
 
-		//@TODO		
 		
 		if (dataMatOut1Const.empty() || dataMatOut2Const.empty() || dataMatInConst.empty())
 			return;
@@ -743,7 +742,6 @@ namespace Cosserat::mapping {
 			}
 		} else {
 			int j = 0;
-			vector<int> index = d_index.getValue();
 			for (unsigned int i = 0; i < sz - 1; i++) {
 				j = m_indices_vectors[i] - 1; // to get the articulation on which the frame is related to
 				RGBAColor color = _eval(xPos[j][d_deformationAxis.getValue()]);
