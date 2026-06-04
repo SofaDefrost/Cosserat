@@ -226,9 +226,32 @@ namespace Cosserat::mapping {
 			
 		// std::cout<<"--- outside the loop ---"<<std::endl;
 
-
-
 		dataVecOutPos[0]->endEdit();
+
+		// std::cout<<"=================================== "<<std::endl;
+		// std::cout<<"============= Test ================ "<<std::endl;
+		// std::cout<<"=================================== "<<std::endl;
+		
+		// TangentVector strain_in;
+		// strain_in << 0.1, 0.2, 0.3, 1.0, 0.05, -0.02; 
+		// double length = 0.625;
+
+		// //1. S2R: exp
+		// SE3Types g_ = SE3Types::expCosserat(strain_in, length);
+
+		// //2. F2S: log
+		// TangentVector xi_ = g_.computeLog()/length;
+		// xi_[3] -= 1.0;
+
+		// //3. Compare
+		// std::cout<<"Input strain: "<<strain_in.transpose()<<std::endl;
+		// std::cout<<"Output strain: "<<xi_.transpose()<<std::endl;
+		// std::cout<<"Erreur: "<<(strain_in - xi_).norm()<<std::endl;	
+		
+		// std::cout<<"=================================== "<<std::endl;
+		// std::cout<<"============= FinTest ============= "<<std::endl;
+		// std::cout<<"=================================== "<<std::endl;
+		
     
     }
 

@@ -30,6 +30,8 @@
 #include <cassert>
 #include <string>
 
+#include <iomanip> // for std::setprecision
+
 namespace Cosserat::mapping {
 
 	using sofa::core::objectmodel::BaseContext;
@@ -214,6 +216,10 @@ namespace Cosserat::mapping {
 			if(d_debug.getValue())
 				std::cout << "Frame  : " << i << " = " << current_frame << std::endl;
 				
+			// Affichage de la position et de l'orientation de chaque frame avec précision
+			// std::cout << "Frame  : " << i << " = " << std::fixed << std::setprecision(16) << current_frame << std::endl;
+			
+			
 			// Save current rigid frame transformation into frame's properties
 			//m_frameProperties[i].setTransformation(current_frame);
 
