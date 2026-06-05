@@ -216,7 +216,7 @@ namespace Cosserat::mapping {
 					strains[i][j] = xi[j];
 				}
 
-				// std::cout<<"(out) Strain ["<<i<<"] :" << strains[i]<<std::endl;
+				std::cout<<"(out) Strain ["<<i<<"] :" << std::fixed << std::setprecision(16)<< strains[i]<<std::endl;
 
 			}
 			else{

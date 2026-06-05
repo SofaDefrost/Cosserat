@@ -217,7 +217,7 @@ namespace Cosserat::mapping {
 				std::cout << "Frame  : " << i << " = " << current_frame << std::endl;
 				
 			// Affichage de la position et de l'orientation de chaque frame avec précision
-			// std::cout << "Frame  : " << i << " = " << std::fixed << std::setprecision(16) << current_frame << std::endl;
+			std::cout << "Frame  : " << i << " = " << std::fixed << std::setprecision(16) << current_frame << std::endl;
 			
 			
 			// Save current rigid frame transformation into frame's properties
