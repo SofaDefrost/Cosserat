@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Cosserat/config.h>
 #include <liegroups/SO3.h>
 #include <sofa/core/objectmodel/BaseObject.h>
 #include <sofa/core/objectmodel/Data.h>
@@ -24,7 +25,7 @@ namespace sofa::component::cosserat::engine {
  * Velocities and accelerations (tangent-space, R³) are stored for the
  * Python integrator but are not connected to SOFA's solver pipeline.
  */
-class CosseratIntrinsicState : public sofa::core::objectmodel::BaseObject {
+class SOFA_COSSERAT_API CosseratIntrinsicState : public sofa::core::objectmodel::BaseObject {
    public:
     SOFA_CLASS(CosseratIntrinsicState, sofa::core::objectmodel::BaseObject);
 

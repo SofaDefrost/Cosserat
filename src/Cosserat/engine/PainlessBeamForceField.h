@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Cosserat/config.h>
 #include <Cosserat/engine/CosseratIntrinsicState.h>
 #include <liegroups/SO3.h>
 
@@ -81,7 +82,7 @@ namespace sofa::component::cosserat::engine {
  * @endcode
  * (material stiffness only; geometric stiffness terms from ∂J_r^{-1}/∂φ are TODO)
  */
-class PainlessBeamForceField : public sofa::core::behavior::BaseForceField {
+class SOFA_COSSERAT_API PainlessBeamForceField : public sofa::core::behavior::BaseForceField {
    public:
     SOFA_CLASS(PainlessBeamForceField, sofa::core::behavior::BaseForceField);
 
