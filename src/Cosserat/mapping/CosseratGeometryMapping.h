@@ -46,10 +46,14 @@ namespace Cosserat::mapping {
 		// Transformation SE3 au lieu de Matrix4 simple
 		SE3Type gX_;
 
-		// Matrix computed automatically
+		// Cached lazy outputs of computeAdjoint() / computeCoAdjoint().
+		// Invalidated whenever gX_ changes (see setTransformation*()).
+		// Separate dirty flags so getAdjoint() and getCoAdjoint() can be cached
+		// independently (some call sites only need one of them).
 		mutable AdjointMatrix adjoint_;
 		mutable AdjointMatrix coAdjoint_;
-		mutable bool adjoint_computed_ = false;
+		mutable bool adjoint_dirty_   = true;
+		mutable bool coAdjoint_dirty_ = true;
 		AdjointMatrix tang_adjoint_;
 		AdjointMatrix tang_co_adjoint_;
 
@@ -153,7 +157,8 @@ namespace Cosserat::mapping {
 		const SE3Type &getTransformation() const { return gX_; }
 		void setTransformation(const SE3Type &transform) {
 			gX_ = transform;
-			adjoint_computed_ = false; // Invalider le cache
+			adjoint_dirty_   = true; // invalide le cache (recalc à la prochaine lecture)
+			coAdjoint_dirty_ = true;
 		}
 
 		// Méthodes exploitant les fonctionnalités SE3
@@ -161,19 +166,27 @@ namespace Cosserat::mapping {
 
 		void setTransformationFromMatrix(const Matrix4 &matrix) {
 			gX_ = SE3Type(matrix);
-			adjoint_computed_ = true;
+			adjoint_dirty_   = true; // bug fix : la version précédente mettait
+			coAdjoint_dirty_ = true; // adjoint_computed_=true SANS calculer adjoint_
 		}
 
-		// Exploitation de computeAdjoint() avec cache pour les performances
+		// computeAdjoint() / computeCoAdjoint() avec cache lazy.
+		// Au prix d'une branche, on évite le coût d'une multiplication matricielle 6x6
+		// quand la transformation n'a pas bougé entre deux accès — typique dans
+		// applyJ qui demande getAdjoint() plusieurs fois par section/frame.
 		const AdjointMatrix &getAdjoint() const {
-			adjoint_ = gX_.computeAdjoint();
-
+			if (adjoint_dirty_) {
+				adjoint_ = gX_.computeAdjoint();
+				adjoint_dirty_ = false;
+			}
 			return adjoint_;
 		}
 
 		const AdjointMatrix &getCoAdjoint() const {
-			coAdjoint_ = gX_.computeCoAdjoint();
-
+			if (coAdjoint_dirty_) {
+				coAdjoint_ = gX_.computeCoAdjoint();
+				coAdjoint_dirty_ = false;
+			}
 			return coAdjoint_;
 		}
 
@@ -298,9 +311,11 @@ namespace Cosserat::mapping {
 		double distance_to_nearest_beam_node = 0.0; // The distance to the nearest beam node from the base
 		SE3Type transformation_;
 
+		// Lazy cache (cf. SectionInfo above) — invalidé par setTransformation().
 		mutable AdjointMatrix adjoint_;
 		mutable AdjointMatrix coAdjoint_;
-		mutable bool adjoint_computed_ = false;
+		mutable bool adjoint_dirty_   = true;
+		mutable bool coAdjoint_dirty_ = true;
 		AdjointMatrix tang_adjoint_;
 
 	public:
@@ -316,9 +331,7 @@ namespace Cosserat::mapping {
 
 		unsigned int get_related_beam_index_() const { return related_beam_index_; }
 		void set_related_beam_index_(unsigned int index) {
-			//@appa: index is unsigned so the condition index < 0 is always false.
-			// if (index < 0)
-			// 	throw std::invalid_argument("related_beam_index_ must be non-negative");
+			// Note: no `index >= 0` check needed since `index` is unsigned.
 			related_beam_index_ = index;
 		}
 
@@ -337,20 +350,23 @@ namespace Cosserat::mapping {
 
 		void setTransformation(const SE3Type &transform) {
 			transformation_ = transform;
-
-			// Do I really need this?
-			adjoint_computed_ = false;
+			adjoint_dirty_   = true;
+			coAdjoint_dirty_ = true;
 		}
 
 		const AdjointMatrix &getAdjoint() const {
-			adjoint_ = transformation_.computeAdjoint();
-			
+			if (adjoint_dirty_) {
+				adjoint_ = transformation_.computeAdjoint();
+				adjoint_dirty_ = false;
+			}
 			return adjoint_;
 		}
 
 		const AdjointMatrix &getCoAdjoint() const {
-			coAdjoint_ = transformation_.computeCoAdjoint();
-
+			if (coAdjoint_dirty_) {
+				coAdjoint_ = transformation_.computeCoAdjoint();
+				coAdjoint_dirty_ = false;
+			}
 			return coAdjoint_;
 		}
 
@@ -525,7 +541,10 @@ namespace Cosserat::mapping {
 	public:
 		void init() override;
 		virtual void doBaseCosseratInit() = 0;
-		virtual void initialization() = 0; //@appa: New method
+		/// Hook called by init() AFTER the mechanical states are wired up but
+		/// BEFORE updateGeometryInfo()/initializeSectionProperties() run.
+		/// Derived classes seed per-frame initial transforms here.
+		virtual void initialization() = 0;
 		// void init() override {
 		//     try {
 		//         // Validation des données

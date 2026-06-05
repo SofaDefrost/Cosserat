@@ -252,7 +252,9 @@ namespace sofa::component::forcefield {
 		else
 			for (unsigned int i = 0; i < dx.size(); i++) {
 				d_strain = Vector3::Map(dx[i].data());
-				_df = (m_K_sectionList[i] * d_strain) * kFactor * this->d_length.getValue()[i]; //@appa: kFactor was missing
+				// Bug fix: kFactor must multiply the stiffness contribution, otherwise
+				// implicit solvers' Newton step is mis-scaled (was missing previously).
+				_df = (m_K_sectionList[i] * d_strain) * kFactor * this->d_length.getValue()[i];
 				for (unsigned int j = 0; j < 3; j++)
 					df[i][j] -= _df[j];
 			}

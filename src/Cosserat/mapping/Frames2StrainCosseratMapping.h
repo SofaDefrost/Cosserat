@@ -19,8 +19,7 @@
  *                                                                             *
  * Contact information: contact@sofa-framework.org                             *
  ******************************************************************************/
-//@appa
- #pragma once
+#pragma once
 
 #include <Cosserat/config.h>
 #include <Cosserat/mapping/CosseratGeometryMapping.h>
@@ -106,8 +105,13 @@ namespace Cosserat::mapping{
 					 const sofa::type::vector<sofa::DataVecDeriv_t<In2> *> &dataVecOut2RootForce,
 					 const sofa::type::vector<const sofa::DataVecDeriv_t<Out> *> &dataVecInForce) override;
 
-		void applyDJT(const sofa::core::MechanicalParams * /*mparams*/, sofa::core::MultiVecDerivId /*inForce*/,
-					  sofa::core::ConstMultiVecDerivId /*outForce*/) override {}
+		/// Geometric stiffness K_G · δξ — NOT YET IMPLEMENTED.
+		/// Implementation lives in the .inl so a single per-instance warning can
+		/// fire when implicit solvers query the tangent stiffness; without an
+		/// applyDJT body the Newton step is mis-scaled on large deformations.
+		void applyDJT(const sofa::core::MechanicalParams* mparams,
+					  sofa::core::MultiVecDerivId          inForce,
+					  sofa::core::ConstMultiVecDerivId     outForce) override;
 
 		/// Support for constraints
 		void applyJT(const sofa::core::ConstraintParams *cparams,
@@ -122,7 +126,6 @@ namespace Cosserat::mapping{
 		AdjointMatrix computeInverseTangentOperator(const TangentVector&);
 		AdjointMatrix compute_adjoint(const TangentVector&);
 		Matrix3 buildHatMatrix(const Vector3&);
-		AdjointMatrix compute_Adjoint(const Matrix4& g);
 
 
 	public:
@@ -159,7 +162,7 @@ namespace Cosserat::mapping{
     #if !defined(SOFA_COSSERAT_CPP_Frames2StrainCosseratMapping)
     extern template class SOFA_COSSERAT_API Frames2StrainCosseratMapping<
             sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Vec3Types>;
-	
-	
+    extern template class SOFA_COSSERAT_API Frames2StrainCosseratMapping<
+            sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Vec6Types>;
     #endif
 }// namespace Cosserat::mapping

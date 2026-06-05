@@ -23,8 +23,8 @@
 namespace Cosserat::mapping {
 	template class SOFA_COSSERAT_API Strain2RigidCosseratMapping<
 			sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types>;
-	// template class SOFA_COSSERAT_API Strain2RigidCosseratMapping<
-	// 		sofa::defaulttype::Vec6Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types>;
+	template class SOFA_COSSERAT_API Strain2RigidCosseratMapping<
+			sofa::defaulttype::Vec6Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types>;
 
 } // namespace Cosserat::mapping
 
@@ -45,8 +45,8 @@ namespace Cosserat {
 						.add<mapping::Strain2RigidCosseratMapping<sofa::defaulttype::Vec3Types,
 															   sofa::defaulttype::Rigid3Types,
 															   sofa::defaulttype::Rigid3Types>>(true)
-		.add<mapping::Strain2RigidCosseratMapping<sofa::defaulttype::Vec6Types,
-											   sofa::defaulttype::Rigid3Types,
-											   sofa::defaulttype::Rigid3Types>>());
+						.add<mapping::Strain2RigidCosseratMapping<sofa::defaulttype::Vec6Types,
+															   sofa::defaulttype::Rigid3Types,
+															   sofa::defaulttype::Rigid3Types>>());
 	}
 } // namespace Cosserat

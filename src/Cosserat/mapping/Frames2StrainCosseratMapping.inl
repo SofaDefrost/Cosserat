@@ -19,10 +19,10 @@
  *                                                                             *
  * Contact information: contact@sofa-framework.org                             *
  ******************************************************************************/
-//@appa
 #pragma once
 
 #include <Cosserat/mapping/Frames2StrainCosseratMapping.h>
+#include <Cosserat/mapping/SofaLieGroupsUtils.h>
 #include <sofa/core/Multi2Mapping.inl>
 #include <sofa/core/objectmodel/BaseContext.h>
 #include <sofa/core/visual/VisualParams.h>
@@ -68,10 +68,11 @@ namespace Cosserat::mapping {
     {
         this->addUpdateCallback("updateFrames", {&d_curv_abs_section, &d_curv_abs_frames, &d_debug},
 								[this](const sofa::core::DataTracker &t) {
-									msg_info() << "Frames2StrainCosseratMapping updateFrames callback called";
 									SOFA_UNUSED(t);
+									msg_info() << "Frames2StrainCosseratMapping updateFrames callback called";
 									this->updateGeometryInfo();
-									std::cout << "====> Update Callback <====" << std::endl;
+									msg_info_when(d_debug.getValue())
+										<< "====> Update Callback <====";
 									return sofa::core::objectmodel::ComponentState::Valid;
 								},
 								{});
@@ -126,18 +127,11 @@ namespace Cosserat::mapping {
 		if (this->d_componentState.getValue() != sofa::core::objectmodel::ComponentState::Valid)
 			return;
 
-		if (d_debug.getValue())
-			std::cout << " ########## Apply Function ########" << std::endl;
+		msg_info_when(d_debug.getValue()) << " ########## Apply Function ########";
 		
         // Get input data
 		const sofa::VecCoord_t<In1> &frames = dataVecIn1Pos[0]->getValue(); // frames positions
 		const sofa::VecCoord_t<In2> &rigidBase = dataVecIn2Pos[0]->getValue(); // Rigid base
-
-		// std::cout<<"(in) Rigid base: "<<rigidBase<<std::endl;
-
-		// for(int i=0; i<frames.size();i++){
-		// 	std::cout<<"(in) Frame ["<<i<<"]: "<<frames[i]<<std::endl;
-		// }
 
         //Output: strain (to evaluate)
         const auto nbSections = m_section_properties.size()-1;
@@ -149,16 +143,8 @@ namespace Cosserat::mapping {
 
 		const auto baseIndex = d_baseIndex.getValue();
         
-        //Get base config g(0)
-		const auto &base_rigid = rigidBase[baseIndex];
-		Vector3 base_trans(base_rigid.getCenter()[0], base_rigid.getCenter()[1], base_rigid.getCenter()[2]);
-
-		// Convert SOFA quaternion to Eigen quaternion (SOFA: x,y,z,w; Eigen: w,x,y,z)
-		const auto &base_sofa_quat = base_rigid.getOrientation();
-		Eigen::Quaternion<double> base_rot(base_sofa_quat[3], base_sofa_quat[0], base_sofa_quat[1], base_sofa_quat[2]);
-
-		// Create SE3 transformation
-		SE3Types g_base(SE3Types::SO3Type(base_rot), base_trans);
+        //Get base config g(0)  (via SOFA<->Eigen helper)
+		const SE3Types g_base = rigidCoordToSE3(rigidBase[baseIndex]);
 
         // g(X) = g(L_{n-1})*exp((X-L_{n-1})*strain_n)
         // for each frame (except the base frame), compute  g(L_{n-1}).inverse * g(X) = g_rel
@@ -167,25 +153,11 @@ namespace Cosserat::mapping {
 		const auto &curv_abs_sections = d_curv_abs_section.getValue();
 		const auto &curv_abs_frames = d_curv_abs_frames.getValue();
 
-		//compute transformation of each frame
+		//compute transformation of each frame (via SOFA<->Eigen helper)
 		std::vector<SE3Types> g_frames(frames.size());
-
-		// g_frames[0] = g_base;
-
-		for(unsigned int i=0; i<frames.size(); i++){
-
-			const auto& frame = frames[i];
-
-			Vector3 translation(frame.getCenter()[0], frame.getCenter()[1], frame.getCenter()[2]);
-
-			// Convert SOFA quaternion to Eigen quaternion (SOFA: x,y,z,w; Eigen: w,x,y,z)
-			const auto &quat = frame.getOrientation();
-			Eigen::Quaternion<double> rotation(quat[3], quat[0], quat[1], quat[2]);
-
-			g_frames[i] =SE3Types(SE3Types::SO3Type(rotation), translation);
+		for (unsigned int i = 0; i < frames.size(); i++) {
+			g_frames[i] = rigidCoordToSE3(frames[i]);
 		}
-
-		// std::cout<<"--- in the loop to compute strains ---"<<std::endl;
 
 		for(unsigned int i=0; i<nbSections; i++){
 			double section_start = curv_abs_sections[i];
@@ -208,25 +180,17 @@ namespace Cosserat::mapping {
 				double dx = section_end - section_start; //section length
 
 				SE3Types g_rel = g_frames[left_frame_idx].computeInverse() * g_frames[right_frame_idx];
-				
-				// std::cout<<"g_rel: " << g_rel<<std::endl;
+
 				TangentVector xi = g_rel.computeLog()/dx;
 
 				for(int j=0; j<6; j++){
 					strains[i][j] = xi[j];
 				}
-
-				// std::cout<<"(out) Strain ["<<i<<"] :" << strains[i]<<std::endl;
-
 			}
 			else{
-				std::cout<<"Warning: Could not find frames for section "<<i<<std::endl;
+				msg_warning() << "Could not find frames for section " << i;
 			}
 		}
-			
-		// std::cout<<"--- outside the loop ---"<<std::endl;
-
-
 
 		dataVecOutPos[0]->endEdit();
     
@@ -310,8 +274,8 @@ namespace Cosserat::mapping {
 		if (this->d_componentState.getValue() != sofa::core::objectmodel::ComponentState::Valid)
 			return;
 
-		if (d_debug.getValue())
-			std::cout << " ########## Frames2StrainCosseratMapping ApplyJ Function ########" << std::endl;
+		msg_info_when(d_debug.getValue())
+			<< " ########## Frames2StrainCosseratMapping ApplyJ Function ########";
 															
 		const sofa::VecDeriv_t<In1> &frame_vel = dataVecIn1Vel[0]->getValue();
 		const sofa::VecDeriv_t<In2> &base_vel = dataVecIn2Vel[0]->getValue();
@@ -340,27 +304,10 @@ namespace Cosserat::mapping {
 		for (auto u = 0; u < 6; u++)
 			base_vel_local[u] = base_vel[base_index][u];
 
-
-		// std::cout<<"(in) Base Velocity : ["<<base_vel_local.transpose()<<"]"<<std::endl;
-				
-		// for(int i=0; i<frame_vel.size(); i++)
-		// 	std::cout<<"(in) Frame velocity ["<<i<<"]: "<<frame_vel[i]<<std::endl;
-
-		
-		//compute transformation of each frame
+		//compute transformation of each frame (via SOFA<->Eigen helper)
 		std::vector<SE3Types> g_frames(framePositions.size());
-
-		for(unsigned int i=0; i<framePositions.size(); i++){
-
-			const auto& frame = framePositions[i];
-
-			Vector3 translation(frame.getCenter()[0], frame.getCenter()[1], frame.getCenter()[2]);
-
-			// Convert SOFA quaternion to Eigen quaternion (SOFA: x,y,z,w; Eigen: w,x,y,z)
-			const auto &quat = frame.getOrientation();
-			Eigen::Quaternion<double> rotation(quat[3], quat[0], quat[1], quat[2]);
-
-			g_frames[i] =SE3Types(SE3Types::SO3Type(rotation), translation);
+		for (unsigned int i = 0; i < framePositions.size(); i++) {
+			g_frames[i] = rigidCoordToSE3(framePositions[i]);
 		}
 
 		//
@@ -410,8 +357,6 @@ namespace Cosserat::mapping {
 			for(int k=0; k<6; k++){
 				strain_vel[i][k] = output_vel[k];
 			}
-
-			// std::cout << "(out) Strain velocity [" << i << "]: " << output_vel.transpose() <<"\n";
 		}
 
 		dataVecOutVel[0]->endEdit();
@@ -434,8 +379,8 @@ namespace Cosserat::mapping {
 		if (this->d_componentState.getValue() != sofa::core::objectmodel::ComponentState::Valid)
 			return;
 
-		if (d_debug.getValue())
-			std::cout << " ########## Frames2StrainCosseratMapping ApplyJT Force Function ########" << std::endl;
+		msg_info_when(d_debug.getValue())
+			<< " ########## Frames2StrainCosseratMapping ApplyJT Force Function ########";
 
 
 
@@ -456,42 +401,22 @@ namespace Cosserat::mapping {
 		// Initialize output forces
 		frameForces.resize(framePositions.size());
 
-		// std::cout<<"(in) Strain forces: "<<std::endl;
-		// for(auto v : strainForces){
-		// 	std::cout<< v <<std::endl;
-		// }
-
-		//compute transformation of each frame
+		//compute transformation of each frame (via SOFA<->Eigen helper)
 		std::vector<SE3Types> g_frames(framePositions.size());
-
-		for(unsigned int i=0; i<framePositions.size(); i++){
-
-			const auto& frame = framePositions[i];
-
-			Vector3 translation(frame.getCenter()[0], frame.getCenter()[1], frame.getCenter()[2]);
-
-			// Convert SOFA quaternion to Eigen quaternion (SOFA: x,y,z,w; Eigen: w,x,y,z)
-			const auto &quat = frame.getOrientation();
-			Eigen::Quaternion<double> rotation(quat[3], quat[0], quat[1], quat[2]);
-
-			g_frames[i] =SE3Types(SE3Types::SO3Type(rotation), translation);
+		for (unsigned int i = 0; i < framePositions.size(); i++) {
+			g_frames[i] = rigidCoordToSE3(framePositions[i]);
 		}
-
 
 		const auto section_count = d_curv_abs_section.getValue().size() - 1;
 
 		for(unsigned int i=0; i<section_count; i++){
-			// std::cout<<"## Section "<<i <<std::endl;
-
 			const auto& section = m_section_properties[i+1];
 
 			double dx = section.getLength(); //section length
 
-
 			//get current strain of the section
 			TangentVector strain_i = TangentVector::Zero();
 			TangentVector lambda = TangentVector::Zero();
-
 
 			for(int j=0; j<6; j++){
 				strain_i[j] = strainState[i][j];
@@ -499,8 +424,6 @@ namespace Cosserat::mapping {
 			}
 
 			TangentVector Omega_i = dx * strain_i;
-
-			// std::cout<<"Omega_i: "<< Omega_i.transpose()<<std::endl;
 
 			//compute Jacobians
 			AdjointMatrix dexp_inv = computeInverseTangentOperator(Omega_i);
@@ -510,30 +433,21 @@ namespace Cosserat::mapping {
 			AdjointMatrix AdgT = g.computeAdjoint().transpose();
 			AdjointMatrix J1_transpose = -(1./dx) * AdgT * dexp_inv.transpose();
 
-
-			//@appa: multiplication par dx déjà fait dans le forcefield
+			// NB : le facteur dx est déjà appliqué dans le ForceField, on ne le
+			// remultiplie pas ici (cf. J1_transpose ci-dessus qui contient déjà -1/dx)
 			TangentVector fa_local = J1_transpose * lambda; //a (b): extremite gauche (droite) de la section
 			TangentVector fb_local = J2.transpose() * lambda;
-
-			// std::cout<<"fa_local: "<<fa_local.transpose()<<std::endl;
-			// std::cout<<"fb_local: "<<fb_local.transpose()<<std::endl;
-
 
 			//Projection (local -> global)
 			//frame a
 			SE3Types ga = g_frames[i];
 			AdjointMatrix a_projector = ga.buildProjectionMatrix(ga.rotation().matrix());
 			TangentVector fa_global = a_projector.transpose().inverse() * fa_local;
-			
 
 			// idem pour le frame b
 			SE3Types gb = g_frames[i+1];
 			AdjointMatrix b_projector = gb.buildProjectionMatrix(gb.rotation().matrix());
 			TangentVector fb_global = b_projector.transpose().inverse() * fb_local;
-
-
-			// std::cout<<"fa_global: "<<fa_global.transpose()<<std::endl;
-			// std::cout<<"fb_global: "<<fb_global.transpose()<<std::endl;
 
 			for(int k=0; k<6; k++){
 				frameForces[i][k] +=fa_global[k];
@@ -542,14 +456,6 @@ namespace Cosserat::mapping {
 
 
 		}
-		
-		// // std::cout<<"-- End of the computation --"<<std::endl;
-
-		// std::cout << "(out) Frame forces: " << std::endl;
-		// for(int j=0; j<frameForces.size(); j++){
-		// 	std::cout<<"  (out) frame "<< j <<" : "<< frameForces[j] << std::endl;
-		// }
-    	// std::cout << "(out)base Force: " << baseForces[baseIndex] << std::endl;
 
 		dataVecOut1Force[0]->endEdit();
 		dataVecOut2Force[0]->endEdit();
@@ -571,8 +477,8 @@ namespace Cosserat::mapping {
 		if (this->d_componentState.getValue() != sofa::core::objectmodel::ComponentState::Valid)
 			return;
 
-		if (d_debug.getValue())
-			std::cout << " ########## Frames2StrainCosseratMapping ApplyJT Constraint Function ########" << std::endl;
+		msg_info_when(d_debug.getValue())
+			<< " ########## Frames2StrainCosseratMapping ApplyJT Constraint Function ########";
 
 		
 		// Prepare input and output data matrices
@@ -590,20 +496,10 @@ namespace Cosserat::mapping {
 		this->m_frames->read(sofa::core::vec_id::read_access::position)->getValue();
 
 
-		//compute transformation of each frame
+		//compute transformation of each frame (via SOFA<->Eigen helper)
 		std::vector<SE3Types> g_frames(framePositions.size());
-
-		for(unsigned int i=0; i<framePositions.size(); i++){
-
-			const auto& frame = framePositions[i];
-
-			Vector3 translation(frame.getCenter()[0], frame.getCenter()[1], frame.getCenter()[2]);
-
-			// Convert SOFA quaternion to Eigen quaternion (SOFA: x,y,z,w; Eigen: w,x,y,z)
-			const auto &quat = frame.getOrientation();
-			Eigen::Quaternion<double> rotation(quat[3], quat[0], quat[1], quat[2]);
-
-			g_frames[i] =SE3Types(SE3Types::SO3Type(rotation), translation);
+		for (unsigned int i = 0; i < framePositions.size(); i++) {
+			g_frames[i] = rigidCoordToSE3(framePositions[i]);
 		}
 
 		// Process constraints
@@ -758,7 +654,28 @@ namespace Cosserat::mapping {
 		// 	displayOutputFrames(xData, "draw - rendering frames");
 		// }
 
-		glEnd();				
+		glEnd();
+	}
+
+
+	// applyDJT — geometric stiffness K_G · δξ.
+	// NOT YET IMPLEMENTED. The stub satisfies the vtable so the component loads,
+	// but with an implicit solver (EulerImplicitSolver, StaticSolver, …) the
+	// tangent stiffness will be incomplete → Newton's method will not converge
+	// quadratically on large deformations.  Mirror of the same stub already in
+	// Strain2RigidCosseratMapping — see the analogous warning policy there.
+	template<class TIn1, class TIn2, class TOut>
+	void Frames2StrainCosseratMapping<TIn1, TIn2, TOut>::applyDJT(
+			const sofa::core::MechanicalParams* /*mparams*/,
+			sofa::core::MultiVecDerivId          /*inForce*/,
+			sofa::core::ConstMultiVecDerivId     /*outForce*/) {
+		static thread_local bool s_warned = false;
+		if (!s_warned) {
+			s_warned = true;
+			msg_warning() << "applyDJT() is not implemented for Frames2StrainCosseratMapping. "
+							 "Geometric stiffness is missing — implicit solvers may converge poorly "
+							 "on large deformations.";
+		}
 	}
 
 }

@@ -35,7 +35,9 @@ namespace Cosserat::mapping {
 	}
 
 	template<class TIn1, class TIn2, class TOut>
-	void CosseratGeometryMapping<TIn1, TIn2, TOut>::init() {//@appa: make the init func more generic
+	void CosseratGeometryMapping<TIn1, TIn2, TOut>::init() {
+		// Generic init: assigns the 3 mechanical states, calls the derived-class
+		// initialization() hook, builds geometry/sections/frames, then validates.
 		// Initialize pointers to nullptr
 		msg_info("CosseratGeometryMapping") << "Initializing CosseratGeometryMapping...";
 

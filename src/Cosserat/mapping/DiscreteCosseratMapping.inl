@@ -35,7 +35,8 @@
 
 #include <string>
 
-//@appa: Adaption pour fonctionner avec des Vec6 comme type d'entrée
+// This mapping is templated to support both Vec3 and Vec6 strain inputs;
+// the Vec6 specialisation is provided at the bottom of DiscreteCosseratMapping.cpp.
 namespace Cosserat::mapping {
 
     using sofa::core::objectmodel::BaseContext;

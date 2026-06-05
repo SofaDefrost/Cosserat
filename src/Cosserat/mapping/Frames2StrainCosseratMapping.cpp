@@ -19,7 +19,6 @@
 *                                                                             *
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
-//@appa
 #define SOFA_COSSERAT_CPP_Frames2StrainCosseratMapping
 #include <Cosserat/mapping/Frames2StrainCosseratMapping.inl>
 #include <sofa/core/ObjectFactory.h>
