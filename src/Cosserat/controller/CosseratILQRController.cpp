@@ -40,7 +40,7 @@ namespace Cosserat::controller {
 			"  mode=0  Gradient descent (fast, may need small stepSize)\n"
 			"  mode=1  Gauss-Newton    (quadratic convergence near solution)\n"
 			"\n"
-			"Requires a link to a Strain2RigidCosseratMapping (mapping=@...).\n"
+			"Requires a link to a Strain2FramesCosseratMapping (mapping=@...).\n"
 			"The strain corrections are written back to the strain mechanical\n"
 			"state at the start of each AnimateBeginEvent.")
 			.add<CosseratILQRController<Vec3Types, Rigid3Types, Rigid3Types>>(true));

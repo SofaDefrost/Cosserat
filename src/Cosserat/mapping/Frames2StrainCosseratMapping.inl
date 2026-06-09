@@ -663,7 +663,7 @@ namespace Cosserat::mapping {
 	// but with an implicit solver (EulerImplicitSolver, StaticSolver, …) the
 	// tangent stiffness will be incomplete → Newton's method will not converge
 	// quadratically on large deformations.  Mirror of the same stub already in
-	// Strain2RigidCosseratMapping — see the analogous warning policy there.
+	// Strain2FramesCosseratMapping — see the analogous warning policy there.
 	template<class TIn1, class TIn2, class TOut>
 	void Frames2StrainCosseratMapping<TIn1, TIn2, TOut>::applyDJT(
 			const sofa::core::MechanicalParams* /*mparams*/,

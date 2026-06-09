@@ -18,7 +18,7 @@
 #pragma once
 
 #include <Cosserat/config.h>
-#include <Cosserat/mapping/Strain2RigidCosseratMapping.h>
+#include <Cosserat/mapping/Strain2FramesCosseratMapping.h>
 
 #include <sofa/core/objectmodel/BaseObject.h>
 #include <sofa/core/objectmodel/Event.h>
@@ -51,7 +51,7 @@ namespace Cosserat::controller {
 	 * | 1      | Gauss-Newton   | (J^T·Q·J + R·I)·Δξ = -J^T·Q·e  (one Newton) |
 	 *
 	 * Both modes use the body Jacobian J_tip ∈ ℝ^{6×(N·DOF)} provided by
-	 * `Strain2RigidCosseratMapping::getBodyJacobian().getJacobianAtSection(N-1)`.
+	 * `Strain2FramesCosseratMapping::getBodyJacobian().getJacobianAtSection(N-1)`.
 	 *
 	 * For piecewise-constant strain (the standard Cosserat discretisation),
 	 * Gauss-Newton converges in one step for small errors.  Multiple iLQR
@@ -74,7 +74,7 @@ namespace Cosserat::controller {
 		SOFA_CLASS(SOFA_TEMPLATE3(CosseratILQRController, TIn1, TIn2, TOut),
 				   sofa::core::objectmodel::BaseObject);
 
-		using MappingType   = Cosserat::mapping::Strain2RigidCosseratMapping<TIn1, TIn2, TOut>;
+		using MappingType   = Cosserat::mapping::Strain2FramesCosseratMapping<TIn1, TIn2, TOut>;
 		using SE3Types      = SE3<double>;
 		using SO3Type       = typename SE3Types::SO3Type;
 		using TangentVector = typename SE3Types::TangentVector;

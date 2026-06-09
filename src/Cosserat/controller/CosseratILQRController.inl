@@ -37,7 +37,7 @@ namespace Cosserat::controller {
 	CosseratILQRController<TIn1, TIn2, TOut>::CosseratILQRController() :
 		Inherit1(),
 		l_mapping(initLink("mapping",
-			"Link to the Strain2RigidCosseratMapping whose body Jacobian "
+			"Link to the Strain2FramesCosseratMapping whose body Jacobian "
 			"is used for the iLQR optimisation.")),
 		d_targetPose(initData(&d_targetPose, OutCoord(),
 			"targetPose",
@@ -90,7 +90,7 @@ namespace Cosserat::controller {
 
 		if (!l_mapping.get()) {
 			msg_error() << "CosseratILQRController: 'mapping' link is not set. "
-			               "Please link to a Strain2RigidCosseratMapping.";
+			               "Please link to a Strain2FramesCosseratMapping.";
 			return;
 		}
 

@@ -17,7 +17,7 @@
  ******************************************************************************/
 #pragma once
 
-#include <Cosserat/mapping/Strain2RigidCosseratMapping.h>
+#include <Cosserat/mapping/Strain2FramesCosseratMapping.h>
 #include <Cosserat/mapping/SofaLieGroupsUtils.h>
 #include <sofa/core/Multi2Mapping.inl>
 #include <sofa/core/objectmodel/BaseContext.h>
@@ -42,7 +42,7 @@ namespace Cosserat::mapping {
 	using namespace sofa::component::cosserat::liegroups;
 
 	template<class TIn1, class TIn2, class TOut>
-	Strain2RigidCosseratMapping<TIn1, TIn2, TOut>::Strain2RigidCosseratMapping() :
+	Strain2FramesCosseratMapping<TIn1, TIn2, TOut>::Strain2FramesCosseratMapping() :
 		Inherit(), d_deformationAxis(initData(&d_deformationAxis, (int) 1, "deformationAxis",
 											  "the axis in which we want to show the deformation.\n")),
 		d_max(initData(&d_max, (SReal) 1.0e-2, "max", "the maximum of the deformation.\n")),
@@ -82,7 +82,7 @@ namespace Cosserat::mapping {
 		// Register callback for updating frame transformations when geometry changes
 		this->addUpdateCallback("updateFrames", {&d_curv_abs_section, &d_curv_abs_frames, &d_debug},
 								[this](const sofa::core::DataTracker &t) {
-									msg_info() << "Strain2RigidCosseratMapping updateFrames callback called";
+									msg_info() << "Strain2FramesCosseratMapping updateFrames callback called";
 									SOFA_UNUSED(t);
 									this->updateGeometryInfo();
 									std::cout << "====> Update Callback <====" << std::endl;
@@ -97,16 +97,16 @@ namespace Cosserat::mapping {
 	}
 
 	template<class TIn1, class TIn2, class TOut>
-	void Strain2RigidCosseratMapping<TIn1, TIn2, TOut>::doBaseCosseratInit() {
+	void Strain2FramesCosseratMapping<TIn1, TIn2, TOut>::doBaseCosseratInit() {
 		// Initialize colormap for visualization
 		m_colorMap.setColorScheme("Blue to Red");
 		m_colorMap.reinit();
 
-		msg_info() << "Strain2RigidCosseratMapping initialized with liegroups SE(3) integration";
+		msg_info() << "Strain2FramesCosseratMapping initialized with liegroups SE(3) integration";
 	}
 
 	template<class TIn1, class TIn2, class TOut>
-	void Strain2RigidCosseratMapping<TIn1, TIn2, TOut>::initialization() {	
+	void Strain2FramesCosseratMapping<TIn1, TIn2, TOut>::initialization() {	
 			// Get the initial configuration g(X):frames and initialize FrameInfo objects
 		if (m_frames) {
 			auto xfromData = m_frames->read(sofa::core::vec_id::read_access::position);
@@ -133,13 +133,13 @@ namespace Cosserat::mapping {
 
 	template<class TIn1, class TIn2, class TOut>
 	void
-	Strain2RigidCosseratMapping<TIn1, TIn2, TOut>::apply(const sofa::core::MechanicalParams * /* mparams */,
+	Strain2FramesCosseratMapping<TIn1, TIn2, TOut>::apply(const sofa::core::MechanicalParams * /* mparams */,
 													  const vector<sofa::DataVecCoord_t<Out> *> &dataVecOutPos,
 													  const vector<const sofa::DataVecCoord_t<In1> *> &dataVecIn1Pos,
 													  const vector<const sofa::DataVecCoord_t<In2> *> &dataVecIn2Pos) {
 
 
-		msg_info("Strain2RigidCosseratMapping") << "Strain2RigidCosseratMapping::apply called";
+		msg_info("Strain2FramesCosseratMapping") << "Strain2FramesCosseratMapping::apply called";
 
 		if (dataVecOutPos.empty() || dataVecIn1Pos.empty() || dataVecIn2Pos.empty())
 			return;
@@ -245,7 +245,7 @@ namespace Cosserat::mapping {
 	}
 
 	template<class TIn1, class TIn2, class TOut>
-	void Strain2RigidCosseratMapping<TIn1, TIn2, TOut>::updateFrameTransformations(
+	void Strain2FramesCosseratMapping<TIn1, TIn2, TOut>::updateFrameTransformations(
 			const sofa::type::vector<Coord1> &vec_of_strains) {
 		auto nb_node = vec_of_strains.size();
 
@@ -296,7 +296,7 @@ namespace Cosserat::mapping {
 
 	template<class TIn1, class TIn2, class TOut>
 	void
-	Strain2RigidCosseratMapping<TIn1, TIn2, TOut>::applyJ(const sofa::core::MechanicalParams * /* mparams */,
+	Strain2FramesCosseratMapping<TIn1, TIn2, TOut>::applyJ(const sofa::core::MechanicalParams * /* mparams */,
 													   const vector<sofa::DataVecDeriv_t<Out> *> &dataVecOutVel,
 													   const vector<const sofa::DataVecDeriv_t<In1> *> &dataVecIn1Vel,
 													   const vector<const sofa::DataVecDeriv_t<In2> *> &dataVecIn2Vel) {
@@ -309,7 +309,7 @@ namespace Cosserat::mapping {
 			return;
 
 		if (d_debug.getValue())
-			std::cout << " ########## Strain2RigidCosseratMapping ApplyJ Function ########" << std::endl;
+			std::cout << " ########## Strain2FramesCosseratMapping ApplyJ Function ########" << std::endl;
 
 		const sofa::VecDeriv_t<In1> &strain_vel = dataVecIn1Vel[0]->getValue();
 		const sofa::VecDeriv_t<In2> &base_vel = dataVecIn2Vel[0]->getValue();
@@ -450,7 +450,7 @@ namespace Cosserat::mapping {
 	}
 
 	template<class TIn1, class TIn2, class TOut>
-	void Strain2RigidCosseratMapping<TIn1, TIn2, TOut>::applyJT(
+	void Strain2FramesCosseratMapping<TIn1, TIn2, TOut>::applyJT(
 			const sofa::core::MechanicalParams * /*mparams*/,
 			const vector<sofa::DataVecDeriv_t<In1> *> &dataVecOut1Force,
 			const vector<sofa::DataVecDeriv_t<In2> *> &dataVecOut2Force,
@@ -464,7 +464,7 @@ namespace Cosserat::mapping {
 			return;
 
 		if (d_debug.getValue())
-			std::cout << " ########## Strain2RigidCosseratMapping ApplyJT Force Function ########" << std::endl;
+			std::cout << " ########## Strain2FramesCosseratMapping ApplyJT Force Function ########" << std::endl;
 
 
 
@@ -587,7 +587,7 @@ namespace Cosserat::mapping {
 	}
 
 	template<class TIn1, class TIn2, class TOut>
-	void Strain2RigidCosseratMapping<TIn1, TIn2, TOut>::applyJT(
+	void Strain2FramesCosseratMapping<TIn1, TIn2, TOut>::applyJT(
 			const sofa::core::ConstraintParams * /*cparams*/,
 			const vector<sofa::DataMatrixDeriv_t<In1> *> &dataMatOut1Const,
 			const vector<sofa::DataMatrixDeriv_t<In2> *> &dataMatOut2Const,
@@ -601,7 +601,7 @@ namespace Cosserat::mapping {
 			return;
 
 		if (d_debug.getValue())
-			std::cout << " ########## Strain2RigidCosseratMapping ApplyJT Constraint Function ########" << std::endl;
+			std::cout << " ########## Strain2FramesCosseratMapping ApplyJT Constraint Function ########" << std::endl;
 
 		
 		// Prepare input and output data matrices
@@ -738,7 +738,7 @@ namespace Cosserat::mapping {
 
 
 	template<class TIn1, class TIn2, class TOut>
-	void Strain2RigidCosseratMapping<TIn1, TIn2, TOut>::draw(const sofa::core::visual::VisualParams *vparams) {
+	void Strain2FramesCosseratMapping<TIn1, TIn2, TOut>::draw(const sofa::core::visual::VisualParams *vparams) {
 		if (!vparams->displayFlags().getShowMechanicalMappings())
 			return;
 
@@ -807,7 +807,7 @@ namespace Cosserat::mapping {
 
 
 	template<class TIn1, class TIn2, class TOut>
-	void Strain2RigidCosseratMapping<TIn1, TIn2, TOut>::computeBBox(const sofa::core::ExecParams *params,
+	void Strain2FramesCosseratMapping<TIn1, TIn2, TOut>::computeBBox(const sofa::core::ExecParams *params,
 																 bool onlyVisible) {
 		// Compute bounding box for visualization
 		// Implementation would calculate the extent of all frames
@@ -817,11 +817,11 @@ namespace Cosserat::mapping {
 	// Debug display functions (displayStrainState, displayRigidState, displayOutputFrames,
 	// displaySectionProperties, displayFrameProperties, displaySE3Transform,
 	// displayMappingState, displayVelocities) live in a separate _debug.inl included
-	// at the bottom of this file — see Strain2RigidCosseratMapping_debug.inl.
+	// at the bottom of this file — see Strain2FramesCosseratMapping_debug.inl.
 
 	// applyDJT — geometric stiffness K_G · δξ.
 	//
-	// NOT YET IMPLEMENTED. See Strain2RigidCosseratMapping.h lines 171-199 for the
+	// NOT YET IMPLEMENTED. See Strain2FramesCosseratMapping.h lines 171-199 for the
 	// formula (frame direct term + section transport term). The stub satisfies the
 	// vtable so the component loads, but with an implicit solver (EulerImplicitSolver,
 	// StaticSolver, …) the tangent stiffness will be incomplete → Newton's method
@@ -830,7 +830,7 @@ namespace Cosserat::mapping {
 	// TODO(P1) : implement using `TwistType::smallAdjoint()` from liegroups and the
 	//             body-wrench backward sweep from `CosseratBodyJacobian`.
 	template<class TIn1, class TIn2, class TOut>
-	void Strain2RigidCosseratMapping<TIn1, TIn2, TOut>::applyDJT(
+	void Strain2FramesCosseratMapping<TIn1, TIn2, TOut>::applyDJT(
 			const sofa::core::MechanicalParams* /*mparams*/,
 			sofa::core::MultiVecDerivId          /*inForce*/,
 			sofa::core::ConstMultiVecDerivId     /*outForce*/) {
@@ -839,7 +839,7 @@ namespace Cosserat::mapping {
 		static thread_local bool s_warned = false;
 		if (!s_warned) {
 			s_warned = true;
-			msg_warning() << "applyDJT() is not implemented for Strain2RigidCosseratMapping. "
+			msg_warning() << "applyDJT() is not implemented for Strain2FramesCosseratMapping. "
 							 "Geometric stiffness is missing — implicit solvers may converge poorly "
 							 "on large deformations. See header lines 171-199 for the target formula.";
 		}
@@ -849,4 +849,4 @@ namespace Cosserat::mapping {
 
 // Debug helpers (display*() definitions). Kept out-of-line so this file stays
 // focused on the mapping algebra.
-#include <Cosserat/mapping/Strain2RigidCosseratMapping_debug.inl>
+#include <Cosserat/mapping/Strain2FramesCosseratMapping_debug.inl>

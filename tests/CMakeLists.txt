@@ -11,7 +11,7 @@ set(
 )
 
 set(SOURCE_FILES
-    unit/Strain2RigidCosseratMappingTest.cpp
+    unit/Strain2FramesCosseratMappingTest.cpp
     unit/LiegroupsIntegrationTest.cpp
     unit/DiscreteCosseratMappingApplyDJTTest.cpp
     unit/LogExpRoundTripTest.cpp

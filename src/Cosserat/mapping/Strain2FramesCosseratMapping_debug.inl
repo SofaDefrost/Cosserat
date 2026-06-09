@@ -6,28 +6,28 @@
 #pragma once
 
 /**
- * @file Strain2RigidCosseratMapping_debug.inl
+ * @file Strain2FramesCosseratMapping_debug.inl
  * @brief Out-of-line implementations of the display*() debug helpers.
  *
- * These ~250 lines used to live at the bottom of Strain2RigidCosseratMapping.inl
+ * These ~250 lines used to live at the bottom of Strain2FramesCosseratMapping.inl
  * but cluttered the file without adding to the mapping's correctness or runtime
  * behaviour.  They are only invoked when `d_debug.getValue() == true` (or via
  * `f_printLog`), so the cost in release builds is one branch + the compiled
  * std::cout instructions — kept here so the main .inl stays focused on the
  * mapping algebra.
  *
- * Included unconditionally at the end of Strain2RigidCosseratMapping.inl.
+ * Included unconditionally at the end of Strain2FramesCosseratMapping.inl.
  * The implementations remain in a header because they're class-template
  * member functions and must be visible to every translation unit that
- * instantiates Strain2RigidCosseratMapping.
+ * instantiates Strain2FramesCosseratMapping.
  */
 
-#include <Cosserat/mapping/Strain2RigidCosseratMapping.h>
+#include <Cosserat/mapping/Strain2FramesCosseratMapping.h>
 
 namespace Cosserat::mapping {
 
 	template<class TIn1, class TIn2, class TOut>
-	void Strain2RigidCosseratMapping<TIn1, TIn2, TOut>::displayStrainState(
+	void Strain2FramesCosseratMapping<TIn1, TIn2, TOut>::displayStrainState(
 			const sofa::type::vector<Coord1> &strainState,
 			const std::string &context) const {
 		std::cout << "\n=== STRAIN STATE DEBUG" << (context.empty() ? "" : " (" + context + ")") << " ===\n";
@@ -53,7 +53,7 @@ namespace Cosserat::mapping {
 	}
 
 	template<class TIn1, class TIn2, class TOut>
-	void Strain2RigidCosseratMapping<TIn1, TIn2, TOut>::displayRigidState(
+	void Strain2FramesCosseratMapping<TIn1, TIn2, TOut>::displayRigidState(
 			const sofa::type::vector<sofa::Coord_t<In2>> &rigidState,
 			const std::string &context) const {
 		std::cout << "\n=== RIGID STATE DEBUG" << (context.empty() ? "" : " (" + context + ")") << " ===\n";
@@ -73,7 +73,7 @@ namespace Cosserat::mapping {
 	}
 
 	template<class TIn1, class TIn2, class TOut>
-	void Strain2RigidCosseratMapping<TIn1, TIn2, TOut>::displayOutputFrames(
+	void Strain2FramesCosseratMapping<TIn1, TIn2, TOut>::displayOutputFrames(
 			const sofa::type::vector<OutCoord> &outputFrames,
 			const std::string &context) const {
 		std::cout << "\n=== OUTPUT FRAMES DEBUG" << (context.empty() ? "" : " (" + context + ")") << " ===\n";
@@ -98,7 +98,7 @@ namespace Cosserat::mapping {
 	}
 
 	template<class TIn1, class TIn2, class TOut>
-	void Strain2RigidCosseratMapping<TIn1, TIn2, TOut>::displaySectionProperties(
+	void Strain2FramesCosseratMapping<TIn1, TIn2, TOut>::displaySectionProperties(
 			const std::string &context) const {
 		std::cout << "\n=== SECTION PROPERTIES DEBUG" << (context.empty() ? "" : " (" + context + ")") << " ===\n";
 		std::cout << "Section properties size: " << m_section_properties.size() << std::endl;
@@ -123,7 +123,7 @@ namespace Cosserat::mapping {
 	}
 
 	template<class TIn1, class TIn2, class TOut>
-	void Strain2RigidCosseratMapping<TIn1, TIn2, TOut>::displayFrameProperties(
+	void Strain2FramesCosseratMapping<TIn1, TIn2, TOut>::displayFrameProperties(
 			const std::string &context) const {
 		std::cout << "\n=== FRAME PROPERTIES DEBUG" << (context.empty() ? "" : " (" + context + ")") << " ===\n";
 		std::cout << "Frame properties size: " << m_frameProperties.size() << std::endl;
@@ -151,7 +151,7 @@ namespace Cosserat::mapping {
 	}
 
 	template<class TIn1, class TIn2, class TOut>
-	void Strain2RigidCosseratMapping<TIn1, TIn2, TOut>::displaySE3Transform(
+	void Strain2FramesCosseratMapping<TIn1, TIn2, TOut>::displaySE3Transform(
 			const SE3Types &transform,
 			const std::string &name) const {
 		std::cout << "\n=== SE3 TRANSFORM DEBUG: " << name << " ===\n";
@@ -179,7 +179,7 @@ namespace Cosserat::mapping {
 	}
 
 	template<class TIn1, class TIn2, class TOut>
-	void Strain2RigidCosseratMapping<TIn1, TIn2, TOut>::displayMappingState(
+	void Strain2FramesCosseratMapping<TIn1, TIn2, TOut>::displayMappingState(
 			const std::string &context) const {
 		std::cout << "\n=== MAPPING STATE DEBUG" << (context.empty() ? "" : " (" + context + ")") << " ===\n";
 		std::cout << "Base index: " << d_baseIndex.getValue() << std::endl;
@@ -224,7 +224,7 @@ namespace Cosserat::mapping {
 	}
 
 	template<class TIn1, class TIn2, class TOut>
-	void Strain2RigidCosseratMapping<TIn1, TIn2, TOut>::displayVelocities(
+	void Strain2FramesCosseratMapping<TIn1, TIn2, TOut>::displayVelocities(
 			const sofa::type::vector<Deriv1> &strainVel,
 			const sofa::type::vector<sofa::Deriv_t<In2>> &baseVel,
 			const sofa::type::vector<OutDeriv> &outputVel,

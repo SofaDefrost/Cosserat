@@ -52,9 +52,9 @@ namespace Cosserat::mapping {
 	 * @tparam TOut The output type for the mapping (frames)
 	 */
 	template<class TIn1, class TIn2, class TOut>
-	class Strain2RigidCosseratMapping : public CosseratGeometryMapping<TIn1, TIn2, TOut> {
+	class Strain2FramesCosseratMapping : public CosseratGeometryMapping<TIn1, TIn2, TOut> {
 	public:
-		SOFA_CLASS(SOFA_TEMPLATE3(Strain2RigidCosseratMapping
+		SOFA_CLASS(SOFA_TEMPLATE3(Strain2FramesCosseratMapping
 	, TIn1, TIn2, TOut),
 				   SOFA_TEMPLATE3(CosseratGeometryMapping, TIn1, TIn2, TOut));
 
@@ -276,16 +276,16 @@ namespace Cosserat::mapping {
 							   const sofa::type::vector<OutDeriv> &outputVel, const std::string &context = "") const;
 
 	protected:
-		Strain2RigidCosseratMapping
+		Strain2FramesCosseratMapping
 ();
-		~Strain2RigidCosseratMapping
+		~Strain2FramesCosseratMapping
 () override = default;
 	};
 
-#if !defined(SOFA_COSSERAT_CPP_Strain2RigidCosseratMapping)
-	extern template class SOFA_COSSERAT_API Strain2RigidCosseratMapping<
+#if !defined(SOFA_COSSERAT_CPP_Strain2FramesCosseratMapping)
+	extern template class SOFA_COSSERAT_API Strain2FramesCosseratMapping<
 			sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types>;
-	extern template class SOFA_COSSERAT_API Strain2RigidCosseratMapping<
+	extern template class SOFA_COSSERAT_API Strain2FramesCosseratMapping<
 			sofa::defaulttype::Vec6Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types>;
 #endif
 

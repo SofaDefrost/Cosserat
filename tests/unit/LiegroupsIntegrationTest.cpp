@@ -29,7 +29,7 @@
  *  6. CosseratILQRController — computeControl reduces predicted tip error
  *
  * Tests 1–5 are pure liegroups tests (no SOFA simulation needed).
- * Test 6 uses the SOFA fixture from Strain2RigidCosseratMappingTest.
+ * Test 6 uses the SOFA fixture from Strain2FramesCosseratMappingTest.
  */
 
 // ── liegroups (header-only) ───────────────────────────────────────────────────
@@ -44,8 +44,8 @@
 
 // ── Cosserat mapping / controller ─────────────────────────────────────────────
 #include <Cosserat/mapping/BeamStateEstimator.h>
-// Only include header — .cpp symbols come from libCosserat (no duplicate with Strain2RigidCosseratMappingTest)
-#include <Cosserat/mapping/Strain2RigidCosseratMapping.h>
+// Only include header — .cpp symbols come from libCosserat (no duplicate with Strain2FramesCosseratMappingTest)
+#include <Cosserat/mapping/Strain2FramesCosseratMapping.h>
 #include <Cosserat/controller/CosseratILQRController.h>
 #include <Cosserat/controller/CosseratILQRController.cpp>
 
@@ -520,7 +520,7 @@ TEST(UncertaintyPropagatorTest, TipConfidenceRadiiPositive) {
 
 class ILQRControllerTest : public ::testing::Test {
 protected:
-    using MappingT    = Cosserat::mapping::Strain2RigidCosseratMapping<Vec3Types, Rigid3Types, Rigid3Types>;
+    using MappingT    = Cosserat::mapping::Strain2FramesCosseratMapping<Vec3Types, Rigid3Types, Rigid3Types>;
     using ControllerT = Cosserat::controller::CosseratILQRController<Vec3Types, Rigid3Types, Rigid3Types>;
     using StrainMO    = sofa::component::statecontainer::MechanicalObject<Vec3Types>;
     using RigidMO     = sofa::component::statecontainer::MechanicalObject<Rigid3Types>;

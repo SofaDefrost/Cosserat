@@ -59,7 +59,7 @@ def createScene(root):
     strain_node = _add_cosserat_state(rigid_base, frame_node, beam_geometry)
    
 
-    #### Beam 2 (Red beam using Strain2RigidCosseratMapping) ####
+    #### Beam 2 (Red beam using Strain2FramesCosseratMapping) ####
     
     #Using same beam parameters
 
@@ -97,7 +97,7 @@ def createScene(root):
     frame_node2.addObject("UniformMass", totalMass=beam_mass)
 
     frame_node2.addObject(
-        "Strain2RigidCosseratMapping",
+        "Strain2FramesCosseratMapping",
         curv_abs_input=beam_geometry.curv_abs_sections,
         curv_abs_output=beam_geometry.curv_abs_frames,
         name="cosseratMapping2",

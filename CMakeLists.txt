@@ -47,8 +47,8 @@ set(HEADER_FILES
   ${SRC_ROOT_DIR}/types.h
   ${SRC_ROOT_DIR}/mapping/CosseratGeometryMapping.h
   ${SRC_ROOT_DIR}/mapping/CosseratGeometryMapping.inl
-  ${SRC_ROOT_DIR}/mapping/Strain2RigidCosseratMapping.h
-  ${SRC_ROOT_DIR}/mapping/Strain2RigidCosseratMapping.inl
+  ${SRC_ROOT_DIR}/mapping/Strain2FramesCosseratMapping.h
+  ${SRC_ROOT_DIR}/mapping/Strain2FramesCosseratMapping.inl
   ${SRC_ROOT_DIR}/mapping/Frames2StrainCosseratMapping.h
   ${SRC_ROOT_DIR}/mapping/Frames2StrainCosseratMapping.inl
   ${SRC_ROOT_DIR}/mapping/BaseCosseratMapping.h
@@ -97,7 +97,7 @@ set(SOURCE_FILES
     ${SRC_ROOT_DIR}/initCosserat.cpp
     ${SRC_ROOT_DIR}/mapping/BaseCosseratMapping.cpp
     ${SRC_ROOT_DIR}/mapping/CosseratGeometryMapping.cpp
-    ${SRC_ROOT_DIR}/mapping/Strain2RigidCosseratMapping.cpp
+    ${SRC_ROOT_DIR}/mapping/Strain2FramesCosseratMapping.cpp
     ${SRC_ROOT_DIR}/mapping/Frames2StrainCosseratMapping.cpp
 
     ${SRC_ROOT_DIR}/mapping/DiscreteCosseratMapping.cpp

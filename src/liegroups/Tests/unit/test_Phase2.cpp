@@ -59,7 +59,7 @@ TEST(BeamStateEstimatorTest, Prediction) {
 }
 
 // Test BeamTopology
-class ConcreteStrain2RigidCosseratMapping
+class ConcreteStrain2FramesCosseratMapping
 	: public CosseratGeometryMapping<sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types,
 								   sofa::defaulttype::Rigid3Types> {
 public:
@@ -96,7 +96,7 @@ public:
 };
 
 TEST(BeamTopologyTest, Structure) {
-	ConcreteStrain2RigidCosseratMapping mapping;
+	ConcreteStrain2FramesCosseratMapping mapping;
 
 	// Create a Y-shape topology: 0 -> 1, 0 -> 2
 	BeamTopology topology;

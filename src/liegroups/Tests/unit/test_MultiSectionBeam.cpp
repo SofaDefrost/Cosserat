@@ -1,4 +1,4 @@
-#include <Cosserat/mapping/Strain2RigidCosseratMapping.h>
+#include <Cosserat/mapping/Strain2FramesCosseratMapping.h>
 #include <gtest/gtest.h>
 #include <sofa/defaulttype/RigidTypes.h>
 #include <sofa/defaulttype/VecTypes.h>
@@ -6,8 +6,8 @@
 using namespace sofa::component::cosserat::liegroups;
 using namespace Cosserat::mapping;
 
-class ConcreteStrain2RigidCosseratMapping
-	: public Strain2RigidCosseratMapping<sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types,
+class ConcreteStrain2FramesCosseratMapping
+	: public Strain2FramesCosseratMapping<sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types,
 										sofa::defaulttype::Rigid3Types> {
 public:
 	using In1 = sofa::defaulttype::Vec3Types;
@@ -42,11 +42,11 @@ public:
 				  sofa::core::ConstMultiVecDerivId /* outForce */) override {}
 
 	// Expose protected methods
-	using Strain2RigidCosseratMapping::checkContinuity;
+	using Strain2FramesCosseratMapping::checkContinuity;
 };
 
 TEST(MultiSectionBeamTest, TopologyValidation) {
-	ConcreteStrain2RigidCosseratMapping mapping;
+	ConcreteStrain2FramesCosseratMapping mapping;
 
 	// Invalid topology (size mismatch)
 	BeamTopology invalid_topology;
@@ -68,7 +68,7 @@ TEST(MultiSectionBeamTest, TopologyValidation) {
 }
 
 TEST(MultiSectionBeamTest, ContinuityCheck) {
-	ConcreteStrain2RigidCosseratMapping mapping;
+	ConcreteStrain2FramesCosseratMapping mapping;
 
 	// Create two sections that are continuous
 	// Section 1: Length 1, Strain 0 (Identity transform) -> End at Identity * Length? No, Exp(0)*L

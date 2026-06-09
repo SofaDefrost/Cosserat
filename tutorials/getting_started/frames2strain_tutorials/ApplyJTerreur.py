@@ -1,5 +1,5 @@
 """
-The frame positions are obtained using the Strain2RigidCosseratMapping with strain of section i equal to [0, 0, i*0.1, 0, 0, 0].
+The frame positions are obtained using the Strain2FramesCosseratMapping with strain of section i equal to [0, 0, i*0.1, 0, 0, 0].
 Remark that in this mapping (same for the DiscreteCosseratMapping) the default elongation is 0 
 but for the force field (BeamHookeLawForceField or HookeSeratPCSForceField) the default elongation is fixed to 1. 
 """
@@ -76,7 +76,7 @@ def createScene(root):
                            ExportPositions=True, ExportVelocities=False, 
                            ExportForces=False, fileName="monitor_frames2strain")
 
-    #### Beam 2 (Red beam using Strain2RigidCosseratMapping) ####
+    #### Beam 2 (Red beam using Strain2FramesCosseratMapping) ####
     
     #Using same beam parameters
 
@@ -121,7 +121,7 @@ def createScene(root):
     frame_node2.addObject("UniformMass", totalMass=beam_mass)
 
     frame_node2.addObject(
-        "Strain2RigidCosseratMapping",
+        "Strain2FramesCosseratMapping",
         curv_abs_input=beam_geometry.curv_abs_sections,
         curv_abs_output=beam_geometry.curv_abs_frames,
         name="cosseratMapping2",

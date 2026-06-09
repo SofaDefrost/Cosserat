@@ -1,5 +1,5 @@
 """
-Remark that in Strain2RigidCosseratMapping the default elongation is 0 
+Remark that in Strain2FramesCosseratMapping the default elongation is 0 
 but for the Frames2StrainCosseratMapping the default elongation is fixed to 1. 
 
 """

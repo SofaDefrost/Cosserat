@@ -1,7 +1,7 @@
 """
 Initially curved beam:
 
-The frame positions are obtained using the Strain2RigidCosseratMapping with strain of section i equal to [0, 0, i*0.1, 0, 0, 0].
+The frame positions are obtained using the Strain2FramesCosseratMapping with strain of section i equal to [0, 0, i*0.1, 0, 0, 0].
 Remark that in this mapping (same for the DiscreteCosseratMapping) the default elongation is 0 
 but for the force field (BeamHookeLawForceField or HookeSeratPCSForceField) the default elongation is fixed to 1. 
 """

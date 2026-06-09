@@ -16,8 +16,8 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.        *
  ******************************************************************************/
 
-#include <Cosserat/mapping/Strain2RigidCosseratMapping.h>
-#include <Cosserat/mapping/Strain2RigidCosseratMapping.cpp>
+#include <Cosserat/mapping/Strain2FramesCosseratMapping.h>
+#include <Cosserat/mapping/Strain2FramesCosseratMapping.cpp>
 #include <gtest/gtest.h>
 #include <sofa/component/statecontainer/MechanicalObject.h>
 #include <sofa/core/MechanicalParams.h>
@@ -37,11 +37,11 @@ using namespace sofa::simulation;
 using namespace sofa::component::statecontainer;
 
 /**
- * @brief Test fixture for Strain2RigidCosseratMapping
+ * @brief Test fixture for Strain2FramesCosseratMapping
  */
-class Strain2RigidCosseratMappingTest : public ::testing::Test {
+class Strain2FramesCosseratMappingTest : public ::testing::Test {
    protected:
-    using Mapping = Strain2RigidCosseratMapping<Vec3Types, Rigid3Types, Rigid3Types>;
+    using Mapping = Strain2FramesCosseratMapping<Vec3Types, Rigid3Types, Rigid3Types>;
     using StrainMO = MechanicalObject<Vec3Types>;
     using RigidMO = MechanicalObject<Rigid3Types>;
 
@@ -139,7 +139,7 @@ class Strain2RigidCosseratMappingTest : public ::testing::Test {
 /**
  * @brief Test basic initialization
  */
-TEST_F(Strain2RigidCosseratMappingTest, Initialization) {
+TEST_F(Strain2FramesCosseratMappingTest, Initialization) {
     setupStraightBeam(5);
 
     EXPECT_NE(mapping, nullptr);
@@ -150,7 +150,7 @@ TEST_F(Strain2RigidCosseratMappingTest, Initialization) {
 /**
  * @brief Test apply() with zero strain (straight beam)
  */
-TEST_F(Strain2RigidCosseratMappingTest, ApplyZeroStrain) {
+TEST_F(Strain2FramesCosseratMappingTest, ApplyZeroStrain) {
     setupStraightBeam(5);
 
     // Apply mapping
@@ -188,7 +188,7 @@ TEST_F(Strain2RigidCosseratMappingTest, ApplyZeroStrain) {
  * A dedicated applyJ test should be written once the velocity propagation
  * interface is stabilised.
  */
-TEST_F(Strain2RigidCosseratMappingTest, JacobianFiniteDifference) {
+TEST_F(Strain2FramesCosseratMappingTest, JacobianFiniteDifference) {
     GTEST_SKIP() << "FD-based applyJ test not yet implemented (velocity MO "
                     "read-back path incomplete)";
     setupStraightBeam(3);
@@ -286,7 +286,7 @@ TEST_F(Strain2RigidCosseratMappingTest, JacobianFiniteDifference) {
  * is stabilised and applyJ is validated.
  * Mathematical identity to verify: ⟨J·v, f⟩ = ⟨v, Jᵀ·f⟩
  */
-TEST_F(Strain2RigidCosseratMappingTest, JacobianTranspose) {
+TEST_F(Strain2FramesCosseratMappingTest, JacobianTranspose) {
     GTEST_SKIP() << "Transpose consistency test not yet implemented "
                     "(depends on functional applyJ velocity path)";
 }
@@ -294,7 +294,7 @@ TEST_F(Strain2RigidCosseratMappingTest, JacobianTranspose) {
 /**
  * @brief Test with curved beam (non-zero strain)
  */
-TEST_F(Strain2RigidCosseratMappingTest, CurvedBeam) {
+TEST_F(Strain2FramesCosseratMappingTest, CurvedBeam) {
     setupStraightBeam(5);
 
     // Set constant curvature — bending around z-axis (φ₃ = 0.1 rad/m).
@@ -334,7 +334,7 @@ TEST_F(Strain2RigidCosseratMappingTest, CurvedBeam) {
 /**
  * @brief Test validateJacobianAccuracy method
  */
-TEST_F(Strain2RigidCosseratMappingTest, ValidateJacobianAccuracy) {
+TEST_F(Strain2FramesCosseratMappingTest, ValidateJacobianAccuracy) {
     setupStraightBeam(3);
 
     // This test verifies the built-in numerical validation
