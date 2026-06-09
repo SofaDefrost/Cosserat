@@ -216,7 +216,7 @@ namespace Cosserat::mapping {
 					strains[i][j] = xi[j];
 				}
 
-				std::cout<<"(out) Strain ["<<i<<"] :" << std::fixed << std::setprecision(16)<< strains[i]<<std::endl;
+				// std::cout<<"(out) Strain ["<<i<<"] :" << std::fixed << std::setprecision(16)<< strains[i]<<std::endl;
 
 			}
 			else{
@@ -415,18 +415,18 @@ namespace Cosserat::mapping {
 
 			//Projection (global -> local)
 			//frame a
-			SE3Types ga_inv = g_frames[i].inverse();
+			SE3Types ga_inv = g_frames[i];
 			AdjointMatrix a_projector = ga_inv.buildProjectionMatrix(ga_inv.rotation().matrix());
 			TangentVector vela_global(frame_vel[i][0], frame_vel[i][1], frame_vel[i][2], frame_vel[i][3], frame_vel[i][4], frame_vel[i][5]);
 			
-			eta_a = a_projector * vela_global;
+			eta_a = a_projector.transpose()* vela_global;
 
 			// idem pour le frame b
-			SE3Types gb_inv = g_frames[i+1].inverse();
+			SE3Types gb_inv = g_frames[i+1];
 			AdjointMatrix b_projector = gb_inv.buildProjectionMatrix(gb_inv.rotation().matrix());
 			TangentVector velb_global(frame_vel[i+1][0], frame_vel[i+1][1], frame_vel[i+1][2], frame_vel[i+1][3], frame_vel[i+1][4], frame_vel[i+1][5]);
 			
-			eta_b = b_projector * velb_global;
+			eta_b = b_projector.transpose() * velb_global;
 			
 			TangentVector output_vel = J1*eta_a + J2*eta_b;
 			
@@ -546,21 +546,21 @@ namespace Cosserat::mapping {
 			//frame a
 			SE3Types ga = g_frames[i];
 			AdjointMatrix a_projector = ga.buildProjectionMatrix(ga.rotation().matrix());
-			TangentVector fa_global = a_projector.transpose().inverse() * fa_local;
+			TangentVector fa_global = a_projector * fa_local;
 			
 
 			// idem pour le frame b
 			SE3Types gb = g_frames[i+1];
 			AdjointMatrix b_projector = gb.buildProjectionMatrix(gb.rotation().matrix());
-			TangentVector fb_global = b_projector.transpose().inverse() * fb_local;
+			TangentVector fb_global = b_projector * fb_local;
 
 
 			// std::cout<<"fa_global: "<<fa_global.transpose()<<std::endl;
 			// std::cout<<"fb_global: "<<fb_global.transpose()<<std::endl;
 
 			for(int k=0; k<6; k++){
-				frameForces[i][k] +=fa_global[k];
-				frameForces[i+1][k] +=fb_global[k];
+				frameForces[i][k] += fa_global[k];
+				frameForces[i+1][k] += fb_global[k];
 			}
 
 
@@ -676,13 +676,13 @@ namespace Cosserat::mapping {
 				//frame a
 				SE3Types ga = g_frames[strainIndex];
 				AdjointMatrix a_projector = ga.buildProjectionMatrix(ga.rotation().matrix());
-				TangentVector fa_global = a_projector.transpose().inverse() * fa_local;
+				TangentVector fa_global = a_projector * fa_local;
 				
 
 				// idem pour le frame b
 				SE3Types gb = g_frames[strainIndex+1];
 				AdjointMatrix b_projector = gb.buildProjectionMatrix(gb.rotation().matrix());
-				TangentVector fb_global = b_projector.transpose().inverse() * fb_local;
+				TangentVector fb_global = b_projector * fb_local;
 
 				sofa::type::Vec<6, double> fa_vec, fb_vec;
 

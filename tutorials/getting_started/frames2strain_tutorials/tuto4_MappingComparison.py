@@ -37,7 +37,7 @@ def createScene(root):
         rayleighMass="0.1",
         vdamping=v_damping_param,  # Damping parameter for dynamics
     )
-    solver.addObject("CGLinearSolver", iterations=100, tolerance=1e-9, threshold=1e-9)
+    solver.addObject("CGLinearSolver", iterations=1000, tolerance=1e-15, threshold=1e-15)
 
     #### Beam 1 (Green beam using Frames2StrainCosseratMapping) ####
  
@@ -53,7 +53,7 @@ def createScene(root):
     rigid_base = _add_rigid_base(solver, node_name="rigid_base")
     
     ## frame node
-    frame_node = _add_cosserat_frame(solver, beam_geometry, beam_mass=beam_mass)
+    frame_node = _add_cosserat_frame(solver, beam_geometry, beam_mass=beam_mass, constraint=False)
 
     ## bending node
     strain_node = _add_cosserat_state(rigid_base, frame_node, beam_geometry)
@@ -67,8 +67,8 @@ def createScene(root):
     base_node2.addObject("MechanicalObject", template="Rigid3d", name="base_mo2", 
                         position=[0., 0., 0., 0., 0., 0., 1.], showIndices="1", showObject="1", showObjectScale=0.1)
     
-    base_node2.addObject("RestShapeSpringsForceField", name="spring2", stiffness=stiffness_param, angularStiffness=stiffness_param,
-                         external_points="0", mstate="@base_mo2", points="0", template="Rigid3d")
+    # base_node2.addObject("RestShapeSpringsForceField", name="spring2", stiffness=stiffness_param, angularStiffness=stiffness_param,
+    #                      external_points="0", mstate="@base_mo2", points="0", template="Rigid3d")
         
     custom_bending_states = [[0., 0., 0, 0, 0, 0] for _ in range(nb_section)]
     
