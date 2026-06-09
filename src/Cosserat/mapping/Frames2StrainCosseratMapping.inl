@@ -130,7 +130,7 @@ namespace Cosserat::mapping {
 			std::cout << " ########## Apply Function ########" << std::endl;
 		
         // Get input data
-		const sofa::VecCoord_t<In1> &frames = dataVecIn1Pos[0]->getValue(); // frames positions
+		const sofa::VecCoord_t<In1> &framePositions = dataVecIn1Pos[0]->getValue(); // frames positions
 		const sofa::VecCoord_t<In2> &rigidBase = dataVecIn2Pos[0]->getValue(); // Rigid base
 
 		// std::cout<<"(in) Rigid base: "<<rigidBase<<std::endl;
@@ -167,92 +167,67 @@ namespace Cosserat::mapping {
 		const auto &curv_abs_sections = d_curv_abs_section.getValue();
 		const auto &curv_abs_frames = d_curv_abs_frames.getValue();
 
-		//compute transformation of each frame
-		std::vector<SE3Types> g_frames(frames.size());
+		// //compute transformation of each frame
+		// std::vector<SE3Types> g_frames(frames.size());
 
-		// g_frames[0] = g_base;
+		// // g_frames[0] = g_base;
 
-		for(unsigned int i=0; i<frames.size(); i++){
+		// for(unsigned int i=0; i<frames.size(); i++){
 
-			const auto& frame = frames[i];
+		// 	const auto& frame = frames[i];
 
-			Vector3 translation(frame.getCenter()[0], frame.getCenter()[1], frame.getCenter()[2]);
+		// 	Vector3 translation(frame.getCenter()[0], frame.getCenter()[1], frame.getCenter()[2]);
 
-			// Convert SOFA quaternion to Eigen quaternion (SOFA: x,y,z,w; Eigen: w,x,y,z)
-			const auto &quat = frame.getOrientation();
-			Eigen::Quaternion<double> rotation(quat[3], quat[0], quat[1], quat[2]);
+		// 	// Convert SOFA quaternion to Eigen quaternion (SOFA: x,y,z,w; Eigen: w,x,y,z)
+		// 	const auto &quat = frame.getOrientation();
+		// 	Eigen::Quaternion<double> rotation(quat[3], quat[0], quat[1], quat[2]);
 
-			g_frames[i] =SE3Types(SE3Types::SO3Type(rotation), translation);
-		}
+		// 	g_frames[i] =SE3Types(SE3Types::SO3Type(rotation), translation);
+		// }
 
 		// std::cout<<"--- in the loop to compute strains ---"<<std::endl;
 
+
+		//frame a
+	 	const auto& frame_a = framePositions[0];
+		Vector3 trans_a(frame_a.getCenter()[0], frame_a.getCenter()[1], frame_a.getCenter()[2]);
+
+		// Convert SOFA quaternion to Eigen quaternion (SOFA: x,y,z,w; Eigen: w,x,y,z)
+		const auto &quat_a = frame_a.getOrientation();
+		Eigen::Quaternion<double> rot_a(quat_a[3], quat_a[0], quat_a[1], quat_a[2]);
+
+		
+		SE3Types g_prev = SE3Types(SE3Types::SO3Type(rot_a), trans_a);
+		
 		for(unsigned int i=0; i<nbSections; i++){
-			double section_start = curv_abs_sections[i];
-			double section_end = curv_abs_sections[i+1];
 
-			// Trouver l'indice des frames correspondants
-			int left_frame_idx = -1, right_frame_idx = -1;
+			const auto& section = m_section_properties[i+1];
+			double dx = section.getLength();
 
-			for(size_t j=0; j<curv_abs_frames.size(); j++){
-				if (std::abs(curv_abs_frames[j] - section_start) <1e-12){
-					left_frame_idx = j;
-				}
-				if (std::abs(curv_abs_frames[j] - section_end) <1e-12){
-					right_frame_idx = j;
-				}
+			//frame b
+			const auto& frame_b = framePositions[i+1];
+			Vector3 trans_b(frame_b.getCenter()[0], frame_b.getCenter()[1], frame_b.getCenter()[2]);
+
+			// Convert SOFA quaternion to Eigen quaternion (SOFA: x,y,z,w; Eigen: w,x,y,z)
+			const auto &quat_b = frame_b.getOrientation();
+			Eigen::Quaternion<double> rot_b(quat_b[3], quat_b[0], quat_b[1], quat_b[2]);
+
+			SE3Types g_curr = SE3Types(SE3Types::SO3Type(rot_b), trans_b);
+
+			SE3Types g_rel = g_prev.inverse()*g_curr;
+
+			TangentVector xi = g_rel.computeLog()/dx;
+
+			for(int j=0; j<6; j++){
+				strains[i][j] = xi[j];
 			}
 
-			//si les deux frames sont trouvés, calculer le strain
-			if(left_frame_idx >=0 && right_frame_idx >=0){
-				double dx = section_end - section_start; //section length
-
-				SE3Types g_rel = g_frames[left_frame_idx].computeInverse() * g_frames[right_frame_idx];
-				
-				// std::cout<<"g_rel: " << g_rel<<std::endl;
-				TangentVector xi = g_rel.computeLog()/dx;
-
-				for(int j=0; j<6; j++){
-					strains[i][j] = xi[j];
-				}
-
+			g_prev = g_curr;
 				// std::cout<<"(out) Strain ["<<i<<"] :" << std::fixed << std::setprecision(16)<< strains[i]<<std::endl;
-
-			}
-			else{
-				std::cout<<"Warning: Could not find frames for section "<<i<<std::endl;
-			}
 		}
-			
 		// std::cout<<"--- outside the loop ---"<<std::endl;
-
+		
 		dataVecOutPos[0]->endEdit();
-
-		// std::cout<<"=================================== "<<std::endl;
-		// std::cout<<"============= Test ================ "<<std::endl;
-		// std::cout<<"=================================== "<<std::endl;
-		
-		// TangentVector strain_in;
-		// strain_in << 0.1, 0.2, 0.3, 1.0, 0.05, -0.02; 
-		// double length = 0.625;
-
-		// //1. S2R: exp
-		// SE3Types g_ = SE3Types::expCosserat(strain_in, length);
-
-		// //2. F2S: log
-		// TangentVector xi_ = g_.computeLog()/length;
-		// xi_[3] -= 1.0;
-
-		// //3. Compare
-		// std::cout<<"Input strain: "<<strain_in.transpose()<<std::endl;
-		// std::cout<<"Output strain: "<<xi_.transpose()<<std::endl;
-		// std::cout<<"Erreur: "<<(strain_in - xi_).norm()<<std::endl;	
-		
-		// std::cout<<"=================================== "<<std::endl;
-		// std::cout<<"============= FinTest ============= "<<std::endl;
-		// std::cout<<"=================================== "<<std::endl;
-		
-    
     }
 
 
@@ -268,13 +243,8 @@ namespace Cosserat::mapping {
 	}
 	template<class TIn1, class TIn2, class TOut>
 	AdjointMatrix Frames2StrainCosseratMapping<TIn1, TIn2, TOut>::compute_adjoint(const TangentVector& Omega){
-		Vector3 k = Vector3::Zero(); //first 3 components of Omega
-		Vector3 q = Vector3::Zero(); //last components
-
-		for(int i=0; i<3; i++){
-			k(i) = Omega(i);
-			q(i) = Omega(i+3);
-		}
+		Vector3 k = Vector3(Omega(0), Omega(1), Omega(2)); //first 3 components of Omega
+		Vector3 q = Vector3(Omega(3), Omega(4), Omega(5)); //last components
 
 		Matrix3 k_hat = buildHatMatrix(k);
 		Matrix3 q_hat = buildHatMatrix(q);
@@ -292,8 +262,6 @@ namespace Cosserat::mapping {
 	AdjointMatrix Frames2StrainCosseratMapping<TIn1, TIn2, TOut>::computeInverseTangentOperator(const TangentVector& Omega){
 		//computation at order 5
 		//5 Bernouilli nb. : B0=1, B1=-1/2, B2=1/6, B3=0, B4=-1/30
-
-		AdjointMatrix res = AdjointMatrix::Zero();
 		
 		const Vector3 phi = Omega.template head<3>();
 		double theta = phi.norm();
@@ -306,18 +274,13 @@ namespace Cosserat::mapping {
 
 		
 		if (theta < 1e-4){ //pour de petite deformation
-
-			res = B0*Id6 + B1*adOmega + (1./2.)*B2*adOmega2 + (1./24.)*B4*adOmega4;
+			return B0*Id6 + B1*adOmega + (1./2.)*B2*adOmega2 + (1./24.)*B4*adOmega4;
 		}
-		else{
-			double cot_half = 1.0 / std::tan(theta / 2.0);
-			double c4 = ((theta/2.) * cot_half - 1. + (theta*theta)/12.)/std::pow(theta, 4);
 			
-			res = B0*Id6 + B1*adOmega + (1./2.)*B2*adOmega2 + c4*adOmega4; 
-		}
-
-		return res;
-
+		double cot_half = 1.0 / std::tan(theta / 2.0);
+		double c4 = ((theta/2.) * cot_half - 1. + (theta*theta)/12.)/std::pow(theta, 4);
+		
+		return B0*Id6 + B1*adOmega + (1./2.)*B2*adOmega2 + c4*adOmega4; 
 	}
 
 	template<class TIn1, class TIn2, class TOut>	
@@ -386,6 +349,7 @@ namespace Cosserat::mapping {
 			g_frames[i] =SE3Types(SE3Types::SO3Type(rotation), translation);
 		}
 
+
 		//
 		// compute the Jacobians J1 and J2
 		// Omega = Log(ga^-1gb
@@ -415,15 +379,15 @@ namespace Cosserat::mapping {
 
 			//Projection (global -> local)
 			//frame a
-			SE3Types ga_inv = g_frames[i];
-			AdjointMatrix a_projector = ga_inv.buildProjectionMatrix(ga_inv.rotation().matrix());
+			SE3Types ga =g_frames[i];
+			AdjointMatrix a_projector = ga.buildProjectionMatrix(ga.rotation().matrix());
 			TangentVector vela_global(frame_vel[i][0], frame_vel[i][1], frame_vel[i][2], frame_vel[i][3], frame_vel[i][4], frame_vel[i][5]);
 			
 			eta_a = a_projector.transpose()* vela_global;
 
 			// idem pour le frame b
-			SE3Types gb_inv = g_frames[i+1];
-			AdjointMatrix b_projector = gb_inv.buildProjectionMatrix(gb_inv.rotation().matrix());
+			SE3Types gb = g_frames[i+1];
+			AdjointMatrix b_projector = gb.buildProjectionMatrix(gb.rotation().matrix());
 			TangentVector velb_global(frame_vel[i+1][0], frame_vel[i+1][1], frame_vel[i+1][2], frame_vel[i+1][3], frame_vel[i+1][4], frame_vel[i+1][5]);
 			
 			eta_b = b_projector.transpose() * velb_global;
@@ -614,20 +578,20 @@ namespace Cosserat::mapping {
 
 
 		//compute transformation of each frame
-		std::vector<SE3Types> g_frames(framePositions.size());
+		// std::vector<SE3Types> g_frames(framePositions.size());
 
-		for(unsigned int i=0; i<framePositions.size(); i++){
+		// for(unsigned int i=0; i<framePositions.size(); i++){
 
-			const auto& frame = framePositions[i];
+		// 	const auto& frame = framePositions[i];
 
-			Vector3 translation(frame.getCenter()[0], frame.getCenter()[1], frame.getCenter()[2]);
+		// 	Vector3 translation(frame.getCenter()[0], frame.getCenter()[1], frame.getCenter()[2]);
 
-			// Convert SOFA quaternion to Eigen quaternion (SOFA: x,y,z,w; Eigen: w,x,y,z)
-			const auto &quat = frame.getOrientation();
-			Eigen::Quaternion<double> rotation(quat[3], quat[0], quat[1], quat[2]);
+		// 	// Convert SOFA quaternion to Eigen quaternion (SOFA: x,y,z,w; Eigen: w,x,y,z)
+		// 	const auto &quat = frame.getOrientation();
+		// 	Eigen::Quaternion<double> rotation(quat[3], quat[0], quat[1], quat[2]);
 
-			g_frames[i] =SE3Types(SE3Types::SO3Type(rotation), translation);
-		}
+		// 	g_frames[i] =SE3Types(SE3Types::SO3Type(rotation), translation);
+		// }
 
 		// Process constraints
 		for(auto rowIt = in.begin(); rowIt != in.end(); ++rowIt){
@@ -674,13 +638,28 @@ namespace Cosserat::mapping {
 
 				//Projection (local -> global)
 				//frame a
-				SE3Types ga = g_frames[strainIndex];
+				const auto& frame_a = framePositions[strainIndex];
+				Vector3 trans_a(frame_a.getCenter()[0], frame_a.getCenter()[1], frame_a.getCenter()[2]);
+
+				// Convert SOFA quaternion to Eigen quaternion (SOFA: x,y,z,w; Eigen: w,x,y,z)
+				const auto &quat_a = frame_a.getOrientation();
+				Eigen::Quaternion<double> rot_a(quat_a[3], quat_a[0], quat_a[1], quat_a[2]);
+
+		
+				SE3Types ga = SE3Types(SE3Types::SO3Type(rot_a), trans_a);
 				AdjointMatrix a_projector = ga.buildProjectionMatrix(ga.rotation().matrix());
 				TangentVector fa_global = a_projector * fa_local;
 				
 
 				// idem pour le frame b
-				SE3Types gb = g_frames[strainIndex+1];
+				const auto& frame_b = framePositions[strainIndex+1];
+				Vector3 trans_b(frame_b.getCenter()[0], frame_b.getCenter()[1], frame_b.getCenter()[2]);
+
+				// Convert SOFA quaternion to Eigen quaternion (SOFA: x,y,z,w; Eigen: w,x,y,z)
+				const auto &quat_b = frame_b.getOrientation();
+				Eigen::Quaternion<double> rot_b(quat_b[3], quat_b[0], quat_b[1], quat_b[2]);
+
+				SE3Types gb = SE3Types(SE3Types::SO3Type(rot_b), trans_b);
 				AdjointMatrix b_projector = gb.buildProjectionMatrix(gb.rotation().matrix());
 				TangentVector fb_global = b_projector * fb_local;
 
