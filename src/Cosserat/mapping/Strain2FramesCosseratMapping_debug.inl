@@ -126,21 +126,21 @@ namespace Cosserat::mapping {
 	void Strain2FramesCosseratMapping<TIn1, TIn2, TOut>::displayFrameProperties(
 			const std::string &context) const {
 		std::cout << "\n=== FRAME PROPERTIES DEBUG" << (context.empty() ? "" : " (" + context + ")") << " ===\n";
-		std::cout << "Frame properties size: " << m_frameProperties.size() << std::endl;
+		std::cout << "Frame properties size: " << m_frame_properties.size() << std::endl;
 
-		for (size_t i = 0; i < m_frameProperties.size(); ++i) {
-			const auto &frame = m_frameProperties[i];
+		for (size_t i = 0; i < m_frame_properties.size(); ++i) {
+			const auto &frame = m_frame_properties[i];
 			const auto &transform = frame.getTransformation();
 
 			std::cout << "  Frame[" << i << "]:";
 			std::cout << " length=" << frame.getLength();
 			std::cout << " frames_sect_length_=" << frame.getLength();
 
-			if (i < m_indices_vectors.size()) {
-				std::cout << " section_idx=" << m_indices_vectors[i];
+			if (i < m_frame_to_section_indices.size()) {
+				std::cout << " section_idx=" << m_frame_to_section_indices[i];
 			}
 
-			std::cout << " distance_to_nearest_beam_node=" << frame.getDistanceToNearestBeamNode();
+			std::cout << " distance_to_nearest_beam_node=" << frame.getDistanceToSectionStart();
 
 			const auto &translation = transform.translation();
 			const auto &rotation = transform.rotation();
@@ -185,7 +185,7 @@ namespace Cosserat::mapping {
 		std::cout << "Base index: " << d_baseIndex.getValue() << std::endl;
 		std::cout << "Debug mode: " << (d_debug.getValue() ? "ON" : "OFF") << std::endl;
 
-		// TODO: switch to m_frameProperties once frame topology is exposed there.
+		// TODO: switch to m_frame_properties once frame topology is exposed there.
 		const auto &curvFrames = d_curv_abs_frames.getValue();
 		std::cout << "Curv abs frames size: " << curvFrames.size() << std::endl;
 		if (!curvFrames.empty()) {
@@ -198,23 +198,23 @@ namespace Cosserat::mapping {
 			std::cout << "]\n";
 		}
 
-		std::cout << "Indices vectors size: " << m_indices_vectors.size() << std::endl;
-		if (!m_indices_vectors.empty()) {
+		std::cout << "Indices vectors size: " << m_frame_to_section_indices.size() << std::endl;
+		if (!m_frame_to_section_indices.empty()) {
 			std::cout << "  Values: [";
-			for (size_t i = 0; i < m_indices_vectors.size(); ++i) {
-				std::cout << m_indices_vectors[i];
-				if (i < m_indices_vectors.size() - 1)
+			for (size_t i = 0; i < m_frame_to_section_indices.size(); ++i) {
+				std::cout << m_frame_to_section_indices[i];
+				if (i < m_frame_to_section_indices.size() - 1)
 					std::cout << ", ";
 			}
 			std::cout << "]\n";
 		}
 
-		std::cout << "Beam length vectors size: " << m_beam_length_vectors.size() << std::endl;
-		if (!m_beam_length_vectors.empty()) {
+		std::cout << "Beam length vectors size: " << m_section_length_vectors.size() << std::endl;
+		if (!m_section_length_vectors.empty()) {
 			std::cout << "  Values: [";
-			for (size_t i = 0; i < m_beam_length_vectors.size(); ++i) {
-				std::cout << m_beam_length_vectors[i];
-				if (i < m_beam_length_vectors.size() - 1)
+			for (size_t i = 0; i < m_section_length_vectors.size(); ++i) {
+				std::cout << m_section_length_vectors[i];
+				if (i < m_section_length_vectors.size() - 1)
 					std::cout << ", ";
 			}
 			std::cout << "]\n";

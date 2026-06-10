@@ -24,13 +24,20 @@
 #include <sofa/defaulttype/VecTypes.h>
 
 namespace Cosserat::mapping {
+	// Explicit instantiation of the CosseratBeamGeometry mixin for each TStrain
+	// used by the mapping specialisations below. With Windows DLL exports, the
+	// linker needs the mixin's methods materialised in this translation unit.
+	template class SOFA_COSSERAT_API CosseratBeamGeometry<sofa::defaulttype::Vec3Types>;
+	template class SOFA_COSSERAT_API CosseratBeamGeometry<sofa::defaulttype::Vec6Types>;
+	template class SOFA_COSSERAT_API CosseratBeamGeometry<sofa::defaulttype::Rigid3Types>;
+
 	// for Strain2FramesCosseratMapping
 	template class SOFA_COSSERAT_API CosseratGeometryMapping<sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types,
-														   sofa::defaulttype::Rigid3Types>;
+															sofa::defaulttype::Rigid3Types>;
 	template class SOFA_COSSERAT_API CosseratGeometryMapping<sofa::defaulttype::Vec6Types, sofa::defaulttype::Rigid3Types,
-														   sofa::defaulttype::Rigid3Types>;
+															sofa::defaulttype::Rigid3Types>;
 
-	// @appa: for Frames2StrainCosseratMapping
+	// for Frames2StrainCosseratMapping
 	template class SOFA_COSSERAT_API CosseratGeometryMapping<sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types,
 															sofa::defaulttype::Vec3Types>;
 	template class SOFA_COSSERAT_API CosseratGeometryMapping<sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types,

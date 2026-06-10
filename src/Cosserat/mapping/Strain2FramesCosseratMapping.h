@@ -232,10 +232,10 @@ namespace Cosserat::mapping {
 		////////////////////////// Inherited attributes ////////////////////////////
 		/// Bring inherited attributes into the current lookup context
 		using CosseratGeometryMapping<TIn1, TIn2, TOut>::m_section_properties;
-		using CosseratGeometryMapping<TIn1, TIn2, TOut>::m_frameProperties;
-		using CosseratGeometryMapping<TIn1, TIn2, TOut>::m_indices_vectors;
-		using CosseratGeometryMapping<TIn1, TIn2, TOut>::m_indices_vectors_draw;
-		using CosseratGeometryMapping<TIn1, TIn2, TOut>::m_beam_length_vectors;
+		using CosseratGeometryMapping<TIn1, TIn2, TOut>::m_frame_properties;
+		using CosseratGeometryMapping<TIn1, TIn2, TOut>::m_frame_to_section_indices;
+		using CosseratGeometryMapping<TIn1, TIn2, TOut>::m_frame_to_section_indices_draw;
+		using CosseratGeometryMapping<TIn1, TIn2, TOut>::m_section_length_vectors;
 		using CosseratGeometryMapping<TIn1, TIn2, TOut>::m_strain_state;
 		using CosseratGeometryMapping<TIn1, TIn2, TOut>::m_rigid_base;
 		using CosseratGeometryMapping<TIn1, TIn2, TOut>::m_frames;

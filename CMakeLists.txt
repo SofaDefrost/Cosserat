@@ -45,6 +45,8 @@ set(HEADER_FILES
   ${SRC_ROOT_DIR}/config.h.in
   ${SRC_ROOT_DIR}/fwd.h
   ${SRC_ROOT_DIR}/types.h
+  ${SRC_ROOT_DIR}/mapping/CosseratBeamGeometry.h
+  ${SRC_ROOT_DIR}/mapping/CosseratBeamGeometry.inl
   ${SRC_ROOT_DIR}/mapping/CosseratGeometryMapping.h
   ${SRC_ROOT_DIR}/mapping/CosseratGeometryMapping.inl
   ${SRC_ROOT_DIR}/mapping/Strain2FramesCosseratMapping.h

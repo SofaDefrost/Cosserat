@@ -97,11 +97,11 @@ namespace Cosserat::mapping {
 			// Initialize frame properties using the initial frame states
 			const auto frame_count = xfrom.size();
 
-			m_frameProperties.clear();
-			m_frameProperties.reserve(frame_count);
+			m_frame_properties.clear();
+			m_frame_properties.reserve(frame_count);
 
 			for(size_t i=0; i<frame_count; i++){
-				m_frameProperties.emplace_back();
+				m_frame_properties.emplace_back();
 			}
 		}
 
@@ -639,7 +639,7 @@ namespace Cosserat::mapping {
 		} else {
 			int j = 0;
 			for (unsigned int i = 0; i < sz - 1; i++) {
-				j = m_indices_vectors[i] - 1; // to get the articulation on which the frame is related to
+				j = m_frame_to_section_indices[i] - 1; // to get the articulation on which the frame is related to
 				RGBAColor color = _eval(xPos[j][d_deformationAxis.getValue()]);
 				vparams->drawTool()->drawLine(positions[i], positions[i + 1], color);
 			}

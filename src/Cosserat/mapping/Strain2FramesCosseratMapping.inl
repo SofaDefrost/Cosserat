@@ -115,8 +115,8 @@ namespace Cosserat::mapping {
 			// Initialize frame properties using the initial frame states
 			const auto frame_count = xfrom.size();
 
-			m_frameProperties.clear();
-			m_frameProperties.reserve(frame_count);
+			m_frame_properties.clear();
+			m_frame_properties.reserve(frame_count);
 
 			for (size_t i = 0; i < frame_count; ++i) {
 				// Convert SOFA Rigid3 coord -> SE3 (via shared helper)
@@ -125,7 +125,7 @@ namespace Cosserat::mapping {
 				// Length and kappa will be set later in initializeFrameProperties
 				FrameInfo frameInfo;
 				frameInfo.setTransformation(gXi);
-				m_frameProperties.push_back(frameInfo);
+				m_frame_properties.push_back(frameInfo);
 			}
 		}
 
@@ -186,14 +186,14 @@ namespace Cosserat::mapping {
 		// Apply transformations to compute output frames
 		for (unsigned int i = 0; i < frame_count; i++) {
 			// Bounds checking
-			assert(i < m_frameProperties.size() && "Frame index out of bounds");
+			assert(i < m_frame_properties.size() && "Frame index out of bounds");
 			assert(i < output_frames.size() && "Output frames index out of bounds");
 
 			// Start with the base frame
 			auto current_frame = base_frame;
 
 			// Apply section transformations up to the frame
-			const auto related_beam_idx = m_frameProperties[i].get_related_beam_index_();
+			const auto related_beam_idx = m_frame_properties[i].getRelatedSectionIndex();
 			assert(related_beam_idx <= m_section_properties.size() && "Invalid beam index");
 
 			for (unsigned int j = 0; j < related_beam_idx; j++) {
@@ -205,14 +205,14 @@ namespace Cosserat::mapping {
 
 			// Apply additional frame transformation
 			// frame*gX(x)
-			current_frame = current_frame * m_frameProperties[i].getTransformation();
+			current_frame = current_frame * m_frame_properties[i].getTransformation();
 			// std::cout<<"Frame: "<<current_frame<<std::endl;
 
 			if(d_debug.getValue())
 				std::cout << "Frame  : " << i << " = " << current_frame << std::endl;
 				
 			// Save current rigid frame transformation into frame's properties
-			//m_frameProperties[i].setTransformation(current_frame);
+			//m_frame_properties[i].setTransformation(current_frame);
 
 			// Convert SE3 -> SOFA rigid coordinates (via helper)
 			se3ToRigidCoord(current_frame, output_frames[i]);
@@ -279,14 +279,14 @@ namespace Cosserat::mapping {
 		}
 
 		// Update frame properties based on their position within sections
-		for (size_t i = 0; i < m_frameProperties.size(); ++i) {
-			if (i < m_indices_vectors.size()) {
-				int sectionIndex = m_frameProperties[i].get_related_beam_index_();
+		for (size_t i = 0; i < m_frame_properties.size(); ++i) {
+			if (i < m_frame_to_section_indices.size()) {
+				int sectionIndex = m_frame_properties[i].getRelatedSectionIndex();
 				if (sectionIndex >= 0 && sectionIndex < static_cast<int>(vec_of_strains.size() + 1)) {
 					// Compute frame transformation at its specific position
 					SE3Types frame_gx = SE3Types::expCosserat(m_section_properties[sectionIndex].getStrainsVec(),
-															  m_frameProperties[i].getDistanceToNearestBeamNode());
-					m_frameProperties[i].setTransformation(frame_gx);
+															  m_frame_properties[i].getDistanceToSectionStart());
+					m_frame_properties[i].setTransformation(frame_gx);
 				}
 			}
 		}
@@ -384,11 +384,11 @@ namespace Cosserat::mapping {
 
 		// 4. Compute velocity at each output frame
 		for (size_t i = 0; i < frame_count; ++i) {
-			const auto &frame = m_frameProperties[i];
+			const auto &frame = m_frame_properties[i];
 			const auto &tang_adj = frame.getTangAdjointMatrix();
 
 			// Get the section index this frame belongs to
-			int section_idx = (i < m_indices_vectors.size()) ? m_indices_vectors[i] - 1 : 0;
+			int section_idx = (i < m_frame_to_section_indices.size()) ? m_frame_to_section_indices[i] - 1 : 0;
 
 			// Ensure valid section index
 			if (section_idx < 0 || section_idx >= static_cast<int>(node_velocities.size())) {
@@ -397,14 +397,14 @@ namespace Cosserat::mapping {
 
 			// Extract frame strain velocity (same as section strain).
 			//
-			// SAFETY (P1 fix): m_indices_vectors[i] is the 1-based section index of
+			// SAFETY (P1 fix): m_frame_to_section_indices[i] is the 1-based section index of
 			// this frame.  For a frame located exactly on the rigid base (section 0),
-			// the index can be 0 and `m_indices_vectors[i] - 1` would wrap to SIZE_MAX
+			// the index can be 0 and `m_frame_to_section_indices[i] - 1` would wrap to SIZE_MAX
 			// on the unsigned arithmetic of the subscript, causing a heap OOB read.
 			// We clamp to [0, strain_vel.size()-1] and skip strain contribution if no
 			// strain section is associated with this frame.
 			TangentVector frame_strain_vel = TangentVector::Zero();
-			const int strain_idx = static_cast<int>(m_indices_vectors[i]) - 1;
+			const int strain_idx = static_cast<int>(m_frame_to_section_indices[i]) - 1;
 			const bool has_strain = (strain_idx >= 0) &&
 									(strain_idx < static_cast<int>(strain_vel.size()));
 
@@ -420,7 +420,7 @@ namespace Cosserat::mapping {
 			const AdjointMatrix Ad_gm1 = g_inv.computeAdjoint();
 
 			TangentVector eta_frame =
-					Ad_gm1 * (node_velocities[m_indices_vectors[i]-1] + tang_adj * frame_strain_vel);
+					Ad_gm1 * (node_velocities[m_frame_to_section_indices[i]-1] + tang_adj * frame_strain_vel);
 
 			// Project body twist to SOFA Rigid3 convention (P(R) · η_body).
 			const SE3Types absoluteFrame = rigidCoordToSE3(framePositions[i]);
@@ -505,7 +505,7 @@ namespace Cosserat::mapping {
 		}
 
 		// Process forces following the beam structure (similar to DiscreteCosseratMapping)
-		auto sz = m_indices_vectors.size();
+		auto sz = m_frame_to_section_indices.size();
 
 		if (sz == 0 || localForces.empty()) {
 			dataVecOut1Force[0]->endEdit();
@@ -515,7 +515,7 @@ namespace Cosserat::mapping {
 		}
 		
 
-		auto lastSectionIndex = m_indices_vectors[sz - 1];
+		auto lastSectionIndex = m_frame_to_section_indices[sz - 1];
 		TangentVector totalForce = TangentVector::Zero();
 
 		constexpr int N = std::is_same_v<Deriv1, sofa::type::Vec3> ? 3 : 6;
@@ -526,8 +526,8 @@ namespace Cosserat::mapping {
 		// Process frames in reverse order to accumulate forces
 		for (auto s = sz; s--;) {
 
-			int currentSectionIndex = m_indices_vectors[s];
-			const FrameInfo &frame = m_frameProperties[s];
+			int currentSectionIndex = m_frame_to_section_indices[s];
+			const FrameInfo &frame = m_frame_properties[s];
 		
 			AdjointMatrix coAdjoint = frame.getCoAdjoint();
 			
@@ -653,13 +653,13 @@ namespace Cosserat::mapping {
 					constraintValue[j] = val[j];
 				}
 
-				int sectionIndex = m_indices_vectors[frameIndex];
+				int sectionIndex = m_frame_to_section_indices[frameIndex];
 
 				const SE3Types absoluteFrame = rigidCoordToSE3(framePositions[frameIndex]);
 				const AdjointMatrix P_trans =
 					absoluteFrame.buildProjectionMatrix(absoluteFrame.rotation().matrix());
 				
-				const FrameInfo &frame = m_frameProperties[frameIndex];
+				const FrameInfo &frame = m_frame_properties[frameIndex];
 			
 				AdjointMatrix coAdjoint = frame.getCoAdjoint();
 
@@ -785,7 +785,7 @@ namespace Cosserat::mapping {
 		} else {
 			int j = 0;
 			for (unsigned int i = 0; i < sz - 1; i++) {
-				j = m_indices_vectors[i] - 1; // to get the articulation on which the frame is related to
+				j = m_frame_to_section_indices[i] - 1; // to get the articulation on which the frame is related to
 				RGBAColor color = _eval(xPos[j][d_deformationAxis.getValue()]);
 				vparams->drawTool()->drawLine(positions[i], positions[i + 1], color);
 			}
