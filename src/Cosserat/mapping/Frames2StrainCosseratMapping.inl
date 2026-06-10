@@ -422,7 +422,7 @@ namespace Cosserat::mapping {
 		// J2 = 1/h dexp^-1_{Omega}
 
 		for(int i=0; i<section_count; i++){
-			std::cout<<"Section "<<i<<": "<<std::endl;
+			// std::cout<<"Section "<<i<<": "<<std::endl;
 			const auto &section = m_section_properties[i+1];
 			double dx = section.getLength();
 
