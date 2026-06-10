@@ -120,9 +120,13 @@ namespace Cosserat::mapping{
 		void computeBBox(const sofa::core::ExecParams *params, bool onlyVisible) override;
 
 		AdjointMatrix computeInverseTangentOperator(const TangentVector&);
+		AdjointMatrix computeTangentOperator(const TangentVector&);
 		AdjointMatrix compute_adjoint(const TangentVector&);
 		Matrix3 buildHatMatrix(const Vector3&);
-		AdjointMatrix compute_Adjoint(const Matrix4& g);
+		AdjointMatrix compute_Adjoint(const Matrix4&);
+		Matrix3 SO3LeftJacobian(const Vector3&);
+		Matrix3 SO3LeftJacobianInverse(const Vector3&);
+		Matrix3 computeQ_SE3(const Vector3&, const Vector3&);
 
 
 	public:

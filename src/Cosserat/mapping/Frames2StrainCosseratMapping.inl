@@ -35,6 +35,9 @@
 #include <cassert>
 #include <string>
 
+static constexpr double epsilon = 1e-10;
+
+
 namespace Cosserat::mapping {
 
 	using sofa::core::objectmodel::BaseContext;
@@ -167,27 +170,6 @@ namespace Cosserat::mapping {
 		const auto &curv_abs_sections = d_curv_abs_section.getValue();
 		const auto &curv_abs_frames = d_curv_abs_frames.getValue();
 
-		// //compute transformation of each frame
-		// std::vector<SE3Types> g_frames(frames.size());
-
-		// // g_frames[0] = g_base;
-
-		// for(unsigned int i=0; i<frames.size(); i++){
-
-		// 	const auto& frame = frames[i];
-
-		// 	Vector3 translation(frame.getCenter()[0], frame.getCenter()[1], frame.getCenter()[2]);
-
-		// 	// Convert SOFA quaternion to Eigen quaternion (SOFA: x,y,z,w; Eigen: w,x,y,z)
-		// 	const auto &quat = frame.getOrientation();
-		// 	Eigen::Quaternion<double> rotation(quat[3], quat[0], quat[1], quat[2]);
-
-		// 	g_frames[i] =SE3Types(SE3Types::SO3Type(rotation), translation);
-		// }
-
-		// std::cout<<"--- in the loop to compute strains ---"<<std::endl;
-
-
 		//frame a
 	 	const auto& frame_a = framePositions[0];
 		Vector3 trans_a(frame_a.getCenter()[0], frame_a.getCenter()[1], frame_a.getCenter()[2]);
@@ -226,6 +208,18 @@ namespace Cosserat::mapping {
 				// std::cout<<"(out) Strain ["<<i<<"] :" << std::fixed << std::setprecision(16)<< strains[i]<<std::endl;
 		}
 		// std::cout<<"--- outside the loop ---"<<std::endl;
+
+
+		std::cout<<"==========Test du log =============="<<std::endl;
+
+		// TangentVector xi_test(0.1, 0.2, -0.15, 1.02, 0.01, -0.005);
+		// double s = 0.5;
+		// TangentVector O = xi_test * s;
+		// SE3Types g_reconstructed = SE3Types::computeExp(O);
+		// TangentVector xi_recovered = g_reconstructed.computeLog() / s;
+		// double err = (xi_test - xi_recovered).norm();
+		
+		// std::cout << "Erreur log*exp : " << err << std::endl;
 		
 		dataVecOutPos[0]->endEdit();
     }
@@ -258,30 +252,101 @@ namespace Cosserat::mapping {
 		return ad;
 	}
 
+
+
+	//Inspiré du code de Sophus	(https://github.com/strasdat/sophus)
+	template<class TIn1, class TIn2, class TOut>
+	Matrix3 Frames2StrainCosseratMapping<TIn1, TIn2, TOut>::SO3LeftJacobian(const Vector3& phi){
+		const double theta = phi.norm();
+		const Matrix3 Phi  = buildHatMatrix(phi);
+		const Matrix3 Phi2 = Phi * Phi;
+	
+		if (theta < epsilon)
+			return Matrix3::Identity() + 0.5 * Phi + (1.0 / 6.0) * Phi2;
+	
+		const double theta2 = theta * theta;
+		return Matrix3::Identity() + (1.0 - std::cos(theta)) / theta2 * Phi
+								   + (theta - std::sin(theta)) / (theta2 * theta) * Phi2;
+	}
+
+	template<class TIn1, class TIn2, class TOut>
+	Matrix3 Frames2StrainCosseratMapping<TIn1, TIn2, TOut>::SO3LeftJacobianInverse(const Vector3& phi){
+		const double theta = phi.norm();
+		const Matrix3 Phi = buildHatMatrix(phi);
+		const Matrix3 Phi2 = Phi * Phi;
+	
+		if (theta < epsilon)
+			return Matrix3::Identity() - 0.5 * Phi + (1.0 / 12.0) * Phi2;
+	
+		const double theta2 = theta * theta;
+		const double ht = 0.5 * theta;
+		const double c = (1.0 - 0.5 * theta * std::cos(ht) / std::sin(ht)) / theta2;
+		return Matrix3::Identity() - 0.5 * Phi + c * Phi2;
+	}
+
+	template<class TIn1, class TIn2, class TOut>
+	Matrix3 Frames2StrainCosseratMapping<TIn1, TIn2, TOut>::computeQ_SE3(const Vector3& nu, const Vector3& phi){
+		const double theta = phi.norm();
+		const Matrix3 N = buildHatMatrix(nu);
+	
+		if (theta < epsilon)
+			return 0.5 * N;
+	
+		const double theta2  = theta * theta;
+		const double theta3 = theta2 * theta;
+		const double theta4 = theta2 * theta2;
+		const double theta5 = theta4 * theta;
+		const double st = std::sin(theta);
+		const double ct = std::cos(theta);
+	
+		// Coefficients scalaires c1, c2, c3
+		const double c1 = (theta - st) / theta3;
+		const double c2 = (0.5 * theta2 + ct - 1.0) / theta4;
+		const double c3 = (theta * (1.0 + 0.5 * ct) - 1.5*st) / theta5;
+	
+		const Matrix3 Phi = buildHatMatrix(phi);
+		const Matrix3 PhiN = Phi * N;
+		const Matrix3 NPhi = N * Phi;
+		const Matrix3 PhiNPhi = PhiN * Phi;
+	
+		return 0.5 * N + c1 * (PhiN + NPhi + PhiNPhi)
+						- c2 * (theta2 * N + 2.0 * PhiNPhi)
+						+ c3 * (PhiNPhi * Phi + Phi * PhiNPhi);
+	}
+
+
+	template<class TIn1, class TIn2, class TOut>
+	AdjointMatrix Frames2StrainCosseratMapping<TIn1, TIn2, TOut>::computeTangentOperator(const TangentVector& Omega){
+		const Vector3 phi = Omega.template head<3>();
+		const Vector3 nu  = Omega.template tail<3>();
+	
+		const Matrix3 J = SO3LeftJacobian(phi);
+		const Matrix3 Q = computeQ_SE3(nu, phi);
+	
+		AdjointMatrix T = AdjointMatrix::Zero();
+		T.template block<3,3>(0, 0) = J;
+		T.template block<3,3>(3, 3) = J;
+		T.template block<3,3>(3, 0) = Q;
+
+		return T;
+	}
+
 	template<class TIn1, class TIn2, class TOut>
 	AdjointMatrix Frames2StrainCosseratMapping<TIn1, TIn2, TOut>::computeInverseTangentOperator(const TangentVector& Omega){
-		//computation at order 5
-		//5 Bernouilli nb. : B0=1, B1=-1/2, B2=1/6, B3=0, B4=-1/30
-		
 		const Vector3 phi = Omega.template head<3>();
-		double theta = phi.norm();
-		AdjointMatrix Id6 = AdjointMatrix::Identity();
-		AdjointMatrix adOmega = compute_adjoint(Omega); //Compute adjoint
-		AdjointMatrix adOmega2 = adOmega * adOmega;
-		AdjointMatrix adOmega4 = adOmega2 * adOmega2;		
-		
-		double B0=1., B1=-1./2., B2=1./6., B4=-1./30.;
+		const Vector3 nu  = Omega.template tail<3>();
+	
+		const Matrix3 Ji = SO3LeftJacobianInverse(phi);
+		const Matrix3 Q  = computeQ_SE3(nu, phi);
+	
+		AdjointMatrix Ti = AdjointMatrix::Zero();
+		Ti.template block<3,3>(0, 0) = Ji;
+		Ti.template block<3,3>(3, 3) = Ji;
+		Ti.template block<3,3>(3, 0) = -Ji * Q * Ji;
 
-		
-		if (theta < 1e-4){ //pour de petite deformation
-			return B0*Id6 + B1*adOmega + (1./2.)*B2*adOmega2 + (1./24.)*B4*adOmega4;
-		}
-			
-		double cot_half = 1.0 / std::tan(theta / 2.0);
-		double c4 = ((theta/2.) * cot_half - 1. + (theta*theta)/12.)/std::pow(theta, 4);
-		
-		return B0*Id6 + B1*adOmega + (1./2.)*B2*adOmega2 + c4*adOmega4; 
+		return Ti;
 	}
+
 
 	template<class TIn1, class TIn2, class TOut>	
 	void 
@@ -357,6 +422,7 @@ namespace Cosserat::mapping {
 		// J2 = 1/h dexp^-1_{Omega}
 
 		for(int i=0; i<section_count; i++){
+			std::cout<<"Section "<<i<<": "<<std::endl;
 			const auto &section = m_section_properties[i+1];
 			double dx = section.getLength();
 
@@ -367,11 +433,14 @@ namespace Cosserat::mapping {
 
 			TangentVector Omega_i = dx*strain_i;
 			AdjointMatrix dexp_inv = computeInverseTangentOperator(Omega_i);
+			// AdjointMatrix dexp = computeTangentOperator(Omega_i);
+			// std::cout<<"erreur approx = "<<(dexp*dexp_inv - AdjointMatrix::Identity()).norm()<<std::endl;
+
 			AdjointMatrix J2 = (1./dx)*dexp_inv;
 
-			SE3Types g = SE3Types::expCosserat(strain_i, -dx); // = exp(-Omega_i)
-			AdjointMatrix Adg = g.computeAdjoint();
-			AdjointMatrix J1 = -(1./dx)*dexp_inv*Adg;
+			SE3Types g_inv = SE3Types::computeExp(-Omega_i); // = exp(-Omega_i)
+			AdjointMatrix Adg_inv = g_inv.computeAdjoint();
+			AdjointMatrix J1 = -(1./dx)*dexp_inv*Adg_inv;
 
 			TangentVector eta_a = TangentVector::Zero();
 			TangentVector eta_b = TangentVector::Zero();
@@ -402,7 +471,6 @@ namespace Cosserat::mapping {
 		}
 
 		dataVecOutVel[0]->endEdit();
-
 	}
 
 
@@ -442,6 +510,7 @@ namespace Cosserat::mapping {
 		
 		// Initialize output forces
 		frameForces.resize(framePositions.size());
+		//Ne pas faire clear() ou mettre à zéro frameForces !!!
 
 		// std::cout<<"(in) Strain forces: "<<std::endl;
 		// for(auto v : strainForces){
@@ -493,13 +562,13 @@ namespace Cosserat::mapping {
 			AdjointMatrix dexp_inv = computeInverseTangentOperator(Omega_i);
 			AdjointMatrix J2 = (1./dx)*dexp_inv;
 
-			SE3Types g = SE3Types::expCosserat(strain_i, -dx); // = exp(-Omega_i)
-			AdjointMatrix AdgT = g.computeAdjoint().transpose();
-			AdjointMatrix J1_transpose = -(1./dx) * AdgT * dexp_inv.transpose();
+			SE3Types g_inv = SE3Types::computeExp(-Omega_i); // = exp(-Omega_i)
+			AdjointMatrix Adg_inv = g_inv.computeAdjoint();
+			AdjointMatrix J1 = -(1./dx) * dexp_inv * Adg_inv;
 
 
 			//@appa: multiplication par dx déjà fait dans le forcefield
-			TangentVector fa_local = J1_transpose * lambda; //a (b): extremite gauche (droite) de la section
+			TangentVector fa_local = J1.transpose() * lambda; //a (b): extremite gauche (droite) de la section
 			TangentVector fb_local = J2.transpose() * lambda;
 
 			// std::cout<<"fa_local: "<<fa_local.transpose()<<std::endl;
@@ -628,7 +697,7 @@ namespace Cosserat::mapping {
 				AdjointMatrix dexp_inv = computeInverseTangentOperator(Omega);
 				AdjointMatrix J2 = (1./dx)*dexp_inv;
 
-				SE3Types g = SE3Types::expCosserat(strain, -dx); // = exp(-Omega)
+				SE3Types g = SE3Types::computeExp(-Omega); // = exp(-Omega)
 				AdjointMatrix AdgT = g.computeAdjoint().transpose();
 				AdjointMatrix J1_transpose = -(1./dx) * AdgT * dexp_inv.transpose();
 

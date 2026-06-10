@@ -24,7 +24,7 @@ from basic_functions import (_add_cosserat_frame, _add_cosserat_state,
 
 v_damping_param: float =  8e-1  # Damping parameter for dynamics
 beam_mass: float = 5
-nb_section: int = 12
+nb_section: int = 5
 beam_length: int = 10
 
 
@@ -41,7 +41,7 @@ def createScene(root):
     ## solver node
     solver = root.addChild("solver_node")
     solver.addObject("EulerImplicitSolver", firstOrder="0", rayleighMass=0.1, rayleighStiffness=0.1, vdamping=v_damping_param)
-    solver.addObject("CGLinearSolver", iterations=1000, tolerance=1e-10, threshold=1e-10)
+    solver.addObject("CGLinearSolver", iterations=30, tolerance=1e-10, threshold=1e-10)
 
     beam_geometry_params = BeamGeometryParameters(
         beam_length=beam_length,
