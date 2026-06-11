@@ -86,7 +86,7 @@ def _add_cosserat_frame(
     return frame_node
 
 
-def _add_cosserat_state(p_node, f_node, geometry: CosseratGeometry, custom_bending_states=None, node_name="bending_node", radius=0.5, youngModulus=1e3, poissonRatio=0.4):
+def _add_cosserat_state(p_node, f_node, geometry: CosseratGeometry, custom_bending_states=None, node_name="bending_node", radius=0.5, youngModulus=1e3, poissonRatio=0.4, color=[0., 1., 0., 0.5]):
     """Create the cosserat coordinate node using CosseratGeometry."""
     bending_node = f_node.addChild(node_name)
 
@@ -123,7 +123,7 @@ def _add_cosserat_state(p_node, f_node, geometry: CosseratGeometry, custom_bendi
     output=bending_node.cosserat_state.getLinkPath(), 
     debug=0,
     radius=beam_radius, 
-    color=[0., 1., 0., 0.5], #green   
+    color=color,
     )
 
     return bending_node

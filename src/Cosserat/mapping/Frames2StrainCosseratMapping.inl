@@ -34,6 +34,7 @@
 
 #include <cassert>
 #include <string>
+#include <iomanip> // for std::setprecision
 
 static constexpr double epsilon = 1e-10;
 
@@ -181,6 +182,8 @@ namespace Cosserat::mapping {
 		
 		SE3Types g_prev = SE3Types(SE3Types::SO3Type(rot_a), trans_a);
 		
+		std::cout<<"Frame 0: "<< std::setprecision(16)<<frame_a<<std::endl;
+
 		for(unsigned int i=0; i<nbSections; i++){
 
 			const auto& section = m_section_properties[i+1];
@@ -188,6 +191,9 @@ namespace Cosserat::mapping {
 
 			//frame b
 			const auto& frame_b = framePositions[i+1];
+			
+			std::cout<<"Frame "<<i+1<<": "<< std::setprecision(16)<<frame_b<<std::endl;
+
 			Vector3 trans_b(frame_b.getCenter()[0], frame_b.getCenter()[1], frame_b.getCenter()[2]);
 
 			// Convert SOFA quaternion to Eigen quaternion (SOFA: x,y,z,w; Eigen: w,x,y,z)
@@ -212,14 +218,14 @@ namespace Cosserat::mapping {
 
 		std::cout<<"==========Test du log =============="<<std::endl;
 
-		// TangentVector xi_test(0.1, 0.2, -0.15, 1.02, 0.01, -0.005);
-		// double s = 0.5;
-		// TangentVector O = xi_test * s;
-		// SE3Types g_reconstructed = SE3Types::computeExp(O);
-		// TangentVector xi_recovered = g_reconstructed.computeLog() / s;
-		// double err = (xi_test - xi_recovered).norm();
+		TangentVector xi_test(0.1, 0.2, -0.15, 1.02, 0.01, -0.005);
+		double s = 0.5;
+		TangentVector O = xi_test * s;
+		SE3Types g_reconstructed = SE3Types::computeExp(O);
+		TangentVector xi_recovered = g_reconstructed.computeLog() / s;
+		double err = (xi_test - xi_recovered).norm();
 		
-		// std::cout << "Erreur log*exp : " << err << std::endl;
+		std::cout << "Erreur : " << err << std::endl;
 		
 		dataVecOutPos[0]->endEdit();
     }
@@ -646,22 +652,6 @@ namespace Cosserat::mapping {
 		this->m_frames->read(sofa::core::vec_id::read_access::position)->getValue();
 
 
-		//compute transformation of each frame
-		// std::vector<SE3Types> g_frames(framePositions.size());
-
-		// for(unsigned int i=0; i<framePositions.size(); i++){
-
-		// 	const auto& frame = framePositions[i];
-
-		// 	Vector3 translation(frame.getCenter()[0], frame.getCenter()[1], frame.getCenter()[2]);
-
-		// 	// Convert SOFA quaternion to Eigen quaternion (SOFA: x,y,z,w; Eigen: w,x,y,z)
-		// 	const auto &quat = frame.getOrientation();
-		// 	Eigen::Quaternion<double> rotation(quat[3], quat[0], quat[1], quat[2]);
-
-		// 	g_frames[i] =SE3Types(SE3Types::SO3Type(rotation), translation);
-		// }
-
 		// Process constraints
 		for(auto rowIt = in.begin(); rowIt != in.end(); ++rowIt){
 		
@@ -697,7 +687,7 @@ namespace Cosserat::mapping {
 				AdjointMatrix dexp_inv = computeInverseTangentOperator(Omega);
 				AdjointMatrix J2 = (1./dx)*dexp_inv;
 
-				SE3Types g = SE3Types::computeExp(-Omega); // = exp(-Omega)
+				SE3Types g = SE3Types::computeExp(Omega); // = exp(-Omega)
 				AdjointMatrix AdgT = g.computeAdjoint().transpose();
 				AdjointMatrix J1_transpose = -(1./dx) * AdgT * dexp_inv.transpose();
 
