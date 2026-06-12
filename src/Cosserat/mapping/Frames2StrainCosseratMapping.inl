@@ -36,7 +36,7 @@
 #include <string>
 #include <iomanip> // for std::setprecision
 
-static constexpr double epsilon = 1e-10;
+static constexpr double epsilon = 1e-6;
 
 
 namespace Cosserat::mapping {
@@ -687,11 +687,11 @@ namespace Cosserat::mapping {
 				AdjointMatrix dexp_inv = computeInverseTangentOperator(Omega);
 				AdjointMatrix J2 = (1./dx)*dexp_inv;
 
-				SE3Types g = SE3Types::computeExp(Omega); // = exp(-Omega)
-				AdjointMatrix AdgT = g.computeAdjoint().transpose();
-				AdjointMatrix J1_transpose = -(1./dx) * AdgT * dexp_inv.transpose();
+				SE3Types g_inv = SE3Types::computeExp(-Omega); // = exp(-Omega)
+				AdjointMatrix Adg_inv = g_inv.computeAdjoint();
+				AdjointMatrix J1 = -(1./dx) * dexp_inv * Adg_inv;
 
-				TangentVector fa_local = J1_transpose * constraintValue; //a (b): extremite gauche (droite) de la section
+				TangentVector fa_local = J1.transpose() * constraintValue; //a (b): extremite gauche (droite) de la section
 				TangentVector fb_local = J2.transpose() * constraintValue;
 
 
