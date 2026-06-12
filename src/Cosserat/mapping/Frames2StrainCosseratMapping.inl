@@ -36,7 +36,7 @@
 #include <string>
 #include <iomanip> // for std::setprecision
 
-static constexpr double epsilon = 1e-6;
+static constexpr double epsilon = 1e-8;
 
 
 namespace Cosserat::mapping {
@@ -182,7 +182,7 @@ namespace Cosserat::mapping {
 		
 		SE3Types g_prev = SE3Types(SE3Types::SO3Type(rot_a), trans_a);
 		
-		std::cout<<"Frame 0: "<< std::setprecision(16)<<frame_a<<std::endl;
+		// std::cout<<"Frame 0: "<< std::setprecision(16)<<frame_a<<std::endl;
 
 		for(unsigned int i=0; i<nbSections; i++){
 
@@ -192,7 +192,7 @@ namespace Cosserat::mapping {
 			//frame b
 			const auto& frame_b = framePositions[i+1];
 			
-			std::cout<<"Frame "<<i+1<<": "<< std::setprecision(16)<<frame_b<<std::endl;
+			// std::cout<<"Frame "<<i+1<<": "<< std::setprecision(16)<<frame_b<<std::endl;
 
 			Vector3 trans_b(frame_b.getCenter()[0], frame_b.getCenter()[1], frame_b.getCenter()[2]);
 
@@ -216,17 +216,40 @@ namespace Cosserat::mapping {
 		// std::cout<<"--- outside the loop ---"<<std::endl;
 
 
-		std::cout<<"==========Test du log =============="<<std::endl;
+		// std::cout<<"==========Test du log =============="<<std::endl;
 
-		TangentVector xi_test(0.1, 0.2, -0.15, 1.02, 0.01, -0.005);
-		double s = 0.5;
-		TangentVector O = xi_test * s;
-		SE3Types g_reconstructed = SE3Types::computeExp(O);
-		TangentVector xi_recovered = g_reconstructed.computeLog() / s;
-		double err = (xi_test - xi_recovered).norm();
+		// TangentVector xi_test(0.1, 0.2, -0.15, 1.02, 0.01, -0.005);
+		// double s = 0.5;
+		// TangentVector O = xi_test * s;
+		// SE3Types g_reconstructed = SE3Types::computeExp(O);
+		// TangentVector xi_recovered = g_reconstructed.computeLog() / s;
+		// double err = (xi_test - xi_recovered).norm();
 		
-		std::cout << "Erreur : " << err << std::endl;
+		// std::cout << "Erreur : " << err << std::endl;
 		
+		// for (int i=0; i<6; i++){
+		// 	TangentVector Omega = TangentVector::Random();
+		// 	AdjointMatrix dexp    = computeTangentOperator(Omega);
+		// 	AdjointMatrix dexpInv = computeInverseTangentOperator(Omega);
+
+		// 	std::cout <<" Error : "<< (dexp * dexpInv - AdjointMatrix::Identity()).norm()<< std::endl;
+		
+		// }
+
+		// // dexp(Omega) * dOmega ≈ [log(exp(Omega)^{-1} * exp(Omega + eps*dOmega))]/eps
+		TangentVector Omega = TangentVector::Random();
+		std::cout<<"Omega : "<<Omega.transpose()<<std::endl;
+		TangentVector dOmega = TangentVector::Random();
+		std::cout<<"dOmega : "<<dOmega.transpose()<<std::endl;
+
+		for(double eps=1e-3; eps > 1e-8; eps *= 0.1){
+			SE3Types g1 = SE3Types::computeExp(Omega);
+			SE3Types g2 = SE3Types::computeExp(Omega + eps*dOmega);
+			TangentVector diff_numeric = (g1.inverse()*g2).computeLog();
+			TangentVector diff_analytic = computeTangentOperator(-Omega) * dOmega;
+			std::cout << "Erreur Q (eps=" << eps << ") : " << (diff_numeric - eps*diff_analytic).norm() << std::endl;
+		}
+
 		dataVecOutPos[0]->endEdit();
     }
 
@@ -258,9 +281,7 @@ namespace Cosserat::mapping {
 		return ad;
 	}
 
-
-
-	//Inspiré du code de Sophus	(https://github.com/strasdat/sophus)
+	//Inspiré du code de Sophus	(https://github.com/strasdat/sophus) et de l'article "A micro Lie theory for state estimation in robotics" par Joan Sola et al. (2018)
 	template<class TIn1, class TIn2, class TOut>
 	Matrix3 Frames2StrainCosseratMapping<TIn1, TIn2, TOut>::SO3LeftJacobian(const Vector3& phi){
 		const double theta = phi.norm();
@@ -268,7 +289,7 @@ namespace Cosserat::mapping {
 		const Matrix3 Phi2 = Phi * Phi;
 	
 		if (theta < epsilon)
-			return Matrix3::Identity() + 0.5 * Phi + (1.0 / 6.0) * Phi2;
+			return Matrix3::Identity() + 0.5 * Phi;
 	
 		const double theta2 = theta * theta;
 		return Matrix3::Identity() + (1.0 - std::cos(theta)) / theta2 * Phi
@@ -291,12 +312,16 @@ namespace Cosserat::mapping {
 	}
 
 	template<class TIn1, class TIn2, class TOut>
-	Matrix3 Frames2StrainCosseratMapping<TIn1, TIn2, TOut>::computeQ_SE3(const Vector3& nu, const Vector3& phi){
+	Matrix3 Frames2StrainCosseratMapping<TIn1, TIn2, TOut>::computeQ_SE3(const Vector3& rho, const Vector3& phi){
 		const double theta = phi.norm();
-		const Matrix3 N = buildHatMatrix(nu);
-	
+		const Matrix3 N = buildHatMatrix(rho);
+		const Matrix3 Phi = buildHatMatrix(phi);
+		const Matrix3 PhiN = Phi * N;
+		const Matrix3 NPhi = N * Phi;
+		const Matrix3 PhiNPhi = PhiN * Phi;
+
 		if (theta < epsilon)
-			return 0.5 * N;
+			return 0.5 * N + (1./6.)*(PhiN + NPhi) + (1./12.)*PhiNPhi;
 	
 		const double theta2  = theta * theta;
 		const double theta3 = theta2 * theta;
@@ -307,17 +332,15 @@ namespace Cosserat::mapping {
 	
 		// Coefficients scalaires c1, c2, c3
 		const double c1 = (theta - st) / theta3;
-		const double c2 = (0.5 * theta2 + ct - 1.0) / theta4;
-		const double c3 = (theta * (1.0 + 0.5 * ct) - 1.5*st) / theta5;
+		const double c2 = (0.5*theta2 + ct -1) / theta4;
+		const double c3 = -c2 - 3.*(theta - st -theta3/6.) / theta5;
 	
-		const Matrix3 Phi = buildHatMatrix(phi);
-		const Matrix3 PhiN = Phi * N;
-		const Matrix3 NPhi = N * Phi;
-		const Matrix3 PhiNPhi = PhiN * Phi;
+		const Matrix3 Phi2 = Phi * Phi;
+		const Matrix3 NPhi2 = N * Phi2;
 	
 		return 0.5 * N + c1 * (PhiN + NPhi + PhiNPhi)
-						- c2 * (theta2 * N + 2.0 * PhiNPhi)
-						+ c3 * (PhiNPhi * Phi + Phi * PhiNPhi);
+						+ c2 * (Phi2 * N + NPhi2 - 3*PhiNPhi)
+						- 0.5*c3 * (Phi*NPhi2 + Phi2 * NPhi);
 	}
 
 
@@ -348,11 +371,11 @@ namespace Cosserat::mapping {
 		AdjointMatrix Ti = AdjointMatrix::Zero();
 		Ti.template block<3,3>(0, 0) = Ji;
 		Ti.template block<3,3>(3, 3) = Ji;
-		Ti.template block<3,3>(3, 0) = -Ji * Q * Ji;
+		Ti.template block<3,3>(3, 0) =  -Ji * Q * Ji;
 
 		return Ti;
+	
 	}
-
 
 	template<class TIn1, class TIn2, class TOut>	
 	void 
@@ -438,7 +461,7 @@ namespace Cosserat::mapping {
 				strain_i[j] = strain[i][j];
 
 			TangentVector Omega_i = dx*strain_i;
-			AdjointMatrix dexp_inv = computeInverseTangentOperator(Omega_i);
+			AdjointMatrix dexp_inv = computeInverseTangentOperator(-Omega_i); // (-) sign because we use the right-trivialized Jacobian
 			// AdjointMatrix dexp = computeTangentOperator(Omega_i);
 			// std::cout<<"erreur approx = "<<(dexp*dexp_inv - AdjointMatrix::Identity()).norm()<<std::endl;
 
@@ -565,7 +588,7 @@ namespace Cosserat::mapping {
 			// std::cout<<"Omega_i: "<< Omega_i.transpose()<<std::endl;
 
 			//compute Jacobians
-			AdjointMatrix dexp_inv = computeInverseTangentOperator(Omega_i);
+			AdjointMatrix dexp_inv = computeInverseTangentOperator(-Omega_i);
 			AdjointMatrix J2 = (1./dx)*dexp_inv;
 
 			SE3Types g_inv = SE3Types::computeExp(-Omega_i); // = exp(-Omega_i)
@@ -684,7 +707,7 @@ namespace Cosserat::mapping {
 
 
 				//compute Jacobians
-				AdjointMatrix dexp_inv = computeInverseTangentOperator(Omega);
+				AdjointMatrix dexp_inv = computeInverseTangentOperator(-Omega);
 				AdjointMatrix J2 = (1./dx)*dexp_inv;
 
 				SE3Types g_inv = SE3Types::computeExp(-Omega); // = exp(-Omega)
