@@ -237,18 +237,18 @@ namespace Cosserat::mapping {
 		// }
 
 		// // dexp(Omega) * dOmega ≈ [log(exp(Omega)^{-1} * exp(Omega + eps*dOmega))]/eps
-		TangentVector Omega = TangentVector::Random();
-		std::cout<<"Omega : "<<Omega.transpose()<<std::endl;
-		TangentVector dOmega = TangentVector::Random();
-		std::cout<<"dOmega : "<<dOmega.transpose()<<std::endl;
+		// TangentVector Omega = TangentVector::Random();
+		// std::cout<<"Omega : "<<Omega.transpose()<<std::endl;
+		// TangentVector dOmega = TangentVector::Random();
+		// std::cout<<"dOmega : "<<dOmega.transpose()<<std::endl;
 
-		for(double eps=1e-3; eps > 1e-8; eps *= 0.1){
-			SE3Types g1 = SE3Types::computeExp(Omega);
-			SE3Types g2 = SE3Types::computeExp(Omega + eps*dOmega);
-			TangentVector diff_numeric = (g1.inverse()*g2).computeLog();
-			TangentVector diff_analytic = computeTangentOperator(-Omega) * dOmega;
-			std::cout << "Erreur Q (eps=" << eps << ") : " << (diff_numeric - eps*diff_analytic).norm() << std::endl;
-		}
+		// for(double eps=1e-3; eps > 1e-8; eps *= 0.1){
+		// 	SE3Types g1 = SE3Types::computeExp(Omega);
+		// 	SE3Types g2 = SE3Types::computeExp(Omega + eps*dOmega);
+		// 	TangentVector diff_numeric = (g1.inverse()*g2).computeLog();
+		// 	TangentVector diff_analytic = computeTangentOperator(-Omega) * dOmega;
+		// 	std::cout << "Erreur Q (eps=" << eps << ") : " << (diff_numeric - eps*diff_analytic).norm() << std::endl;
+		// }
 
 		dataVecOutPos[0]->endEdit();
     }
