@@ -22,147 +22,140 @@
 #pragma once
 
 #include <Cosserat/config.h>
-#include <Cosserat/mapping/CosseratGeometryMapping.h>
+#include <Cosserat/mapping/CosseratBeamGeometry.h>
+#include <sofa/core/Mapping.h>
 #include <sofa/helper/ColorMap.h>
 
-namespace Cosserat::mapping{
-	namespace{
+namespace Cosserat::mapping {
+
+	namespace {
 		using Mat3x6 = sofa::type::Mat<3, 6, SReal>;
 		using Mat6x6 = sofa::type::Mat6x6;
 	}
 
-    /**
-     * @tparam TIn1 The first input type for the mapping (frames)
-     * @tparam TIn2 The second input type for the mapping (rigid base)
-     * @tparam TOut the output type for the mapping (frames)
-     */
-
-	template<class TIn1, class TIn2, class TOut>
-	class Frames2StrainCosseratMapping : public CosseratGeometryMapping<TIn1, TIn2, TOut> {
+	/**
+	 * @brief SOFA Mapping computing per-section Cosserat strains from absolute
+	 *        Rigid3 frames along a rod.
+	 *
+	 * Mathematically the mapping is 1-to-1:
+	 *
+	 *   ξ_k = log( g_a⁻¹ · g_b ) / h_k          for each section k
+	 *
+	 * where g_a, g_b are the two boundary frames of the k-th section. The
+	 * rigid base that used to be a second input is geometrically *invariant*
+	 * (strain is local), so this class inherits from a single-input
+	 * `sofa::core::Mapping<TIn, TOut>` rather than the historical
+	 * `Multi2Mapping`. See FRAMES2STRAIN_ANALYSIS.md §7 for the rationale.
+	 *
+	 * Inheritance model (Z1):
+	 *   - sofa::core::Mapping<TIn, TOut> provides the SOFA Mapping interface
+	 *     and the BaseObject lineage.
+	 *   - CosseratBeamGeometry<TOut> is the non-BaseObject mixin holding the
+	 *     section / frame topology and tangent-exp matrices. Templated on the
+	 *     strain (output) type. Its Data members are registered with this
+	 *     BaseObject via addData() in the constructor.
+	 *
+	 * @tparam TIn  Frames input type — Rigid3Types.
+	 * @tparam TOut Strain output type — Vec3Types or Vec6Types.
+	 */
+	template<class TIn, class TOut>
+	class Frames2StrainCosseratMapping
+		: public sofa::core::Mapping<TIn, TOut>
+		, public CosseratBeamGeometry<TOut>
+	{
 	public:
-		SOFA_CLASS(SOFA_TEMPLATE3(Frames2StrainCosseratMapping
-	, TIn1, TIn2, TOut),
-				   SOFA_TEMPLATE3(CosseratGeometryMapping, TIn1, TIn2, TOut));
+		SOFA_CLASS(SOFA_TEMPLATE2(Frames2StrainCosseratMapping, TIn, TOut),
+				   SOFA_TEMPLATE2(sofa::core::Mapping, TIn, TOut));
 
-		using In1 = TIn1;
-		using In2 = TIn2;
-		using Out = TOut;
-		using Inherit = CosseratGeometryMapping<TIn1, TIn2, TOut>;
+		using In       = TIn;
+		using Out      = TOut;
+		using Inherit  = sofa::core::Mapping<TIn, TOut>;
+		using Geometry = CosseratBeamGeometry<TOut>;
 
-		// Type aliases from base classes
-		using Coord1 = sofa::Coord_t<In1>;
-		using Deriv1 = sofa::Deriv_t<In1>;
+		using Coord    = sofa::Coord_t<In>;
+		using Deriv    = sofa::Deriv_t<In>;
 		using OutCoord = sofa::Coord_t<Out>;
 		using OutDeriv = sofa::Deriv_t<Out>;
 
-		// using SectionProperties = typename CosseratGeometryMapping<TIn1,TIn2,TOut>::SectionProperties;
-		// using FrameInfo = typename FrameInfo;
-		using SE3Types = sofa::component::cosserat::liegroups::SE3<double>;
-		using Vector3 = typename SE3Types::Vector3;
-		using TangentVector = typename SE3Types::TangentVector; 
+		using SE3Types      = sofa::component::cosserat::liegroups::SE3<double>;
+		using Vector3       = typename SE3Types::Vector3;
+		using TangentVector = typename SE3Types::TangentVector;
 
+		// Re-export the geometry mixin's Data members
+		using Geometry::d_curv_abs_section;
+		using Geometry::d_curv_abs_frames;
+		using Geometry::d_debug;
 
 	public:
-		//////////////////////////////////////////////////////////////////////
-		/// @name Data Fields
-		/// @{
-		sofa::Data<int> d_deformationAxis;
-		sofa::Data<SReal> d_max;
-		sofa::Data<SReal> d_min;
-		sofa::Data<SReal> d_radius;
-		sofa::Data<bool> d_drawMapBeam;
-		sofa::Data<sofa::type::RGBAColor> d_color;
+		// ── Data fields (visualization) ──────────────────────────────────
+		sofa::Data<int>                     d_deformationAxis;
+		sofa::Data<SReal>                   d_max;
+		sofa::Data<SReal>                   d_min;
+		sofa::Data<SReal>                   d_radius;
+		sofa::Data<bool>                    d_drawMapBeam;
+		sofa::Data<sofa::type::RGBAColor>   d_color;
 		sofa::Data<sofa::type::vector<int>> d_index;
-		sofa::Data<unsigned int> d_baseIndex;
-		/// @}
-		//////////////////////////////////////////////////////////////////////
 
 	public:
-		//////////////////////////////////////////////////////////////////////
-		/// @name Inherited from BaseObject
-		/// @{
-		void initialization() override;
-		void doBaseCosseratInit() override;
+		// ── Inherited from BaseObject ─────────────────────────────────────
+		void init() override;
 		void draw(const sofa::core::visual::VisualParams *vparams) override;
-		/// @}
-		//////////////////////////////////////////////////////////////////////
 
-		//////////////////////////////////////////////////////////////////////
-		/// @name Inherited from Multi2Mapping
-		/// @{
+		// ── Inherited from Mapping<TIn, TOut> ─────────────────────────────
 		void apply(const sofa::core::MechanicalParams *mparams,
-				   const sofa::type::vector<sofa::DataVecCoord_t<Out> *> &dataVecOutPos,
-				   const sofa::type::vector<const sofa::DataVecCoord_t<In1> *> &dataVecIn1Pos,
-				   const sofa::type::vector<const sofa::DataVecCoord_t<In2> *> &dataVecIn2Pos) override;
+				   sofa::DataVecCoord_t<Out> &out,
+				   const sofa::DataVecCoord_t<In> &in) override;
 
 		void applyJ(const sofa::core::MechanicalParams *mparams,
-					const sofa::type::vector<sofa::DataVecDeriv_t<Out> *> &dataVecOutVel,
-					const sofa::type::vector<const sofa::DataVecDeriv_t<In1> *> &dataVecIn1Vel,
-					const sofa::type::vector<const sofa::DataVecDeriv_t<In2> *> &dataVecIn2Vel) override;
+					sofa::DataVecDeriv_t<Out> &out,
+					const sofa::DataVecDeriv_t<In> &in) override;
 
 		void applyJT(const sofa::core::MechanicalParams *mparams,
-					 const sofa::type::vector<sofa::DataVecDeriv_t<In1> *> &dataVecOut1Force,
-					 const sofa::type::vector<sofa::DataVecDeriv_t<In2> *> &dataVecOut2RootForce,
-					 const sofa::type::vector<const sofa::DataVecDeriv_t<Out> *> &dataVecInForce) override;
+					 sofa::DataVecDeriv_t<In> &out,
+					 const sofa::DataVecDeriv_t<Out> &in) override;
 
-		/// Geometric stiffness K_G · δξ — NOT YET IMPLEMENTED.
-		/// Implementation lives in the .inl so a single per-instance warning can
-		/// fire when implicit solvers query the tangent stiffness; without an
-		/// applyDJT body the Newton step is mis-scaled on large deformations.
-		void applyDJT(const sofa::core::MechanicalParams* mparams,
+		/// Geometric stiffness K_G · δξ — NOT YET IMPLEMENTED (one-time warning).
+		void applyDJT(const sofa::core::MechanicalParams *mparams,
 					  sofa::core::MultiVecDerivId          inForce,
 					  sofa::core::ConstMultiVecDerivId     outForce) override;
 
-		/// Support for constraints
+		/// Constraint version
 		void applyJT(const sofa::core::ConstraintParams *cparams,
-					 const sofa::type::vector<sofa::DataMatrixDeriv_t<In1> *> &dataMatOut1Const,
-					 const sofa::type::vector<sofa::DataMatrixDeriv_t<In2> *> &dataMatOut2Const,
-					 const sofa::type::vector<const sofa::DataMatrixDeriv_t<Out> *> &dataMatInConst) override;
-		// // /// @}
-		// // //////////////////////////////////////////////////////////////////////
+					 sofa::DataMatrixDeriv_t<In> &out,
+					 const sofa::DataMatrixDeriv_t<Out> &in) override;
 
 		void computeBBox(const sofa::core::ExecParams *params, bool onlyVisible) override;
 
-		AdjointMatrix computeInverseTangentOperator(const TangentVector&);
-		AdjointMatrix compute_adjoint(const TangentVector&);
-		Matrix3 buildHatMatrix(const Vector3&);
-
+		// ── Local mathematical helpers ────────────────────────────────────
+		AdjointMatrix computeInverseTangentOperator(const TangentVector &);
+		AdjointMatrix compute_adjoint(const TangentVector &);
+		Matrix3       buildHatMatrix(const Vector3 &);
 
 	public:
-		////////////////////////// Inherited attributes ////////////////////////////
-		/// Bring inherited attributes into the current lookup context
-		using CosseratGeometryMapping<TIn1, TIn2, TOut>::d_curv_abs_section;
-		using CosseratGeometryMapping<TIn1, TIn2, TOut>::d_curv_abs_frames;
-		using CosseratGeometryMapping<TIn1, TIn2, TOut>::d_debug;
+		// Re-export geometry state for convenience inside .inl
+		using Geometry::m_section_properties;
+		using Geometry::m_frame_properties;
+		using Geometry::m_frame_to_section_indices;
+		using Geometry::m_frame_to_section_indices_draw;
+		using Geometry::m_section_length_vectors;
 
 	protected:
-		////////////////////////// Inherited attributes ////////////////////////////
-		/// Bring inherited attributes into the current lookup context
-		using CosseratGeometryMapping<TIn1, TIn2, TOut>::m_section_properties;
-		using CosseratGeometryMapping<TIn1, TIn2, TOut>::m_frame_properties;
-		using CosseratGeometryMapping<TIn1, TIn2, TOut>::m_frame_to_section_indices;
-		using CosseratGeometryMapping<TIn1, TIn2, TOut>::m_frame_to_section_indices_draw;
-		using CosseratGeometryMapping<TIn1, TIn2, TOut>::m_section_length_vectors;
-		using CosseratGeometryMapping<TIn1, TIn2, TOut>::m_frames;
-		using CosseratGeometryMapping<TIn1, TIn2, TOut>::m_rigid_base;
-		using CosseratGeometryMapping<TIn1, TIn2, TOut>::m_strain_state;
-		//////////////////////////////////////////////////////////////////////////////
-
 		sofa::helper::ColorMap m_colorMap;
-	
 
+		// Mechanical-state pointers cached at init().
+		sofa::core::State<In>  *m_input  = nullptr; ///< Rigid3 frames
+		sofa::core::State<Out> *m_output = nullptr; ///< Vec3 / Vec6 strains
 
-    protected:
-		Frames2StrainCosseratMapping
-();
-		~Frames2StrainCosseratMapping
-() override = default;
-    };
+	protected:
+		Frames2StrainCosseratMapping();
+		~Frames2StrainCosseratMapping() override = default;
+	};
 
-    #if !defined(SOFA_COSSERAT_CPP_Frames2StrainCosseratMapping)
-    extern template class SOFA_COSSERAT_API Frames2StrainCosseratMapping<
-            sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Vec3Types>;
-    extern template class SOFA_COSSERAT_API Frames2StrainCosseratMapping<
-            sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Vec6Types>;
-    #endif
-}// namespace Cosserat::mapping
+#if !defined(SOFA_COSSERAT_CPP_Frames2StrainCosseratMapping)
+	extern template class SOFA_COSSERAT_API Frames2StrainCosseratMapping<
+			sofa::defaulttype::Rigid3Types, sofa::defaulttype::Vec3Types>;
+	extern template class SOFA_COSSERAT_API Frames2StrainCosseratMapping<
+			sofa::defaulttype::Rigid3Types, sofa::defaulttype::Vec6Types>;
+#endif
+
+} // namespace Cosserat::mapping

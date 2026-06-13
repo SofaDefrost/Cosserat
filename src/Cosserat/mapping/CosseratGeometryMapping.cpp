@@ -25,21 +25,17 @@
 
 namespace Cosserat::mapping {
 	// Explicit instantiation of the CosseratBeamGeometry mixin for each TStrain
-	// used by the mapping specialisations below. With Windows DLL exports, the
-	// linker needs the mixin's methods materialised in this translation unit.
+	// used by the mapping specialisations across the plugin. With Windows DLL
+	// exports, the linker needs the mixin's methods materialised in this
+	// translation unit. CosseratBeamGeometry<Rigid3> is no longer needed since
+	// the option-B refactor removed the old Frames2StrainCosseratMapping that
+	// inherited from CosseratGeometryMapping<Rigid3, Rigid3, Vec3/Vec6>.
 	template class SOFA_COSSERAT_API CosseratBeamGeometry<sofa::defaulttype::Vec3Types>;
 	template class SOFA_COSSERAT_API CosseratBeamGeometry<sofa::defaulttype::Vec6Types>;
-	template class SOFA_COSSERAT_API CosseratBeamGeometry<sofa::defaulttype::Rigid3Types>;
 
-	// for Strain2FramesCosseratMapping
+	// for Strain2FramesCosseratMapping (Multi2Mapping<Vec3/Vec6, Rigid3, Rigid3>)
 	template class SOFA_COSSERAT_API CosseratGeometryMapping<sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types,
 															sofa::defaulttype::Rigid3Types>;
 	template class SOFA_COSSERAT_API CosseratGeometryMapping<sofa::defaulttype::Vec6Types, sofa::defaulttype::Rigid3Types,
 															sofa::defaulttype::Rigid3Types>;
-
-	// for Frames2StrainCosseratMapping
-	template class SOFA_COSSERAT_API CosseratGeometryMapping<sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types,
-															sofa::defaulttype::Vec3Types>;
-	template class SOFA_COSSERAT_API CosseratGeometryMapping<sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types,
-															sofa::defaulttype::Vec6Types>;
 } // namespace Cosserat::mapping
