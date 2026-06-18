@@ -264,23 +264,8 @@ namespace Cosserat::mapping {
 		return k_hat;
 
 	}
-	template<class TIn1, class TIn2, class TOut>
-	AdjointMatrix Frames2StrainCosseratMapping<TIn1, TIn2, TOut>::compute_adjoint(const TangentVector& Omega){
-		Vector3 k = Vector3(Omega(0), Omega(1), Omega(2)); //first 3 components of Omega
-		Vector3 q = Vector3(Omega(3), Omega(4), Omega(5)); //last components
 
-		Matrix3 k_hat = buildHatMatrix(k);
-		Matrix3 q_hat = buildHatMatrix(q);
-		
-		AdjointMatrix ad = AdjointMatrix::Zero();
-
-		ad.template block<3,3>(0, 0) = k_hat;
-		ad.template block<3,3>(3, 3) = k_hat;
-		ad.template block<3,3>(3, 0) = q_hat;
-
-		return ad;
-	}
-
+	
 	//Inspiré du code de Sophus	(https://github.com/strasdat/sophus) et de l'article "A micro Lie theory for state estimation in robotics" par Joan Sola et al. (2018)
 	template<class TIn1, class TIn2, class TOut>
 	Matrix3 Frames2StrainCosseratMapping<TIn1, TIn2, TOut>::SO3LeftJacobian(const Vector3& phi){

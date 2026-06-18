@@ -121,7 +121,6 @@ namespace Cosserat::mapping{
 
 		AdjointMatrix computeInverseTangentOperator(const TangentVector&);
 		AdjointMatrix computeTangentOperator(const TangentVector&);
-		AdjointMatrix compute_adjoint(const TangentVector&);
 		Matrix3 buildHatMatrix(const Vector3&);
 		AdjointMatrix compute_Adjoint(const Matrix4&);
 		Matrix3 SO3LeftJacobian(const Vector3&);
