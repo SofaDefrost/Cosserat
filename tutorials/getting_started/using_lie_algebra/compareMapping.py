@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Tutorial 02: Cosserat Beam with Forces
+Compare Mapping: Cosserat Beam with Forces (DiscreteCosseratMapping vs Strain2RigidCosseratMapping)
 =====================================
 
 This tutorial builds on Tutorial 01 by adding:
@@ -71,7 +71,7 @@ def createScene(root_node):
     # Create bending states with a curve (last section has more bending)
     custom_bending_states = []
     for i in range(beam_geometry.get_number_of_sections()):
-        custom_bending_states.append([0, 0.0, 0.1])
+        custom_bending_states.append([0, 0.0, 0.])
 
     # Create cosserat state using geometry
     bending_node = _add_cosserat_state(solver_node, beam_geometry, node_name="cosserat_states",

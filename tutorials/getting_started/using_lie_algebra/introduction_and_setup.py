@@ -69,7 +69,7 @@ def _add_rigid_base(p_node, node_name="rigid_base", positions=None):
     return rigid_base_node
 
 
-def _add_cosserat_state(p_node, geometry: CosseratGeometry, node_name="cosserat_coordinates", custom_bending_states=None):
+def _add_cosserat_state(p_node, geometry: CosseratGeometry, node_name="cosserat_coordinates", custom_bending_states=None, radius=2.0, youngModulus=1.0e3, poissonRatio=0.4):
     """Create the cosserat coordinate node using CosseratGeometry."""
     cosserat_coordinate_node = p_node.addChild(node_name)
 
@@ -88,9 +88,9 @@ def _add_cosserat_state(p_node, geometry: CosseratGeometry, node_name="cosserat_
         "BeamHookeLawForceField",
         crossSectionShape="circular",
         length=geometry.section_lengths,  # Use geometry data
-        radius=2.0,
-        youngModulus=1.0e3,
-        poissonRatio=0.4,
+        radius=radius,
+        youngModulus=youngModulus,
+        poissonRatio=poissonRatio,
     )
     return cosserat_coordinate_node
 
@@ -124,7 +124,7 @@ def _add_cosserat_frame(
         output=frames_mo.getLinkPath(),
         debug=0,
         radius=beam_radius,
-        color=[0.0, 0.0, 1.0, 1.0], #blue
+        color=[0.0, 0.0, 1.0, 0.45], #blue
     )
     return cosserat_in_sofa_frame_node
 
@@ -157,8 +157,8 @@ def _add_cosserat_frame_v2(
         input2=p_node.cosserat_base_mo.getLinkPath(),
         output=frames_mo.getLinkPath(),
         debug=0,
-        radius=beam_radius,
-        color=[1.0, 0.0, 0.0, 1.0], #red
+        radius=0.5,
+        color=[1.0, 0.0, 0.0, 0.5], #red
     )
     return cosserat_in_sofa_frame_node
 

@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-Tutorial 02: Cosserat Beam with Forces
+Tutorial 00: Cosserat Beams with Forces (DiscreteCosseratMapping and Strain2RigidCosseratMapping)
 =====================================
 
-This tutorial builds on Tutorial 01 by adding:
+This tutorial builds on Tutorial 00 by adding:
 - Gravity forces
 - Applied forces at the beam tip
 - Mass distribution
@@ -119,7 +119,7 @@ def createScene(root_node):
         node_name="cosserat_states_2",
         custom_bending_states=custom_bending_states,
     )
-    frame_node_2 = _add_cosserat_frame(
+    frame_node_2 = _add_cosserat_frame_v2(
         base_node_2, bending_node_2, beam_geometry, beam_mass=5.0
     )
 

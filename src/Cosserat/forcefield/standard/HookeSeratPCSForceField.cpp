@@ -197,8 +197,8 @@ namespace Cosserat {
 		factory->registerObjects(
 				sofa::core::ObjectRegistrationData(
 						"This component is used to compute internal stress for torsion (along x) and bending (y and z)")
-						.add<sofa::component::forcefield::HookeSeratPCSForceField<sofa::defaulttype::Vec3Types>>(true));
-		//.add<sofa::component::forcefield::HookeSeratPCSForceField<sofa::defaulttype::Vec6Types>>());
+						.add<sofa::component::forcefield::HookeSeratPCSForceField<sofa::defaulttype::Vec3Types>>(true)
+		.add<sofa::component::forcefield::HookeSeratPCSForceField<sofa::defaulttype::Vec6Types>>());
 	}
 
 } // namespace Cosserat

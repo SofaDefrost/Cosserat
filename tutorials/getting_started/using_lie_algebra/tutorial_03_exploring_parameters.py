@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Tutorial 02: Cosserat Beam with Forces
+Tutorial 03: Exploring Cosserat Beam Parameters
 =====================================
 
 This tutorial builds on Tutorial 01 by adding:

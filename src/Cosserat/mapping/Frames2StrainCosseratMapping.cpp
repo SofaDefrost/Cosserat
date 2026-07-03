@@ -19,30 +19,35 @@
 *                                                                             *
 * Contact information: contact@sofa-framework.org                             *
 ******************************************************************************/
-#define SOFA_COSSERAT_CPP_DiscreteCosseratMapping
-#include <Cosserat/mapping/DiscreteCosseratMapping.inl>
-
-#include <sofa/defaulttype/VecTypes.h>
-#include <sofa/defaulttype/RigidTypes.h>
+//@appa
+#define SOFA_COSSERAT_CPP_Frames2StrainCosseratMapping
+#include <Cosserat/mapping/Frames2StrainCosseratMapping.inl>
 #include <sofa/core/ObjectFactory.h>
+#include <sofa/defaulttype/VecTypes.h>
 
-namespace Cosserat::mapping{
-
-    template class SOFA_COSSERAT_API DiscreteCosseratMapping< sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types >;
-    template class SOFA_COSSERAT_API DiscreteCosseratMapping< sofa::defaulttype::Vec6Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types >;
-
-} // namespace sofa::component::mapping
+namespace Cosserat::mapping {
+	template class SOFA_COSSERAT_API Frames2StrainCosseratMapping<
+			sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Vec3Types>;
+	template class SOFA_COSSERAT_API Frames2StrainCosseratMapping<
+			sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Vec6Types>;
+} // namespace Cosserat::mapping
 
 namespace Cosserat{
-    // Register in the Factory
-    void registerDiscreteCosseratMapping(sofa::core::ObjectFactory* factory){
-        factory->registerObjects(sofa::core::ObjectRegistrationData(
-            "This component facilitates the creation of Cosserat Cables in SOFA simulations. It takes two mechanical"
-            "objects as inputs: the rigid base of the beam (with 6 degrees of freedom) and the local coordinates of the beam. Using "
-            "these inputs, the component computes and outputs the mechanical positions of the beam in global coordinates. "
-            "Like any mapping, it updates the positions and velocities of the outputs based on the inputs. "
-            "Additionally, forces applied to the outputs are propagated back to the inputs, ensuring bidirectional coupling.")
-            .add< mapping::DiscreteCosseratMapping< sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types > >(true)
-            .add< mapping::DiscreteCosseratMapping< sofa::defaulttype::Vec6Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types > >());
-    }
-}
+	// Register in the Factory
+	void registerFrames2StrainCosseratMapping(sofa::core::ObjectFactory* factory)
+	{
+		factory->registerObjects(
+				sofa::core::ObjectRegistrationData(
+						"This component computes Cosserat strains from input frames and rigid base. "
+						"It takes two mechanical" 
+						"objects as inputs; the rigid base of the beam (with 6 degree of freedom) and the frames (Rigid3) "
+						"in global coordinates." 
+						"Using these inputs, the component computes and outputs the strains (Vec3) of the beam.")
+						.add<mapping::Frames2StrainCosseratMapping<sofa::defaulttype::Rigid3Types, 
+																sofa::defaulttype::Rigid3Types, 
+																sofa::defaulttype::Vec3Types>>(true)
+						.add< mapping::Frames2StrainCosseratMapping< sofa::defaulttype::Rigid3Types, 
+																sofa::defaulttype::Rigid3Types, 
+																sofa::defaulttype::Vec6Types> >());
+	}
+}// namespace Cosserat

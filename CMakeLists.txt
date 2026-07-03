@@ -49,6 +49,8 @@ set(HEADER_FILES
   ${SRC_ROOT_DIR}/mapping/CosseratGeometryMapping.inl
   ${SRC_ROOT_DIR}/mapping/Strain2RigidCosseratMapping.h
   ${SRC_ROOT_DIR}/mapping/Strain2RigidCosseratMapping.inl
+  ${SRC_ROOT_DIR}/mapping/Frames2StrainCosseratMapping.h
+  ${SRC_ROOT_DIR}/mapping/Frames2StrainCosseratMapping.inl
   ${SRC_ROOT_DIR}/mapping/BaseCosseratMapping.h
   ${SRC_ROOT_DIR}/mapping/BaseCosseratMapping.inl
   ${SRC_ROOT_DIR}/mapping/DiscreteCosseratMapping.h
@@ -87,6 +89,8 @@ set(SOURCE_FILES
     ${SRC_ROOT_DIR}/mapping/BaseCosseratMapping.cpp
     ${SRC_ROOT_DIR}/mapping/CosseratGeometryMapping.cpp
     ${SRC_ROOT_DIR}/mapping/Strain2RigidCosseratMapping.cpp
+    ${SRC_ROOT_DIR}/mapping/Frames2StrainCosseratMapping.cpp
+
     ${SRC_ROOT_DIR}/mapping/DiscreteCosseratMapping.cpp
     # ${SRC_ROOT_DIR}/mapping/DiscreteDynamicCosseratMapping.cpp
     ${SRC_ROOT_DIR}/engine/ProjectionEngine.cpp

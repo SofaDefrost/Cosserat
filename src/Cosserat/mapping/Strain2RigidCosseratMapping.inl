@@ -30,6 +30,8 @@
 #include <cassert>
 #include <string>
 
+#include <iomanip> // for std::setprecision
+
 namespace Cosserat::mapping {
 
 	using sofa::core::objectmodel::BaseContext;
@@ -86,13 +88,53 @@ namespace Cosserat::mapping {
 		msg_info() << "Strain2RigidCosseratMapping initialized with liegroups SE(3) integration";
 	}
 
-	/*********************start debugging **************************/
+	template<class TIn1, class TIn2, class TOut>
+	void Strain2RigidCosseratMapping<TIn1, TIn2, TOut>::initialization() {	
+			// Get the initial configuration g(X):frames and initialize FrameInfo objects
+		if (m_frames) {
+			auto xfromData = m_frames->read(sofa::core::vec_id::read_access::position);
+			const auto &xfrom = xfromData->getValue();
+
+			// Initialize frame properties using the initial frame states
+			const auto frame_count = xfrom.size();
+
+			m_frameProperties.clear();
+			m_frameProperties.reserve(frame_count);
+
+			for (size_t i = 0; i < frame_count; ++i) {
+				// Convert SOFA coordinates to SE3 transformations
+				const auto &frame_i = xfrom[i];
+				Vector3 translation(frame_i.getCenter()[0], frame_i.getCenter()[1], frame_i.getCenter()[2]);
+
+				// Convert quaternion to rotation matrix
+				const auto &quat = frame_i.getOrientation();
+				SO3Type rotation;
+				// Convert SOFA quaternion to our SO3 representation
+				// SOFA quaternions use [x, y, z, w] order, Eigen uses [w, x, y, z]
+				Eigen::Quaternion<double> eigenQuat(quat[3], quat[0], quat[1], quat[2]);
+				rotation = SO3Type(eigenQuat.toRotationMatrix());
+
+				SE3Type gXi(rotation, translation);
+
+			// Frame info initialized
+
+				// Create FrameInfo with initial transformation
+				// Length and kappa will be set later in initializeFrameProperties
+				FrameInfo frameInfo;
+				frameInfo.setTransformation(gXi);
+				m_frameProperties.push_back(frameInfo);
+			}
+		}
+
+	}
+
 	template<class TIn1, class TIn2, class TOut>
 	void
 	Strain2RigidCosseratMapping<TIn1, TIn2, TOut>::apply(const sofa::core::MechanicalParams * /* mparams */,
 													  const vector<sofa::DataVecCoord_t<Out> *> &dataVecOutPos,
 													  const vector<const sofa::DataVecCoord_t<In1> *> &dataVecIn1Pos,
 													  const vector<const sofa::DataVecCoord_t<In2> *> &dataVecIn2Pos) {
+
 
 		msg_info("Strain2RigidCosseratMapping") << "Strain2RigidCosseratMapping::apply called";
 
@@ -110,6 +152,7 @@ namespace Cosserat::mapping {
 		// Get input data
 		const sofa::VecCoord_t<In1> &strainState = dataVecIn1Pos[0]->getValue();
 		const sofa::VecCoord_t<In2> &rigidBase = dataVecIn2Pos[0]->getValue();
+
 
 		const auto frame_count = d_curv_abs_frames.getValue().size();
 		sofa::VecCoord_t<Out> &output_frames = *dataVecOutPos[0]->beginEdit();
@@ -173,6 +216,10 @@ namespace Cosserat::mapping {
 			if(d_debug.getValue())
 				std::cout << "Frame  : " << i << " = " << current_frame << std::endl;
 				
+			// Affichage de la position et de l'orientation de chaque frame avec précision
+			// std::cout << "Frame  : " << i << " = " << std::fixed << std::setprecision(16) << current_frame << std::endl;
+			
+			
 			// Save current rigid frame transformation into frame's properties
 			//m_frameProperties[i].setTransformation(current_frame);
 
@@ -209,7 +256,9 @@ namespace Cosserat::mapping {
 			displayOutputFrames(output_frames, "apply - output");
 		}
 
+
 		dataVecOutPos[0]->endEdit();
+
 	}
 
 	template<class TIn1, class TIn2, class TOut>
@@ -268,6 +317,7 @@ namespace Cosserat::mapping {
 													   const vector<sofa::DataVecDeriv_t<Out> *> &dataVecOutVel,
 													   const vector<const sofa::DataVecDeriv_t<In1> *> &dataVecIn1Vel,
 													   const vector<const sofa::DataVecDeriv_t<In2> *> &dataVecIn2Vel) {
+
 
 		if (dataVecOutVel.empty() || dataVecIn1Vel.empty() || dataVecIn2Vel.empty())
 			return;
@@ -328,6 +378,7 @@ namespace Cosserat::mapping {
 		if (d_debug.getValue())
     		std::cout << "Base local Velocity :" << node_velocities[0].transpose() << std::endl;
 
+		
 		for (size_t i = 1; i < m_section_properties.size(); ++i) {
 			const auto &section = m_section_properties[i];
 			const auto &tang_adj = section.getTangAdjointMatrix();
@@ -335,8 +386,13 @@ namespace Cosserat::mapping {
 			// Extract strain velocity for this section
 			TangentVector strain_vel_i = TangentVector::Zero();
 			
-			for (int j = 0; j < 3; ++j) {
-				strain_vel_i[j] = strain_vel[i - 1][j];
+			if constexpr (std::is_same_v<Deriv1, sofa::type::Vec3>){ 
+				for (int j = 0; j < 3; ++j)
+					strain_vel_i[j] = strain_vel[i - 1][j];
+			}
+			else{
+				for (int j = 0; j < 6; ++j)
+					strain_vel_i[j] = strain_vel[i - 1][j];
 			}
 
 			// Propagate velocity: η_i = Ad_{g_i^{-1}} * (η_{i-1} + T_i * ξ̇_i)
@@ -363,8 +419,14 @@ namespace Cosserat::mapping {
 
 			// Extract frame strain velocity (same as section strain)
 			TangentVector frame_strain_vel = TangentVector::Zero();
-			for (int j = 0; j < 3; ++j) {
-				frame_strain_vel[j] = strain_vel[m_indices_vectors[i]-1][j]; //@appa: replace section_idx by m_indices_vectors[i]-1
+
+			if constexpr (std::is_same_v<Deriv1, sofa::type::Vec3>){
+				for (int j = 0; j < 3; ++j) 
+					frame_strain_vel[j] = strain_vel[m_indices_vectors[i]-1][j]; //@appa: replace section_idx by m_indices_vectors[i]-1
+			}
+			else{
+				for (int j = 0; j < 6; ++j) 
+					frame_strain_vel[j] = strain_vel[m_indices_vectors[i]-1][j];
 			}
 
 			// Compute frame velocity: η_frame = Ad_{g_frame^{-1}} * (η_node + T_frame * ξ̇_frame)
@@ -393,6 +455,7 @@ namespace Cosserat::mapping {
 			if (d_debug.getValue()) {
 				std::cout << "Frame velocity [" << i << "]: " << output_vel.transpose() <<"\n";
 			}
+
 		}
 
 		// Debug output velocities if enabled
@@ -401,6 +464,7 @@ namespace Cosserat::mapping {
 		}
 
 		dataVecOutVel[0]->endEdit();
+
 	}
 
 	template<class TIn1, class TIn2, class TOut>
@@ -409,6 +473,7 @@ namespace Cosserat::mapping {
 			const vector<sofa::DataVecDeriv_t<In1> *> &dataVecOut1Force,
 			const vector<sofa::DataVecDeriv_t<In2> *> &dataVecOut2Force,
 			const vector<const sofa::DataVecDeriv_t<Out> *> &dataVecInForce) {
+
 
 		if (dataVecOut1Force.empty() || dataVecInForce.empty() || dataVecOut2Force.empty())
 			return;
@@ -469,6 +534,7 @@ namespace Cosserat::mapping {
 		if (sz == 0 || localForces.empty()) {
 			dataVecOut1Force[0]->endEdit();
 			dataVecOut2Force[0]->endEdit();
+			// Add error or warning message 
 			return;
 		}
 		
@@ -476,8 +542,9 @@ namespace Cosserat::mapping {
 		auto lastSectionIndex = m_indices_vectors[sz - 1];
 		TangentVector totalForce = TangentVector::Zero();
 
-		Eigen::Matrix<double, 3, 6> matB_trans = Eigen::Matrix<double, 3, 6>::Zero();
-		for (int k=0; k<3; k++)
+		constexpr int N = std::is_same_v<Deriv1, sofa::type::Vec3> ? 3 : 6;
+		Eigen::Matrix<double, N, 6> matB_trans = Eigen::Matrix<double, N, 6>::Zero();
+		for (int k=0; k<N; k++)
 			matB_trans(k, k) = 1.0;
 		
 		// Process frames in reverse order to accumulate forces
@@ -493,7 +560,7 @@ namespace Cosserat::mapping {
 			
 			AdjointMatrix temp = frame.getTangAdjointMatrix().transpose();
 			
-			Vector3 f = matB_trans * temp * currentLocalForce;
+			Eigen::Matrix<double, N, 1>  f = matB_trans * temp * currentLocalForce;
 
 			// Handle section change - propagate accumulated force
 			if (lastSectionIndex != currentSectionIndex) {
@@ -507,17 +574,17 @@ namespace Cosserat::mapping {
 				AdjointMatrix tempSection = section.getTangAdjointMatrix().transpose();
 
 				// apply F_tot to the new beam
-				Vector3 temp_f = matB_trans * tempSection * totalForce;
+				Eigen::Matrix<double, N, 1>  temp_f = matB_trans * tempSection * totalForce;
 								
 				// Add accumulated force to strain outpute
-				for (int j=0; j<3; j++){
+				for (int j=0; j<N; j++){
 					strainForces[lastSectionIndex-1][j] +=temp_f[j];
 				}
 				
 			}
 
 			totalForce += currentLocalForce;
-			for (int j=0; j<3; j++){
+			for (int j=0; j<N; j++){
 					strainForces[currentSectionIndex-1][j] +=f[j];
 			}
 		}
@@ -541,6 +608,7 @@ namespace Cosserat::mapping {
 			std::cout << "Total base force: [" << totalForce.transpose() << "]" << std::endl;
 			std::cout << "Applied to base index: " << baseIndex << std::endl;
 		}
+
 
 		dataVecOut1Force[0]->endEdit();
 		dataVecOut2Force[0]->endEdit();
@@ -578,8 +646,10 @@ namespace Cosserat::mapping {
      		 	m_strain_state->read(sofa::core::vec_id::read_access::position);
 		const sofa::VecCoord_t<In1> strainState = x1fromData->getValue();
 
-		Eigen::Matrix<double, 3, 6> matB_trans = Eigen::Matrix<double, 3, 6>::Zero();
-		for (int k=0; k<3; k++)
+		
+		constexpr int N = std::is_same_v<Deriv1, sofa::type::Vec3> ? 3 : 6;
+		Eigen::Matrix<double, N, 6> matB_trans = Eigen::Matrix<double, N, 6>::Zero();
+		for (int k=0; k<N; k++)
 			matB_trans(k, k) = 1.0;
 
 		vector<std::tuple<int, TangentVector>> NodesInvolved;
@@ -625,9 +695,12 @@ namespace Cosserat::mapping {
 
 				AdjointMatrix temp = frame.getTangAdjointMatrix().transpose();
 
-				Vector3 f = matB_trans * temp * localForce; // constraint direction in the strain space.
+				Eigen::Matrix<double, N, 1> f = matB_trans * temp * localForce; // constraint direction in the strain space.
 				
-				sofa::type::Vec3 f_trans (f[0], f[1], f[2]);
+				Deriv1 f_trans;
+				for(int k=0; k<N; k++){
+					f_trans[k] = f[k];
+				}
 				
 				o1.addCol(sectionIndex-1, f_trans);
 
@@ -685,9 +758,12 @@ namespace Cosserat::mapping {
 					// transfer to strain space (local coordinates)
 					AdjointMatrix tempSection = section.getTangAdjointMatrix().transpose();
 					
-					Vector3 temp_f = matB_trans * tempSection * CumulativeF;
+					Eigen::Matrix<double, N, 1>  temp_f = matB_trans * tempSection * CumulativeF;
 
-					sofa::type::Vec3 temp_f_trans (temp_f[0], temp_f[1], temp_f[2]);
+					Deriv1 temp_f_trans;
+					for(int k=0; k<N; k++){
+						temp_f_trans[k] = temp_f[k];
+					}
 
 					if(i>1){
 						o1.addCol(i-2, temp_f_trans);
@@ -771,7 +847,6 @@ namespace Cosserat::mapping {
 			}
 		} else {
 			int j = 0;
-			vector<int> index = d_index.getValue();
 			for (unsigned int i = 0; i < sz - 1; i++) {
 				j = m_indices_vectors[i] - 1; // to get the articulation on which the frame is related to
 				RGBAColor color = _eval(xPos[j][d_deformationAxis.getValue()]);
