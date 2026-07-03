@@ -34,9 +34,8 @@
 
 #include <cassert>
 #include <string>
-#include <iomanip> // for std::setprecision
 
-static constexpr double epsilon = 1e-8;
+static constexpr double epsilon = 1e-8; //for small value comparison (small deformation, rotation, etc.)
 
 
 namespace Cosserat::mapping {
@@ -137,12 +136,6 @@ namespace Cosserat::mapping {
 		const sofa::VecCoord_t<In1> &framePositions = dataVecIn1Pos[0]->getValue(); // frames positions
 		const sofa::VecCoord_t<In2> &rigidBase = dataVecIn2Pos[0]->getValue(); // Rigid base
 
-		// std::cout<<"(in) Rigid base: "<<rigidBase<<std::endl;
-
-		// for(int i=0; i<frames.size();i++){
-		// 	std::cout<<"(in) Frame ["<<i<<"]: "<<frames[i]<<std::endl;
-		// }
-
         //Output: strain (to evaluate)
         const auto nbSections = m_section_properties.size()-1;
 		sofa::VecCoord_t<Out> &strains = *dataVecOutPos[0]->beginEdit();
@@ -182,8 +175,6 @@ namespace Cosserat::mapping {
 		
 		SE3Types g_prev = SE3Types(SE3Types::SO3Type(rot_a), trans_a);
 		
-		// std::cout<<"Frame 0: "<< std::setprecision(16)<<frame_a<<std::endl;
-
 		for(unsigned int i=0; i<nbSections; i++){
 
 			const auto& section = m_section_properties[i+1];
@@ -192,8 +183,6 @@ namespace Cosserat::mapping {
 			//frame b
 			const auto& frame_b = framePositions[i+1];
 			
-			// std::cout<<"Frame "<<i+1<<": "<< std::setprecision(16)<<frame_b<<std::endl;
-
 			Vector3 trans_b(frame_b.getCenter()[0], frame_b.getCenter()[1], frame_b.getCenter()[2]);
 
 			// Convert SOFA quaternion to Eigen quaternion (SOFA: x,y,z,w; Eigen: w,x,y,z)
@@ -211,44 +200,7 @@ namespace Cosserat::mapping {
 			}
 
 			g_prev = g_curr;
-				// std::cout<<"(out) Strain ["<<i<<"] :" << std::fixed << std::setprecision(16)<< strains[i]<<std::endl;
 		}
-		// std::cout<<"--- outside the loop ---"<<std::endl;
-
-
-		// std::cout<<"==========Test du log =============="<<std::endl;
-
-		// TangentVector xi_test(0.1, 0.2, -0.15, 1.02, 0.01, -0.005);
-		// double s = 0.5;
-		// TangentVector O = xi_test * s;
-		// SE3Types g_reconstructed = SE3Types::computeExp(O);
-		// TangentVector xi_recovered = g_reconstructed.computeLog() / s;
-		// double err = (xi_test - xi_recovered).norm();
-		
-		// std::cout << "Erreur : " << err << std::endl;
-		
-		// for (int i=0; i<6; i++){
-		// 	TangentVector Omega = TangentVector::Random();
-		// 	AdjointMatrix dexp    = computeTangentOperator(Omega);
-		// 	AdjointMatrix dexpInv = computeInverseTangentOperator(Omega);
-
-		// 	std::cout <<" Error : "<< (dexp * dexpInv - AdjointMatrix::Identity()).norm()<< std::endl;
-		
-		// }
-
-		// // dexp(Omega) * dOmega ≈ [log(exp(Omega)^{-1} * exp(Omega + eps*dOmega))]/eps
-		// TangentVector Omega = TangentVector::Random();
-		// std::cout<<"Omega : "<<Omega.transpose()<<std::endl;
-		// TangentVector dOmega = TangentVector::Random();
-		// std::cout<<"dOmega : "<<dOmega.transpose()<<std::endl;
-
-		// for(double eps=1e-3; eps > 1e-8; eps *= 0.1){
-		// 	SE3Types g1 = SE3Types::computeExp(Omega);
-		// 	SE3Types g2 = SE3Types::computeExp(Omega + eps*dOmega);
-		// 	TangentVector diff_numeric = (g1.inverse()*g2).computeLog();
-		// 	TangentVector diff_analytic = computeTangentOperator(-Omega) * dOmega;
-		// 	std::cout << "Erreur Q (eps=" << eps << ") : " << (diff_numeric - eps*diff_analytic).norm() << std::endl;
-		// }
 
 		dataVecOutPos[0]->endEdit();
     }
@@ -400,18 +352,12 @@ namespace Cosserat::mapping {
 
 
 		// Compute the base velocity in SE(3) tangent space
-		//    Convert base velocity to se(3) tangent vector
+		// Convert base velocity to se(3) tangent vector
 		TangentVector base_vel_local = TangentVector::Zero();
 		for (auto u = 0; u < 6; u++)
 			base_vel_local[u] = base_vel[base_index][u];
 
 
-		// std::cout<<"(in) Base Velocity : ["<<base_vel_local.transpose()<<"]"<<std::endl;
-				
-		// for(int i=0; i<frame_vel.size(); i++)
-		// 	std::cout<<"(in) Frame velocity ["<<i<<"]: "<<frame_vel[i]<<std::endl;
-
-		
 		//compute transformation of each frame
 		std::vector<SE3Types> g_frames(framePositions.size());
 
@@ -429,8 +375,7 @@ namespace Cosserat::mapping {
 		}
 
 
-		//
-		// compute the Jacobians J1 and J2
+		// Compute the Jacobians J1 and J2
 		// Omega = Log(ga^-1gb
 		// J1 = 1/h dexp^-1_{-Omega)} Ad_{exp(-Omega)}
 		// J2 = 1/h dexp^-1_{Omega}
@@ -447,8 +392,6 @@ namespace Cosserat::mapping {
 
 			TangentVector Omega_i = dx*strain_i;
 			AdjointMatrix dexp_inv = computeInverseTangentOperator(-Omega_i); // (-) sign because we use the right-trivialized Jacobian
-			// AdjointMatrix dexp = computeTangentOperator(Omega_i);
-			// std::cout<<"erreur approx = "<<(dexp*dexp_inv - AdjointMatrix::Identity()).norm()<<std::endl;
 
 			AdjointMatrix J2 = (1./dx)*dexp_inv;
 
@@ -480,8 +423,6 @@ namespace Cosserat::mapping {
 			for(int k=0; k<6; k++){
 				strain_vel[i][k] = output_vel[k];
 			}
-
-			// std::cout << "(out) Strain velocity [" << i << "]: " << output_vel.transpose() <<"\n";
 		}
 
 		dataVecOutVel[0]->endEdit();
@@ -507,7 +448,6 @@ namespace Cosserat::mapping {
 			std::cout << " ########## Frames2StrainCosseratMapping ApplyJT Force Function ########" << std::endl;
 
 
-
 		const sofa::VecDeriv_t<Out> &strainForces = dataVecInForce[0]->getValue();
 		sofa::VecDeriv_t<In1> &frameForces = *dataVecOut1Force[0]->beginEdit();
 		sofa::VecDeriv_t<In2> &baseForces = *dataVecOut2Force[0]->beginEdit();
@@ -525,11 +465,6 @@ namespace Cosserat::mapping {
 		// Initialize output forces
 		frameForces.resize(framePositions.size());
 		//Ne pas faire clear() ou mettre à zéro frameForces !!!
-
-		// std::cout<<"(in) Strain forces: "<<std::endl;
-		// for(auto v : strainForces){
-		// 	std::cout<< v <<std::endl;
-		// }
 
 		//compute transformation of each frame
 		std::vector<SE3Types> g_frames(framePositions.size());
@@ -551,8 +486,6 @@ namespace Cosserat::mapping {
 		const auto section_count = d_curv_abs_section.getValue().size() - 1;
 
 		for(unsigned int i=0; i<section_count; i++){
-			// std::cout<<"## Section "<<i <<std::endl;
-
 			const auto& section = m_section_properties[i+1];
 
 			double dx = section.getLength(); //section length
@@ -570,8 +503,6 @@ namespace Cosserat::mapping {
 
 			TangentVector Omega_i = dx * strain_i;
 
-			// std::cout<<"Omega_i: "<< Omega_i.transpose()<<std::endl;
-
 			//compute Jacobians
 			AdjointMatrix dexp_inv = computeInverseTangentOperator(-Omega_i);
 			AdjointMatrix J2 = (1./dx)*dexp_inv;
@@ -585,10 +516,6 @@ namespace Cosserat::mapping {
 			TangentVector fa_local = J1.transpose() * lambda; //a (b): extremite gauche (droite) de la section
 			TangentVector fb_local = J2.transpose() * lambda;
 
-			// std::cout<<"fa_local: "<<fa_local.transpose()<<std::endl;
-			// std::cout<<"fb_local: "<<fb_local.transpose()<<std::endl;
-
-
 			//Projection (local -> global)
 			//frame a
 			SE3Types ga = g_frames[i];
@@ -601,25 +528,12 @@ namespace Cosserat::mapping {
 			AdjointMatrix b_projector = gb.buildProjectionMatrix(gb.rotation().matrix());
 			TangentVector fb_global = b_projector * fb_local;
 
-
-			// std::cout<<"fa_global: "<<fa_global.transpose()<<std::endl;
-			// std::cout<<"fb_global: "<<fb_global.transpose()<<std::endl;
-
 			for(int k=0; k<6; k++){
 				frameForces[i][k] += fa_global[k];
 				frameForces[i+1][k] += fb_global[k];
 			}
 
-
 		}
-		
-		// // std::cout<<"-- End of the computation --"<<std::endl;
-
-		// std::cout << "(out) Frame forces: " << std::endl;
-		// for(int j=0; j<frameForces.size(); j++){
-		// 	std::cout<<"  (out) frame "<< j <<" : "<< frameForces[j] << std::endl;
-		// }
-    	// std::cout << "(out)base Force: " << baseForces[baseIndex] << std::endl;
 
 		dataVecOut1Force[0]->endEdit();
 		dataVecOut2Force[0]->endEdit();
@@ -821,11 +735,6 @@ namespace Cosserat::mapping {
 		if (!vparams->displayFlags().getShowMappings())
 			if (!d_debug.getValue())
 				return;
-
-		// // Debug output if needed
-		// if (this->f_printLog.getValue()) {
-		// 	displayOutputFrames(xData, "draw - rendering frames");
-		// }
 
 		glEnd();				
 	}
