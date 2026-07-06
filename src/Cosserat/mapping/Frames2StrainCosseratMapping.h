@@ -127,9 +127,23 @@ namespace Cosserat::mapping {
 		void computeBBox(const sofa::core::ExecParams *params, bool onlyVisible) override;
 
 		// ── Local mathematical helpers ────────────────────────────────────
+		// Exact SE(3) left-Jacobian machinery (closed form). Inspired by Sophus
+		// (github.com/strasdat/sophus) and Solà et al., "A micro Lie theory for
+		// state estimation in robotics" (2018).
+		//
+		// The tangent operator T(Ω) is the left Jacobian of the SE(3) exp map,
+		// laid out in the Cosserat convention [φ; ρ] (angular head, linear tail):
+		//     T(Ω)  = [ Jl(φ)        0    ]      Jl  = SO3 left Jacobian
+		//             [ Q(ν,φ)      Jl(φ) ]      Q   = SE(3) coupling block
+		// and its inverse:
+		//     T⁻¹(Ω) = [ Jl⁻¹(φ)         0      ]
+		//              [ -Jl⁻¹·Q·Jl⁻¹   Jl⁻¹(φ) ]
+		AdjointMatrix computeTangentOperator(const TangentVector &);
 		AdjointMatrix computeInverseTangentOperator(const TangentVector &);
-		AdjointMatrix compute_adjoint(const TangentVector &);
 		Matrix3       buildHatMatrix(const Vector3 &);
+		Matrix3       SO3LeftJacobian(const Vector3 &phi);
+		Matrix3       SO3LeftJacobianInverse(const Vector3 &phi);
+		Matrix3       computeQ_SE3(const Vector3 &rho, const Vector3 &phi);
 
 	public:
 		// Re-export geometry state for convenience inside .inl
