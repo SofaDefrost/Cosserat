@@ -40,8 +40,6 @@ namespace Cosserat::mapping {
 	using sofa::type::vector;
 	using namespace sofa::component::cosserat::liegroups;
 
-	// Small-angle threshold for the closed-form SE(3) Jacobian branches.
-	static constexpr double kSmallAngle = 1e-8;
 
 	// ──────────────────────────────────────────────────────────────────────────
 	// Constructor
@@ -202,121 +200,6 @@ namespace Cosserat::mapping {
 	}
 
 	// ──────────────────────────────────────────────────────────────────────────
-	// Exact SE(3) left-Jacobian machinery (closed form).
-	// Inspired by Sophus (github.com/strasdat/sophus) and Solà et al.,
-	// "A micro Lie theory for state estimation in robotics" (2018).
-	// ──────────────────────────────────────────────────────────────────────────
-	template<class TIn, class TOut>
-	Matrix3 Frames2StrainCosseratMapping<TIn, TOut>::buildHatMatrix(const Vector3 &k) {
-		Matrix3 k_hat;
-		k_hat <<  0.,    -k(2),  k(1),
-				  k(2),   0.,   -k(0),
-				 -k(1),   k(0),  0.;
-		return k_hat;
-	}
-
-	// SO(3) left Jacobian Jl(φ) = I + (1-cosθ)/θ²·[φ]× + (θ-sinθ)/θ³·[φ]×²
-	template<class TIn, class TOut>
-	Matrix3 Frames2StrainCosseratMapping<TIn, TOut>::SO3LeftJacobian(const Vector3 &phi) {
-		const double theta = phi.norm();
-		const Matrix3 Phi  = buildHatMatrix(phi);
-		const Matrix3 Phi2 = Phi * Phi;
-
-		if (theta < kSmallAngle)
-			return Matrix3::Identity() + 0.5 * Phi;
-
-		const double theta2 = theta * theta;
-		return Matrix3::Identity()
-			   + (1.0 - std::cos(theta)) / theta2 * Phi
-			   + (theta - std::sin(theta)) / (theta2 * theta) * Phi2;
-	}
-
-	// SO(3) left Jacobian inverse Jl⁻¹(φ) = I - ½[φ]× + c·[φ]×²,
-	//   c = (1 - ½θ·cot(θ/2))/θ²   (→ 1/12 as θ→0)
-	template<class TIn, class TOut>
-	Matrix3 Frames2StrainCosseratMapping<TIn, TOut>::SO3LeftJacobianInverse(const Vector3 &phi) {
-		const double theta = phi.norm();
-		const Matrix3 Phi  = buildHatMatrix(phi);
-		const Matrix3 Phi2 = Phi * Phi;
-
-		if (theta < kSmallAngle)
-			return Matrix3::Identity() - 0.5 * Phi + (1.0 / 12.0) * Phi2;
-
-		const double theta2 = theta * theta;
-		const double ht     = 0.5 * theta;
-		const double c      = (1.0 - 0.5 * theta * std::cos(ht) / std::sin(ht)) / theta2;
-		return Matrix3::Identity() - 0.5 * Phi + c * Phi2;
-	}
-
-	// SE(3) coupling block Q(ρ,φ) — the lower-left 3×3 block of the SE(3) left
-	// Jacobian (Barfoot §7.1.5 / Solà §4.5.2).
-	template<class TIn, class TOut>
-	Matrix3 Frames2StrainCosseratMapping<TIn, TOut>::computeQ_SE3(const Vector3 &rho, const Vector3 &phi) {
-		const double theta   = phi.norm();
-		const Matrix3 N      = buildHatMatrix(rho);
-		const Matrix3 Phi    = buildHatMatrix(phi);
-		const Matrix3 PhiN   = Phi * N;
-		const Matrix3 NPhi   = N * Phi;
-		const Matrix3 PhiNPhi = PhiN * Phi;
-
-		if (theta < kSmallAngle)
-			return 0.5 * N + (1. / 6.) * (PhiN + NPhi) + (1. / 12.) * PhiNPhi;
-
-		const double theta2 = theta * theta;
-		const double theta3 = theta2 * theta;
-		const double theta4 = theta2 * theta2;
-		const double theta5 = theta4 * theta;
-		const double st = std::sin(theta);
-		const double ct = std::cos(theta);
-
-		const double c1 = (theta - st) / theta3;
-		const double c2 = (0.5 * theta2 + ct - 1.) / theta4;
-		const double c3 = -c2 - 3. * (theta - st - theta3 / 6.) / theta5;
-
-		const Matrix3 Phi2  = Phi * Phi;
-		const Matrix3 NPhi2 = N * Phi2;
-
-		return 0.5 * N
-			   + c1 * (PhiN + NPhi + PhiNPhi)
-			   + c2 * (Phi2 * N + NPhi2 - 3. * PhiNPhi)
-			   - 0.5 * c3 * (Phi * NPhi2 + Phi2 * NPhi);
-	}
-
-	// Forward tangent operator T(Ω) = left Jacobian of SE(3) exp, laid out in
-	// the Cosserat convention [φ; ρ] (angular head, linear tail).
-	template<class TIn, class TOut>
-	AdjointMatrix Frames2StrainCosseratMapping<TIn, TOut>::computeTangentOperator(const TangentVector &Omega) {
-		const Vector3 phi = Omega.template head<3>();
-		const Vector3 nu  = Omega.template tail<3>();
-
-		const Matrix3 J = SO3LeftJacobian(phi);
-		const Matrix3 Q = computeQ_SE3(nu, phi);
-
-		AdjointMatrix T = AdjointMatrix::Zero();
-		T.template block<3, 3>(0, 0) = J;
-		T.template block<3, 3>(3, 3) = J;
-		T.template block<3, 3>(3, 0) = Q;
-		return T;
-	}
-
-	// Inverse tangent operator T⁻¹(Ω) = (left Jacobian)⁻¹, exact closed form.
-	template<class TIn, class TOut>
-	AdjointMatrix Frames2StrainCosseratMapping<TIn, TOut>::computeInverseTangentOperator(
-			const TangentVector &Omega) {
-		const Vector3 phi = Omega.template head<3>();
-		const Vector3 nu  = Omega.template tail<3>();
-
-		const Matrix3 Ji = SO3LeftJacobianInverse(phi);
-		const Matrix3 Q  = computeQ_SE3(nu, phi);
-
-		AdjointMatrix Ti = AdjointMatrix::Zero();
-		Ti.template block<3, 3>(0, 0) = Ji;
-		Ti.template block<3, 3>(3, 3) = Ji;
-		Ti.template block<3, 3>(3, 0) = -Ji * Q * Ji;
-		return Ti;
-	}
-
-	// ──────────────────────────────────────────────────────────────────────────
 	// applyJ — ξ̇_k = J₁·η_a + J₂·η_b
 	// ──────────────────────────────────────────────────────────────────────────
 	template<class TIn, class TOut>
@@ -363,7 +246,7 @@ namespace Cosserat::mapping {
 
 			TangentVector Omega_i  = dx * strain_i;
 			// dexp_inv = Jr⁻¹(Ω) = Jl⁻¹(-Ω): the right-trivialized inverse Jacobian.
-			AdjointMatrix dexp_inv = computeInverseTangentOperator(-Omega_i);
+			AdjointMatrix dexp_inv = SE3Types::computeRightJacobianInverse(Omega_i);
 			AdjointMatrix J2       = (1. / dx) * dexp_inv;
 
 			SE3Types g_inv       = SE3Types::computeExp(-Omega_i); // = exp(-Ω)
@@ -439,7 +322,7 @@ namespace Cosserat::mapping {
 
 			TangentVector Omega_i  = dx * strain_i;
 			// dexp_inv = Jr⁻¹(Ω) = Jl⁻¹(-Ω): the right-trivialized inverse Jacobian.
-			AdjointMatrix dexp_inv = computeInverseTangentOperator(-Omega_i);
+			AdjointMatrix dexp_inv = SE3Types::computeRightJacobianInverse(Omega_i);
 			AdjointMatrix J2       = (1. / dx) * dexp_inv;
 
 			SE3Types g_inv        = SE3Types::computeExp(-Omega_i);
@@ -522,7 +405,7 @@ namespace Cosserat::mapping {
 				double dx = section.getLength();
 				TangentVector Omega    = dx * strain;
 				// dexp_inv = Jr⁻¹(Ω) = Jl⁻¹(-Ω): the right-trivialized inverse Jacobian.
-				AdjointMatrix dexp_inv = computeInverseTangentOperator(-Omega);
+				AdjointMatrix dexp_inv = SE3Types::computeRightJacobianInverse(Omega);
 				AdjointMatrix J2       = (1. / dx) * dexp_inv;
 
 				SE3Types g_inv        = SE3Types::computeExp(-Omega);

@@ -551,6 +551,104 @@ namespace sofa::component::cosserat::liegroups {
 		return m_rotation.matrix();
 	}
 
+	// ========== Exp-map Jacobians (exact closed form) ==========
+	//
+	// Left/right Jacobians of the SE(3) exponential map, in the Cosserat
+	// convention ξ = [φ; ρ] (angular head, linear tail — same layout as
+	// computeExp / computeAdjoint).  Closed form from Barfoot §7.1.5 and
+	// Solà et al., "A micro Lie theory for state estimation in robotics"
+	// (2018); cross-checked against Sophus.
+	//
+	// Block layout (matching computeAdjoint's lower-left coupling):
+	//   Jl(ξ)  = [ Jl_SO3(φ)          0        ]
+	//            [ Q(ρ,φ)          Jl_SO3(φ)   ]
+	//   Jl⁻¹(ξ)= [ Jl_SO3⁻¹(φ)         0        ]
+	//            [ -Jl⁻¹·Q·Jl⁻¹    Jl_SO3⁻¹(φ)  ]
+	// Right Jacobians follow from Jr(ξ) = Jl(-ξ).
+	//
+	// NOTE: These are the CRTP hooks required by LieGroupBase::leftJacobian /
+	// rightJacobian / *Inverse. Before this, SE3 had none, so those wrappers
+	// were uninstantiable for SE(3).
+
+	/// SO(3) left-Jacobian inverse Jl⁻¹(φ) = I - ½[φ]× + c·[φ]×²,
+	/// c = (1 - ½θ·cot(θ/2))/θ²  (→ 1/12 as θ→0). Static counterpart of
+	/// SO3::dlog() (which only exists as a member on a group element).
+	static Matrix3 so3LeftJacobianInverse(const Vector3 &phi) {
+		const Scalar theta = phi.norm();
+		const Matrix3 Phi  = SO3Type::computeHat(phi);
+		const Matrix3 Phi2 = Phi * Phi;
+		if (theta < Types<Scalar>::SMALL_ANGLE_THRESHOLD)
+			return Matrix3::Identity() - Scalar(0.5) * Phi + (Scalar(1) / Scalar(12)) * Phi2;
+		const Scalar theta2 = theta * theta;
+		const Scalar ht     = Scalar(0.5) * theta;
+		const Scalar c = (Scalar(1) - Scalar(0.5) * theta * std::cos(ht) / std::sin(ht)) / theta2;
+		return Matrix3::Identity() - Scalar(0.5) * Phi + c * Phi2;
+	}
+
+	/// SE(3) coupling block Q(ρ,φ) — the lower-left 3×3 block of Jl(ξ).
+	static Matrix3 computeQ(const Vector3 &rho, const Vector3 &phi) {
+		const Scalar theta   = phi.norm();
+		const Matrix3 N      = SO3Type::computeHat(rho);
+		const Matrix3 Phi    = SO3Type::computeHat(phi);
+		const Matrix3 PhiN   = Phi * N;
+		const Matrix3 NPhi   = N * Phi;
+		const Matrix3 PhiNPhi = PhiN * Phi;
+		if (theta < Types<Scalar>::SMALL_ANGLE_THRESHOLD)
+			return Scalar(0.5) * N + (Scalar(1) / Scalar(6)) * (PhiN + NPhi)
+				 + (Scalar(1) / Scalar(12)) * PhiNPhi;
+		const Scalar theta2 = theta * theta;
+		const Scalar theta3 = theta2 * theta;
+		const Scalar theta4 = theta2 * theta2;
+		const Scalar theta5 = theta4 * theta;
+		const Scalar st = std::sin(theta);
+		const Scalar ct = std::cos(theta);
+		const Scalar c1 = (theta - st) / theta3;
+		const Scalar c2 = (Scalar(0.5) * theta2 + ct - Scalar(1)) / theta4;
+		const Scalar c3 = -c2 - Scalar(3) * (theta - st - theta3 / Scalar(6)) / theta5;
+		const Matrix3 Phi2  = Phi * Phi;
+		const Matrix3 NPhi2 = N * Phi2;
+		return Scalar(0.5) * N
+			 + c1 * (PhiN + NPhi + PhiNPhi)
+			 + c2 * (Phi2 * N + NPhi2 - Scalar(3) * PhiNPhi)
+			 - Scalar(0.5) * c3 * (Phi * NPhi2 + Phi2 * NPhi);
+	}
+
+	/// Left Jacobian of SE(3) exp — CRTP hook for LieGroupBase::leftJacobian.
+	static AdjointMatrix computeLeftJacobian(const TangentVector &xi) {
+		const Vector3 phi = xi.template head<3>();
+		const Vector3 rho = xi.template tail<3>();
+		const Matrix3 Jl  = SO3Type::dexp(phi); // SO3 left Jacobian
+		const Matrix3 Q   = computeQ(rho, phi);
+		AdjointMatrix M = AdjointMatrix::Zero();
+		M.template block<3, 3>(0, 0) = Jl;
+		M.template block<3, 3>(3, 3) = Jl;
+		M.template block<3, 3>(3, 0) = Q;
+		return M;
+	}
+
+	/// Inverse left Jacobian — CRTP hook for LieGroupBase::leftJacobianInverse.
+	static AdjointMatrix computeLeftJacobianInverse(const TangentVector &xi) {
+		const Vector3 phi = xi.template head<3>();
+		const Vector3 rho = xi.template tail<3>();
+		const Matrix3 Ji  = so3LeftJacobianInverse(phi);
+		const Matrix3 Q   = computeQ(rho, phi);
+		AdjointMatrix M = AdjointMatrix::Zero();
+		M.template block<3, 3>(0, 0) = Ji;
+		M.template block<3, 3>(3, 3) = Ji;
+		M.template block<3, 3>(3, 0) = -Ji * Q * Ji;
+		return M;
+	}
+
+	/// Right Jacobian Jr(ξ) = Jl(-ξ) — CRTP hook.
+	static AdjointMatrix computeRightJacobian(const TangentVector &xi) {
+		return computeLeftJacobian(-xi);
+	}
+
+	/// Inverse right Jacobian Jr⁻¹(ξ) = Jl⁻¹(-ξ) — CRTP hook.
+	static AdjointMatrix computeRightJacobianInverse(const TangentVector &xi) {
+		return computeLeftJacobianInverse(-xi);
+	}
+
 	// ========== Accessors ==========
 
 	const SO3Type &rotation() const { return m_rotation; }
