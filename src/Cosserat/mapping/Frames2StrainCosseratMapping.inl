@@ -253,18 +253,20 @@ namespace Cosserat::mapping {
 			AdjointMatrix Adg_inv = g_inv.computeAdjoint();         // = Ad_{exp(-Ω)}
 			AdjointMatrix J1     = -(1. / dx) * dexp_inv * Adg_inv;
 
-			// Project frame velocities (global → local)
-			SE3Types ga_inv               = g_frames[i].inverse();
-			AdjointMatrix a_projector     = ga_inv.buildProjectionMatrix(ga_inv.rotation().matrix());
+			// Project frame velocities (global → local body twist).
+			// P(R) is anti-diagonal ⇒ P(R)ᵀ = P(R⁻¹), so we transpose the
+			// projector of the (non-inverted) frame instead of inverting it.
+			const SE3Types &ga            = g_frames[i];
+			AdjointMatrix a_projector     = ga.buildProjectionMatrix(ga.rotation().matrix());
 			TangentVector vela_global(frame_vel[i][0], frame_vel[i][1], frame_vel[i][2],
 									  frame_vel[i][3], frame_vel[i][4], frame_vel[i][5]);
-			TangentVector eta_a           = a_projector * vela_global;
+			TangentVector eta_a           = a_projector.transpose() * vela_global;
 
-			SE3Types gb_inv               = g_frames[i + 1].inverse();
-			AdjointMatrix b_projector     = gb_inv.buildProjectionMatrix(gb_inv.rotation().matrix());
+			const SE3Types &gb            = g_frames[i + 1];
+			AdjointMatrix b_projector     = gb.buildProjectionMatrix(gb.rotation().matrix());
 			TangentVector velb_global(frame_vel[i + 1][0], frame_vel[i + 1][1], frame_vel[i + 1][2],
 									  frame_vel[i + 1][3], frame_vel[i + 1][4], frame_vel[i + 1][5]);
-			TangentVector eta_b           = b_projector * velb_global;
+			TangentVector eta_b           = b_projector.transpose() * velb_global;
 
 			TangentVector output_vel      = J1 * eta_a + J2 * eta_b;
 
@@ -333,14 +335,15 @@ namespace Cosserat::mapping {
 			TangentVector fa_local = J1.transpose() * lambda;
 			TangentVector fb_local = J2.transpose() * lambda;
 
-			// Project (local → global)
-			SE3Types ga                 = g_frames[i];
+			// Project (local → global). P(R) is orthogonal ⇒ P⁻ᵀ = P, so the
+			// projector applies directly (no transpose/inverse needed).
+			const SE3Types &ga          = g_frames[i];
 			AdjointMatrix a_projector   = ga.buildProjectionMatrix(ga.rotation().matrix());
-			TangentVector fa_global     = a_projector.transpose().inverse() * fa_local;
+			TangentVector fa_global     = a_projector * fa_local;
 
-			SE3Types gb                 = g_frames[i + 1];
+			const SE3Types &gb          = g_frames[i + 1];
 			AdjointMatrix b_projector   = gb.buildProjectionMatrix(gb.rotation().matrix());
-			TangentVector fb_global     = b_projector.transpose().inverse() * fb_local;
+			TangentVector fb_global     = b_projector * fb_local;
 
 			for (int k = 0; k < 6; ++k) {
 				frameForces[i][k]     += fa_global[k];
@@ -415,13 +418,14 @@ namespace Cosserat::mapping {
 				TangentVector fa_local = J1.transpose() * constraintValue;
 				TangentVector fb_local = J2.transpose() * constraintValue;
 
-				SE3Types ga                 = g_frames[strainIndex];
+				// Project (local → global). P(R) orthogonal ⇒ P⁻ᵀ = P.
+				const SE3Types &ga          = g_frames[strainIndex];
 				AdjointMatrix a_projector   = ga.buildProjectionMatrix(ga.rotation().matrix());
-				TangentVector fa_global     = a_projector.transpose().inverse() * fa_local;
+				TangentVector fa_global     = a_projector * fa_local;
 
-				SE3Types gb                 = g_frames[strainIndex + 1];
+				const SE3Types &gb          = g_frames[strainIndex + 1];
 				AdjointMatrix b_projector   = gb.buildProjectionMatrix(gb.rotation().matrix());
-				TangentVector fb_global     = b_projector.transpose().inverse() * fb_local;
+				TangentVector fb_global     = b_projector * fb_local;
 
 				sofa::type::Vec<6, double> fa_vec, fb_vec;
 				for (int k = 0; k < 6; ++k) {
