@@ -49,7 +49,7 @@ def createScene(root):
         
     beam_geometry = CosseratGeometry(beam_geometry_params)
     
-    ## base node
+    # base node
     rigid_base = _add_rigid_base(solver, node_name="rigid_base")
     
     ## frame node
@@ -59,9 +59,9 @@ def createScene(root):
     strain_node = _add_cosserat_state(rigid_base, frame_node, beam_geometry)
    
 
-    #### Beam 2 (Red beam using Strain2FramesCosseratMapping) ####
+    ### Beam 2 (Red beam using Strain2FramesCosseratMapping) ####
     
-    #Using same beam parameters
+    # Using same beam parameters
 
     base_node2 = solver.addChild("base_node2")
     base_node2.addObject("MechanicalObject", template="Rigid3d", name="base_mo2", 
@@ -101,7 +101,8 @@ def createScene(root):
         curv_abs_input=beam_geometry.curv_abs_sections,
         curv_abs_output=beam_geometry.curv_abs_frames,
         name="cosseratMapping2",
-        input=bending_node.bending_state.getLinkPath(),
+        input1=bending_node.bending_state.getLinkPath(),
+        input2=base_node2.base_mo2.getLinkPath(),
         output=frames_mo2.getLinkPath(),
         debug=0,
         radius=0.5,
