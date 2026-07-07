@@ -101,7 +101,6 @@ namespace Cosserat::mapping {
         const vector<const sofa::DataVecCoord_t<In1> *> &dataVecIn1Pos,
         const vector<const sofa::DataVecCoord_t<In2> *> &dataVecIn2Pos) {
 
-        std::cout<<"===== In apply function ====="<<std::endl;
         if (dataVecOutPos.empty() || dataVecIn1Pos.empty() || dataVecIn2Pos.empty())
             return;
 
@@ -129,8 +128,6 @@ namespace Cosserat::mapping {
         /* Apply the transformation to go from cossserat to SOFA frame*/
         const auto frame0 = Frame(In2::getCPos(in2[baseIndex]), In2::getCRot(in2[baseIndex]));
             
-        std::cout<<"Base frame: "<<frame0<<std::endl;
-
         // Cache the printLog value out of the loop, otherwise it will trigger a graph
         // update at every iteration.
         bool doPrintLog = this->f_printLog.getValue();
@@ -147,8 +144,6 @@ namespace Cosserat::mapping {
             // This is a lazy printing approach, so there is no time consuming action in
             // the core of the loop.
             msg_info_when(doPrintLog) << "Frame  : " << i << " = " << frame;
-
-            std::cout<< "Frame  : " << i << " = " << frame<<std::endl;
 
             Vec3 origin = frame.getOrigin();
             Quat orientation = frame.getOrientation();
@@ -170,7 +165,7 @@ namespace Cosserat::mapping {
         // elaborate more on the purpose of m_indexInput and how to use it.
         m_indexInput = 0;
 
-        std::cout<<"===== End apply ====="<<std::endl;
+        dataVecOutPos[0]->endEdit();
     }
 
     template <class TIn1, class TIn2, class TOut>
@@ -214,8 +209,6 @@ namespace Cosserat::mapping {
         const vector<const sofa::DataVecDeriv_t<In1> *> &dataVecIn1Vel,
         const vector<const sofa::DataVecDeriv_t<In2> *> &dataVecIn2Vel) {
 
-
-        std::cout<<"===== In applyJ function ======"<<std::endl;
 
         if (dataVecOutVel.empty() || dataVecIn1Vel.empty() || dataVecIn2Vel.empty())
             return;
@@ -263,12 +256,6 @@ namespace Cosserat::mapping {
         if (d_debug.getValue())
             std::cout << "Base local Velocity :" << baseLocalVelocity << std::endl;
         
-		
-    	std::cout << "(in) Base local Velocity :" << baseLocalVelocity << std::endl;
-
-		for(int i=0; i<in1_vel.size(); i++)
-			std::cout<<"(in) Strain velocity ["<<i<<"]: "<<in1_vel[i]<<std::endl;
-
 
         // Compute velocity at nodes
         for (unsigned int i = 1; i < curv_abs_section.size(); i++) {
@@ -295,7 +282,7 @@ namespace Cosserat::mapping {
             m_nodesVelocityVectors.push_back(eta_node_i);
 
             if (d_debug.getValue())
-            std::cout << "Node velocity : " << i << " = " << eta_node_i << std::endl;
+                std::cout << "Node velocity : " << i << " = " << eta_node_i << std::endl;
         }
 
         const sofa::VecCoord_t<Out> &out = m_global_frames->read(sofa::core::vec_id::read_access::position)->getValue();
@@ -329,13 +316,10 @@ namespace Cosserat::mapping {
             if (d_debug.getValue())
                 std::cout << "Frame velocity : " << i << " = " << eta_frame_i << std::endl;
 
-            std::cout << "(out) Frame velocity : " << i << " = " << eta_frame_i << std::endl;            
         }
 
         dataVecOutVel[0]->endEdit();
         m_indexInput = 0;
-
-        std::cout<<"===== End applyJ ======"<<std::endl;
 
     }
 
