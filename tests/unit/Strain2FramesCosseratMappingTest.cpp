@@ -343,5 +343,159 @@ TEST_F(Strain2FramesCosseratMappingTest, ValidateJacobianAccuracy) {
     EXPECT_TRUE(isValid) << "Jacobian accuracy validation should pass";
 }
 
+// ============================================================================
+// applyDJT — structural tests for the PARTIAL geometric stiffness
+//
+// applyDJT only computes the coAdjoint-variation term of the exact derivative
+// of Jᵀf (same known limitation as DiscreteCosseratMapping::applyDJT; see the
+// doc-blocks in Strain2FramesCosseratMapping.{h,inl} and the skipped FD tests
+// in DiscreteCosseratMappingApplyDJTTest.cpp). These tests therefore check
+// only the properties the implementation actually guarantees:
+//   1. zero child forces  → zero output
+//   2. output scales linearly with kFactor
+// ============================================================================
+
+namespace {
+
+/// Write curvatures, refresh internal maps (apply), write child forces +
+/// strain displacement, run applyDJT, and return the resulting strain force.
+sofa::type::vector<Vec3Types::Deriv> runStrain2FramesApplyDJT(
+    Strain2FramesCosseratMapping<Vec3Types, Rigid3Types, Rigid3Types>* mapping,
+    MechanicalObject<Vec3Types>* strainState,
+    MechanicalObject<Rigid3Types>* rigidBase,
+    MechanicalObject<Rigid3Types>* outputFrames,
+    const sofa::type::vector<Vec3Types::Coord>& xi,
+    const sofa::type::vector<Rigid3Types::Deriv>& childForces,
+    const sofa::type::vector<Vec3Types::Deriv>& dx,
+    double kFactor)
+{
+    sofa::core::MechanicalParams mp;
+    mp.setKFactor(kFactor);
+
+    // Strain configuration
+    {
+        auto w = sofa::helper::getWriteAccessor(
+            *strainState->write(sofa::core::vec_id::write_access::position));
+        for (size_t k = 0; k < xi.size(); ++k) w[k] = xi[k];
+    }
+
+    // Refresh frame positions (applyDJT refreshes the tangent-exp matrices itself)
+    mapping->apply(&mp, {outputFrames->write(sofa::core::vec_id::write_access::position)},
+                   {strainState->read(sofa::core::vec_id::read_access::position)},
+                   {rigidBase->read(sofa::core::vec_id::read_access::position)});
+
+    // Child wrenches into the force slot (mparams->readF reads it)
+    {
+        auto w = sofa::helper::getWriteAccessor(
+            *outputFrames->write(sofa::core::vec_id::write_access::force));
+        w.resize(childForces.size());
+        for (size_t s = 0; s < childForces.size(); ++s) w[s] = childForces[s];
+    }
+
+    // Strain displacement into the dx slot (mparams->readDx reads it)
+    {
+        auto w = sofa::helper::getWriteAccessor(
+            *strainState->write(sofa::core::vec_id::write_access::dx));
+        w.resize(dx.size());
+        for (size_t k = 0; k < dx.size(); ++k) w[k] = dx[k];
+    }
+
+    // Zero the strain force accumulator (applyDJT uses += semantics)
+    {
+        auto w = sofa::helper::getWriteAccessor(
+            *strainState->write(sofa::core::vec_id::write_access::force));
+        w.resize(xi.size());
+        for (auto& f : w) f = Vec3Types::Deriv(0, 0, 0);
+    }
+
+    mapping->applyDJT(&mp, sofa::core::vec_id::write_access::force,
+                      sofa::core::vec_id::read_access::force);
+
+    auto r = sofa::helper::getReadAccessor(
+        *strainState->read(sofa::core::vec_id::read_access::force));
+    return r.ref();
+}
+
+} // anonymous namespace
+
+/**
+ * @brief applyDJT with zero child forces must produce zero strain force.
+ */
+TEST_F(Strain2FramesCosseratMappingTest, ApplyDJTZeroForces) {
+    setupStraightBeam(3);
+
+    const sofa::type::vector<Vec3Types::Coord> xi = {
+        Vec3Types::Coord(0.1, 0.0, 0.0),
+        Vec3Types::Coord(0.0, 0.1, 0.0),
+        Vec3Types::Coord(0.0, 0.0, 0.1)};
+
+    // 4 frames (3 sections + base frame), all wrenches zero
+    const sofa::type::vector<Rigid3Types::Deriv> zeroF(4, Rigid3Types::Deriv());
+    const sofa::type::vector<Vec3Types::Deriv> dx = {
+        Vec3Types::Deriv(1, 0, 0), Vec3Types::Deriv(0, 0, 0), Vec3Types::Deriv(0, 0, 0)};
+
+    auto result = runStrain2FramesApplyDJT(mapping.get(), strainState.get(),
+                                           rigidBase.get(), outputFrames.get(),
+                                           xi, zeroF, dx, 1.0);
+
+    for (size_t k = 0; k < result.size(); ++k)
+        for (int c = 0; c < 3; ++c)
+            EXPECT_NEAR(result[k][c], 0.0, 1e-14)
+                << "applyDJT with zero forces should give zero at strain " << k;
+}
+
+/**
+ * @brief applyDJT output must scale linearly with kFactor.
+ */
+TEST_F(Strain2FramesCosseratMappingTest, ApplyDJTKFactorScaling) {
+    setupStraightBeam(3);
+
+    const sofa::type::vector<Vec3Types::Coord> xi = {
+        Vec3Types::Coord(0.2, 0.0, 0.0),
+        Vec3Types::Coord(0.0, 0.2, 0.0),
+        Vec3Types::Coord(0.0, 0.0, 0.2)};
+
+    sofa::type::vector<Rigid3Types::Deriv> childF(4);
+    childF[0] = Rigid3Types::Deriv(sofa::type::Vec3(0.0, 0.5, 1.0), sofa::type::Vec3(1.0, 0.0, 0.0));
+    childF[1] = Rigid3Types::Deriv(sofa::type::Vec3(0.5, 0.0, 0.5), sofa::type::Vec3(0.0, 1.0, 0.5));
+    childF[2] = Rigid3Types::Deriv(sofa::type::Vec3(1.0, 1.0, 0.0), sofa::type::Vec3(0.5, 0.5, 0.0));
+    childF[3] = Rigid3Types::Deriv(sofa::type::Vec3(0.0, 1.0, 0.5), sofa::type::Vec3(1.0, 0.5, 0.0));
+
+    const sofa::type::vector<Vec3Types::Deriv> dx = {
+        Vec3Types::Deriv(1, 0, 0), Vec3Types::Deriv(0, 1, 0), Vec3Types::Deriv(0, 0, 1)};
+
+    auto f1 = runStrain2FramesApplyDJT(mapping.get(), strainState.get(),
+                                       rigidBase.get(), outputFrames.get(),
+                                       xi, childF, dx, 1.0);
+    auto f2 = runStrain2FramesApplyDJT(mapping.get(), strainState.get(),
+                                       rigidBase.get(), outputFrames.get(),
+                                       xi, childF, dx, 2.0);
+
+    // The output must be non-trivially exercised…
+    double norm = 0.0;
+    for (size_t k = 0; k < f1.size(); ++k)
+        for (int c = 0; c < 3; ++c)
+            norm += f1[k][c] * f1[k][c];
+    EXPECT_GT(norm, 1e-10) << "applyDJT should produce nonzero output here";
+
+    // …and scale linearly in kFactor.
+    for (size_t k = 0; k < f1.size(); ++k)
+        for (int c = 0; c < 3; ++c)
+            EXPECT_NEAR(f2[k][c], 2.0 * f1[k][c], 1e-12)
+                << "applyDJT must scale linearly with kFactor (strain " << k << ")";
+}
+
+/**
+ * @brief Finite-difference validation — intentionally skipped.
+ */
+TEST_F(Strain2FramesCosseratMappingTest, ApplyDJTFiniteDifference) {
+    GTEST_SKIP() << "applyDJT computes only the coAdjoint-variation term of "
+                    "d(J^T f)/dxi; the tangent-map (dT/dxi) and projector "
+                    "variations are missing, so central finite differences of "
+                    "applyJT do not match. Same limitation and skip rationale "
+                    "as DiscreteCosseratMappingApplyDJTTest::StraightBeam_FD. "
+                    "Re-enable once the full geometric stiffness is implemented.";
+}
+
 // No main() here — Sofa.Testing links SofaGTestMain which provides
 // main() + sofa::simulation::graph::init() + sofa::simulation::graph::cleanup().

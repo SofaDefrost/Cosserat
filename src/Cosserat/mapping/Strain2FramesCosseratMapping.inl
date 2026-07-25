@@ -19,6 +19,7 @@
 
 #include <Cosserat/mapping/Strain2FramesCosseratMapping.h>
 #include <Cosserat/mapping/SofaLieGroupsUtils.h>
+#include <sofa/core/MechanicalParams.h>
 #include <sofa/core/Multi2Mapping.inl>
 #include <sofa/core/objectmodel/BaseContext.h>
 #include <sofa/core/visual/VisualParams.h>
@@ -819,30 +820,148 @@ namespace Cosserat::mapping {
 	// displayMappingState, displayVelocities) live in a separate _debug.inl included
 	// at the bottom of this file — see Strain2FramesCosseratMapping_debug.inl.
 
-	// applyDJT — geometric stiffness K_G · δξ.
+	// applyDJT — PARTIAL geometric stiffness contribution (child wrench frozen).
 	//
-	// NOT YET IMPLEMENTED. See Strain2FramesCosseratMapping.h lines 171-199 for the
-	// formula (frame direct term + section transport term). The stub satisfies the
-	// vtable so the component loads, but with an implicit solver (EulerImplicitSolver,
-	// StaticSolver, …) the tangent stiffness will be incomplete → Newton's method
-	// will not converge quadratically on large deformations.
+	// ⚠ SCOPE — read before relying on this for Newton convergence analysis.
 	//
-	// TODO(P1) : implement using `TwistType::smallAdjoint()` from liegroups and the
-	//             body-wrench backward sweep from `CosseratBodyJacobian`.
+	// The exact directional derivative of Jᵀ(ξ)·f_x w.r.t. ξ has three terms:
+	//   (1) ∂T/∂ξ · δξ · node_F            — tangent-map variation
+	//   (2) Tᵀ · ∂coAd(F)/∂ξ · δξ · …      — coAdjoint variation
+	//   (3) Tᵀ · coAd(F) · ∂P/∂ξ · δξ · …  — projector variation
+	// This implementation computes ONLY term (2), faithfully ported from
+	// DiscreteCosseratMapping::applyDJT which has the same limitation (its
+	// finite-difference validation tests StraightBeam_FD / CurvedBeam_FD are
+	// GTEST_SKIP'd for exactly this reason — see
+	// tests/unit/DiscreteCosseratMappingApplyDJTTest.cpp for the analysis;
+	// at ξ=0 terms (2) and (3) cancel, so term (2) alone is wrong even there).
+	//
+	// Consequences:
+	//   - The returned matrix-vector product is NOT the exact mapping tangent;
+	//     it does not match central finite differences of applyJT.
+	//   - It is strictly more information than the previous zero stub, and the
+	//     structural properties hold: zero for f_x = 0, linear in kFactor,
+	//     mirrors applyJT's backward sweep (same coAdjoint / tangent sources).
+	//   - Implicit solvers remain stable in our scene tests, but quadratic
+	//     Newton convergence is NOT guaranteed by this term alone.
+	//
+	// Sweep structure (identical index handling to applyJT), with the geometric
+	// factor ad(v)ᵀ where v = T · δξ is the local twist from the strain increment:
+	//   (a) frame direct:      δf_k += kFactor · Bᵀ · T_frameᵀ · ad(v_s)ᵀ · node_F
+	//   (b) section transport: δf_k += kFactor · Bᵀ · T_nodeᵀ  · ad(v_n)ᵀ · F_tot
+	//
+	// TODO(geometric-stiffness): implement terms (1) and (3) + the cross-section
+	// couplings; then re-enable the FD tests. Until then this is an approximation
+	// beyond the usual "freeze T" one (Simo & Vu-Quoc 1986).
 	template<class TIn1, class TIn2, class TOut>
 	void Strain2FramesCosseratMapping<TIn1, TIn2, TOut>::applyDJT(
-			const sofa::core::MechanicalParams* /*mparams*/,
-			sofa::core::MultiVecDerivId          /*inForce*/,
+			const sofa::core::MechanicalParams* mparams,
+			sofa::core::MultiVecDerivId          inForce,
 			sofa::core::ConstMultiVecDerivId     /*outForce*/) {
-		// Warn once per component instance so users running implicit solvers know
-		// why convergence may be poor.
-		static thread_local bool s_warned = false;
-		if (!s_warned) {
-			s_warned = true;
-			msg_warning() << "applyDJT() is not implemented for Strain2FramesCosseratMapping. "
-							 "Geometric stiffness is missing — implicit solvers may converge poorly "
-							 "on large deformations. See header lines 171-199 for the target formula.";
+
+		if (this->d_componentState.getValue() != sofa::core::objectmodel::ComponentState::Valid)
+			return;
+
+		const SReal kFactor = mparams->kFactor();
+		if (kFactor == 0.0)
+			return;
+
+		// δξ : strain displacement (In1). f_x : child wrenches (Out), held constant.
+		const sofa::VecDeriv_t<In1> &dx     = mparams->readDx(m_strain_state)->getValue();
+		const sofa::VecDeriv_t<Out> &childF = mparams->readF(m_frames)->getValue();
+
+		// Parent strain force output (In1, accumulate +=).
+		sofa::Data<sofa::VecDeriv_t<In1>> &out1Data = *inForce[m_strain_state].write();
+		sofa::VecDeriv_t<In1> &out1 = *out1Data.beginEdit();
+
+		const sofa::VecCoord_t<Out> &framePositions =
+				this->m_frames->read(sofa::core::vec_id::read_access::position)->getValue();
+
+		// Refresh tangent-exp matrices (applyJ already does this each step; guard
+		// against a standalone applyDJT call).
+		this->updateTangExpSE3();
+
+		const auto sz = m_frame_to_section_indices.size();
+		if (sz == 0) {
+			out1Data.endEdit();
+			return;
 		}
+
+		// Convert child wrenches to the local beam frame (same as applyJT).
+		vector<TangentVector> local_F(sz);
+		for (size_t s = 0; s < sz; ++s) {
+			TangentVector vec = TangentVector::Zero();
+			for (unsigned j = 0; j < 6; ++j)
+				vec[j] = childF[s][j];
+			const SE3Types absoluteFrame = rigidCoordToSE3(framePositions[s]);
+			const AdjointMatrix P_trans =
+				absoluteFrame.buildProjectionMatrix(absoluteFrame.rotation().matrix());
+			local_F[s] = P_trans.transpose() * vec;
+		}
+
+		constexpr int N = std::is_same_v<Deriv1, sofa::type::Vec3> ? 3 : 6;
+		Eigen::Matrix<double, N, 6> matB_trans = Eigen::Matrix<double, N, 6>::Zero();
+		for (int k = 0; k < N; ++k)
+			matB_trans(k, k) = 1.0;
+
+		// Little adjoint ad(v) for v = [φ; ρ] (angular head), same convention as
+		// CosseratBeamGeometry::computeTangExpImplementation and DiscreteCosserat.
+		auto littleAdjoint = [this](const TangentVector &v) -> AdjointMatrix {
+			AdjointMatrix adv;
+			this->buildAdjoint(this->getTildeMatrix(Vector3(v.template head<3>())),
+							   this->getTildeMatrix(Vector3(v.template tail<3>())), adv);
+			return adv;
+		};
+
+		// Embed a strain increment δξ_k (Vec3 → angular head, Vec6 → full) into a twist.
+		auto embedStrainDelta = [&](int k) -> TangentVector {
+			TangentVector xi_dot = TangentVector::Zero();
+			for (int j = 0; j < N; ++j)
+				xi_dot[j] = dx[k][j];
+			return xi_dot;
+		};
+
+		auto lastSectionIndex = m_frame_to_section_indices[sz - 1];
+		TangentVector totalForce = TangentVector::Zero();
+
+		for (auto s = sz; s--;) {
+			const int currentSectionIndex = static_cast<int>(m_frame_to_section_indices[s]);
+			const FrameInfo &frame = m_frame_properties[s];
+
+			// node_F = coAd(g_frame) · local_F[s]  (identical to applyJT's currentLocalForce)
+			const TangentVector node_F = frame.getCoAdjoint() * local_F[s];
+
+			// (a) frame direct geometric term
+			{
+				const int k_s = currentSectionIndex - 1;
+				const AdjointMatrix &T_frame = frame.getTangAdjointMatrix();
+				const TangentVector v_s     = T_frame * embedStrainDelta(k_s);
+				const AdjointMatrix adv     = littleAdjoint(v_s);
+				const Eigen::Matrix<double, N, 1> delta_f =
+					kFactor * (matB_trans * (T_frame.transpose() * (adv.transpose() * node_F)));
+				for (int j = 0; j < N; ++j)
+					out1[k_s][j] += delta_f[j];
+			}
+
+			// Section boundary: transport accumulated wrench + (b) node term
+			if (lastSectionIndex != m_frame_to_section_indices[s]) {
+				lastSectionIndex--;
+				const SectionInfo &section = m_section_properties[lastSectionIndex];
+				totalForce = section.getCoAdjoint() * totalForce;
+
+				const int k_node = static_cast<int>(lastSectionIndex) - 1;
+				const AdjointMatrix &T_node = section.getTangAdjointMatrix();
+				const TangentVector v_node  = T_node * embedStrainDelta(k_node);
+				const AdjointMatrix adv_n   = littleAdjoint(v_node);
+				const Eigen::Matrix<double, N, 1> delta_fn =
+					kFactor * (matB_trans * (T_node.transpose() * (adv_n.transpose() * totalForce)));
+				for (int j = 0; j < N; ++j)
+					out1[k_node][j] += delta_fn[j];
+			}
+
+			totalForce += node_F;
+		}
+
+		out1Data.endEdit();
 	}
 
 } // namespace Cosserat::mapping
