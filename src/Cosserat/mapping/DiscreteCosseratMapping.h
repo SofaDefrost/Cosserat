@@ -62,6 +62,13 @@ public:
     typedef TIn2 In2;
     typedef TOut Out;
 
+
+
+    using Coord1 = sofa::Coord_t<In1>;
+    using Deriv1 = sofa::Deriv_t<In1>;
+    using OutCoord = sofa::Coord_t<Out>;
+    using OutDeriv = sofa::Deriv_t<Out>;
+
     //////////////////////////////////////////////////////////////////////
     /// @name Data Fields
     /// @{
@@ -105,12 +112,23 @@ public:
                  const vector<sofa::DataVecDeriv_t<In2> *> &dataVecOut2RootForce,
                  const vector<const sofa::DataVecDeriv_t<Out> *> &dataVecInForce) override;
 
-    // TODO(dmarchal:2024/06/13): Override with an empty function is a rare code pattern
-    // to make it clear this is the intented and not just an "I'm too lazy to implement it"
-    // please always have a precise code comment explaning with details why it is empty.
-    void applyDJT(const sofa::core::MechanicalParams * /*mparams*/,
-                  sofa::core::MultiVecDerivId /*inForce*/,
-                  sofa::core::ConstMultiVecDerivId /*outForce*/) override {}
+    /// Geometric stiffness of the Cosserat mapping.
+    ///
+    /// Computes the directional derivative of J(q)^T f_x w.r.t. q, with f_x held
+    /// constant (current child forces). This is the mapping contribution to the
+    /// tangent stiffness that is missing when applyDJT is left empty:
+    ///
+    ///   [applyDJT(δq)]_k = B^T · T_k^T · ad(T_k B δξ_k)^T · F_tot_k  (node term)
+    ///                     + B^T · T_s^T · ad(T_s B δξ_k)^T · node_F_s  (frame term)
+    ///
+    /// where F_tot_k is the accumulated wrench at section k, T_k is the tangent
+    /// exponential, and B is the strain selector (angular-only for Vec3, identity for Vec6).
+    ///
+    /// Without this term, Newton convergence degrades for large rotations (>~30°).
+    /// See docs/geometric_stiffness_mapping.md for the full derivation.
+    void applyDJT(const sofa::core::MechanicalParams* mparams,
+                  sofa::core::MultiVecDerivId inForce,
+                  sofa::core::ConstMultiVecDerivId outForce) override;
 
     /// Support for constraints.
     void applyJT(

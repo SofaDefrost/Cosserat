@@ -72,7 +72,7 @@ namespace sofa::component::forcefield {
 		d_EA(initData(&d_EA, "EA", "The inertia parameter, EA")),
 		d_EI(initData(&d_EI, "EI", "The inertia parameter, EI")) {
 
-		compute_df = true;//@appa: initialize compute_df at true (by default)
+		compute_df = true; // enable addDForce by default (was uninitialized before)
 	}
 
 	template<typename DataTypes>

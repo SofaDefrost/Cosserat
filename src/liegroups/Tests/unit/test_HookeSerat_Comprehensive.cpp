@@ -9,7 +9,7 @@ using namespace sofa::component::cosserat::liegroups;
 using namespace Cosserat::mapping;
 
 // Concrete implementation for testing
-class TestStrain2RigidCosseratMapping : public CosseratGeometryMapping<sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types,
+class TestStrain2FramesCosseratMapping : public CosseratGeometryMapping<sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types,
 														   sofa::defaulttype::Rigid3Types> {
 public:
 	using In1 = sofa::defaulttype::Vec3Types;
@@ -17,6 +17,7 @@ public:
 	using Out = sofa::defaulttype::Rigid3Types;
 
 	void doBaseCosseratInit() override {}
+	void initialization() override {}
 
 	// Implement pure virtual methods from Multi2Mapping
 	void apply(const sofa::core::MechanicalParams * /* mparams */,
@@ -50,7 +51,7 @@ public:
 
 class HookeSeratComprehensiveTest : public ::testing::Test {
 protected:
-	TestStrain2RigidCosseratMapping mapping;
+	TestStrain2FramesCosseratMapping mapping;
 	using SE3Type = SE3<double>;
 	using TangentVector = SE3Type::TangentVector;
 	using AdjointMatrix = SE3Type::AdjointMatrix;

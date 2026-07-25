@@ -9,7 +9,7 @@ using namespace Cosserat::mapping;
 using namespace sofa::component::cosserat::liegroups;
 
 // Concrete subclass for testing
-class ConcreteStrain2RigidCosseratMapping
+class ConcreteStrain2FramesCosseratMapping
 	: public CosseratGeometryMapping<sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types,
 								   sofa::defaulttype::Rigid3Types> {
 public:
@@ -18,6 +18,7 @@ public:
 	using Out = sofa::defaulttype::Rigid3Types;
 
 	void doBaseCosseratInit() override {}
+	void initialization() override {}
 
 	// Implement pure virtual methods from Multi2Mapping
 	void applyDJT(const sofa::core::MechanicalParams * /*mparams*/, sofa::core::MultiVecDerivId /*inForce*/,
@@ -40,7 +41,7 @@ protected:
 	using TangentVector = typename SE3Type::TangentVector;
 	using Vector3 = typename SE3Type::Vector3;
 
-	ConcreteStrain2RigidCosseratMapping mapping;
+	ConcreteStrain2FramesCosseratMapping mapping;
 
 	void SetUp() override {
 		// Clear any existing data

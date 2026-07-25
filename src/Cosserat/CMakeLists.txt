@@ -9,6 +9,7 @@ set(HEADER_FILES
     initCosserat.cpp
     engine/GeometricStiffnessEngine.h
     engine/GeometricStiffnessEngine.inl
+    engine/CosseratBeamGeometryEngine.h
     forcefield/BeamHookeLawForceField.h
     forcefield/BeamHookeLawForceField.inl
     mapping/CosseratNonLinearMapping2D.h
@@ -17,15 +18,24 @@ set(HEADER_FILES
     mapping/DifferenceMultiMapping.inl
     constraint/UnilateralPlaneConstraint.h
     constraint/UnilateralPlaneConstraint.inl
+    engine/CosseratTopologyBuilder.h
+    engine/CosseratIntrinsicState.h
+    engine/PainlessBeamForceField.h
+    mapping/StaggeredCosseratMapping.h
 )
 
 set(SOURCE_FILES
     initCosserat.cpp
     engine/GeometricStiffnessEngine.cpp
+    engine/CosseratBeamGeometryEngine.cpp
     forcefield/BeamHookeLawForceField.cpp
     mapping/CosseratNonLinearMapping2D.cpp
     mapping/DifferenceMultiMapping.cpp
     constraint/UnilateralPlaneConstraint.cpp
+    engine/CosseratTopologyBuilder.cpp
+    engine/CosseratIntrinsicState.cpp
+    engine/PainlessBeamForceField.cpp
+    mapping/StaggeredCosseratMapping.cpp
 )
 
 find_package(SofaFramework REQUIRED)

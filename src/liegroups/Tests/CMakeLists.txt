@@ -23,6 +23,9 @@ set(LIEGROUPS_TEST_FILES
         unit/test_HookeSerat_Comprehensive.cpp
         unit/test_MultiSectionBeam.cpp
         unit/test_AdvancedFeatures.cpp
+        unit/test_TwistWrench.cpp
+        unit/test_LieGroupIntegrators.cpp
+        unit/test_BodyJacobianUncertaintyBezier.cpp
         
         # Differentiation tests
         differentiation/test_finite_differences.cpp

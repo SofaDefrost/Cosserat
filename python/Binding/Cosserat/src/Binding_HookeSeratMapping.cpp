@@ -19,7 +19,7 @@
 ******************************************************************************/
 #include "Binding_HookeSeratMapping.h"
 #include <Cosserat/mapping/CosseratGeometryMapping.h>
-#include <Cosserat/mapping/Strain2RigidCosseratMapping.h>
+#include <Cosserat/mapping/Strain2FramesCosseratMapping.h>
 #include <SofaPython3/PythonFactory.h>
 #include <SofaPython3/Sofa/Core/Binding_Base.h>
 #include <SofaPython3/Sofa/Core/Binding_BaseContext.h>
@@ -51,12 +51,12 @@ void moduleAddHookeSeratMapping(py::module &m) {
 
 
     // Explicit instantiation for Vec3Types
-    using Strain2RigidCosseratMapping = Strain2RigidCosseratMapping<Vec3Types, Rigid3Types, Rigid3Types>;
-    py::class_<Strain2RigidCosseratMapping, CosseratGeometryMapping<Vec3Types, Rigid3Types, Rigid3Types>, py_shared_ptr<Strain2RigidCosseratMapping>> c3(m, "HookeSeratDiscretMapping3");
+    using Strain2FramesCosseratMapping = Strain2FramesCosseratMapping<Vec3Types, Rigid3Types, Rigid3Types>;
+    py::class_<Strain2FramesCosseratMapping, CosseratGeometryMapping<Vec3Types, Rigid3Types, Rigid3Types>, py_shared_ptr<Strain2FramesCosseratMapping>> c3(m, "HookeSeratDiscretMapping3");
 
-    PythonFactory::registerType<Strain2RigidCosseratMapping>(
+    PythonFactory::registerType<Strain2FramesCosseratMapping>(
         [](sofa::core::objectmodel::Base *object) {
-            return py::cast(dynamic_cast<Strain2RigidCosseratMapping *>(object));
+            return py::cast(dynamic_cast<Strain2FramesCosseratMapping *>(object));
         });
 
 

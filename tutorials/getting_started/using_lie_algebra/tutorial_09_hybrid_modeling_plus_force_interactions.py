@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Tutorial 08: Hybrid Modeling - Combining Cosserat and FEM
+Tutorial 09: Hybrid Modeling - Combining Cosserat and FEM
 =========================================================
 
 This tutorial demonstrates a powerful feature of SOFA: combining different

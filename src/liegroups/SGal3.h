@@ -169,9 +169,10 @@ private:
         Vector3 beta = algebra_element.template segment<3>(6); // Boost
         Scalar tau = algebra_element[9]; // Time rate
 
-        // First compute the SE(3) part using (v, w)
+        // First compute the SE(3) part.
+        // SE3::computeExp expects [φ(head)=angular, ρ(tail)=linear].
         typename SE3<Scalar>::TangentVector se3_element;
-        se3_element << v, w;
+        se3_element << w, v;  // angular first, linear second
         SE3<Scalar> pose = SE3<Scalar>::computeExp(se3_element);
 
         // For small rotations or zero angular velocity
@@ -196,10 +197,11 @@ private:
      * @return The corresponding element in the Lie algebra (a 10D vector).
      */
     TangentVector computeLog() const {
-        // First get the SE(3) part
+        // First get the SE(3) part.
+        // computeLog() now returns [φ(head), ρ(tail)] — Cosserat convention.
         typename SE3<Scalar>::TangentVector se3_part = m_pose.computeLog();
-        Vector3 v = se3_part.template head<3>();
-        Vector3 w = se3_part.template tail<3>();
+        Vector3 w = se3_part.template head<3>();  // φ — angular velocity
+        Vector3 v = se3_part.template tail<3>();  // ρ — linear velocity
 
         // For small rotations or zero angular velocity
         TangentVector result;

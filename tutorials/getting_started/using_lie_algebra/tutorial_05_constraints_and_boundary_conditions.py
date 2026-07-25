@@ -89,7 +89,7 @@ def createScene(root_node):
         template="Rigid3d")
 
     frame_node.addObject(
-        "Strain2RigidCosseratMapping",
+        "Strain2FramesCosseratMapping",
         curv_abs_input=beam_geometry.curv_abs_sections,  # Use geometry data
         curv_abs_output=beam_geometry.curv_abs_frames,  # Use geometry data
         name="cosseratMapping",

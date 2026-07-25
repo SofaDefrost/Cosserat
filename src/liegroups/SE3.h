@@ -112,50 +112,142 @@ namespace sofa::component::cosserat::liegroups {
 			return expCosseratGeneral(rho, phi, phi_norm, length);
 		}
 
+		/**
+		 * @brief Standard SE(3) exponential map. Returns g = exp(ξ) with ξ = [φ; ρ].
+		 *
+		 * The translation part is t = V(φ) · ρ where
+		 *   V(φ) = I + (1-cos θ)/θ² · [φ]× + (θ-sin θ)/θ³ · [φ]×²,  θ = ‖φ‖.
+		 *
+		 * NOTE — bug fix 2026-05-31 : la version précédente utilisait K = [axis]×
+		 * (unitaire) avec les coefficients prévus pour K = [φ]× ; un facteur θ
+		 * manquant rendait log(exp(ξ)) ≠ ξ pour tout θ ≠ 1.
+		 *
+		 * NOTE — Taylor à l'ordre 3 (terme inclus jusqu'à θ²) pour la branche
+		 * small-angle :
+		 *   (1-cos θ)/θ² ≈ 1/2 − θ²/24
+		 *   (θ-sin θ)/θ³ ≈ 1/6 − θ²/120
+		 */
 		static SE3 computeExp(const TangentVector &xi) {
 			const Vector3 rho = xi.template tail<3>();
 			const Vector3 phi = xi.template head<3>();
 
-			const Scalar angle = phi.norm();
-			const SO3Type R = SO3Type::exp(phi);
+			const Scalar angle  = phi.norm();
+			const SO3Type R     = SO3Type::exp(phi);
+			const Matrix3 K_phi = SO3Type::computeHat(phi);   // [φ]× (non normalisé)
 			Matrix3 V;
 
-			if (angle < Types<Scalar>::epsilon()) {
-				V = Matrix3::Identity() + Scalar(0.5) * SO3Type::computeHat(phi);
+			if (angle < Types<Scalar>::SMALL_ANGLE_THRESHOLD) {
+				// 3rd-order Taylor expansion in θ
+				const Scalar theta2 = angle * angle;
+				const Scalar c1 = Scalar(0.5)        - theta2 / Scalar(24);
+				const Scalar c2 = Scalar(1) / Scalar(6) - theta2 / Scalar(120);
+				V = Matrix3::Identity() + c1 * K_phi + c2 * (K_phi * K_phi);
 			} else {
-				const Vector3 axis = phi / angle;
-				const Matrix3 K = SO3Type::computeHat(axis);
-				const Scalar sin_angle = std::sin(angle);
-				const Scalar cos_angle = std::cos(angle);
-				V = Matrix3::Identity() + (Scalar(1) - cos_angle) / angle * K +
-					(angle - sin_angle) / (angle * angle) * K * K;
+				// General case, in terms of [φ]× :
+				//   V = I + (1-cos θ)/θ² · [φ]× + (θ-sin θ)/θ³ · [φ]×²
+				const Scalar theta2 = angle * angle;
+				const Scalar theta3 = theta2 * angle;
+				const Scalar c1 = (Scalar(1) - std::cos(angle)) / theta2;
+				const Scalar c2 = (angle - std::sin(angle))      / theta3;
+				V = Matrix3::Identity() + c1 * K_phi + c2 * (K_phi * K_phi);
 			}
 			return SE3(R, V * rho);
 		}
 
+		/**
+		 * @brief Logarithmic map from SE(3) to se(3).
+		 *
+		 * Returns ξ = [φ(head<3>), ρ(tail<3>)] ∈ se(3) such that computeExp(ξ) == *this.
+		 *
+		 * Convention (Cosserat, matches computeExp):
+		 *   head<3>() = φ  — angular part  (rotation axis-angle)
+		 *   tail<3>() = ρ  — linear part   (V⁻¹ · t)
+		 *
+		 * V(φ) = I + (1-cos θ)/θ² · [φ]× + (θ-sin θ)/θ³ · [φ]×²
+		 * V⁻¹(φ) = I − ½ · [φ]× + c(θ) · [φ]×²
+		 *   with c(θ) = 1/θ² − (1+cos θ)/(2θ sin θ)
+		 *
+		 * NOTE — bug fix 2026-05-31 : la version précédente utilisait K = [axis]×
+		 * (unitaire) avec les coefficients prévus pour K = [φ]× ; deux facteurs
+		 * θ et θ² manquaient sur les deux termes.
+		 *
+		 * NOTE — Taylor à l'ordre 3 (terme inclus jusqu'à θ²) pour la branche
+		 * small-angle :
+		 *   c(θ) ≈ 1/12 + θ²/720
+		 */
 		TangentVector computeLog() const {
-			const Vector3 phi = m_rotation.log();
-			const Scalar angle = phi.norm();
+			const Vector3 phi   = m_rotation.log();
+			const Scalar  angle = phi.norm();
+			const Matrix3 K_phi = SO3Type::computeHat(phi);   // [φ]× (non normalisé)
 			Matrix3 V_inv;
 
-			if (angle < Types<Scalar>::epsilon()) {
-				V_inv = Matrix3::Identity() - Scalar(0.5) * SO3Type::computeHat(phi);
+			if (angle < Types<Scalar>::SMALL_ANGLE_THRESHOLD) {
+				// 3rd-order Taylor expansion in θ
+				const Scalar theta2 = angle * angle;
+				const Scalar c2 = Scalar(1) / Scalar(12) + theta2 / Scalar(720);
+				V_inv = Matrix3::Identity() - Scalar(0.5) * K_phi + c2 * (K_phi * K_phi);
 			} else {
-				const Vector3 axis = phi / angle;
-				const Matrix3 K = SO3Type::computeHat(axis);
-				const Scalar sin_angle = std::sin(angle);
-				const Scalar cos_angle = std::cos(angle);
-				V_inv = Matrix3::Identity() - Scalar(0.5) * K +
-						(Scalar(2) * sin_angle - angle * (Scalar(1) + cos_angle)) /
-								(Scalar(2) * angle * angle * sin_angle) * K * K;
+				// General case, in terms of [φ]× :
+				//   V⁻¹ = I − ½ [φ]× + c(θ) [φ]×²
+				const Scalar sin_a  = std::sin(angle);
+				const Scalar cos_a  = std::cos(angle);
+				const Scalar theta2 = angle * angle;
+				const Scalar c2 = Scalar(1) / theta2
+				                - (Scalar(1) + cos_a) / (Scalar(2) * angle * sin_a);
+				V_inv = Matrix3::Identity() - Scalar(0.5) * K_phi + c2 * (K_phi * K_phi);
 			}
 
 			const Vector3 rho = V_inv * m_translation;
 			TangentVector result;
-			result.template head<3>() = rho;
-			result.template tail<3>() = phi;
+			result.template head<3>() = phi;  // angular first — consistent with computeExp()
+			result.template tail<3>() = rho;  // linear second
 			return result;
 		}
+
+		// static SE3 computeExp(const TangentVector &xi) {
+		// 	const Vector3 rho = xi.template tail<3>();
+		// 	const Vector3 phi = xi.template head<3>();
+
+		// 	const Scalar angle = phi.norm();
+		// 	const SO3Type R = SO3Type::exp(phi);
+		// 	Matrix3 V;
+
+		// 	if (angle < Types<Scalar>::epsilon()) {
+		// 		V = Matrix3::Identity() + Scalar(0.5) * SO3Type::computeHat(phi);
+		// 	} else {
+		// 		const Vector3 axis = phi / angle;
+		// 		const Matrix3 K = SO3Type::computeHat(axis);
+		// 		const Scalar sin_angle = std::sin(angle);
+		// 		const Scalar cos_angle = std::cos(angle);
+		// 		V = Matrix3::Identity() + (Scalar(1) - cos_angle) / angle * K +
+		// 			(angle - sin_angle) / (angle * angle) * K * K;
+		// 	}
+		// 	return SE3(R, V * rho);
+		// }
+
+		// TangentVector computeLog() const {
+		// 	const Vector3 phi = m_rotation.log();
+		// 	const Scalar angle = phi.norm();
+		// 	Matrix3 V_inv;
+
+		// 	if (angle < Types<Scalar>::epsilon()) {
+		// 		V_inv = Matrix3::Identity() - Scalar(0.5) * SO3Type::computeHat(phi);
+		// 	} else {
+		// 		// const Vector3 axis = phi / angle; //@appa: correction here (error if division with angle)
+		// 		const Matrix3 phiHat = SO3Type::computeHat(phi);
+		// 		const Scalar sin_angle = std::sin(angle);
+		// 		const Scalar cos_angle = std::cos(angle);
+		// 		V_inv = Matrix3::Identity() - Scalar(0.5) * phiHat +
+		// 				((Scalar(2) * sin_angle - angle * (Scalar(1) + cos_angle)) /
+		// 						(Scalar(2) * angle * angle * sin_angle)) * phiHat * phiHat;
+		// 	}
+
+		// 	const Vector3 rho = V_inv * m_translation;
+		// 	TangentVector result;
+		// 	result.template head<3>() = phi;
+		// 	result.template tail<3>() = rho;
+		// 	return result;
+		// }
 
 		AdjointMatrix computeAdjoint() const {
 			AdjointMatrix Ad = AdjointMatrix::Zero();
@@ -186,11 +278,14 @@ namespace sofa::component::cosserat::liegroups {
 			return tangent;
 		}
 
+		/**
+		 * @brief Logarithmic map — thin wrapper around computeLog() for CRTP callers.
+		 *
+		 * Returns [φ(head<3>), ρ(tail<3>)] = [angular, V⁻¹·t].
+		 * Consistent with computeExp().
+		 */
 		TangentVector log() const {
-			TangentVector tangent;
-			tangent.template head<3>() = m_rotation.log();
-			tangent.template tail<3>() = m_rotation.inverse().act(m_translation);
-			return tangent;
+			return computeLog();
 		}
 
 		AdjointMatrix ad(const TangentVector &v) {
@@ -276,9 +371,19 @@ namespace sofa::component::cosserat::liegroups {
 
 
 		/**
-		 * @brief Computes the adjoint representation of the group element.
-		 * This is a CRTP-required method.
-		 * @return The adjoint matrix representing the action on the Lie algebra.
+		 * @brief ⚠ MISNAMED — this returns the adjoint Ad_g, NOT the differential
+		 *        of the logarithm map.
+		 *
+		 * The true differential of the SE(3) log requires the inverse of the
+		 * SE(3) left Jacobian (with the « Q-matrix » of Barfoot et al.) and is
+		 * NOT implemented here. Anyone calling this function expecting d(log)/dg
+		 * will get nonsense.
+		 *
+		 * Kept under the historical name for API compatibility — see also the
+		 * (correct) `computeAdjoint()` method which returns the exact same value.
+		 *
+		 * TODO : either implement the real d(log) (see Barfoot, State Estimation
+		 * for Robotics, §7.1.4), or rename this to `adjointAlias()` and deprecate.
 		 */
 		AdjointMatrix dlog() const {
 			AdjointMatrix Ad = AdjointMatrix::Zero();
@@ -444,6 +549,104 @@ namespace sofa::component::cosserat::liegroups {
 	 */
 	Matrix3 actionJacobianPoint([[maybe_unused]] const ActionVector &point) const noexcept {
 		return m_rotation.matrix();
+	}
+
+	// ========== Exp-map Jacobians (exact closed form) ==========
+	//
+	// Left/right Jacobians of the SE(3) exponential map, in the Cosserat
+	// convention ξ = [φ; ρ] (angular head, linear tail — same layout as
+	// computeExp / computeAdjoint).  Closed form from Barfoot §7.1.5 and
+	// Solà et al., "A micro Lie theory for state estimation in robotics"
+	// (2018); cross-checked against Sophus.
+	//
+	// Block layout (matching computeAdjoint's lower-left coupling):
+	//   Jl(ξ)  = [ Jl_SO3(φ)          0        ]
+	//            [ Q(ρ,φ)          Jl_SO3(φ)   ]
+	//   Jl⁻¹(ξ)= [ Jl_SO3⁻¹(φ)         0        ]
+	//            [ -Jl⁻¹·Q·Jl⁻¹    Jl_SO3⁻¹(φ)  ]
+	// Right Jacobians follow from Jr(ξ) = Jl(-ξ).
+	//
+	// NOTE: These are the CRTP hooks required by LieGroupBase::leftJacobian /
+	// rightJacobian / *Inverse. Before this, SE3 had none, so those wrappers
+	// were uninstantiable for SE(3).
+
+	/// SO(3) left-Jacobian inverse Jl⁻¹(φ) = I - ½[φ]× + c·[φ]×²,
+	/// c = (1 - ½θ·cot(θ/2))/θ²  (→ 1/12 as θ→0). Static counterpart of
+	/// SO3::dlog() (which only exists as a member on a group element).
+	static Matrix3 so3LeftJacobianInverse(const Vector3 &phi) {
+		const Scalar theta = phi.norm();
+		const Matrix3 Phi  = SO3Type::computeHat(phi);
+		const Matrix3 Phi2 = Phi * Phi;
+		if (theta < Types<Scalar>::SMALL_ANGLE_THRESHOLD)
+			return Matrix3::Identity() - Scalar(0.5) * Phi + (Scalar(1) / Scalar(12)) * Phi2;
+		const Scalar theta2 = theta * theta;
+		const Scalar ht     = Scalar(0.5) * theta;
+		const Scalar c = (Scalar(1) - Scalar(0.5) * theta * std::cos(ht) / std::sin(ht)) / theta2;
+		return Matrix3::Identity() - Scalar(0.5) * Phi + c * Phi2;
+	}
+
+	/// SE(3) coupling block Q(ρ,φ) — the lower-left 3×3 block of Jl(ξ).
+	static Matrix3 computeQ(const Vector3 &rho, const Vector3 &phi) {
+		const Scalar theta   = phi.norm();
+		const Matrix3 N      = SO3Type::computeHat(rho);
+		const Matrix3 Phi    = SO3Type::computeHat(phi);
+		const Matrix3 PhiN   = Phi * N;
+		const Matrix3 NPhi   = N * Phi;
+		const Matrix3 PhiNPhi = PhiN * Phi;
+		if (theta < Types<Scalar>::SMALL_ANGLE_THRESHOLD)
+			return Scalar(0.5) * N + (Scalar(1) / Scalar(6)) * (PhiN + NPhi)
+				 + (Scalar(1) / Scalar(12)) * PhiNPhi;
+		const Scalar theta2 = theta * theta;
+		const Scalar theta3 = theta2 * theta;
+		const Scalar theta4 = theta2 * theta2;
+		const Scalar theta5 = theta4 * theta;
+		const Scalar st = std::sin(theta);
+		const Scalar ct = std::cos(theta);
+		const Scalar c1 = (theta - st) / theta3;
+		const Scalar c2 = (Scalar(0.5) * theta2 + ct - Scalar(1)) / theta4;
+		const Scalar c3 = -c2 - Scalar(3) * (theta - st - theta3 / Scalar(6)) / theta5;
+		const Matrix3 Phi2  = Phi * Phi;
+		const Matrix3 NPhi2 = N * Phi2;
+		return Scalar(0.5) * N
+			 + c1 * (PhiN + NPhi + PhiNPhi)
+			 + c2 * (Phi2 * N + NPhi2 - Scalar(3) * PhiNPhi)
+			 - Scalar(0.5) * c3 * (Phi * NPhi2 + Phi2 * NPhi);
+	}
+
+	/// Left Jacobian of SE(3) exp — CRTP hook for LieGroupBase::leftJacobian.
+	static AdjointMatrix computeLeftJacobian(const TangentVector &xi) {
+		const Vector3 phi = xi.template head<3>();
+		const Vector3 rho = xi.template tail<3>();
+		const Matrix3 Jl  = SO3Type::dexp(phi); // SO3 left Jacobian
+		const Matrix3 Q   = computeQ(rho, phi);
+		AdjointMatrix M = AdjointMatrix::Zero();
+		M.template block<3, 3>(0, 0) = Jl;
+		M.template block<3, 3>(3, 3) = Jl;
+		M.template block<3, 3>(3, 0) = Q;
+		return M;
+	}
+
+	/// Inverse left Jacobian — CRTP hook for LieGroupBase::leftJacobianInverse.
+	static AdjointMatrix computeLeftJacobianInverse(const TangentVector &xi) {
+		const Vector3 phi = xi.template head<3>();
+		const Vector3 rho = xi.template tail<3>();
+		const Matrix3 Ji  = so3LeftJacobianInverse(phi);
+		const Matrix3 Q   = computeQ(rho, phi);
+		AdjointMatrix M = AdjointMatrix::Zero();
+		M.template block<3, 3>(0, 0) = Ji;
+		M.template block<3, 3>(3, 3) = Ji;
+		M.template block<3, 3>(3, 0) = -Ji * Q * Ji;
+		return M;
+	}
+
+	/// Right Jacobian Jr(ξ) = Jl(-ξ) — CRTP hook.
+	static AdjointMatrix computeRightJacobian(const TangentVector &xi) {
+		return computeLeftJacobian(-xi);
+	}
+
+	/// Inverse right Jacobian Jr⁻¹(ξ) = Jl⁻¹(-ξ) — CRTP hook.
+	static AdjointMatrix computeRightJacobianInverse(const TangentVector &xi) {
+		return computeLeftJacobianInverse(-xi);
 	}
 
 	// ========== Accessors ==========
@@ -708,7 +911,7 @@ namespace sofa::component::cosserat::liegroups {
 			// So the tangent vector representing the spatial derivative of the frame is indeed [1+rho.x, rho.y, rho.z].
 			// I will keep it as is, assuming 'rho' passed here is the strain (deviation).
 
-			xi_hat(0, 3) = 1.0 + rho.x();
+			xi_hat(0, 3) = 1 + rho.x();
 			xi_hat(1, 3) = rho.y();
 			xi_hat(2, 3) = rho.z();
 

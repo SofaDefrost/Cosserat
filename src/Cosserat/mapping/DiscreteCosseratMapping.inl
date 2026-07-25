@@ -22,6 +22,7 @@
 #pragma once
 #include <Cosserat/mapping/DiscreteCosseratMapping.h>
 
+#include <sofa/core/MechanicalParams.h>
 #include <sofa/core/Multi2Mapping.inl>
 #include <sofa/core/behavior/MechanicalState.h>
 #include <sofa/core/objectmodel/BaseContext.h>
@@ -34,690 +35,919 @@
 
 #include <string>
 
+// This mapping is templated to support both Vec3 and Vec6 strain inputs;
+// the Vec6 specialisation is provided at the bottom of DiscreteCosseratMapping.cpp.
 namespace Cosserat::mapping {
 
-using sofa::core::objectmodel::BaseContext;
-using sofa::defaulttype::SolidTypes;
-using sofa::helper::AdvancedTimer;
-using sofa::helper::WriteAccessor;
-using sofa::type::RGBAColor;
-
-template <class TIn1, class TIn2, class TOut>
-DiscreteCosseratMapping<TIn1, TIn2, TOut>::DiscreteCosseratMapping()
-    : d_deformationAxis(
-          initData(&d_deformationAxis, (int)1, "deformationAxis",
-                   "the axis in which we want to show the deformation.\n")),
-      d_max(initData(&d_max, (SReal)1.0e-2, "max",
-                     "the maximum of the deformation.\n")),
-      d_min(initData(&d_min, (SReal)0.0, "min",
-                     "the minimum of the deformation.\n")),
-      d_radius(
-          initData(&d_radius, (SReal)0.05, "radius",
-                   "the axis in which we want to show the deformation.\n")),
-      d_drawMapBeam(
-          initData(&d_drawMapBeam, true, "nonColored",
-                   "if this parameter is false, you draw the beam with "
-                   "color according to the force apply to each beam")),
-      d_color(initData(
-          &d_color,
-          sofa::type::RGBAColor(40 / 255.0, 104 / 255.0, 137 / 255.0, 0.8),
-          "color", "The default beam color")),
-      d_index(
-          initData(&d_index, "index",
-                   "if this parameter is false, you draw the beam with color "
-                   "according to the force apply to each beam")),
-      d_baseIndex(initData(&d_baseIndex, (unsigned int)0, "baseIndex",
-                           "This parameter defines the index of the rigid "
-                           "base of Cosserat models, 0 by default this can"
-                           "take another value if the rigid base is given "
-                           "by another body.")) {
-  this->addUpdateCallback(
-      "updateFrames", {&d_curv_abs_section, &d_curv_abs_frames, &d_debug},
-      [this](const sofa::core::DataTracker &t) {
-        SOFA_UNUSED(t);
-        this->update_geometry_info();
-
-        const sofa::VecCoord_t<In1> &strain_state =
-            m_strain_state->read(sofa::core::vec_id::read_access::position)->getValue();
-
-        this->updateExponentialSE3(strain_state);
-        return sofa::core::objectmodel::ComponentState::Valid;
-      },
-      {});
-}
-
-template <class TIn1, class TIn2, class TOut>
-void DiscreteCosseratMapping<TIn1, TIn2, TOut>::doBaseCosseratInit() {
-  m_colorMap.setColorScheme("Blue to Red");
-  m_colorMap.reinit();
-}
-
-template <class TIn1, class TIn2, class TOut>
-void DiscreteCosseratMapping<TIn1, TIn2, TOut>::apply(
-    const sofa::core::MechanicalParams * /* mparams */,
-    const vector<sofa::DataVecCoord_t<Out> *> &dataVecOutPos,
-    const vector<const sofa::DataVecCoord_t<In1> *> &dataVecIn1Pos,
-    const vector<const sofa::DataVecCoord_t<In2> *> &dataVecIn2Pos) {
-
-  if (dataVecOutPos.empty() || dataVecIn1Pos.empty() || dataVecIn2Pos.empty())
-    return;
-
-
-  // Checking the componentState, to trigger a callback if other data fields (specifically
-  // d_curv_abs_section and d_curv_abs_frames) were changed dynamically
-  if (this->d_componentState.getValue() != sofa::core::objectmodel::ComponentState::Valid)
-    return;
-  /// Do Apply
-  // We need only one input In model and input Root model (if present)
-  const sofa::VecCoord_t<In1> &in1 = dataVecIn1Pos[0]->getValue();
-  const sofa::VecCoord_t<In2> &in2 = dataVecIn2Pos[0]->getValue();  
-
-  const auto sz = d_curv_abs_frames.getValue().size();
-  sofa::VecCoord_t<Out> &out = *dataVecOutPos[0]->beginEdit(); // frames states
-  out.resize(sz);
-  const auto baseIndex = d_baseIndex.getValue();
-
-  // update the Exponential matrices according to new deformation
-  // Here we update m_framesExponentialSE3Vectors & m_nodesExponentialSE3Vectors
-  // Which are the homogeneous matrices of the frames and the nodes in local
-  // coordinate.
-  this->updateExponentialSE3(in1);
-
-  /* Apply the transformation to go from cossserat to SOFA frame*/
-  const auto frame0 =
-      Frame(In2::getCPos(in2[baseIndex]), In2::getCRot(in2[baseIndex]));
-      
-  // Cache the printLog value out of the loop, otherwise it will trigger a graph
-  // update at every iteration.
-  bool doPrintLog = this->f_printLog.getValue();
-  
-
-  // Apply transformations to compute output frames
-  for (unsigned int i = 0; i < sz; i++) {
-    auto frame = frame0;
-    for (unsigned int u = 0; u < m_indicesVectors[i]; u++) {
-      frame *=
-          m_nodesExponentialSE3Vectors[u]; // frame = gX(L_0)*...*gX(L_{n-1})
-    }
-    frame *= m_framesExponentialSE3Vectors[i]; // frame*gX(x)
-
-    // This is a lazy printing approach, so there is no time consuming action in
-    // the core of the loop.
-    msg_info_when(doPrintLog) << "Frame  : " << i << " = " << frame;
-
-    Vec3 origin = frame.getOrigin();
-    Quat orientation = frame.getOrientation();
-    out[i] = sofa::Coord_t<Out>(origin, orientation);
-  }
-
-  // If the printLog attribute is checked then print distance between out
-  // frames.
-  if (doPrintLog) {
-    std::stringstream tmp;
-    for (unsigned int i = 0; i < out.size() - 1; i++) {
-      Vec3 diff = out[i + 1].getCenter() - out[i].getCenter();
-      tmp << "dist " << i << "  : " << diff.norm() << msgendl;
-    }
-    msg_info() << tmp.str();
-  }
-
-  // TODO(dmarchal:2024/06/13): This looks a suspicious design pattern,
-  // elaborate more on the purpose of m_indexInput and how to use it.
-  m_indexInput = 0;
-}
-
-template <class TIn1, class TIn2, class TOut>
-void DiscreteCosseratMapping<TIn1, TIn2, TOut>::computeLogarithm(
-    const double &x, const Mat4x4 &gX, Mat4x4 &log_gX) {
-
-  // computes theta
-  const double theta = computeTheta(x, gX);
-
-  // if theta is very small we return log_gX as the identity.
-  if (theta <= std::numeric_limits<double>::epsilon()) {
-    log_gX = Mat4x4::Identity();
-    return;
-  }
-
-  // otherwise we compute it
-  const double csc_theta = 1.0 / (sin(x * theta / 2.0));
-  const double sec_theta = 1.0 / (cos(x * theta / 2.0));
-  const double cst = (1.0 / 8) * (csc_theta * csc_theta * csc_theta) * sec_theta;
-  const double x_theta = x * theta;
-  const double cos_2x_theta = cos(2.0 * x_theta);
-  const double cos_x_theta = cos(x_theta);
-  const double sin_2x_theta = sin(2.0 * x_theta);
-  const double sin_x_theta = sin(x_theta);
-
-  log_gX.clear();
-  log_gX = cst * ((x_theta * cos_2x_theta - sin_x_theta) * Mat4x4::Identity() -
-                  (x_theta * cos_x_theta + 2.0 * x_theta * cos_2x_theta -
-                   sin_x_theta - sin_2x_theta) *
-                      gX +
-                  (2.0 * x_theta * cos_x_theta + x_theta * cos_2x_theta -
-                   sin_x_theta - sin_2x_theta) *
-                      (gX * gX) -
-                  (x_theta * cos_x_theta - sin_x_theta) * (gX * gX * gX));
-}
-
-template <class TIn1, class TIn2, class TOut>
-void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJ(
-    const sofa::core::MechanicalParams * /* mparams */,
-    const vector<sofa::DataVecDeriv_t<Out> *> &dataVecOutVel,
-    const vector<const sofa::DataVecDeriv_t<In1> *> &dataVecIn1Vel,
-    const vector<const sofa::DataVecDeriv_t<In2> *> &dataVecIn2Vel) {
-
-  if (dataVecOutVel.empty() || dataVecIn1Vel.empty() || dataVecIn2Vel.empty())
-    return;
-
-  if (this->d_componentState.getValue() != sofa::core::objectmodel::ComponentState::Valid)
-    return;
-  if (d_debug.getValue())
-    std::cout << " ########## ApplyJ Function ########" << std::endl;
-
-  const sofa::VecDeriv_t<In1> &in1_vel = dataVecIn1Vel[0]->getValue();
-  const sofa::VecDeriv_t<In2> &in2_vel = dataVecIn2Vel[0]->getValue();
-  sofa::VecDeriv_t<Out> &out_vel = *dataVecOutVel[0]->beginEdit();
-  const auto baseIndex = d_baseIndex.getValue();
-
-  
-  // Curv abscissa of nodes and frames
-  sofa::helper::ReadAccessor<sofa::Data<vector<double>>> curv_abs_section =
-      d_curv_abs_section;
-  sofa::helper::ReadAccessor<sofa::Data<vector<double>>> curv_abs_frames =
-      d_curv_abs_frames;
-
-  const sofa::VecDeriv_t<In1> &inDeform =
-      m_strain_state->read(sofa::core::vec_id::read_access::position)
-          ->getValue(); // Strains
-  // Compute the tangent Exponential SE3 vectors
-  this->updateTangExpSE3(inDeform);
-
-  // Get base velocity as input this is also called eta
-  m_nodesVelocityVectors.clear();
-
-  // Get base velocity and convert to Vec6, for the facility of computation
-  Vec6 baseVelocity; //
-  for (auto u = 0; u < 6; u++)
-    baseVelocity[u] = in2_vel[baseIndex][u];
-
-  // Apply the local transform i.e. from SOFA's frame to Cosserat's frame
-
-  const sofa::VecCoord_t<In2> &xfrom2Data =
-      m_rigid_base->read(sofa::core::vec_id::read_access::position)->getValue();
-  auto TInverse = Frame(xfrom2Data[baseIndex].getCenter(),
-                                 xfrom2Data[baseIndex].getOrientation()).inversed();
-  Mat6x6 P = this->buildProjector(TInverse);
-  Vec6 baseLocalVelocity =
-      P * baseVelocity; // This is the base velocity in Locale frame
-  
-  m_nodesVelocityVectors.push_back(baseLocalVelocity);
-
-  if (d_debug.getValue())
-    std::cout << "Base local Velocity :" << baseLocalVelocity << std::endl;
-
-  // Compute velocity at nodes
-  for (unsigned int i = 1; i < curv_abs_section.size(); i++) {
-    auto Trans = m_nodesExponentialSE3Vectors[i].inversed();
-    TangentTransform Adjoint;
-    Adjoint.clear();
-    this->computeAdjoint(Trans, Adjoint);
-
-    /// The null vector is replace by the linear velocity in Vec6Type
-    Vec6 Xi_dot = Vec6(in1_vel[i - 1], Vec3(0.0, 0.0, 0.0));
-
-    Vec6 eta_node_i = Adjoint * (m_nodesVelocityVectors[i - 1] +
-                                 m_nodesTangExpVectors[i] * Xi_dot);
-    m_nodesVelocityVectors.push_back(eta_node_i);
-
-    if (d_debug.getValue())
-      std::cout << "Node velocity : " << i << " = " << eta_node_i << std::endl;
-  }
-
-  const sofa::VecCoord_t<Out> &out =
-      m_global_frames->read(sofa::core::vec_id::read_access::position)->getValue();
-  auto sz = curv_abs_frames.size();
-  out_vel.resize(sz);
-  for (unsigned int i = 0; i < sz; i++) {
-    auto Trans = m_framesExponentialSE3Vectors[i].inversed();
-    TangentTransform Adjoint; ///< the class insure that the constructed adjoint is zeroed.
-    Adjoint.clear();
-    this->computeAdjoint(Trans, Adjoint);
-
-    Vec6 frame_Xi_dot;
-
-    for (auto u = 0; u < 3; u++) {
-      frame_Xi_dot(u) = in1_vel[m_indicesVectors[i] - 1][u];
-      frame_Xi_dot(u + 3) = 0.;
-    }
-    Vec6 eta_frame_i =
-        Adjoint * (m_nodesVelocityVectors[m_indicesVectors[i] - 1] +
-                   m_framesTangExpVectors[i] * frame_Xi_dot); // eta
-
-    auto T = Frame(out[i].getCenter(), out[i].getOrientation());
-    Mat6x6 Proj = this->buildProjector(T);
-    out_vel[i] = Proj * eta_frame_i;
-    if (d_debug.getValue())
-      std::cout << "Frame velocity : " << i << " = " << eta_frame_i
-                << std::endl;
-  }
-  dataVecOutVel[0]->endEdit();
-  m_indexInput = 0;
-
-}
-
-template <class TIn1, class TIn2, class TOut>
-void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJT(
-    const sofa::core::MechanicalParams * /*mparams*/,
-    const vector<sofa::DataVecDeriv_t<In1> *> &dataVecOut1Force,
-    const vector<sofa::DataVecDeriv_t<In2> *> &dataVecOut2Force,
-    const vector<const sofa::DataVecDeriv_t<Out> *> &dataVecInForce) {
-
-  if (dataVecOut1Force.empty() || dataVecInForce.empty() ||
-      dataVecOut2Force.empty())
-    return;
-
-  if (this->d_componentState.getValue() != sofa::core::objectmodel::ComponentState::Valid)
-    return;
-
-  if (d_debug.getValue())
-    std::cout << " ########## ApplyJT force Function ########" << std::endl;
-  
-  const sofa::VecDeriv_t<Out> &in = dataVecInForce[0]->getValue();
-  sofa::VecDeriv_t<In1> &out1 = *dataVecOut1Force[0]->beginEdit();
-  sofa::VecDeriv_t<In2> &out2 = *dataVecOut2Force[0]->beginEdit();
-  const auto baseIndex = d_baseIndex.getValue();
-
-  const sofa::VecCoord_t<Out> &frame =
-      m_global_frames->read(sofa::core::vec_id::read_access::position)->getValue();
-  const sofa::DataVecCoord_t<In1> *x1fromData =
-      m_strain_state->read(sofa::core::vec_id::read_access::position);
-  const sofa::VecCoord_t<In1> x1from = x1fromData->getValue();
-  vector<Vec6> local_F_Vec;
-  local_F_Vec.clear();
-  
-  out1.resize(x1from.size());
-
-  for (unsigned int var = 0; var < in.size(); ++var) {
-    Vec6 vec;
-    for (unsigned j = 0; j < 6; j++)
-      vec[j] = in[var][j];
-    // Convert input from global frame(SOFA) to local frame
-
-    const auto _T =
-        Frame(frame[var].getCenter(), frame[var].getOrientation());
-
-    Mat6x6 P_trans = (this->buildProjector(_T));
-    
-    P_trans.transpose();
-    Vec6 local_F = P_trans * vec;
-
-    local_F_Vec.push_back(local_F);
-  }
-
-  // Compute output forces
-  auto sz = m_indicesVectors.size();
-  auto index = m_indicesVectors[sz - 1];
-  m_totalBeamForceVectors.clear();
-  m_totalBeamForceVectors.resize(sz);
-
-  Vec6 F_tot;
-  F_tot.clear();
-  m_totalBeamForceVectors.push_back(F_tot);
-
-  Mat3x6 matB_trans;
-  matB_trans.clear();
-  for (unsigned int k = 0; k < 3; k++)
-    matB_trans[k][k] = 1.0;
-
-  for (auto s = sz; s--;) {
-    Mat6x6 coAdjoint;
-
-    this->computeCoAdjoint(
-        m_framesExponentialSE3Vectors[s],
-        coAdjoint); // m_framesExponentialSE3Vectors[s] computed in apply
-
-
-    Vec6 node_F_Vec = coAdjoint * local_F_Vec[s];
-    Mat6x6 temp =
-        m_framesTangExpVectors[s]; // m_framesTangExpVectors[s] computed in
-    // applyJ (here we transpose)
-    temp.transpose();
-
-    Vec3 f = matB_trans * temp * node_F_Vec;
-
-    if (index != m_indicesVectors[s]) {
-      index--;
-      // bring F_tot to the reference of the new beam
-      this->computeCoAdjoint(
-          m_nodesExponentialSE3Vectors[index],
-          coAdjoint); // m_nodesExponentialSE3Vectors computed in apply
-      
-      F_tot = coAdjoint * F_tot;
-      
-      Mat6x6 temp = m_nodesTangExpVectors[index];
-      temp.transpose();
-
-      // apply F_tot to the new beam
-      Vec3 temp_f = matB_trans * temp * F_tot;
-
-      // Add accumulated force to strain output
-      out1[index - 1] += temp_f;
-    }
-    if (d_debug.getValue())
-      std::cout << "f at s =" << s << " and index" << index << " is : " << f
-                << std::endl;
-
-    // compute F_tot
-    F_tot += node_F_Vec;
-    out1[m_indicesVectors[s] - 1] += f;
-  }
-
-  auto frame0 = Frame(frame[0].getCenter(), frame[0].getOrientation());
-  Mat6x6 M = this->buildProjector(frame0);
-  out2[baseIndex] += M * F_tot;
-
-
-  if (d_debug.getValue()) {
-    std::cout << "Node forces " << out1 << std::endl;
-    std::cout << "base Force: " << out2[baseIndex] << std::endl;
-  }
-
-  dataVecOut1Force[0]->endEdit();
-  dataVecOut2Force[0]->endEdit();
-
-}
-
-template <class TIn1, class TIn2, class TOut>
-void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJT(
-    const sofa::core::ConstraintParams * /*cparams*/,
-    const vector<sofa::DataMatrixDeriv_t<In1> *> &dataMatOut1Const,
-    const vector<sofa::DataMatrixDeriv_t<In2> *> &dataMatOut2Const,
-    const vector<const sofa::DataMatrixDeriv_t<Out> *> &dataMatInConst) {
-
-
-  if (dataMatOut1Const.empty() || dataMatOut2Const.empty() ||
-      dataMatInConst.empty())
-    return;
-
-  if (this->d_componentState.getValue() != sofa::core::objectmodel::ComponentState::Valid)
-    return;
-
-  if (d_debug.getValue())
-    std::cout << " ########## ApplyJT Constraint Function ########"
-              << std::endl;
-  // We need only one input In model and input Root model (if present)
-  sofa::MatrixDeriv_t<In1> &out1 =
-      *dataMatOut1Const[0]->beginEdit(); // constraints on the strain space
-  // (reduced coordinate)
-  sofa::MatrixDeriv_t<In2> &out2 =
-      *dataMatOut2Const[0]
-           ->beginEdit(); // constraints on the reference frame (base frame)
-  const sofa::MatrixDeriv_t<Out> &in =
-      dataMatInConst[0]
-          ->getValue(); // input constraints defined on the mapped frames
-
-  const sofa::VecCoord_t<Out> &frame =
-      m_global_frames->read(sofa::core::vec_id::read_access::position)->getValue();
-  const sofa::DataVecCoord_t<In1> *x1fromData =
-      m_strain_state->read(sofa::core::vec_id::read_access::position);
-  const sofa::VecCoord_t<In1> x1from = x1fromData->getValue();
-
-  Mat3x6 matB_trans;
-  matB_trans.clear();
-  for (unsigned int k = 0; k < 3; k++)
-    matB_trans[k][k] = 1.0;
-
-  vector<std::tuple<int, Vec6>> NodesInvolved;
-  vector<std::tuple<int, Vec6>> NodesInvolvedCompressed;
-  // helper::vector<Vec6> NodesConstraintDirection;
-
-  typename sofa::MatrixDeriv_t<Out>::RowConstIterator rowItEnd = in.end();
-
-  for (typename sofa::MatrixDeriv_t<Out>::RowConstIterator rowIt = in.begin();
-       rowIt != rowItEnd; ++rowIt) {
-    if (d_debug.getValue()) {
-      std::cout << "************* Apply JT (MatrixDeriv) iteration on line ";
-      std::cout << rowIt.index();
-      std::cout << "*************  " << std::endl;
-    }
-    typename sofa::MatrixDeriv_t<Out>::ColConstIterator colIt = rowIt.begin();
-    typename sofa::MatrixDeriv_t<Out>::ColConstIterator colItEnd = rowIt.end();
-
-    // Creates a constraints if the input constraint is not empty.
-    if (colIt == colItEnd) {
-      if (d_debug.getValue()) {
-        std::cout << "no column for this constraint" << std::endl;
-      }
-      continue;
-    }
-    typename sofa::MatrixDeriv_t<In1>::RowIterator o1 =
-        out1.writeLine(rowIt.index()); // we store the constraint number
-    typename sofa::MatrixDeriv_t<In2>::RowIterator o2 = out2.writeLine(rowIt.index());
-
-    NodesInvolved.clear();
-    while (colIt != colItEnd) {
-      int childIndex = colIt.index();
-
-      const sofa::Deriv_t<Out> valueConst_ = colIt.val();
-      Vec6 valueConst;
-      for (unsigned j = 0; j < 6; j++)
-        valueConst[j] = valueConst_[j];
-
-      int indexBeam = m_indicesVectors[childIndex];
-
-      const auto _T = Frame(frame[childIndex].getCenter(),
-                               frame[childIndex].getOrientation());
-      Mat6x6 P_trans = (this->buildProjector(_T));
-      
-      P_trans.transpose();
-
-      Mat6x6 co_adjoint;
-        this->computeCoAdjoint(
-          m_framesExponentialSE3Vectors[childIndex],
-          co_adjoint); // m_framesExponentialSE3Vectors[s] computed in apply
-
-      
-      Mat6x6 temp =
-          m_framesTangExpVectors[childIndex]; // m_framesTangExpVectors[s]
-      // computed in applyJ
-      // (here we transpose)
-      temp.transpose();
-
-      Vec6 local_F =
-          co_adjoint * P_trans *
-          valueConst; // constraint direction in local frame of the beam.
-
-
-      Vec3 f = matB_trans * temp *
-               local_F; // constraint direction in the strain space.
-      
-
-      o1.addCol(indexBeam - 1, f);
-      std::tuple<int, Vec6> test = std::make_tuple(indexBeam, local_F);
-
-      NodesInvolved.push_back(test);
-      colIt++;
-    }
-    if (d_debug.getValue()) {
-      std::cout << "==> NodesInvolved : " << std::endl;
-      for (size_t i = 0; i < NodesInvolved.size(); i++)
-        std::cout << "index :" << get<0>(NodesInvolved[i])
-                  << " force :" << get<1>(NodesInvolved[i]) << "\n ";
+    using sofa::core::objectmodel::BaseContext;
+    using sofa::defaulttype::SolidTypes;
+    using sofa::helper::AdvancedTimer;
+    using sofa::helper::WriteAccessor;
+    using sofa::type::RGBAColor;
+
+    template <class TIn1, class TIn2, class TOut>
+    DiscreteCosseratMapping<TIn1, TIn2, TOut>::DiscreteCosseratMapping()
+        : d_deformationAxis(
+            initData(&d_deformationAxis, (int)1, "deformationAxis",
+                    "the axis in which we want to show the deformation.\n")),
+        d_max(initData(&d_max, (SReal)1.0e-2, "max",
+                        "the maximum of the deformation.\n")),
+        d_min(initData(&d_min, (SReal)0.0, "min",
+                        "the minimum of the deformation.\n")),
+        d_radius(
+            initData(&d_radius, (SReal)0.05, "radius",
+                    "the axis in which we want to show the deformation.\n")),
+        d_drawMapBeam(
+            initData(&d_drawMapBeam, true, "nonColored",
+                    "if this parameter is false, you draw the beam with "
+                    "color according to the force apply to each beam")),
+        d_color(initData(
+            &d_color,
+            sofa::type::RGBAColor(40 / 255.0, 104 / 255.0, 137 / 255.0, 0.8),
+            "color", "The default beam color")),
+        d_index(
+            initData(&d_index, "index",
+                    "if this parameter is false, you draw the beam with color "
+                    "according to the force apply to each beam")),
+        d_baseIndex(initData(&d_baseIndex, (unsigned int)0, "baseIndex",
+                            "This parameter defines the index of the rigid "
+                            "base of Cosserat models, 0 by default this can"
+                            "take another value if the rigid base is given "
+                            "by another body.")) {
+    this->addUpdateCallback(
+        "updateFrames", {&d_curv_abs_section, &d_curv_abs_frames, &d_debug},
+        [this](const sofa::core::DataTracker &t) {
+            SOFA_UNUSED(t);
+            this->update_geometry_info();
+
+            const sofa::VecCoord_t<In1> &strain_state = m_strain_state->read(sofa::core::vec_id::read_access::position)->getValue();
+
+            this->updateExponentialSE3(strain_state);
+            return sofa::core::objectmodel::ComponentState::Valid;
+        },
+        {});
     }
 
-    // sort the Nodes Invoved by decreasing order
-    std::sort(
-        begin(NodesInvolved), end(NodesInvolved),
-        [](std::tuple<int, Vec6> const &t1, std::tuple<int, Vec6> const &t2) {
-          return std::get<0>(t1) > std::get<0>(t2); // custom compare function
-        });
+    template <class TIn1, class TIn2, class TOut>
+    void DiscreteCosseratMapping<TIn1, TIn2, TOut>::doBaseCosseratInit() {
+        m_colorMap.setColorScheme("Blue to Red");
+        m_colorMap.reinit();
+    }
 
-    NodesInvolvedCompressed.clear();
+    template <class TIn1, class TIn2, class TOut>
+    void DiscreteCosseratMapping<TIn1, TIn2, TOut>::apply(
+        const sofa::core::MechanicalParams * /* mparams */,
+        const vector<sofa::DataVecCoord_t<Out> *> &dataVecOutPos,
+        const vector<const sofa::DataVecCoord_t<In1> *> &dataVecIn1Pos,
+        const vector<const sofa::DataVecCoord_t<In2> *> &dataVecIn2Pos) {
 
-    for (unsigned n = 0; n < NodesInvolved.size(); n++) {
-      std::tuple<int, Vec6> test_i = NodesInvolved[n];
-      int numNode_i = std::get<0>(test_i);
-      Vec6 cumulativeF = std::get<1>(test_i);
+        if (dataVecOutPos.empty() || dataVecIn1Pos.empty() || dataVecIn2Pos.empty())
+            return;
 
-      if (n < NodesInvolved.size() - 1) {
-        std::tuple<int, Vec6> test_i1 = NodesInvolved[n + 1];
-        int numNode_i1 = std::get<0>(test_i1);
 
-        while (numNode_i == numNode_i1) {
-          cumulativeF += std::get<1>(test_i1);
-          //// This was if ((n!=NodesInvolved.size()-2)||(n==0)) before and I
-          /// change it to
-          /// if ((n!=NodesInvolved.size()-1)||(n==0)) since the code can't
-          /// leave the will loop
-          if ((n != NodesInvolved.size() - 1) || (n == 0)) {
-            n++;
-            break;
-          }
-          test_i1 = NodesInvolved[n + 1];
-          numNode_i1 = std::get<0>(test_i1);
+        // Checking the componentState, to trigger a callback if other data fields (specifically
+        // d_curv_abs_section and d_curv_abs_frames) were changed dynamically
+        if (this->d_componentState.getValue() != sofa::core::objectmodel::ComponentState::Valid)
+            return;
+        /// Do Apply
+        // We need only one input In model and input Root model (if present)
+        const sofa::VecCoord_t<In1> &in1 = dataVecIn1Pos[0]->getValue();
+        const sofa::VecCoord_t<In2> &in2 = dataVecIn2Pos[0]->getValue();  
+
+        const auto sz = d_curv_abs_frames.getValue().size();
+        sofa::VecCoord_t<Out> &out = *dataVecOutPos[0]->beginEdit(); // frames states
+        out.resize(sz);
+        const auto baseIndex = d_baseIndex.getValue();
+
+        // update the Exponential matrices according to new deformation
+        // Here we update m_framesExponentialSE3Vectors & m_nodesExponentialSE3Vectors
+        // Which are the homogeneous matrices of the frames and the nodes in local
+        // coordinate.
+        this->updateExponentialSE3(in1);
+
+        /* Apply the transformation to go from cossserat to SOFA frame*/
+        const auto frame0 = Frame(In2::getCPos(in2[baseIndex]), In2::getCRot(in2[baseIndex]));
+            
+        // Cache the printLog value out of the loop, otherwise it will trigger a graph
+        // update at every iteration.
+        bool doPrintLog = this->f_printLog.getValue();
+        
+
+        // Apply transformations to compute output frames
+        for (unsigned int i = 0; i < sz; i++) {
+            auto frame = frame0;
+            for (unsigned int u = 0; u < m_indicesVectors[i]; u++) {
+                frame *= m_nodesExponentialSE3Vectors[u]; // frame = gX(L_0)*...*gX(L_{n-1})
+            }
+            frame *= m_framesExponentialSE3Vectors[i]; // frame*gX(x)
+
+            // This is a lazy printing approach, so there is no time consuming action in
+            // the core of the loop.
+            msg_info_when(doPrintLog) << "Frame  : " << i << " = " << frame;
+
+            Vec3 origin = frame.getOrigin();
+            Quat orientation = frame.getOrientation();
+            out[i] = sofa::Coord_t<Out>(origin, orientation);
         }
-      }
-      NodesInvolvedCompressed.push_back(
-          std::make_tuple(numNode_i, cumulativeF));
+
+        // If the printLog attribute is checked then print distance between out
+        // frames.
+        if (doPrintLog) {
+            std::stringstream tmp;
+            for (unsigned int i = 0; i < out.size() - 1; i++) {
+                Vec3 diff = out[i + 1].getCenter() - out[i].getCenter();
+                tmp << "dist " << i << "  : " << diff.norm() << msgendl;
+            }
+            msg_info() << tmp.str();
+        }
+
+        // TODO(dmarchal:2024/06/13): This looks a suspicious design pattern,
+        // elaborate more on the purpose of m_indexInput and how to use it.
+        m_indexInput = 0;
+
+        dataVecOutPos[0]->endEdit();
     }
 
-    if (d_debug.getValue()) {
-      std::cout << " NodesInvolved after sort and compress" << std::endl;
-      for (size_t i = 0; i < NodesInvolvedCompressed.size(); i++)
-        std::cout << "index :" << get<0>(NodesInvolvedCompressed[i])
-                  << " force :" << get<1>(NodesInvolvedCompressed[i]) << "\n ";
+    template <class TIn1, class TIn2, class TOut>
+    void DiscreteCosseratMapping<TIn1, TIn2, TOut>::computeLogarithm(
+        const double &x, const Mat4x4 &gX, Mat4x4 &log_gX) {
+
+        // computes theta
+        const double theta = computeTheta(x, gX);
+
+        // if theta is very small we return log_gX as the identity.
+        if (theta <= std::numeric_limits<double>::epsilon()) {
+            log_gX = Mat4x4::Identity();
+            return;
+        }
+
+        // otherwise we compute it
+        const double csc_theta = 1.0 / (sin(x * theta / 2.0));
+        const double sec_theta = 1.0 / (cos(x * theta / 2.0));
+        const double cst = (1.0 / 8) * (csc_theta * csc_theta * csc_theta) * sec_theta;
+        const double x_theta = x * theta;
+        const double cos_2x_theta = cos(2.0 * x_theta);
+        const double cos_x_theta = cos(x_theta);
+        const double sin_2x_theta = sin(2.0 * x_theta);
+        const double sin_x_theta = sin(x_theta);
+
+        log_gX.clear();
+        log_gX = cst * ((x_theta * cos_2x_theta - sin_x_theta) * Mat4x4::Identity() -
+                        (x_theta * cos_x_theta + 2.0 * x_theta * cos_2x_theta -
+                        sin_x_theta - sin_2x_theta) *
+                            gX +
+                        (2.0 * x_theta * cos_x_theta + x_theta * cos_2x_theta -
+                        sin_x_theta - sin_2x_theta) *
+                            (gX * gX) -
+                        (x_theta * cos_x_theta - sin_x_theta) * (gX * gX * gX));
     }
 
-    for (unsigned n = 0; n < NodesInvolvedCompressed.size(); n++) {
-      std::tuple<int, Vec6> test = NodesInvolvedCompressed[n];
-      int numNode = std::get<0>(test);
-      int i = numNode;
-      Vec6 CumulativeF = std::get<1>(test);
+    template <class TIn1, class TIn2, class TOut>
+    void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJ(
+        const sofa::core::MechanicalParams * /* mparams */,
+        const vector<sofa::DataVecDeriv_t<Out> *> &dataVecOutVel,
+        const vector<const sofa::DataVecDeriv_t<In1> *> &dataVecIn1Vel,
+        const vector<const sofa::DataVecDeriv_t<In2> *> &dataVecIn2Vel) {
 
-      while (i > 0) {
-        // cumulate on beam frame
-        Mat6x6 coAdjoint;
-        this->computeCoAdjoint(
-            m_nodesExponentialSE3Vectors[i - 1],
-            coAdjoint); // m_nodesExponentialSE3Vectors computed in apply
-        
-        CumulativeF = coAdjoint * CumulativeF;
-        // transfer to strain space (local coordinates)
-        Mat6x6 temp = m_nodesTangExpVectors[i - 1];
-        temp.transpose();
-        
-        Vec3 temp_f = matB_trans * temp * CumulativeF;
-        
-        if (i > 1)
-          o1.addCol(i - 2, temp_f);
-        i--;
-      }
-      const auto frame0 =
-            Frame(frame[0].getCenter(), frame[0].getOrientation());
-      const Mat6x6 M = this->buildProjector(frame0);
 
-        const Vec6 base_force = M * CumulativeF;
+        if (dataVecOutVel.empty() || dataVecIn1Vel.empty() || dataVecIn2Vel.empty())
+            return;
 
-        o2.addCol(d_baseIndex.getValue(), base_force);
+        if (this->d_componentState.getValue() != sofa::core::objectmodel::ComponentState::Valid)
+            return;
+        if (d_debug.getValue())
+            std::cout << " ########## ApplyJ Function ########" << std::endl;
+
+        const sofa::VecDeriv_t<In1> &in1_vel = dataVecIn1Vel[0]->getValue();
+        const sofa::VecDeriv_t<In2> &in2_vel = dataVecIn2Vel[0]->getValue();
+        sofa::VecDeriv_t<Out> &out_vel = *dataVecOutVel[0]->beginEdit();
+        const auto baseIndex = d_baseIndex.getValue();
+
+        
+        // Curv abscissa of nodes and frames
+        sofa::helper::ReadAccessor<sofa::Data<vector<double>>> curv_abs_section = d_curv_abs_section;
+        sofa::helper::ReadAccessor<sofa::Data<vector<double>>> curv_abs_frames =  d_curv_abs_frames;
+
+        const sofa::VecDeriv_t<In1> &inDeform = m_strain_state->read(sofa::core::vec_id::read_access::position)->getValue(); // Strains
+
+        // Compute the tangent Exponential SE3 vectors
+        this->updateTangExpSE3(inDeform);
+
+        // Get base velocity as input this is also called eta
+        m_nodesVelocityVectors.clear();
+
+        // Get base velocity and convert to Vec6, for the facility of computation
+        Vec6 baseVelocity; //
+        for (auto u = 0; u < 6; u++)
+            baseVelocity[u] = in2_vel[baseIndex][u];
+
+        // Apply the local transform i.e. from SOFA's frame to Cosserat's frame
+
+        const sofa::VecCoord_t<In2> &xfrom2Data = m_rigid_base->read(sofa::core::vec_id::read_access::position)->getValue();
+        
+        auto TInverse = Frame(xfrom2Data[baseIndex].getCenter(), xfrom2Data[baseIndex].getOrientation()).inversed();
+        
+        Mat6x6 P = this->buildProjector(TInverse);
+        
+        Vec6 baseLocalVelocity = P * baseVelocity; // This is the base velocity in Locale frame
+        
+        m_nodesVelocityVectors.push_back(baseLocalVelocity);
+
+        if (d_debug.getValue())
+            std::cout << "Base local Velocity :" << baseLocalVelocity << std::endl;
+        
+
+        // Compute velocity at nodes
+        for (unsigned int i = 1; i < curv_abs_section.size(); i++) {
+            auto Trans = m_nodesExponentialSE3Vectors[i].inversed();
+            TangentTransform Adjoint;
+            Adjoint.clear();
+            this->computeAdjoint(Trans, Adjoint);
+
+            /// The null vector is replace by the linear velocity in Vec6Type
+            //Vec6 Xi_dot = Vec6(in1_vel[i - 1], Vec3(0.0, 0.0, 0.0));
+
+            Vec6 Xi_dot = Vec6(0, 0, 0, 0, 0, 0);
+            if constexpr (std::is_same_v<Deriv1, sofa::type::Vec3>){
+                for(int k=0; k<3; k++)
+                    Xi_dot(k) = in1_vel[i - 1][k];
+            }
+            else{
+                for(int k=0; k<6; k++)
+                    Xi_dot(k) = in1_vel[i - 1][k];
+            }
+
+            Vec6 eta_node_i = Adjoint * (m_nodesVelocityVectors[i - 1] +
+                                        m_nodesTangExpVectors[i] * Xi_dot);
+            m_nodesVelocityVectors.push_back(eta_node_i);
+
+            if (d_debug.getValue())
+                std::cout << "Node velocity : " << i << " = " << eta_node_i << std::endl;
+        }
+
+        const sofa::VecCoord_t<Out> &out = m_global_frames->read(sofa::core::vec_id::read_access::position)->getValue();
+        
+        auto sz = curv_abs_frames.size();
+        out_vel.resize(sz);
+        
+        for (unsigned int i = 0; i < sz; i++) {
+            auto Trans = m_framesExponentialSE3Vectors[i].inversed();
+            TangentTransform Adjoint; ///< the class insure that the constructed adjoint is zeroed.
+            Adjoint.clear();
+            this->computeAdjoint(Trans, Adjoint);
+
+            Vec6 frame_Xi_dot = Vec6(0, 0, 0, 0, 0, 0);
+            if constexpr (std::is_same_v<Deriv1, sofa::type::Vec3>){
+                for(int k=0; k<3; k++)
+                    frame_Xi_dot(k) = in1_vel[m_indicesVectors[i] - 1][k];
+            }
+            else{
+                for(int k=0; k<6; k++)
+                    frame_Xi_dot(k) = in1_vel[m_indicesVectors[i] - 1][k];
+            }
+
+
+            Vec6 eta_frame_i = Adjoint * (m_nodesVelocityVectors[m_indicesVectors[i] - 1] + m_framesTangExpVectors[i] * frame_Xi_dot); // eta
+
+            auto T = Frame(out[i].getCenter(), out[i].getOrientation());
+            Mat6x6 Proj = this->buildProjector(T);
+            out_vel[i] = Proj * eta_frame_i;
+            
+            if (d_debug.getValue())
+                std::cout << "Frame velocity : " << i << " = " << eta_frame_i << std::endl;
+
+        }
+
+        dataVecOutVel[0]->endEdit();
+        m_indexInput = 0;
+
     }
-  }
 
-  //"""END ARTICULATION SYSTEM MAPPING"""
-  dataMatOut1Const[0]->endEdit();
-  dataMatOut2Const[0]->endEdit();
+        
+    template <class TIn1, class TIn2, class TOut>
+    void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJT(
+        const sofa::core::MechanicalParams * /*mparams*/,
+        const vector<sofa::DataVecDeriv_t<In1> *> &dataVecOut1Force,
+        const vector<sofa::DataVecDeriv_t<In2> *> &dataVecOut2Force,
+        const vector<const sofa::DataVecDeriv_t<Out> *> &dataVecInForce) {
 
-}
+        if (dataVecOut1Force.empty() || dataVecInForce.empty() ||
+            dataVecOut2Force.empty())
+            return;
 
+        if (this->d_componentState.getValue() != sofa::core::objectmodel::ComponentState::Valid)
+            return;
+
+        if (d_debug.getValue())
+            std::cout << " ########## ApplyJT force Function ########" << std::endl;
+        
+        const sofa::VecDeriv_t<Out> &in = dataVecInForce[0]->getValue();
+        sofa::VecDeriv_t<In1> &out1 = *dataVecOut1Force[0]->beginEdit();
+        sofa::VecDeriv_t<In2> &out2 = *dataVecOut2Force[0]->beginEdit();
+        const auto baseIndex = d_baseIndex.getValue();
+
+        const sofa::VecCoord_t<Out> &frame = m_global_frames->read(sofa::core::vec_id::read_access::position)->getValue();
+        
+        const sofa::DataVecCoord_t<In1> *x1fromData = m_strain_state->read(sofa::core::vec_id::read_access::position);
+        const sofa::VecCoord_t<In1> x1from = x1fromData->getValue();
+        
+        vector<Vec6> local_F_Vec;
+        local_F_Vec.clear();
+        
+        out1.resize(x1from.size());
+
+        for (unsigned int var = 0; var < in.size(); ++var) {
+            Vec6 vec;
+            for (unsigned j = 0; j < 6; j++)
+                vec[j] = in[var][j];
+            
+            // Convert input from global frame(SOFA) to local frame
+            const auto _T = Frame(frame[var].getCenter(), frame[var].getOrientation());
+
+            Mat6x6 P_trans = (this->buildProjector(_T));
+            
+            P_trans.transpose();
+            Vec6 local_F = P_trans * vec;
+
+            local_F_Vec.push_back(local_F);
+        }
+
+        // Compute output forces
+        auto sz = m_indicesVectors.size();
+        auto index = m_indicesVectors[sz - 1];
+        m_totalBeamForceVectors.clear();
+        m_totalBeamForceVectors.resize(sz);
+
+        Vec6 F_tot;
+        F_tot.clear();
+        m_totalBeamForceVectors.push_back(F_tot);
+
+
+        if constexpr (std::is_same_v<Deriv1, sofa::type::Vec3>){
+            Mat3x6 matB_trans;
+            matB_trans.clear();
+            for (unsigned int k = 0; k < 3; k++)
+                matB_trans[k][k] = 1.0;
+
+            for (auto s = sz; s--;) {
+                Mat6x6 coAdjoint;
+
+                this->computeCoAdjoint(m_framesExponentialSE3Vectors[s], coAdjoint); // m_framesExponentialSE3Vectors[s] computed in apply
+
+
+                Vec6 node_F_Vec = coAdjoint * local_F_Vec[s];
+                Mat6x6 temp =  m_framesTangExpVectors[s]; // m_framesTangExpVectors[s] computed in
+                
+                // applyJ (here we transpose)
+                temp.transpose();
+
+                Vec3 f = matB_trans * temp * node_F_Vec;
+
+                if (index != m_indicesVectors[s]) {
+                    index--;
+                    // bring F_tot to the reference of the new beam
+                    this->computeCoAdjoint(m_nodesExponentialSE3Vectors[index], coAdjoint); // m_nodesExponentialSE3Vectors computed in apply
+                    
+                    F_tot = coAdjoint * F_tot;
+                    
+                    Mat6x6 temp = m_nodesTangExpVectors[index];
+                    temp.transpose();
+
+                    // apply F_tot to the new beam
+                    Vec3 temp_f = matB_trans * temp * F_tot;
+
+                    // Add accumulated force to strain output
+                    out1[index - 1] += temp_f;
+                }
+                if (d_debug.getValue())
+                    std::cout << "f at s =" << s << " and index" << index << " is : " << f << std::endl;
+
+                // compute F_tot
+                F_tot += node_F_Vec;
+                out1[m_indicesVectors[s] - 1] += f;
+            }
+        }
+        else{
+            for (auto s = sz; s--;) {
+                Mat6x6 coAdjoint;
+
+                this->computeCoAdjoint(m_framesExponentialSE3Vectors[s], coAdjoint); // m_framesExponentialSE3Vectors[s] computed in apply
+
+
+                Vec6 node_F_Vec = coAdjoint * local_F_Vec[s];
+                Mat6x6 temp =  m_framesTangExpVectors[s]; // m_framesTangExpVectors[s] computed in
+                
+                // applyJ (here we transpose)
+                temp.transpose();
+
+                Vec6 f = temp * node_F_Vec;
+
+                if (index != m_indicesVectors[s]) {
+                    index--;
+                    // bring F_tot to the reference of the new beam
+                    this->computeCoAdjoint(m_nodesExponentialSE3Vectors[index], coAdjoint); // m_nodesExponentialSE3Vectors computed in apply
+                    
+                    F_tot = coAdjoint * F_tot;
+                    
+                    Mat6x6 temp = m_nodesTangExpVectors[index];
+                    temp.transpose();
+
+                    // apply F_tot to the new beam
+                    Vec6 temp_f = temp * F_tot;
+
+                    // Add accumulated force to strain output
+                    out1[index - 1] += temp_f;
+                }
+                if (d_debug.getValue())
+                    std::cout << "f at s =" << s << " and index" << index << " is : " << f << std::endl;
+
+                // compute F_tot
+                F_tot += node_F_Vec;
+                out1[m_indicesVectors[s] - 1] += f;
+            }
+
+        }
+        
+
+        auto frame0 = Frame(frame[0].getCenter(), frame[0].getOrientation());
+        Mat6x6 M = this->buildProjector(frame0);
+        out2[baseIndex] += M * F_tot;
+
+
+        if (d_debug.getValue()) {
+            std::cout << "Node forces " << out1 << std::endl;
+            std::cout << "base Force: " << out2[baseIndex] << std::endl;
+        }
+
+        dataVecOut1Force[0]->endEdit();
+        dataVecOut2Force[0]->endEdit();
+
+    }
+
+    template <class TIn1, class TIn2, class TOut>
+    void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJT(
+        const sofa::core::ConstraintParams * /*cparams*/,
+        const vector<sofa::DataMatrixDeriv_t<In1> *> &dataMatOut1Const,
+        const vector<sofa::DataMatrixDeriv_t<In2> *> &dataMatOut2Const,
+        const vector<const sofa::DataMatrixDeriv_t<Out> *> &dataMatInConst) {
+
+
+        if (dataMatOut1Const.empty() || dataMatOut2Const.empty() ||
+            dataMatInConst.empty())
+            return;
+
+        if (this->d_componentState.getValue() != sofa::core::objectmodel::ComponentState::Valid)
+            return;
+
+        if (d_debug.getValue())
+            std::cout << " ########## ApplyJT Constraint Function ########" << std::endl;
+
+        // We need only one input In model and input Root model (if present)
+        sofa::MatrixDeriv_t<In1> &out1 = *dataMatOut1Const[0]->beginEdit(); // constraints on the strain space
+
+        // (reduced coordinate)
+        sofa::MatrixDeriv_t<In2> &out2 = *dataMatOut2Const[0]->beginEdit(); // constraints on the reference frame (base frame)
+        const sofa::MatrixDeriv_t<Out> &in = dataMatInConst[0]->getValue(); // input constraints defined on the mapped frames
+
+        const sofa::VecCoord_t<Out> &frame = m_global_frames->read(sofa::core::vec_id::read_access::position)->getValue();
+        const sofa::DataVecCoord_t<In1> *x1fromData = m_strain_state->read(sofa::core::vec_id::read_access::position);
+        const sofa::VecCoord_t<In1> x1from = x1fromData->getValue();
+
+
+        vector<std::tuple<int, Vec6>> NodesInvolved;
+        vector<std::tuple<int, Vec6>> NodesInvolvedCompressed;
+        // helper::vector<Vec6> NodesConstraintDirection;
+
+        typename sofa::MatrixDeriv_t<Out>::RowConstIterator rowItEnd = in.end();
+
+        for (typename sofa::MatrixDeriv_t<Out>::RowConstIterator rowIt = in.begin();
+            rowIt != rowItEnd; ++rowIt) {
+            if (d_debug.getValue()) {
+                std::cout << "************* Apply JT (MatrixDeriv) iteration on line ";
+                std::cout << rowIt.index();
+                std::cout << "*************  " << std::endl;
+            }
+            typename sofa::MatrixDeriv_t<Out>::ColConstIterator colIt = rowIt.begin();
+            typename sofa::MatrixDeriv_t<Out>::ColConstIterator colItEnd = rowIt.end();
+
+            // Creates a constraints if the input constraint is not empty.
+            if (colIt == colItEnd) {
+                if (d_debug.getValue()) {
+                    std::cout << "no column for this constraint" << std::endl;
+                }
+                continue;
+            }
+            typename sofa::MatrixDeriv_t<In1>::RowIterator o1 = out1.writeLine(rowIt.index()); // we store the constraint number
+            typename sofa::MatrixDeriv_t<In2>::RowIterator o2 = out2.writeLine(rowIt.index());
+
+            NodesInvolved.clear();
+            while (colIt != colItEnd) {
+                int childIndex = colIt.index();
+
+                const sofa::Deriv_t<Out> valueConst_ = colIt.val();
+                Vec6 valueConst;
+                for (unsigned j = 0; j < 6; j++)
+                    valueConst[j] = valueConst_[j];
+
+                int indexBeam = m_indicesVectors[childIndex];
+
+                const auto _T = Frame(frame[childIndex].getCenter(), frame[childIndex].getOrientation());
+                Mat6x6 P_trans = (this->buildProjector(_T));
+                
+                P_trans.transpose();
+
+                Mat6x6 co_adjoint;
+                this->computeCoAdjoint(m_framesExponentialSE3Vectors[childIndex], co_adjoint); // m_framesExponentialSE3Vectors[s] computed in apply
+
+                
+                Mat6x6 temp = m_framesTangExpVectors[childIndex]; // m_framesTangExpVectors[s]
+                // computed in applyJ
+                // (here we transpose)
+                temp.transpose();
+
+                Vec6 local_F = co_adjoint * P_trans * valueConst; // constraint direction in local frame of the beam.
+
+                if constexpr (std::is_same_v<Deriv1, sofa::type::Vec3>){
+                    Mat3x6 matB_trans;
+                    matB_trans.clear();
+                    for (unsigned int k = 0; k < 3; k++)
+                        matB_trans[k][k] = 1.0;
+
+                    Vec3 f = matB_trans * temp * local_F; // constraint direction in the strain space.
+                    o1.addCol(indexBeam - 1, f);
+                }
+                else{
+                    Vec6 f = temp * local_F; // 6d
+                    o1.addCol(indexBeam - 1, f);
+                }
+
+                
+                std::tuple<int, Vec6> test = std::make_tuple(indexBeam, local_F);
+
+                NodesInvolved.push_back(test);
+                colIt++;
+            }
+            if (d_debug.getValue()) {
+                std::cout << "==> NodesInvolved : " << std::endl;
+                for (size_t i = 0; i < NodesInvolved.size(); i++)
+                    std::cout << "index :" << get<0>(NodesInvolved[i])
+                            << " force :" << get<1>(NodesInvolved[i]) << "\n ";
+            }
+
+            // sort the Nodes Invoved by decreasing order
+            std::sort(
+                begin(NodesInvolved), end(NodesInvolved),
+                [](std::tuple<int, Vec6> const &t1, std::tuple<int, Vec6> const &t2) {
+                return std::get<0>(t1) > std::get<0>(t2); // custom compare function
+                });
+
+            NodesInvolvedCompressed.clear();
+
+            for (unsigned n = 0; n < NodesInvolved.size(); n++) {
+                std::tuple<int, Vec6> test_i = NodesInvolved[n];
+                int numNode_i = std::get<0>(test_i);
+                Vec6 cumulativeF = std::get<1>(test_i);
+
+                if (n < NodesInvolved.size() - 1) {
+                    std::tuple<int, Vec6> test_i1 = NodesInvolved[n + 1];
+                    int numNode_i1 = std::get<0>(test_i1);
+
+                    while (numNode_i == numNode_i1) {
+                        cumulativeF += std::get<1>(test_i1);
+                        //// This was if ((n!=NodesInvolved.size()-2)||(n==0)) before and I
+                        /// change it to
+                        /// if ((n!=NodesInvolved.size()-1)||(n==0)) since the code can't
+                        /// leave the will loop
+                        if ((n != NodesInvolved.size() - 1) || (n == 0)) {
+                            n++;
+                            break;
+                        }
+                        test_i1 = NodesInvolved[n + 1];
+                        numNode_i1 = std::get<0>(test_i1);
+                    }
+                }
+
+                NodesInvolvedCompressed.push_back(
+                std::make_tuple(numNode_i, cumulativeF));
+            }
+
+            if (d_debug.getValue()) {
+                std::cout << " NodesInvolved after sort and compress" << std::endl;
+                for (size_t i = 0; i < NodesInvolvedCompressed.size(); i++)
+                    std::cout << "index :" << get<0>(NodesInvolvedCompressed[i])
+                            << " force :" << get<1>(NodesInvolvedCompressed[i]) << "\n ";
+            }
+
+            for (unsigned n = 0; n < NodesInvolvedCompressed.size(); n++) {
+                std::tuple<int, Vec6> test = NodesInvolvedCompressed[n];
+                int numNode = std::get<0>(test);
+                int i = numNode;
+                Vec6 CumulativeF = std::get<1>(test);
+
+                while (i > 0) {
+                    // cumulate on beam frame
+                    Mat6x6 coAdjoint;
+                    this->computeCoAdjoint(
+                        m_nodesExponentialSE3Vectors[i - 1],
+                        coAdjoint); // m_nodesExponentialSE3Vectors computed in apply
+                    
+                    CumulativeF = coAdjoint * CumulativeF;
+                    // transfer to strain space (local coordinates)
+                    Mat6x6 temp = m_nodesTangExpVectors[i - 1];
+                    temp.transpose();
+                    
+                    // Vec3 temp_f = matB_trans * temp * CumulativeF;
+                
+                    if constexpr (std::is_same_v<Deriv1, sofa::type::Vec3>){
+                        Mat3x6 matB_trans;
+                        matB_trans.clear();
+                        for (unsigned int k = 0; k < 3; k++)
+                            matB_trans[k][k] = 1.0;
+
+                        Vec3 temp_f = matB_trans * temp * CumulativeF;
+                        if (i > 1)
+                            o1.addCol(i - 2, temp_f);
+                    }
+                    else{
+                        Vec6 temp_f = temp * CumulativeF; // 6d
+                        if (i > 1)
+                            o1.addCol(i - 2, temp_f);
+                    }
+
+                    
+                    i--;
+                }
+                const auto frame0 = Frame(frame[0].getCenter(), frame[0].getOrientation());
+                const Mat6x6 M = this->buildProjector(frame0);
+
+                const Vec6 base_force = M * CumulativeF;
+
+                o2.addCol(d_baseIndex.getValue(), base_force);
+            }
+        }
+
+        //"""END ARTICULATION SYSTEM MAPPING"""
+        dataMatOut1Const[0]->endEdit();
+        dataMatOut2Const[0]->endEdit();
+
+    }
+
+
+        
+    template <class TIn1, class TIn2, class TOut>
+    void DiscreteCosseratMapping<TIn1, TIn2, TOut>::computeBBox(const sofa::core::ExecParams *, bool) {
+        
+        const sofa::VecCoord_t<Out> &x = m_global_frames->read(sofa::core::vec_id::read_access::position)->getValue();
+
+        SReal minBBox[3] = {std::numeric_limits<SReal>::max(),
+                            std::numeric_limits<SReal>::max(),
+                            std::numeric_limits<SReal>::max()};
+        SReal maxBBox[3] = {-std::numeric_limits<SReal>::max(),
+                            -std::numeric_limits<SReal>::max(),
+                            -std::numeric_limits<SReal>::max()};
+        
+        for (std::size_t i = 0; i < x.size(); i++) {
+            const sofa::Coord_t<Out> &p = x[i];
+            for (int c = 0; c < 3; c++) {
+            if (p[c] > maxBBox[c])
+                maxBBox[c] = p[c];
+            if (p[c] < minBBox[c])
+                minBBox[c] = p[c];
+            }
+        }
+        this->f_bbox.setValue(sofa::type::TBoundingBox<SReal>(minBBox, maxBBox));
+    }
+
+    template <class TIn1, class TIn2, class TOut>
+    void DiscreteCosseratMapping<TIn1, TIn2, TOut>::draw(const sofa::core::visual::VisualParams *vparams) {
+
+        if (!vparams->displayFlags().getShowMechanicalMappings())
+            return;
+
+        // draw cable
+        typedef RGBAColor RGBAColor;
+
+        const auto stateLifeCycle = vparams->drawTool()->makeStateLifeCycle();
+
+        const sofa::DataVecCoord_t<Out> *xfromData = m_global_frames->read(sofa::core::vec_id::read_access::position);
+        const sofa::VecCoord_t<Out> xData = xfromData->getValue();
+        
+        vector<Vec3> positions;
+        vector<sofa::type::Quat<SReal>> Orientation;
+        positions.clear();
+        Orientation.clear();
+        unsigned int sz = xData.size();
+        for (unsigned int i = 0; i < sz; i++) {
+            positions.push_back(xData[i].getCenter());
+            Orientation.push_back(xData[i].getOrientation());
+        }
+
+        // Get access articulated
+        const sofa::DataVecCoord_t<In1> *artiData = m_strain_state->read(sofa::core::vec_id::read_access::position);
+        
+        const sofa::VecCoord_t<In1> xPos = artiData->getValue();
+
+        RGBAColor drawColor = d_color.getValue();
+        // draw each segment of the beam as a cylinder.
+        for (unsigned int i = 0; i < sz - 1; i++)
+            vparams->drawTool()->drawCylinder(positions[i], positions[i + 1],
+                                            d_radius.getValue(), drawColor);
+
+        // Define color map
+        SReal min = d_min.getValue();
+        SReal max = d_max.getValue();
+        sofa::helper::ColorMap::evaluator<SReal> _eval =
+            m_colorMap.getEvaluator(min, max);
+
+        glLineWidth(d_radius.getValue());
+        glBegin(GL_LINES);
+        if (d_drawMapBeam.getValue()) {
+            sofa::type::RGBAColor _color = d_color.getValue();
+            RGBAColor colorL = RGBAColor(_color[0], _color[1], _color[2], _color[3]);
+            glColor4f(colorL[0], colorL[1], colorL[2], colorL[3]);
+            for (unsigned int i = 0; i < sz - 1; i++) {
+            vparams->drawTool()->drawLine(positions[i], positions[i + 1], colorL);
+            }
+        } else {
+            int j = 0;
+            for (unsigned int i = 0; i < sz - 1; i++) {
+            j = m_indicesVectorsDraw[i] -
+                1; // to get the articulation on which the frame is related to
+            RGBAColor color = _eval(xPos[j][d_deformationAxis.getValue()]);
+            vparams->drawTool()->drawLine(positions[i], positions[i + 1], color);
+            }
+        }
+        glLineWidth(1);
+        if (!vparams->displayFlags().getShowMappings())
+            if (!d_debug.getValue())
+            return;
+        glEnd();
+    }
+
+// =============================================================================
+// applyDJT — geometric stiffness of the Cosserat mapping (Vec3Types template)
+// =============================================================================
+//
+// Computes the directional derivative of J(q)^T f_x w.r.t. q, holding f_x
+// (current child frame wrenches) constant.  This is the K_G contribution from
+// the mapping level; without it the Newton solver only sees the material
+// stiffness pulled back through J (the J^T K_material J term), and may need
+// many more iterations under large rotations.
+//
+// Formula (see docs/geometric_stiffness_mapping.md §5):
+//
+//   For each section k (0-indexed strain):
+//
+//   (a) Frame direct term  — variation of coAd(F_s) when ξ_k changes:
+//       δf_k += kFactor · B^T · T_s^T · ad(v_s)^T · node_F_s
+//       with v_s = T_frames[s] · B · δξ_k,  node_F_s = coAd(F_s^{-1}) f_s
+//
+//   (b) Node transport term — variation of coAd(E_{k+1}) in the chain:
+//       δf_k += kFactor · B^T · T_node[k+1]^T · ad(v_k)^T · F_tot_k
+//       with v_k = T_nodes[k+1] · B · δξ_k
+//
+// What is T?
+//   T_k = J_R(ξ_k L_k) · L_k  is the right Jacobian of the exponential map,
+//   scaled by the section length.  It maps a strain increment δξ_k to the
+//   local velocity twist:  v_k = T_k · B · δξ_k ∈ se(3).
+//   For an undeformed beam (ξ_k → 0): T_k → L_k · I₆.
+//   See docs/geometric_stiffness_mapping.md §6 for the full explanation.
+//
+// Both terms neglect the variation of T itself (∂T/∂ξ, a third-order tensor);
+// this is the standard approximation in Cosserat beam FEM
+// (Simo & Vu-Quoc 1986, Cardona & Géradin 1988).
+//
+// For Vec3Types: B = [I₃|0] (angular strains only), output force is Vec3.
+// For Vec6Types: B = I₆ (full strains), overridden in .cpp.
+//
 template <class TIn1, class TIn2, class TOut>
-void DiscreteCosseratMapping<TIn1, TIn2, TOut>::computeBBox(
-    const sofa::core::ExecParams *, bool) {
-  const sofa::VecCoord_t<Out> &x =
-      m_global_frames->read(sofa::core::vec_id::read_access::position)->getValue();
+void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyDJT(
+    const sofa::core::MechanicalParams* mparams,
+    sofa::core::MultiVecDerivId          inForce,
+    sofa::core::ConstMultiVecDerivId     /*outForce*/)
+{
+    if (this->d_componentState.getValue() !=
+        sofa::core::objectmodel::ComponentState::Valid)
+        return;
 
-  SReal minBBox[3] = {std::numeric_limits<SReal>::max(),
-                      std::numeric_limits<SReal>::max(),
-                      std::numeric_limits<SReal>::max()};
-  SReal maxBBox[3] = {-std::numeric_limits<SReal>::max(),
-                      -std::numeric_limits<SReal>::max(),
-                      -std::numeric_limits<SReal>::max()};
-  for (std::size_t i = 0; i < x.size(); i++) {
-    const sofa::Coord_t<Out> &p = x[i];
-    for (int c = 0; c < 3; c++) {
-      if (p[c] > maxBBox[c])
-        maxBBox[c] = p[c];
-      if (p[c] < minBBox[c])
-        minBBox[c] = p[c];
+    const SReal kFactor = mparams->kFactor();
+    if (kFactor == 0.0)
+        return;
+
+    // ---- Inputs --------------------------------------------------------------
+    // δξ : strain displacement (In1 space)
+    const sofa::VecDeriv_t<In1>& dx =
+        mparams->readDx(m_strain_state)->getValue();
+
+    // f_x : current child wrenches (Out space, held constant)
+    const sofa::VecDeriv_t<Out>& childF =
+        mparams->readF(m_global_frames)->getValue();
+
+    // ---- Output parent force (In1 space, accumulate +=) ----------------------
+    sofa::Data<sofa::VecDeriv_t<In1>>& out1Data =
+        *inForce[m_strain_state].write();
+    sofa::VecDeriv_t<In1>& out1 = *out1Data.beginEdit();
+
+    // ---- Frame positions (for projector to local frame) ----------------------
+    const sofa::VecCoord_t<Out>& frames =
+        m_global_frames->read(sofa::core::vec_id::read_access::position)->getValue();
+
+    // ---- Ensure tangent exponentials are up-to-date --------------------------
+    // (applyJ already calls updateTangExpSE3; guard against standalone calls)
+    const sofa::VecCoord_t<In1>& strains =
+        m_strain_state->read(sofa::core::vec_id::read_access::position)->getValue();
+    this->updateTangExpSE3(strains);
+
+    // ---- Step 1: convert child forces to local beam frame -------------------
+    const auto sz = m_indicesVectors.size();
+    vector<Vec6> local_F(sz);
+    for (unsigned int s = 0; s < sz; ++s) {
+        Vec6 vec;
+        for (unsigned j = 0; j < 6; j++) vec[j] = childF[s][j];
+        auto T = Frame(frames[s].getCenter(), frames[s].getOrientation());
+        Mat6x6 P = this->buildProjector(T);
+        P.transpose();            // buildProjector gives P; we need P^T
+        local_F[s] = P * vec;
     }
-  }
-  this->f_bbox.setValue(sofa::type::TBoundingBox<SReal>(minBBox, maxBBox));
-}
 
-template <class TIn1, class TIn2, class TOut>
-void DiscreteCosseratMapping<TIn1, TIn2, TOut>::draw(
-    const sofa::core::visual::VisualParams *vparams) {
-  if (!vparams->displayFlags().getShowMechanicalMappings())
-    return;
+    // ---- matB: angular-only selector for Vec3Types --------------------------
+    // B^T maps Vec3 → Vec6 as [δξ; 0,0,0].
+    // matB_trans = B (3×6), so matB_trans * (6-vec) → Vec3
+    Mat3x6 matB_trans;
+    matB_trans.clear();
+    for (unsigned int k = 0; k < 3; k++) matB_trans[k][k] = 1.0;
 
-  // draw cable
-  typedef RGBAColor RGBAColor;
+    // ---- Step 2: backward sweep identical to applyJT ------------------------
+    auto index = m_indicesVectors[sz - 1];
+    Vec6 F_tot;
+    F_tot.clear();
 
-  const auto stateLifeCycle = vparams->drawTool()->makeStateLifeCycle();
+    for (auto s = sz; s--;) {
+        // Transport frame wrench to beam frame: node_F = coAd(F_s^{-1}) f_s
+        Mat6x6 coAdj_frame;
+        this->computeCoAdjoint(m_framesExponentialSE3Vectors[s], coAdj_frame);
+        const Vec6 node_F = coAdj_frame * local_F[s];
 
-  const sofa::DataVecCoord_t<Out> *xfromData =
-      m_global_frames->read(sofa::core::vec_id::read_access::position);
-  const sofa::VecCoord_t<Out> xData = xfromData->getValue();
-  vector<Vec3> positions;
-  vector<sofa::type::Quat<SReal>> Orientation;
-  positions.clear();
-  Orientation.clear();
-  unsigned int sz = xData.size();
-  for (unsigned int i = 0; i < sz; i++) {
-    positions.push_back(xData[i].getCenter());
-    Orientation.push_back(xData[i].getOrientation());
-  }
+        // 0-indexed section that owns this frame
+        const unsigned int k_s = m_indicesVectors[s] - 1;
 
-  // Get access articulated
-  const sofa::DataVecCoord_t<In1> *artiData =
-      m_strain_state->read(sofa::core::vec_id::read_access::position);
-  const sofa::VecCoord_t<In1> xPos = artiData->getValue();
+        // ---- (a) Direct frame geometric contribution -------------------------
+        // δf_k += B^T · T_s^T · ad(v_s)^T · node_F
+        // where v_s = T_frames[s] · [δξ_{k_s}; 0,0,0]
+        {
+            const Vec6 xi_dot(dx[k_s][0], dx[k_s][1], dx[k_s][2],
+                              0., 0., 0.);                 // embed angular δξ
+            const Vec6 v_s = m_framesTangExpVectors[s] * xi_dot;
 
-  RGBAColor drawColor = d_color.getValue();
-  // draw each segment of the beam as a cylinder.
-  for (unsigned int i = 0; i < sz - 1; i++)
-    vparams->drawTool()->drawCylinder(positions[i], positions[i + 1],
-                                      d_radius.getValue(), drawColor);
+            Mat6x6 adv;
+            this->computeAdjoint(v_s, adv);   // adv = ad(v_s)
+            adv.transpose();                   // adv = ad(v_s)^T
+            const Vec6 adT_node_F = adv * node_F;
 
-  // Define color map
-  SReal min = d_min.getValue();
-  SReal max = d_max.getValue();
-  sofa::helper::ColorMap::evaluator<SReal> _eval =
-      m_colorMap.getEvaluator(min, max);
+            Mat6x6 Ts = m_framesTangExpVectors[s];
+            Ts.transpose();
+            const Vec3 delta_f =
+                static_cast<SReal>(kFactor) * (matB_trans * (Ts * adT_node_F));
+            out1[k_s] += delta_f;
+        }
 
-  glLineWidth(d_radius.getValue());
-  glBegin(GL_LINES);
-  if (d_drawMapBeam.getValue()) {
-    sofa::type::RGBAColor _color = d_color.getValue();
-    RGBAColor colorL = RGBAColor(_color[0], _color[1], _color[2], _color[3]);
-    glColor4f(colorL[0], colorL[1], colorL[2], colorL[3]);
-    for (unsigned int i = 0; i < sz - 1; i++) {
-      vparams->drawTool()->drawLine(positions[i], positions[i + 1], colorL);
+        // ---- Section boundary: transport accumulated F_tot ------------------
+        if (index != m_indicesVectors[s]) {
+            index--;   // 1-indexed node that separates sections
+
+            // Transport (same as applyJT)
+            Mat6x6 coAdj_node;
+            this->computeCoAdjoint(m_nodesExponentialSE3Vectors[index], coAdj_node);
+            F_tot = coAdj_node * F_tot;
+
+            // 0-indexed section for this node: index-1
+            const unsigned int k_node = index - 1;
+
+            // ---- (b) Node transport geometric contribution ------------------
+            // δf_{k_node} += B^T · T_node^T · ad(v_node)^T · F_tot
+            // where v_node = T_nodes[index] · [δξ_{k_node}; 0,0,0]
+            {
+                const Vec6 xi_dot(dx[k_node][0], dx[k_node][1], dx[k_node][2],
+                                  0., 0., 0.);
+                const Vec6 v_node = m_nodesTangExpVectors[index] * xi_dot;
+
+                Mat6x6 adv;
+                this->computeAdjoint(v_node, adv);
+                adv.transpose();
+                const Vec6 adT_F = adv * F_tot;
+
+                Mat6x6 T_node = m_nodesTangExpVectors[index];
+                T_node.transpose();
+                const Vec3 delta_f =
+                    static_cast<SReal>(kFactor) * (matB_trans * (T_node * adT_F));
+                out1[k_node] += delta_f;
+            }
+        }
+
+        F_tot += node_F;   // accumulate (same order as applyJT)
     }
-  } else {
-    int j = 0;
-    vector<int> index = d_index.getValue();
-    for (unsigned int i = 0; i < sz - 1; i++) {
-      j = m_indicesVectorsDraw[i] -
-          1; // to get the articulation on which the frame is related to
-      RGBAColor color = _eval(xPos[j][d_deformationAxis.getValue()]);
-      vparams->drawTool()->drawLine(positions[i], positions[i + 1], color);
-    }
-  }
-  glLineWidth(1);
-  if (!vparams->displayFlags().getShowMappings())
-    if (!d_debug.getValue())
-      return;
-  glEnd();
+
+    out1Data.endEdit();
 }
 
 } // namespace Cosserat::mapping

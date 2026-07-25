@@ -26,13 +26,11 @@
 #include <sofa/defaulttype/RigidTypes.h>
 #include <sofa/core/ObjectFactory.h>
 
-namespace Cosserat::mapping
-{
-using namespace sofa::defaulttype;
+namespace Cosserat::mapping{
 
 
 template <>
-void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>:: applyJ(
+void DiscreteCosseratMapping<sofa::defaulttype::Vec6Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types>:: applyJ(
     const sofa::core::MechanicalParams* /* mparams */, const vector< sofa::DataVecDeriv_t<Out>*>& dataVecOutVel,
     const vector<const sofa::DataVecDeriv_t<In1>*>& dataVecIn1Vel,
     const vector<const sofa::DataVecDeriv_t<In2>*>& dataVecIn2Vel) {
@@ -84,7 +82,7 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>:: applyJ(
 
         Vec6 node_Xi_dot;
         for (unsigned int u =0; u<6; u++)
-            node_Xi_dot(i) = in1_vel[i-1][u];
+            node_Xi_dot(u) = in1_vel[i-1][u];
 
         Vec6 eta_node_i = Adjoint * (m_nodesVelocityVectors[i-1] + m_nodesTangExpVectors[i] *node_Xi_dot );
         m_nodesVelocityVectors.push_back(eta_node_i);
@@ -111,7 +109,7 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>:: applyJ(
 }
 
 template <>
-void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>:: applyJT(
+void DiscreteCosseratMapping<sofa::defaulttype::Vec6Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types>:: applyJT(
     const sofa::core::MechanicalParams* /*mparams*/, const vector< sofa::DataVecDeriv_t<In1>*>& dataVecOut1Force,
     const vector< sofa::DataVecDeriv_t<In2>*>& dataVecOut2Force,
     const vector<const sofa::DataVecDeriv_t<Out>*>& dataVecInForce)  {
@@ -155,8 +153,11 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>:: applyJT(
     Vec6 F_tot; F_tot.clear();
     m_totalBeamForceVectors.push_back(F_tot);
 
+    // Vec6Types has 6 active DOFs (both angular and linear strain), so matB_trans
+    // must be the full 6×6 identity — not the 3×6 angular-only selector used in
+    // the Vec3Types specialisation.
     TangentTransform matB_trans; matB_trans.clear();
-    for(unsigned int k=0; k<3; k++) matB_trans[k][k] = 1.0;
+    for(unsigned int k=0; k<6; k++) matB_trans[k][k] = 1.0;
 
     for (auto s = sz ; s-- ; ) {
         TangentTransform coAdjoint;
@@ -196,7 +197,7 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>:: applyJT(
 }
 
 template <>
-void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>::applyJT(
+void DiscreteCosseratMapping<sofa::defaulttype::Vec6Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types>::applyJT(
     const sofa::core::ConstraintParams*/*cparams*/ , const vector< sofa::DataMatrixDeriv_t<In1>*>&  dataMatOut1Const,
     const vector< sofa::DataMatrixDeriv_t<In2>*>&  dataMatOut2Const ,
     const vector<const sofa::DataMatrixDeriv_t<Out>*>& dataMatInConst)
@@ -217,8 +218,9 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>::applyJT(
         m_strain_state->read(sofa::core::vec_id::read_access::position);
     const sofa::VecCoord_t<In1> x1from = x1fromData->getValue();
 
+    // Vec6Types has 6 active DOFs: matB_trans = I_6 (full identity, not 3-row selector).
     TangentTransform matB_trans; matB_trans.clear();
-    for(unsigned int k=0; k<3; k++) matB_trans[k][k] = 1.0;
+    for(unsigned int k=0; k<6; k++) matB_trans[k][k] = 1.0;
 
     vector< std::tuple<int,Vec6> > NodesInvolved;
     vector< std::tuple<int,Vec6> > NodesInvolvedCompressed;
@@ -362,23 +364,146 @@ void DiscreteCosseratMapping<Vec6Types, Rigid3Types, Rigid3Types>::applyJT(
 }
 
 
+// =============================================================================
+// applyDJT — Vec6Types specialization
+// =============================================================================
+//
+// Same algorithm as the Vec3Types template in .inl, but with B = I₆ (full
+// 6-DOF strains: angular + linear).  Differences vs Vec3:
+//   - dx[k] is already Vec6 (no angular-only embedding)
+//   - matB_trans is a 6×6 identity
+//   - out1[k] accumulates a Vec6
+//
+// See docs/geometric_stiffness_mapping.md §5 for the derivation.
+//
+template <>
+void DiscreteCosseratMapping<sofa::defaulttype::Vec6Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types>::applyDJT(
+    const sofa::core::MechanicalParams* mparams,
+    sofa::core::MultiVecDerivId          inForce,
+    sofa::core::ConstMultiVecDerivId     /*outForce*/)
+{
+    if (this->d_componentState.getValue() !=
+        sofa::core::objectmodel::ComponentState::Valid)
+        return;
+
+    const SReal kFactor = mparams->kFactor();
+    if (kFactor == 0.0)
+        return;
+
+    // ---- Inputs --------------------------------------------------------------
+    const sofa::VecDeriv_t<In1>& dx =
+        mparams->readDx(m_strain_state)->getValue();
+    const sofa::VecDeriv_t<Out>& childF =
+        mparams->readF(m_global_frames)->getValue();
+
+    // ---- Output --------------------------------------------------------------
+    sofa::Data<sofa::VecDeriv_t<In1>>& out1Data =
+        *inForce[m_strain_state].write();
+    sofa::VecDeriv_t<In1>& out1 = *out1Data.beginEdit();
+
+    const sofa::VecCoord_t<Out>& frames =
+        m_global_frames->read(sofa::core::vec_id::read_access::position)->getValue();
+
+    // Ensure tangent exponentials are current
+    const sofa::VecCoord_t<In1>& strains =
+        m_strain_state->read(sofa::core::vec_id::read_access::position)->getValue();
+    this->updateTangExpSE3(strains);
+
+    // ---- Step 1: child forces → local beam frame ----------------------------
+    const auto sz = m_indicesVectors.size();
+    vector<Vec6> local_F(sz);
+    for (unsigned int s = 0; s < sz; ++s) {
+        Vec6 vec;
+        for (unsigned j = 0; j < 6; j++) vec[j] = childF[s][j];
+        auto T = Frame(frames[s].getCenter(), frames[s].getOrientation());
+        TangentTransform P = this->buildProjector(T);
+        P.transpose();
+        local_F[s] = P * vec;
+    }
+
+    // ---- matB = I₆  (Vec6 has full 6-DOF strain) ----------------------------
+    TangentTransform matB_trans;
+    matB_trans.clear();
+    for (unsigned int k = 0; k < 6; k++) matB_trans[k][k] = 1.0;
+
+    // ---- Step 2: backward sweep ---------------------------------------------
+    auto index = m_indicesVectors[sz - 1];
+    Vec6 F_tot;
+    F_tot.clear();
+
+    for (auto s = sz; s--;) {
+        TangentTransform coAdj_frame;
+        this->computeCoAdjoint(m_framesExponentialSE3Vectors[s], coAdj_frame);
+        const Vec6 node_F = coAdj_frame * local_F[s];
+
+        const unsigned int k_s = m_indicesVectors[s] - 1;
+
+        // ---- (a) Direct frame geometric contribution -------------------------
+        {
+            const Vec6 xi_dot = dx[k_s];                     // Vec6 directly
+            const Vec6 v_s = m_framesTangExpVectors[s] * xi_dot;
+
+            Mat6x6 adv;
+            this->computeAdjoint(v_s, adv);
+            adv.transpose();                                  // ad(v_s)^T
+            const Vec6 adT_node_F = adv * node_F;
+
+            Mat6x6 Ts = m_framesTangExpVectors[s];
+            Ts.transpose();
+            const Vec6 delta_f =
+                static_cast<SReal>(kFactor) * (matB_trans * (Ts * adT_node_F));
+            out1[k_s] += delta_f;
+        }
+
+        // ---- Section boundary: transport F_tot ------------------------------
+        if (index != m_indicesVectors[s]) {
+            index--;
+
+            TangentTransform coAdj_node;
+            this->computeCoAdjoint(m_nodesExponentialSE3Vectors[index], coAdj_node);
+            F_tot = coAdj_node * F_tot;
+
+            const unsigned int k_node = index - 1;
+
+            // ---- (b) Node transport geometric contribution ------------------
+            {
+                const Vec6 xi_dot = dx[k_node];
+                const Vec6 v_node = m_nodesTangExpVectors[index] * xi_dot;
+
+                Mat6x6 adv;
+                this->computeAdjoint(v_node, adv);
+                adv.transpose();
+                const Vec6 adT_F = adv * F_tot;
+
+                Mat6x6 T_node = m_nodesTangExpVectors[index];
+                T_node.transpose();
+                const Vec6 delta_f =
+                    static_cast<SReal>(kFactor) * (matB_trans * (T_node * adT_F));
+                out1[k_node] += delta_f;
+            }
+        }
+
+        F_tot += node_F;
+    }
+
+    out1Data.endEdit();
+}
+
 template class SOFA_COSSERAT_API DiscreteCosseratMapping< sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types >;
 template class SOFA_COSSERAT_API DiscreteCosseratMapping< sofa::defaulttype::Vec6Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types >;
 
 } // namespace sofa::component::mapping
 
-namespace Cosserat
-{
-// Register in the Factory
-void registerDiscreteCosseratMapping(sofa::core::ObjectFactory* factory)
-{
-    factory->registerObjects(sofa::core::ObjectRegistrationData(
-        "This component facilitates the creation of Cosserat Cables in SOFA simulations. It takes two mechanical"
-        "objects as inputs: the rigid base of the beam (with 6 degrees of freedom) and the local coordinates of the beam. Using "
-        "these inputs, the component computes and outputs the mechanical positions of the beam in global coordinates. "
-        "Like any mapping, it updates the positions and velocities of the outputs based on the inputs. "
-        "Additionally, forces applied to the outputs are propagated back to the inputs, ensuring bidirectional coupling.")
-        .add< mapping::DiscreteCosseratMapping< sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types > >(true)
-        .add< mapping::DiscreteCosseratMapping< sofa::defaulttype::Vec6Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types > >());
-}
+namespace Cosserat{
+    // Register in the Factory
+    void registerDiscreteCosseratMapping(sofa::core::ObjectFactory* factory){
+        factory->registerObjects(sofa::core::ObjectRegistrationData(
+            "This component facilitates the creation of Cosserat Cables in SOFA simulations. It takes two mechanical"
+            "objects as inputs: the rigid base of the beam (with 6 degrees of freedom) and the local coordinates of the beam. Using "
+            "these inputs, the component computes and outputs the mechanical positions of the beam in global coordinates. "
+            "Like any mapping, it updates the positions and velocities of the outputs based on the inputs. "
+            "Additionally, forces applied to the outputs are propagated back to the inputs, ensuring bidirectional coupling.")
+            .add< mapping::DiscreteCosseratMapping< sofa::defaulttype::Vec3Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types > >(true)
+            .add< mapping::DiscreteCosseratMapping< sofa::defaulttype::Vec6Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types > >());
+    }
 }

@@ -121,34 +121,34 @@ namespace sofa::component::cosserat::liegroups {
 
 		/**
 		 * @brief Logarithmic map from SO(3) to Lie algebra so(3).
+		 * Thin wrapper around computeLog() — no longer a code duplicate.
 		 * @return Angular velocity vector in ℝ³.
 		 */
-		TangentVector log() const {
-			// Extract angle-axis representation
-			Eigen::AngleAxis<Scalar> aa(m_quat);
-			const Scalar theta = aa.angle();
-
-			if (theta < Types<Scalar>::epsilon()) {
-				// For small rotations, use first-order approximation
-				return Vector(m_quat.x() * Scalar(2), m_quat.y() * Scalar(2), m_quat.z() * Scalar(2));
-			}
-
-			return aa.axis() * theta;
-		}
+		TangentVector log() const { return computeLog(); }
 
 		/**
 		 * @brief Computes the logarithmic map from SO(3) to Lie algebra so(3).
 		 * This is a CRTP-required method.
+		 *
+		 * For small rotations (θ < ε) we use the first-order quaternion approximation
+		 *   ω ≈ 2 · (qx, qy, qz)
+		 * which is valid as long as qw ≥ 0 (the case ensured by Eigen::AngleAxis(quat)
+		 * normalising the quaternion onto the qw ≥ 0 hemisphere at construction).
+		 *
 		 * @return Angular velocity vector in ℝ³.
 		 */
 		TangentVector computeLog() const {
-			// Extract angle-axis representation
+			// Extract angle-axis representation. Eigen::AngleAxis(quat) returns
+			// angle ∈ [0, π] (handles the antipodal quaternion automatically).
 			Eigen::AngleAxis<Scalar> aa(m_quat);
 			const Scalar theta = aa.angle();
 
 			if (theta < Types<Scalar>::epsilon()) {
-				// For small rotations, use first-order approximation
-				return Vector(m_quat.x() * Scalar(2), m_quat.y() * Scalar(2), m_quat.z() * Scalar(2));
+				// First-order approximation. Use the SIGN of qw to remain on the
+				// correct hemisphere (Eigen does it for the general branch via
+				// aa.axis(), but here we bypass it).
+				const Scalar s = (m_quat.w() >= Scalar(0)) ? Scalar(2) : Scalar(-2);
+				return Vector(m_quat.x() * s, m_quat.y() * s, m_quat.z() * s);
 			}
 
 			return aa.axis() * theta;
@@ -690,6 +690,49 @@ namespace sofa::component::cosserat::liegroups {
 								  axis.z() * sin_half_theta));
 		}
 	};
+
+// ── Convenience type aliases ──────────────────────────────────────────────────
+using SO3d = SO3<double>;
+using SO3f = SO3<float>;
+
+// ── Stream operators (required by sofa::type::vector<SO3>) ───────────────────
+//
+// Serialisation format: rotation vector ω ∈ so(3) ≅ ℝ³  (3 scalars)
+//
+//   write : ω = log(R)          (axis * angle, zero for identity)
+//   read  : R = exp(ω)
+//
+// This is the natural parametrisation for a Lie group element:
+//   • minimal (3 parameters for 3 DOF)
+//   • identity = "0 0 0"
+//   • consistent with the log/exp API already used throughout the codebase
+//   • independent of the internal quaternion representation
+
+/**
+ * @brief Output operator: writes the SO3 element as its rotation vector ω = log(R) ∈ ℝ³.
+ *
+ * Format: "ωx ωy ωz"   (space-separated doubles)
+ * Identity rotation:  "0 0 0"
+ */
+template <typename Scalar>
+inline std::ostream& operator<<(std::ostream& os, const SO3<Scalar>& R) {
+    const auto omega = R.log();   // TangentVector = Eigen::Vector3<Scalar>
+    return os << omega.x() << " " << omega.y() << " " << omega.z();
+}
+
+/**
+ * @brief Input operator: reads a rotation vector ω ∈ ℝ³ and constructs R = exp(ω).
+ *
+ * Format: "ωx ωy ωz"
+ * Identity rotation:  "0 0 0"
+ */
+template <typename Scalar>
+inline std::istream& operator>>(std::istream& is, SO3<Scalar>& R) {
+    Scalar wx{}, wy{}, wz{};
+    is >> wx >> wy >> wz;
+    R = SO3<Scalar>::exp(typename SO3<Scalar>::TangentVector(wx, wy, wz));
+    return is;
+}
 
 } // namespace sofa::component::cosserat::liegroups
 

@@ -45,10 +45,14 @@ set(HEADER_FILES
   ${SRC_ROOT_DIR}/config.h.in
   ${SRC_ROOT_DIR}/fwd.h
   ${SRC_ROOT_DIR}/types.h
+  ${SRC_ROOT_DIR}/mapping/CosseratBeamGeometry.h
+  ${SRC_ROOT_DIR}/mapping/CosseratBeamGeometry.inl
   ${SRC_ROOT_DIR}/mapping/CosseratGeometryMapping.h
   ${SRC_ROOT_DIR}/mapping/CosseratGeometryMapping.inl
-  ${SRC_ROOT_DIR}/mapping/Strain2RigidCosseratMapping.h
-  ${SRC_ROOT_DIR}/mapping/Strain2RigidCosseratMapping.inl
+  ${SRC_ROOT_DIR}/mapping/Strain2FramesCosseratMapping.h
+  ${SRC_ROOT_DIR}/mapping/Strain2FramesCosseratMapping.inl
+  ${SRC_ROOT_DIR}/mapping/Frames2StrainCosseratMapping.h
+  ${SRC_ROOT_DIR}/mapping/Frames2StrainCosseratMapping.inl
   ${SRC_ROOT_DIR}/mapping/BaseCosseratMapping.h
   ${SRC_ROOT_DIR}/mapping/BaseCosseratMapping.inl
   ${SRC_ROOT_DIR}/mapping/DiscreteCosseratMapping.h
@@ -81,12 +85,23 @@ set(HEADER_FILES
   ${SRC_ROOT_DIR}/mapping/LegendrePolynomialsMapping.inl
   ${SRC_ROOT_DIR}/constraint/CosseratNeedleSlidingConstraint.h
   ${SRC_ROOT_DIR}/constraint/CosseratNeedleSlidingConstraint.inl
+  # Lie-group controllers
+  ${SRC_ROOT_DIR}/controller/CosseratILQRController.h
+  ${SRC_ROOT_DIR}/controller/CosseratILQRController.inl
+  # Painless / Staggered Cosserat
+  ${SRC_ROOT_DIR}/engine/CosseratBeamGeometryEngine.h
+  ${SRC_ROOT_DIR}/engine/CosseratTopologyBuilder.h
+  ${SRC_ROOT_DIR}/engine/CosseratIntrinsicState.h
+  ${SRC_ROOT_DIR}/engine/PainlessBeamForceField.h
+  ${SRC_ROOT_DIR}/mapping/StaggeredCosseratMapping.h
 )
 set(SOURCE_FILES
     ${SRC_ROOT_DIR}/initCosserat.cpp
     ${SRC_ROOT_DIR}/mapping/BaseCosseratMapping.cpp
     ${SRC_ROOT_DIR}/mapping/CosseratGeometryMapping.cpp
-    ${SRC_ROOT_DIR}/mapping/Strain2RigidCosseratMapping.cpp
+    ${SRC_ROOT_DIR}/mapping/Strain2FramesCosseratMapping.cpp
+    ${SRC_ROOT_DIR}/mapping/Frames2StrainCosseratMapping.cpp
+
     ${SRC_ROOT_DIR}/mapping/DiscreteCosseratMapping.cpp
     # ${SRC_ROOT_DIR}/mapping/DiscreteDynamicCosseratMapping.cpp
     ${SRC_ROOT_DIR}/engine/ProjectionEngine.cpp
@@ -102,6 +117,14 @@ set(SOURCE_FILES
     ${SRC_ROOT_DIR}/constraint/CosseratSlidingConstraint.cpp
     ${SRC_ROOT_DIR}/mapping/LegendrePolynomialsMapping.cpp
     ${SRC_ROOT_DIR}/constraint/CosseratNeedleSlidingConstraint.cpp
+    # Lie-group controllers
+    ${SRC_ROOT_DIR}/controller/CosseratILQRController.cpp
+    # Painless / Staggered Cosserat
+    ${SRC_ROOT_DIR}/engine/CosseratBeamGeometryEngine.cpp
+    ${SRC_ROOT_DIR}/engine/CosseratTopologyBuilder.cpp
+    ${SRC_ROOT_DIR}/engine/CosseratIntrinsicState.cpp
+    ${SRC_ROOT_DIR}/engine/PainlessBeamForceField.cpp
+    ${SRC_ROOT_DIR}/mapping/StaggeredCosseratMapping.cpp
 )
 
 sofa_find_package(SoftRobots QUIET)
