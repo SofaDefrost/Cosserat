@@ -134,9 +134,10 @@ namespace Cosserat::mapping {
 		}
 		this->initializeSectionProperties(zero_strain);
 
-		// Initialise colourmap for the draw() output
-		m_colorMap.setColorScheme("Blue to Red");
-		m_colorMap.reinit();
+		// Initialise colourmap for the draw() output.
+		// (SOFA deleted setColorScheme/reinit; build the palette via the
+		//  string constructor instead.)
+		m_colorMap = sofa::helper::ColorMap(256, "Blue to Red");
 
 		// Parent init
 		Inherit::init();

@@ -19,16 +19,18 @@ import sys
 # Add the python package to the path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "python"))
 
-from cosserat import (BeamGeometryParameters, BeamPhysicsBaseParameters,
-                      CosseratGeometry)
+from cosserat import BeamGeometryParameters, BeamPhysicsBaseParameters, CosseratGeometry
 
 # Global parameters
 stiffness_param: float = 1.0e10
 beam_radius: float = 1.0
 
+
 def add_mini_header(root_node):
     root_node.addObject("RequiredPlugin", pluginName="Sofa.Component.Mass")
-    root_node.addObject("RequiredPlugin", pluginName="Sofa.Component.SolidMechanics.Spring")
+    root_node.addObject(
+        "RequiredPlugin", pluginName="Sofa.Component.SolidMechanics.Spring"
+    )
     root_node.addObject("RequiredPlugin", pluginName="Sofa.Component.StateContainer")
     root_node.addObject("RequiredPlugin", pluginName="Sofa.Component.Visual")
     root_node.addObject("RequiredPlugin", pluginName="Cosserat")
@@ -67,7 +69,12 @@ def _add_rigid_base(p_node, node_name="rigid_base", positions=None):
     return rigid_base_node
 
 
-def _add_cosserat_state(p_node, geometry: CosseratGeometry, node_name="cosserat_coordinates", custom_bending_states=None):
+def _add_cosserat_state(
+    p_node,
+    geometry: CosseratGeometry,
+    node_name="cosserat_coordinates",
+    custom_bending_states=None,
+):
     """Create the cosserat coordinate node using CosseratGeometry."""
     cosserat_coordinate_node = p_node.addChild(node_name)
 
@@ -94,7 +101,11 @@ def _add_cosserat_state(p_node, geometry: CosseratGeometry, node_name="cosserat_
 
 
 def _add_cosserat_frame(
-    p_node, bending_node, geometry: CosseratGeometry, node_name="cosserat_in_Sofa_frame_node", beam_mass=0.0
+    p_node,
+    bending_node,
+    geometry: CosseratGeometry,
+    node_name="cosserat_in_Sofa_frame_node",
+    beam_mass=0.0,
 ):
     """Create the cosserat frame node using CosseratGeometry."""
     cosserat_in_sofa_frame_node = p_node.addChild(node_name)
@@ -124,7 +135,6 @@ def _add_cosserat_frame(
         radius=beam_radius,
     )
     return cosserat_in_sofa_frame_node
-
 
 
 def createScene(root_node):
@@ -167,8 +177,9 @@ def createScene(root_node):
     ]
 
     # Create cosserat state using the geometry object
-    bending_node = _add_cosserat_state(root_node, beam_geometry,
-                                       custom_bending_states=custom_bending_states)
+    bending_node = _add_cosserat_state(
+        root_node, beam_geometry, custom_bending_states=custom_bending_states
+    )
 
     # Create cosserat frame using the geometry object
     _add_cosserat_frame(base_node, bending_node, beam_geometry, beam_mass=0.0)

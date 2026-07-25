@@ -170,30 +170,31 @@ namespace Cosserat::mapping {
 					 const sofa::type::vector<const sofa::DataVecDeriv_t<Out> *> &dataVecInForce) override;
 
 		/**
-		 * @brief Geometric stiffness contribution K_G · δξ.
+		 * @brief PARTIAL geometric stiffness contribution (child wrench frozen).
 		 *
-		 * Computes ∂/∂ξ [J(ξ)ᵀ f_x] · δξ with the child wrenches f_x held
-		 * constant (frozen at the current configuration), and accumulates the
-		 * result into the input (strain) force vector with weight `kFactor`.
+		 * Accumulates an approximation of ∂/∂ξ [J(ξ)ᵀ f_x] · δξ into the strain
+		 * force vector, weighted by `kFactor`, with the child wrenches f_x held
+		 * constant at the current configuration.
 		 *
-		 * Two contributions are assembled:
-		 *  - **(a) Frame direct term** — the dependency of each output-frame
-		 *    co-adjoint on the local strain via the tangent-exponential matrix:
-		 *      δf_k += kFactor · Bᵀ · J_frame^T · ad(J_frame · B·δξ_k)ᵀ · w_body_k
-		 *  - **(b) Section transport term** — the dependency of the accumulated
-		 *    downstream wrench on the local SE(3) transport (backward sweep):
-		 *      δf_k += kFactor · Bᵀ · J_local_k^T · ad(J_local_k · B·δξ_k)ᵀ · F_tot_k
+		 * ⚠ This is NOT the exact mapping tangent. Of the three terms of the
+		 * exact derivative (tangent-map variation ∂T/∂ξ, coAdjoint variation,
+		 * projector variation), only the **coAdjoint variation** is computed —
+		 * the same limitation as DiscreteCosseratMapping::applyDJT, whose
+		 * finite-difference validation tests are skipped for this reason (see
+		 * tests/unit/DiscreteCosseratMappingApplyDJTTest.cpp). Guaranteed
+		 * properties: zero output for f_x = 0, linear scaling in kFactor,
+		 * index handling identical to applyJT's backward sweep. Do not expect
+		 * quadratic Newton convergence from this term alone; full details in
+		 * the implementation doc-block (Strain2FramesCosseratMapping.inl).
 		 *
-		 * where B = [I_m | 0] is the selector for the m active strain DOFs
-		 * (m = 3 for Vec3Types, 6 for Vec6Types).
-		 *
-		 * The implementation uses `TwistType::smallAdjoint()` from the liegroups
-		 * library and `CosseratBodyJacobian` for the backward wrench sweep.
+		 * B = [I_m | 0] selects the m active strain DOFs (m = 3 for Vec3Types,
+		 * 6 for Vec6Types). The little adjoint and tangent matrices come from
+		 * CosseratBeamGeometry (buildAdjoint / getTangAdjointMatrix).
 		 *
 		 * @param mparams   Mechanical parameters; kFactor is read from here.
 		 * @param inForce   Multi-vec id for the strain force (in/out, += semantics).
-		 * @param outForce  Multi-vec id for the child wrenches (read-only, unused
-		 *                  because we read directly from m_frames).
+		 * @param outForce  Multi-vec id for the child wrenches (unused; forces are
+		 *                  read from m_frames via mparams->readF()).
 		 */
 		void applyDJT(const sofa::core::MechanicalParams* mparams,
 					  sofa::core::MultiVecDerivId          inForce,
