@@ -61,8 +61,9 @@ void DrawTrianglesComponent::init()
         serr << "Error cannot find the m_tetrahedron" << sendl;
         return;
     }
-    m_VonMisesColorMap.setColorScheme("Blue to Red");
-    m_VonMisesColorMap.reinit();
+    // (SOFA deleted setColorScheme/reinit; build the palette via the
+    //  string constructor instead.)
+    m_VonMisesColorMap = helper::ColorMap(256, "Blue to Red");
     m_tetraForceField->updateVonMisesStress = true;
 
     m_minVM = d_minStress.getValue();

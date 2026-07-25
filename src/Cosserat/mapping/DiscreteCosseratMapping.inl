@@ -90,8 +90,9 @@ namespace Cosserat::mapping {
 
     template <class TIn1, class TIn2, class TOut>
     void DiscreteCosseratMapping<TIn1, TIn2, TOut>::doBaseCosseratInit() {
-        m_colorMap.setColorScheme("Blue to Red");
-        m_colorMap.reinit();
+        // (SOFA deleted setColorScheme/reinit; build the palette via the
+        //  string constructor instead.)
+        m_colorMap = sofa::helper::ColorMap(256, "Blue to Red");
     }
 
     template <class TIn1, class TIn2, class TOut>

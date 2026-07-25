@@ -99,9 +99,10 @@ namespace Cosserat::mapping {
 
 	template<class TIn1, class TIn2, class TOut>
 	void Strain2FramesCosseratMapping<TIn1, TIn2, TOut>::doBaseCosseratInit() {
-		// Initialize colormap for visualization
-		m_colorMap.setColorScheme("Blue to Red");
-		m_colorMap.reinit();
+		// Initialize colormap for visualization.
+		// (SOFA deleted setColorScheme/reinit; build the palette via the
+		//  string constructor instead.)
+		m_colorMap = sofa::helper::ColorMap(256, "Blue to Red");
 
 		msg_info() << "Strain2FramesCosseratMapping initialized with liegroups SE(3) integration";
 	}
