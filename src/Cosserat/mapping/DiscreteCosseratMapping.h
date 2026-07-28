@@ -153,7 +153,7 @@ protected:
 
     //////////////////////////////////////////////////////////////////////////////
 
-    sofa::helper::ColorMap m_colorMap;
+    sofa::helper::ColorMap m_colorMap = sofa::helper::ColorMap(256, "Blue to Red");
 protected:
     DiscreteCosseratMapping();
     ~DiscreteCosseratMapping() override = default;
