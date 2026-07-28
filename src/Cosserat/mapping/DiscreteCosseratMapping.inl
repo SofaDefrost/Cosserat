@@ -88,8 +88,6 @@ DiscreteCosseratMapping<TIn1, TIn2, TOut>::DiscreteCosseratMapping()
 
 template <class TIn1, class TIn2, class TOut>
 void DiscreteCosseratMapping<TIn1, TIn2, TOut>::doBaseCosseratInit() {
-  m_colorMap.setColorScheme("Blue to Red");
-  m_colorMap.reinit();
 }
 
 template <class TIn1, class TIn2, class TOut>
