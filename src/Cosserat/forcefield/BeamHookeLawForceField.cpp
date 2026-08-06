@@ -66,7 +66,7 @@ void BeamHookeLawForceField<defaulttype::Vec6Types>::reinit()
         Iy = M_PI * (r4 - rInner4) / 4.0;
         Iz = Iy;
         J = Iy + Iz;
-        A = M_PI * (r * r - rInner4);
+        A = M_PI * (r * r - rInner*rInner);
     }
     m_crossSectionArea = A;
 
