@@ -132,7 +132,7 @@ class Cosserat(Sofa.Prefab):
         return solverNode
 
     def addRigidBaseNode(self):
-        rigidBaseNode = self.addChild('rigidBase')
+        rigidBaseNode = self.solverNode.addChild('rigidBase')
 
         # trans = [t for t in self.translation.value]
         trans = list(self.translation.value)
@@ -153,7 +153,7 @@ class Cosserat(Sofa.Prefab):
         return rigidBaseNode
 
     def addCosseratCoordinate(self, bendingStates, listOfSectionsLength):
-        cosseratCoordinateNode = self.addChild('cosseratCoordinate')
+        cosseratCoordinateNode = self.solverNode.addChild('cosseratCoordinate')
         cosseratCoordinateNode.addObject('MechanicalObject',
                                          template='Vec3d', name='cosseratCoordinateMO',
                                          position=bendingStates,
