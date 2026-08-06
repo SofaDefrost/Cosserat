@@ -125,6 +125,8 @@ public:
     void computeBBox(const sofa::core::ExecParams *params, bool onlyVisible) override;
     void computeLogarithm(const double &x, const Mat4x4 &gX, Mat4x4 &log_gX);
 
+    Mat3x3 getTildeMatrix(const Vec3 &u);
+
 protected:
     ////////////////////////// Inherited attributes ////////////////////////////
     /// https://gcc.gnu.org/onlinedocs/gcc/Name-lookup.html
