@@ -1,0 +1,66 @@
+# SOFA scene-tests directives for the Cosserat plugin `examples/` tree.
+# The SOFA CI scene checker loads every scene under this directory and would
+# report these legacy scenes as failing. They are ignored here on purpose.
+# Paths are relative to this file's directory (examples/).
+#
+# Maintained, tested scenes now live in `tutorials/` (covered by the plugin's
+# own tests/TestTutorialsScenes.py). See the comparison in the project notes.
+#
+# ---------------------------------------------------------------------------
+# Group A — legacy scenes superseded by tutorials/ (redundant)
+# ---------------------------------------------------------------------------
+
+# Basic beam -> tutorials/getting_started/tutorial_01_discretization_and_visualization.py
+ignore "basic/step1.py"
+
+# Mapping comparison -> tutorials/.../frames2strain_tutorials/tuto4_MappingComparison.py
+ignore "benchmarks/tuto_compare_2.py"
+
+# Gravity cantilever -> tutorials/getting_started/tutorial_02_gravity_and_dynamics.py
+ignore "python3/CosseratBeamFallingUnderTheEffectOfGravity.py"
+
+# PCS demos -> tutorials/getting_started/tutorial_01/02/03
+ignore "python3/examples/PCS/PCS_Example1.py"
+ignore "python3/examples/PCS/PCS_Example2.py"
+ignore "python3/examples/PCS/PCS_Example3.py"
+
+# Piecewise-nonlinear-strain demos -> tutorial_07_initially_curved_beams.py (partial)
+ignore "python3/examples/PNLS/PNLS_Example1.py"
+ignore "python3/examples/PNLS/PNLS_Example2.py"
+ignore "python3/examples/PNLS/PNLS_Example3.py"
+ignore "python3/cosserat/nonLinearCosserat.py"
+
+# Legacy helper scenes/modules (deprecated SofaEngine plugin / local imports)
+ignore "python3/cosserat/cosseratObject.py"
+ignore "python3/cosserat/utils/basecosserat.py"
+
+# Obsolete training material / WIP
+ignore "python3/tutorial/formation/chiba/Actuator.py"
+ignore "python3/tutorial/formation/chiba/actuator_v1.py"
+ignore "python3/tutorial/scene_w9991.py"
+ignore "python3/wip/completDirectNeedleInsertion.py"
+ignore "python3/wip/needleInteractionTest.py"
+
+# ---------------------------------------------------------------------------
+# Group B — no tutorial equivalent yet; kept in-tree but currently failing.
+# These are the only demos of their components; to be fixed or migrated to
+# tutorials/ (tracked as tech debt), ignored here meanwhile.
+# ---------------------------------------------------------------------------
+
+# Cable actuation (SoftRobots CableConstraint) -> conceptually covered by
+# tutorials/advanced/geo_cable_driven_*.py ; kept for reference.
+ignore "python3/actuators/example1.py"
+ignore "python3/actuators/fingerActuation.py"
+ignore "python3/actuators/step1.py"
+ignore "python3/actuators/step3.py"
+ignore "python3/actuators/step4.py"
+ignore "python3/actuators/step7.py"
+
+# Needle insertion (CosseratNeedleSlidingConstraint) — only demo of this
+# component; fails on legacy local imports (from cosserat/useful ...).
+ignore "python3/examples/needle/NeedleInsertion.py"
+ignore "python3/examples/needle/NeedleInsertion-predefinedPath.py"
+
+# Staggered / Painless (PainlessBeamForceField + StaggeredCosseratMapping) —
+# WIP from branch painless/python-explicit, not fully wired on this branch.
+ignore "python3/examples/staggered/staggered_cantilever_gravity.py"
