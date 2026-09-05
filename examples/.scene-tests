@@ -61,6 +61,5 @@ ignore "python3/actuators/step7.py"
 ignore "python3/examples/needle/NeedleInsertion.py"
 ignore "python3/examples/needle/NeedleInsertion-predefinedPath.py"
 
-# Staggered / Painless (PainlessBeamForceField + StaggeredCosseratMapping) —
-# WIP from branch painless/python-explicit, not fully wired on this branch.
-ignore "python3/examples/staggered/staggered_cantilever_gravity.py"
+# NOTE: the staggered/Painless scenes were migrated to
+# tutorials/advanced/staggered/ (out of the SOFA examples scan).

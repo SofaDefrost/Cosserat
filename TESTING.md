@@ -170,7 +170,7 @@ gdb --args $BUILD/bin/Cosserat_tests --gtest_filter="*BUG_SENTINEL*"
 ## 8. Tests Python (scènes SOFA)
 
 > Les 5 scènes staggered importent désormais leurs helpers depuis
-> `examples/python3/examples/staggered/_common.py` (raideur, masse, inertie,
+> `tutorials/advanced/staggered/_common.py` (raideur, masse, inertie,
 > SO3, `add_painless_beam`). Toute modification d'une formule de raideur ne se
 > fait qu'à un seul endroit (`_common.py:circular_stiffness`).
 
@@ -180,31 +180,31 @@ Les scènes Python ne sont pas dans `Cosserat_tests` — elles se lancent via `r
 cd /Users/yadagolo/travail/plugin/plugin.Cosserat
 
 # Validation Euler-Bernoulli (régime petit déplacement)
-runSofa -g qt examples/python3/examples/staggered/sofa_staggered_validation.py
-runSofa -g qt examples/python3/examples/staggered/sofa_staggered_validation.py --argv "N=16"
-runSofa -g qt examples/python3/examples/staggered/sofa_staggered_validation.py --argv "N=32"
+runSofa -g qt tutorials/advanced/staggered/sofa_staggered_validation.py
+runSofa -g qt tutorials/advanced/staggered/sofa_staggered_validation.py --argv "N=16"
+runSofa -g qt tutorials/advanced/staggered/sofa_staggered_validation.py --argv "N=32"
 
 # Cantilever full (positions + SO3, grande déformation)
-runSofa -g qt examples/python3/examples/staggered/staggered_cantilever_full.py
+runSofa -g qt tutorials/advanced/staggered/staggered_cantilever_full.py
 
 # Validation torsion (GJ)
-runSofa -g qt examples/python3/examples/staggered/staggered_torsion_validation.py
+runSofa -g qt tutorials/advanced/staggered/staggered_torsion_validation.py
 
 # Cantilever gravité (positions seules)
-runSofa -g qt examples/python3/examples/staggered/staggered_cantilever_gravity.py
+runSofa -g qt tutorials/advanced/staggered/staggered_cantilever_gravity.py
 
 # Large déformation (arc, hélice, torsion prescrite)
-runSofa -g qt examples/python3/examples/staggered/staggered_large_deformation.py
+runSofa -g qt tutorials/advanced/staggered/staggered_large_deformation.py
 
 # Test géométrie pure (frames Rigid3d)
-runSofa -g qt examples/python3/examples/staggered/staggered_geometry_test.py
+runSofa -g qt tutorials/advanced/staggered/staggered_geometry_test.py
 ```
 
 Mode batch (headless, sans GUI) :
 
 ```bash
 runSofa --batch --nbIterations 10000 \
-        examples/python3/examples/staggered/sofa_staggered_validation.py
+        tutorials/advanced/staggered/sofa_staggered_validation.py
 ```
 
 ---
@@ -295,7 +295,7 @@ $BUILD/bin/Cosserat_tests --gtest_filter="*LogExpRoundTrip*"
 $BUILD/bin/Cosserat_tests
 
 # 4. Si OK, lancer une scène staggered pour vérifier la pile globale
-runSofa -g qt examples/python3/examples/staggered/staggered_cantilever_full.py
+runSofa -g qt tutorials/advanced/staggered/staggered_cantilever_full.py
 ```
 
 ---
