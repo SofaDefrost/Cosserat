@@ -550,7 +550,8 @@ void PainlessBeamForceField::addKToMatrix(
 }
 
 SReal PainlessBeamForceField::getPotentialEnergy(
-    const sofa::core::MechanicalParams* /*mparams*/) const {
+    const sofa::core::MechanicalParams* /*mparams*/, core::ConstMultiVecCoordId x) const {
+    SOFA_UNUSED(x);
     if (!l_state.get()) return 0.0;
     VecVec3d f_tmp, tau_tmp;
     return computeForcesAndTorques(f_tmp, tau_tmp);
