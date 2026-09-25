@@ -147,7 +147,7 @@ class SOFA_COSSERAT_API PainlessBeamForceField : public sofa::core::behavior::Ba
     void addKToMatrix(const sofa::core::MechanicalParams* mparams,
                       const sofa::core::behavior::MultiMatrixAccessor* matrix) override;
 
-    SReal getPotentialEnergy(const sofa::core::MechanicalParams* mparams) const override;
+    SReal getPotentialEnergy(const sofa::core::MechanicalParams* mparams, core::ConstMultiVecCoordId x) const override;
 
     // ── Direct Python/C++ API ──────────────────────────────────────────────────
 
