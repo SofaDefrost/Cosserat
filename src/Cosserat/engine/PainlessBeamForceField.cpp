@@ -523,9 +523,14 @@ void PainlessBeamForceField::computeAndStoreForces() {
 
 void PainlessBeamForceField::addDForce(
     const sofa::core::MechanicalParams* mparams,
-    sofa::core::MultiVecDerivId        /*dfId*/) {
+    sofa::core::MultiVecDerivId dfId, sofa::core::ConstMultiVecDerivId dxId,
+    sofa::core::ConstMultiVecCoordId xId, sofa::core::ConstMultiVecDerivId vId) {
 
     SOFA_UNUSED(mparams);
+    SOFA_UNUSED(dfId);
+    SOFA_UNUSED(dxId);
+    SOFA_UNUSED(xId);
+    SOFA_UNUSED(vId);
 
     // The standard MultiVecDerivId path requires CosseratIntrinsicState to expose
     // standard VecDeriv accessors, which is tracked as a future TODO.
