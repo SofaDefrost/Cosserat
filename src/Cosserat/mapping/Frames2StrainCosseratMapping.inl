@@ -204,10 +204,12 @@ namespace Cosserat::mapping {
 	// applyJ — ξ̇_k = J₁·η_a + J₂·η_b
 	// ──────────────────────────────────────────────────────────────────────────
 	template<class TIn, class TOut>
-	void Frames2StrainCosseratMapping<TIn, TOut>::applyJ(
-			const sofa::core::MechanicalParams * /*mparams*/,
-			sofa::DataVecDeriv_t<Out> &dataVecOut,
-			const sofa::DataVecDeriv_t<In> &dataVecIn) {
+	void Frames2StrainCosseratMapping<TIn, TOut>::doApplyJacobianVectorProduct(
+		const sofa::core::MechanicalParams *mparams, sofa::DataVecDeriv_t<Out> &tangentOut,
+		const sofa::DataVecDeriv_t<In> &tangentIn, const sofa::DataVecCoord_t<In> &positionIn) {
+
+		SOFA_UNUSED(mparams);
+		SOFA_UNUSED(positionIn);
 
 		if (this->d_componentState.getValue() != sofa::core::objectmodel::ComponentState::Valid)
 			return;
@@ -215,8 +217,8 @@ namespace Cosserat::mapping {
 		msg_info_when(this->d_debug.getValue())
 			<< " ########## Frames2StrainCosseratMapping ApplyJ Function ########";
 
-		const sofa::VecDeriv_t<In> &frame_vel = dataVecIn.getValue();
-		sofa::VecDeriv_t<Out> &strain_vel     = *dataVecOut.beginEdit();
+		const sofa::VecDeriv_t<In> &frame_vel = tangentIn.getValue();
+		sofa::VecDeriv_t<Out> &strain_vel     = *tangentOut.beginEdit();
 
 		// Current strain values are stored in the output state (we wrote them in apply())
 		const sofa::VecCoord_t<Out> &strain =
@@ -275,7 +277,7 @@ namespace Cosserat::mapping {
 				strain_vel[i][k] = output_vel[k];
 		}
 
-		dataVecOut.endEdit();
+		tangentOut.endEdit();
 	}
 
 	// ──────────────────────────────────────────────────────────────────────────
