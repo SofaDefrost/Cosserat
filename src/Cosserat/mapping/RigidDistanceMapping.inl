@@ -140,7 +140,7 @@ void RigidDistanceMapping<TIn1, TIn2, TOut>::doApplyJacobianVectorProduct(
     if(dataVecTangentOut.empty() || dataVecTangentIn1.empty() ||dataVecTangentIn2.empty() )
         return;
 
-    const VecDeriv_t<In1>& in1Vel = dataVecPositionIn1[0]->getValue();
+    const VecDeriv_t<In1>& in1Vel = dataVecTangentIn1[0]->getValue();
     const VecDeriv_t<In2>& in2Vel = dataVecTangentIn2[0]->getValue();
 
     auto outVel = sofa::helper::getWriteOnlyAccessor(*dataVecTangentOut[0]);
