@@ -139,7 +139,8 @@ class SOFA_COSSERAT_API PainlessBeamForceField : public sofa::core::behavior::Ba
     //   addKToMatrix(mparams, matrix) — sparse stiffness assembly
     //
     void addForce(const sofa::core::MechanicalParams* mparams,
-                  sofa::core::MultiVecDerivId fId) override;
+                  sofa::core::MultiVecDerivId fId,
+                  sofa::core::ConstMultiVecCoordId xId, sofa::core::ConstMultiVecDerivId vId) override;
 
     void addDForce(const sofa::core::MechanicalParams* mparams,
                    sofa::core::MultiVecDerivId dfId) override;

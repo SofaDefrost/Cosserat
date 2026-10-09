@@ -486,7 +486,11 @@ void PainlessBeamForceField::computeDForcesFromData(double kFactor) {
 
 void PainlessBeamForceField::addForce(
     const sofa::core::MechanicalParams* /*mparams*/,
-    sofa::core::MultiVecDerivId        /*fId*/) {
+    sofa::core::MultiVecDerivId        /*fId*/,
+    sofa::core::ConstMultiVecCoordId xId, sofa::core::ConstMultiVecDerivId vId)
+{
+    SOFA_UNUSED(xId);
+    SOFA_UNUSED(vId);
 
     if (!l_state.get()) return;
 
