@@ -1,6 +1,6 @@
 name: Cosserat-CI
 
-# Controls when the action will run. 
+# Controls when the action will run.
 on:
   # This is used to automatically publish nightlies at UTC nighttime
   schedule:
@@ -19,9 +19,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-22.04, macos-14, windows-2022]
+        os: [ubuntu-24.04, macos-15, windows-latest]
         sofa_branch: [master]
-        python_version: ['3.10']
+        python_version: ['3.12']
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
@@ -52,7 +52,7 @@ jobs:
             cmake_options="$cmake_options -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
           fi
           cmake_options="$(echo $cmake_options)" # prettify
-          
+
           if [[ "$RUNNER_OS" == "Windows" ]]; then
             cmd //c "${{ steps.sofa.outputs.vs_vsdevcmd }} \
               && cd /d $WORKSPACE_BUILD_PATH \
@@ -104,7 +104,7 @@ jobs:
       #     echo "LD_LIBRARY_PATH=$WORKSPACE_ARTIFACT_PATH/lib:$SOFA_ROOT/lib:$LD_LIBRARY_PATH" | tee -a $GITHUB_ENV
       #     # Add execution right on the tests
       #     chmod +x $WORKSPACE_BUILD_PATH/bin/*_test${{ steps.sofa.outputs.exe }}
-           
+
       # - name: Check environment vars for tests
       #   shell: bash
       #   run: |
