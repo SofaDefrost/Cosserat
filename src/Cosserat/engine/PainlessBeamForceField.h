@@ -143,7 +143,8 @@ class SOFA_COSSERAT_API PainlessBeamForceField : public sofa::core::behavior::Ba
                   sofa::core::ConstMultiVecCoordId xId, sofa::core::ConstMultiVecDerivId vId) override;
 
     void addDForce(const sofa::core::MechanicalParams* mparams,
-                   sofa::core::MultiVecDerivId dfId) override;
+        sofa::core::MultiVecDerivId dfId, sofa::core::ConstMultiVecDerivId dxId,
+        sofa::core::ConstMultiVecCoordId xId, sofa::core::ConstMultiVecDerivId vId) override;
 
     void addKToMatrix(const sofa::core::MechanicalParams* mparams,
                       const sofa::core::behavior::MultiMatrixAccessor* matrix) override;
