@@ -30,10 +30,16 @@ namespace Cosserat::mapping{
 
 
 template <>
-void DiscreteCosseratMapping<sofa::defaulttype::Vec6Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types>:: applyJ(
-    const sofa::core::MechanicalParams* /* mparams */, const vector< sofa::DataVecDeriv_t<Out>*>& dataVecOutVel,
+void DiscreteCosseratMapping<sofa::defaulttype::Vec6Types, sofa::defaulttype::Rigid3Types, sofa::defaulttype::Rigid3Types>::doApplyJacobianVectorProduct(
+    const sofa::core::MechanicalParams* mparams, const vector< sofa::DataVecDeriv_t<Out>*>& dataVecOutVel,
     const vector<const sofa::DataVecDeriv_t<In1>*>& dataVecIn1Vel,
-    const vector<const sofa::DataVecDeriv_t<In2>*>& dataVecIn2Vel) {
+    const vector<const sofa::DataVecDeriv_t<In2>*>& dataVecIn2Vel,
+    const sofa::type::vector<const sofa::DataVecCoord_t<In1>*>& dataVecPositionIn1,
+    const sofa::type::vector<const sofa::DataVecCoord_t<In2>*>& dataVecPositionIn2)
+{
+    SOFA_UNUSED(mparams);
+    SOFA_UNUSED(dataVecPositionIn1);
+    SOFA_UNUSED(dataVecPositionIn2);
 
     if(dataVecOutVel.empty() || dataVecIn1Vel.empty() ||dataVecIn2Vel.empty() )
         return;

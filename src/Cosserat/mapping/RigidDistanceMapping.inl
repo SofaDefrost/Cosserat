@@ -124,21 +124,26 @@ void RigidDistanceMapping<TIn1, TIn2, TOut>::apply(
     }
 }
 
+template<class TIn1, class TIn2, class TOut>
+void RigidDistanceMapping<TIn1, TIn2, TOut>::doApplyJacobianVectorProduct(
+    const sofa::core::MechanicalParams *mparams,
+    const sofa::type::vector<sofa::DataVecDeriv_t<Out> *> &dataVecTangentOut,
+    const sofa::type::vector<const sofa::DataVecDeriv_t<In1> *> &dataVecTangentIn1,
+    const sofa::type::vector<const sofa::DataVecDeriv_t<In2> *> &dataVecTangentIn2,
+    const sofa::type::vector<const sofa::DataVecCoord_t<In1> *> &dataVecPositionIn1,
+    const sofa::type::vector<const sofa::DataVecCoord_t<In2> *> &dataVecPositionIn2)
+{
+    SOFA_UNUSED(mparams);
+    SOFA_UNUSED(dataVecPositionIn1);
+    SOFA_UNUSED(dataVecPositionIn2);
 
-template <class TIn1, class TIn2, class TOut>
-void RigidDistanceMapping<TIn1, TIn2, TOut>:: applyJ(
-    const sofa::core::MechanicalParams* /* mparams */,
-    const vector< DataVecDeriv_t<Out>*>& dataVecOutVel,
-    const vector<const DataVecDeriv_t<In1>*>& dataVecIn1Vel,
-    const vector<const DataVecDeriv_t<In2>*>& dataVecIn2Vel) {
-
-    if(dataVecOutVel.empty() || dataVecIn1Vel.empty() ||dataVecIn2Vel.empty() )
+    if(dataVecTangentOut.empty() || dataVecTangentIn1.empty() ||dataVecTangentIn2.empty() )
         return;
 
-    const VecDeriv_t<In1>& in1Vel = dataVecIn1Vel[0]->getValue();
-    const VecDeriv_t<In2>& in2Vel = dataVecIn2Vel[0]->getValue();
+    const VecDeriv_t<In1>& in1Vel = dataVecTangentIn1[0]->getValue();
+    const VecDeriv_t<In2>& in2Vel = dataVecTangentIn2[0]->getValue();
 
-    auto outVel = sofa::helper::getWriteOnlyAccessor(*dataVecOutVel[0]);
+    auto outVel = sofa::helper::getWriteOnlyAccessor(*dataVecTangentOut[0]);
 
     const auto &m1Indices = d_index1.getValue();
     const auto &m2Indices = d_index2.getValue();

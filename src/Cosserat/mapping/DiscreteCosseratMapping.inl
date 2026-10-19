@@ -203,15 +203,20 @@ namespace Cosserat::mapping {
                         (x_theta * cos_x_theta - sin_x_theta) * (gX * gX * gX));
     }
 
-    template <class TIn1, class TIn2, class TOut>
-    void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyJ(
-        const sofa::core::MechanicalParams * /* mparams */,
-        const vector<sofa::DataVecDeriv_t<Out> *> &dataVecOutVel,
-        const vector<const sofa::DataVecDeriv_t<In1> *> &dataVecIn1Vel,
-        const vector<const sofa::DataVecDeriv_t<In2> *> &dataVecIn2Vel) {
+    template<class TIn1, class TIn2, class TOut>
+    void DiscreteCosseratMapping<TIn1, TIn2, TOut>::doApplyJacobianVectorProduct(
+        const sofa::core::MechanicalParams *mparams,
+        const sofa::type::vector<sofa::DataVecDeriv_t<Out> *> &dataVecTangentOut,
+        const sofa::type::vector<const sofa::DataVecDeriv_t<In1> *> &dataVecTangentIn1,
+        const sofa::type::vector<const sofa::DataVecDeriv_t<In2> *> &dataVecTangentIn2,
+        const sofa::type::vector<const sofa::DataVecCoord_t<In1> *> &dataVecPositionIn1,
+        const sofa::type::vector<const sofa::DataVecCoord_t<In2> *> &dataVecPositionIn2) {
 
+        SOFA_UNUSED(mparams);
+        SOFA_UNUSED(dataVecPositionIn1);
+        SOFA_UNUSED(dataVecPositionIn2);
 
-        if (dataVecOutVel.empty() || dataVecIn1Vel.empty() || dataVecIn2Vel.empty())
+        if (dataVecTangentOut.empty() || dataVecTangentIn1.empty() || dataVecTangentIn2.empty())
             return;
 
         if (this->d_componentState.getValue() != sofa::core::objectmodel::ComponentState::Valid)
@@ -219,9 +224,9 @@ namespace Cosserat::mapping {
         if (d_debug.getValue())
             std::cout << " ########## ApplyJ Function ########" << std::endl;
 
-        const sofa::VecDeriv_t<In1> &in1_vel = dataVecIn1Vel[0]->getValue();
-        const sofa::VecDeriv_t<In2> &in2_vel = dataVecIn2Vel[0]->getValue();
-        sofa::VecDeriv_t<Out> &out_vel = *dataVecOutVel[0]->beginEdit();
+        const sofa::VecDeriv_t<In1> &in1_vel = dataVecTangentIn1[0]->getValue();
+        const sofa::VecDeriv_t<In2> &in2_vel = dataVecTangentIn2[0]->getValue();
+        sofa::VecDeriv_t<Out> &out_vel = *dataVecTangentOut[0]->beginEdit();
         const auto baseIndex = d_baseIndex.getValue();
 
         
@@ -319,7 +324,7 @@ namespace Cosserat::mapping {
 
         }
 
-        dataVecOutVel[0]->endEdit();
+        dataVecTangentOut[0]->endEdit();
         m_indexInput = 0;
 
     }
