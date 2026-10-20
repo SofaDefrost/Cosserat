@@ -46,12 +46,12 @@ def createScene(root_node):
     # Configure time integration and solver
     solver_node = root_node.addChild("solver_1")
 
+    # vdamping no longer exists (SOFA >= 26.06): its damping is added to rayleighMass of EulerImplicitIntegrationScheme.
     solver_node.addObject(
-        "EulerImplicitSolver",
+        "EulerImplicitIntegrationScheme",
         firstOrder="0",
         rayleighStiffness="0.0",
-        rayleighMass="0.0",
-        vdamping=v_damping_param,  # Damping parameter for dynamics
+        rayleighMass=v_damping_param,  # Damping parameter for dynamics
     )
     solver_node.addObject("SparseLDLSolver", name="solver")
 
@@ -100,12 +100,12 @@ def createScene(root_node):
     ##################################################
 
     solver_node_2 = root_node.addChild("solver_2")
+    # vdamping no longer exists (SOFA >= 26.06): its damping is added to rayleighMass of EulerImplicitIntegrationScheme.
     solver_node_2.addObject(
-        "EulerImplicitSolver",
+        "EulerImplicitIntegrationScheme",
         firstOrder="0",
         rayleighStiffness="0.0",
-        rayleighMass="0.0",
-        vdamping=v_damping_param,  # Damping parameter for dynamics
+        rayleighMass=v_damping_param,  # Damping parameter for dynamics
         name="euler2",
     )
     solver_node_2.addObject("SparseLDLSolver", name="solver_2")
