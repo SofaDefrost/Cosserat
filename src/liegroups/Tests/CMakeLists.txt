@@ -24,6 +24,9 @@ set(LIEGROUPS_TEST_FILES
         unit/test_MultiSectionBeam.cpp
         unit/test_AdvancedFeatures.cpp
         unit/test_TwistWrench.cpp
+        unit/test_RevoluteJoint.cpp
+        unit/test_MultiDofJoints.cpp
+        unit/test_ComponentOrder.cpp
         unit/test_LieGroupIntegrators.cpp
         unit/test_BodyJacobianUncertaintyBezier.cpp
         
