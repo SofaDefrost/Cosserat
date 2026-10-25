@@ -104,9 +104,15 @@ namespace sofa::component::forcefield {
 		Mat33 m_K_section;
 		type::vector<Mat33> m_K_sectionList;
 
-		// The stiffness matrix for the beam section in 6x6 format
+		// The stiffness matrix for the beam section in 6x6 format (Vec6Types)
 		Mat66 m_K_section66;
-		type::vector<Mat66> m_k_section66List;
+		// One 6x6 stiffness matrix per section when variantSections is true (Vec6Types), empty otherwise
+		type::vector<Mat66> m_K_section66List;
+
+		/// 6x6 stiffness of section i: its own when the sections are variant, the common one otherwise.
+		const Mat66 &getSectionStiffness66(const std::size_t i) const {
+			return m_K_section66List.empty() ? m_K_section66 : m_K_section66List[i];
+		}
 	};
 
 	// Explicit declaration of this spécialisation
