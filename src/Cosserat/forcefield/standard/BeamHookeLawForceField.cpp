@@ -45,6 +45,7 @@ namespace sofa::component::forcefield {
 	template<>
 	void BeamHookeLawForceField<defaulttype::Vec6Types>::reinit() {
 		Inherit1::reinit();
+		m_K_section66List.clear();
 		if (d_useInertiaParams.getValue()) {
 			msg_info() << "Pre-calculated inertia parameters are used for the computation of the stiffness matrix.";
 			m_K_section66[0][0] = d_GI.getValue();
@@ -53,23 +54,49 @@ namespace sofa::component::forcefield {
 			m_K_section66[3][3] = d_EA.getValue();
 			m_K_section66[4][4] = d_GA.getValue();
 			m_K_section66[5][5] = d_GA.getValue();
-		} else {
-			// Pour du vec 6, on a  _m_K =diag([G*J E*Iy E*Iz E*A G*As G*As]); % stifness matrix
-			Real E = this->d_youngModulus.getValue();
-			Real G = E / (2.0 * (1.0 + this->d_poissonRatio.getValue()));
-			// Translational Stiffness (X, Y, Z directions):
-			//  Gs * J(i): Shearing modulus times the second moment of the area (torsional stiffness). E * Js(i):
-			//  Young's modulus times the second moment of the area (bending stiffness).
-			m_K_section66[0][0] = G * this->J;
-			m_K_section66[1][1] = E * this->Iy;
-			m_K_section66[2][2] = E * this->Iz;
-			// Rotational Stiffness (X, Y, Z directions):
-			// E * A: Young's modulus times the cross-sectional area (axial stiffness).
-			// Gs * A: Shearing modulus times the cross-sectional area (shearing stiffness).
-			m_K_section66[3][3] = E * this->m_crossSectionArea;
-			m_K_section66[4][4] = G * this->m_crossSectionArea;
-			m_K_section66[5][5] = G * this->m_crossSectionArea;
+			if (d_variantSections.getValue())
+				msg_warning() << "variantSections is not supported together with useInertiaParams: "
+								 "the same inertia parameters are used for every section.";
+			return;
 		}
+
+		// Pour du vec 6, on a  _m_K =diag([G*J E*Iy E*Iz E*A G*As G*As]); % stifness matrix
+		// Translational Stiffness (X, Y, Z directions):
+		//  Gs * J(i): Shearing modulus times the second moment of the area (torsional stiffness). E * Js(i):
+		//  Young's modulus times the second moment of the area (bending stiffness).
+		// Rotational Stiffness (X, Y, Z directions):
+		// E * A: Young's modulus times the cross-sectional area (axial stiffness).
+		// Gs * A: Shearing modulus times the cross-sectional area (shearing stiffness).
+		const auto stiffness = [this](const Real E, const Real nu) {
+			const Real G = E / (2.0 * (1.0 + nu));
+			Mat66 K;
+			K.clear();
+			K[0][0] = G * this->J;
+			K[1][1] = E * this->Iy;
+			K[2][2] = E * this->Iz;
+			K[3][3] = E * this->m_crossSectionArea;
+			K[4][4] = G * this->m_crossSectionArea;
+			K[5][5] = G * this->m_crossSectionArea;
+			return K;
+		};
+		m_K_section66 = stiffness(this->d_youngModulus.getValue(), this->d_poissonRatio.getValue());
+
+		if (!d_variantSections.getValue())
+			return;
+
+		// Sections with their own Young's modulus and Poisson's ratio: one 6x6 matrix per section.
+		const auto &youngs = d_youngModulusList.getValue();
+		const auto &poissons = d_poissonRatioList.getValue();
+		const std::size_t sectionCount = this->d_length.getValue().size();
+		if (youngs.size() != sectionCount || poissons.size() != sectionCount) {
+			msg_error() << "variantSections: length (" << sectionCount << "), youngModulusList (" << youngs.size()
+						<< ") and poissonRatioList (" << poissons.size() << ") must have the same size. "
+						<< "The common youngModulus and poissonRatio are used for every section.";
+			return;
+		}
+		m_K_section66List.reserve(sectionCount);
+		for (std::size_t k = 0; k < sectionCount; ++k)
+			m_K_section66List.push_back(stiffness(youngs[k], poissons[k]));
 	}
 
 	template<>
@@ -96,7 +123,7 @@ namespace sofa::component::forcefield {
 			return;
 		}
 		for (unsigned int i = 0; i < x.size(); i++) {
-			f[i] -= (m_K_section66 * (x[i] - x0[i])) * this->d_length.getValue()[i];
+			f[i] -= (getSectionStiffness66(i) * (x[i] - x0[i])) * this->d_length.getValue()[i];
 		}
 
 		d_f.endEdit();
@@ -115,7 +142,7 @@ namespace sofa::component::forcefield {
 
 		df.resize(dx.size());
 		for (unsigned int i = 0; i < dx.size(); i++) {
-			df[i] -= (m_K_section66 * dx[i]) * kFactor * this->d_length.getValue()[i];
+			df[i] -= (getSectionStiffness66(i) * dx[i]) * kFactor * this->d_length.getValue()[i];
 		}
 	}
 
@@ -131,10 +158,11 @@ namespace sofa::component::forcefield {
 		const VecCoord &pos = this->mstate->read(core::vec_id::read_access::restPosition)->getValue();
 		constexpr int VEC_SIZE = 6;
 		for (unsigned int n = 0; n < pos.size(); n++) {
+			const Mat66 &K = getSectionStiffness66(n);
 			for (unsigned int i = 0; i < VEC_SIZE; i++) {
 				for (unsigned int j = 0; j < VEC_SIZE; j++) {
 					mat->add(offset + i + VEC_SIZE * n, offset + j + VEC_SIZE * n,
-							 -kFact * m_K_section66[i][j] * this->d_length.getValue()[n]);
+							 -kFact * K[i][j] * this->d_length.getValue()[n]);
 				}
 			}
 		}
@@ -152,7 +180,7 @@ namespace sofa::component::forcefield {
 
 		double energy = 0.0;
 		for (unsigned int i = 0; i < x.size(); i++) {
-			const auto &K = m_K_section66;
+			const auto &K = getSectionStiffness66(i);
 			const auto &strain = x[i] - x0[i];
 			energy += 0.5 * (strain * (K * strain)) * this->d_length.getValue()[i];
 		}
