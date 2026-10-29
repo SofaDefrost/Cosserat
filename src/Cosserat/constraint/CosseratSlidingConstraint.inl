@@ -74,7 +74,7 @@ void CosseratSlidingConstraint<DataTypes>::computeProximity(const DataVecCoord &
     //For each point in the FEM find the closest edge of the cable
     for (unsigned int i = 0 ; i < szFrom-1; i++) {
         Coord P = from[i];
-        Constraint constraint;
+        Constraint constraint{};   // value-initialised: a point with no segment in front of it keeps zeros, not garbage
 
         //std::cout << "P "<< P << std::endl;
 
@@ -248,7 +248,7 @@ void CosseratSlidingConstraint<DataTypes>::storeLambda(const ConstraintParams* /
         if(c.thirdConstraint)
         {
             lamb3 = lambda->element(c.cid+2);
-            d_force.setValue( c.dirProj* lamb1 + c.dirOrtho * lamb2 + c.dirProj * lamb3);
+            d_force.setValue( c.dirProj* lamb1 + c.dirOrtho * lamb2 + c.dirAxe * (c.thirdConstraint < 0 ? lamb3 : -lamb3));
         }
         else
         {

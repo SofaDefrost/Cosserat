@@ -15,6 +15,8 @@ set(SOURCE_FILES
     unit/LiegroupsIntegrationTest.cpp
     unit/DiscreteCosseratMappingApplyDJTTest.cpp
     unit/LogExpRoundTripTest.cpp
+    unit/CosseratNeedleSlidingConstraintTest.cpp
+    unit/CosseratSlidingConstraintResolutionTest.cpp
 )
 
     add_executable(${PROJECT_NAME} ${HEADER_FILES} ${SOURCE_FILES})
