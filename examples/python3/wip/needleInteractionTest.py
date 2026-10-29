@@ -4,7 +4,7 @@
 Based on the work done with SofaPython. See POEMapping.py
 """
 
-from params import NeedleParameters
+from cosserat.needle.params import NeedleParameters
 from cosserat.usefulFunctions import pluginList
 from cosserat.createFemRegularGrid import createFemCubeWithParams
 from cosserat.cosseratObject import Cosserat
@@ -156,7 +156,7 @@ def createScene(rootNode):
                        coneFactor=params.contact.coneFactor, angleCone=0.1)
 
     rootNode.addObject('FreeMotionAnimationLoop')
-    generic = rootNode.addObject('ProjectedGaussSeidelConstraintSolver', tolerance="1e-20",
+    generic = rootNode.addObject('BlockGaussSeidelConstraintSolver', tolerance="1e-20",
                                  maxIterations="500", computeConstraintForces=1, printLog="0")
 
     gravity = [0, 0, 0]

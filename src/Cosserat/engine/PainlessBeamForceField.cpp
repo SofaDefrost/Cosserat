@@ -40,8 +40,8 @@ PainlessBeamForceField::PainlessBeamForceField()
                               "OUTPUT — differential forces on N+1 nodes (world frame)")),
       d_df_angles(initData(&d_df_angles, "df_angles",
                            "OUTPUT — differential torques on N segments (body frame)")),
-      d_printEvery(initData(&d_printEvery, 100, "printEvery",
-                            "Print debug info every N force computations. 0 = disabled.")),
+      d_printEvery(initData(&d_printEvery, 0, "printEvery",
+                            "Print a debug summary every N force computations (animation steps). 0 = disabled (default).")),
       d_printPerSegment(initData(&d_printPerSegment, false, "printPerSegment",
                                  "Also print per-segment Gamma/Omega/f/tau when printing summary.")) {}
 
@@ -91,19 +91,19 @@ void PainlessBeamForceField::init() {
             // Print the stiffness numbers and let the user judge.
             const double omega_ref_lin  = std::sqrt(GA / h0);   // [rad/s · sqrt(1/kg·m)]
             const double omega_ref_ang  = std::sqrt(EIy / (h0 * h0)); // [rad/s · sqrt(1/kg·m²)]
-            msg_info() << "┌─ PainlessBeamForceField INIT ─────────────────────────────";
-            msg_info() << "│  N=" << N << " segments   h=" << h0 << " m";
-            msg_info() << "│  K_L : EA=" << d_EA.getValue() << " N   GA=" << GA << " N";
-            msg_info() << "│  K_A : GJ=" << GJ << " N·m²   EIy=" << EIy
+            dmsg_info() << "┌─ PainlessBeamForceField INIT ─────────────────────────────";
+            dmsg_info() << "│  N=" << N << " segments   h=" << h0 << " m";
+            dmsg_info() << "│  K_L : EA=" << d_EA.getValue() << " N   GA=" << GA << " N";
+            dmsg_info() << "│  K_A : GJ=" << GJ << " N·m²   EIy=" << EIy
                        << " N·m²   EIz=" << d_EIz.getValue() << " N·m²";
-            msg_info() << "│  sqrt(GA/h)  = " << omega_ref_lin
+            dmsg_info() << "│  sqrt(GA/h)  = " << omega_ref_lin
                        << "  [~angular freq if I_seg=1 kg·m²]";
-            msg_info() << "│  sqrt(EIy/h²)= " << omega_ref_ang
+            dmsg_info() << "│  sqrt(EIy/h²)= " << omega_ref_ang
                        << "  [~angular freq if I_seg=1 kg·m²]";
-            msg_info() << "│  Stability check: for each I_seg, verify dt < 2/sqrt(GA*h/I_seg)";
-            msg_info() << "│  printEvery=" << d_printEvery.getValue()
+            dmsg_info() << "│  Stability check: for each I_seg, verify dt < 2/sqrt(GA*h/I_seg)";
+            dmsg_info() << "│  printEvery=" << d_printEvery.getValue()
                        << "  printPerSegment=" << d_printPerSegment.getValue();
-            msg_info() << "└───────────────────────────────────────────────────────────";
+            dmsg_info() << "└───────────────────────────────────────────────────────────";
         }
     }
 
@@ -115,12 +115,6 @@ void PainlessBeamForceField::reinit() { init(); }
 
 void PainlessBeamForceField::handleEvent(sofa::core::objectmodel::Event* e) {
     if (sofa::simulation::AnimateBeginEvent::checkEventType(e)) {
-        // m_step is incremented inside computeForcesAndTorques.
-        // (m_step+1) % freq == 0  → next increment will trigger the summary print.
-        const int freq = d_printEvery.getValue();
-        if (freq > 0 && ((m_step + 1) % freq == 0))
-            msg_info() << "[handleEvent] AnimateBeginEvent — step=" << (m_step + 1)
-                       << " → computeAndStoreForces() (summary will follow)";
         computeAndStoreForces();
     }
 }
@@ -147,7 +141,8 @@ PainlessBeamForceField::Mat3x3d PainlessBeamForceField::buildK_A() const {
 
 double PainlessBeamForceField::computeForcesAndTorques(
     VecVec3d& f_nodes,
-    VecVec3d& tau_segs) const {
+    VecVec3d& tau_segs,
+    bool debug) const {
 
     const auto* state = l_state.get();
     if (!state) return 0.0;
@@ -167,13 +162,13 @@ double PainlessBeamForceField::computeForcesAndTorques(
     const Mat3x3d K_A = buildK_A();
     double energy = 0.0;
 
-    // ── Per-step debug control ────────────────────────────────────────────────
-    ++m_step;
+    // ── Per-step debug control (only the animation-step path advances the counter) ─────
+    if (debug) ++m_step;
     const int freq   = d_printEvery.getValue();
-    const bool doPrint    = (freq > 0) && (m_step % freq == 0);
+    const bool doPrint    = debug && (freq > 0) && (m_step % freq == 0);
     const bool doPerSeg   = doPrint && d_printPerSegment.getValue();
 
-    // Accumulators for summary (always computed, printed only if doPrint)
+    // Accumulators for the summary print (only meaningful when doPrint)
     double max_Gamma_norm = 0.0, max_Omega_norm = 0.0;
     double max_f_world    = 0.0, max_tau_lin    = 0.0;
     double max_tau_ang    = 0.0;
@@ -203,8 +198,9 @@ double PainlessBeamForceField::computeForcesAndTorques(
         //
         //   τ_linear_i = dx_body × f_body    (body frame of segment i)
         //
-        // Derived from  δE_i = ξ · (dx_body × f_body)  under right perturbation
-        // R_i → R_i exp(ε ξ).  This term drives R_i to follow the deformed beam
+        // Derived from  δE_i = −ξ · (dx_body × f_body)  under right perturbation
+        // R_i → R_i exp(ε ξ), hence τ = −∂E/∂ξ = +dx_body × f_body (checked against finite
+        // differences of the energy).  This term drives R_i to follow the deformed beam
         // direction; without it SO3 DOFs are decoupled from position dynamics and
         // bending stiffness (EI/GJ) never activates.
         const SO3::Vector tau_lin = dx_body.cross(f_body);
@@ -214,10 +210,11 @@ double PainlessBeamForceField::computeForcesAndTorques(
         energy_lin += e_lin_i;
         energy     += e_lin_i;
 
-        // Accumulate extrema
-        max_Gamma_norm = std::max(max_Gamma_norm, Gamma_i.norm());
-        max_f_world    = std::max(max_f_world,    f_world.norm());
-        max_tau_lin    = std::max(max_tau_lin,    Vec3d(tau_lin.x(), tau_lin.y(), tau_lin.z()).norm());
+        if (doPrint) {
+            max_Gamma_norm = std::max(max_Gamma_norm, Gamma_i.norm());
+            max_f_world    = std::max(max_f_world,    f_world.norm());
+            max_tau_lin    = std::max(max_tau_lin,    Vec3d(tau_lin.x(), tau_lin.y(), tau_lin.z()).norm());
+        }
 
         if (doPerSeg) {
             // Rotation vector of R_i
@@ -273,8 +270,10 @@ double PainlessBeamForceField::computeForcesAndTorques(
         energy_ang += e_ang_i;
         energy     += e_ang_i;
 
-        max_Omega_norm = std::max(max_Omega_norm, Omega.norm());
-        max_tau_ang    = std::max(max_tau_ang,    std::max(tau_i.norm(), tau_im1.norm()));
+        if (doPrint) {
+            max_Omega_norm = std::max(max_Omega_norm, Omega.norm());
+            max_tau_ang    = std::max(max_tau_ang,    std::max(tau_i.norm(), tau_im1.norm()));
+        }
 
         if (doPerSeg) {
             msg_info() << std::fixed << std::setprecision(4)
@@ -414,8 +413,10 @@ void PainlessBeamForceField::computeDForces(
     //   dτ(R_i)     += kF · [−(A·K_A·B / h̃_i)·dω_i + (A·K_A·A / h̃_i)·dω_{i−1}]
     //   dτ(R_{i−1}) += kF · [+(B·K_A·B / h̃_i)·dω_i − (B·K_A·A / h̃_i)·dω_{i−1}]
     //
-    //   NOTE: these are the material (constitutive) terms only.
-    //   Geometric stiffness (∂J_r^{-1}/∂φ contributions) is TODO.
+    //   NOTE: these are the angular material terms only. Missing (verified against finite
+    //   differences): the position↔rotation cross blocks, the shear coupling −h·diag(0,GA,GA)
+    //   on the diagonal rotation blocks, and the geometric stiffness (∂J_r^{-1}/∂φ).
+    //   See the class documentation in PainlessBeamForceField.h.
     //
     for (size_t i = 1; i < N; ++i) {
         const double h_dual = (h[i - 1] + h[i]) * 0.5;
@@ -508,7 +509,7 @@ void PainlessBeamForceField::addForce(
     //
     VecVec3d& f_nodes  = *d_nodalForces.beginEdit();
     VecVec3d& tau_segs = *d_segmentTorques.beginEdit();
-    computeForcesAndTorques(f_nodes, tau_segs);
+    computeForcesAndTorques(f_nodes, tau_segs, /*debug=*/false);
     d_nodalForces.endEdit();
     d_segmentTorques.endEdit();
 }
@@ -520,7 +521,7 @@ void PainlessBeamForceField::computeAndStoreForces() {
     }
     VecVec3d& f_nodes  = *d_nodalForces.beginEdit();
     VecVec3d& tau_segs = *d_segmentTorques.beginEdit();
-    computeForcesAndTorques(f_nodes, tau_segs);
+    computeForcesAndTorques(f_nodes, tau_segs, /*debug=*/true);
     d_nodalForces.endEdit();
     d_segmentTorques.endEdit();
 }
@@ -558,7 +559,7 @@ SReal PainlessBeamForceField::getPotentialEnergy(
     SOFA_UNUSED(x);
     if (!l_state.get()) return 0.0;
     VecVec3d f_tmp, tau_tmp;
-    return computeForcesAndTorques(f_tmp, tau_tmp);
+    return computeForcesAndTorques(f_tmp, tau_tmp, /*debug=*/false);
 }
 
 }  // namespace sofa::component::cosserat::engine

@@ -29,10 +29,10 @@ def createScene(rootNode):
     rootNode.addObject('BackgroundSetting', color='0 0.168627 0.211765')
     addVisual(rootNode)
 
-    addHeader(rootNode, isConstrained=False)
+    addHeader(rootNode, is_constrained=False)
     rootNode.addObject('FreeMotionAnimationLoop', parallelCollisionDetectionAndFreeMotion=False,
                        parallelODESolving=False)
-    rootNode.addObject('ProjectedGaussSeidelConstraintSolver', name='ConstraintSolver', tolerance=1e-20, maxIterations=1000,
+    rootNode.addObject('BlockGaussSeidelConstraintSolver', name='ConstraintSolver', tolerance=1e-20, maxIterations=1000,
                        multithreading=False)
     rootNode.findData('gravity').value = [0., 0., 0.]
 
@@ -91,7 +91,7 @@ def createScene(rootNode):
     cableNode = rootNode.addChild('cableNode')
     cableNode.addObject('EulerImplicitSolver', firstOrder="0",
                         rayleighStiffness="0.1", rayleighMass='0.1')
-    cableNode.addObject('SparseLUSolver', name='solver')
+    cableNode.addObject('SparseLDLSolver', name='solver', template='CompressedRowSparseMatrixd')
     cableNode.addObject('GenericConstraintCorrection')
 
     cosserat = cableNode.addChild(Cosserat(parent=cableNode, cosseratGeometry=beamGeometrie, radius=0.5,

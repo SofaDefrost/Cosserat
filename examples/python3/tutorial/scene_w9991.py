@@ -1,12 +1,11 @@
 import Sofa
-from useful.params import BeamPhysicsParameters, BeamGeometryParameters, SimulationParameters, Parameters
+from useful.params import BeamPhysicsParametersNoInertia, BeamGeometryParameters, SimulationParameters, Parameters
 
-geoParams = BeamGeometryParameters(init_pos=[0., 0., 0.], beamLength=30.0, nbSection=6, nbFrames=24,
-show_frames_object=1, buildCollisionModel=0)
-physicsParams = BeamPhysicsParameters(beamMass=1.0, youngModulus=1.0e4, poissonRatio=0.38,
-beamRadius=0.2, beamLength=30.0)
+geoParams = BeamGeometryParameters(beam_length=30.0, nb_section=6, nb_frames=24, build_collision_model=0)
+physicsParams = BeamPhysicsParametersNoInertia(beam_mass=1.0, young_modulus=1.0e4, poisson_ratio=0.38,
+beam_radius=0.2, beam_length=30.0)
 simuParams = SimulationParameters()
-Params = Parameters(beamGeoParams=geoParams, beamPhysicsParams=physicsParams, simuParams=simuParams)
+Params = Parameters(beam_geo_params=geoParams, beam_physics_params=physicsParams, simu_params=simuParams)
 
 stiffness_param = 1.e10
 
@@ -25,7 +24,7 @@ def _add_cosserat_state(p_node, bending_states, list_sections_length, _radius=0.
     cosserat_coordinate_node.addObject('MechanicalObject', template="Vec3d", name="cosserat_state",
     position=bending_states)
     cosserat_coordinate_node.addObject('BeamHookeLawForceField', crossSectionShape="circular", innerRadius=_innerRadius,
-    length=list_sections_length, radius=_radius,youngModulus=physicsParams.youngModulus, poissonRatio=physicsParams.poissonRatio)
+    length=list_sections_length, radius=_radius,youngModulus=physicsParams.young_modulus, poissonRatio=physicsParams.poisson_ratio)
     return cosserat_coordinate_node
 
 def _add_cosserat_frame(p_node, _bending_node, nb_framesF, _section_curv_abs, _frame_curv_abs, _radius=0.2, _innerRadius=0.05):
@@ -33,7 +32,7 @@ def _add_cosserat_frame(p_node, _bending_node, nb_framesF, _section_curv_abs, _f
     _bending_node.addChild(cosserat_in_Sofa_frame_node)
     frames_mo = cosserat_in_Sofa_frame_node.addObject('MechanicalObject', template="Rigid3d", name="FramesMO",
     position=nb_framesF, showIndices=0, showObject=0, showObjectScale=0.8)
-    cosserat_in_Sofa_frame_node.addObject('UniformMass', totalMass=physicsParams.beamMass)
+    cosserat_in_Sofa_frame_node.addObject('UniformMass', totalMass=physicsParams.beam_mass)
     cosserat_in_Sofa_frame_node.addObject('DiscreteCosseratMapping', name="cosseratMapping",
     curv_abs_input=_section_curv_abs, curv_abs_output=_frame_curv_abs,
     input1=_bending_node.cosserat_state.getLinkPath(), input2=p_node.cosserat_base_mo.getLinkPath(),
@@ -49,7 +48,7 @@ def createScene(root_node):
     "Sofa.Component.Collision.Geometry",
     "Sofa.Component.Collision.Response.Contact",            # Needed to use components [RuleBasedContactManager]
     "Sofa.Component.Constraint.Lagrangian.Correction",      # Needed to use components [GenericConstraintCorrection]
-    "Sofa.Component.Constraint.Lagrangian.Solver",          # Needed to use components [GenericConstraintSolver]
+    "Sofa.Component.Constraint.Lagrangian.Solver",          # Needed to use components [BlockGaussSeidelConstraintSolver]
     "Sofa.Component.Constraint.Projective",                 # Needed to use components [FixedConstraint]
     "Sofa.Component.Engine.Select",
     "Sofa.Component.IO.Mesh",                               # Needed to use components MeshOBJLoader, MeshSTLLoader
@@ -82,13 +81,13 @@ def createScene(root_node):
 
     root_node.addObject('FreeMotionAnimationLoop')
     root_node.addObject('EulerImplicitSolver', firstOrder="0", rayleighStiffness="0.0", rayleighMass="0.0")
-    root_node.addObject('ProjectedGaussSeidelConstraintSolver', maxIterations="500", tolerance="1e-20", computeConstraintForces=1, printLog="0")
+    root_node.addObject('BlockGaussSeidelConstraintSolver', maxIterations="500", tolerance="1e-20", computeConstraintForces=1, printLog="0")
     root_node.addObject('SparseLDLSolver', name="solver", template="CompressedRowSparseMatrixd")
 
     base_node = _add_rigid_base(root_node)
 
-    nb_sections = geoParams.nbSection
-    beam_length = geoParams.beamLength
+    nb_sections = geoParams.nb_section
+    beam_length = geoParams.beam_length
     length_s = beam_length/float(nb_sections)
     bending_states = []
     list_sections_length = []
@@ -105,7 +104,7 @@ def createScene(root_node):
     section_curv_abs[nb_sections] = beam_length
 
     bending_node = _add_cosserat_state(root_node, bending_states, list_sections_length)
-    nb_frames = geoParams.nbFrames
+    nb_frames = geoParams.nb_frames
     length_f = beam_length/float(nb_frames)
     cosserat_G_frames = []
     frames_curv_abs = []

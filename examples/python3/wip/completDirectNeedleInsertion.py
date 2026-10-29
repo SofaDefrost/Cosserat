@@ -17,12 +17,11 @@ from stlib3.scene import MainHeader
 from splib3.numerics import Quat
 
 sys.path.append('../')
-from createFemRegularGrid import createFemCube
-from usefulFunctions import BuildCosseratGeometry, AddPointProcess
+from cosserat.createFemRegularGrid import createFemCube
+from cosserat.usefulFunctions import BuildCosseratGeometry, AddPointProcess
 
-pluginNameList = 'SofaConstraint SofaDeformable SofaImplicitOdeSolver SofaMeshCollision SofaPreconditioner' \
-                 ' SofaGeneralTopology SofaOpenglVisual SofaGeneralRigid SoftRobots SofaSparseSolver' \
-                 ' Cosserat SofaBoundaryCondition'
+from cosserat.usefulFunctions import pluginList
+pluginNameList = ' '.join(pluginList + ['SoftRobots'])  # current (Sofa.Component.*) plugin names
 
 
 class Animation(Sofa.Core.Controller):
@@ -71,7 +70,7 @@ def createScene(rootNode):
     rootNode.addObject('VisualStyle', displayFlags='showBehaviorModels hideCollisionModels hideBoundingCollisionModels '
                                                    'showForceFields hideInteractionForceFields showWireframe')
     rootNode.addObject('FreeMotionAnimationLoop')
-    rootNode.addObject('ProjectedGaussSeidelConstraintSolver', tolerance="1e-20", maxIterations="500", printLog="0")
+    rootNode.addObject('BlockGaussSeidelConstraintSolver', tolerance="1e-20", maxIterations="500", printLog="0")
 
     gravity = [0, 0, 0]
     rootNode.gravity.value = gravity
@@ -82,7 +81,7 @@ def createScene(rootNode):
     ###############
     cableNode = rootNode.addChild('cableNode')
     cableNode.addObject('EulerImplicitSolver', firstOrder="0", rayleighStiffness="0.1", rayleighMass='0.1')
-    cableNode.addObject('SparseLUSolver', name='solver')
+    cableNode.addObject('SparseLDLSolver', name='solver', template='CompressedRowSparseMatrixd')
     cableNode.addObject('GenericConstraintCorrection')
 
     # ###############
