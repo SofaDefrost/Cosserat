@@ -44,7 +44,8 @@ def createScene(root_node):
 
     # --- Solver ---
     solver_node = root_node.addChild("solver")
-    solver_node.addObject("EulerImplicitSolver", firstOrder="0", rayleighMass=0.1, rayleighStiffness=0.1, vdamping=v_damping_param)
+    # vdamping no longer exists (SOFA >= 26.06): its damping is added to rayleighMass of EulerImplicitIntegrationScheme.
+    solver_node.addObject("EulerImplicitIntegrationScheme", firstOrder="0", rayleighMass=0.1 + v_damping_param, rayleighStiffness=0.1)
     solver_node.addObject("CGLinearSolver", iterations=1000, tolerance=1e-10, threshold=1e-10)
 
     # --- Beam ---
@@ -63,7 +64,7 @@ def createScene(root_node):
 
     # --- FEM Gripper ---
     fem_node = frame_node.addChild("fem_gripper") # fem_node child node of frame_node (Essential for the futur Mapping)
-    fem_node.addObject("EulerImplicitSolver", name="fem_solver")
+    fem_node.addObject("EulerImplicitIntegrationScheme", name="fem_solver")
     fem_node.addObject("SparseLDLSolver", name="fem_ldl_solver", template="CompressedRowSparseMatrixd")
     fem_node.addObject("MeshGmshLoader", name="loader", filename="mesh/liver.msh", scale=1.5) # from Gmsh in order to use TetrahedronFEMForceField
     fem_node.addObject("TetrahedronSetTopologyContainer", name="topology", src="@loader")

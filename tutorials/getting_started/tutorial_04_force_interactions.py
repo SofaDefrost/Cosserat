@@ -38,7 +38,7 @@ def createScene(root_node):
     # Configure scene with time integration
     add_mini_header(root_node)
     root_node.addObject('RequiredPlugin', pluginName='Sofa.Component.LinearSolver.Direct') # Needed to use components [SparseLDLSolver]  
-    root_node.addObject('RequiredPlugin', pluginName='Sofa.Component.ODESolver.Backward') # Needed to use components [EulerImplicitSolver]  
+    root_node.addObject('RequiredPlugin', pluginName='Sofa.Component.IntegrationScheme.Backward') # Needed to use components [EulerImplicitIntegrationScheme]  
     root_node.addObject('RequiredPlugin', pluginName='Sofa.Component.MechanicalLoad') # Needed to use components [ConstantForceField] 
     
     # Add gravity
@@ -47,12 +47,12 @@ def createScene(root_node):
     # Configure time integration and solver
     solver_node = root_node.addChild("solver_1")
 
+    # vdamping no longer exists (SOFA >= 26.06): its damping is added to rayleighMass of EulerImplicitIntegrationScheme.
     solver_node.addObject(
-        "EulerImplicitSolver",
+        "EulerImplicitIntegrationScheme",
         firstOrder="0",
         rayleighStiffness="0.0",
-        rayleighMass="0.0",
-        vdamping=v_damping_param,  # Damping parameter for dynamics
+        rayleighMass=v_damping_param,  # Damping parameter for dynamics
     )
     solver_node.addObject("SparseLDLSolver", template="CompressedRowSparseMatrixMat3x3d", name="solver")
 

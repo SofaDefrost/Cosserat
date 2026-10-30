@@ -23,17 +23,28 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "..", "py
 
 from cosserat import BeamGeometryParameters, CosseratGeometry
 
-from introduction_and_setup import (_add_cosserat_frame_v2, _add_cosserat_state,
-                                    _add_rigid_base, add_mini_header)
+from introduction_and_setup import (
+    _add_cosserat_frame_v2,
+    _add_cosserat_state,
+    _add_rigid_base,
+    add_mini_header,
+)
 
-v_damping_param: float =  8e-1  # Damping parameter for dynamics
+# Mass-proportional Rayleigh damping. It replaces the old ``vdamping`` of
+# EulerImplicitSolver, which EulerImplicitIntegrationScheme (SOFA >= 26.06) no longer has.
+rayleigh_mass_param: float = 8e-1
+
 
 def createScene(root_node):
     """Create a Cosserat beam scene with forces and dynamics."""
     # Configure scene with time integration
     add_mini_header(root_node)
-    root_node.addObject('RequiredPlugin', pluginName='Sofa.Component.LinearSolver.Direct') # Needed to use components [SparseLDLSolver]  
-    root_node.addObject('RequiredPlugin', pluginName='Sofa.Component.ODESolver.Backward') # Needed to use components [EulerImplicitSolver]  
+    root_node.addObject(
+        "RequiredPlugin", pluginName="Sofa.Component.LinearSolver.Direct"
+    )  # Needed to use components [SparseLDLSolver]
+    root_node.addObject(
+        "RequiredPlugin", pluginName="Sofa.Component.IntegrationScheme.Backward"
+    )  # Needed to use components [EulerImplicitIntegrationScheme]
 
     # Add gravity
     root_node.gravity = [0, -9.81, 0]  # Add gravity!
@@ -42,13 +53,14 @@ def createScene(root_node):
     solver_node = root_node.addChild("solver_1")
 
     solver_node.addObject(
-        "EulerImplicitSolver",
-        firstOrder="0",
-        rayleighStiffness="0.0",
-        rayleighMass="0.0",
-        vdamping=v_damping_param,  # Damping parameter for dynamics
+        "EulerImplicitIntegrationScheme",
+        firstOrder=False,
+        rayleighStiffness=0.0,
+        rayleighMass=rayleigh_mass_param,  # Damping parameter for dynamics
     )
-    solver_node.addObject("SparseLDLSolver", template="CompressedRowSparseMatrixMat3x3d", name="solver")
+    solver_node.addObject(
+        "SparseLDLSolver", template="CompressedRowSparseMatrixMat3x3d", name="solver"
+    )
 
     # === NEW APPROACH: Use CosseratGeometry with more sections for smoother dynamics ===
     beam_geometry_params = BeamGeometryParameters(
@@ -73,11 +85,15 @@ def createScene(root_node):
     # We start with a slightly bent beam to better visualize the effect of gravity.
     custom_bending_states = []
     for i in range(beam_geometry.get_number_of_sections()):
-        custom_bending_states.append([0, 0.0, 0.])
+        custom_bending_states.append([0, 0.0, 0.0])
 
     # Create cosserat state using geometry
-    bending_node = _add_cosserat_state(solver_node, beam_geometry, node_name="cosserat_states",
-                                       custom_bending_states=custom_bending_states)
+    bending_node = _add_cosserat_state(
+        solver_node,
+        beam_geometry,
+        node_name="cosserat_states",
+        custom_bending_states=custom_bending_states,
+    )
 
     # Create cosserat frame with mass (important for dynamics!)
     # The mass is distributed uniformly along the beam. Without mass, the beam
@@ -85,6 +101,5 @@ def createScene(root_node):
     frame_node = _add_cosserat_frame_v2(
         base_node, bending_node, beam_geometry, beam_mass=5.0
     )
-
 
     return root_node

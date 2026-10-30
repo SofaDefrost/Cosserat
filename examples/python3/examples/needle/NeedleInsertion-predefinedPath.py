@@ -96,7 +96,7 @@ def createScene(rootNode):
     rootNode.addObject('VisualStyle', displayFlags='showBehaviorModels hideCollisionModels hideBoundingCollisionModels '
                                                    'showForceFields hideInteractionForceFields showWireframe')
     rootNode.addObject('FreeMotionAnimationLoop')
-    rootNode.addObject('ProjectedGaussSeidelConstraintSolver',
+    rootNode.addObject('BlockGaussSeidelConstraintSolver',
                        tolerance="1e-20", maxIterations="500", printLog="0")
 
     gravity = [0, 0, 0]
@@ -109,7 +109,7 @@ def createScene(rootNode):
     cableNode = rootNode.addChild('cableNode')
     cableNode.addObject('EulerImplicitSolver', firstOrder="0",
                         rayleighStiffness="0.1", rayleighMass='0.1')
-    cableNode.addObject('SparseLUSolver', name='solver')
+    cableNode.addObject('SparseLDLSolver', name='solver', template='CompressedRowSparseMatrixd')
     cableNode.addObject('GenericConstraintCorrection')
 
     # ###############

@@ -32,7 +32,7 @@ def createScene(root_node):
     add_mini_header(root_node)
     root_node.addObject('RequiredPlugin', pluginName='Sofa.Component.IO.Mesh') # Needed to use components [MeshVTKLoader]  
     root_node.addObject('RequiredPlugin', pluginName='Sofa.Component.LinearSolver.Direct') # Needed to use components [SparseLDLSolver]  
-    root_node.addObject('RequiredPlugin', pluginName='Sofa.Component.ODESolver.Backward') # Needed to use components [EulerImplicitSolver]  
+    root_node.addObject('RequiredPlugin', pluginName='Sofa.Component.IntegrationScheme.Backward') # Needed to use components [EulerImplicitIntegrationScheme]  
     root_node.addObject('RequiredPlugin', pluginName='Sofa.Component.SolidMechanics.FEM.Elastic') # Needed to use components [TetrahedronFEMForceField]  
     root_node.addObject('RequiredPlugin', pluginName='Sofa.Component.Topology.Container.Dynamic') # Needed to use components [TetrahedronSetTopologyContainer]     
     root_node.addObject('RequiredPlugin', pluginName='Sofa.GL.Component.Rendering3D') # Needed to use components [OglModel]  
@@ -43,7 +43,8 @@ def createScene(root_node):
 
     # --- Solver ---
     solver_node = root_node.addChild("solver")
-    solver_node.addObject("EulerImplicitSolver", rayleighStiffness="0.0", rayleighMass="0.0", vdamping=0.5)
+    # vdamping no longer exists (SOFA >= 26.06): its damping is added to rayleighMass of EulerImplicitIntegrationScheme.
+    solver_node.addObject("EulerImplicitIntegrationScheme", rayleighStiffness="0.0", rayleighMass=0.5)
     solver_node.addObject("SparseLDLSolver", name="solver", template="CompressedRowSparseMatrixd")
 
     # --- Beam ---
@@ -56,7 +57,7 @@ def createScene(root_node):
 
     # --- FEM Gripper ---
     fem_node = frame_node.addChild("fem_gripper") # fem_node child node of frame_node (Essential for the futur Mapping)
-    fem_node.addObject("EulerImplicitSolver", name="fem_solver")
+    fem_node.addObject("EulerImplicitIntegrationScheme", name="fem_solver")
     fem_node.addObject("SparseLDLSolver", name="fem_ldl_solver", template="CompressedRowSparseMatrixd")
     fem_node.addObject("MeshGmshLoader", name="loader", filename="mesh/liver.msh", scale=1.5) # from Gmsh in order to use TetrahedronFEMForceField
     fem_node.addObject("TetrahedronSetTopologyContainer", name="topology", src="@loader")

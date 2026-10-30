@@ -168,7 +168,7 @@ void DiscreteCosseratMapping<sofa::defaulttype::Vec6Types, sofa::defaulttype::Ri
         temp.transpose();
         Vec6 f = matB_trans * temp * node_F_Vec;
 
-        if(index != m_indicesVectors[s]){
+        while (index > m_indicesVectors[s]) {   // several sections may separate two frames
             index--;
             //bring F_tot to the reference of the new beam
             this->computeCoAdjoint(m_nodesExponentialSE3Vectors[index],coAdjoint);  //m_nodesExponentialSE3Vectors computed in apply
@@ -456,7 +456,7 @@ void DiscreteCosseratMapping<sofa::defaulttype::Vec6Types, sofa::defaulttype::Ri
         }
 
         // ---- Section boundary: transport F_tot ------------------------------
-        if (index != m_indicesVectors[s]) {
+        while (index > m_indicesVectors[s]) {   // several sections may separate two frames
             index--;
 
             TangentTransform coAdj_node;

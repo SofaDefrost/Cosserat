@@ -19,11 +19,13 @@ import os
 import sys
 
 # Add the python package to the path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'python'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..', 'python'))
+# The helpers of the former tutorial_01_basic_beam now live in using_lie_algebra/introduction_and_setup.py
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'using_lie_algebra'))
 
 from cosserat import BeamGeometryParameters, CosseratGeometry
 
-from tutorial_01_basic_beam import (_add_cosserat_frame, _add_cosserat_state,
+from introduction_and_setup import (_add_cosserat_frame, _add_cosserat_state,
                                     _add_rigid_base)
 
 stiffness_param: float = 1.e10
@@ -36,10 +38,12 @@ def createScene(root_node):
     # Load required plugins
     root_node.addObject('RequiredPlugin', name='Sofa.Component.LinearSolver.Direct')
     root_node.addObject('RequiredPlugin', name='Sofa.Component.Mass')
-    root_node.addObject('RequiredPlugin', name='Sofa.Component.ODESolver.Backward')
+    root_node.addObject('RequiredPlugin', name='Sofa.Component.IntegrationScheme.Backward')
     root_node.addObject('RequiredPlugin', name='Sofa.Component.SolidMechanics.Spring')
     root_node.addObject('RequiredPlugin', name='Sofa.Component.SolidMechanics.FEM.Elastic')
     root_node.addObject('RequiredPlugin', name='Sofa.Component.StateContainer')
+    root_node.addObject('RequiredPlugin', name='Sofa.Component.MechanicalLoad')  # ConstantForceField
+    root_node.addObject('RequiredPlugin', name='Sofa.Component.Mapping.NonLinear')
     root_node.addObject('RequiredPlugin', name='Sofa.Component.Visual')
     root_node.addObject("RequiredPlugin", name='Cosserat')
 
@@ -49,12 +53,12 @@ def createScene(root_node):
         displayFlags="showBehaviorModels showCollisionModels showMechanicalMappings",
     )
     root_node.gravity = [0, -9.81, 0]  # Add gravity!
+    # vdamping no longer exists (SOFA >= 26.06): its damping is added to rayleighMass of EulerImplicitIntegrationScheme.
     solver_node = root_node.addObject(
-        "EulerImplicitSolver",
+        "EulerImplicitIntegrationScheme",
         firstOrder="0",
         rayleighStiffness="0.0",
-        rayleighMass="0.0",
-        vdamping=vdamping_param,  # Damping parameter for dynamics
+        rayleighMass=vdamping_param,  # Damping parameter for dynamics
     )
     # solver_node.setAttribute("vdamping", 0.02)  # Set time step for dynamics
     root_node.addObject("SparseLDLSolver", name="solver")
@@ -105,7 +109,6 @@ def createScene(root_node):
         indices=[tip_frame_index],
         forces=[applied_force],
         showArrowSize=1e-1,
-        arrowSizeCoeff=1e-3
     )
 
     print(f"💪 Applied force {applied_force[:3]} at frame {tip_frame_index}")

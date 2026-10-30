@@ -30,12 +30,12 @@ def createScene(root):
     # Configure time integration and solver
     solver = root.addChild("solver")
 
+    # vdamping no longer exists (SOFA >= 26.06): its damping is added to rayleighMass of EulerImplicitIntegrationScheme.
     solver.addObject(
-        "EulerImplicitSolver",
+        "EulerImplicitIntegrationScheme",
         firstOrder="0",
         rayleighStiffness="0.1",
-        rayleighMass="0.1",
-        vdamping=v_damping_param,  # Damping parameter for dynamics
+        rayleighMass=0.1 + v_damping_param,  # Damping parameter for dynamics
     )
     solver.addObject("CGLinearSolver", iterations=100, tolerance=1e-9, threshold=1e-9)
 
