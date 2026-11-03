@@ -404,7 +404,7 @@ namespace Cosserat::mapping {
 
                 Vec3 f = matB_trans * temp * node_F_Vec;
 
-                if (index != m_indicesVectors[s]) {
+                while (index > m_indicesVectors[s]) {   // several sections may separate two frames
                     index--;
                     // bring F_tot to the reference of the new beam
                     this->computeCoAdjoint(m_nodesExponentialSE3Vectors[index], coAdjoint); // m_nodesExponentialSE3Vectors computed in apply
@@ -443,7 +443,7 @@ namespace Cosserat::mapping {
 
                 Vec6 f = temp * node_F_Vec;
 
-                if (index != m_indicesVectors[s]) {
+                while (index > m_indicesVectors[s]) {   // several sections may separate two frames
                     index--;
                     // bring F_tot to the reference of the new beam
                     this->computeCoAdjoint(m_nodesExponentialSE3Vectors[index], coAdjoint); // m_nodesExponentialSE3Vectors computed in apply
@@ -913,7 +913,7 @@ void DiscreteCosseratMapping<TIn1, TIn2, TOut>::applyDJT(
         }
 
         // ---- Section boundary: transport accumulated F_tot ------------------
-        if (index != m_indicesVectors[s]) {
+        while (index > m_indicesVectors[s]) {   // several sections may separate two frames
             index--;   // 1-indexed node that separates sections
 
             // Transport (same as applyJT)

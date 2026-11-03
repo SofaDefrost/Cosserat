@@ -99,7 +99,9 @@ Constraints work closely with other components in the Cosserat plugin:
 def createScene(rootNode):
     # Configure animation and solver components for constraints
     rootNode.addObject("FreeMotionAnimationLoop")
-    rootNode.addObject("GenericConstraintSolver", tolerance=1e-5, maxIterations=5e2)
+    # SOFA >= v25.12: BlockGaussSeidelConstraintSolver replaces GenericConstraintSolver
+    # (python/cosserat/header.py provides add_constraint_solver() which picks the right name)
+    rootNode.addObject("BlockGaussSeidelConstraintSolver", tolerance=1e-5, maxIterations=500)
     
     solverNode = rootNode.addChild("solverNode")
     solverNode.addObject(

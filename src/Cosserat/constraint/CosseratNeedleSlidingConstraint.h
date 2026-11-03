@@ -33,6 +33,7 @@
 #include <sofa/defaulttype/VecTypes.h>
 #include <sofa/helper/OptionsGroup.h>
 #include <sofa/core/behavior/Constraint.h>
+#include <sofa/core/ConstraintParams.h>
 
 namespace sofa::component::constraintset
 {
@@ -108,11 +109,10 @@ namespace sofa::component::constraintset
         }
 
 
+         /// Stores in `res` the force (J^T lambda) that the constraint applies on its mechanical state.
          void storeLambda(const ConstraintParams *cParams, MultiVecDerivId res, const sofa::linearalgebra::BaseVector *lambda) override
          {
-            SOFA_UNUSED(cParams);
-            SOFA_UNUSED(res);
-            SOFA_UNUSED(lambda);
+            storeLambda(cParams, *res[this->mstate.get()].write(), *cParams->readJ(this->mstate.get()), lambda);
          }
 
     protected:
@@ -120,6 +120,9 @@ namespace sofa::component::constraintset
         Data<type::vector<Real>> d_value;
         Data<unsigned int> d_valueIndex;
         Data<helper::OptionsGroup> d_valueType;
+        /// Directions (x, y, z) in which the points are imposed to stay at 0 (default 0 1 1: the points slide along x).
+        /// x is the sliding axis (friction acts along it) and is never constrained: only y and z give lines, one per
+        /// constrained direction and per point, in the order y, z.
         Data<type::Vec<3, bool>> d_useDirections;
         // displacement = the constraint will impose the displacement provided in data d_inputValue[d_iputIndex]
         // force = the constraint will impose the force provided in data d_inputValue[d_iputIndex]

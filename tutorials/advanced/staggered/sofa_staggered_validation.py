@@ -29,7 +29,7 @@ Cible de validation
 
 API SOFA utilisée
 -----------------
-Conformément à MEMOIRE.md §4, on accède aux Data fields via `.value`
+Conformément à dev_notes/MEMOIRE.md §4, on accède aux Data fields via `.value`
 (pas via les méthodes pybind11 getPositions/setPositions/getNodalForces…
 qui ne sont pas exposées par le binding actuel).
 

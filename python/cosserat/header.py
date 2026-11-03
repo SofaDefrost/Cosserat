@@ -19,6 +19,39 @@ from stlib3.physics.deformable import ElasticMaterialObject
 
 from .params import ContactParameters as DefaultContactParams
 
+# Gauss-Seidel (LCP) constraint solver, by SOFA version, newest name first:
+#   - SOFA >= v25.12 : BlockGaussSeidelConstraintSolver (the former "ProjectedGaussSeidel" of
+#                      GenericConstraintSolver, renamed in sofa-framework/sofa#5804)
+#   - transitional   : ProjectedGaussSeidelConstraintSolver
+#   - SOFA <  v25.12 : GenericConstraintSolver (default resolution method = projected Gauss-Seidel)
+# GenericConstraintSolver is no longer instantiable since v25.12 (replaced by BlockGaussSeidel,
+# UnbuiltGaussSeidel and NNCG constraint solvers).
+GAUSS_SEIDEL_CONSTRAINT_SOLVERS = (
+    "BlockGaussSeidelConstraintSolver",
+    "ProjectedGaussSeidelConstraintSolver",
+    "GenericConstraintSolver",
+)
+
+
+def add_constraint_solver(node, **kwargs):
+    """Adds the Gauss-Seidel constraint solver available in the running SOFA version.
+
+    Tries the component names of GAUSS_SEIDEL_CONSTRAINT_SOLVERS from the newest to the oldest and
+    returns the first one that can be created. Keyword arguments (tolerance, maxIterations, name,
+    multithreading, computeConstraintForces, ...) are forwarded to the component.
+
+    Raises:
+        RuntimeError: if none of the known solver names exists in this SOFA build.
+    """
+    errors = []
+    for solver_name in GAUSS_SEIDEL_CONSTRAINT_SOLVERS:
+        try:
+            return node.addObject(solver_name, **kwargs)
+        except Exception as error:  # SofaPython3 raises when the component type does not exist
+            errors.append(f"{solver_name}: {str(error).splitlines()[0] if str(error) else error!r}")
+    raise RuntimeError("No Gauss-Seidel constraint solver could be created in this SOFA build:\n  "
+                       + "\n  ".join(errors))
+
 
 def show_mecha_visual(node, show=True):
     node.showObject = show
@@ -48,7 +81,7 @@ def addHeader(parent_node, multithreading=False, inverse=False, is_constrained=F
         "Sofa.Component.Collision.Detection.Intersection",  # Needed to use components LocalMinDistance
         "Sofa.Component.Collision.Response.Contact",  # Needed to use components RuleBasedContactManager
         "Sofa.Component.Constraint.Lagrangian.Correction",  # Needed to use components GenericConstraintCorrection
-        "Sofa.Component.Constraint.Lagrangian.Solver",  # Needed to use components GenericConstraintSolver
+        "Sofa.Component.Constraint.Lagrangian.Solver",  # Needed to use components BlockGaussSeidelConstraintSolver (GenericConstraintSolver before v25.12)
         "Sofa.Component.Constraint.Projective",  # Needed to use components FixedConstraint
         "Sofa.Component.IO.Mesh",  # Needed to use components MeshOBJLoader, MeshSTLLoader
         "Sofa.Component.Mass", 'Sofa.Component.LinearSolver.Direct',
@@ -81,7 +114,7 @@ def addHeader(parent_node, multithreading=False, inverse=False, is_constrained=F
             parent_node.addObject('QPInverseProblemSolver', name='ConstraintSolver', tolerance=1e-8, maxIterations=100,
                                   multithreading=multithreading, epsilon=1)
         else:
-            parent_node.addObject('ProjectedGaussSeidelConstraintSolver', name='ConstraintSolver', tolerance=1e-8, maxIterations=100,
+            add_constraint_solver(parent_node, name='ConstraintSolver', tolerance=1e-8, maxIterations=100,
                                   multithreading=multithreading)
 
     if is_contact:

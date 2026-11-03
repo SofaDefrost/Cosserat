@@ -19,15 +19,15 @@ import os
 import sys
 
 # Add the python package to the path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "python"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "..", "python"))
 
 from cosserat import BeamGeometryParameters, CosseratGeometry
 
 # Import helper functions from the first tutorial
-from tutorials.getting_started.wip.improved_tutorial_00_basic_beam import (add_required_plugins,
-                                                                           create_rigid_base,
-                                                                           create_cosserat_state,
-                                                                           create_cosserat_frame)
+from improved_tutorial_00_basic_beam import (add_required_plugins,
+                                             create_rigid_base,
+                                             create_cosserat_state,
+                                             create_cosserat_frame)
 
 # Damping parameter for dynamics - helps stabilize the simulation
 v_damping_param: float = 8.e-1
@@ -46,12 +46,12 @@ def create_solver_node(parent_node, name="solver"):
     solver_node = parent_node.addChild(name)
     
     # Add an implicit Euler solver for time integration
+    # vdamping no longer exists (SOFA >= 26.06): its damping is added to rayleighMass of EulerImplicitIntegrationScheme.
     solver_node.addObject(
-        "EulerImplicitSolver",
+        "EulerImplicitIntegrationScheme",
         firstOrder="0",              # Second-order integration
         rayleighStiffness="0.0",     # No stiffness-based damping
-        rayleighMass="0.0",          # No mass-based damping
-        vdamping=v_damping_param,    # Velocity damping for stability
+        rayleighMass=v_damping_param,    # Velocity damping for stability
     )
     
     # Add a sparse LDL solver for efficient linear system solving

@@ -20,7 +20,7 @@ import Sofa
 from numpy import array
 
 from .geometry import CosseratGeometry, generate_edge_list
-from .header import addHeader, addVisual
+from .header import add_constraint_solver, addHeader, addVisual
 from .params import (BeamGeometryParameters, BeamPhysicsBaseParameters,
                      Parameters)
 from .utils import addEdgeCollision, addPointsCollision, create_rigid_node
@@ -372,7 +372,7 @@ def createScene(rootNode):
     rootNode.findData("gravity").value = [0.0, -9.81, 0.0]
     rootNode.addObject("BackgroundSetting", color="0 0.168627 0.211765")
     rootNode.addObject("FreeMotionAnimationLoop")
-    rootNode.addObject("GenericConstraintSolver", tolerance=1e-5, maxIterations=5e2)
+    add_constraint_solver(rootNode, tolerance=1e-5, maxIterations=500)
     rootNode.addObject("Camera", position="-35 0 280", lookAt="0 0 0")
 
     solverNode = rootNode.addChild("solverNode")

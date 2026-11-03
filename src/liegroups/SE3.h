@@ -288,77 +288,66 @@ namespace sofa::component::cosserat::liegroups {
 			return computeLog();
 		}
 
-		AdjointMatrix ad(const TangentVector &v) {
-			AdjointMatrix Ad = AdjointMatrix::Zero();
-			const Vector3 omega = v.template tail<3>();
-			const Vector3 rho = v.template head<3>();
-			const Matrix3 R = m_rotation.matrix();
-
-			Ad.template block<3, 3>(0, 0) = R;
-			Ad.template block<3, 3>(3, 3) = R;
-			Ad.template block<3, 3>(0, 3) = SO3Type::computeHat(rho) * R;
-			Ad.template block<3, 3>(0, 0) += SO3Type::computeHat(omega) * R;
-
-			return Ad;
+		/**
+		 * @brief Lie bracket [v, w] of se(3) in the [phi ; rho] layout (angular first).
+		 *
+		 * With v = [phi_v ; rho_v], w = [phi_w ; rho_w]:
+		 *   [v, w] = [ phi_v x phi_w ;  phi_v x rho_w - phi_w x rho_v ] = vee(hat(v) hat(w) - hat(w) hat(v)).
+		 */
+		static TangentVector lieBracket(const TangentVector &v, const TangentVector &w) {
+			const Vector3 phi_v = v.template head<3>();
+			const Vector3 rho_v = v.template tail<3>();
+			const Vector3 phi_w = w.template head<3>();
+			const Vector3 rho_w = w.template tail<3>();
+			TangentVector result;
+			result.template head<3>() = phi_v.cross(phi_w);
+			result.template tail<3>() = phi_v.cross(rho_w) - phi_w.cross(rho_v);
+			return result;
 		}
 
-		AdjointMatrix ad(const ActionVector &point) {
-			AdjointMatrix Ad = AdjointMatrix::Zero();
-			const Vector3 rho = point.template head<3>();
-			const Vector3 omega = point.template tail<3>();
-			const Matrix3 R = m_rotation.matrix();
-
-			Ad.template block<3, 3>(0, 0) = R;
-			Ad.template block<3, 3>(3, 3) = R;
-			Ad.template block<3, 3>(0, 3) = SO3Type::computeHat(rho) * R;
-			Ad.template block<3, 3>(0, 0) += SO3Type::computeHat(omega) * R;
-
-			return Ad;
+		/**
+		 * @brief Algebra adjoint operator ad_v of v = [phi ; rho]: ad_v w = [v, w].
+		 *
+		 *   ad_v = [ [phi]x      0     ]
+		 *          [ [rho]x   [phi]x   ]
+		 *
+		 * Independent of any group element (no rotation block); this is the derivative at t = 0 of
+		 * Ad(exp(t v)). Static, but can still be called on an instance for backward compatibility.
+		 * Also the CRTP hook LieGroupBase::ad() expects.
+		 */
+		static AdjointMatrix computeAd(const TangentVector &v) {
+			const Matrix3 phi_x = SO3Type::computeHat(Vector3(v.template head<3>()));
+			const Matrix3 rho_x = SO3Type::computeHat(Vector3(v.template tail<3>()));
+			AdjointMatrix ad = AdjointMatrix::Zero();
+			ad.template block<3, 3>(0, 0) = phi_x;
+			ad.template block<3, 3>(3, 3) = phi_x;
+			ad.template block<3, 3>(3, 0) = rho_x;
+			return ad;
 		}
 
-		AdjointMatrix ad(const TangentVector &v, const ActionVector & /*point*/) {
-			AdjointMatrix Ad = AdjointMatrix::Zero();
-			const Vector3 omega = v.template tail<3>();
-			const Vector3 rho = v.template head<3>();
-			const Matrix3 R = m_rotation.matrix();
+		/// ad_v = [[phi]x 0; [rho]x [phi]x] (see computeAd). Does not depend on this group element.
+		static AdjointMatrix ad(const TangentVector &v) { return computeAd(v); }
 
-			Ad.template block<3, 3>(0, 0) = R;
-			Ad.template block<3, 3>(3, 3) = R;
-			Ad.template block<3, 3>(0, 3) = SO3Type::computeHat(rho) * R;
-			Ad.template block<3, 3>(0, 0) += SO3Type::computeHat(omega) * R;
-
-			return Ad;
+		/**
+		 * @brief ad of the pure-translation generator [0 ; point]: [[0 0], [point]x 0]].
+		 *
+		 * The previous version split a 3-vector into "rho" and "omega" (both being the same 3 numbers),
+		 * which had no meaning; a point is interpreted here as a linear generator rho = point, phi = 0.
+		 */
+		static AdjointMatrix ad(const ActionVector &point) {
+			TangentVector v = TangentVector::Zero();
+			v.template tail<3>() = point;
+			return computeAd(v);
 		}
 
-		AdjointMatrix ad(const ActionVector & /*point*/, const TangentVector &v) {
-			AdjointMatrix Ad = AdjointMatrix::Zero();
-			const Vector3 omega = v.template tail<3>();
-			const Vector3 rho = v.template head<3>();
-			const Matrix3 R = m_rotation.matrix();
+		/// ad_v; the point argument was already ignored and still is (kept for API compatibility).
+		static AdjointMatrix ad(const TangentVector &v, const ActionVector & /*point*/) { return computeAd(v); }
 
-			Ad.template block<3, 3>(0, 0) = R;
-			Ad.template block<3, 3>(3, 3) = R;
-			Ad.template block<3, 3>(0, 3) = SO3Type::computeHat(rho) * R;
-			Ad.template block<3, 3>(0, 0) += SO3Type::computeHat(omega) * R;
+		/// ad_v; the point argument was already ignored and still is (kept for API compatibility).
+		static AdjointMatrix ad(const ActionVector & /*point*/, const TangentVector &v) { return computeAd(v); }
 
-			return Ad;
-		}
-
-		AdjointMatrix ad(const TangentVector &v, const TangentVector &w) {
-			AdjointMatrix Ad = AdjointMatrix::Zero();
-			const Vector3 omega_v = v.template tail<3>();
-			const Vector3 rho_v = v.template head<3>();
-			const Vector3 omega_w = w.template tail<3>();
-			const Vector3 rho_w = w.template head<3>();
-			const Matrix3 R = m_rotation.matrix();
-
-			Ad.template block<3, 3>(0, 0) = R;
-			Ad.template block<3, 3>(3, 3) = R;
-			Ad.template block<3, 3>(0, 3) = SO3Type::computeHat(rho_v) * R;
-			Ad.template block<3, 3>(0, 0) += SO3Type::computeHat(omega_v) * R;
-
-			return Ad;
-		}
+		/// ad(v, w) = [v, w] = ad_v w = vee(hat(v) hat(w) - hat(w) hat(v)) (a 6-vector, not a matrix).
+		static TangentVector ad(const TangentVector &v, const TangentVector &w) { return lieBracket(v, w); }
 
 		AdjointMatrix projector() const {
 			AdjointMatrix Ad = AdjointMatrix::Zero();
@@ -495,49 +484,40 @@ namespace sofa::component::cosserat::liegroups {
 
 	/**
 	 * @brief Compute the Jacobian of the group action on a point.
-	 * 
+	 *
 	 * For y = g*p (where g acts on point p), computes:
-	 * - ∂y/∂g (with g perturbed in tangent space): 3x6 matrix
+	 * - ∂y/∂g (g perturbed on the LEFT in the tangent space, exp(ξ)·g, ξ = [φ ; ρ]ᵀ): 3x6 matrix
 	 * - ∂y/∂p: 3x3 matrix
-	 * 
+	 *
+	 * Columns follow the library layout [φ (angular, 0..2) ; ρ (linear, 3..5)] of computeExp/computeLog.
+	 *
 	 * @param point The point p ∈ ℝ³
 	 * @return Pair of Jacobians (∂y/∂g, ∂y/∂p)
 	 */
 	std::pair<JacobianMatrix, Matrix3> actionJacobians(const ActionVector &point) const noexcept {
-		// For SE(3) action: y = R*p + t
-		// Perturbation: (exp(ξ) * g) * p where ξ = [ρ, φ]ᵀ
-		// exp(ξ) * g * p ≈ g*p + [R 0; [t]×R R] * ξ
-		//                = R*p + t + R*ρ + φ×(R*p)
-		
-		Vector3 Rp = m_rotation.act(point);
-		Matrix3 R = m_rotation.matrix();
-		
-		// Jacobian w.r.t. ξ = [ρ, φ]ᵀ is 3x6:
-		// [R  -[R*p]×]
-		JacobianMatrix J_wrt_group;  // 3x6
-		J_wrt_group.template block<3, 3>(0, 0) = R;  // ∂y/∂ρ
-		J_wrt_group.template block<3, 3>(0, 3) = -SO3Type::computeHat(Rp);  // ∂y/∂φ
-		
-		// Jacobian w.r.t. p is simply R
-		Matrix3 J_wrt_point = R;
-		
-		return {J_wrt_group, J_wrt_point};
+		return {actionJacobianGroup(point), actionJacobianPoint(point)};
 	}
 
 	/**
 	 * @brief Compute only the Jacobian w.r.t. the group element for action.
-	 * 
+	 *
+	 * Left perturbation, ξ = [φ ; ρ]ᵀ:  exp(ξ)·(g·p) ≈ y + ρ + φ × y   with y = g·p = R p + t, so
+	 *
+	 *   ∂(g·p)/∂ξ = [ -[y]×  |  I₃ ]      (columns 0..2 : φ, columns 3..5 : ρ)
+	 *
+	 * (a right perturbation g·exp(ξ) would instead give [ -R [p]× | R ]; that is what the generic
+	 * LieGroupBase::actionJacobian finite differences compute.)
+	 *
 	 * @param point The point p ∈ ℝ³
 	 * @return 3x6 Jacobian ∂(g*p)/∂g
 	 */
 	JacobianMatrix actionJacobianGroup(const ActionVector &point) const noexcept {
-		Vector3 Rp = m_rotation.act(point);
-		Matrix3 R = m_rotation.matrix();
-		
+		const Vector3 y = m_rotation.act(point) + m_translation;
+
 		JacobianMatrix J;  // 3x6
-		J.template block<3, 3>(0, 0) = R;
-		J.template block<3, 3>(0, 3) = -SO3Type::computeHat(Rp);
-		
+		J.template block<3, 3>(0, 0) = -SO3Type::computeHat(y);  // ∂y/∂φ
+		J.template block<3, 3>(0, 3) = Matrix3::Identity();      // ∂y/∂ρ
+
 		return J;
 	}
 
@@ -724,45 +704,19 @@ namespace sofa::component::cosserat::liegroups {
 		/**
 		 * @brief Computes the Baker-Campbell-Hausdorff (BCH) approximation for log(exp(x) * exp(y)).
 		 *
-		 * Z = log(exp(X) * exp(Y)) ≈ X + Y + 0.5 * [X, Y] + ...
+		 * Z = log(exp(X) * exp(Y)) ≈ X + Y + 0.5 * [X, Y]   (error O(|X,Y|^3))
+		 *
+		 * Tangent vectors use the [phi ; rho] layout of computeExp/computeLog (angular part first,
+		 * linear part last); the bracket is lieBracket().
 		 *
 		 * @param x First tangent vector.
 		 * @param y Second tangent vector.
 		 * @return Approximate tangent vector Z.
 		 */
 		static TangentVector computeBCH(const TangentVector &x, const TangentVector &y) {
-			// First order: x + y
-			TangentVector z = x + y;
-
-			// Second order: 0.5 * [x, y]
-			// Lie Bracket [x, y] = ad(x) * y
-			// We need to implement the Lie Bracket for SE(3)
-			// ad(x) is 6x6 matrix.
-			// We can use the ad() method if available or implement it here.
-			// The ad() method is available as an instance method but we need a static one or use a dummy instance.
-			// Actually, ad(v) returns the adjoint matrix of the algebra element v.
-
-			// Let's implement the Lie Bracket directly:
-			// [u, v] = [ (rho_u, phi_u), (rho_v, phi_v) ]
-			//        = ( phi_u x rho_v - phi_v x rho_u, phi_u x phi_v )
-
-			Vector3 rho_x = x.template head<3>();
-			Vector3 phi_x = x.template tail<3>();
-			Vector3 rho_y = y.template head<3>();
-			Vector3 phi_y = y.template tail<3>();
-
-			Vector3 rho_bracket = phi_x.cross(rho_y) - phi_y.cross(rho_x);
-			Vector3 phi_bracket = phi_x.cross(phi_y);
-
-			TangentVector bracket;
-			bracket.template head<3>() = rho_bracket;
-			bracket.template tail<3>() = phi_bracket;
-
-			z += Scalar(0.5) * bracket;
-
-			// Higher orders can be added if needed (1/12 * ([x,[x,y]] + [y,[y,x]]))
-
-			return z;
+			// Second order: x + y + 1/2 [x, y], bracket in the [phi ; rho] layout (same as computeExp/computeLog).
+			// Higher orders (1/12 ([x,[x,y]] + [y,[y,x]]), ...) can be added if needed.
+			return x + y + Scalar(0.5) * lieBracket(x, y);
 		}
 
 		/**
@@ -790,29 +744,15 @@ namespace sofa::component::cosserat::liegroups {
 		 * parallel to the geodesic.
 		 *
 		 * For now, let's implement a simple approximation:
-		 * v_out = (I - 0.5 * ad(u)) * v  (First order approximation of parallel transport along u)
-		 * where u = log(this)
+		 * v_out = (I - 0.5 * ad(u)) * v = v - 0.5 * [u, v]  (First order approximation of parallel transport along u)
+		 * where u = log(this). Vectors use the [phi ; rho] layout (angular first), see lieBracket().
 		 *
 		 * @param v The tangent vector to transport.
 		 * @return The transported tangent vector.
 		 */
 		TangentVector parallelTransport(const TangentVector &v) const {
-			TangentVector u = this->log();
-
-			// Lie Bracket [u, v]
-			Vector3 rho_u = u.template head<3>();
-			Vector3 phi_u = u.template tail<3>();
-			Vector3 rho_v = v.template head<3>();
-			Vector3 phi_v = v.template tail<3>();
-
-			Vector3 rho_bracket = phi_u.cross(rho_v) - phi_v.cross(rho_u);
-			Vector3 phi_bracket = phi_u.cross(phi_v);
-
-			TangentVector bracket;
-			bracket.template head<3>() = rho_bracket;
-			bracket.template tail<3>() = phi_bracket;
-
-			return v - Scalar(0.5) * bracket;
+			const TangentVector u = this->log();
+			return v - Scalar(0.5) * lieBracket(u, v);
 		}
 
 	private:

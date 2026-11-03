@@ -47,9 +47,9 @@ void CosseratIntrinsicState::init() {
     rest_lengths.clear();
     rest_lengths.reserve(nbSections);
 
-    msg_info() << "┌─ CosseratIntrinsicState INIT ──────────────────────────────";
-    msg_info() << "│  d_positions.size()    = " << pos.size()    << "  (expected N+1=" << nbSections+1 << ")";
-    msg_info() << "│  d_orientations.size() = " << omegas.size() << "  (expected N="   << nbSections   << ")";
+    dmsg_info() << "┌─ CosseratIntrinsicState INIT ──────────────────────────────";
+    dmsg_info() << "│  d_positions.size()    = " << pos.size()    << "  (expected N+1=" << nbSections+1 << ")";
+    dmsg_info() << "│  d_orientations.size() = " << omegas.size() << "  (expected N="   << nbSections   << ")";
 
     bool length_ok = true;
     for (size_t i = 0; i < nbSections; ++i) {
@@ -71,32 +71,33 @@ void CosseratIntrinsicState::init() {
     // Print rest lengths summary
     double h_min = 1e30, h_max = 0.0, h_sum = 0.0;
     for (double h : rest_lengths) { h_min = std::min(h_min, h); h_max = std::max(h_max, h); h_sum += h; }
-    msg_info() << "│  rest_lengths : min=" << h_min << "  max=" << h_max
+    dmsg_info() << "│  rest_lengths : min=" << h_min << "  max=" << h_max
                << "  total=" << h_sum << " m"
                << (length_ok ? "" : "  ← WARNINGS above");
 
     // Print initial node positions
-    msg_info() << "│  Initial node positions (world frame):";
+    dmsg_info() << "│  Initial node positions (world frame):";
     for (size_t i = 0; i < pos.size(); ++i)
-        msg_info() << "│    x[" << i << "] = ("
+        dmsg_info() << "│    x[" << i << "] = ("
                    << std::fixed << std::setprecision(5)
                    << pos[i].x() << ", " << pos[i].y() << ", " << pos[i].z() << ")";
 
     // Print initial orientations (rotation vectors)
-    msg_info() << "│  Initial orientations ω = log(R)  [identity = (0,0,0)]:";
+    dmsg_info() << "│  Initial orientations ω = log(R)  [identity = (0,0,0)]:";
     double max_omega0 = 0.0;
     for (size_t i = 0; i < omegas.size(); ++i) {
-        msg_info() << "│    ω[" << i << "] = ("
+        dmsg_info() << "│    ω[" << i << "] = ("
                    << omegas[i].x() << ", " << omegas[i].y() << ", " << omegas[i].z()
                    << ")  |ω|=" << omegas[i].norm();
         max_omega0 = std::max(max_omega0, omegas[i].norm());
     }
-    if (max_omega0 < 1e-10)
-        msg_info() << "│  ✓ All orientations = identity (rotation vectors ≈ 0)";
-    else
-        msg_info() << "│  ⚠  Non-zero initial orientations (max |ω|=" << max_omega0 << ")";
+    if (max_omega0 < 1e-10) {
+        dmsg_info() << "│  ✓ All orientations = identity (rotation vectors ≈ 0)";
+    } else {
+        dmsg_info() << "│  ⚠  Non-zero initial orientations (max |ω|=" << max_omega0 << ")";
+    }
 
-    msg_info() << "└──────────────────────────────────────────────────────────────";
+    dmsg_info() << "└──────────────────────────────────────────────────────────────";
 }
 
 void CosseratIntrinsicState::updateStrainsCache() {
@@ -116,10 +117,10 @@ void CosseratIntrinsicState::updateStrainsCache() {
     if (!dirty) return;
 
     ++cache_update_count_;
-    // Print the first 3 cache updates (init check) then every 500 to avoid spam
-    const bool printCache = (cache_update_count_ <= 3) || (cache_update_count_ % 500 == 0);
+    // Diagnostics only with printLog=true: the first 3 cache updates, then every 500
+    const bool printCache = f_printLog.getValue() && ((cache_update_count_ <= 3) || (cache_update_count_ % 500 == 0));
     if (printCache) {
-        msg_info() << "[updateStrainsCache] #" << cache_update_count_
+        dmsg_info() << "[updateStrainsCache] #" << cache_update_count_
                    << "  pos_changed=" << pos_changed
                    << "  ori_changed=" << ori_changed
                    << "  pos_counter=" << last_positions_counter
@@ -162,7 +163,7 @@ void CosseratIntrinsicState::updateStrainsCache() {
     }
 
     if (printCache) {
-        msg_info() << "[updateStrainsCache] max|Gamma|=" << std::scientific << std::setprecision(3)
+        dmsg_info() << "[updateStrainsCache] max|Gamma|=" << std::scientific << std::setprecision(3)
                    << max_gamma << "  max|Omega|=" << max_omega_strain
                    << "  [both should be 0 at rest]";
         if (max_gamma > 0.5)
@@ -193,13 +194,13 @@ sofa::type::Vec3d CosseratIntrinsicState::getAngularStrain(size_t i) {
 // ─────────────────────────────────────────────────────────────────────────────
 // J_r⁻¹(ω) — right Lie Jacobian inverse of SO(3)
 //
-// NOTE — duplication intentionnelle :
-//   La même formule existe dans `sofa::component::cosserat::liegroups::SO3
-//   ::computeRightJacobianInverse` (fichier src/liegroups/SO3.inl). Cette copie
-//   locale est conservée pour éviter les conversions Eigen ↔ sofa::type::Mat3x3d
-//   à chaque appel depuis `PainlessBeamForceField` (chemin chaud, called dans la
-//   boucle de force à chaque step). Toute correction de l'une DOIT être répercutée
-//   dans l'autre — les deux retournent EXACTEMENT la même fonction.
+// NOTE — implémentation de référence côté plugin :
+//   `liegroups::SO3` ne fournit pas de J_r⁻¹ utilisable : `SO3::dlog()` / `SO3::dexp()` sont
+//   déclarées dans SO3.h mais leurs définitions sont dans SO3.inl, qui ne compile pas comme
+//   en-tête (donc jamais compilées). Cette fonction est la seule implémentation de J_r⁻¹
+//   disponible ; elle travaille directement en `sofa::type::Mat3x3d` pour éviter les
+//   conversions Eigen ↔ SOFA dans la boucle de force (chemin chaud). Si SO3 reçoit un jour
+//   une J_r⁻¹ compilée et testée, cette fonction pourra y déléguer.
 //
 // Formule (Solà 2018, eq. 144) :
 //   J_r⁻¹(ω) = I + ½ [ω]× + c(θ) [ω]×²

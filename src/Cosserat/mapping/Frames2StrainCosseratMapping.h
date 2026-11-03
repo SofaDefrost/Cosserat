@@ -45,7 +45,7 @@ namespace Cosserat::mapping {
 	 * rigid base that used to be a second input is geometrically *invariant*
 	 * (strain is local), so this class inherits from a single-input
 	 * `sofa::core::Mapping<TIn, TOut>` rather than the historical
-	 * `Multi2Mapping`. See FRAMES2STRAIN_ANALYSIS.md §7 for the rationale.
+	 * `Multi2Mapping`. See dev_notes/FRAMES2STRAIN_ANALYSIS.md §7 for the rationale.
 	 *
 	 * Inheritance model (Z1):
 	 *   - sofa::core::Mapping<TIn, TOut> provides the SOFA Mapping interface

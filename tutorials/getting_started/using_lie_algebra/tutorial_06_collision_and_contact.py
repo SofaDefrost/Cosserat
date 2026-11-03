@@ -35,7 +35,7 @@ def createScene(root_node):
     root_node.addObject('RequiredPlugin', pluginName='Sofa.Component.Collision.Detection.Intersection') # Needed to use components [MinProximityIntersection]  
     root_node.addObject('RequiredPlugin', pluginName='Sofa.Component.Collision.Response.Contact') # Needed to use components [RuleBasedContactManager]  
     root_node.addObject('RequiredPlugin', pluginName='Sofa.Component.LinearSolver.Direct') # Needed to use components [SparseLDLSolver]  
-    root_node.addObject('RequiredPlugin', pluginName='Sofa.Component.ODESolver.Backward') # Needed to use components [EulerImplicitSolver] 
+    root_node.addObject('RequiredPlugin', pluginName='Sofa.Component.IntegrationScheme.Backward') # Needed to use components [EulerImplicitIntegrationScheme] 
     root_node.addObject('RequiredPlugin', pluginName='Sofa.Component.Collision.Geometry') # Needed to use components [LineCollisionModel]  
     root_node.addObject('RequiredPlugin', pluginName='Sofa.Component.Mapping.Linear') # Needed to use components [IdentityMapping]  
     root_node.addObject('RequiredPlugin', pluginName='Sofa.Component.Topology.Container.Dynamic') # Needed to use components [EdgeSetTopologyContainer]    
@@ -56,11 +56,11 @@ def createScene(root_node):
 
     # --- Solver ---
     solver_node = root_node.addChild("solver")
+    # vdamping no longer exists (SOFA >= 26.06): its damping is added to rayleighMass of EulerImplicitIntegrationScheme.
     solver_node.addObject(
-        "EulerImplicitSolver",
+        "EulerImplicitIntegrationScheme",
         rayleighStiffness="0.0",
-        rayleighMass="0.0",
-        vdamping=v_damping_param,
+        rayleighMass=v_damping_param,
     )
     solver_node.addObject("SparseLDLSolver", name="solver", template="CompressedRowSparseMatrixd")
 

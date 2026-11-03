@@ -80,6 +80,10 @@ DAMPING_POS = 0.995  # velocity damping (positions)
 DAMPING_ANG = 0.990  # angular velocity damping
 GRAVITY_Y = -9.81  # m/s²
 
+# Diagnostics (set DEBUG_FREQ = 1 to print at every step; 0 would divide by zero, use a large value to silence)
+DEBUG_FREQ = 100  # print summary every N steps
+DEBUG_FREQ_FULL = 500  # print full per-segment table every N steps
+
 
 # ── Helpers : mass_per_node / inertia_per_seg importés depuis _common.py ──────
 
@@ -205,9 +209,6 @@ class StaggeredFullIntegrator(Sofa.Core.Controller):
         if not hasattr(self, '_step'):
             self._step = 0
         self._step += 1
-
-        DEBUG_FREQ      = 1     # print summary every N steps  (réduit à 1 pour debug)
-        DEBUG_FREQ_FULL = 1     # print full per-segment table every N steps
 
         if self._step % DEBUG_FREQ == 0:
             tip     = pos[-1]

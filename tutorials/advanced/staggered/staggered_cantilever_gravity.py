@@ -309,7 +309,7 @@ def createScene(rootNode):
     print(f"  Young modulus   : {YOUNG_MOD:.2e} Pa")
     print(f"  Shear modulus   : {SHEAR_MOD:.2e} Pa")
     print(f"  Density         : {DENSITY:.1f} kg/m³")
-    print(f"  Mass / node     : {mass_per_node:.4f} kg")
+    print(f"  Mass / node     : {m_node:.4f} kg")
     print(f"  dt              : {DT:.2e} s")
     print(f"  Gravity (−Y)    : {GRAVITY:.2f} m/s²")
     print(f"  Note: SO3 orientations are fixed (identity).")

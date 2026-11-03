@@ -80,7 +80,21 @@ namespace sofa::component::cosserat::engine {
  *   dτ(R_i)     += kF · [−(A·K_A·B/h̃_i)·dω_i + (A·K_A·A/h̃_i)·dω_{i−1}]
  *   dτ(R_{i-1}) += kF · [+(B·K_A·B/h̃_i)·dω_i − (B·K_A·A/h̃_i)·dω_{i−1}]
  * @endcode
- * (material stiffness only; geometric stiffness terms from ∂J_r^{-1}/∂φ are TODO)
+ *
+ * ### Status of the tangent (checked against finite differences, 2026-10-27)
+ * `computeDForces` is **not the full tangent stiffness**. The position-position block is
+ * exact, but it omits:
+ *  - the position↔rotation cross blocks K_xω and K_ωx (the coupling τ_lin = dx_body × f_body
+ *    and the dependence of f on R_i), which are entirely missing;
+ *  - in K_ωω, the shear coupling term −h_i·diag(0, GA, GA) per segment, which dominates the
+ *    bending term by about two orders of magnitude for the usual beams;
+ *  - the geometric stiffness (∂J_r^{-1}/∂φ contributions).
+ * It is therefore only usable as is for the explicit Python integrator (which does not call it);
+ * the implicit path (addDForce / addKToMatrix) still has to be written, see IMPLICIT_ROADMAP.md.
+ *
+ * ## Forces and torques are exact
+ * `computeAndStoreForces` returns the exact negative gradient of the energy above for a right
+ * perturbation R_i → R_i·exp(ξ) of the orientations (torques expressed in the body frame).
  */
 class SOFA_COSSERAT_API PainlessBeamForceField : public sofa::core::behavior::BaseForceField {
    public:
@@ -190,8 +204,9 @@ class SOFA_COSSERAT_API PainlessBeamForceField : public sofa::core::behavior::Ba
                         VecVec3d&       df_ang) const;
 
     // ── Debug controls ─────────────────────────────────────────────────────────
-    /// Print detailed diagnostics every N calls to computeAndStoreForces().
-    /// 0 = disabled.  Default 100.
+    /// Print detailed diagnostics every N calls to computeAndStoreForces() (the per-animation-step
+    /// path). addForce() and getPotentialEnergy() never print and never advance the counter.
+    /// 0 = disabled (default).
     sofa::core::objectmodel::Data<int> d_printEvery;
 
     /// When true, also print per-segment details (Gamma, Omega, f, tau) each
@@ -202,10 +217,13 @@ class SOFA_COSSERAT_API PainlessBeamForceField : public sofa::core::behavior::Ba
     Mat3x3d buildK_L() const;
     Mat3x3d buildK_A() const;
 
+    /// Computes forces/torques and returns the elastic energy. @p debug advances the call
+    /// counter and allows the periodic summary print (see d_printEvery).
     double computeForcesAndTorques(VecVec3d& f_nodes,
-                                   VecVec3d& tau_segs) const;
+                                   VecVec3d& tau_segs,
+                                   bool debug = false) const;
 
-    /// Monotonically increasing call counter for computeAndStoreForces().
+    /// Call counter for computeAndStoreForces() (debug prints only).
     mutable int m_step = 0;
 };
 

@@ -40,7 +40,8 @@ def createScene(root):
 
     ## solver node
     solver = root.addChild("solver_node")
-    solver.addObject("EulerImplicitSolver", firstOrder="0", rayleighMass=0.1, rayleighStiffness=0.1, vdamping=v_damping_param)
+    # vdamping no longer exists (SOFA >= 26.06): its damping is added to rayleighMass of EulerImplicitIntegrationScheme.
+    solver.addObject("EulerImplicitIntegrationScheme", firstOrder="0", rayleighMass=0.1 + v_damping_param, rayleighStiffness=0.1)
     solver.addObject("CGLinearSolver", iterations=1000, tolerance=1e-10, threshold=1e-10)
 
     beam_geometry_params = BeamGeometryParameters(

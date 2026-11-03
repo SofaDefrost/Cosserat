@@ -121,30 +121,22 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::update_geometry_info()
     const auto sz = curv_abs_frames.size();
     auto sectionIndex = 1;
     /*
-     * This main loop iterates through the frames, comparing their curvilinear abscissa values with those of the beam sections:
-      If the frame's abscissa is less than the current section's, it assigns the current section index.
-      If they're equal, it assigns the current index and then increments it.
-      If the frame's abscissa is greater, it increments the index and then assigns it.
+     * Each frame is attached to the section sectionIndex (1-based) such that
+     *   curv_abs_section[sectionIndex-1] < curv_abs_frame <= curv_abs_section[sectionIndex].
+     * The frames are sorted, so sectionIndex only moves forward; it may advance by SEVERAL sections between
+     * two consecutive frames (fewer frames than sections), hence the loop. The index used for drawing is the
+     * following section when the frame sits exactly on a section node (historical behaviour).
      * */
+    const auto lastSection = static_cast<decltype(sectionIndex)>(curv_abs_section.size()) - 1;
     for (auto i = 0; i < sz; ++i)
     {
-        if (curv_abs_section[sectionIndex] > curv_abs_frames[i])
-        {
-            m_indicesVectors.emplace_back(sectionIndex);
-            m_indicesVectorsDraw.emplace_back(sectionIndex);
-        }
-        //@todo: I should change this with abs(val1-val2)>epsilon
-        else if (curv_abs_section[sectionIndex] == curv_abs_frames[i])
-        {
-            m_indicesVectors.emplace_back(sectionIndex);
+        while (sectionIndex < lastSection && curv_abs_section[sectionIndex] < curv_abs_frames[i])
             sectionIndex++;
-            m_indicesVectorsDraw.emplace_back(sectionIndex);
-        }
-        else {
-          sectionIndex++;
-            m_indicesVectors.emplace_back(sectionIndex);
-            m_indicesVectorsDraw.emplace_back(sectionIndex);
-        }
+
+        m_indicesVectors.emplace_back(sectionIndex);
+        //@todo: I should change this with abs(val1-val2)>epsilon
+        const bool onNode = (curv_abs_section[sectionIndex] == curv_abs_frames[i]);
+        m_indicesVectorsDraw.emplace_back(onNode ? sectionIndex + 1 : sectionIndex);
 
         // Fill the vector m_framesLengthVectors with the distance
         // between frame(output) and the closest beam node toward the base
@@ -152,7 +144,8 @@ void BaseCosseratMapping<TIn1, TIn2, TOut>::update_geometry_info()
                     curv_abs_frames[i] - curv_abs_section[m_indicesVectors.back() - 1]);
     }
 
-    for (auto j = 0; j < sz - 1; ++j)
+    // One length per section (the number of sections is independent of the number of frames)
+    for (std::size_t j = 0; j + 1 < curv_abs_section.size(); ++j)
     {
         m_beamLengthVectors.emplace_back(curv_abs_section[j + 1] - curv_abs_section[j]);
     }

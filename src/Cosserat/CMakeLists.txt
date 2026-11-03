@@ -1,3 +1,6 @@
+# LEGACY — not used by the build. The Cosserat library is defined by the top-level CMakeLists.txt of the
+# plugin (src/Cosserat/CMakeLists.txt is never added with add_subdirectory). It still lists files that no
+# longer exist (engine/GeometricStiffnessEngine.*); do not rely on it.
 cmake_minimum_required(VERSION 3.12)
 
 project(Cosserat_SRC)

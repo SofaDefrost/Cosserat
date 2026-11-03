@@ -26,7 +26,9 @@
 #include <sofa/core/behavior/MechanicalState.h>
 #include <sofa/core/behavior/ConstraintResolution.h>
 
+#include <cmath>
 #include <iostream>
+#include <limits>
 
 namespace sofa::component::constraintset
 {
@@ -53,7 +55,9 @@ public:
      * \param force
      */
     void resolution (int line, double** w, double* d, double* force, double * /*dFree*/) override {
-        force[line] -= d[line] / w[line][line];
+        // a zero diagonal (a constrained point that is clamped, so with no compliance) must not give NaN
+        if (std::abs(w[line][line]) > std::numeric_limits<double>::epsilon())
+            force[line] -= d[line] / w[line][line];
 
         if (force[line]>m_maxForce)
             force[line] = m_maxForce;
@@ -73,7 +77,9 @@ public:
     void resolution(int line, double** w, double* d, double* force, double *dfree) override
     {
         SOFA_UNUSED(dfree);
-        force[line] -= d[line] / w[line][line];
+        // a zero diagonal (a constrained point that is clamped, so with no compliance) must not give NaN
+        if (std::abs(w[line][line]) > std::numeric_limits<double>::epsilon())
+            force[line] -= d[line] / w[line][line];
     }
 
     void init(int line, double** /*w*/, double* force) override

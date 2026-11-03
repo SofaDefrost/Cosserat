@@ -28,7 +28,7 @@ namespace Cosserat {
 						"Cosserat strain mapping: computes per-section strains (Vec3/Vec6) from absolute "
 						"Rigid3 frames along a beam. Inherits from sofa::core::Mapping (single input) — the "
 						"rigid base used to be a second input but is geometrically invariant and was removed "
-						"in the option-B refactor; see FRAMES2STRAIN_ANALYSIS.md §7.")
+						"in the option-B refactor; see dev_notes/FRAMES2STRAIN_ANALYSIS.md §7.")
 						.add<mapping::Frames2StrainCosseratMapping<sofa::defaulttype::Rigid3Types,
 																   sofa::defaulttype::Vec3Types>>(true)
 						.add<mapping::Frames2StrainCosseratMapping<sofa::defaulttype::Rigid3Types,

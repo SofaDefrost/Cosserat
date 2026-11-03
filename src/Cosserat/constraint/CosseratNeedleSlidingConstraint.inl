@@ -94,8 +94,11 @@ namespace sofa::component::constraintset
       value[0] = 0.;
     }
 
+    if (d_useDirections.getValue()[0])
+      msg_warning() << "useDirections[0] (x) is ignored: x is the sliding axis, only y and z are constrained.";
+
     // check for errors in the initialization
-    if (d_value.getValue().size() < d_valueIndex.getValue())
+    if (d_value.getValue().size() <= d_valueIndex.getValue())
     {
       msg_warning() << "Bad size for data value (size=" << d_value.getValue().size() << "), or wrong value for data valueIndex (valueIndex=" << d_valueIndex.getValue() << "). Set default valueIndex=0.";
       d_valueIndex.setValue(0);
@@ -118,6 +121,9 @@ namespace sofa::component::constraintset
 
     for (unsigned int i = 0; i < positions.size(); i++)
     {
+      // one line per constrained transverse direction and per point, in the order y, z: getConstraintViolation and
+      // getConstraintResolution use the same order.  x is the sliding axis: it is never constrained here (friction
+      // along it is handled elsewhere)
       if (use[1])
       {
         MatrixDerivRowIterator c_it = matrix.writeLine(cIndex++);
@@ -152,20 +158,14 @@ namespace sofa::component::constraintset
     type::Vec<3, bool> use = d_useDirections.getValue();
     const auto& constraintIndex = d_constraintIndex.getValue();
 
+    // same lines, in the same order, as in buildConstraintMatrix (y then z; never x, the sliding axis)
+    unsigned int line = constraintIndex;
     for (unsigned int i = 0; i < positions.size(); i++)
     {
-      if (use[0]){
-        Real dfree0 = positions[i][0];
-        resV->set(constraintIndex + 2 * i, dfree0);
-      }
-      if (use[1]){
-        Real dfree1 = positions[i][1];
-        resV->set(constraintIndex + 2 * i, dfree1);
-      }
-      if (use[2]){
-        Real dfree2 = positions[i][2];
-        resV->set(constraintIndex + 2 * i + 1, dfree2);
-      }
+      if (use[1])
+        resV->set(line++, positions[i][1]);
+      if (use[2])
+        resV->set(line++, positions[i][2]);
     }
   }
 

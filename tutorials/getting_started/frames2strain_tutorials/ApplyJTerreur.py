@@ -27,7 +27,7 @@ def createScene(root):
     """Create a Cosserat beam scene with forces and dynamics."""
     # Configure scene with time integration
     add_mini_header(root)
-    root.addObject("RequiredPlugin", pluginName="SofaValidation")
+    root.addObject("RequiredPlugin", pluginName="Sofa.Component.Playback")
 
     # Add gravity
     root.gravity = [0, -9.81, 0]  # Add gravity!
@@ -36,7 +36,8 @@ def createScene(root):
 
     ## solver node
     solver = root.addChild("solver_node")
-    solver.addObject("EulerImplicitSolver", firstOrder="0", rayleighMass=0.1, rayleighStiffness=0.1, vdamping=v_damping_param)
+    # vdamping no longer exists (SOFA >= 26.06): its damping is added to rayleighMass of EulerImplicitIntegrationScheme.
+    solver.addObject("EulerImplicitIntegrationScheme", firstOrder="0", rayleighMass=0.1 + v_damping_param, rayleighStiffness=0.1)
     solver.addObject("CGLinearSolver", iterations=1000, tolerance=1e-10, threshold=1e-10)
 
     beam_geometry_params = BeamGeometryParameters(
@@ -46,9 +47,6 @@ def createScene(root):
     )    
         
     beam_geometry = CosseratGeometry(beam_geometry_params)
-
-    # On génère la liste des indices que l'on veut monitorer (0, 1, 2... 7)
-    indices_str = "   ".join([str(i) for i in range(nb_section)])
 
     ## base node
     rigid_base = _add_rigid_base(solver, node_name="rigid_base")
@@ -71,10 +69,8 @@ def createScene(root):
     custom_bending_states = [[0, 0, i*0.1, 1, 0, 0] for i in range(nb_section)]
     strain_node = _add_cosserat_state(rigid_base, frame_node, beam_geometry, custom_bending_states=custom_bending_states)
 
-    strain_node.addObject("Monitor", name="Monitor_Frames2Strain", template="Vec6d", 
-                           listening=True, indices=indices_str, showPositions=True, 
-                           ExportPositions=True, ExportVelocities=False, 
-                           ExportForces=False, fileName="monitor_frames2strain")
+    # Monitor left SOFA with SofaValidation: WriteState exports the positions of all the dofs.
+    strain_node.addObject("WriteState", name="Monitor_Frames2Strain", filename="monitor_frames2strain", writeX=True, writeV=False, writeF=False)
 
     #### Beam 2 (Red beam using Strain2FramesCosseratMapping) ####
     
@@ -100,10 +96,8 @@ def createScene(root):
         poissonRatio=0.4,
     )    
 
-    bending_node.addObject("Monitor", name="Monitor_Strain2Rigid", template="Vec6d", 
-                           listening=True, indices=indices_str, showPositions=True, 
-                           ExportPositions=True, ExportVelocities=False, 
-                           ExportForces=False, fileName="monitor_strain2rigid")
+    # Monitor left SOFA with SofaValidation: WriteState exports the positions of all the dofs.
+    bending_node.addObject("WriteState", name="Monitor_Strain2Rigid", filename="monitor_strain2rigid", writeX=True, writeV=False, writeF=False)
 
     frame_node2 = base_node2.addChild("frame_node")
     bending_node.addChild(frame_node2)
