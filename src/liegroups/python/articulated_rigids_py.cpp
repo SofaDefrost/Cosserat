@@ -6,12 +6,14 @@
 //
 // Build with build_python_binding.sh.
 
+#include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
 
 #include <array>
 #include <cmath>
 #include <stdexcept>
 
+#include <liegroups/KinematicChain.h>
 #include <liegroups/MultiDofJoints.h>
 #include <liegroups/RevoluteJoint.h>
 
@@ -134,4 +136,51 @@ PYBIND11_MODULE(articulated_rigids, m) {
               const SE3d::TangentVector xi = toSE3(pose, "pose").computeLog();
               return py::make_tuple(toTuple3(xi.head<3>()), toTuple3(xi.tail<3>()));
           }, py::arg("pose"), "Logarithm SE(3) -> se(3). Returns (phi, rho).");
+
+    // ---- Generic SE(3) operations (poses as 7-tuples, matrices as numpy arrays) ----
+    m.def("se3_compose", [](const py::object &a, const py::object &b) {
+              return toTuple(fromSE3(toSE3(a, "a") * toSE3(b, "b")));
+          }, py::arg("a"), py::arg("b"), "Group product a * b.");
+    m.def("se3_inverse", [](const py::object &a) { return toTuple(fromSE3(toSE3(a, "pose").inverse())); },
+          py::arg("pose"));
+    m.def("se3_act", [](const py::object &a, const py::object &p) {
+              const Vec3 r = toSE3(a, "pose").act(toVec3(p, "point"));
+              return toTuple3(r);
+          }, py::arg("pose"), py::arg("point"), "Apply the rigid transform to a point.");
+    m.def("se3_matrix", [](const py::object &a) { return Eigen::Matrix4d(toSE3(a, "pose").matrix()); },
+          py::arg("pose"), "4x4 homogeneous matrix.");
+    m.def("se3_adjoint", [](const py::object &a) { return Eigen::Matrix<double, 6, 6>(toSE3(a, "pose").computeAdjoint()); },
+          py::arg("pose"), "6x6 adjoint Ad_g in the [phi; rho] layout.");
+    m.def("se3_ad", [](const Eigen::Matrix<double, 6, 1> &v) { return Eigen::Matrix<double, 6, 6>(SE3d::computeAd(v)); },
+          py::arg("twist"), "6x6 Lie-algebra adjoint ad_v, [phi; rho] layout.");
+    m.def("se3_bracket", [](const Eigen::Matrix<double, 6, 1> &v, const Eigen::Matrix<double, 6, 1> &w) {
+              return Eigen::Matrix<double, 6, 1>(SE3d::lieBracket(v, w));
+          }, py::arg("v"), py::arg("w"), "Lie bracket [v, w].");
+    m.def("se3_left_jacobian_inverse", [](const Eigen::Matrix<double, 6, 1> &xi) {
+              return Eigen::Matrix<double, 6, 6>(SE3d::computeLeftJacobianInverse(xi));
+          }, py::arg("twist"));
+
+    // ---- Serial chain (product of exponentials) ----
+    using Chain = KinematicChain<double>;
+    py::class_<Chain>(m, "KinematicChain",
+                      "Serial chain of revolute / prismatic / fixed segments. Product of exponentials on SE(3).")
+        .def(py::init<>())
+        .def("add_revolute", [](Chain &c, const py::object &axis, const py::object &pivot, const py::object &rest) {
+                 c.addRevolute(toVec3(axis, "axis"), toVec3(pivot, "pivot"),
+                               rest.is_none() ? SE3d() : toSE3(rest, "rest"));
+             }, py::arg("axis"), py::arg("pivot") = py::make_tuple(0., 0., 0.), py::arg("rest") = py::none())
+        .def("add_prismatic", [](Chain &c, const py::object &axis, const py::object &rest) {
+                 c.addPrismatic(toVec3(axis, "axis"), rest.is_none() ? SE3d() : toSE3(rest, "rest"));
+             }, py::arg("axis"), py::arg("rest") = py::none())
+        .def("add_fixed", [](Chain &c, const py::object &rest) { c.addFixed(toSE3(rest, "rest")); }, py::arg("rest"))
+        .def_property_readonly("n_dof", &Chain::nDof)
+        .def_property_readonly("n_segments", &Chain::nSegments)
+        .def("forward", [](const Chain &c, const Eigen::VectorXd &q) { return toTuple(fromSE3(c.forward(q))); },
+             py::arg("q"))
+        .def("segment_pose", [](const Chain &c, const Eigen::VectorXd &q, int i) {
+                 return toTuple(fromSE3(c.segmentPose(q, i)));
+             }, py::arg("q"), py::arg("i"))
+        .def("spatial_jacobian", &Chain::spatialJacobian, py::arg("q"))
+        .def("body_jacobian", &Chain::bodyJacobian, py::arg("q"))
+        .def("hybrid_jacobian", &Chain::hybridJacobian, py::arg("q"));
 }
