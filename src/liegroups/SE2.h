@@ -274,9 +274,11 @@ namespace sofa::component::cosserat::liegroups {
 		 * @param eps The tolerance for approximation.
 		 * @return True if the elements are approximately equal, false otherwise.
 		 */
-		bool computeIsApprox(const SE2 &other, const Scalar &eps) const {
+		bool computeIsApprox(const SE2 &other, const Scalar &eps = Types<Scalar>::epsilon()) const {
+			// absolute tolerance scaled by max(1, |t|): Eigen's relative isApprox is false against a zero translation
+			const Scalar scale = std::max(Scalar(1), std::max(m_translation.norm(), other.m_translation.norm()));
 			return m_rotation.computeIsApprox(other.m_rotation, eps) &&
-				   m_translation.isApprox(other.m_translation, eps);
+				   (m_translation - other.m_translation).norm() <= eps * scale;
 		}
 
 		/**
