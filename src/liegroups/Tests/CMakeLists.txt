@@ -28,6 +28,7 @@ set(LIEGROUPS_TEST_FILES
         unit/test_SE23_Audit.cpp
         unit/test_SGal3_Audit.cpp
         unit/test_Bundle_Audit.cpp
+        unit/test_Types_Audit.cpp
         unit/test_HookeSerat_Phase1.cpp
         unit/test_Phase2.cpp
         unit/test_HookeSerat_Comprehensive.cpp

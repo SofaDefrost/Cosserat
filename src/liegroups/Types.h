@@ -472,46 +472,34 @@ namespace sofa::component::cosserat::liegroups {
 			return result;
 		}
 
+		/// a = (1 - cos t)/t^2, b = (t - sin t)/t^3, c = (1 - (t/2) cot(t/2))/t^2: Taylor series below 0.25 rad,
+		/// closed forms (without cancellation / half-angle form) above. Same as detail::so3JacobianCoefficients
+		/// in SO3.inl, duplicated here because Types.h is included by SO3.h.
+		static void jacobianCoefficients(const Scalar t, Scalar &a, Scalar &b, Scalar &c) noexcept {
+			const Scalar t2 = t * t;
+			if (t < Scalar(0.25)) {
+				const Scalar t4 = t2 * t2;
+				a = Scalar(1) / Scalar(2) - t2 / Scalar(24) + t4 / Scalar(720) - t4 * t2 / Scalar(40320) +
+					t4 * t4 / Scalar(3628800) - t4 * t4 * t2 / Scalar(479001600);
+				b = Scalar(1) / Scalar(6) - t2 / Scalar(120) + t4 / Scalar(5040) - t4 * t2 / Scalar(362880) +
+					t4 * t4 / Scalar(39916800) - t4 * t4 * t2 / Scalar(6227020800.0);
+				c = Scalar(1) / Scalar(12) + t2 / Scalar(720) + t4 / Scalar(30240) + t4 * t2 / Scalar(1209600) +
+					t4 * t4 / Scalar(47900160);
+			} else {
+				const Scalar sh = std::sin(Scalar(0.5) * t);
+				a = Scalar(2) * sh * sh / t2;
+				b = (t - std::sin(t)) / (t2 * t);
+				c = Scalar(1) / t2 - Scalar(1) / (Scalar(2) * t * std::tan(Scalar(0.5) * t));
+			}
+		}
+
 		/**
 		 * @brief Computes the matrix logarithm for skew-symmetric matrices.
 		 * Useful for SE(3) and SO(3) computations.
 		 * @param mat The input skew-symmetric matrix.
 		 * @return The matrix logarithm.
 		 */
-		static Matrix3 logSO3(const Matrix3 &R) noexcept {
-			const Scalar trace = R.trace();
-			const Scalar cos_angle = Scalar(0.5) * (trace - Scalar(1));
-
-			if (cos_angle >= Scalar(1) - tolerance()) {
-				// Near identity
-				return Scalar(0.5) * (R - R.transpose());
-			} else if (cos_angle <= Scalar(-1) + tolerance()) {
-				// Near 180 degree rotation
-				const Scalar angle = PI;
-				// Find the axis (largest diagonal element)
-				int i = 0;
-				for (int j = 1; j < 3; ++j) {
-					if (R(j, j) > R(i, i))
-						i = j;
-				}
-
-				Vector3 axis = Vector3::Zero();
-				axis(i) = std::sqrt((R(i, i) + Scalar(1)) / Scalar(2));
-
-				for (int j = 0; j < 3; ++j) {
-					if (j != i) {
-						axis(j) = R(i, j) / (Scalar(2) * axis(i));
-					}
-				}
-
-				return angle * skew3(axis);
-			} else {
-				const Scalar angle = std::acos(clamp(cos_angle, Scalar(-1), Scalar(1)));
-				const Scalar sin_angle = std::sin(angle);
-
-				return (angle / (Scalar(2) * sin_angle)) * (R - R.transpose());
-			}
-		}
+		static Matrix3 logSO3(const Matrix3 &R) noexcept { return skew3(SO3Log(R)); }
 
 		/**
 		 * @brief Generates a random scalar value within the range [0, 1].
@@ -730,33 +718,19 @@ namespace sofa::component::cosserat::liegroups {
 		static Matrix4 SE3Exp(const Vector6 &xi) {
 			const Vector3 rho = xi.template head<3>();
 			const Vector3 phi = xi.template tail<3>();
-
-			const Scalar angle = phi.norm();
-			Matrix3 R;
-			Matrix3 V;
-
-			if (angle < SMALL_ANGLE_THRESHOLD) {
-				// Near identity case
-				R = Matrix3::Identity() + skew3(phi);
-				V = Matrix3::Identity() + Scalar(0.5) * skew3(phi);
-			} else {
-				// General case
-				const Vector3 axis = phi / angle;
-				const Matrix3 K = skew3(axis);
-
-				// Rodrigues' formula for rotation
-				const Scalar sin_angle = std::sin(angle);
-				const Scalar cos_angle = std::cos(angle);
-				R = Matrix3::Identity() + sin_angle * K + (Scalar(1) - cos_angle) * K * K;
-
-				// V matrix for translation
-				V = Matrix3::Identity() + (Scalar(1) - cos_angle) / angle * K + (angle - sin_angle) / angle * K * K;
-			}
-
+			Scalar a, b, c;
+			jacobianCoefficients(phi.norm(), a, b, c);
+			// R = I + sin t/t [phi]x + a [phi]x^2 (sin t / t = 1 - t^2 b), V = I + a [phi]x + b [phi]x^2.
+			// The former code used R = I + [phi]x and V = I + [phi]x/2 below 1e-4 (errors up to 5e-9 at
+			// 1e-4) and closed forms with a 1/angle that cancels above it.
+			const Matrix3 K = skew3(phi);
+			const Matrix3 K2 = K * K;
+			const Scalar t2 = phi.squaredNorm();
+			const Matrix3 R = Matrix3::Identity() + (Scalar(1) - t2 * b) * K + a * K2;
+			const Matrix3 V = Matrix3::Identity() + a * K + b * K2;
 			Matrix4 result = Matrix4::Identity();
 			result.template block<3, 3>(0, 0) = R;
 			result.template block<3, 1>(0, 3) = V * rho;
-
 			return result;
 		}
 
@@ -768,34 +742,18 @@ namespace sofa::component::cosserat::liegroups {
 		static Vector6 SE3Log(const Matrix4 &T) {
 			const Matrix3 R = T.template block<3, 3>(0, 0);
 			const Vector3 t = T.template block<3, 1>(0, 3);
-
-			// Compute rotation part
 			const Vector3 phi = SO3Log(R);
-			const Scalar angle = phi.norm();
-
-			Vector3 rho;
-			if (angle < SMALL_ANGLE_THRESHOLD) {
-				// Near identity case
-				rho = t;
-			} else {
-				// General case
-				const Vector3 axis = phi / angle;
-				const Matrix3 K = skew3(axis);
-
-				// Compute V^(-1)
-				const Scalar sin_angle = std::sin(angle);
-				const Scalar cos_angle = std::cos(angle);
-				const Matrix3 V_inv = Matrix3::Identity() - Scalar(0.5) * K +
-									  (Scalar(2) * sin_angle - angle * (Scalar(1) + cos_angle)) /
-											  (Scalar(2) * angle * angle * sin_angle) * K * K;
-
-				rho = V_inv * t;
-			}
-
+			// V^-1 = I - [phi]x/2 + c [phi]x^2, c = (1 - (t/2) cot(t/2)) / t^2 (half-angle form, accurate up
+			// to pi). The former code used the normalised axis with the un-normalised coefficients (-K/2
+			// instead of -t K/2, and an extra 1/t^2), and rho = t below 1e-4, so it was wrong for every
+			// angle above 1e-9.
+			Scalar a, b, c;
+			jacobianCoefficients(phi.norm(), a, b, c);
+			const Matrix3 K = skew3(phi);
+			const Matrix3 V_inv = Matrix3::Identity() - Scalar(0.5) * K + c * (K * K);
 			Vector6 result;
-			result.template head<3>() = rho;
+			result.template head<3>() = V_inv * t;
 			result.template tail<3>() = phi;
-
 			return result;
 		}
 
@@ -805,40 +763,31 @@ namespace sofa::component::cosserat::liegroups {
 		 * @return The axis-angle representation as a 3D vector.
 		 */
 		static Vector3 SO3Log(const Matrix3 &R) {
-			const Scalar trace = R.trace();
-			const Scalar cos_angle = (trace - Scalar(1)) / Scalar(2);
-
-			if (cos_angle >= Scalar(1) - SMALL_ANGLE_THRESHOLD) {
-				// Near identity
-				return Scalar(0.5) * Vector3(R(2, 1) - R(1, 2), R(0, 2) - R(2, 0), R(1, 0) - R(0, 1));
-			} else if (cos_angle <= Scalar(-1) + SMALL_ANGLE_THRESHOLD) {
-				// Near 180 degree rotation
-				const Scalar angle = PI;
-
-				// Find the axis (largest diagonal element)
-				int i = 0;
-				for (int j = 1; j < 3; ++j) {
-					if (R(j, j) > R(i, i))
-						i = j;
-				}
-
-				Vector3 axis = Vector3::Zero();
-				axis(i) = std::sqrt((R(i, i) + Scalar(1)) / Scalar(2));
-
-				for (int j = 0; j < 3; ++j) {
-					if (j != i) {
-						axis(j) = R(i, j) / (Scalar(2) * axis(i));
-					}
-				}
-
-				return angle * axis;
-			} else {
-				const Scalar angle = std::acos(std::max(Scalar(-1), std::min(Scalar(1), cos_angle)));
-				const Scalar sin_angle = std::sin(angle);
-
-				return (angle / (Scalar(2) * sin_angle)) *
-					   Vector3(R(2, 1) - R(1, 2), R(0, 2) - R(2, 0), R(1, 0) - R(0, 1));
+			// With v = vee(R - R^T)/2 = sin(t) axis and c = (tr R - 1)/2 = cos(t), t = atan2(|v|, c) is
+			// accurate for every angle. The former code switched on cos(t) >= 1 - 1e-4 (first-order
+			// 0.5 vee(R - R^T), error t^3/6 up to 4e-7) and on cos(t) <= -1 + 1e-4, where it returned
+			// exactly pi with an axis from the diagonal of R without a sign (errors of several radians).
+			const Vector3 v = Scalar(0.5) * Vector3(R(2, 1) - R(1, 2), R(0, 2) - R(2, 0), R(1, 0) - R(0, 1));
+			const Scalar s = v.norm();
+			const Scalar c = Scalar(0.5) * (R.trace() - Scalar(1));
+			const Scalar angle = std::atan2(s, c);
+			if (c > Scalar(-0.9)) {
+				// angle / sin(angle): 1 + angle^2/6 + 7 angle^4/360 for small angles
+				const Scalar factor = angle < Scalar(1e-4) ? Scalar(1) + angle * angle / Scalar(6)
+														   : angle / std::sin(angle);
+				return factor * v;
 			}
+			// Near pi sin(angle) -> 0 and v loses its relative accuracy: take the axis from the symmetric
+			// part, B = (R - cos(t) I)/(1 - cos(t)) = a a^T + sin(t)/(1 - cos(t)) [a]x, whose
+			// symmetric part is a a^T, then fix its sign with v.
+			const Matrix3 B = (R - c * Matrix3::Identity()) / (Scalar(1) - c);
+			const Matrix3 aaT = Scalar(0.5) * (B + B.transpose());
+			int j = 0;
+			if (aaT(1, 1) > aaT(j, j)) j = 1;
+			if (aaT(2, 2) > aaT(j, j)) j = 2;
+			Vector3 axis = aaT.col(j) / std::sqrt(aaT(j, j));
+			if (axis.dot(v) < Scalar(0)) axis = -axis;
+			return angle * axis;
 		}
 
 	private:
