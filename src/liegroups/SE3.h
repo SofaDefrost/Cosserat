@@ -162,27 +162,13 @@ namespace sofa::component::cosserat::liegroups {
 		 *   c(θ) ≈ 1/12 + θ²/720
 		 */
 		TangentVector computeLog() const {
-			const Vector3 phi   = m_rotation.log();
-			const Scalar  angle = phi.norm();
-			const Matrix3 K_phi = SO3Type::computeHat(phi);   // [φ]× (non normalisé)
-			Matrix3 V_inv;
-
-			if (angle < Types<Scalar>::SMALL_ANGLE_THRESHOLD) {
-				// 3rd-order Taylor expansion in θ
-				const Scalar theta2 = angle * angle;
-				const Scalar c2 = Scalar(1) / Scalar(12) + theta2 / Scalar(720);
-				V_inv = Matrix3::Identity() - Scalar(0.5) * K_phi + c2 * (K_phi * K_phi);
-			} else {
-				// General case, in terms of [φ]× :
-				//   V⁻¹ = I − ½ [φ]× + c(θ) [φ]×²
-				const Scalar sin_a  = std::sin(angle);
-				const Scalar cos_a  = std::cos(angle);
-				const Scalar theta2 = angle * angle;
-				const Scalar c2 = Scalar(1) / theta2
-				                - (Scalar(1) + cos_a) / (Scalar(2) * angle * sin_a);
-				V_inv = Matrix3::Identity() - Scalar(0.5) * K_phi + c2 * (K_phi * K_phi);
-			}
-
+			const Vector3 phi = m_rotation.log();
+			const Matrix3 K_phi = SO3Type::computeHat(phi); // [phi]x (not normalised)
+			// V^-1(phi) = I - [phi]x/2 + c [phi]x^2 with c = 1/t^2 - 1/(2 t tan(t/2)); the half-angle
+			// form stays accurate up to t = pi where the (1 + cos t)/(2 t sin t) form had 1e-9 errors.
+			Scalar a, b, c;
+			detail::so3JacobianCoefficients(phi.norm(), a, b, c);
+			const Matrix3 V_inv = Matrix3::Identity() - Scalar(0.5) * K_phi + c * (K_phi * K_phi);
 			const Vector3 rho = V_inv * m_translation;
 			TangentVector result;
 			result.template head<3>() = phi;  // angular first — consistent with computeExp()

@@ -63,6 +63,26 @@ TEST(SE3Numerics, ExpMatchesMatrixExponential) {
 	}
 }
 
+TEST(SE3Numerics, LogInvertsExp) {
+	std::mt19937_64 rng(33);
+	for (double angle : kAngles) {
+		for (int i = 0; i < 5; ++i) {
+			const V6 xi = randomSE3Tangent(rng, angle);
+			const V6 l = referenceElement(xi).log();
+			EXPECT_LT((l - xi).cwiseAbs().maxCoeff(), 2e-14) << "angle " << angle;
+		}
+	}
+}
+
+TEST(SE3Numerics, ExpOfLogIsIdentityOnTheGroup) {
+	std::mt19937_64 rng(34);
+	for (double angle : kAngles) {
+		const SE3d g = referenceElement(randomSE3Tangent(rng, angle));
+		const SE3d back = SE3d::exp(g.log());
+		EXPECT_LT((g.inverse() * back).log().cwiseAbs().maxCoeff(), 3e-14) << "angle " << angle;
+	}
+}
+
 TEST(SE3Numerics, AdjointIsExpOfAd) {
 	// Ad_{exp(xi)} = exp(ad_xi)
 	std::mt19937_64 rng(36);
