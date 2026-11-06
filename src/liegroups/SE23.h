@@ -153,12 +153,14 @@ namespace sofa::component::cosserat::liegroups {
 		 * @return The corresponding SE23 element.
 		 */
 		static SE23<Scalar> computeExp(const TangentVector &algebra_element) {
-			Vector3 v = algebra_element.template segment<3>(0); // Linear velocity
-			Vector3 w = algebra_element.template segment<3>(3); // Angular velocity
-			Vector3 a = algebra_element.template segment<3>(6); // Linear acceleration
+			const Vector3 v = algebra_element.template segment<3>(0); // Linear velocity
+			const Vector3 w = algebra_element.template segment<3>(3); // Angular velocity
+			const Vector3 a = algebra_element.template segment<3>(6); // Linear acceleration
 
-			// First compute the SE(3) part.
-			// SE3::computeExp expects [φ(head)=angular, ρ(tail)=linear].
+			// exp([[w^, v, a], [0, 0, 0], [0, 0, 0]]) = [[R, V v, V a], [0, 1, 0], [0, 0, 1]],
+			// V(w) = I + A [w]x + B [w]x^2 being the SO(3) left Jacobian (same V for p and u). The
+			// former code scaled the whole velocity by 1/theta (J a / theta with J = I + ...), so
+			// the velocity column was wrong for every non-zero rotation.
 			typename SE3<Scalar>::TangentVector se3_element;
 			se3_element << w, v;  // angular first, linear second
 			SE3<Scalar> pose = SE3<Scalar>::computeExp(se3_element);
@@ -186,13 +188,15 @@ namespace sofa::component::cosserat::liegroups {
 		 * @return The corresponding element in the Lie algebra (a 9D vector).
 		 */
 		TangentVector computeLog() const {
-			// First get the SE(3) part.
-			// computeLog() now returns [φ(head), ρ(tail)] — Cosserat convention.
-			typename SE3<Scalar>::TangentVector se3_part = m_pose.computeLog();
-			Vector3 w = se3_part.template head<3>();  // φ — angular velocity
-			Vector3 v = se3_part.template tail<3>();  // ρ — linear velocity
+			const typename SE3<Scalar>::TangentVector se3_part = m_pose.computeLog();
+			const Vector3 w = se3_part.template head<3>(); // phi: angular velocity
+			const Vector3 v = se3_part.template tail<3>(); // V^-1 p: linear velocity
 
-			// For small rotations or zero angular velocity
+			// a = V^-1 u with V^-1 = I - [w]x/2 + c [w]x^2 (half-angle coefficient, accurate up to pi)
+			Scalar A, B, C;
+			detail::so3JacobianCoefficients(w.norm(), A, B, C);
+			const Matrix3 W = SO3<Scalar>::computeHat(w);
+			const Matrix3 V_inv = Matrix3::Identity() - Scalar(0.5) * W + C * (W * W);
 			TangentVector result;
 			if (w.norm() < Types<Scalar>::epsilon()) {
 				result << v, w, m_velocity;
