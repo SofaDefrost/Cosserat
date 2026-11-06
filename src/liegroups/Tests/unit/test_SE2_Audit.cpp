@@ -42,6 +42,26 @@ MatL<3> adSE2(const V3 &x) {
 }
 } // namespace
 
+TEST(SE2Audit, ExpMatchesMatrixExponential) {
+	std::mt19937_64 rng(41);
+	for (double th : kThetas) {
+		for (int i = 0; i < 5; ++i) {
+			const V3 xi = randomXi(rng, th);
+			EXPECT_LT(maxAbsDiff(SE2d::exp(xi).matrix(), expm<3>(hatSE2(xi.cast<LD>()))), 4e-15) << "theta " << th;
+		}
+	}
+}
+
+TEST(SE2Audit, LogInvertsExp) {
+	std::mt19937_64 rng(42);
+	for (double th : kThetas) {
+		for (int i = 0; i < 5; ++i) {
+			const V3 xi = randomXi(rng, th);
+			EXPECT_LT((referenceElement(xi).log() - xi).cwiseAbs().maxCoeff(), 2e-14) << "theta " << th;
+		}
+	}
+}
+
 TEST(SE2Audit, AdIsTheLieBracketAndAdjointIsExpOfAd) {
 	std::mt19937_64 rng(43);
 	for (double th : {0.0, 0.3, -1.0, 2.5}) {

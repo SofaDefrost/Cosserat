@@ -25,6 +25,7 @@
 #include <random>
 #include "LieGroupBase.h"
 #include "LieGroupBase.inl"
+#include "SO3.h" // detail::so3JacobianCoefficients (shared sin/cos series)
 #include "SO2.h"
 #include "Types.h"
 
@@ -198,21 +199,16 @@ namespace sofa::component::cosserat::liegroups {
 			const Scalar &theta = algebra_element[2];
 			const Vector2 rho(algebra_element[0], algebra_element[1]);
 
-			// Handle small angle case for numerical stability
-			if (std::abs(theta) < Types<Scalar>::epsilon()) {
-				return SE2(SO2<Scalar>(theta), rho);
-			}
-
-			// Compute V matrix for translation component
-			const Scalar sin_theta = std::sin(theta);
-			const Scalar cos_theta = std::cos(theta);
-			const Scalar theta_inv = Scalar(1.0) / theta;
-			const Scalar sin_over_theta = sin_theta * theta_inv;
-			const Scalar one_minus_cos_over_theta = (Scalar(1.0) - cos_theta) * theta_inv;
-
+			// V(theta) = [sin t / t, -(1 - cos t)/t ; (1 - cos t)/t, sin t / t]. With the shared
+			// coefficients a = (1 - cos t)/t^2 and b = (t - sin t)/t^3 (series for small t):
+			// sin t / t = 1 - t^2 b and (1 - cos t)/t = t a, with no division by theta and no
+			// cancellation (the direct quotients were off by 1e-9 at theta = 1e-9).
+			Scalar a, b, c;
+			detail::so3JacobianCoefficients(std::abs(theta), a, b, c);
+			const Scalar sin_over_theta = Scalar(1) - theta * theta * b;
+			const Scalar one_minus_cos_over_theta = theta * a;
 			Matrix2 V;
 			V << sin_over_theta, -one_minus_cos_over_theta, one_minus_cos_over_theta, sin_over_theta;
-
 			return SE2(SO2<Scalar>(theta), V * rho);
 		}
 
@@ -222,39 +218,18 @@ namespace sofa::component::cosserat::liegroups {
 		 */
 		TangentVector computeLog() const {
 			const Scalar theta = m_rotation.angle();
-			TangentVector result;
 
-			// Handle small angle case
-			if (std::abs(theta) < Types<Scalar>::epsilon()) {
-				result << m_translation, theta;
-				return result;
-			}
-
-			// Check for singularity (θ = ±π)
-			const Scalar abs_theta = std::abs(theta);
-			if (abs_theta > M_PI - Types<Scalar>::epsilon()) {
-				// Near ±π, use series expansion for numerical stability
-				const Scalar theta_sq = theta * theta;
-				const Scalar coeff = Scalar(1.0) - theta_sq / Scalar(12.0); // First correction term
-				Matrix2 V_inv = coeff * Matrix2::Identity();
-				V_inv(0, 1) = -theta / Scalar(2.0);
-				V_inv(1, 0) = theta / Scalar(2.0);
-
-				Vector2 rho = V_inv * m_translation;
-				result << rho, theta;
-				return result;
-			}
-
-			// General case
-			const Scalar sin_theta = std::sin(theta);
-			const Scalar cos_theta = std::cos(theta);
-			const Scalar half_theta = theta * Scalar(0.5);
-			const Scalar cot_half = cos_theta / sin_theta; // cot(θ/2) = cos(θ)/sin(θ) for θ ≠ 0
-
+			// V^-1(theta) = [h, theta/2 ; -theta/2, h] with h = (theta/2) cot(theta/2) = 1 - theta^2 c,
+			// c = (1 - (t/2) cot(t/2)) / t^2 from the shared coefficients (series for small t, finite and
+			// accurate up to |theta| = pi). The previous code used cot(theta) instead of cot(theta/2),
+			// the wrong sign for the off-diagonal terms and, for small theta, h = 1/2 instead of 1.
+			Scalar a, b, c;
+			detail::so3JacobianCoefficients(std::abs(theta), a, b, c);
+			const Scalar h = Scalar(1) - theta * theta * c;
 			Matrix2 V_inv;
-			V_inv << half_theta * cot_half, -half_theta, half_theta, half_theta * cot_half;
-
-			Vector2 rho = V_inv * m_translation;
+			V_inv << h, Scalar(0.5) * theta, -Scalar(0.5) * theta, h;
+			const Vector2 rho = V_inv * m_translation;
+			TangentVector result;
 			result << rho, theta;
 			return result;
 		}
