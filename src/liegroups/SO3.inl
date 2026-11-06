@@ -87,22 +87,36 @@ namespace sofa::component::cosserat::liegroups {
 
 	namespace detail {
 	/**
-	 * @brief Coefficients shared by the SO(3) Jacobians, with Taylor expansions for small angles
-	 * (the closed forms (1-cos t)/t^2 and (t-sin t)/t^3 lose all their digits there).
-	 *   a(t) = (1 - cos t) / t^2         ~ 1/2   - t^2/24
-	 *   b(t) = (t - sin t) / t^3         ~ 1/6   - t^2/120
-	 *   c(t) = 1/t^2 - 1/(2 t tan(t/2))  ~ 1/12  + t^2/720   (inverse Jacobian; half-angle form
-	 *                                                         stays finite and accurate near pi)
+	 * @brief Coefficients shared by the SO(3) and SE(3) Jacobians and exponentials.
+	 *   a(t) = (1 - cos t) / t^2         = 1/2  - t^2/24  + t^4/720 - ...
+	 *   b(t) = (t - sin t) / t^3         = 1/6  - t^2/120 + t^4/5040 - ...
+	 *   c(t) = 1/t^2 - 1/(2 t tan(t/2))  = 1/12 + t^2/720 + t^4/30240 + ...   (inverse Jacobian)
+	 *
+	 * Below kSeriesAngle the Taylor series (6 terms, truncation < 1e-16) is used: the closed
+	 * forms lose digits there, (1-cos t)/t^2 and (t-sin t)/t^3 cancel, and the previous switch at
+	 * 1e-4 still left 2e-13 errors in the Jacobian just above it. Above, a uses 2 sin^2(t/2)/t^2
+	 * (no cancellation) and c the half-angle form, which stays finite and accurate up to pi
+	 * (the (1+cos t)/(2 t sin t) form loses everything near pi).
 	 */
+	template<typename Scalar>
+	inline constexpr Scalar so3SeriesAngle() noexcept {
+		return Scalar(0.25);
+	}
+
 	template<typename Scalar>
 	inline void so3JacobianCoefficients(const Scalar theta, Scalar &a, Scalar &b, Scalar &c) noexcept {
 		const Scalar t2 = theta * theta;
-		if (theta < Types<Scalar>::SMALL_ANGLE_THRESHOLD) {
-			a = Scalar(0.5) - t2 / Scalar(24);
-			b = Scalar(1) / Scalar(6) - t2 / Scalar(120);
-			c = Scalar(1) / Scalar(12) + t2 / Scalar(720);
+		if (theta < so3SeriesAngle<Scalar>()) {
+			const Scalar t4 = t2 * t2;
+			a = Scalar(1) / Scalar(2) - t2 / Scalar(24) + t4 / Scalar(720) - t4 * t2 / Scalar(40320) +
+				t4 * t4 / Scalar(3628800) - t4 * t4 * t2 / Scalar(479001600);
+			b = Scalar(1) / Scalar(6) - t2 / Scalar(120) + t4 / Scalar(5040) - t4 * t2 / Scalar(362880) +
+				t4 * t4 / Scalar(39916800) - t4 * t4 * t2 / Scalar(6227020800.0);
+			c = Scalar(1) / Scalar(12) + t2 / Scalar(720) + t4 / Scalar(30240) + t4 * t2 / Scalar(1209600) +
+				t4 * t4 / Scalar(47900160);
 		} else {
-			a = (Scalar(1) - std::cos(theta)) / t2;
+			const Scalar s_half = std::sin(Scalar(0.5) * theta);
+			a = Scalar(2) * s_half * s_half / t2;
 			b = (theta - std::sin(theta)) / (t2 * theta);
 			c = Scalar(1) / t2 - Scalar(1) / (Scalar(2) * theta * std::tan(Scalar(0.5) * theta));
 		}
