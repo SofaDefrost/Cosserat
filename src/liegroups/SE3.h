@@ -379,29 +379,14 @@ namespace sofa::component::cosserat::liegroups {
 
 
 		/**
-		 * @brief ⚠ MISNAMED — this returns the adjoint Ad_g, NOT the differential
-		 *        of the logarithm map.
+		 * @brief Differential of the logarithm at this element, in the right convention:
+		 *   log(g exp(d)) = log(g) + dlog() d + O(d^2),  dlog() = Jr^-1(log g) = dexpInv(log g).
 		 *
-		 * The true differential of the SE(3) log requires the inverse of the
-		 * SE(3) left Jacobian (with the « Q-matrix » of Barfoot et al.) and is
-		 * NOT implemented here. Anyone calling this function expecting d(log)/dg
-		 * will get nonsense.
-		 *
-		 * Kept under the historical name for API compatibility — see also the
-		 * (correct) `computeAdjoint()` method which returns the exact same value.
-		 *
-		 * TODO : either implement the real d(log) (see Barfoot, State Estimation
-		 * for Robotics, §7.1.4), or rename this to `adjointAlias()` and deprecate.
+		 * Declared by LieGroupBase (generic implementation through computeRightJacobianInverse);
+		 * the SE3-specific override that used to be here returned the co-adjoint matrix
+		 * instead, so it is simply removed. Note SO3::dlog() uses the left convention.
 		 */
-		AdjointMatrix dlog() const {
-			AdjointMatrix Ad = AdjointMatrix::Zero();
-			const Matrix3 R = m_rotation.matrix();
-			Ad.template block<3, 3>(0, 0) = R;
-			Ad.template block<3, 3>(3, 3) = R;
-			Ad.template block<3, 3>(0, 3) = SO3Type::computeHat(m_translation) * R;
-			return Ad;
-		}
-
+		using Base::dlog;
 
 		AdjointMatrix adjoint() const noexcept { return computeAdjoint(); }
 

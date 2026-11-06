@@ -268,12 +268,12 @@ namespace sofa::component::cosserat::liegroups {
 	 * @brief Alternative implementation of the differential of the exponential map.
 	 * This function calculates the Jacobian of the exponential map, which is
 	 * crucial for relating velocities in the Lie algebra to velocities on the Lie
-	 * group. It uses Taylor series expansion for small input values for numerical
-	 * stability and a closed-form expression for larger values.
-	 * 
+	 * group. It evaluates the series sum_k (-ad_v)^k / (k+1)! from the ad() operator, which
+	 * has no singularity and no cancellation.
+	 *
 	 * NOTE: This is an alternative implementation to the wrapper dexp() in LieGroupBase.h
-	 * that calls rightJacobian(). Both implementations should be equivalent but need
-	 * comparison/validation. This version uses direct computation with ad() operator.
+	 * that calls rightJacobian(); both return the right Jacobian (checked against each other
+	 * in Tests/unit/test_LieGroupBase_Generic.cpp).
 	 * 
 	 * @tparam Derived The derived class implementing the specific Lie group.
 	 * @tparam _Scalar The scalar type used for computations.
@@ -291,39 +291,20 @@ namespace sofa::component::cosserat::liegroups {
 	LieGroupBase<Derived, _Scalar, _Dim, _AlgebraDim, _ActionDim>::dexp_alternative(const TangentVector &v) {
 		using Matrix = typename Derived::AdjointMatrix;
 		using Scalar = typename Derived::Scalar;
-		using Types = typename Derived::Types;
 
-		const Scalar theta = v.norm();
-
-		if (Types::isZero(theta)) {
-			return Matrix::Identity();
-		}
-
-		// Create the adjoint representation of v
-		const Matrix ad_v = Derived::ad(v);
-		const Scalar theta_sq = theta * theta;
-
-		// Use improved series with better numerical stability
+		// Right Jacobian Jr(v) = sum_k (-ad_v)^k / (k+1)!, the same convention as dexp() ==
+		// rightJacobian(). The series is valid for every group and every |v| (it converges like
+		// exp), so there is no small-angle branch and no cancellation to guard against.
+		const Matrix minus_ad = -Derived::ad(v);
 		Matrix result = Matrix::Identity();
-
-		// Series coefficients for improved numerical stability
-		if (theta < Types::SMALL_ANGLE_THRESHOLD) {
-			// Use Taylor series for small angles
-			result += ad_v * Scalar(0.5);
-			result += ad_v * ad_v * Scalar(1.0 / 12.0);
-			result += ad_v * ad_v * ad_v * Scalar(1.0 / 720.0);
-		} else {
-			// Use closed form for larger angles
-			const Scalar sin_theta = std::sin(theta);
-			const Scalar cos_theta = std::cos(theta);
-
-			const Scalar c1 = sin_theta / theta;
-			const Scalar c2 = (Scalar(1) - cos_theta) / theta_sq;
-
-			result += ad_v * c2;
-			result += ad_v * ad_v * (theta - sin_theta) / (theta_sq * theta);
+		Matrix term = Matrix::Identity();
+		for (int k = 1; k < 64; ++k) {
+			term = term * minus_ad / Scalar(k + 1);
+			result += term;
+			if (term.cwiseAbs().maxCoeff() <= std::numeric_limits<Scalar>::epsilon() * Scalar(1e-3)) {
+				break;
+			}
 		}
-
 		return result;
 	}
 
@@ -331,12 +312,10 @@ namespace sofa::component::cosserat::liegroups {
 	 * @brief Alternative implementation of the inverse differential of the exponential map.
 	 * This function calculates the inverse Jacobian of the exponential
 	 * map, useful for mapping velocities on the Lie group back to the Lie algebra.
-	 * It employs Taylor series expansion for small input values and a closed-form
-	 * expression for larger values to ensure numerical stability.
-	 * 
+	 * Computed as the inverse of dexp_alternative().
+	 *
 	 * NOTE: This is an alternative implementation to the wrapper dexpInv() in LieGroupBase.h
-	 * that calls rightJacobianInverse(). Both implementations should be equivalent but need
-	 * comparison/validation. This version uses direct computation with ad() operator.
+	 * that calls rightJacobianInverse(); both return the right Jacobian inverse.
 	 * 
 	 * @tparam Derived The derived class implementing the specific Lie group.
 	 * @tparam _Scalar The scalar type used for computations.
@@ -352,47 +331,19 @@ namespace sofa::component::cosserat::liegroups {
 		requires(_Dim > 0 && _AlgebraDim > 0 && _ActionDim > 0)
 	inline typename LieGroupBase<Derived, _Scalar, _Dim, _AlgebraDim, _ActionDim>::AdjointMatrix
 	LieGroupBase<Derived, _Scalar, _Dim, _AlgebraDim, _ActionDim>::dexpInv_alternative(const TangentVector &v) {
-		using Matrix = typename Derived::AdjointMatrix;
-		using Scalar = typename Derived::Scalar;
-		using Types = typename Derived::Types;
-
-		const Scalar theta = v.norm();
-
-		if (Types::isZero(theta)) {
-			return Matrix::Identity();
-		}
-
-		// Create the adjoint representation of v
-		const Matrix ad_v = Derived::ad(v);
-		const Scalar theta_sq = theta * theta;
-
-		Matrix result = Matrix::Identity();
-
-		if (theta < Types::SMALL_ANGLE_THRESHOLD) {
-			// Taylor series for small angles
-			result -= ad_v * Scalar(0.5);
-			result += ad_v * ad_v * Scalar(1.0 / 12.0);
-			result -= ad_v * ad_v * ad_v * Scalar(1.0 / 720.0);
-		} else {
-			// Closed form for larger angles
-			const Scalar sin_theta = std::sin(theta);
-			const Scalar cos_theta = std::cos(theta);
-			const Scalar half_theta = theta * Scalar(0.5);
-			const Scalar cot_half = cos_theta / sin_theta;
-
-			result -= ad_v * Scalar(0.5);
-			result += ad_v * ad_v * (Scalar(1.0 / 12.0) - half_theta * cot_half / Scalar(6.0));
-		}
-
-		return result;
+		// Inverse of the series of dexp_alternative(). The Bernoulli series
+		// I + ad/2 + ad^2/12 - ad^4/720 + ... would only converge for |ad_v| < 2 pi and its
+		// coefficients are easy to get wrong; inverting the always-convergent series is exact
+		// up to the conditioning of Jr (singular only when exp is, i.e. at |phi| = 2 pi k).
+		return dexp_alternative(v).inverse();
 	}
 
 	/**
 	 * @brief Computes the differential of the logarithm map (dlog).
 	 * This function calculates the Jacobian of the logarithm map, which is
 	 * essential for mapping velocities on the Lie group to velocities in the Lie
-	 * algebra. It uses Taylor series expansion for small input values and a
-	 * closed-form expression for larger values to ensure numerical stability.
+	 * algebra: log(g exp(d)) = log(g) + dlog() d + O(d^2), i.e. dexpInv(log g).
+	 * Groups may hide it with their own convention (SO3::dlog() is the left one).
 	 * @tparam Derived The derived class implementing the specific Lie group.
 	 * @tparam _Scalar The scalar type used for computations.
 	 * @tparam _Dim The dimension of the group representation.
@@ -405,40 +356,14 @@ namespace sofa::component::cosserat::liegroups {
 		requires(_Dim > 0 && _AlgebraDim > 0 && _ActionDim > 0)
 	inline typename LieGroupBase<Derived, _Scalar, _Dim, _AlgebraDim, _ActionDim>::AdjointMatrix
 	LieGroupBase<Derived, _Scalar, _Dim, _AlgebraDim, _ActionDim>::dlog() const {
-		using Matrix = typename Derived::AdjointMatrix;
-		using Vector = typename Derived::TangentVector;
-		using Scalar = typename Derived::Scalar;
-		using Types = typename Derived::Types;
-
-		// Get the logarithm of the current element
-		const Vector v = derived().log();
-		const Scalar theta = v.norm();
-
-		if (Types::isZero(theta)) {
-			return Matrix::Identity();
-		}
-
-		// Create the adjoint representation of v
-		const Matrix ad_v = Derived::ad(v);
-		Matrix result = Matrix::Identity();
-
-		if (theta < Types::SMALL_ANGLE_THRESHOLD) {
-			// Taylor series for small angles
-			result -= ad_v * Scalar(0.5);
-			result += ad_v * ad_v * Scalar(1.0 / 12.0);
-			result -= ad_v * ad_v * ad_v * Scalar(1.0 / 720.0);
+		// log(g exp(d)) = log(g) + Jr^-1(log g) d + O(d^2): the inverse of the right Jacobian
+		// at log(g), i.e. dexpInv(log g), consistent with dexp()/dexpInv() of this class.
+		const TangentVector v = derived().log();
+		if constexpr (requires { Derived::computeRightJacobianInverse(v); }) {
+			return Derived::computeRightJacobianInverse(v);
 		} else {
-			// Closed form for larger angles
-			const Scalar sin_theta = std::sin(theta);
-			const Scalar cos_theta = std::cos(theta);
-			const Scalar half_theta = theta * Scalar(0.5);
-
-			const Scalar factor = half_theta * std::cos(half_theta) / std::sin(half_theta);
-			result -= ad_v * Scalar(0.5);
-			result += ad_v * ad_v * (Scalar(1.0 / 12.0) - factor / Scalar(6.0));
+			return dexpInv_alternative(v);
 		}
-
-		return result;
 	}
 
 	/**
