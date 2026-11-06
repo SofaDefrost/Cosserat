@@ -150,7 +150,9 @@ namespace sofa::component::cosserat::liegroups::testing {
 
 		SO3 g1(Scalar(M_PI / 4.0), Vector::UnitX());
 		SO3 g2(Scalar(M_PI / 4.0) + this->eps / 2.0, Vector::UnitX());
-		SO3 g3(Scalar(M_PI / 4.0) + this->eps * 2.0, Vector::UnitX());
+		// SO3::isApprox compares the quaternion coefficients (relative): a rotation-angle difference d changes
+		// them by sin(pi/8) d / 2... ~ 0.46 d, so 2*eps of angle (0.92 eps) is still within eps; use 10*eps.
+		SO3 g3(Scalar(M_PI / 4.0) + this->eps * 10.0, Vector::UnitX());
 
 		EXPECT_TRUE(g1.computeIsApprox(g2, this->eps));
 		EXPECT_FALSE(g1.computeIsApprox(g3, this->eps));

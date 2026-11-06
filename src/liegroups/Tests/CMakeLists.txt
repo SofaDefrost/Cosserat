@@ -17,6 +17,7 @@ set(LIEGROUPS_TEST_FILES
         integration/SE23Test.cpp
         integration/SGal3Test.cpp
         integration/SE3Test.cpp
+        integration/SO3Test.cpp
     
         # Unit tests
         unit/test_jacobian_verification.cpp
