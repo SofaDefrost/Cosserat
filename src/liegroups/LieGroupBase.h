@@ -356,7 +356,11 @@ namespace sofa::component::cosserat::liegroups {
 		 * @note Essential for uncertainty propagation in Kalman filters
 		 */
 		[[nodiscard]] static AdjointMatrix rightJacobian(const TangentVector &tau) noexcept {
-			return Derived::computeRightJacobian(tau);
+			if constexpr (requires { Derived::computeRightJacobian(tau); }) {
+				return Derived::computeRightJacobian(tau);
+			} else {
+				return jacobianFromAd(-Derived::ad(tau)); // generic fallback, see jacobianFromAd
+			}
 		}
 
 		/**
@@ -374,7 +378,11 @@ namespace sofa::component::cosserat::liegroups {
 		 * @note Related to right Jacobian: Jl(τ) = Jr(-τ)
 		 */
 		[[nodiscard]] static AdjointMatrix leftJacobian(const TangentVector &tau) noexcept {
-			return Derived::computeLeftJacobian(tau);
+			if constexpr (requires { Derived::computeLeftJacobian(tau); }) {
+				return Derived::computeLeftJacobian(tau);
+			} else {
+				return jacobianFromAd(Derived::ad(tau));
+			}
 		}
 
 		/**
@@ -387,7 +395,11 @@ namespace sofa::component::cosserat::liegroups {
 		 * @return Inverse right Jacobian matrix ∈ ℝᵐˣᵐ
 		 */
 		[[nodiscard]] static AdjointMatrix rightJacobianInverse(const TangentVector &tau) noexcept {
-			return Derived::computeRightJacobianInverse(tau);
+			if constexpr (requires { Derived::computeRightJacobianInverse(tau); }) {
+				return Derived::computeRightJacobianInverse(tau);
+			} else {
+				return jacobianFromAd(-Derived::ad(tau)).inverse();
+			}
 		}
 
 		/**
@@ -402,7 +414,11 @@ namespace sofa::component::cosserat::liegroups {
 		 * @note Related to right inverse: Jl⁻¹(τ) = Jr⁻¹(-τ)
 		 */
 		[[nodiscard]] static AdjointMatrix leftJacobianInverse(const TangentVector &tau) noexcept {
-			return Derived::computeLeftJacobianInverse(tau);
+			if constexpr (requires { Derived::computeLeftJacobianInverse(tau); }) {
+				return Derived::computeLeftJacobianInverse(tau);
+			} else {
+				return jacobianFromAd(Derived::ad(tau)).inverse();
+			}
 		}
 
 		/**
@@ -541,6 +557,25 @@ namespace sofa::component::cosserat::liegroups {
 		[[nodiscard]] Scalar squaredDistance(const Derived &other) const noexcept;
 
 	protected:
+		/**
+		 * @brief Left Jacobian of exp as a function of the matrix ad: sum_k ad^k / (k+1)!
+		 * (pass -ad for the right one). Fallback used by leftJacobian() & co. for groups that do
+		 * not provide closed forms (SO2, SE2, RealSpace, SE_2(3), ...): the series converges like
+		 * exp, so it needs no small-angle branch; the inverse is the matrix inverse.
+		 */
+		[[nodiscard]] static AdjointMatrix jacobianFromAd(const AdjointMatrix &ad) noexcept {
+			AdjointMatrix result = AdjointMatrix::Identity();
+			AdjointMatrix term = AdjointMatrix::Identity();
+			for (int k = 1; k < 64; ++k) {
+				term = term * ad / Scalar(k + 1);
+				result += term;
+				if (term.cwiseAbs().maxCoeff() <= std::numeric_limits<Scalar>::epsilon() * Scalar(1e-3)) {
+					break;
+				}
+			}
+			return result;
+		}
+
 		/**
 		 * @brief Helper for derived classes to validate construction parameters
 		 */

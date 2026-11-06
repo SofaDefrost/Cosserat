@@ -84,3 +84,31 @@ TEST(SE2Audit, MatrixAndTangentConstructorsCompileAndAgree) {
 	EXPECT_TRUE(fromTangent.isApprox(g, 1e-12));
 }
 
+TEST(SE2Audit, JacobiansMatchSeries) {
+	// LieGroupBase::leftJacobian & co. must work for SE2 (no closed form needed: the series
+	// sum ad^k/(k+1)! is the definition).
+	std::mt19937_64 rng(45);
+	for (double th : kThetas) {
+		const V3 xi = randomXi(rng, th);
+		const MatL<3> ad = adSE2(xi);
+		const MatL<3> Jl = jacobianSeries<3>(ad), Jr = jacobianSeries<3>(-ad);
+		EXPECT_LT(maxAbsDiff(SE2d::leftJacobian(xi), Jl), 4e-15) << "theta " << th;
+		EXPECT_LT(maxAbsDiff(SE2d::rightJacobian(xi), Jr), 4e-15) << "theta " << th;
+		if (std::abs(th) < 3.0) { // Jl is singular at |theta| = 2 pi only, but keep the inverse well scaled
+			EXPECT_LT(maxAbsDiff(SE2d::leftJacobianInverse(xi), Jl.inverse()), 4e-14) << "theta " << th;
+			EXPECT_LT(maxAbsDiff(SE2d::rightJacobianInverse(xi), Jr.inverse()), 4e-14) << "theta " << th;
+		}
+	}
+}
+
+TEST(SE2Audit, SO2AndRealSpaceJacobiansExist) {
+	// Abelian groups: every Jacobian is the identity.
+	SO2d::TangentVector t;
+	t << 0.7;
+	EXPECT_NEAR(SO2d::leftJacobian(t)(0, 0), 1.0, 1e-15);
+	EXPECT_NEAR(SO2d::rightJacobianInverse(t)(0, 0), 1.0, 1e-15);
+	using R3 = RealSpace<double, 3>;
+	const R3::TangentVector v(0.1, -2.0, 3.0);
+	EXPECT_LT((R3::leftJacobian(v) - Eigen::Matrix3d::Identity()).norm(), 1e-15);
+	EXPECT_LT((R3::rightJacobianInverse(v) - Eigen::Matrix3d::Identity()).norm(), 1e-15);
+}
