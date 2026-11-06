@@ -306,6 +306,13 @@ namespace sofa::component::cosserat::liegroups {
 	 */
 	static AdjointMatrix computeAd(const TangentVector &v);
 
+	/// SO(3) Jacobians of the exponential map (Solà et al. 2021, eq. 143-144).
+	/// CRTP hooks used by LieGroupBase::leftJacobian / rightJacobian / *Inverse.
+	static AdjointMatrix computeRightJacobian(const TangentVector &omega) noexcept;
+	static AdjointMatrix computeLeftJacobian(const TangentVector &omega) noexcept;
+	static AdjointMatrix computeRightJacobianInverse(const TangentVector &omega) noexcept;
+	static AdjointMatrix computeLeftJacobianInverse(const TangentVector &omega) noexcept;
+
 	// ========== NEW: Differentiation Jacobians ==========
 
 	/**
@@ -735,5 +742,8 @@ inline std::istream& operator>>(std::istream& is, SO3<Scalar>& R) {
 }
 
 } // namespace sofa::component::cosserat::liegroups
+
+// Out-of-line definitions (distance, interpolate, BCH, dexp, dlog, Jacobians).
+#include "SO3.inl"
 
 // #endif // SOFA_COMPONENT_COSSERAT_LIEGROUPS_SO3_H

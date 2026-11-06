@@ -48,7 +48,7 @@ namespace sofa::component::cosserat::liegroups {
 	 * @return The interpolated SO3 rotation.
 	 */
 	template<typename _Scalar>
-	SO3<_Scalar> SO3<_Scalar>::computeInterpolate(const SO3 &other, const Scalar &t) const noexcept {
+	SO3<_Scalar> SO3<_Scalar>::interpolate(const SO3 &other, const Scalar &t) const noexcept {
 		// Clamp t to [0,1] for safety
 		const Scalar t_clamped = std::max(Scalar(0), std::min(Scalar(1), t));
 		// Use quaternion SLERP for optimal interpolation
@@ -70,70 +70,74 @@ namespace sofa::component::cosserat::liegroups {
 		TangentVector result = v + w;
 
 		if (order >= 2) {
-			// Compute [v,w] once and store it
-			const Matrix Vhat = hat(v);
-			const Matrix What = hat(w);
-			const Matrix VW = Vhat * What - What * Vhat;
-			const TangentVector vw = vee(VW);
+			// [v,w] = v x w for so(3) (vee of the matrix commutator)
+			const TangentVector vw = v.cross(w);
 
 			// Second-order term: 1/2[v,w]
 			result += vw * Scalar(0.5);
 
 			if (order >= 3) {
-				// Third-order term using stored [v,w]
-				result += (Derived::computeVee(Vhat * Derived::computeHat(vw)) -
-						   Derived::computeVee(What * Derived::computeHat(vw))) *
-						  Scalar(1.0 / 12.0);
+				// Third-order term: 1/12 ([v,[v,w]] + [w,[w,v]]) = 1/12 (v x vw - w x vw)
+				result += (v.cross(vw) - w.cross(vw)) * Scalar(1.0 / 12.0);
 			}
 		}
 
 		return result;
 	}
 
+	namespace detail {
 	/**
-	 * @brief Computes the differential of the exponential map.
-	 * For small angles, uses a Taylor expansion. For larger angles, uses the
-	 * closed-form expression.
+	 * @brief Coefficients shared by the SO(3) Jacobians, with Taylor expansions for small angles
+	 * (the closed forms (1-cos t)/t^2 and (t-sin t)/t^3 lose all their digits there).
+	 *   a(t) = (1 - cos t) / t^2         ~ 1/2   - t^2/24
+	 *   b(t) = (t - sin t) / t^3         ~ 1/6   - t^2/120
+	 *   c(t) = 1/t^2 - 1/(2 t tan(t/2))  ~ 1/12  + t^2/720   (inverse Jacobian; half-angle form
+	 *                                                         stays finite and accurate near pi)
+	 */
+	template<typename Scalar>
+	inline void so3JacobianCoefficients(const Scalar theta, Scalar &a, Scalar &b, Scalar &c) noexcept {
+		const Scalar t2 = theta * theta;
+		if (theta < Types<Scalar>::SMALL_ANGLE_THRESHOLD) {
+			a = Scalar(0.5) - t2 / Scalar(24);
+			b = Scalar(1) / Scalar(6) - t2 / Scalar(120);
+			c = Scalar(1) / Scalar(12) + t2 / Scalar(720);
+		} else {
+			a = (Scalar(1) - std::cos(theta)) / t2;
+			b = (theta - std::sin(theta)) / (t2 * theta);
+			c = Scalar(1) / t2 - Scalar(1) / (Scalar(2) * theta * std::tan(Scalar(0.5) * theta));
+		}
+	}
+	} // namespace detail
+
+	/**
+	 * @brief Computes the differential of the exponential map (the left Jacobian Jl).
+	 *   Jl(w) = I + a(|w|) [w]x + b(|w|) [w]x^2
 	 * @tparam _Scalar The scalar type.
 	 * @param v The tangent vector.
 	 * @return The matrix representing the differential of exp at v.
 	 */
 	template<typename _Scalar>
 	typename SO3<_Scalar>::AdjointMatrix SO3<_Scalar>::dexp(const TangentVector &v) {
-		const Scalar theta = v.norm();
-
-		if (theta < Types<Scalar>::SMALL_ANGLE_THRESHOLD) {
-			return Matrix::Identity() + hat(v) * Scalar(0.5);
-		}
-
-		const Matrix V = hat(v);
-		const Scalar theta2 = theta * theta;
-
-		return Matrix::Identity() + (Scalar(1) - std::cos(theta)) / theta2 * V +
-			   (theta - std::sin(theta)) / (theta2 * theta) * (V * V);
+		Scalar a, b, c;
+		detail::so3JacobianCoefficients(v.norm(), a, b, c);
+		const Matrix V = SO3::computeHat(v);
+		return Matrix::Identity() + a * V + b * (V * V);
 	}
 
 	/**
-	 * @brief Computes the differential of the logarithm map.
-	 * For small angles, uses a Taylor expansion. For larger angles, uses the
-	 * closed-form expression.
+	 * @brief Computes the differential of the logarithm map (inverse of the left Jacobian,
+	 * evaluated at log of the current element).
+	 *   Jl^-1(w) = I - 1/2 [w]x + c(|w|) [w]x^2
 	 * @tparam _Scalar The scalar type.
 	 * @return The matrix representing the differential of log at the current point.
 	 */
 	template<typename _Scalar>
 	typename SO3<_Scalar>::AdjointMatrix SO3<_Scalar>::dlog() const {
 		const TangentVector omega = computeLog();
-		const Scalar theta = omega.norm();
-
-		if (theta < Types<Scalar>::SMALL_ANGLE_THRESHOLD) {
-			return Matrix::Identity() - hat(omega) * Scalar(0.5);
-		}
-
-		const Matrix V = hat(omega);
-		const Scalar theta2 = theta * theta;
-
-		return Matrix::Identity() - Scalar(0.5) * V +
-			   (Scalar(1) / theta2 - (Scalar(1) + std::cos(theta)) / (Scalar(2) * theta * std::sin(theta))) * (V * V);
+		Scalar a, b, c;
+		detail::so3JacobianCoefficients(omega.norm(), a, b, c);
+		const Matrix V = SO3::computeHat(omega);
+		return Matrix::Identity() - Scalar(0.5) * V + c * (V * V);
 	}
 
 	/**
@@ -145,116 +149,48 @@ namespace sofa::component::cosserat::liegroups {
 	 */
 	template<typename _Scalar>
 	typename SO3<_Scalar>::AdjointMatrix SO3<_Scalar>::computeAd(const TangentVector &v) {
-		// For SO(3), ad(v) is just the hat map
-		// TODO :  Check this implementation  !!!
-		// For SO(3), ad(v) is just the hat map
-		return ad(v);
+		// For SO(3), ad(v) is the hat map. Do not call ad(v) here: LieGroupBase::ad
+		// dispatches back to computeAd, which would recurse forever.
+		return computeHat(v);
 	}
 
 	/**
-	 * @brief Computes the right Jacobian of SO(3): Jr(ω)
-	 * 
-	 * Formula from Solà et al. (2021), Equation (143):
-	 *   Jr(θ) = I - (1-cos θ)/θ² [θ]× + (θ-sin θ)/θ³ [θ]²×
-	 * 
-	 * For small angles (θ < ε):
-	 *   Jr(θ) ≈ I - ½[θ]×
-	 * 
-	 * @tparam _Scalar The scalar type.
-	 * @param omega Angular velocity vector in ℝ³.
-	 * @return Right Jacobian matrix (3×3).
+	 * @brief Right Jacobian of SO(3): Jr(w) = I - a(|w|) [w]x + b(|w|) [w]x^2
+	 * (Solà et al. 2021, eq. 143).
 	 */
 	template<typename _Scalar>
 	typename SO3<_Scalar>::AdjointMatrix SO3<_Scalar>::computeRightJacobian(const TangentVector &omega) noexcept {
-		const Scalar theta = omega.norm();
-		
-		// Small angle approximation
-		if (theta < Types<Scalar>::epsilon()) {
-			return Matrix::Identity() - Scalar(0.5) * hat(omega);
-		}
-		
-		// General case
-		const Matrix omega_hat = hat(omega);
-		const Matrix omega_hat2 = omega_hat * omega_hat;
-		const Scalar theta2 = theta * theta;
-		const Scalar theta3 = theta2 * theta;
-		const Scalar sin_theta = std::sin(theta);
-		const Scalar cos_theta = std::cos(theta);
-		
-		// Jr(θ) = I - (1-cos θ)/θ² [θ]× + (θ-sin θ)/θ³ [θ]²×
-		return Matrix::Identity() 
-			   - ((Scalar(1) - cos_theta) / theta2) * omega_hat
-			   + ((theta - sin_theta) / theta3) * omega_hat2;
+		Scalar a, b, c;
+		detail::so3JacobianCoefficients(omega.norm(), a, b, c);
+		const Matrix W = SO3::computeHat(omega);
+		return Matrix::Identity() - a * W + b * (W * W);
 	}
 
 	/**
-	 * @brief Computes the left Jacobian of SO(3): Jl(ω)
-	 * 
-	 * Formula from Solà et al. (2021):
-	 *   Jl(θ) = Jr(-θ)
-	 * 
-	 * @tparam _Scalar The scalar type.
-	 * @param omega Angular velocity vector in ℝ³.
-	 * @return Left Jacobian matrix (3×3).
+	 * @brief Left Jacobian of SO(3): Jl(w) = Jr(-w).
 	 */
 	template<typename _Scalar>
 	typename SO3<_Scalar>::AdjointMatrix SO3<_Scalar>::computeLeftJacobian(const TangentVector &omega) noexcept {
-		// Jl(θ) = Jr(-θ)
 		return computeRightJacobian(-omega);
 	}
 
 	/**
-	 * @brief Computes the inverse of the right Jacobian: Jr⁻¹(ω)
-	 * 
-	 * Formula from Solà et al. (2021), Equation (144):
-	 *   Jr⁻¹(θ) = I + ½[θ]× + (1/θ² - (1+cos θ)/(2θ sin θ))[θ]²×
-	 * 
-	 * For small angles (θ < ε):
-	 *   Jr⁻¹(θ) ≈ I + ½[θ]×
-	 * 
-	 * @tparam _Scalar The scalar type.
-	 * @param omega Angular velocity vector in ℝ³.
-	 * @return Inverse right Jacobian matrix (3×3).
+	 * @brief Inverse right Jacobian: Jr^-1(w) = I + 1/2 [w]x + c(|w|) [w]x^2
+	 * (Solà et al. 2021, eq. 144).
 	 */
 	template<typename _Scalar>
 	typename SO3<_Scalar>::AdjointMatrix SO3<_Scalar>::computeRightJacobianInverse(const TangentVector &omega) noexcept {
-		const Scalar theta = omega.norm();
-		
-		// Small angle approximation
-		if (theta < Types<Scalar>::epsilon()) {
-			return Matrix::Identity() + Scalar(0.5) * hat(omega);
-		}
-		
-		// General case
-		const Matrix omega_hat = hat(omega);
-		const Matrix omega_hat2 = omega_hat * omega_hat;
-		const Scalar theta2 = theta * theta;
-		const Scalar sin_theta = std::sin(theta);
-		const Scalar cos_theta = std::cos(theta);
-		
-		// Coefficient for [θ]²× term
-		const Scalar coeff = Scalar(1) / theta2 
-						   - (Scalar(1) + cos_theta) / (Scalar(2) * theta * sin_theta);
-		
-		// Jr⁻¹(θ) = I + ½[θ]× + coeff·[θ]²×
-		return Matrix::Identity() 
-			   + Scalar(0.5) * omega_hat 
-			   + coeff * omega_hat2;
+		Scalar a, b, c;
+		detail::so3JacobianCoefficients(omega.norm(), a, b, c);
+		const Matrix W = SO3::computeHat(omega);
+		return Matrix::Identity() + Scalar(0.5) * W + c * (W * W);
 	}
 
 	/**
-	 * @brief Computes the inverse of the left Jacobian: Jl⁻¹(ω)
-	 * 
-	 * Formula from Solà et al. (2021):
-	 *   Jl⁻¹(θ) = Jr⁻¹(-θ)
-	 * 
-	 * @tparam _Scalar The scalar type.
-	 * @param omega Angular velocity vector in ℝ³.
-	 * @return Inverse left Jacobian matrix (3×3).
+	 * @brief Inverse left Jacobian: Jl^-1(w) = Jr^-1(-w).
 	 */
 	template<typename _Scalar>
 	typename SO3<_Scalar>::AdjointMatrix SO3<_Scalar>::computeLeftJacobianInverse(const TangentVector &omega) noexcept {
-		// Jl⁻¹(θ) = Jr⁻¹(-θ)
 		return computeRightJacobianInverse(-omega);
 	}
 
