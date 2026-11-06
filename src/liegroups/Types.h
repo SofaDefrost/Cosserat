@@ -477,7 +477,7 @@ namespace sofa::component::cosserat::liegroups {
 		/// in SO3.inl, duplicated here because Types.h is included by SO3.h.
 		static void jacobianCoefficients(const Scalar t, Scalar &a, Scalar &b, Scalar &c) noexcept {
 			const Scalar t2 = t * t;
-			if (t < Scalar(0.25)) {
+			if (t < (sizeof(Scalar) <= 4 ? Scalar(1) : Scalar(0.25))) { // float: series up to 1 rad, see so3SeriesAngle
 				const Scalar t4 = t2 * t2;
 				a = Scalar(1) / Scalar(2) - t2 / Scalar(24) + t4 / Scalar(720) - t4 * t2 / Scalar(40320) +
 					t4 * t4 / Scalar(3628800) - t4 * t4 * t2 / Scalar(479001600);

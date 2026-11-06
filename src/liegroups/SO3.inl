@@ -100,7 +100,13 @@ namespace sofa::component::cosserat::liegroups {
 	 */
 	template<typename Scalar>
 	inline constexpr Scalar so3SeriesAngle() noexcept {
-		return Scalar(0.25);
+		// float cancels earlier than double (eps 6e-8 vs 2e-16): the 6-term series is still exact to
+		// float precision up to 1 rad, so use it there (the closed forms at 0.3 rad cost 1.3e-6).
+		if constexpr (sizeof(Scalar) <= 4) {
+			return Scalar(1);
+		} else {
+			return Scalar(0.25);
+		}
 	}
 
 	template<typename Scalar>

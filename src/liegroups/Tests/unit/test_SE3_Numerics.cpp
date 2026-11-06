@@ -135,3 +135,19 @@ TEST(SE3Numerics, ExpCosseratIsExpOfTheStrainPlusUnitStretch) {
 		}
 	}
 }
+
+TEST(SE3Numerics, SinglePrecisionStaysWithinFloatEpsilon) {
+	// The small-angle switch must not be tuned for double only: in float the closed forms cancel
+	// from ~1e-2 rad up (errors of 1.7e-4 at 1e-3 rad before the series were used there).
+	std::mt19937_64 rng(39);
+	for (double angle : {1e-6, 1e-3, 0.1, 0.3, 1.0, 3.0, 3.14}) {
+		for (int i = 0; i < 5; ++i) {
+			const V6 x = randomSE3Tangent(rng, angle);
+			const Eigen::Matrix<float, 6, 1> xf = x.cast<float>();
+			EXPECT_LT(maxAbsDiff(SE3f::exp(xf).matrix(), expm<4>(hatSE3(xf.cast<LD>()))), 6e-7) << "angle " << angle;
+			const MatL<6> Jl = jacobianSeries<6>(adSE3(xf.cast<LD>()));
+			EXPECT_LT(maxAbsDiff(SE3f::computeLeftJacobian(xf), Jl), 6e-7) << "Jl angle " << angle;
+			EXPECT_LT(maxAbsDiff(SE3f::computeLeftJacobianInverse(xf), Jl.inverse()), 1.2e-6) << "Jl^-1 angle " << angle;
+		}
+	}
+}
