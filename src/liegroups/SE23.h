@@ -162,25 +162,13 @@ namespace sofa::component::cosserat::liegroups {
 			// former code scaled the whole velocity by 1/theta (J a / theta with J = I + ...), so
 			// the velocity column was wrong for every non-zero rotation.
 			typename SE3<Scalar>::TangentVector se3_element;
-			se3_element << w, v;  // angular first, linear second
-			SE3<Scalar> pose = SE3<Scalar>::computeExp(se3_element);
-
-			// Compute the velocity part
-			// For small rotations or zero angular velocity
-			if (w.norm() < Types<Scalar>::epsilon()) {
-				return SE23(pose, a);
-			}
-
-			// For finite rotations, integrate the velocity
-			const Scalar theta = w.norm();
-			const Vector3 w_normalized = w / theta;
-			const Matrix3 w_hat = SO3<Scalar>::computeHat(w_normalized);
-
-			// Integration matrix for acceleration
-			Matrix3 J = Matrix3::Identity() + (Scalar(1) - std::cos(theta)) * w_hat +
-						(theta - std::sin(theta)) * w_hat * w_hat;
-
-			return SE23(pose, J * a / theta);
+			se3_element << w, v; // SE3 is angular first, linear second
+			const SE3<Scalar> pose = SE3<Scalar>::computeExp(se3_element);
+			Scalar A, B, C;
+			detail::so3JacobianCoefficients(w.norm(), A, B, C);
+			const Matrix3 W = SO3<Scalar>::computeHat(w);
+			const Matrix3 V = Matrix3::Identity() + A * W + B * (W * W);
+			return SE23(pose, V * a);
 		}
 		/**
 		 * @brief Computes the logarithmic map from the SE23 group to its Lie algebra
@@ -198,23 +186,7 @@ namespace sofa::component::cosserat::liegroups {
 			const Matrix3 W = SO3<Scalar>::computeHat(w);
 			const Matrix3 V_inv = Matrix3::Identity() - Scalar(0.5) * W + C * (W * W);
 			TangentVector result;
-			if (w.norm() < Types<Scalar>::epsilon()) {
-				result << v, w, m_velocity;
-				return result;
-			}
-
-			// For finite rotations, compute acceleration
-			const Scalar theta = w.norm();
-			const Vector3 w_normalized = w / theta;
-			const Matrix3 w_hat = SO3<Scalar>::computeHat(w_normalized);
-
-			// Integration matrix inverse
-			Matrix3 J_inv =
-					Matrix3::Identity() - Scalar(0.5) * w_hat +
-					(Scalar(1) - theta * std::cos(theta / Scalar(2)) / (Scalar(2) * std::sin(theta / Scalar(2)))) /
-							(theta * theta) * (w_hat * w_hat);
-
-			result << v, w, J_inv * m_velocity * theta;
+			result << v, w, V_inv * m_velocity;
 			return result;
 		}
 		/**
@@ -222,22 +194,19 @@ namespace sofa::component::cosserat::liegroups {
 		 * @return The adjoint matrix.
 		 */
 		AdjointMatrix computeAdjoint() const {
+			// Ad_g xi = vee(g hat(xi) g^-1), g = [[R, p, u], [0, 1, 0], [0, 0, 1]], xi = [v ; w ; a]:
+			//   v' = R v + [p]x R w,  w' = R w,  a' = R a + [u]x R w
+			// i.e. Ad = [[R, [p]x R, 0], [0, R, 0], [0, [u]x R, R]]. The velocity block [u]x R belongs
+			// at (a, w) = (6, 3); the previous code put it at (0, 6), which maps a into v.
 			AdjointMatrix Ad = AdjointMatrix::Zero();
-			Matrix3 R = m_pose.rotation().matrix();
-			Matrix3 p_hat = SO3<Scalar>::computeHat(m_pose.translation());
-			Matrix3 v_hat = SO3<Scalar>::computeHat(m_velocity);
-
-			// Upper-left block: rotation
+			const Matrix3 R = m_pose.rotation().matrix();
+			const Matrix3 p_hat = SO3<Scalar>::computeHat(m_pose.translation());
+			const Matrix3 u_hat = SO3<Scalar>::computeHat(m_velocity);
 			Ad.template block<3, 3>(0, 0) = R;
-			// Upper-middle block: position cross rotation
 			Ad.template block<3, 3>(0, 3) = p_hat * R;
-			// Upper-right block: velocity cross rotation
-			Ad.template block<3, 3>(0, 6) = v_hat * R;
-			// Middle-middle block: rotation
 			Ad.template block<3, 3>(3, 3) = R;
-			// Bottom-bottom block: rotation
+			Ad.template block<3, 3>(6, 3) = u_hat * R;
 			Ad.template block<3, 3>(6, 6) = R;
-
 			return Ad;
 		}
 		/**
@@ -279,11 +248,12 @@ namespace sofa::component::cosserat::liegroups {
 		 * @return The 5x5 matrix representation.
 		 */
 		static Matrix computeHat(const TangentVector &v) {
-			// For SE_2(3), the hat operator maps a 9D vector to a 5x5 matrix
-			// This is a placeholder, actual implementation depends on the specific
-			// representation
+			// hat([v ; w ; a]) = [[w^, v, a], [0, 0, 0], [0, 0, 0]] (5x5), embedded in the top-left
+			// corner of the 9x9 AlgebraMatrix so that matrix commutators equal the Lie bracket.
 			Matrix result = Matrix::Zero();
-			// ... implement hat operator for SE_2(3)
+			result.template block<3, 3>(0, 0) = SO3<Scalar>::computeHat(Vector3(v.template segment<3>(3)));
+			result.template block<3, 1>(0, 3) = v.template segment<3>(0);
+			result.template block<3, 1>(0, 4) = v.template segment<3>(6);
 			return result;
 		}
 
@@ -295,11 +265,10 @@ namespace sofa::component::cosserat::liegroups {
 		 * @return The 9D Lie algebra vector.
 		 */
 		static TangentVector computeVee(const Matrix &X) {
-			// For SE_2(3), the vee operator maps a 5x5 matrix to a 9D vector
-			// This is a placeholder, actual implementation depends on the specific
-			// representation
-			TangentVector result = TangentVector::Zero();
-			// ... implement vee operator for SE_2(3)
+			TangentVector result;
+			result.template segment<3>(0) = X.template block<3, 1>(0, 3);
+			result.template segment<3>(3) = SO3<Scalar>::computeVee(Matrix3(X.template block<3, 3>(0, 0)));
+			result.template segment<3>(6) = X.template block<3, 1>(0, 4);
 			return result;
 		}
 
@@ -311,11 +280,15 @@ namespace sofa::component::cosserat::liegroups {
 		 * @return The adjoint matrix.
 		 */
 		static AdjointMatrix computeAd(const TangentVector &v) {
-			// For SE_2(3), the adjoint operator maps a 9D vector to a 9x9 matrix
-			// This is a placeholder, actual implementation depends on the specific
-			// representation
+			// ad_xi y = [xi, y]: v' = w_x v_y - w_y v_x ..., i.e. in the [v ; w ; a] layout
+			//   ad = [[w^, v^, 0], [0, w^, 0], [0, a^, w^]]
 			AdjointMatrix result = AdjointMatrix::Zero();
-			// ... implement adjoint operator for SE_2(3)
+			const Matrix3 W = SO3<Scalar>::computeHat(Vector3(v.template segment<3>(3)));
+			result.template block<3, 3>(0, 0) = W;
+			result.template block<3, 3>(0, 3) = SO3<Scalar>::computeHat(Vector3(v.template segment<3>(0)));
+			result.template block<3, 3>(3, 3) = W;
+			result.template block<3, 3>(6, 3) = SO3<Scalar>::computeHat(Vector3(v.template segment<3>(6)));
+			result.template block<3, 3>(6, 6) = W;
 			return result;
 		}
 

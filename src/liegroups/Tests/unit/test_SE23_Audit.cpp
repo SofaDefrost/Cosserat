@@ -82,3 +82,53 @@ TEST(SE23Audit, LogInvertsExp) {
 	}
 }
 
+TEST(SE23Audit, HatVeeAndAdAreTheLieAlgebra) {
+	std::mt19937_64 rng(53);
+	for (double angle : {0.0, 0.4, 2.0}) {
+		const V9 x = randomXi(rng, angle), y = randomXi(rng, angle / 2 + 0.1);
+		EXPECT_LT((SE23d::vee(SE23d::hat(x)) - x).norm(), 1e-15);
+		const M9 comm = SE23d::hat(x) * SE23d::hat(y) - SE23d::hat(y) * SE23d::hat(x);
+		EXPECT_LT((SE23d::computeAd(x) * y - SE23d::vee(comm)).cwiseAbs().maxCoeff(), 1e-14) << angle;
+		EXPECT_LT(maxAbsDiff(SE23d::computeAd(x), ad9(x.cast<LD>())), 1e-15) << angle;
+	}
+}
+
+TEST(SE23Audit, AdjointIsExpOfAd) {
+	std::mt19937_64 rng(54);
+	for (double angle : kAngles) {
+		const V9 xi = randomXi(rng, angle);
+		EXPECT_LT(maxAbsDiff(SE23d::exp(xi).computeAdjoint(), expm<9>(ad9(xi.cast<LD>()))), 8e-15) << "angle " << angle;
+	}
+}
+
+TEST(SE23Audit, ComposeAndInverseFollowTheMatrixProduct) {
+	std::mt19937_64 rng(55);
+	const SE23d g = SE23d::exp(randomXi(rng, 1.1)), h = SE23d::exp(randomXi(rng, 2.0));
+	EXPECT_LT((g.compose(h).extendedMatrix() - g.extendedMatrix() * h.extendedMatrix()).cwiseAbs().maxCoeff(), 1e-14);
+	EXPECT_LT((g.computeInverse().extendedMatrix() - g.extendedMatrix().inverse()).cwiseAbs().maxCoeff(), 1e-13);
+}
+
+TEST(SE23Audit, JacobiansMatchSeriesAndBchConverges) {
+	std::mt19937_64 rng(56);
+	for (double angle : kAngles) {
+		const V9 xi = randomXi(rng, angle);
+		const MatL<9> ad = ad9(xi.cast<LD>());
+		EXPECT_LT(maxAbsDiff(SE23d::leftJacobian(xi), jacobianSeries<9>(ad)), 4e-15) << "angle " << angle;
+		EXPECT_LT(maxAbsDiff(SE23d::rightJacobian(xi), jacobianSeries<9>(-ad)), 4e-15) << "angle " << angle;
+	}
+	std::uniform_real_distribution<double> u(-1.0, 1.0);
+	V9 v0, w0;
+	for (int i = 0; i < 9; ++i) {
+		v0[i] = u(rng);
+		w0[i] = u(rng);
+	}
+	auto err = [&](double s, int order) {
+		const V9 v = v0 * s, w = w0 * s;
+		return (SE23d::BCH(v, w, order) - (SE23d::exp(v) * SE23d::exp(w)).log()).norm();
+	};
+	for (int order = 2; order <= 4; ++order) {
+		const double ratio = err(0.04, order) / err(0.02, order);
+		EXPECT_GT(ratio, 0.7 * std::pow(2.0, order + 1)) << order;
+		EXPECT_LT(ratio, 1.5 * std::pow(2.0, order + 1)) << order;
+	}
+}
