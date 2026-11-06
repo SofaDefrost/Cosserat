@@ -39,88 +39,37 @@ namespace sofa::component::cosserat::liegroups {
 
 	namespace detail {
 
-		// Helper to compute total dimension of all groups
+		/// Sum of Group::<member> over the pack, evaluated at compile time. Dim (size of the matrix
+		/// representation), AlgebraDim (tangent coordinates) and ActionDim (size of the vectors acted on)
+		/// differ for SE3 (4, 6, 3), SO2 (2, 1, 2), SE2 (3, 3, 2): each one needs its own offsets.
 		template<typename... Groups>
-		struct TotalDimension;
-
-		template<>
-		struct TotalDimension<> {
-			static constexpr int value = 0;
+		struct Sums {
+			static constexpr int dim = (0 + ... + Groups::Dim);
+			static constexpr int algebra = (0 + ... + Groups::AlgebraDim);
+			static constexpr int action = (0 + ... + Groups::ActionDim);
 		};
 
-		template<typename Group, typename... Rest>
-		struct TotalDimension<Group, Rest...> {
-			static constexpr int value = Group::Dim + TotalDimension<Rest...>::value;
+		/// Offset of group I in the concatenation of Groups, for the member selected by Which
+		/// (0: Dim, 1: AlgebraDim, 2: ActionDim).
+		template<int Which, std::size_t I, typename... Groups>
+		struct OffsetOf {
+			static constexpr int value = [] {
+				constexpr int sizes[] = {(Which == 0 ? Groups::Dim : Which == 1 ? Groups::AlgebraDim : Groups::ActionDim)...};
+				int off = 0;
+				for (std::size_t k = 0; k < I; ++k)
+					off += sizes[k];
+				return off;
+			}();
 		};
 
-		// Helper to compute total action dimension
-		template<typename... Groups>
-		struct TotalActionDimension;
-
-		template<>
-		struct TotalActionDimension<> {
-			static constexpr int value = 0;
-		};
-
-		template<typename Group, typename... Rest>
-		struct TotalActionDimension<Group, Rest...> {
-			// This assumes we know actionDimension at compile time
-			// For runtime computation, we'll use a different approach
-			static constexpr int value = -1; // Indicates runtime computation needed
-		};
-
-		// Helper to check if all types are LieGroupBase derivatives with same scalar
-		// type
 		template<typename FirstScalar, typename... Groups>
-		struct AllAreLieGroups;
-
-		template<typename FirstScalar>
-		struct AllAreLieGroups<FirstScalar> : std::true_type {};
-
-		template<typename FirstScalar, typename Group, typename... Rest>
-		struct AllAreLieGroups<FirstScalar, Group, Rest...> {
-			static constexpr bool value = std::is_base_of_v<LieGroupBase<Group, typename Group::Scalar, Group::Dim,
-																		 Group::AlgebraDim, Group::ActionDim>,
-															Group> &&
-										  std::is_same_v<FirstScalar, typename Group::Scalar> &&
-										  AllAreLieGroups<FirstScalar, Rest...>::value;
-		};
-
-		// Compile-time offset computation
-		template<int Index, typename... Groups>
-		struct OffsetAt;
-
-		template<int Index>
-		struct OffsetAt<Index> {
-			static constexpr int value = 0;
-		};
-
-		template<int Index, typename Group, typename... Rest>
-		struct OffsetAt<Index, Group, Rest...> {
-			static constexpr int value = (Index == 0) ? 0 : Group::Dim + OffsetAt<Index - 1, Rest...>::value;
-		};
-
-		// Runtime offset computation for action dimensions
-		template<typename... Groups>
-		class ActionOffsets {
-		public:
-			explicit ActionOffsets(const std::tuple<Groups...> &groups) {
-				computeOffsets(groups, std::index_sequence_for<Groups...>());
-			}
-
-			int operator[](std::size_t i) const { return offsets_[i]; }
-			int total() const { return total_; }
-
-		private:
-			std::array<int, sizeof...(Groups)> offsets_;
-			int total_ = 0;
-
-			template<std::size_t... Is>
-			void computeOffsets(const std::tuple<Groups...> &groups, std::index_sequence<Is...>) {
-				int offset = 0;
-				((offsets_[Is] = offset, offset += std::get<Is>(groups).actionDimension()), ...);
-				total_ = offset;
-			}
+		struct AllAreLieGroups {
+			static constexpr bool value =
+					(std::is_base_of_v<LieGroupBase<Groups, typename Groups::Scalar, Groups::Dim, Groups::AlgebraDim,
+													Groups::ActionDim>,
+									   Groups> &&
+					 ...) &&
+					(std::is_same_v<FirstScalar, typename Groups::Scalar> && ...);
 		};
 
 	} // namespace detail
@@ -162,381 +111,265 @@ namespace sofa::component::cosserat::liegroups {
 	template<typename... Groups>
 	class Bundle
 		: public LieGroupBase<Bundle<Groups...>, typename std::tuple_element_t<0, std::tuple<Groups...>>::Scalar,
-							  detail::TotalDimension<Groups...>::value, detail::TotalDimension<Groups...>::value,
-							  detail::TotalDimension<Groups...>::value> {
-
-		// Compile-time validation
+							  detail::Sums<Groups...>::dim, detail::Sums<Groups...>::algebra,
+							  detail::Sums<Groups...>::action> {
 		static_assert(sizeof...(Groups) > 0, "Bundle must contain at least one group");
-
 		using FirstGroup = std::tuple_element_t<0, std::tuple<Groups...>>;
 		using FirstScalar = typename FirstGroup::Scalar;
-
 		static_assert(detail::AllAreLieGroups<FirstScalar, Groups...>::value,
 					  "All template parameters must be Lie groups with the same scalar type");
 
 	public:
-		using Base = LieGroupBase<Bundle<Groups...>, FirstScalar, detail::TotalDimension<Groups...>::value,
-								  detail::TotalDimension<Groups...>::value, detail::TotalDimension<Groups...>::value>;
+		using Base = LieGroupBase<Bundle<Groups...>, FirstScalar, detail::Sums<Groups...>::dim,
+								  detail::Sums<Groups...>::algebra, detail::Sums<Groups...>::action>;
 		using Scalar = typename Base::Scalar;
 		using Vector = typename Base::Vector;
 		using Matrix = typename Base::Matrix;
 		using TangentVector = typename Base::TangentVector;
 		using AdjointMatrix = typename Base::AdjointMatrix;
-
+		using ActionVector = typename Base::ActionVector;
 		static constexpr int Dim = Base::Dim;
+		static constexpr int AlgebraDim = Base::AlgebraDim;
+		static constexpr int ActionDim = Base::ActionDim;
 		static constexpr std::size_t NumGroups = sizeof...(Groups);
 
 		using GroupTuple = std::tuple<Groups...>;
 
-		// Compile-time offset table for algebra elements
+		/// Offset of group I among the tangent coordinates.
 		template<std::size_t I>
-		static constexpr int AlgebraOffset = detail::OffsetAt<I, Groups...>::value;
+		static constexpr int AlgebraOffset = detail::OffsetOf<1, I, Groups...>::value;
+		/// Offset of group I among the coordinates of the vectors the bundle acts on.
+		template<std::size_t I>
+		static constexpr int ActionOffset = detail::OffsetOf<2, I, Groups...>::value;
+		/// Offset of group I in the (block diagonal) matrix representation.
+		template<std::size_t I>
+		static constexpr int DimOffset = detail::OffsetOf<0, I, Groups...>::value;
 
 		template<std::size_t I>
 		using GroupType = std::tuple_element_t<I, GroupTuple>;
 
-		// ========== Constructors ==========
+		Bundle() : m_groups() {}
+		explicit Bundle(const Groups &...groups) : m_groups(groups...) {}
+		explicit Bundle(const GroupTuple &groups) : m_groups(groups) {}
+		explicit Bundle(const TangentVector &algebra_element) : Bundle() { *this = computeExp(algebra_element); }
 
-		/**
-		 * @brief Default constructor creates identity bundle
-		 */
-		Bundle() : m_groups(), m_action_offsets(m_groups) {}
-
-		/**
-		 * @brief Construct from individual group elements
-		 */
-		explicit Bundle(const Groups &...groups) : m_groups(groups...), m_action_offsets(m_groups) {}
-
-		/**
-		 * @brief Construct from tuple of groups
-		 */
-		explicit Bundle(const GroupTuple &groups) : m_groups(groups), m_action_offsets(m_groups) {}
-
-		/**
-		 * @brief Construct from Lie algebra vector
-		 */
-		explicit Bundle(const TangentVector &algebra_element) : Bundle() { *this = exp(algebra_element); }
-
-		/**
-		 * @brief Copy constructor
-		 */
 		Bundle(const Bundle &other) = default;
-
-		/**
-		 * @brief Move constructor
-		 */
 		Bundle(Bundle &&other) noexcept = default;
-
-		/**
-		 * @brief Copy assignment
-		 */
 		Bundle &operator=(const Bundle &other) = default;
-
-		/**
-		 * @brief Move assignment
-		 */
 		Bundle &operator=(Bundle &&other) noexcept = default;
 
-		// ========== Group Operations ==========
+		// ---- group operations (also the CRTP hooks of LieGroupBase) ----
 
-		/**
-		 * @brief Group composition (component-wise)
-		 * Implements: (g₁, ..., gₙ) * (h₁, ..., hₙ) = (g₁h₁, ..., gₙhₙ)
-		 */
-		Bundle operator*(const Bundle &other) const {
-			return multiply_impl(other, std::index_sequence_for<Groups...>());
-		}
-
-		/**
-		 * @brief In-place group composition
-		 */
+		Bundle operator*(const Bundle &other) const { return compose(other); }
+		Bundle compose(const Bundle &other) const { return multiply_impl(other, std::index_sequence_for<Groups...>()); }
 		Bundle &operator*=(const Bundle &other) {
 			multiply_assign_impl(other, std::index_sequence_for<Groups...>());
 			return *this;
 		}
 
-		/**
-		 * @brief Inverse element (component-wise)
-		 * Implements: (g₁, ..., gₙ)⁻¹ = (g₁⁻¹, ..., gₙ⁻¹)
-		 */
-		Bundle inverse() const { return inverse_impl(std::index_sequence_for<Groups...>()); }
+		Bundle inverse() const { return computeInverse(); }
+		Bundle computeInverse() const { return inverse_impl(std::index_sequence_for<Groups...>()); }
 
-		// ========== Lie Algebra Operations ==========
-
-		/**
-		 * @brief Exponential map from Lie algebra to bundle
-		 * The Lie algebra of the product is the direct sum of individual algebras
-		 */
-		Bundle exp(const TangentVector &algebra_element) const {
-			validateAlgebraElement(algebra_element);
+		/// Static (as in LieGroupBase): the former non-static `exp` hid the base one, which then
+		/// could not be used by plus() / minus() / interpolate().
+		static Bundle exp(const TangentVector &algebra_element) { return computeExp(algebra_element); }
+		static Bundle computeExp(const TangentVector &algebra_element) {
 			return exp_impl(algebra_element, std::index_sequence_for<Groups...>());
 		}
 
-		/**
-		 * @brief Logarithmic map from bundle to Lie algebra
-		 * Maps to the direct sum of individual Lie algebras
-		 */
-		TangentVector log() const { return log_impl(std::index_sequence_for<Groups...>()); }
+		TangentVector log() const { return computeLog(); }
+		TangentVector computeLog() const { return log_impl(std::index_sequence_for<Groups...>()); }
 
-		/**
-		 * @brief Adjoint representation (block diagonal structure)
-		 * Ad_{(g₁,...,gₙ)} = diag(Ad_{g₁}, ..., Ad_{gₙ})
-		 */
-		AdjointMatrix adjoint() const { return adjoint_impl(std::index_sequence_for<Groups...>()); }
+		AdjointMatrix adjoint() const { return computeAdjoint(); }
+		AdjointMatrix computeAdjoint() const { return adjoint_impl(std::index_sequence_for<Groups...>()); }
 
-		// ========== Group Actions ==========
-
-		/**
-		 * @brief Group action on a point (component-wise on appropriate subspaces)
-		 * Each group acts on its corresponding portion of the input vector
-		 */
-		Vector act(const Vector &point) const {
-			validateActionInput(point);
+		ActionVector act(const ActionVector &point) const { return computeAction(point); }
+		ActionVector computeAction(const ActionVector &point) const {
 			return act_impl(point, std::index_sequence_for<Groups...>());
 		}
 
-		/**
-		 * @brief Batch group action on multiple points
-		 */
 		template<int N>
 		Eigen::Matrix<Scalar, Eigen::Dynamic, N> act(const Eigen::Matrix<Scalar, Eigen::Dynamic, N> &points) const {
-
-			if (points.rows() != actionDimension()) {
+			if (points.rows() != ActionDim) {
 				throw std::invalid_argument("Point matrix has wrong dimension");
 			}
-
-			Eigen::Matrix<Scalar, Eigen::Dynamic, N> result(actionDimension(), N);
-
+			Eigen::Matrix<Scalar, Eigen::Dynamic, N> result(ActionDim, N);
 			for (int i = 0; i < N; ++i) {
-				result.col(i) = act(points.col(i));
+				result.col(i) = act(ActionVector(points.col(i)));
 			}
-
 			return result;
 		}
 
-		// ========== Utility Functions ==========
-
-		/**
-		 * @brief Check if approximately equal to another bundle
-		 */
 		bool isApprox(const Bundle &other, const Scalar &eps = Types<Scalar>::epsilon()) const {
+			return computeIsApprox(other, eps);
+		}
+		bool computeIsApprox(const Bundle &other, const Scalar &eps = Types<Scalar>::epsilon()) const {
 			return isApprox_impl(other, eps, std::index_sequence_for<Groups...>());
 		}
-
-		/**
-		 * @brief Equality operator
-		 */
 		bool operator==(const Bundle &other) const { return isApprox(other); }
-
-		/**
-		 * @brief Inequality operator
-		 */
 		bool operator!=(const Bundle &other) const { return !(*this == other); }
 
-		/**
-		 * @brief Linear interpolation between two bundles (geodesic in product space)
-		 * @param other Target bundle
-		 * @param t Interpolation parameter [0,1]
-		 */
 		Bundle interpolate(const Bundle &other, const Scalar &t) const {
 			if (t < 0 || t > 1) {
 				throw std::invalid_argument("Interpolation parameter must be in [0,1]");
 			}
-
-			TangentVector delta = (inverse() * other).log();
+			const TangentVector delta = (inverse() * other).log();
 			return *this * exp(t * delta);
 		}
 
-		/**
-		 * @brief Generate random bundle element
-		 */
+		/// Random element, each group drawn with its own Random(gen); `scale` is kept for API compatibility
+		/// and ignored (the groups have no scale parameter).
 		template<typename Generator>
-		static Bundle random(Generator &gen, const Scalar &scale = Scalar(1)) {
-			return random_impl(gen, scale, std::index_sequence_for<Groups...>());
+		static Bundle random(Generator &gen, [[maybe_unused]] const Scalar &scale = Scalar(1)) {
+			return computeRandom(gen);
+		}
+		template<typename Generator>
+		static Bundle computeRandom(Generator &gen) {
+			return Bundle(Groups::computeRandom(gen)...);
 		}
 
-		// ========== Accessors ==========
-
-		/**
-		 * @brief Get the identity element
-		 */
 		static const Bundle &identity() {
 			static const Bundle id;
 			return id;
 		}
+		static Bundle computeIdentity() noexcept { return Bundle(); }
 
-		/**
-		 * @brief Get the dimension of the Lie algebra
-		 */
-		int algebraDimension() const { return Dim; }
+		int algebraDimension() const { return AlgebraDim; }
+		int actionDimension() const { return ActionDim; }
 
-		/**
-		 * @brief Get the dimension of the space the group acts on (computed at
-		 * runtime)
-		 */
-		int actionDimension() const { return m_action_offsets.total(); }
+		// ---- Lie algebra hooks: block diagonal, so that the generic ad / Jacobians / BCH work ----
 
-		/**
-		 * @brief Access individual group elements (const)
-		 */
+		/// Block-diagonal embedding of the groups' own matrix representations.
+		static Matrix computeHat(const TangentVector &v) {
+			Matrix result = Matrix::Zero();
+			hat_impl(result, v, std::index_sequence_for<Groups...>());
+			return result;
+		}
+		static TangentVector computeVee(const Matrix &X) {
+			TangentVector result;
+			vee_impl(result, X, std::index_sequence_for<Groups...>());
+			return result;
+		}
+		static AdjointMatrix computeAd(const TangentVector &v) {
+			AdjointMatrix result = AdjointMatrix::Zero();
+			ad_impl(result, v, std::index_sequence_for<Groups...>());
+			return result;
+		}
+
+		bool computeIsValid() const { return isValid_impl(std::index_sequence_for<Groups...>()); }
+		void computeNormalize() { normalize_impl(std::index_sequence_for<Groups...>()); }
+		static constexpr std::string_view getTypeName() { return "Bundle"; }
+		std::ostream &print(std::ostream &os) const {
+			os << "Bundle<" << NumGroups << ">(";
+			print_impl(os, std::index_sequence_for<Groups...>());
+			os << ")";
+			return os;
+		}
+
 		template<std::size_t I>
 		const auto &get() const {
 			static_assert(I < NumGroups, "Index out of bounds");
 			return std::get<I>(m_groups);
 		}
-
-		/**
-		 * @brief Access individual group elements (mutable)
-		 */
 		template<std::size_t I>
 		auto &get() {
 			static_assert(I < NumGroups, "Index out of bounds");
-			// Need to recompute action offsets if groups are modified
-			auto &result = std::get<I>(m_groups);
-			// In practice, you might want to make this const and provide setters
-			return result;
+			return std::get<I>(m_groups);
 		}
-
-		/**
-		 * @brief Set individual group element
-		 */
 		template<std::size_t I>
 		void set(const GroupType<I> &group) {
 			std::get<I>(m_groups) = group;
-			m_action_offsets = detail::ActionOffsets<Groups...>(m_groups);
 		}
-
-		/**
-		 * @brief Get the underlying tuple
-		 */
 		const GroupTuple &groups() const { return m_groups; }
 
-		/**
-		 * @brief Get algebra element for specific group
-		 */
 		template<std::size_t I>
 		typename GroupType<I>::TangentVector getAlgebraElement() const {
 			return std::get<I>(m_groups).log();
 		}
-
-		/**
-		 * @brief Set from algebra element for specific group
-		 */
 		template<std::size_t I>
 		void setFromAlgebra(const typename GroupType<I>::TangentVector &algebra) {
-			std::get<I>(m_groups) = GroupType<I>().exp(algebra);
-			m_action_offsets = detail::ActionOffsets<Groups...>(m_groups);
+			std::get<I>(m_groups) = GroupType<I>::exp(algebra);
 		}
 
-		// ========== Stream Output ==========
-
-		/**
-		 * @brief Output stream operator
-		 */
-		friend std::ostream &operator<<(std::ostream &os, const Bundle &bundle) {
-			os << "Bundle<" << NumGroups << ">(";
-			bundle.print_impl(os, std::index_sequence_for<Groups...>());
-			os << ")";
-			return os;
-		}
+		friend std::ostream &operator<<(std::ostream &os, const Bundle &bundle) { return bundle.print(os); }
 
 	private:
 		GroupTuple m_groups; ///< Tuple of group elements
-		detail::ActionOffsets<Groups...> m_action_offsets; ///< Cached action dimension offsets
 
-		// ========== Implementation Helpers ==========
-
-		// Validation helpers
-		void validateAlgebraElement(const TangentVector &element) const {
-			if (element.size() != Dim) {
-				throw std::invalid_argument("Algebra element has wrong dimension");
-			}
-		}
-
-		void validateActionInput(const Vector &point) const {
-			if (point.size() != actionDimension()) {
-				throw std::invalid_argument("Action input has wrong dimension");
-			}
-		}
-
-		// Multiplication implementation
 		template<std::size_t... Is>
 		Bundle multiply_impl(const Bundle &other, std::index_sequence<Is...>) const {
 			return Bundle((std::get<Is>(m_groups) * std::get<Is>(other.m_groups))...);
 		}
-
 		template<std::size_t... Is>
 		void multiply_assign_impl(const Bundle &other, std::index_sequence<Is...>) {
-			((std::get<Is>(m_groups) *= std::get<Is>(other.m_groups)), ...);
+			((std::get<Is>(m_groups) = std::get<Is>(m_groups) * std::get<Is>(other.m_groups)), ...);
 		}
-
-		// Inverse implementation
 		template<std::size_t... Is>
 		Bundle inverse_impl(std::index_sequence<Is...>) const {
 			return Bundle((std::get<Is>(m_groups).inverse())...);
 		}
-
-		// Exponential map implementation
 		template<std::size_t... Is>
-		Bundle exp_impl(const TangentVector &algebra_element, std::index_sequence<Is...>) const {
-			return Bundle(
-					(GroupType<Is>().exp(algebra_element.template segment<GroupType<Is>::Dim>(AlgebraOffset<Is>)))...);
+		static Bundle exp_impl(const TangentVector &x, std::index_sequence<Is...>) {
+			return Bundle((GroupType<Is>::exp(typename GroupType<Is>::TangentVector(
+								  x.template segment<GroupType<Is>::AlgebraDim>(AlgebraOffset<Is>))))...);
 		}
-
-		// Logarithmic map implementation
 		template<std::size_t... Is>
 		TangentVector log_impl(std::index_sequence<Is...>) const {
 			TangentVector result;
-			((result.template segment<GroupType<Is>::Dim>(AlgebraOffset<Is>) = std::get<Is>(m_groups).log()), ...);
-			return result;
-		}
-
-		// Adjoint implementation (block diagonal)
-		template<std::size_t... Is>
-		AdjointMatrix adjoint_impl(std::index_sequence<Is...>) const {
-			AdjointMatrix result = AdjointMatrix::Zero();
-			((result.template block<GroupType<Is>::Dim, GroupType<Is>::Dim>(AlgebraOffset<Is>, AlgebraOffset<Is>) =
-					  std::get<Is>(m_groups).adjoint()),
+			((result.template segment<GroupType<Is>::AlgebraDim>(AlgebraOffset<Is>) = std::get<Is>(m_groups).log()),
 			 ...);
 			return result;
 		}
-
-		// Group action implementation
 		template<std::size_t... Is>
-		Vector act_impl(const Vector &point, std::index_sequence<Is...>) const {
-			Vector result(actionDimension());
-
-			// Apply each group's action to its corresponding subspace
-			((applyGroupAction<Is>(result, point)), ...);
-
+		AdjointMatrix adjoint_impl(std::index_sequence<Is...>) const {
+			AdjointMatrix result = AdjointMatrix::Zero();
+			((result.template block<GroupType<Is>::AlgebraDim, GroupType<Is>::AlgebraDim>(
+					  AlgebraOffset<Is>, AlgebraOffset<Is>) = std::get<Is>(m_groups).adjoint()),
+			 ...);
 			return result;
 		}
-
-		template<std::size_t I>
-		void applyGroupAction(Vector &result, const Vector &point) const {
-			const auto &group = std::get<I>(m_groups);
-			int in_offset = m_action_offsets[I];
-			int out_offset = in_offset; // Same offset for output
-			int dim = group.actionDimension();
-
-			auto input_segment = point.segment(in_offset, dim);
-			auto output_segment = result.segment(out_offset, dim);
-			output_segment = group.act(input_segment);
+		template<std::size_t... Is>
+		ActionVector act_impl(const ActionVector &point, std::index_sequence<Is...>) const {
+			ActionVector result;
+			((result.template segment<GroupType<Is>::ActionDim>(ActionOffset<Is>) = std::get<Is>(m_groups).act(
+					  typename GroupType<Is>::ActionVector(point.template segment<GroupType<Is>::ActionDim>(ActionOffset<Is>)))),
+			 ...);
+			return result;
 		}
-
-		// Approximate equality implementation
 		template<std::size_t... Is>
 		bool isApprox_impl(const Bundle &other, const Scalar &eps, std::index_sequence<Is...>) const {
 			return (std::get<Is>(m_groups).isApprox(std::get<Is>(other.m_groups), eps) && ...);
 		}
-
-		// Random generation implementation
-		template<typename Generator, std::size_t... Is>
-		static Bundle random_impl(Generator &gen, const Scalar &scale, std::index_sequence<Is...>) {
-			return Bundle((GroupType<Is>::random(gen, scale))...);
+		template<std::size_t... Is>
+		static void hat_impl(Matrix &out, const TangentVector &v, std::index_sequence<Is...>) {
+			((out.template block<GroupType<Is>::Dim, GroupType<Is>::Dim>(DimOffset<Is>, DimOffset<Is>) =
+					  GroupType<Is>::computeHat(typename GroupType<Is>::TangentVector(
+							  v.template segment<GroupType<Is>::AlgebraDim>(AlgebraOffset<Is>)))),
+			 ...);
 		}
-
-		// Stream output implementation
+		template<std::size_t... Is>
+		static void vee_impl(TangentVector &out, const Matrix &X, std::index_sequence<Is...>) {
+			((out.template segment<GroupType<Is>::AlgebraDim>(AlgebraOffset<Is>) = GroupType<Is>::computeVee(
+					  typename GroupType<Is>::AlgebraMatrix(
+							  X.template block<GroupType<Is>::Dim, GroupType<Is>::Dim>(DimOffset<Is>, DimOffset<Is>)))),
+			 ...);
+		}
+		template<std::size_t... Is>
+		static void ad_impl(AdjointMatrix &out, const TangentVector &v, std::index_sequence<Is...>) {
+			((out.template block<GroupType<Is>::AlgebraDim, GroupType<Is>::AlgebraDim>(
+					  AlgebraOffset<Is>, AlgebraOffset<Is>) =
+					  GroupType<Is>::computeAd(typename GroupType<Is>::TangentVector(
+							  v.template segment<GroupType<Is>::AlgebraDim>(AlgebraOffset<Is>)))),
+			 ...);
+		}
+		template<std::size_t... Is>
+		bool isValid_impl(std::index_sequence<Is...>) const {
+			return (std::get<Is>(m_groups).isValid() && ...);
+		}
+		template<std::size_t... Is>
+		void normalize_impl(std::index_sequence<Is...>) {
+			(std::get<Is>(m_groups).normalize(), ...);
+		}
 		template<std::size_t... Is>
 		void print_impl(std::ostream &os, std::index_sequence<Is...>) const {
 			bool first = true;
@@ -544,9 +377,6 @@ namespace sofa::component::cosserat::liegroups {
 		}
 	};
 
-	// ========== Type Aliases ==========
-
-	// Common bundles for robotics applications
 	template<typename Scalar>
 	using SE3_Velocity = Bundle<SE3<Scalar>, RealSpace<Scalar, 6>>;
 
