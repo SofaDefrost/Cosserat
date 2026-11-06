@@ -40,6 +40,40 @@ namespace sofa::component::cosserat::liegroups {
 	}
 
 	/**
+	 * @brief Rotation from Euler angles, ZYX convention: R = Rz(yaw) Ry(pitch) Rx(roll).
+	 * (Used by fromPositionEulerZYX below; it was called but never defined anywhere.)
+	 */
+	template<typename _Scalar>
+	SO3<_Scalar> fromEulerZYX(const _Scalar &roll, const _Scalar &pitch, const _Scalar &yaw) {
+		using Q = Eigen::Quaternion<_Scalar>;
+		const Q q = Q(Eigen::AngleAxis<_Scalar>(yaw, Eigen::Matrix<_Scalar, 3, 1>::UnitZ())) *
+					Q(Eigen::AngleAxis<_Scalar>(pitch, Eigen::Matrix<_Scalar, 3, 1>::UnitY())) *
+					Q(Eigen::AngleAxis<_Scalar>(roll, Eigen::Matrix<_Scalar, 3, 1>::UnitX()));
+		return SO3<_Scalar>(q);
+	}
+
+	/**
+	 * @brief Euler angles (roll, pitch, yaw), ZYX convention, of a rotation. At gimbal lock
+	 * (|pitch| = pi/2) the roll is set to 0 and the yaw absorbs the remaining rotation.
+	 */
+	template<typename _Scalar>
+	Eigen::Matrix<_Scalar, 3, 1> toEulerZYX(const SO3<_Scalar> &rotation) {
+		const Eigen::Matrix<_Scalar, 3, 3> R = rotation.matrix();
+		const _Scalar sp = -R(2, 0);
+		_Scalar roll, pitch, yaw;
+		if (std::abs(sp) < _Scalar(1) - Types<_Scalar>::epsilon() * _Scalar(16)) {
+			pitch = std::asin(sp);
+			roll = std::atan2(R(2, 1), R(2, 2));
+			yaw = std::atan2(R(1, 0), R(0, 0));
+		} else {
+			pitch = sp > 0 ? _Scalar(M_PI) / _Scalar(2) : -_Scalar(M_PI) / _Scalar(2);
+			roll = _Scalar(0);
+			yaw = std::atan2(-R(0, 1), R(1, 1));
+		}
+		return Eigen::Matrix<_Scalar, 3, 1>(roll, pitch, yaw);
+	}
+
+	/**
 	 * @brief Create SE3 transformation from position and Euler angles (ZYX
 	 * convention)
 	 * @param position Translation vector
@@ -58,8 +92,9 @@ namespace sofa::component::cosserat::liegroups {
 	 * @return Vector containing (x, y, z, roll, pitch, yaw)
 	 */
 	template<typename _Scalar>
-	typename SE3<_Scalar>::Vector toPositionEulerZYX(const SE3<_Scalar> &transform) {
-		typename SE3<_Scalar>::Vector result;
+	typename SE3<_Scalar>::TangentVector toPositionEulerZYX(const SE3<_Scalar> &transform) {
+		// SE3::Vector is the 4-vector of the matrix representation; the result has 6 entries.
+		typename SE3<_Scalar>::TangentVector result;
 		result.template head<3>() = transform.translation();
 		result.template tail<3>() = toEulerZYX(transform.rotation());
 		return result;
@@ -87,15 +122,14 @@ namespace sofa::component::cosserat::liegroups {
 	}
 
 	/**
-	 * @brief Dual vector operator for se(3)
-	 * Maps a 6D vector to its dual 4x4 matrix representation
+	 * @brief Dual vector operator for se(3): maps xi = [phi ; rho] (angular first, as everywhere in
+	 * the library) to its 4x4 matrix [[phi^, rho], [0, 0]]. The previous body took the translation
+	 * from the head and the rotation from the tail, i.e. the opposite layout, and called an
+	 * SO3::hat that does not exist.
 	 */
 	template<typename _Scalar>
 	Eigen::Matrix<_Scalar, 4, 4> dualMatrix(const typename SE3<_Scalar>::TangentVector &xi) {
-		Eigen::Matrix<_Scalar, 4, 4> xi_hat = Eigen::Matrix<_Scalar, 4, 4>::Zero();
-		xi_hat.template block<3, 3>(0, 0) = SO3<_Scalar>::hat(xi.template tail<3>());
-		xi_hat.template block<3, 1>(0, 3) = xi.template head<3>();
-		return xi_hat;
+		return SE3<_Scalar>::computeHat(xi);
 	}
 
 	// BCH implementation moved to header file

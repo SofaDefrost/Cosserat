@@ -341,4 +341,8 @@ namespace sofa::component::cosserat::liegroups {
 
 } // namespace sofa::component::cosserat::liegroups
 
+// Out-of-line free functions (operator/, Euler conversions, interpolate, dualMatrix).
+#include "SE23.inl"
+
+
 // #endif // SOFA_COMPONENT_COSSERAT_LIEGROUPS_SE23_H

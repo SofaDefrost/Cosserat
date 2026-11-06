@@ -27,9 +27,6 @@
 
 namespace sofa::component::cosserat::liegroups {
 
-	template<typename _Scalar, int _Dim = 10>
-	class SGal3;
-
 	/**
 	 * @brief Additional operators and utility functions for SGal(3)
 	 */
@@ -78,66 +75,16 @@ namespace sofa::component::cosserat::liegroups {
 	}
 
 	/**
-	 * @brief Dual vector operator for sgal(3)
-	 * Maps a 10D vector to its dual 6x6 matrix representation
+	 * @brief Dual vector operator for sgal(3): maps xi = [rho ; w ; beta ; tau] to the 5x5 matrix
+	 * [[w^, beta, rho], [0, 0, tau], [0, 0, 0]] (top-left block of SGal3::computeHat).
 	 */
 	template<typename _Scalar>
-	Eigen::Matrix<_Scalar, 6, 6> dualMatrix(const typename SGal3<_Scalar>::TangentVector &xi) {
-		Eigen::Matrix<_Scalar, 6, 6> xi_hat = Eigen::Matrix<_Scalar, 6, 6>::Zero();
-
-		// Extract components
-		const auto &v = xi.template segment<3>(0); // Linear velocity
-		const auto &w = xi.template segment<3>(3); // Angular velocity
-		const auto &beta = xi.template segment<3>(6); // Boost
-		const _Scalar &tau = xi[9]; // Time rate
-
-		// Fill the matrix blocks
-		xi_hat.template block<3, 3>(0, 0) = SO3<_Scalar>::computeHat(w);
-		xi_hat.template block<3, 1>(0, 3) = v;
-		xi_hat.template block<3, 1>(0, 4) = beta;
-		xi_hat(4, 5) = tau;
-
-		return xi_hat;
+	Eigen::Matrix<_Scalar, 5, 5> dualMatrix(const typename SGal3<_Scalar>::TangentVector &xi) {
+		return SGal3<_Scalar>::computeHat(xi).template block<5, 5>(0, 0);
 	}
 
-	/**
-	 * @brief Specialization of the Baker-Campbell-Hausdorff formula for SGal(3)
-	 *
-	 * For SGal(3), the BCH formula has a closed form up to second order:
-	 * BCH(X,Y) = X + Y + 1/2[X,Y] + higher order terms
-	 * where [X,Y] is the Lie bracket for sgal(3).
-	 */
-	template<typename _Scalar, int _Dim>
-	typename SGal3<_Scalar, _Dim>::TangentVector
-	SGal3<_Scalar, _Dim>::BCH(const typename SGal3<_Scalar, _Dim>::TangentVector &X,
-							  const typename SGal3<_Scalar, _Dim>::TangentVector &Y) {
-		// Extract components
-		const auto &v1 = X.template segment<3>(0); // First linear velocity
-		const auto &w1 = X.template segment<3>(3); // First angular velocity
-		const auto &b1 = X.template segment<3>(6); // First boost
-		const _Scalar &t1 = X[9]; // First time rate
-
-		const auto &v2 = Y.template segment<3>(0); // Second linear velocity
-		const auto &w2 = Y.template segment<3>(3); // Second angular velocity
-		const auto &b2 = Y.template segment<3>(6); // Second boost
-		const _Scalar &t2 = Y[9]; // Second time rate
-
-		// Compute Lie bracket components
-		const auto w1_cross_w2 = w1.cross(w2); // Angular x Angular
-		const auto w1_cross_v2 = w1.cross(v2); // Angular x Linear
-		const auto v1_cross_w2 = v1.cross(w2); // Linear x Angular
-		const auto w1_cross_b2 = w1.cross(b2); // Angular x Boost
-		const auto b1_cross_w2 = b1.cross(w2); // Boost x Angular
-
-		// Combine terms for the BCH formula up to second order
-		TangentVector result;
-		result.template segment<3>(0) = v1 + v2 + _Scalar(0.5) * (w1_cross_v2 - v1_cross_w2);
-		result.template segment<3>(3) = w1 + w2 + _Scalar(0.5) * w1_cross_w2;
-		result.template segment<3>(6) = b1 + b2 + _Scalar(0.5) * (w1_cross_b2 - b1_cross_w2);
-		result[9] = t1 + t2; // Time component adds linearly
-
-		return result;
-	}
+	// BCH: the generic LieGroupBase::BCH(v, w, order) is used; SGal3::BCH(X, Y) was declared and only
+	// defined here, in a file nobody included, and with brackets that ignored the time terms.
 
 } // namespace sofa::component::cosserat::liegroups
 

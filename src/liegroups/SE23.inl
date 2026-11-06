@@ -26,9 +26,6 @@
 
 namespace sofa::component::cosserat::liegroups {
 
-	template<typename _Scalar>
-	class SE23;
-
 	/**
 	 * @brief Additional operators and utility functions for SE_2(3)
 	 */
@@ -95,59 +92,16 @@ namespace sofa::component::cosserat::liegroups {
 	}
 
 	/**
-	 * @brief Dual vector operator for se_2(3)
-	 * Maps a 9D vector to its dual 5x5 matrix representation
+	 * @brief Dual vector operator for se_2(3): maps xi = [v ; w ; a] to the 5x5 matrix
+	 * [[w^, v, a], [0, 0, 0], [0, 0, 0]] (the top-left block of SE23::computeHat).
 	 */
 	template<typename _Scalar>
 	Eigen::Matrix<_Scalar, 5, 5> dualMatrix(const typename SE23<_Scalar>::TangentVector &xi) {
-		Eigen::Matrix<_Scalar, 5, 5> xi_hat = Eigen::Matrix<_Scalar, 5, 5>::Zero();
-
-		// Extract components
-		const auto &v = xi.template segment<3>(0); // Linear velocity
-		const auto &w = xi.template segment<3>(3); // Angular velocity
-		const auto &a = xi.template segment<3>(6); // Linear acceleration
-
-		// Fill the matrix blocks
-		xi_hat.template block<3, 3>(0, 0) = SO3<_Scalar>::hat(w);
-		xi_hat.template block<3, 1>(0, 3) = v;
-		xi_hat.template block<3, 1>(0, 4) = a;
-
-		return xi_hat;
+		return SE23<_Scalar>::computeHat(xi).template block<5, 5>(0, 0);
 	}
 
-	/**
-	 * @brief Specialization of the Baker-Campbell-Hausdorff formula for SE_2(3)
-	 *
-	 * For SE_2(3), the BCH formula has a closed form up to second order:
-	 * BCH(X,Y) = X + Y + 1/2[X,Y] + higher order terms
-	 * where [X,Y] is the Lie bracket for se_2(3).
-	 */
-	template<typename _Scalar>
-	typename SE23<_Scalar>::TangentVector SE23<_Scalar>::BCH(const TangentVector &X, const TangentVector &Y) {
-		// Extract components
-		const auto &v1 = X.template segment<3>(0); // First linear velocity
-		const auto &w1 = X.template segment<3>(3); // First angular velocity
-		const auto &a1 = X.template segment<3>(6); // First linear acceleration
-
-		const auto &v2 = Y.template segment<3>(0); // Second linear velocity
-		const auto &w2 = Y.template segment<3>(3); // Second angular velocity
-		const auto &a2 = Y.template segment<3>(6); // Second linear acceleration
-
-		// Compute Lie bracket components
-		const auto w1_cross_w2 = w1.cross(w2); // Angular x Angular
-		const auto w1_cross_v2 = w1.cross(v2); // Angular x Linear
-		const auto v1_cross_w2 = v1.cross(w2); // Linear x Angular
-		const auto w1_cross_a2 = w1.cross(a2); // Angular x Acceleration
-		const auto a1_cross_w2 = a1.cross(w2); // Acceleration x Angular
-
-		// Combine terms for the BCH formula up to second order
-		TangentVector result;
-		result.template segment<3>(0) = v1 + v2 + _Scalar(0.5) * (w1_cross_v2 - v1_cross_w2);
-		result.template segment<3>(3) = w1 + w2 + _Scalar(0.5) * w1_cross_w2;
-		result.template segment<3>(6) = a1 + a2 + _Scalar(0.5) * (w1_cross_a2 - a1_cross_w2);
-
-		return result;
-	}
+	// BCH: the generic LieGroupBase::BCH(v, w, order) now works for SE23 (hat/vee are implemented).
+	// The two-argument SE23::BCH that used to be defined here was never declared in the class.
 
 } // namespace sofa::component::cosserat::liegroups
 

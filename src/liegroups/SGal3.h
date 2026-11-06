@@ -304,3 +304,7 @@ using SGal3d = SGal3<double>;
 using SGal3f = SGal3<float>;
 
 } // namespace sofa::component::cosserat::liegroups
+
+// Out-of-line free functions (operator/, Euler conversions, interpolate, dualMatrix).
+#include "SGal3.inl"
+
