@@ -270,8 +270,9 @@ namespace sofa::component::cosserat::liegroups {
 			Ad.template block<2, 2>(0, 0) = m_rotation.matrix();
 
 			// Translation coupling (top-right 2x1)
-			Ad(0, 2) = -m_translation.y();
-			Ad(1, 2) = m_translation.x();
+			// Ad_g = [R, -J t ; 0, 1] with J = [[0, -1], [1, 0]]: the translation column is (t_y, -t_x).
+			Ad(0, 2) = m_translation.y();
+			Ad(1, 2) = -m_translation.x();
 
 			// Bottom row for angular component
 			Ad(2, 2) = Scalar(1.0);
@@ -402,13 +403,16 @@ namespace sofa::component::cosserat::liegroups {
 		 * @return The adjoint matrix.
 		 */
 		static AdjointMatrix computeAd(const TangentVector &v) {
-			AdjointMatrix Ad = AdjointMatrix::Zero();
-			Ad(0, 0) = 1.0;
-			Ad(1, 1) = 1.0;
-			Ad(2, 2) = 1.0;
-			Ad(0, 2) = -v(1);
-			Ad(1, 2) = v(0);
-			return Ad;
+			// ad_xi y = [xi, y] = vee(hat(xi) hat(y) - hat(y) hat(xi)), xi = [rho ; theta]:
+			//   rho part: theta_x J rho_y - theta_y J rho_x,  theta part: 0
+			// so ad_xi = [[theta J, -J rho], [0, 0]]. (The previous body returned an
+			// identity-plus-translation matrix, i.e. an adjoint, not ad.)
+			AdjointMatrix ad = AdjointMatrix::Zero();
+			ad(0, 1) = -v(2);
+			ad(1, 0) = v(2);
+			ad(0, 2) = v(1);
+			ad(1, 2) = -v(0);
+			return ad;
 		}
 
 		/**

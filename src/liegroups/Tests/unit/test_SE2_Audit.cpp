@@ -42,6 +42,18 @@ MatL<3> adSE2(const V3 &x) {
 }
 } // namespace
 
+TEST(SE2Audit, AdIsTheLieBracketAndAdjointIsExpOfAd) {
+	std::mt19937_64 rng(43);
+	for (double th : {0.0, 0.3, -1.0, 2.5}) {
+		const V3 x = randomXi(rng, th), y = randomXi(rng, th / 2 + 0.1);
+		const M3 br = SE2d::computeHat(x) * SE2d::computeHat(y) - SE2d::computeHat(y) * SE2d::computeHat(x);
+		EXPECT_LT((SE2d::computeAd(x) * y - SE2d::computeVee(br)).cwiseAbs().maxCoeff(), 1e-14) << th;
+		EXPECT_LT((SE2d::ad(x) - SE2d::computeAd(x)).cwiseAbs().maxCoeff(), 1e-15) << th;
+		// Ad_{exp(x)} = exp(ad_x)
+		EXPECT_LT(maxAbsDiff(SE2d::exp(x).computeAdjoint(), expm<3>(adSE2(x))), 4e-15) << th;
+	}
+}
+
 TEST(SE2Audit, MatrixAndTangentConstructorsCompileAndAgree) {
 	std::mt19937_64 rng(44);
 	const V3 xi = randomXi(rng, 0.8);
