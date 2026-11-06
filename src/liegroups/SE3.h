@@ -130,27 +130,13 @@ namespace sofa::component::cosserat::liegroups {
 		static SE3 computeExp(const TangentVector &xi) {
 			const Vector3 rho = xi.template tail<3>();
 			const Vector3 phi = xi.template head<3>();
-
-			const Scalar angle  = phi.norm();
-			const SO3Type R     = SO3Type::exp(phi);
-			const Matrix3 K_phi = SO3Type::computeHat(phi);   // [φ]× (non normalisé)
-			Matrix3 V;
-
-			if (angle < Types<Scalar>::SMALL_ANGLE_THRESHOLD) {
-				// 3rd-order Taylor expansion in θ
-				const Scalar theta2 = angle * angle;
-				const Scalar c1 = Scalar(0.5)        - theta2 / Scalar(24);
-				const Scalar c2 = Scalar(1) / Scalar(6) - theta2 / Scalar(120);
-				V = Matrix3::Identity() + c1 * K_phi + c2 * (K_phi * K_phi);
-			} else {
-				// General case, in terms of [φ]× :
-				//   V = I + (1-cos θ)/θ² · [φ]× + (θ-sin θ)/θ³ · [φ]×²
-				const Scalar theta2 = angle * angle;
-				const Scalar theta3 = theta2 * angle;
-				const Scalar c1 = (Scalar(1) - std::cos(angle)) / theta2;
-				const Scalar c2 = (angle - std::sin(angle))      / theta3;
-				V = Matrix3::Identity() + c1 * K_phi + c2 * (K_phi * K_phi);
-			}
+			const SO3Type R = SO3Type::exp(phi);
+			const Matrix3 K_phi = SO3Type::computeHat(phi); // [phi]x (not normalised)
+			// V(phi) = I + a [phi]x + b [phi]x^2 is the SO(3) left Jacobian; a, b come from the
+			// shared series / closed-form switch (no cancellation, see detail::so3JacobianCoefficients).
+			Scalar a, b, c;
+			detail::so3JacobianCoefficients(phi.norm(), a, b, c);
+			const Matrix3 V = Matrix3::Identity() + a * K_phi + b * (K_phi * K_phi);
 			return SE3(R, V * rho);
 		}
 

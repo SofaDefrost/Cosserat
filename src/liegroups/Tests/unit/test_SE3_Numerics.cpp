@@ -52,3 +52,23 @@ TEST(SE3Numerics, SO3JacobiansMatchSeries) {
 	}
 }
 
+TEST(SE3Numerics, ExpMatchesMatrixExponential) {
+	std::mt19937_64 rng(32);
+	for (double angle : kAngles) {
+		for (int i = 0; i < 5; ++i) {
+			const V6 xi = randomSE3Tangent(rng, angle);
+			const MatL<4> T = expm<4>(hatSE3(xi.cast<LD>()));
+			EXPECT_LT(maxAbsDiff(SE3d::exp(xi).matrix(), T), 4e-15) << "angle " << angle;
+		}
+	}
+}
+
+TEST(SE3Numerics, AdjointIsExpOfAd) {
+	// Ad_{exp(xi)} = exp(ad_xi)
+	std::mt19937_64 rng(36);
+	for (double angle : kAngles) {
+		const V6 xi = randomSE3Tangent(rng, angle);
+		EXPECT_LT(maxAbsDiff(SE3d::exp(xi).computeAdjoint(), expm<6>(adSE3(xi.cast<LD>()))), 8e-15) << "angle " << angle;
+	}
+}
+
