@@ -132,7 +132,7 @@ namespace sofa::component::cosserat::liegroups::testing {
 		SGal3 g(pose, vel, time);
 
 		ActionVector point_vel_time;
-		point_vel_time << 1.0, 2.0, 3.0, 0.1, 0.2, 0.3, 0.01, 0.02, 0.03, 0.5; // point, velocity, boost, time
+		point_vel_time << 1.0, 2.0, 3.0, 0.1, 0.2, 0.3, 0.5; // point, velocity, time (ActionDim = 7)
 
 		ActionVector transformed_point_vel_time = g.computeAction(point_vel_time);
 		EXPECT_TRUE(transformed_point_vel_time.allFinite());

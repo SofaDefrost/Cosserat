@@ -36,15 +36,22 @@ namespace sofa::component::cosserat::liegroups {
  *
  * This class implements the group of Galilean transformations in 3D space.
  * Elements of SGal(3) are represented as a combination of:
- * - An SE(3) transformation (rotation and position)
- * - A 3D velocity vector
- * - A time parameter
+ * - An SE(3) transformation (rotation R and position p)
+ * - A 3D velocity vector v
+ * - A time parameter t
+ * and, as a matrix group (Kelly 2023), X = [[R, v, p], [0, 1, t], [0, 0, 1]], so that
+ *   compose:  (R1,v1,p1,t1)(R2,v2,p2,t2) = (R1 R2, R1 v2 + v1, R1 p2 + p1 + v1 t2, t1 + t2)
+ *   inverse:  (R^T, -R^T v, -R^T (p - t v), -t)
  *
- * The Lie algebra sgal(3) consists of vectors in ℝ¹⁰, where:
- * - First three components represent linear velocity
- * - Next three components represent angular velocity
- * - Next three components represent boost (velocity change)
- * - Last component represents time rate
+ * The Lie algebra sgal(3) consists of vectors xi = [rho ; w ; beta ; tau] in ℝ¹⁰, where:
+ * - First three components (rho) represent linear velocity (position rate)
+ * - Next three components (w) represent angular velocity
+ * - Next three components (beta) represent the boost (velocity rate)
+ * - Last component (tau) represents time rate
+ * hat(xi) = [[w^, beta, rho], [0, 0, tau], [0, 0, 0]], and
+ *   exp(xi) = (exp(w^), V beta, V rho + tau E beta, tau), E = sum_k [w]x^k/(k+2)!.
+ *
+ * The action vector is [point ; velocity ; time] ∈ ℝ⁷.
  *
  * @tparam _Scalar The scalar type (must be a floating-point type)
  */
@@ -126,258 +133,154 @@ public:
     Scalar &time() { return m_time; }
 
     /**
-     * @brief Get the extended homogeneous transformation matrix.
-     * This matrix represents the SGal3 element in a higher-dimensional space.
-     * @return The 6x6 extended homogeneous transformation matrix.
+     * @brief The 5x5 matrix [[R, v, p], [0, 1, t], [0, 0, 1]] representing this element.
+     * (Previously a 6x6 matrix with the time at (4, 5), which is not a representation of the group
+     * law implemented by compose(); the class could not even be instantiated before.)
      */
-    Eigen::Matrix<Scalar, 6, 6> extendedMatrix() const {
-        Eigen::Matrix<Scalar, 6, 6> T = Eigen::Matrix<Scalar, 6, 6>::Identity();
-        T.template block<4, 4>(0, 0) = m_pose.matrix();
-        T.template block<3, 1>(0, 4) = m_velocity;
-        T(4, 5) = m_time;
+    Eigen::Matrix<Scalar, 5, 5> extendedMatrix() const {
+        Eigen::Matrix<Scalar, 5, 5> T = Eigen::Matrix<Scalar, 5, 5>::Identity();
+        T.template block<3, 3>(0, 0) = m_pose.rotation().matrix();
+        T.template block<3, 1>(0, 3) = m_velocity;
+        T.template block<3, 1>(0, 4) = m_pose.translation();
+        T(3, 4) = m_time;
         return T;
     }
 
-private:
-    SE3<Scalar> m_pose; ///< Rigid body transformation
-    Vector3 m_velocity; ///< Linear velocity
-    Scalar m_time; ///< Time parameter
+    // ---- CRTP hooks of LieGroupBase (public: the base class and the callers use them) ----
 
-    // Required CRTP methods:
-    /**
-     * @brief Computes the identity element of the SGal3 group.
-     * @return The identity SGal3 element.
-     */
     static SGal3<Scalar> computeIdentity() noexcept { return SGal3(); }
-    /**
-     * @brief Computes the inverse of the current SGal3 element.
-     * @return The inverse SGal3 element.
-     */
+
+    /// (R1,v1,p1,t1)(R2,v2,p2,t2) = (R1 R2, R1 v2 + v1, R1 p2 + p1 + v1 t2, t1 + t2).
+    SGal3<Scalar> compose(const SGal3 &other) const {
+        const Matrix3 R = m_pose.rotation().matrix();
+        return SGal3(SE3<Scalar>(m_pose.rotation() * other.m_pose.rotation(),
+                                 R * other.m_pose.translation() + m_pose.translation() + m_velocity * other.m_time),
+                     R * other.m_velocity + m_velocity, m_time + other.m_time);
+    }
+
     SGal3<Scalar> computeInverse() const {
-        SE3<Scalar> inv_pose = m_pose.computeInverse();
-        return SGal3(inv_pose, -inv_pose.rotation().computeAction(m_velocity), -m_time);
+        const SO3<Scalar> Rinv = m_pose.rotation().inverse();
+        return SGal3(SE3<Scalar>(Rinv, -(Rinv.act(m_pose.translation() - m_time * m_velocity))),
+                     -(Rinv.act(m_velocity)), -m_time);
     }
-    /**
-     * @brief Computes the exponential map from the Lie algebra sgal(3) to the
-     * SGal3 group.
-     * @param algebra_element The element from the Lie algebra (a 10D vector).
-     * @return The corresponding SGal3 element.
-     */
+
+    /// exp([rho ; w ; beta ; tau]) = (exp(w^), V beta, V rho + tau E beta, tau).
     static SGal3<Scalar> computeExp(const TangentVector &algebra_element) {
-        Vector3 v = algebra_element.template segment<3>(0); // Linear velocity
-        Vector3 w = algebra_element.template segment<3>(3); // Angular velocity
-        Vector3 beta = algebra_element.template segment<3>(6); // Boost
-        Scalar tau = algebra_element[9]; // Time rate
+        const Vector3 rho = algebra_element.template segment<3>(0); // Linear velocity
+        const Vector3 w = algebra_element.template segment<3>(3);   // Angular velocity
+        const Vector3 beta = algebra_element.template segment<3>(6); // Boost
+        const Scalar tau = algebra_element[9];                       // Time rate
 
-        // First compute the SE(3) part.
-        // SE3::computeExp expects [φ(head)=angular, ρ(tail)=linear].
-        typename SE3<Scalar>::TangentVector se3_element;
-        se3_element << w, v;  // angular first, linear second
-        SE3<Scalar> pose = SE3<Scalar>::computeExp(se3_element);
-
-        // For small rotations or zero angular velocity
-        if (w.norm() < Types<Scalar>::epsilon()) {
-            return SGal3(pose, beta, tau);
-        }
-
-        // For finite rotations, integrate the velocity
-        const Scalar theta = w.norm();
-        const Vector3 w_normalized = w / theta;
-        const Matrix3 w_hat = SO3<Scalar>::computeHat(w_normalized);
-
-        // Integration matrix for boost
-        Matrix3 J = Matrix3::Identity() + (Scalar(1) - std::cos(theta)) * w_hat +
-                                (theta - std::sin(theta)) * w_hat * w_hat;
-
-        return SGal3(pose, J * beta / theta, tau);
+        Scalar A, B, C, c1, c2, c3;
+        detail::so3JacobianCoefficients(w.norm(), A, B, C);
+        detail::se3QCoefficients(w.norm(), c1, c2, c3);
+        const Matrix3 W = SO3<Scalar>::computeHat(w);
+        const Matrix3 W2 = W * W;
+        const Matrix3 V = Matrix3::Identity() + A * W + B * W2;
+        const Matrix3 E = Scalar(0.5) * Matrix3::Identity() + c1 * W + c2 * W2; // sum W^k/(k+2)!
+        return SGal3(SE3<Scalar>(SO3<Scalar>::exp(w), V * rho + tau * (E * beta)), V * beta, tau);
     }
-    /**
-     * @brief Computes the logarithmic map from the SGal3 group to its Lie algebra
-     * sgal(3).
-     * @return The corresponding element in the Lie algebra (a 10D vector).
-     */
+
     TangentVector computeLog() const {
-        // First get the SE(3) part.
-        // computeLog() now returns [φ(head), ρ(tail)] — Cosserat convention.
-        typename SE3<Scalar>::TangentVector se3_part = m_pose.computeLog();
-        Vector3 w = se3_part.template head<3>();  // φ — angular velocity
-        Vector3 v = se3_part.template tail<3>();  // ρ — linear velocity
-
-        // For small rotations or zero angular velocity
+        const Vector3 w = m_pose.rotation().log();
+        Scalar A, B, C, c1, c2, c3;
+        detail::so3JacobianCoefficients(w.norm(), A, B, C);
+        detail::se3QCoefficients(w.norm(), c1, c2, c3);
+        const Matrix3 W = SO3<Scalar>::computeHat(w);
+        const Matrix3 W2 = W * W;
+        const Matrix3 V_inv = Matrix3::Identity() - Scalar(0.5) * W + C * W2;
+        const Matrix3 E = Scalar(0.5) * Matrix3::Identity() + c1 * W + c2 * W2;
+        const Vector3 beta = V_inv * m_velocity;
+        const Vector3 rho = V_inv * (m_pose.translation() - m_time * (E * beta));
         TangentVector result;
-        if (w.norm() < Types<Scalar>::epsilon()) {
-            result << v, w, m_velocity, m_time;
-            return result;
-        }
-
-        // For finite rotations, compute boost
-        const Scalar theta = w.norm();
-        const Vector3 w_normalized = w / theta;
-        const Matrix3 w_hat = SO3<Scalar>::computeHat(w_normalized);
-
-        // Integration matrix inverse
-        Matrix3 J_inv =
-                        Matrix3::Identity() - Scalar(0.5) * w_hat +
-                        (Scalar(1) - theta * std::cos(theta / Scalar(2)) / (Scalar(2) * std::sin(theta / Scalar(2)))) /
-                                        (theta * theta) * (w_hat * w_hat);
-
-        result << v, w, J_inv * m_velocity * theta, m_time;
+        result << rho, w, beta, m_time;
         return result;
     }
-    /**
-     * @brief Computes the adjoint representation of the current SGal3 element.
-     * @return The adjoint matrix.
-     */
+
+    /// Ad_g xi = vee(g hat(xi) g^-1), order [rho ; w ; beta ; tau]:
+    ///   rho' = R rho + (p - t v)x R w - t R beta + v tau,  w' = R w,  beta' = R beta + vx R w,  tau' = tau.
     AdjointMatrix computeAdjoint() const {
         AdjointMatrix Ad = AdjointMatrix::Zero();
-        Matrix3 R = m_pose.rotation().matrix();
-        Matrix3 p_hat = SO3<Scalar>::hat(m_pose.translation());
-        Matrix3 v_hat = SO3<Scalar>::hat(m_velocity);
-
-        // Upper-left block: rotation
+        const Matrix3 R = m_pose.rotation().matrix();
         Ad.template block<3, 3>(0, 0) = R;
-        // Upper-middle block: position cross rotation
-        Ad.template block<3, 3>(0, 3) = p_hat * R;
-        // Upper-right block: velocity cross rotation
-        Ad.template block<3, 3>(0, 6) = v_hat * R;
-        // Middle-middle block: rotation
+        Ad.template block<3, 3>(0, 3) =
+                SO3<Scalar>::computeHat(Vector3(m_pose.translation() - m_time * m_velocity)) * R;
+        Ad.template block<3, 3>(0, 6) = -m_time * R;
+        Ad.template block<3, 1>(0, 9) = m_velocity;
         Ad.template block<3, 3>(3, 3) = R;
-        // Bottom-bottom block: rotation
+        Ad.template block<3, 3>(6, 3) = SO3<Scalar>::computeHat(m_velocity) * R;
         Ad.template block<3, 3>(6, 6) = R;
-        // Time row and column remain zero except diagonal
         Ad(9, 9) = Scalar(1);
-
         return Ad;
     }
-    /**
-     * @brief Checks if the current SGal3 element is approximately equal to
-     * another.
-     * @param other The other SGal3 element to compare with.
-     * @param eps The tolerance for approximation.
-     * @return True if the elements are approximately equal, false otherwise.
-     */
+
     bool computeIsApprox(const SGal3 &other, const Scalar &eps = Types<Scalar>::epsilon()) const {
-        return m_pose.computeIsApprox(other.m_pose, eps) && m_velocity.isApprox(other.m_velocity, eps) &&
-                   std::abs(m_time - other.m_time) <= eps;
+        const Scalar scale = std::max({Scalar(1), m_velocity.norm(), other.m_velocity.norm()});
+        return m_pose.computeIsApprox(other.m_pose, eps) && (m_velocity - other.m_velocity).norm() <= eps * scale &&
+               std::abs(m_time - other.m_time) <= eps * std::max(Scalar(1), std::abs(m_time));
     }
-    /**
-     * @brief Applies the group action of the current SGal3 element on a
-     * point-velocity-time tuple.
-     * @param point_vel_time The point-velocity-time tuple (10D vector).
-     * @return The transformed point-velocity-time tuple.
-     */
+
+    /// Action on [point ; velocity ; time]: p' = R p + p_g + v_g t, v' = R v + v_g, t' = t + t_g.
     typename Base::ActionVector computeAction(const typename Base::ActionVector &point_vel_time) const {
-        Vector3 point = point_vel_time.template head<3>();
-        Vector3 vel = point_vel_time.template segment<3>(3);
-        Vector3 boost = point_vel_time.template segment<3>(6);
-        Scalar t = point_vel_time[9];
-
-        // Transform position and combine velocities with time evolution
-        Vector3 transformed_point = m_pose.computeAction(point) + m_velocity * t;
-        Vector3 transformed_vel = m_pose.rotation().computeAction(vel) + m_velocity;
-        Vector3 transformed_boost = m_pose.rotation().computeAction(boost);
-
+        const Vector3 point = point_vel_time.template head<3>();
+        const Vector3 vel = point_vel_time.template segment<3>(3);
+        const Scalar t = point_vel_time[6];
         typename Base::ActionVector result;
-        result.resize(10);
-        result << transformed_point, transformed_vel, transformed_boost, t + m_time;
+        result << m_pose.computeAction(point) + m_velocity * t, m_pose.rotation().computeAction(vel) + m_velocity,
+                t + m_time;
         return result;
     }
 
-    /**
-     * @brief Hat operator - maps a 10D Lie algebra vector to a 6x6 matrix
-     * representation. This is a placeholder, actual implementation depends on the
-     * specific representation.
-     * @param v The 10D Lie algebra vector.
-     * @return The 6x6 matrix representation.
-     */
-    static Matrix hat(const TangentVector &v) {
-        // This is a placeholder, actual implementation depends on the specific
-        // representation
+    /// hat(xi) = [[w^, beta, rho], [0, 0, tau], [0, 0, 0]] (5x5) in the top-left corner of the 10x10 AlgebraMatrix.
+    static Matrix computeHat(const TangentVector &xi) {
         Matrix result = Matrix::Zero();
-        // TODO ... implement hat operator for SGal(3)
+        result.template block<3, 3>(0, 0) = SO3<Scalar>::computeHat(Vector3(xi.template segment<3>(3)));
+        result.template block<3, 1>(0, 3) = xi.template segment<3>(6);
+        result.template block<3, 1>(0, 4) = xi.template segment<3>(0);
+        result(3, 4) = xi[9];
         return result;
     }
 
-    /**
-     * @brief Vee operator - inverse of hat, maps a 6x6 matrix representation to a
-     * 10D Lie algebra vector. This is a placeholder, actual implementation
-     * depends on the specific representation.
-     * @param X The 6x6 matrix representation.
-     * @return The 10D Lie algebra vector.
-     */
-    static TangentVector vee(const Matrix &X) {
-        // This is a placeholder, actual implementation depends on the specific
-        // representation
-        TangentVector result = TangentVector::Zero();
-        // TODO  ... implement vee operator for SGal(3)
-        return result;
+    static TangentVector computeVee(const Matrix &X) {
+        TangentVector xi;
+        xi.template segment<3>(0) = X.template block<3, 1>(0, 4);
+        xi.template segment<3>(3) = SO3<Scalar>::computeVee(Matrix3(X.template block<3, 3>(0, 0)));
+        xi.template segment<3>(6) = X.template block<3, 1>(0, 3);
+        xi[9] = X(3, 4);
+        return xi;
     }
 
-    /**
-     * @brief Computes the adjoint representation of a Lie algebra element for
-     * SGal3. This is a placeholder, actual implementation depends on the specific
-     * representation.
-     * @param v The element of the Lie algebra in vector form.
-     * @return The adjoint matrix.
-     */
-    static AdjointMatrix computeAd(const TangentVector &v) {
-        // This is a placeholder, actual implementation depends on the specific
-        // representation
-        AdjointMatrix result = AdjointMatrix::Zero();
-        // TODO ... implement adjoint operator for SGal(3)
-        return result;
+    /// ad_xi y = [xi, y]:  rows [rho ; w ; beta ; tau]
+    ///   [[w^, rho^, -tau I, beta], [0, w^, 0, 0], [0, beta^, w^, 0], [0, 0, 0, 0]]
+    static AdjointMatrix computeAd(const TangentVector &xi) {
+        AdjointMatrix ad = AdjointMatrix::Zero();
+        const Vector3 rho = xi.template segment<3>(0), beta = xi.template segment<3>(6);
+        const Matrix3 W = SO3<Scalar>::computeHat(Vector3(xi.template segment<3>(3)));
+        ad.template block<3, 3>(0, 0) = W;
+        ad.template block<3, 3>(0, 3) = SO3<Scalar>::computeHat(rho);
+        ad.template block<3, 3>(0, 6) = -xi[9] * Matrix3::Identity();
+        ad.template block<3, 1>(0, 9) = beta;
+        ad.template block<3, 3>(3, 3) = W;
+        ad.template block<3, 3>(6, 3) = SO3<Scalar>::computeHat(beta);
+        ad.template block<3, 3>(6, 6) = W;
+        return ad;
     }
 
-    /**
-     * @brief Baker-Campbell-Hausdorff formula for SGal(3) Lie algebra
-     * Computes BCH(X,Y) = X + Y + 1/2[X,Y] + higher order terms
-     * @param X First Lie algebra element
-     * @param Y Second Lie algebra element
-     * @return Combined Lie algebra element
-     */
-    static TangentVector BCH(const TangentVector &X, const TangentVector &Y);
-
-    /**
-     * @brief Generates a random SGal3 element.
-     * @tparam Generator The type of the random number generator.
-     * @param gen The random number generator.
-     * @return A random SGal3 element.
-     */
     template<typename Generator>
     static SGal3<Scalar> computeRandom(Generator &gen) {
         return SGal3(SE3<Scalar>::computeRandom(gen), Types<Scalar>::template randomVector<3>(gen),
-                                 Types<Scalar>::randomScalar(gen));
+                     Types<Scalar>::randomScalar(gen));
     }
 
-    /**
-     * @brief Prints the SGal3 element to an output stream.
-     * @param os The output stream.
-     * @return The output stream.
-     */
     std::ostream &print(std::ostream &os) const {
         os << "SGal3(pose=" << m_pose << ", velocity=" << m_velocity.transpose() << ", time=" << m_time << ")";
         return os;
     }
 
-    /**
-     * @brief Gets the type name of the SGal3 class.
-     * @return A string view of the type name.
-     */
     static constexpr std::string_view getTypeName() { return "SGal3"; }
 
-    /**
-     * @brief Checks if the current SGal3 element is valid.
-     * @return True if pose, velocity, and time components are valid, false
-     * otherwise.
-     */
-    bool computeIsValid() const {
-        return m_pose.computeIsValid() && m_velocity.allFinite() && std::isfinite(m_time);
-    }
+    bool computeIsValid() const { return m_pose.computeIsValid() && m_velocity.allFinite() && std::isfinite(m_time); }
 
-    /**
-     * @brief Normalizes the SGal3 element.
-     * Normalizes the pose component.
-     */
     void computeNormalize() { m_pose.computeNormalize(); }
 
     /**
@@ -387,14 +290,17 @@ private:
      * @return The interpolated SGal3 element.
      */
     SGal3<Scalar> computeInterpolate(const SGal3<Scalar> &other, const Scalar &t) const {
-        // Convert 'other' relative to 'this'
-        SGal3<Scalar> rel = this->computeInverse().compose(other);
-        // Get the relative motion in the Lie algebra
-        typename SGal3<Scalar>::TangentVector delta = rel.computeLog();
-        // Scale it by t and apply it to 'this'
+        const TangentVector delta = (this->computeInverse().compose(other)).computeLog();
         return this->compose(SGal3<Scalar>::computeExp(t * delta));
     }
 
-}; // namespace sofa::component::cosserat::liegroups
+private:
+    SE3<Scalar> m_pose;   ///< Rigid body transformation (R, p)
+    Vector3 m_velocity;   ///< Linear velocity v
+    Scalar m_time;        ///< Time parameter t
+};
 
-}
+using SGal3d = SGal3<double>;
+using SGal3f = SGal3<float>;
+
+} // namespace sofa::component::cosserat::liegroups

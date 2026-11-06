@@ -15,6 +15,8 @@ set(LIEGROUPS_TEST_FILES
         integration/RealSpaceTest.cpp
         integration/SE2Test.cpp
         integration/SE23Test.cpp
+        integration/SGal3Test.cpp
+        integration/SE3Test.cpp
     
         # Unit tests
         unit/test_jacobian_verification.cpp
@@ -24,6 +26,7 @@ set(LIEGROUPS_TEST_FILES
         unit/test_SE3_Numerics.cpp
         unit/test_SE2_Audit.cpp
         unit/test_SE23_Audit.cpp
+        unit/test_SGal3_Audit.cpp
         unit/test_HookeSerat_Phase1.cpp
         unit/test_Phase2.cpp
         unit/test_HookeSerat_Comprehensive.cpp
