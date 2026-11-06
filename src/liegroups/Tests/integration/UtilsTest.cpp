@@ -79,7 +79,7 @@ namespace sofa::component::cosserat::liegroups::testing {
 		EXPECT_NEAR(Utils::sinc(0.0), 1.0, eps);
 
 		// Test negative values
-		EXPECT_NEAR(Utils::sinc(-pi / 2), -2 / pi, eps);
+		EXPECT_NEAR(Utils::sinc(-pi / 2), 2 / pi, eps); // sinc is even: sin(-x)/(-x) = sin(x)/x
 	}
 
 	/**

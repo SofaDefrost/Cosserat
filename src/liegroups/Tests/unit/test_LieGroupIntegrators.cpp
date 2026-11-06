@@ -100,9 +100,10 @@ TEST_F(IntegratorOrderTest, EulerIsOrder1) {
     double e1 = singleStepError(Integrator::Method::Euler, h1);
     double e2 = singleStepError(Integrator::Method::Euler, h2);
     double observed_order = std::log(e1 / e2) / std::log(h1 / h2);
-    // Expect order ≈ 1, allow generous tolerance due to commutator effects
-    EXPECT_GT(observed_order, 0.7);
-    EXPECT_LT(observed_order, 2.0);
+    // singleStepError is the LOCAL error of one step: O(h^(p+1)) for a method of order p, so Euler
+    // (p = 1) shows ~2 (the previous bounds, 0.7 .. 2.0, excluded the expected value 2.0003).
+    EXPECT_GT(observed_order, 1.7);
+    EXPECT_LT(observed_order, 2.5);
 }
 
 TEST_F(IntegratorOrderTest, MidpointIsOrder2) {
@@ -110,9 +111,9 @@ TEST_F(IntegratorOrderTest, MidpointIsOrder2) {
     double e1 = singleStepError(Integrator::Method::Midpoint, h1);
     double e2 = singleStepError(Integrator::Method::Midpoint, h2);
     double observed_order = std::log(e1 / e2) / std::log(h1 / h2);
-    // Expect order ≈ 2
-    EXPECT_GT(observed_order, 1.5);
-    EXPECT_LT(observed_order, 3.0);
+    // local error of an order-2 method: ~h^3
+    EXPECT_GT(observed_order, 2.7);
+    EXPECT_LT(observed_order, 3.5);
 }
 
 TEST_F(IntegratorOrderTest, RKMK4IsOrder4) {
@@ -203,9 +204,12 @@ TEST(IntegratorTest, PureConstantTorsionAnalyticalSolution) {
         SE3d::Identity(), constantField(strain), 0.0, L, 1,
         Integrator::Method::RKMK4);
 
-    // Analytical: pure rotation Rx(kappa*L)
+    // Analytical: rotation Rx(kappa*L) and, since the strain is a deviation from the unit tangential
+    // stretch (rho_x = 0 means the rod advances by L along its tangent, see STRAIN_CONVENTION.md),
+    // a translation (L, 0, 0) along the rotation axis. The previous expectation had no translation,
+    // hence the 0.4 = L pose error.
     Eigen::AngleAxisd rot(kappa * L, Eigen::Vector3d::UnitX());
-    SE3d g_analytic(SO3<double>(rot.toRotationMatrix()), Eigen::Vector3d::Zero());
+    SE3d g_analytic(SO3<double>(rot.toRotationMatrix()), Eigen::Vector3d(L, 0.0, 0.0));
 
     EXPECT_NEAR(poseError(g_analytic, g_rkmk4), 0.0, 1e-12);
 }

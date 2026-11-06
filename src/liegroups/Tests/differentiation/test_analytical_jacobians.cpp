@@ -49,9 +49,12 @@ TEST_F(AnalyticalJacobianTest, SO3_ComposeJacobians) {
     auto [J_left_analytical, J_right_analytical] = R.composeJacobians(S);
     
     // Test left Jacobian: ∂(R*S)/∂R
-    auto compose_wrt_R = [&S](const Vector3& delta) -> Vector3 {
-        SO3d R_perturbed = SO3d::exp(delta);
-        return (R_perturbed * S).log();
+    // composeJacobians uses the right convention (perturbation g exp(delta), result expressed as
+    // (R S)^-1 (perturbed product)): d/dR = Ad_{S^-1} = S^T, d/dS = I.
+    // (The previous FD replaced R by exp(delta) and took log() of the whole product, i.e. it
+    // differentiated at R = identity and measured dlog, not the composition Jacobian.)
+    auto compose_wrt_R = [&R, &S](const Vector3& delta) -> Vector3 {
+        return ((R * S).inverse() * (R * SO3d::exp(delta) * S)).log();
     };
     
     Vector3 zero = Vector3::Zero();
@@ -68,9 +71,8 @@ TEST_F(AnalyticalJacobianTest, SO3_ComposeJacobians) {
         << "Numerical:\n" << J_left_numerical;
     
     // Test right Jacobian: ∂(R*S)/∂S
-    auto compose_wrt_S = [&R](const Vector3& delta) -> Vector3 {
-        SO3d S_perturbed = SO3d::exp(delta);
-        return (R * S_perturbed).log();
+    auto compose_wrt_S = [&R, &S](const Vector3& delta) -> Vector3 {
+        return ((R * S).inverse() * (R * (S * SO3d::exp(delta)))).log();
     };
     
     auto J_right_numerical = TestUtils::centralDifferenceJacobian<3, 3>(
@@ -95,9 +97,10 @@ TEST_F(AnalyticalJacobianTest, SO3_InverseJacobian) {
     auto J_analytical = R.inverseJacobian();
     
     // Numerical Jacobian: ∂(R^{-1})/∂R
+    // inverseJacobian uses the left convention: perturbation exp(delta) R, result measured as
+    // (exp(delta) R)^-1 (R^-1)^-1 = R^-1 exp(-delta) R = exp(-R^T delta), so the Jacobian is -R^T.
     auto inverse_func = [&R](const Vector3& delta) -> Vector3 {
-        SO3d R_perturbed = SO3d::exp(delta) * R;
-        return R_perturbed.inverse().log();
+        return ((SO3d::exp(delta) * R).inverse() * R).log();
     };
     
     Vector3 zero = Vector3::Zero();
@@ -181,9 +184,8 @@ TEST_F(AnalyticalJacobianTest, SE3_ComposeJacobians) {
     auto [J_left_analytical, J_right_analytical] = g.composeJacobians(h);
     
     // Test left Jacobian: ∂(g*h)/∂g
-    auto compose_wrt_g = [&h](const Vector6& delta) -> Vector6 {
-        SE3d g_perturbed = SE3d::exp(delta);
-        return (g_perturbed * h).log();
+    auto compose_wrt_g = [&g, &h](const Vector6& delta) -> Vector6 {
+        return ((g * h).inverse() * (g * SE3d::exp(delta) * h)).log();
     };
     
     Vector6 zero = Vector6::Zero();
@@ -199,9 +201,8 @@ TEST_F(AnalyticalJacobianTest, SE3_ComposeJacobians) {
         << "Max error: " << (J_left_analytical - J_left_numerical).cwiseAbs().maxCoeff();
     
     // Test right Jacobian: ∂(g*h)/∂h
-    auto compose_wrt_h = [&g](const Vector6& delta) -> Vector6 {
-        SE3d h_perturbed = SE3d::exp(delta);
-        return (g * h_perturbed).log();
+    auto compose_wrt_h = [&g, &h](const Vector6& delta) -> Vector6 {
+        return ((g * h).inverse() * (g * (h * SE3d::exp(delta)))).log();
     };
     
     auto J_right_numerical = TestUtils::centralDifferenceJacobian<6, 6>(
@@ -228,8 +229,7 @@ TEST_F(AnalyticalJacobianTest, SE3_InverseJacobian) {
     
     // Numerical Jacobian
     auto inverse_func = [&g](const Vector6& delta) -> Vector6 {
-        SE3d g_perturbed = SE3d::exp(delta) * g;
-        return g_perturbed.inverse().log();
+        return ((SE3d::exp(delta) * g).inverse() * g).log();
     };
     
     Vector6 zero = Vector6::Zero();
@@ -308,9 +308,10 @@ TEST_F(AnalyticalJacobianTest, SO3_JacobiansConsistency) {
     auto J_inv = R.inverseJacobian();
     auto J_inv_inv = R.inverse().inverseJacobian();
     
-    // These should be negatives: J(R^{-1}) = -J(R)
+    // (R^-1)^-1 = R, so the chain rule gives J(R^-1) J(R) = I  (-R^T times -R). The previous
+    // expectation, -I, is wrong for any sign convention of the two factors.
     auto product = J_inv * J_inv_inv;
-    auto expected = -SO3d::AdjointMatrix::Identity();
+    auto expected = SO3d::AdjointMatrix::Identity();
     
     bool consistent = product.isApprox(expected, 0.01);
     EXPECT_TRUE(consistent) << "Inverse Jacobian consistency failed";

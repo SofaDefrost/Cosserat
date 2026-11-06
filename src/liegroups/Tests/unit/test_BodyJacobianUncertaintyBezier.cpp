@@ -185,9 +185,13 @@ TEST(BodyJacobianTest, OutOfRangeJacobianThrows) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 TEST(UncertaintyPropagatorTest, ZeroNoiseStraightRod) {
-    // Zero strain + zero noise → identity propagation, covariance unchanged
+    // Zero NET strain + zero noise → identity propagation, covariance unchanged.
+    // The strain is a deviation from the unit tangential stretch (rho_x = 0 advances the frame by
+    // `length` along x, so Ad_g != I); rho_x = -1 cancels it. With the previous all-zero strain the
+    // step is a pure translation of 0.1 and Ad [t]x R mixes the covariance blocks.
     Propagator::Section sec;
     sec.strain     = Eigen::Matrix<double,6,1>::Zero();
+    sec.strain[3]  = -1.0;
     sec.length     = 0.1;
     sec.strain_cov = Eigen::Matrix<double,6,6>::Zero();
 

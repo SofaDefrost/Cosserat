@@ -100,8 +100,9 @@ TEST_F(DifferentiationTest, SO3_LogJacobian) {
             log_func, zero
         );
         
-        // Near identity perturbation, Jacobian should be close to identity
-        Eigen::Matrix<Scalar, 3, 3> expected = Eigen::Matrix<Scalar, 3, 3>::Identity();
+        // d/d delta log(exp(delta) R) at delta = 0 is the inverse left Jacobian at log(R), which is
+        // the identity only for R = identity (the previous expectation).
+        Eigen::Matrix<Scalar, 3, 3> expected = SO3d::computeLeftJacobianInverse(omega);
         
         bool passed = TestUtils::compareMatrices<3, 3>(
             expected, numerical_jacobian, tolerance, false
