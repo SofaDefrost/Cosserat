@@ -19,6 +19,30 @@ using M6 = Eigen::Matrix<double, 6, 6>;
 const double kAngles[] = {1e-9, 1e-6, 1e-3, 0.1, 1.0, 2.0, 3.0};
 } // namespace
 
+TEST(LieGroupBaseGeneric, BchOrdersConvergeOnSE3) {
+	// log(exp(v) exp(w)) - BCH_n = O(s^(n+1)): halving the size must divide the error by ~2^(n+1).
+	std::mt19937_64 rng(15);
+	std::uniform_real_distribution<double> u(-1.0, 1.0);
+	V6 v0, w0;
+	for (int i = 0; i < 6; ++i) {
+		v0[i] = u(rng);
+		w0[i] = u(rng);
+	}
+	auto err = [&](double s, int order) {
+		const V6 v = v0 * s, w = w0 * s;
+		const V6 ref = (SE3d::exp(v) * SE3d::exp(w)).log();
+		return (SE3d::BCH(v, w, order) - ref).norm();
+	};
+	const double s = 0.04;
+	for (int order = 2; order <= 5; ++order) {
+		const double e1 = err(s, order), e2 = err(s / 2, order);
+		const double expected = std::pow(2.0, order + 1);
+		EXPECT_GT(e1 / e2, 0.7 * expected) << "order " << order << " e1=" << e1 << " e2=" << e2;
+		EXPECT_LT(e1 / e2, 1.5 * expected) << "order " << order << " e1=" << e1 << " e2=" << e2;
+	}
+	EXPECT_LT(err(0.05, 5), 1e-9);
+}
+
 TEST(LieGroupBaseGeneric, SlerpIsTheGeodesicAtParameterT) {
 	const SO3d a = SO3d::exp(Eigen::Vector3d(0.3, 0.5, -0.2));
 	const SO3d b = SO3d::exp(Eigen::Vector3d(-1.0, 0.4, 1.2));

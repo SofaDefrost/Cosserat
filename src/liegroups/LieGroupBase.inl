@@ -235,14 +235,27 @@ namespace sofa::component::cosserat::liegroups {
 					result -= Derived::computeVee(comm4) * Scalar(1.0 / 24.0);
 
 					if (order >= 5) {
-						// Fifth-order terms: more complex nested commutators
-						// -1/720 * [v, [w, [v, [v, w]]]] - 1/720 * [w, [v, [w, [w, v]]]]
-						const AlgebraMatrix comm5a = vMat * comm4 - comm4 * vMat;
-						const AlgebraMatrix comm_w_v_wv = wMat * comm_w_wv - comm_w_wv * wMat;
-						const AlgebraMatrix comm5b = wMat * comm_w_v_wv - comm_w_v_wv * wMat;
-
-						result -= Derived::computeVee(comm5a) * Scalar(1.0 / 720.0);
-						result -= Derived::computeVee(comm5b) * Scalar(1.0 / 720.0);
+						// Fifth-order terms (Dynkin / Wikipedia):
+						//   -1/720 ([y,[y,[y,[y,x]]]] + [x,[x,[x,[x,y]]]])
+						//   +1/360 ([x,[y,[y,[y,x]]]] + [y,[x,[x,[x,y]]]])
+						//   +1/120 ([y,[x,[y,[x,y]]]] + [x,[y,[x,[y,x]]]])
+						auto br = [](const AlgebraMatrix &A, const AlgebraMatrix &B) -> AlgebraMatrix {
+							return A * B - B * A;
+						};
+						const AlgebraMatrix xy = comm_vw;
+						const AlgebraMatrix yx = -comm_vw;
+						const AlgebraMatrix xxy = br(vMat, xy);
+						const AlgebraMatrix yyx = br(wMat, yx);
+						const AlgebraMatrix xxxy = br(vMat, xxy);
+						const AlgebraMatrix yyyx = br(wMat, yyx);
+						const AlgebraMatrix yxy = br(wMat, xy);
+						const AlgebraMatrix xyx = br(vMat, yx);
+						const AlgebraMatrix t720 = br(wMat, yyyx) + br(vMat, xxxy);
+						const AlgebraMatrix t360 = br(vMat, yyyx) + br(wMat, xxxy);
+						const AlgebraMatrix t120 = br(wMat, br(vMat, yxy)) + br(vMat, br(wMat, xyx));
+						result -= Derived::computeVee(t720) * Scalar(1.0 / 720.0);
+						result += Derived::computeVee(t360) * Scalar(1.0 / 360.0);
+						result += Derived::computeVee(t120) * Scalar(1.0 / 120.0);
 					}
 				}
 			}
