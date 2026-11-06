@@ -294,6 +294,25 @@ namespace sofa::component::cosserat::liegroups {
 		 * With v = [phi_v ; rho_v], w = [phi_w ; rho_w]:
 		 *   [v, w] = [ phi_v x phi_w ;  phi_v x rho_w - phi_w x rho_v ] = vee(hat(v) hat(w) - hat(w) hat(v)).
 		 */
+		/**
+		 * @brief hat operator of se(3): [phi ; rho] -> [[phi]x rho ; 0 0] (CRTP hook of LieGroupBase::hat,
+		 * used by the generic BCH(), matrixLog() and ad()).
+		 */
+		static Matrix4 computeHat(const TangentVector &xi) {
+			Matrix4 X = Matrix4::Zero();
+			X.template block<3, 3>(0, 0) = SO3Type::computeHat(Vector3(xi.template head<3>()));
+			X.template block<3, 1>(0, 3) = xi.template tail<3>();
+			return X;
+		}
+
+		/// vee operator of se(3), inverse of computeHat().
+		static TangentVector computeVee(const Matrix4 &X) {
+			TangentVector xi;
+			xi.template head<3>() = SO3Type::computeVee(Matrix3(X.template block<3, 3>(0, 0)));
+			xi.template tail<3>() = X.template block<3, 1>(0, 3);
+			return xi;
+		}
+
 		static TangentVector lieBracket(const TangentVector &v, const TangentVector &w) {
 			const Vector3 phi_v = v.template head<3>();
 			const Vector3 rho_v = v.template tail<3>();
@@ -387,8 +406,16 @@ namespace sofa::component::cosserat::liegroups {
 		AdjointMatrix adjoint() const noexcept { return computeAdjoint(); }
 
 
-		bool computeIsApprox(const SE3 &other, const Scalar &eps) const {
-			return m_rotation.isApprox(other.m_rotation, eps) && m_translation.isApprox(other.m_translation, eps);
+		/**
+		 * @brief Approximate equality. The translations are compared with an absolute tolerance
+		 * scaled by max(1, |t|): Eigen's isApprox is relative (|a-b| <= eps min(|a|,|b|)), so it
+		 * is false for any non-zero difference when one translation is exactly 0, e.g. for
+		 * identity versus a product g * g^-1 whose translation is 1e-17.
+		 */
+		bool computeIsApprox(const SE3 &other, const Scalar &eps = Types<Scalar>::epsilon()) const {
+			const Scalar scale = std::max(Scalar(1), std::max(m_translation.norm(), other.m_translation.norm()));
+			return m_rotation.isApprox(other.m_rotation, eps) &&
+				   (m_translation - other.m_translation).norm() <= eps * scale;
 		}
 
 		/**
