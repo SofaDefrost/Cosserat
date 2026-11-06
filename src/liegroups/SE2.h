@@ -102,7 +102,8 @@ namespace sofa::component::cosserat::liegroups {
 				throw std::invalid_argument("Invalid SE(2) transformation matrix");
 			}
 
-			m_rotation = SO2<Scalar>(matrix.template block<2, 2>(0, 0));
+			// SO2 has no matrix constructor: recover the angle from the first column.
+			m_rotation = SO2<Scalar>(std::atan2(matrix(1, 0), matrix(0, 0)));
 			m_translation = matrix.template block<2, 1>(0, 2);
 		}
 
@@ -111,7 +112,7 @@ namespace sofa::component::cosserat::liegroups {
 		 * @param tangent_vector 3D vector [vx, vy, ω] representing the Lie algebra
 		 * element.
 		 */
-		explicit SE2(const TangentVector &tangent_vector) { *this = exp(tangent_vector); }
+		explicit SE2(const TangentVector &tangent_vector) { *this = computeExp(tangent_vector); }
 
 		/**
 		 * @brief Copy constructor.
@@ -497,11 +498,12 @@ namespace sofa::component::cosserat::liegroups {
 		 * Checks if the bottom row is [0, 0, 1] and if the rotation part is valid.
 		 * @param matrix The 3x3 matrix to validate.
 		 * @param eps The tolerance for floating-point comparisons. Defaults to
-		 * `Types<Scalar>::epsilon()`.
+		 * sqrt(epsilon): a matrix rebuilt from exp/compose is orthonormal only to a few ulps.
 		 * @return True if the matrix is a valid SE(2) transformation matrix, false
 		 * otherwise.
 		 */
-		static bool isValidTransformationMatrix(const Matrix3 &matrix, const Scalar &eps = Types<Scalar>::epsilon()) {
+		static bool isValidTransformationMatrix(const Matrix3 &matrix,
+											 const Scalar &eps = std::sqrt(Types<Scalar>::epsilon())) {
 			// Check bottom row is [0, 0, 1]
 			if (!matrix.template block<1, 2>(2, 0).isZero(eps) || std::abs(matrix(2, 2) - Scalar(1)) > eps) {
 				return false;

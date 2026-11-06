@@ -22,6 +22,7 @@ set(LIEGROUPS_TEST_FILES
         unit/test_LieGroup_Instantiation.cpp
         unit/test_LieGroupBase_Generic.cpp
         unit/test_SE3_Numerics.cpp
+        unit/test_SE2_Audit.cpp
         unit/test_HookeSerat_Phase1.cpp
         unit/test_Phase2.cpp
         unit/test_HookeSerat_Comprehensive.cpp
