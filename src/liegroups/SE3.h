@@ -24,6 +24,28 @@ namespace sofa::component::cosserat::liegroups {
 	 *
 	 * @tparam _Scalar The scalar type (must be a floating-point type)
 	 */
+	namespace detail {
+	/// Coefficients of the Q block of the SE(3) left Jacobian, see SE3::computeQ.
+	template<typename Scalar>
+	inline void se3QCoefficients(const Scalar t, Scalar &c1, Scalar &c2, Scalar &c3) noexcept {
+		const Scalar t2 = t * t;
+		if (t < so3SeriesAngle<Scalar>()) {
+			const Scalar t4 = t2 * t2;
+			c1 = Scalar(1) / Scalar(6) - t2 / Scalar(120) + t4 / Scalar(5040) - t4 * t2 / Scalar(362880) +
+				 t4 * t4 / Scalar(39916800) - t4 * t4 * t2 / Scalar(6227020800.0);
+			c2 = Scalar(1) / Scalar(24) - t2 / Scalar(720) + t4 / Scalar(40320) - t4 * t2 / Scalar(3628800) +
+				 t4 * t4 / Scalar(479001600) - t4 * t4 * t2 / Scalar(87178291200.0);
+			c3 = Scalar(1) / Scalar(120) - t2 / Scalar(2520) + t4 / Scalar(120960) - t4 * t2 / Scalar(9979200) +
+				 t4 * t4 / Scalar(1245404160.0);
+		} else {
+			const Scalar st = std::sin(t), ct = std::cos(t);
+			c1 = (t - st) / (t2 * t);
+			c2 = (Scalar(0.5) * t2 + ct - Scalar(1)) / (t2 * t2);
+			c3 = (Scalar(2) * t - Scalar(3) * st + t * ct) / (Scalar(2) * t2 * t2 * t);
+		}
+	}
+	} // namespace detail
+
 	template<typename _Scalar>
 	class SE3 : public LieGroupBase<SE3<_Scalar>, _Scalar, 4, 6, 3> {
 	public:
@@ -171,8 +193,8 @@ namespace sofa::component::cosserat::liegroups {
 			const Matrix3 V_inv = Matrix3::Identity() - Scalar(0.5) * K_phi + c * (K_phi * K_phi);
 			const Vector3 rho = V_inv * m_translation;
 			TangentVector result;
-			result.template head<3>() = phi;  // angular first — consistent with computeExp()
-			result.template tail<3>() = rho;  // linear second
+			result.template head<3>() = phi; // angular first, consistent with computeExp()
+			result.template tail<3>() = rho; // linear second
 			return result;
 		}
 
@@ -538,15 +560,10 @@ namespace sofa::component::cosserat::liegroups {
 	/// c = (1 - ½θ·cot(θ/2))/θ²  (→ 1/12 as θ→0). Static counterpart of
 	/// SO3::dlog() (which only exists as a member on a group element).
 	static Matrix3 so3LeftJacobianInverse(const Vector3 &phi) {
-		const Scalar theta = phi.norm();
-		const Matrix3 Phi  = SO3Type::computeHat(phi);
-		const Matrix3 Phi2 = Phi * Phi;
-		if (theta < Types<Scalar>::SMALL_ANGLE_THRESHOLD)
-			return Matrix3::Identity() - Scalar(0.5) * Phi + (Scalar(1) / Scalar(12)) * Phi2;
-		const Scalar theta2 = theta * theta;
-		const Scalar ht     = Scalar(0.5) * theta;
-		const Scalar c = (Scalar(1) - Scalar(0.5) * theta * std::cos(ht) / std::sin(ht)) / theta2;
-		return Matrix3::Identity() - Scalar(0.5) * Phi + c * Phi2;
+		Scalar a, b, c;
+		detail::so3JacobianCoefficients(phi.norm(), a, b, c);
+		const Matrix3 Phi = SO3Type::computeHat(phi);
+		return Matrix3::Identity() - Scalar(0.5) * Phi + c * (Phi * Phi);
 	}
 
 	/// SE(3) coupling block Q(ρ,φ) — the lower-left 3×3 block of Jl(ξ).
@@ -557,24 +574,19 @@ namespace sofa::component::cosserat::liegroups {
 		const Matrix3 PhiN   = Phi * N;
 		const Matrix3 NPhi   = N * Phi;
 		const Matrix3 PhiNPhi = PhiN * Phi;
-		if (theta < Types<Scalar>::SMALL_ANGLE_THRESHOLD)
-			return Scalar(0.5) * N + (Scalar(1) / Scalar(6)) * (PhiN + NPhi)
-				 + (Scalar(1) / Scalar(12)) * PhiNPhi;
-		const Scalar theta2 = theta * theta;
-		const Scalar theta3 = theta2 * theta;
-		const Scalar theta4 = theta2 * theta2;
-		const Scalar theta5 = theta4 * theta;
-		const Scalar st = std::sin(theta);
-		const Scalar ct = std::cos(theta);
-		const Scalar c1 = (theta - st) / theta3;
-		const Scalar c2 = (Scalar(0.5) * theta2 + ct - Scalar(1)) / theta4;
-		const Scalar c3 = -c2 - Scalar(3) * (theta - st - theta3 / Scalar(6)) / theta5;
-		const Matrix3 Phi2  = Phi * Phi;
-		const Matrix3 NPhi2 = N * Phi2;
-		return Scalar(0.5) * N
-			 + c1 * (PhiN + NPhi + PhiNPhi)
-			 + c2 * (Phi2 * N + NPhi2 - Scalar(3) * PhiNPhi)
-			 - Scalar(0.5) * c3 * (Phi * NPhi2 + Phi2 * NPhi);
+		const Matrix3 Phi2   = Phi * Phi;
+		const Matrix3 NPhi2  = N * Phi2;
+		// Q = 1/2 N + c1 (Phi N + N Phi + Phi N Phi)
+		//          + c2 (Phi^2 N + N Phi^2 - 3 Phi N Phi)
+		//          + c3 (Phi N Phi^2 + Phi^2 N Phi)           (Barfoot, State Estimation, eq. 7.86)
+		// c1 = (t - sin t)/t^3,  c2 = (t^2/2 + cos t - 1)/t^4,  c3 = (2t - 3 sin t + t cos t)/(2 t^5).
+		// All three cancel catastrophically for small t (the former closed forms were wrong by
+		// 1e-8 near 2e-4 and the former small-angle branch dropped the O(t^2) terms), so below
+		// kSeriesAngle they are evaluated by their Taylor series.
+		Scalar c1, c2, c3;
+		detail::se3QCoefficients(theta, c1, c2, c3);
+		return Scalar(0.5) * N + c1 * (PhiN + NPhi + PhiNPhi) + c2 * (Phi2 * N + NPhi2 - Scalar(3) * PhiNPhi) +
+			   c3 * (Phi * NPhi2 + Phi2 * NPhi);
 	}
 
 	/// Left Jacobian of SE(3) exp — CRTP hook for LieGroupBase::leftJacobian.

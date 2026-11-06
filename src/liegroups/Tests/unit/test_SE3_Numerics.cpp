@@ -83,6 +83,21 @@ TEST(SE3Numerics, ExpOfLogIsIdentityOnTheGroup) {
 	}
 }
 
+TEST(SE3Numerics, JacobiansMatchSeries) {
+	std::mt19937_64 rng(35);
+	for (double angle : kAngles) {
+		for (int i = 0; i < 3; ++i) {
+			const V6 xi = randomSE3Tangent(rng, angle);
+			const MatL<6> ad = adSE3(xi.cast<LD>());
+			const MatL<6> Jl = jacobianSeries<6>(ad), Jr = jacobianSeries<6>(-ad);
+			EXPECT_LT(maxAbsDiff(SE3d::computeLeftJacobian(xi), Jl), 4e-15) << "Jl angle " << angle;
+			EXPECT_LT(maxAbsDiff(SE3d::computeRightJacobian(xi), Jr), 4e-15) << "Jr angle " << angle;
+			EXPECT_LT(maxAbsDiff(SE3d::computeLeftJacobianInverse(xi), Jl.inverse()), 4e-15) << "Jl^-1 angle " << angle;
+			EXPECT_LT(maxAbsDiff(SE3d::computeRightJacobianInverse(xi), Jr.inverse()), 4e-15) << "Jr^-1 angle " << angle;
+		}
+	}
+}
+
 TEST(SE3Numerics, AdjointIsExpOfAd) {
 	// Ad_{exp(xi)} = exp(ad_xi)
 	std::mt19937_64 rng(36);
@@ -92,3 +107,14 @@ TEST(SE3Numerics, AdjointIsExpOfAd) {
 	}
 }
 
+TEST(SE3Numerics, LeftAndRightJacobianAreRelatedByAdjoint) {
+	// Jl(xi) = Ad_exp(xi) Jr(xi)  and  Jl(xi) = Jr(-xi)
+	std::mt19937_64 rng(37);
+	for (double angle : kAngles) {
+		const V6 xi = randomSE3Tangent(rng, angle);
+		const auto Jl = SE3d::computeLeftJacobian(xi);
+		EXPECT_LT((Jl - SE3d::exp(xi).computeAdjoint() * SE3d::computeRightJacobian(xi)).cwiseAbs().maxCoeff(), 1e-13)
+				<< "angle " << angle;
+		EXPECT_LT((Jl - SE3d::computeRightJacobian(-xi)).cwiseAbs().maxCoeff(), 1e-15) << "angle " << angle;
+	}
+}
