@@ -168,34 +168,11 @@ namespace sofa::component::cosserat::liegroups {
 		if (t_clamped >= Scalar(1) - Types::epsilon())
 			return other;
 
-		try {
-			// Compute the "angular distance"
-			const Scalar dist = distance(other);
-
-			if (dist < Types::epsilon()) {
-				return derived(); // Elements are too close for meaningful interpolation
-			}
-
-			// Use sinc-based interpolation for better numerical properties
-			const Scalar theta = dist * t_clamped;
-			const Scalar sin_theta = std::sin(theta);
-			const Scalar sin_dist = std::sin(dist);
-
-			if (std::abs(sin_dist) < Types::epsilon()) {
-				// Fallback to linear interpolation
-				return interpolate(other, t_clamped);
-			}
-
-			const Scalar w1 = std::sin(dist - theta) / sin_dist;
-			const Scalar w2 = sin_theta / sin_dist;
-
-			// This is a simplified version - actual implementation would depend on
-			// group structure
-			return interpolate(other, w2 / (w1 + w2));
-
-		} catch (const std::exception &) {
-			return interpolate(other, t_clamped);
-		}
+		// The geodesic g exp(t log(g^-1 h)) is the SLERP on any group with a bi-invariant metric,
+		// and its parameter is t itself. The previous code reweighted t by
+		// sin(t d) / (sin((1-t) d) + sin(t d)), which is the chord/sphere weighting for
+		// interpolating *vectors* and made slerp(0.25) differ from interpolate(0.25) by 0.125 rad.
+		return interpolate(other, t_clamped);
 	}
 
 	/**

@@ -20,6 +20,7 @@ set(LIEGROUPS_TEST_FILES
         unit/test_jacobian_verification.cpp
         unit/test_SO3_Jacobians.cpp
         unit/test_LieGroup_Instantiation.cpp
+        unit/test_LieGroupBase_Generic.cpp
         unit/test_HookeSerat_Phase1.cpp
         unit/test_Phase2.cpp
         unit/test_HookeSerat_Comprehensive.cpp
