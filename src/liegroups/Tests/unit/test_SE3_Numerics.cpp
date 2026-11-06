@@ -118,3 +118,20 @@ TEST(SE3Numerics, LeftAndRightJacobianAreRelatedByAdjoint) {
 		EXPECT_LT((Jl - SE3d::computeRightJacobian(-xi)).cwiseAbs().maxCoeff(), 1e-15) << "angle " << angle;
 	}
 }
+
+TEST(SE3Numerics, ExpCosseratIsExpOfTheStrainPlusUnitStretch) {
+	// expCosserat(strain, L) is exp(L (kappa ; gamma + e_x)): the reference configuration of a
+	// Cosserat rod has unit tangential stretch. It must not lose digits for small curvature, where
+	// the beams of the plugin live (the terms (1 - cos(L k))/k^2 and (L k - sin(L k))/k^3 multiply
+	// matrices that contain the O(1) unit stretch).
+	std::mt19937_64 rng(38);
+	for (double kappa : {1e-17, 1e-15, 1e-12, 1e-9, 1e-6, 1e-4, 1e-2, 0.5, 2.0, 5.0}) {
+		for (double L : {0.01, 0.3, 1.0}) {
+			const V6 strain = randomSE3Tangent(rng, kappa, 0.5);
+			V6 effective = strain;
+			effective[3] += 1.0;
+			const MatL<4> T = expm<4>(hatSE3((effective * L).cast<LD>()));
+			EXPECT_LT(maxAbsDiff(SE3d::expCosserat(strain, L).matrix(), T), 4e-15) << "kappa " << kappa << " L " << L;
+		}
+	}
+}

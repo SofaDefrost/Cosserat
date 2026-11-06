@@ -108,11 +108,8 @@ namespace sofa::component::cosserat::liegroups {
 	 *
 	 * For ξ = [φ, ρ]ᵀ ∈ se(3):
 	 *
-	 * Small case (‖φ‖ ≈ 0):
-	 *   T = I₄ + s·ξ̂
-	 *
-	 * General case:
-	 *   T = I₄ + s·ξ̂ + α·ξ̂² + β·ξ̂³
+	 * T = exp(s·ξ̂) with ξ̂ = hat([φ ; ρ + e_x]) = I₄ + s·ξ̂ + α·ξ̂² + β·ξ̂³ (closed form, evaluated through
+	 * computeExp for numerical stability at small ‖φ‖)
 	 *   where α = (1-cos(s‖φ‖))/‖φ‖², β = (s‖φ‖-sin(s‖φ‖))/‖φ‖³
 	 *
 	 * @param strain 6D strain vector [φ, ρ]ᵀ (angular and linear strain rates).
@@ -120,18 +117,13 @@ namespace sofa::component::cosserat::liegroups {
 	 * @return The corresponding SE3 element.
 	 */
 		static SE3 expCosserat(const TangentVector &strain, const Scalar &length) noexcept {
-			// Extract translation and rotation parts
-			const Vector3 rho = strain.template tail<3>(); // Linear strain (translation rate)
-			const Vector3 phi = strain.template head<3>(); // Angular strain (rotation rate)
-
-			const Scalar phi_norm = phi.norm();
-
-			// Handle small rotation case
-			if (phi_norm <= std::numeric_limits<Scalar>::epsilon()) {
-				return expCosseratSmall(rho, phi, length);
-			}
-
-			return expCosseratGeneral(rho, phi, phi_norm, length);
+			// exp(length * (strain + [0 ; e_x])): the rod is at unit stretch when rho = 0, hence the +1 on the
+			// x component of the linear part. Going through the cancellation-free computeExp replaces the
+			// series I + sξ̂ + αξ̂² + βξ̂³ whose α = (1-cos(s‖φ‖))/‖φ‖² and β = (s‖φ‖-sin(s‖φ‖))/‖φ‖³ multiply
+			// matrices holding the O(1) unit stretch: with ‖φ‖ = 1e-9 the translation was off by 4.6e-10.
+			TangentVector xi = strain;
+			xi[3] += Scalar(1);
+			return computeExp(length * xi);
 		}
 
 		/**
