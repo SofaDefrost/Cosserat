@@ -8,6 +8,7 @@
 
 #include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 
 #include <array>
 #include <cmath>
@@ -163,24 +164,39 @@ PYBIND11_MODULE(articulated_rigids, m) {
     // ---- Serial chain (product of exponentials) ----
     using Chain = KinematicChain<double>;
     py::class_<Chain>(m, "KinematicChain",
-                      "Serial chain of revolute / prismatic / fixed segments. Product of exponentials on SE(3).")
+                      "Kinematic tree of revolute / prismatic / fixed segments (product of exponentials on SE(3)). "
+                      "parent = -1 attaches a segment to the base, -2 (default) to the previous segment.")
         .def(py::init<>())
-        .def("add_revolute", [](Chain &c, const py::object &axis, const py::object &pivot, const py::object &rest) {
-                 c.addRevolute(toVec3(axis, "axis"), toVec3(pivot, "pivot"),
-                               rest.is_none() ? SE3d() : toSE3(rest, "rest"));
-             }, py::arg("axis"), py::arg("pivot") = py::make_tuple(0., 0., 0.), py::arg("rest") = py::none())
-        .def("add_prismatic", [](Chain &c, const py::object &axis, const py::object &rest) {
-                 c.addPrismatic(toVec3(axis, "axis"), rest.is_none() ? SE3d() : toSE3(rest, "rest"));
-             }, py::arg("axis"), py::arg("rest") = py::none())
-        .def("add_fixed", [](Chain &c, const py::object &rest) { c.addFixed(toSE3(rest, "rest")); }, py::arg("rest"))
+        .def("add_revolute", [](Chain &c, const py::object &axis, const py::object &pivot, const py::object &rest,
+                                int parent) {
+                 return c.addRevolute(toVec3(axis, "axis"), toVec3(pivot, "pivot"),
+                                      rest.is_none() ? SE3d() : toSE3(rest, "rest"), parent);
+             }, py::arg("axis"), py::arg("pivot") = py::make_tuple(0., 0., 0.), py::arg("rest") = py::none(),
+             py::arg("parent") = Chain::Previous)
+        .def("add_prismatic", [](Chain &c, const py::object &axis, const py::object &rest, int parent) {
+                 return c.addPrismatic(toVec3(axis, "axis"), rest.is_none() ? SE3d() : toSE3(rest, "rest"), parent);
+             }, py::arg("axis"), py::arg("rest") = py::none(), py::arg("parent") = Chain::Previous)
+        .def("add_fixed", [](Chain &c, const py::object &rest, int parent) { return c.addFixed(toSE3(rest, "rest"), parent); },
+             py::arg("rest"), py::arg("parent") = Chain::Previous)
         .def_property_readonly("n_dof", &Chain::nDof)
         .def_property_readonly("n_segments", &Chain::nSegments)
+        .def("ancestor_dofs", [](const Chain &c, int i) { return c.ancestorDofs(i); }, py::arg("i"))
         .def("forward", [](const Chain &c, const Eigen::VectorXd &q) { return toTuple(fromSE3(c.forward(q))); },
              py::arg("q"))
         .def("segment_pose", [](const Chain &c, const Eigen::VectorXd &q, int i) {
                  return toTuple(fromSE3(c.segmentPose(q, i)));
              }, py::arg("q"), py::arg("i"))
-        .def("spatial_jacobian", &Chain::spatialJacobian, py::arg("q"))
-        .def("body_jacobian", &Chain::bodyJacobian, py::arg("q"))
-        .def("hybrid_jacobian", &Chain::hybridJacobian, py::arg("q"));
+        .def("all_poses", [](const Chain &c, const Eigen::VectorXd &q) {
+                 py::list out;
+                 for (const auto &T : c.allPoses(q)) out.append(toTuple(fromSE3(T)));
+                 return out;
+             }, py::arg("q"))
+        .def("joint_screws", [](const Chain &c, const Eigen::VectorXd &q) { return c.jointScrews(c.allPoses(q)); },
+             py::arg("q"), "6 x nDof unit screws of every joint seen from the base frame.")
+        .def("spatial_jacobian", [](const Chain &c, const Eigen::VectorXd &q, int i) { return c.spatialJacobian(q, i); },
+             py::arg("q"), py::arg("i") = -1)
+        .def("body_jacobian", [](const Chain &c, const Eigen::VectorXd &q, int i) { return c.bodyJacobian(q, i); },
+             py::arg("q"), py::arg("i") = -1)
+        .def("hybrid_jacobian", [](const Chain &c, const Eigen::VectorXd &q, int i) { return c.hybridJacobian(q, i); },
+             py::arg("q"), py::arg("i") = -1);
 }
