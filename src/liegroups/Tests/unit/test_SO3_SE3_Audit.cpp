@@ -150,3 +150,16 @@ TEST(SO3SE3Audit, SO3BCHOrdersFourAndFiveAreImplemented) {
 	for (int order = 3; order <= 5; ++order)
 		EXPECT_LT(bchError(order, h / 2), bchError(order, h) / std::pow(2.0, order + 1) * 1.3) << "order " << order;
 }
+
+// LieGroupBase::BCH threw NumericalInstabilityException for max(|v|, |w|) > pi/2, while SO3::BCH (same
+// truncated series) never did: the series is a polynomial, always defined. No exception any more; the
+// generic and the SO3 versions agree for large inputs too.
+TEST(SO3SE3Audit, BCHIsDefinedForLargeInputs) {
+	const Eigen::Vector3d v(2.0, -1.0, 1.5), w(-1.2, 2.5, 0.7);
+	for (int order = 1; order <= 5; ++order) {
+		Eigen::Vector3d generic;
+		ASSERT_NO_THROW(generic = SO3d::Base::BCH(v, w, order)) << "order " << order;
+		EXPECT_LT((generic - SO3d::BCH(v, w, order)).norm(), 1e-12) << "order " << order;
+		ASSERT_NO_THROW(SE3d::BCH(SE3d::TangentVector::Constant(2.0), SE3d::TangentVector::Constant(-1.7), order));
+	}
+}

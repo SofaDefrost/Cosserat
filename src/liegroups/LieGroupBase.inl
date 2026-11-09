@@ -179,7 +179,9 @@ namespace sofa::component::cosserat::liegroups {
 	 * @brief Computes the Baker-Campbell-Hausdorff (BCH) formula for Lie algebra
 	 * elements. The BCH formula provides a way to express the logarithm of the
 	 * product of exponentials of two Lie algebra elements. This implementation
-	 * supports up to fifth-order approximation and includes a convergence check.
+	 * supports up to fifth-order approximation. The result is a truncated series: it is
+	 * always defined, accurate for small inputs (error ~ |.|^(order+1)) and degrading for large ones,
+	 * exactly like SO3::BCH (no exception).
 	 * @tparam Derived The derived class implementing the specific Lie group.
 	 * @tparam _Scalar The scalar type used for computations.
 	 * @tparam _Dim The dimension of the group representation.
@@ -190,8 +192,6 @@ namespace sofa::component::cosserat::liegroups {
 	 * @param order The order of approximation to use (1 to 5). Higher orders
 	 * provide more accuracy but are computationally more expensive.
 	 * @return The tangent vector approximating log(exp(v)*exp(w)).
-	 * @throws NumericalInstabilityException if the inputs are too large for the
-	 * series to converge reliably.
 	 */
 	template<typename Derived, FloatingPoint _Scalar, int _Dim, int _AlgebraDim, int _ActionDim>
 		requires(_Dim > 0 && _AlgebraDim > 0 && _ActionDim > 0)
@@ -201,15 +201,6 @@ namespace sofa::component::cosserat::liegroups {
 
 		// Clamp order to reasonable range
 		order = std::max(1, std::min(5, order));
-
-		// Check convergence criterion
-		const Scalar v_norm = v.norm();
-		const Scalar w_norm = w.norm();
-		const Scalar max_norm = std::max(v_norm, w_norm);
-
-		if (max_norm > M_PI / Scalar(2)) {
-			throw NumericalInstabilityException("BCH series may not converge for large inputs");
-		}
 
 		// First-order approximation
 		TangentVector result = v + w;
