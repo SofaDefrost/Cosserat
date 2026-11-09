@@ -1,6 +1,6 @@
 // Checks that the pieces of src/liegroups that are meant to follow the Cosserat strain layout
 //     Xi = [phi (torsion, bending_y, bending_z) ; rho (elongation, shear_y, shear_z)]
-// really do so: exp/log/adjoint/expCosserat/Twist/Wrench/body Jacobian, and SE3::ad, computeBCH and
+// really do so: exp/log/adjoint/expCosserat/Twist/Wrench/body Jacobian, and SE3::ad, bchSecondOrder and
 // parallelTransport and the action Jacobians actionJacobians/actionJacobianGroup (all fixed from the old
 // [rho ; phi] layout). computeTangent and dlog are deliberately not covered: they still return a different
 // layout / object (see the audit notes).
@@ -112,7 +112,7 @@ TEST(ComponentOrderTest, AdjointConjugationAndDerivative) {
 
 TEST(ComponentOrderTest, CoAdjointAndWrenchAreDualToTwist) {
     const SE3d g = SE3d::computeExp(rnd6(0.8));
-    EXPECT_LT((g.computeCoAdjoint() - g.computeAdjoint().inverse().transpose()).norm(), 1e-12);
+    EXPECT_LT((g.coAdjoint() - g.computeAdjoint().inverse().transpose()).norm(), 1e-12);
     const V6 xa = rnd6(1), wb = rnd6(1); // Wrench = [torque ; force] pairs with Twist = [phi ; rho]
     const Twistd xi_a(xa), xi_b = xi_a.transformBy(g.computeAdjoint());
     const Wrenchd w_b(wb), w_a = w_b.transformBy(g.computeAdjoint());
@@ -235,7 +235,7 @@ TEST(ComponentOrderTest, BchIsSecondOrderForPhiRhoLayout) {
     for (double eps : {0.2, 0.1, 0.05, 0.025}) {
         const V6 a = eps * a0 / a0.norm(), b = eps * b0 / b0.norm();
         const V6 ref = reference(a, b);
-        const double err = (SE3d::computeBCH(a, b) - ref).norm();
+        const double err = (SE3d::bchSecondOrder(a, b) - ref).norm();
         // Second-order BCH: error O(eps^3), much smaller than the O(eps^2) error of a + b alone.
         EXPECT_LT(err, 0.5 * eps * eps * eps) << "eps=" << eps;
         EXPECT_LT(err, 0.1 * (a + b - ref).norm()) << "eps=" << eps;
@@ -244,7 +244,7 @@ TEST(ComponentOrderTest, BchIsSecondOrderForPhiRhoLayout) {
     }
     // Exact second-order term, component by component: [phi_a x phi_b ; phi_a x rho_b - phi_b x rho_a] / 2
     const V6 a = rnd6(1e-3), b = rnd6(1e-3);
-    const V6 second = SE3d::computeBCH(a, b) - a - b;
+    const V6 second = SE3d::bchSecondOrder(a, b) - a - b;
     EXPECT_LT((second.head<3>() - 0.5 * a.head<3>().cross(b.head<3>())).norm(), 1e-15);
     EXPECT_LT((second.tail<3>() - 0.5 * (a.head<3>().cross(b.tail<3>()) - b.head<3>().cross(a.tail<3>()))).norm(), 1e-15);
 }

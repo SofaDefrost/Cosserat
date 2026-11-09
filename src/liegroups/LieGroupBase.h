@@ -71,6 +71,24 @@ namespace sofa::component::cosserat::liegroups {
 	 * satisfy. It uses the Curiously Recurring Template Pattern (CRTP) to allow
 	 * static polymorphism, providing better performance than virtual functions.
 	 *
+	 * Naming convention (do not break it, it prevents infinite recursion):
+	 *  - the PUBLIC API has no prefix and is defined here, once, for every group:
+	 *    exp, log, inverse, compose / operator*, adjoint, act, isApprox, Identity, hat, vee, ad, BCH,
+	 *    leftJacobian / rightJacobian (and inverses), dexp, dlog, plus / minus ...
+	 *  - each group provides the matching CUSTOMIZATION POINT with the prefix `compute`:
+	 *    computeExp, computeLog, computeInverse, computeCompose, computeAdjoint, computeAction,
+	 *    computeIsApprox, computeIdentity, computeHat, computeVee, computeAd, computeRandom, computeIsValid,
+	 *    computeNormalize (and optionally computeLeftJacobian / computeRightJacobian / their inverses; when absent,
+	 *    the Jacobians fall back to the series sum ad^k/(k+1)!). print() and getTypeName() are the only unprefixed hooks.
+	 *    A hook named like the public function would make Derived::exp resolve back to the base when a group forgets
+	 *    it, i.e. recurse forever (this is how SO3::computeAd -> ad -> computeAd looped).
+	 *  - callers (plugin, tests of the maths) should use the public API; the hooks are public only for backward
+	 *    compatibility (cosserat_shell still calls SO3::computeHat, SO3::computeRightJacobian and SE3::computeAdjoint,
+	 *    equivalents: hat, rightJacobian, adjoint()). They can become protected (with `friend LieGroupBase`) once
+	 *    those callers are migrated.
+	 *  - groups must not redeclare a public wrapper (exp, log, inverse...): it would hide the base one for nothing.
+	 *    Specialised distance/interpolate (SO3, SE3, SE2, SGal3) are the legitimate exceptions.
+	 *
 	 * @tparam Derived The derived class implementing the specific Lie group
 	 * @tparam _Scalar The scalar type used for computations (must be a
 	 * floating-point type)
@@ -144,7 +162,7 @@ namespace sofa::component::cosserat::liegroups {
 		template<typename T>
 			requires std::same_as<std::decay_t<T>, Derived>
 		constexpr Derived &operator*=(T &&other) noexcept {
-			derived() = derived().compose(std::forward<T>(other));
+			derived() = derived().computeCompose(std::forward<T>(other));
 			return derived();
 		}
 
@@ -154,7 +172,7 @@ namespace sofa::component::cosserat::liegroups {
 		 * @return The composition this * other
 		 */
 		[[nodiscard]] constexpr Derived operator*(const Derived &other) const noexcept {
-			return derived().compose(other);
+			return derived().computeCompose(other);
 		}
 
 		/**
@@ -162,6 +180,9 @@ namespace sofa::component::cosserat::liegroups {
 		 * @return The inverse element such that this * inverse() = identity()
 		 * @throws InverseFailureException if the element is singular (not invertible)
 		 */
+		/// Group product this * other (same as operator*). Hook: Derived::computeCompose.
+		[[nodiscard]] Derived compose(const Derived &other) const { return derived().computeCompose(other); }
+
 		[[nodiscard]] Derived inverse() const { return derived().computeInverse(); }
 
 		/**

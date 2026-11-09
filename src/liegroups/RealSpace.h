@@ -88,7 +88,7 @@ namespace sofa::component::cosserat::liegroups {
 		 * @param other The other RealSpace element to compose with.
 		 * @return The composed RealSpace element.
 		 */
-		RealSpace compose(const RealSpace &other) const { return RealSpace(m_data + other.m_data); }
+		RealSpace computeCompose(const RealSpace &other) const { return RealSpace(m_data + other.m_data); }
 
 		/**
 		 * @brief Computes the exponential map from the Lie algebra to the RealSpace

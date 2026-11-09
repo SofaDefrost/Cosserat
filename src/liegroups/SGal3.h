@@ -151,7 +151,7 @@ public:
     static SGal3<Scalar> computeIdentity() noexcept { return SGal3(); }
 
     /// (R1,v1,p1,t1)(R2,v2,p2,t2) = (R1 R2, R1 v2 + v1, R1 p2 + p1 + v1 t2, t1 + t2).
-    SGal3<Scalar> compose(const SGal3 &other) const {
+    SGal3<Scalar> computeCompose(const SGal3 &other) const {
         const Matrix3 R = m_pose.rotation().matrix();
         return SGal3(SE3<Scalar>(m_pose.rotation() * other.m_pose.rotation(),
                                  R * other.m_pose.translation() + m_pose.translation() + m_velocity * other.m_time),
@@ -290,8 +290,8 @@ public:
      * @return The interpolated SGal3 element.
      */
     SGal3<Scalar> computeInterpolate(const SGal3<Scalar> &other, const Scalar &t) const {
-        const TangentVector delta = (this->computeInverse().compose(other)).computeLog();
-        return this->compose(SGal3<Scalar>::computeExp(t * delta));
+        const TangentVector delta = (this->computeInverse().computeCompose(other)).computeLog();
+        return this->computeCompose(SGal3<Scalar>::computeExp(t * delta));
     }
 
 private:

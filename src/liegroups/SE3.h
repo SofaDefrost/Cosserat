@@ -25,7 +25,7 @@ namespace sofa::component::cosserat::liegroups {
 	 * @tparam _Scalar The scalar type (must be a floating-point type)
 	 */
 	namespace detail {
-	/// Coefficients of the Q block of the SE(3) left Jacobian, see SE3::computeQ.
+	/// Coefficients of the Q block of the SE(3) left Jacobian, see SE3::jacobianQ.
 	template<typename Scalar>
 	inline void se3QCoefficients(const Scalar t, Scalar &c1, Scalar &c2, Scalar &c3) noexcept {
 		const Scalar t2 = t * t;
@@ -86,7 +86,7 @@ namespace sofa::component::cosserat::liegroups {
 			return SE3(inv_rot, -(inv_rot.act(m_translation)));
 		}
 
-		SE3 compose(const SE3 &other) const {
+		SE3 computeCompose(const SE3 &other) const {
 			return SE3(m_rotation * other.m_rotation, m_rotation.act(other.m_translation) + m_translation);
 		}
 
@@ -246,7 +246,7 @@ namespace sofa::component::cosserat::liegroups {
 		}
 
 
-		AdjointMatrix computeCoAdjoint() const {
+		AdjointMatrix coAdjoint() const {
 			AdjointMatrix coAd = AdjointMatrix::Zero();
 			const Matrix3 R = m_rotation.matrix();
 			coAd.template block<3, 3>(0, 0) = R;
@@ -262,16 +262,6 @@ namespace sofa::component::cosserat::liegroups {
 			tangent.template head<3>() = m_rotation.inverse().act(point - m_translation);
 			tangent.template tail<3>() = m_rotation.inverse().log();
 			return tangent;
-		}
-
-		/**
-		 * @brief Logarithmic map — thin wrapper around computeLog() for CRTP callers.
-		 *
-		 * Returns [φ(head<3>), ρ(tail<3>)] = [angular, V⁻¹·t].
-		 * Consistent with computeExp().
-		 */
-		TangentVector log() const {
-			return computeLog();
 		}
 
 		/**
@@ -373,9 +363,6 @@ namespace sofa::component::cosserat::liegroups {
 		 * instead, so it is simply removed. Note SO3::dlog() uses the left convention.
 		 */
 		using Base::dlog;
-
-		AdjointMatrix adjoint() const noexcept { return computeAdjoint(); }
-
 
 		/**
 		 * @brief Approximate equality. The translations are compared with an absolute tolerance
@@ -559,7 +546,7 @@ namespace sofa::component::cosserat::liegroups {
 	}
 
 	/// SE(3) coupling block Q(ρ,φ) — the lower-left 3×3 block of Jl(ξ).
-	static Matrix3 computeQ(const Vector3 &rho, const Vector3 &phi) {
+	static Matrix3 jacobianQ(const Vector3 &rho, const Vector3 &phi) {
 		const Scalar theta   = phi.norm();
 		const Matrix3 N      = SO3Type::computeHat(rho);
 		const Matrix3 Phi    = SO3Type::computeHat(phi);
@@ -586,7 +573,7 @@ namespace sofa::component::cosserat::liegroups {
 		const Vector3 phi = xi.template head<3>();
 		const Vector3 rho = xi.template tail<3>();
 		const Matrix3 Jl  = SO3Type::dexp(phi); // SO3 left Jacobian
-		const Matrix3 Q   = computeQ(rho, phi);
+		const Matrix3 Q   = jacobianQ(rho, phi);
 		AdjointMatrix M = AdjointMatrix::Zero();
 		M.template block<3, 3>(0, 0) = Jl;
 		M.template block<3, 3>(3, 3) = Jl;
@@ -599,7 +586,7 @@ namespace sofa::component::cosserat::liegroups {
 		const Vector3 phi = xi.template head<3>();
 		const Vector3 rho = xi.template tail<3>();
 		const Matrix3 Ji  = so3LeftJacobianInverse(phi);
-		const Matrix3 Q   = computeQ(rho, phi);
+		const Matrix3 Q   = jacobianQ(rho, phi);
 		AdjointMatrix M = AdjointMatrix::Zero();
 		M.template block<3, 3>(0, 0) = Ji;
 		M.template block<3, 3>(3, 3) = Ji;
@@ -701,7 +688,7 @@ namespace sofa::component::cosserat::liegroups {
 		 * @param y Second tangent vector.
 		 * @return Approximate tangent vector Z.
 		 */
-		static TangentVector computeBCH(const TangentVector &x, const TangentVector &y) {
+		static TangentVector bchSecondOrder(const TangentVector &x, const TangentVector &y) {
 			// Second order: x + y + 1/2 [x, y], bracket in the [phi ; rho] layout (same as computeExp/computeLog).
 			// Higher orders (1/12 ([x,[x,y]] + [y,[y,x]]), ...) can be added if needed.
 			return x + y + Scalar(0.5) * lieBracket(x, y);

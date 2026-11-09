@@ -419,7 +419,7 @@ namespace Cosserat::mapping {
 			// Compute frame velocity: η_frame = Ad_{g_frame^{-1}} * (η_node + T_frame * ξ̇_frame)
 			// (we explicitly invert g_frame here to get the adjoint of g^{-1}, not Ad^T)
 			const auto g_inv = frame.getInverseTransformation();
-			const AdjointMatrix Ad_gm1 = g_inv.computeAdjoint();
+			const AdjointMatrix Ad_gm1 = g_inv.adjoint();
 
 			TangentVector eta_frame =
 					Ad_gm1 * (node_velocities[m_frame_to_section_indices[i]-1] + tang_adj * frame_strain_vel);

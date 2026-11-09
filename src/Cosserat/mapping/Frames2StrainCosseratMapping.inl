@@ -188,8 +188,8 @@ namespace Cosserat::mapping {
 
 			if (left_frame_idx >= 0 && right_frame_idx >= 0) {
 				double dx = section_end - section_start;
-				SE3Types g_rel = g_frames[left_frame_idx].computeInverse() * g_frames[right_frame_idx];
-				TangentVector xi = g_rel.computeLog() / dx;
+				SE3Types g_rel = g_frames[left_frame_idx].inverse() * g_frames[right_frame_idx];
+				TangentVector xi = g_rel.log() / dx;
 				for (int j = 0; j < 6; ++j)
 					strains[i][j] = xi[j];
 			} else {
@@ -247,11 +247,11 @@ namespace Cosserat::mapping {
 
 			TangentVector Omega_i  = dx * strain_i;
 			// dexp_inv = Jr⁻¹(Ω) = Jl⁻¹(-Ω): the right-trivialized inverse Jacobian.
-			AdjointMatrix dexp_inv = SE3Types::computeRightJacobianInverse(Omega_i);
+			AdjointMatrix dexp_inv = SE3Types::rightJacobianInverse(Omega_i);
 			AdjointMatrix J2       = (1. / dx) * dexp_inv;
 
-			SE3Types g_inv       = SE3Types::computeExp(-Omega_i); // = exp(-Ω)
-			AdjointMatrix Adg_inv = g_inv.computeAdjoint();         // = Ad_{exp(-Ω)}
+			SE3Types g_inv       = SE3Types::exp(-Omega_i); // = exp(-Ω)
+			AdjointMatrix Adg_inv = g_inv.adjoint();         // = Ad_{exp(-Ω)}
 			AdjointMatrix J1     = -(1. / dx) * dexp_inv * Adg_inv;
 
 			// Project frame velocities (global → local body twist).
@@ -325,11 +325,11 @@ namespace Cosserat::mapping {
 
 			TangentVector Omega_i  = dx * strain_i;
 			// dexp_inv = Jr⁻¹(Ω) = Jl⁻¹(-Ω): the right-trivialized inverse Jacobian.
-			AdjointMatrix dexp_inv = SE3Types::computeRightJacobianInverse(Omega_i);
+			AdjointMatrix dexp_inv = SE3Types::rightJacobianInverse(Omega_i);
 			AdjointMatrix J2       = (1. / dx) * dexp_inv;
 
-			SE3Types g_inv        = SE3Types::computeExp(-Omega_i);
-			AdjointMatrix Adg_inv = g_inv.computeAdjoint();
+			SE3Types g_inv        = SE3Types::exp(-Omega_i);
+			AdjointMatrix Adg_inv = g_inv.adjoint();
 			AdjointMatrix J1      = -(1. / dx) * dexp_inv * Adg_inv;
 
 			// NB: the dx factor is already baked into J1/J2 (via -1/dx and 1/dx)
@@ -409,11 +409,11 @@ namespace Cosserat::mapping {
 				double dx = section.getLength();
 				TangentVector Omega    = dx * strain;
 				// dexp_inv = Jr⁻¹(Ω) = Jl⁻¹(-Ω): the right-trivialized inverse Jacobian.
-				AdjointMatrix dexp_inv = SE3Types::computeRightJacobianInverse(Omega);
+				AdjointMatrix dexp_inv = SE3Types::rightJacobianInverse(Omega);
 				AdjointMatrix J2       = (1. / dx) * dexp_inv;
 
-				SE3Types g_inv        = SE3Types::computeExp(-Omega);
-				AdjointMatrix Adg_inv = g_inv.computeAdjoint();
+				SE3Types g_inv        = SE3Types::exp(-Omega);
+				AdjointMatrix Adg_inv = g_inv.adjoint();
 				AdjointMatrix J1      = -(1. / dx) * dexp_inv * Adg_inv;
 
 				TangentVector fa_local = J1.transpose() * constraintValue;

@@ -89,6 +89,11 @@ Passé en tolérance absolue pondérée par max(1, |t|).
 `SO3::computeLog` (cas qw<0, branche sous epsilon), `Twist.h`, `Wrench.h`, `SO2.h`.
 
 ## Utilisateurs dans `src/Cosserat` de ce qui change de comportement
+
+(Mise à jour : le plugin appelle maintenant l'API publique — `exp`, `inverse`, `adjoint`, `log`, `act`, `Identity`,
+`rightJacobianInverse`, `coAdjoint` — dans `BeamStateEstimator.h`, `BeamShapeInterpolation.h`, `CosseratBeamGeometry.h/.inl`,
+`Frames2StrainCosseratMapping.inl`, `Strain2FramesCosseratMapping.inl`, `CosseratILQRController.inl` et
+`CosseratBeamGeometryEngine.cpp`.)
 - `SE3::expCosserat` : `Strain2FramesCosseratMapping.inl:279,289`. Valeurs inchangées à ~1e-15 pour une courbure normale.
 - `SE3::computeRightJacobianInverse` : `Frames2StrainCosseratMapping.inl`, trois sites. Plus précis, même convention.
 - `SE3::computeIsApprox` : `CosseratBeamGeometry.h:207`. Tolérance absolue pour la translation (avant : relative).
@@ -132,15 +137,29 @@ Chaque fichier a été compilé en standalone (gtest, stub de `sofa/testing/Base
   `NumericalInstabilityException` dans `BCH` dès que la norme dépasse π/2 ; `SE3::computeTangent` a une sémantique
   obscure ; `SE3::projector()` duplique la co-adjointe ; `expCosseratSmall`/`expCosseratGeneral`/`buildXiHat` de
   `SE3.h` sont inutilisés mais gardés (cités par `STRAIN_CONVENTION.md`) ; `Wrench::transformBy` utilise Adᵀ (pull-back).
-- Les propositions de la section « Questions de conception » (hooks `protected`, suppression de `SO3::expCosserat*` et
-  de `Types::SE3*`, déplacement des fichiers Cosserat hors de `liegroups`) ne sont pas appliquées : elles changent l'API
-  publique ou l'arborescence, donc ta décision.
+- Parmi les propositions de « Questions de conception », ne sont pas appliquées : hooks `protected` (casserait `cosserat_shell`),
+  suppression de `SO3::expCosserat*`, déplacement des fichiers Cosserat hors de `liegroups` (§3 et §4, décision : ils servent
+  à `cosserat_shell` et à la version « painless »).
 
 ## Questions de conception
 
-Aucune des recommandations ci-dessous n'est appliquée dans le code : ce sont des propositions, avec leur coût.
-Les comptages d'usage viennent de `grep` dans `src/Cosserat` (hors `liegroups/`) : indicatifs, surtout pour les mots
-courants (`matrix`, `log`, `distance`).
+Statut après la demande de suivi (commits `32ee2c9`, `04a9089` et le commit « hooks » qui les suit) :
+- **§1 appliqué, sauf la visibilité des hooks.** `compose` est devenu le hook `computeCompose` (la base expose `compose`
+  public), les wrappers dupliqués de `SO3`, `SE3` et `Bundle` sont supprimés, `computeCoAdjoint` → `coAdjoint`, `computeQ` →
+  `jacobianQ`, `computeBCH` → `bchSecondOrder`, et le plugin passe par l'API publique (`exp`, `inverse`, `adjoint`, `log`,
+  `act`, `Identity`, `rightJacobianInverse`, `coAdjoint`). Les hooks restent **publics** : `cosserat_shell` appelle encore
+  `SO3::computeHat`, `SO3::computeRightJacobian` et `SE3::computeAdjoint` (équivalents publics : `hat`, `rightJacobian`,
+  `adjoint()`), et ce dépôt ne doit pas être modifié d'ici. On passera les hooks en `protected` + `friend` dès qu'il sera migré.
+  La convention est écrite dans le commentaire de `LieGroupBase`.
+- **§2 appliqué** : doublons matriciels de `Types.h` supprimés. `static` conservé.
+- **§3 et §4 non appliqués, par décision** : ces fichiers servent au projet `cosserat_shell` ou à la version « painless »
+  de Cosserat en cours d'implémentation.
+- **§6 appliqué** : un seul `hat` par groupe (`SO3::buildAntisymmetric`, `dualMatrix`, `Types::skew3/unskew3` supprimés).
+  `Twist::hat()` reste (méthode d'un objet `Twist`).
+- Reste en l'état : `SE3::computeTangent` (non-hook nommé `compute*`, sémantique obscure, sans appelant) ; `print` et
+  `getTypeName` (hooks sans préfixe).
+
+Les propositions sont décrites ci-dessous telles qu'elles ont été faites.
 
 ### 1. Pourquoi `computeXxx` et `xxx` coexistent-ils ?
 
