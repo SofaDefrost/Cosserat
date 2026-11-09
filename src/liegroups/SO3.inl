@@ -78,7 +78,28 @@ namespace sofa::component::cosserat::liegroups {
 
 			if (order >= 3) {
 				// Third-order term: 1/12 ([v,[v,w]] + [w,[w,v]]) = 1/12 (v x vw - w x vw)
-				result += (v.cross(vw) - w.cross(vw)) * Scalar(1.0 / 12.0);
+				const TangentVector vvw = v.cross(vw); // [v,[v,w]]
+				result += (vvw - w.cross(vw)) * Scalar(1.0 / 12.0);
+
+				if (order >= 4) {
+					// Fourth-order term: -1/24 [w,[v,[v,w]]]
+					result -= w.cross(vvw) * Scalar(1.0 / 24.0);
+
+					if (order >= 5) {
+						// Fifth-order terms (Dynkin), same as LieGroupBase::BCH; [a,b] = a x b on so(3):
+						//   -1/720 ([y,[y,[y,[y,x]]]] + [x,[x,[x,[x,y]]]])
+						//   +1/360 ([x,[y,[y,[y,x]]]] + [y,[x,[x,[x,y]]]])
+						//   +1/120 ([y,[x,[y,[x,y]]]] + [x,[y,[x,[y,x]]]])
+						const TangentVector xy = vw, yx = -vw;
+						const TangentVector xxy = v.cross(xy), yyx = w.cross(yx);
+						const TangentVector xxxy = v.cross(xxy), yyyx = w.cross(yyx);
+						const TangentVector yxy = w.cross(xy), xyx = v.cross(yx);
+						const TangentVector t720 = w.cross(yyyx) + v.cross(xxxy);
+						const TangentVector t360 = v.cross(yyyx) + w.cross(xxxy);
+						const TangentVector t120 = w.cross(v.cross(yxy)) + v.cross(w.cross(xyx));
+						result += t360 * Scalar(1.0 / 360.0) + t120 * Scalar(1.0 / 120.0) - t720 * Scalar(1.0 / 720.0);
+					}
+				}
 			}
 		}
 

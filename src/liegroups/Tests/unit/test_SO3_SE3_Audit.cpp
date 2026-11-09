@@ -122,3 +122,31 @@ TEST(SO3SE3Audit, SO3FromImperfectMatrixIsNormalised) {
 	// a uniformly scaled rotation is still the same rotation
 	EXPECT_LT((SO3d(Eigen::Matrix3d((1.0 + 1e-6) * R)).matrix() - R).cwiseAbs().maxCoeff(), 1e-5);
 }
+
+namespace {
+double bchError(int order, double h) {
+	const Eigen::Vector3d v = h * Eigen::Vector3d(0.9, -0.6, 1.2), w = h * Eigen::Vector3d(-0.4, 1.1, 0.7);
+	const Eigen::Vector3d exact = (SO3d::exp(v) * SO3d::exp(w)).log();
+	return (SO3d::BCH(v, w, order) - exact).norm();
+}
+} // namespace
+
+// SO3::BCH documented orders 1 to 5 but stopped at 3: orders 4 and 5 returned the order 3 value
+// (error 1.7e-4 for |v|, |w| ~ 0.3 whatever the order requested).
+TEST(SO3SE3Audit, SO3BCHOrdersFourAndFiveAreImplemented) {
+	const double h = 0.25;
+	double previous = bchError(1, h);
+	for (int order = 2; order <= 5; ++order) {
+		const double e = bchError(order, h);
+		EXPECT_LT(e, previous / (order >= 4 ? 1.5 : 3)) << "order " << order;
+		previous = e;
+	}
+	// same series as the generic matrix-commutator implementation of LieGroupBase
+	const Eigen::Vector3d v(0.21, -0.13, 0.3), w(-0.17, 0.26, 0.11);
+	for (int order = 1; order <= 5; ++order)
+		EXPECT_LT((SO3d::BCH(v, w, order) - SO3d::Base::BCH(v, w, order)).norm(), 1e-15) << "order " << order;
+	EXPECT_LT(bchError(5, h), 1e-5);
+	// the error of order k scales like h^(k+1): halving h divides it by (about) 2^(k+1)
+	for (int order = 3; order <= 5; ++order)
+		EXPECT_LT(bchError(order, h / 2), bchError(order, h) / std::pow(2.0, order + 1) * 1.3) << "order " << order;
+}
