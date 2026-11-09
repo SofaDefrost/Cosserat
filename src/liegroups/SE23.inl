@@ -91,14 +91,6 @@ namespace sofa::component::cosserat::liegroups {
 		return from * SE23<_Scalar>().exp(t * delta);
 	}
 
-	/**
-	 * @brief Dual vector operator for se_2(3): maps xi = [v ; w ; a] to the 5x5 matrix
-	 * [[w^, v, a], [0, 0, 0], [0, 0, 0]] (the top-left block of SE23::computeHat).
-	 */
-	template<typename _Scalar>
-	Eigen::Matrix<_Scalar, 5, 5> dualMatrix(const typename SE23<_Scalar>::TangentVector &xi) {
-		return SE23<_Scalar>::computeHat(xi).template block<5, 5>(0, 0);
-	}
 
 	// BCH: the generic LieGroupBase::BCH(v, w, order) now works for SE23 (hat/vee are implemented).
 	// The two-argument SE23::BCH that used to be defined here was never declared in the class.

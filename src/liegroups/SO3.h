@@ -366,7 +366,7 @@ namespace sofa::component::cosserat::liegroups {
 		// (exp(δ) * R) * p ≈ R*p + δ × (R*p)
 		// So: ∂(R*p)/∂δ = -[R*p]× (negative skew-symmetric)
 		Vector Rp = act(point);
-		Matrix J_wrt_rotation = -buildAntisymmetric(Rp);
+		Matrix J_wrt_rotation = -computeHat(Rp);
 		
 		// ∂(R*p)/∂p = R
 		Matrix J_wrt_point = matrix();
@@ -382,7 +382,7 @@ namespace sofa::component::cosserat::liegroups {
 	 * @return Jacobian ∂(R*p)/∂R
 	 */
 	Matrix actionJacobianRotation(const Vector &point) const noexcept {
-		return -buildAntisymmetric(act(point));
+		return -computeHat(act(point));
 	}
 
 	/**
@@ -412,25 +412,6 @@ namespace sofa::component::cosserat::liegroups {
 		 * @return The Eigen AngleAxis representation.
 		 */
 		Eigen::AngleAxis<Scalar> angleAxis() const { return Eigen::AngleAxis<Scalar>(m_quat); }
-
-		/**
-		 * @brief Builds the antisymmetric matrix [v]× from a 3D vector.
-		 * [v]× = [ 0   -v.z   v.y ]
-		 *        [ v.z   0   -v.x ]
-		 *        [-v.y  v.x    0  ]
-		 * @param v Input 3D vector.
-		 * @return 3x3 antisymmetric matrix.
-		 */
-		static Matrix buildAntisymmetric(const Vector &v) noexcept {
-			Matrix result = Matrix::Zero();
-			result(0, 1) = -v.z();
-			result(0, 2) = v.y();
-			result(1, 0) = v.z();
-			result(1, 2) = -v.x();
-			result(2, 0) = -v.y();
-			result(2, 1) = v.x();
-			return result;
-		}
 
 		/**
 		 * @brief Convert vector to skew-symmetric matrix (hat operator).
@@ -625,7 +606,7 @@ namespace sofa::component::cosserat::liegroups {
 			const Scalar beta = (s_norm - sin_s_norm) / strain_norm3;
 
 			// Build the antisymmetric matrix [strain]×
-			const Matrix strain_cross = buildAntisymmetric(strain);
+			const Matrix strain_cross = computeHat(strain);
 
 			// Compute powers of the antisymmetric matrix
 			const Matrix strain_cross2 = strain_cross * strain_cross;

@@ -134,7 +134,7 @@ TEST_F(DifferentiationTest, SO3_ActionJacobian) {
     
     // Expected: [omega]× * R * p (cross product form)
     Vector3 Rp = R.act(p);
-    Eigen::Matrix<Scalar, 3, 3> expected = -SO3d::buildAntisymmetric(Rp);
+    Eigen::Matrix<Scalar, 3, 3> expected = -SO3d::hat(Rp);
     
     bool passed = TestUtils::compareMatrices<3, 3>(
         expected, numerical_jacobian, tolerance * 10, false  // Slightly relaxed tolerance

@@ -74,14 +74,6 @@ namespace sofa::component::cosserat::liegroups {
 		return result;
 	}
 
-	/**
-	 * @brief Dual vector operator for sgal(3): maps xi = [rho ; w ; beta ; tau] to the 5x5 matrix
-	 * [[w^, beta, rho], [0, 0, tau], [0, 0, 0]] (top-left block of SGal3::computeHat).
-	 */
-	template<typename _Scalar>
-	Eigen::Matrix<_Scalar, 5, 5> dualMatrix(const typename SGal3<_Scalar>::TangentVector &xi) {
-		return SGal3<_Scalar>::computeHat(xi).template block<5, 5>(0, 0);
-	}
 
 	// BCH: the generic LieGroupBase::BCH(v, w, order) is used; SGal3::BCH(X, Y) was declared and only
 	// defined here, in a file nobody included, and with brackets that ignored the time terms.
