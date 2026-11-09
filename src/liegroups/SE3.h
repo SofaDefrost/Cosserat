@@ -189,51 +189,6 @@ namespace sofa::component::cosserat::liegroups {
 			return result;
 		}
 
-		// static SE3 computeExp(const TangentVector &xi) {
-		// 	const Vector3 rho = xi.template tail<3>();
-		// 	const Vector3 phi = xi.template head<3>();
-
-		// 	const Scalar angle = phi.norm();
-		// 	const SO3Type R = SO3Type::exp(phi);
-		// 	Matrix3 V;
-
-		// 	if (angle < Types<Scalar>::epsilon()) {
-		// 		V = Matrix3::Identity() + Scalar(0.5) * SO3Type::computeHat(phi);
-		// 	} else {
-		// 		const Vector3 axis = phi / angle;
-		// 		const Matrix3 K = SO3Type::computeHat(axis);
-		// 		const Scalar sin_angle = std::sin(angle);
-		// 		const Scalar cos_angle = std::cos(angle);
-		// 		V = Matrix3::Identity() + (Scalar(1) - cos_angle) / angle * K +
-		// 			(angle - sin_angle) / (angle * angle) * K * K;
-		// 	}
-		// 	return SE3(R, V * rho);
-		// }
-
-		// TangentVector computeLog() const {
-		// 	const Vector3 phi = m_rotation.log();
-		// 	const Scalar angle = phi.norm();
-		// 	Matrix3 V_inv;
-
-		// 	if (angle < Types<Scalar>::epsilon()) {
-		// 		V_inv = Matrix3::Identity() - Scalar(0.5) * SO3Type::computeHat(phi);
-		// 	} else {
-		// 		// const Vector3 axis = phi / angle; //@appa: correction here (error if division with angle)
-		// 		const Matrix3 phiHat = SO3Type::computeHat(phi);
-		// 		const Scalar sin_angle = std::sin(angle);
-		// 		const Scalar cos_angle = std::cos(angle);
-		// 		V_inv = Matrix3::Identity() - Scalar(0.5) * phiHat +
-		// 				((Scalar(2) * sin_angle - angle * (Scalar(1) + cos_angle)) /
-		// 						(Scalar(2) * angle * angle * sin_angle)) * phiHat * phiHat;
-		// 	}
-
-		// 	const Vector3 rho = V_inv * m_translation;
-		// 	TangentVector result;
-		// 	result.template head<3>() = phi;
-		// 	result.template tail<3>() = rho;
-		// 	return result;
-		// }
-
 		AdjointMatrix computeAdjoint() const {
 			AdjointMatrix Ad = AdjointMatrix::Zero();
 			const Matrix3 R = m_rotation.matrix();
@@ -264,12 +219,6 @@ namespace sofa::component::cosserat::liegroups {
 		}
 
 		/**
-		 * @brief Lie bracket [v, w] of se(3) in the [phi ; rho] layout (angular first).
-		 *
-		 * With v = [phi_v ; rho_v], w = [phi_w ; rho_w]:
-		 *   [v, w] = [ phi_v x phi_w ;  phi_v x rho_w - phi_w x rho_v ] = vee(hat(v) hat(w) - hat(w) hat(v)).
-		 */
-		/**
 		 * @brief hat operator of se(3): [phi ; rho] -> [[phi]x rho ; 0 0] (CRTP hook of LieGroupBase::hat,
 		 * used by the generic BCH(), matrixLog() and ad()).
 		 */
@@ -288,6 +237,12 @@ namespace sofa::component::cosserat::liegroups {
 			return xi;
 		}
 
+		/**
+		 * @brief Lie bracket [v, w] of se(3) in the [phi ; rho] layout (angular first).
+		 *
+		 * With v = [phi_v ; rho_v], w = [phi_w ; rho_w]:
+		 *   [v, w] = [ phi_v x phi_w ;  phi_v x rho_w - phi_w x rho_v ] = vee(hat(v) hat(w) - hat(w) hat(v)).
+		 */
 		static TangentVector lieBracket(const TangentVector &v, const TangentVector &w) {
 			const Vector3 phi_v = v.template head<3>();
 			const Vector3 rho_v = v.template tail<3>();
@@ -798,28 +753,8 @@ namespace sofa::component::cosserat::liegroups {
 			xi_hat(2, 0) = -phi.y();
 			xi_hat(2, 1) = phi.x();
 
-			// Top-right 3x1: translation part
-			// xi_hat(0, 3) = 1.0 + rho.x(); // Wait, why 1.0 + rho.x()? This looks wrong in the original code.
-			// The original code had: xi_hat(0, 3) = 1.0 + rho.x();
-			// This seems like a bug in the previous implementation or a specific convention I'm not aware of.
-			// Standard se(3) hat map puts rho in the translation part.
-			// If I change it, I might break existing logic if it relied on this.
-			// However, looking at expCosseratSmall: T = I + s * xi_hat.
-			// If xi_hat(0,3) has 1.0, then T(0,3) = s * (1 + rho.x).
-			// But T(0,3) should be s * rho.x (for small s).
-			// Wait, T = I + ...
-			// I(0,3) is 0.
-			// So T(0,3) = s * (1 + rho.x).
-			// This implies a constant velocity component of 1 in X direction?
-			// Cosserat rods usually align along X.
-			// So "strain" might be deviation from [1, 0, 0] elongation?
-			// If rho is the strain, and the reference configuration has elongation 1,
-			// then the actual translation rate is 1 + rho.x.
-			// YES. In Cosserat mapping, the strain 'e' usually is (v - v_rest).
-			// If v_rest = [1, 0, 0], then v = [1+e_x, e_y, e_z].
-			// So the tangent vector representing the spatial derivative of the frame is indeed [1+rho.x, rho.y, rho.z].
-			// I will keep it as is, assuming 'rho' passed here is the strain (deviation).
-
+			// Translation part: [1 + rho_x, rho_y, rho_z]. rho is the strain, i.e. the deviation from the rest
+			// configuration whose spatial derivative is the unit stretch e_x (see STRAIN_CONVENTION.md).
 			xi_hat(0, 3) = 1 + rho.x();
 			xi_hat(1, 3) = rho.y();
 			xi_hat(2, 3) = rho.z();
