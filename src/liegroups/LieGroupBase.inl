@@ -117,7 +117,7 @@ namespace sofa::component::cosserat::liegroups {
 	template<typename Derived, FloatingPoint _Scalar, int _Dim, int _AlgebraDim, int _ActionDim>
 		requires(_Dim > 0 && _AlgebraDim > 0 && _ActionDim > 0)
 	inline Derived
-	LieGroupBase<Derived, _Scalar, _Dim, _AlgebraDim, _ActionDim>::interpolate(const Derived &other,
+        LieGroupBase<Derived, _Scalar, _Dim, _AlgebraDim, _ActionDim>::lerp(const Derived &other,
 																			   const Scalar &t) const noexcept {
 
 		// Clamp interpolation parameter
@@ -183,7 +183,7 @@ namespace sofa::component::cosserat::liegroups {
 
 			if (std::abs(sin_dist) < Types::epsilon()) {
 				// Fallback to linear interpolation
-				return interpolate(other, t_clamped);
+                                return lerp(other, t_clamped);
 			}
 
 			const Scalar w1 = std::sin(dist - theta) / sin_dist;
@@ -191,10 +191,10 @@ namespace sofa::component::cosserat::liegroups {
 
 			// This is a simplified version - actual implementation would depend on
 			// group structure
-			return interpolate(other, w2 / (w1 + w2));
+                        return lerp(other, w2 / (w1 + w2));
 
 		} catch (const std::exception &) {
-			return interpolate(other, t_clamped);
+                        return lerp(other, t_clamped);
 		}
 	}
 

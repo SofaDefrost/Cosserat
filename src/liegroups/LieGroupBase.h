@@ -284,22 +284,12 @@ namespace sofa::component::cosserat::liegroups {
 		[[nodiscard]] Scalar distance(const Derived &other) const noexcept;
 
 		/**
-		 * @brief Interpolate between two group elements
-		 * @param other Target group element
-		 * @param t Interpolation parameter between 0 and 1
-		 * @return Interpolated group element
-		 */
-		[[nodiscard]] Derived interpolate(const Derived &other, const Scalar &t) const noexcept;
-
-		/**
 		 * @brief Linear interpolation (alias for interpolate)
 		 * @param other Target group element
 		 * @param t Interpolation parameter between 0 and 1
 		 * @return Interpolated group element
 		 */
-		[[nodiscard]] Derived lerp(const Derived &other, const Scalar &t) const noexcept {
-			return interpolate(other, t);
-		}
+        [[nodiscard]] Derived lerp(const Derived &other, const Scalar &t) const noexcept;
 
 		/**
 		 * @brief Spherical linear interpolation with better numerical properties
