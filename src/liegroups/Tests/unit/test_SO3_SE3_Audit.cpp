@@ -53,3 +53,42 @@ TEST(SO3SE3Audit, IsApproxDefaultToleranceStillDiscriminates) {
 	EXPECT_FALSE(g.isApprox(dt));
 	EXPECT_TRUE(g.isApprox(g));
 }
+
+// computeRandom drew a uniform angle in [-pi, pi] about a random axis: not the Haar measure
+// (rotations cluster around the identity). For Haar, the angle has density (1 - cos t)/pi on
+// [0, pi]: mean pi/2 + 2/pi = 2.2074 (the old generator gave 1.5714) and E[trace R] = 0
+// (the old one gave 1).
+TEST(SO3SE3Audit, RandomRotationsAreHaarDistributed) {
+	std::mt19937_64 rng(2);
+	const int n = 100000;
+	double meanAngle = 0, meanTrace = 0, meanAngleSE3 = 0, meanTraceSE3 = 0;
+	for (int i = 0; i < n; ++i) {
+		const SO3d r = SO3d::computeRandom(rng);
+		meanAngle += r.distance(SO3d::Identity()); // geodesic angle in [0, pi]
+		meanTrace += r.matrix().trace();
+		const SO3d rs = SE3d::computeRandom(rng).rotation();
+		meanAngleSE3 += rs.distance(SO3d::Identity());
+		meanTraceSE3 += rs.matrix().trace();
+	}
+	const double expected = kPi / 2 + 2 / kPi;
+	EXPECT_NEAR(meanAngle / n, expected, 0.01);
+	EXPECT_NEAR(meanTrace / n, 0.0, 0.02);
+	EXPECT_NEAR(meanAngleSE3 / n, expected, 0.01);
+	EXPECT_NEAR(meanTraceSE3 / n, 0.0, 0.02);
+}
+
+// randomUnitVector normalised a vector drawn in the cube [-1, 1]^3: directions along the cube
+// diagonals are favoured. On the uniform sphere E|x| = 1/2 (cube-normalised: 0.516).
+TEST(SO3SE3Audit, RandomUnitVectorIsUniformOnTheSphere) {
+	std::mt19937_64 rng(3);
+	const int n = 400000;
+	double mx = 0, mxy = 0;
+	for (int i = 0; i < n; ++i) {
+		const Eigen::Vector3d u = Typesd::randomUnitVector<3>(rng);
+		EXPECT_NEAR(u.norm(), 1.0, 1e-14);
+		mx += std::abs(u.x());
+		mxy += u.x() * u.y();
+	}
+	EXPECT_NEAR(mx / n, 0.5, 0.002);
+	EXPECT_NEAR(mxy / n, 0.0, 0.002);
+}

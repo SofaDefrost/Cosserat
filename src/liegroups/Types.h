@@ -415,7 +415,11 @@ namespace sofa::component::cosserat::liegroups {
 		}
 
 		/**
-		 * @brief Generates a random unit vector (a vector with a norm of 1).
+		 * @brief Generates a random unit vector, uniformly distributed on the sphere S^(N-1).
+		 *
+		 * The components are independent standard normals (a rotation-invariant distribution) and the
+		 * vector is normalised. Normalising a vector drawn in the cube [-1, 1]^N instead favours the
+		 * cube diagonals (E|x| = 0.516 instead of 0.5 on S^2).
 		 * @tparam N The dimension of the vector.
 		 * @tparam Generator The type of the random number generator.
 		 * @param gen The random number generator.
@@ -423,7 +427,11 @@ namespace sofa::component::cosserat::liegroups {
 		 */
 		template<int N, typename Generator>
 		static Vector<N> randomUnitVector(Generator &gen) noexcept {
-			Vector<N> v = randomVector<N>(gen);
+			std::normal_distribution<Scalar> dist(Scalar(0), Scalar(1));
+			Vector<N> v;
+			for (int i = 0; i < N; ++i) {
+				v(i) = dist(gen);
+			}
 			const Scalar norm = v.norm();
 			if (norm > epsilon()) {
 				v /= norm;

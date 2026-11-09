@@ -189,11 +189,15 @@ namespace sofa::component::cosserat::liegroups {
 		 */
 		template<typename Generator>
 		static SO3 computeRandom(Generator &gen) {
-			// Generate random axis and angle
-			Vector axis = Types<Scalar>::template randomUnitVector<3>(gen);
-			std::uniform_real_distribution<Scalar> dist(-M_PI, M_PI);
-			Scalar angle = dist(gen);
-			return SO3(angle, axis);
+			// Haar-distributed rotation: a unit quaternion with independent standard normal
+			// components is uniform on S^3, hence uniform on SO(3). (A uniform angle about a uniform
+			// axis is not: it over-represents small rotations, mean angle 1.57 instead of 2.21.)
+			std::normal_distribution<Scalar> dist(Scalar(0), Scalar(1));
+			Quaternion q(dist(gen), dist(gen), dist(gen), dist(gen));
+			if (q.norm() < Types<Scalar>::epsilon()) {
+				return SO3();
+			}
+			return SO3(q);
 		}
 
 		/**

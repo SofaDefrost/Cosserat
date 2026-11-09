@@ -627,13 +627,8 @@ namespace sofa::component::cosserat::liegroups {
 			// Random translation
 			Vector3 t = Types<Scalar>::template randomVector<3>(gen);
 
-			// Random rotation
-			// Using a simple approach: random axis and random angle
-			Vector3 axis = Types<Scalar>::template randomUnitVector<3>(gen);
-			std::uniform_real_distribution<Scalar> dist(-M_PI, M_PI);
-			Scalar angle = dist(gen);
-
-			return SE3(SO3Type(angle, axis), t);
+			// Haar-distributed rotation (see SO3::computeRandom)
+			return SE3(SO3Type::computeRandom(gen), t);
 		}
 
 		Matrix4 matrix() const {
