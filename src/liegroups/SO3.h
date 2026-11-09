@@ -156,7 +156,7 @@ namespace sofa::component::cosserat::liegroups {
 		 * @param eps Tolerance for comparison (optional).
 		 * @return true if elements are approximately equal.
 		 */
-		bool computeIsApprox(const SO3 &other, const Scalar &eps = Types<Scalar>::epsilon()) const noexcept {
+		bool computeIsApprox(const SO3 &other, const Scalar &eps = Types<Scalar>::tolerance()) const noexcept {
 			// Handle antipodal representation of same rotation
 			return m_quat.coeffs().isApprox(other.m_quat.coeffs(), eps) ||
 				   m_quat.coeffs().isApprox(-other.m_quat.coeffs(), eps);

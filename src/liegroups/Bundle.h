@@ -194,7 +194,7 @@ namespace sofa::component::cosserat::liegroups {
 			return result;
 		}
 
-		bool computeIsApprox(const Bundle &other, const Scalar &eps = Types<Scalar>::epsilon()) const {
+		bool computeIsApprox(const Bundle &other, const Scalar &eps = Types<Scalar>::tolerance()) const {
 			return isApprox_impl(other, eps, std::index_sequence_for<Groups...>());
 		}
 		bool operator==(const Bundle &other) const { return computeIsApprox(other); }

@@ -228,10 +228,12 @@ namespace sofa::component::cosserat::liegroups {
 		/**
 		 * @brief Check if this element is approximately equal to another
 		 * @param other Another element of the same Lie group
-		 * @param eps Tolerance for comparison (optional)
+		 * @param eps Tolerance for comparison (optional). Defaults to Types::tolerance() (100 machine
+		 *        epsilons): with the machine epsilon itself a single ulp of rounding error made
+		 *        g * h * h^-1 differ from g (SE3: 58 % of random pairs).
 		 * @return true if elements are approximately equal
 		 */
-		[[nodiscard]] bool isApprox(const Derived &other, const Scalar &eps = Types::epsilon()) const noexcept {
+		[[nodiscard]] bool isApprox(const Derived &other, const Scalar &eps = Types::tolerance()) const noexcept {
 			return derived().computeIsApprox(other, eps);
 		}
 
@@ -517,7 +519,7 @@ namespace sofa::component::cosserat::liegroups {
 		 * @param eps Tolerance for comparison
 		 * @return true if close to identity
 		 */
-		[[nodiscard]] bool isNearIdentity(const Scalar &eps = Types::epsilon()) const noexcept {
+		[[nodiscard]] bool isNearIdentity(const Scalar &eps = Types::tolerance()) const noexcept {
 			return isApprox(Identity(), eps);
 		}
 

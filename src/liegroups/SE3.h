@@ -370,7 +370,7 @@ namespace sofa::component::cosserat::liegroups {
 		 * is false for any non-zero difference when one translation is exactly 0, e.g. for
 		 * identity versus a product g * g^-1 whose translation is 1e-17.
 		 */
-		bool computeIsApprox(const SE3 &other, const Scalar &eps = Types<Scalar>::epsilon()) const {
+		bool computeIsApprox(const SE3 &other, const Scalar &eps = Types<Scalar>::tolerance()) const {
 			const Scalar scale = std::max(Scalar(1), std::max(m_translation.norm(), other.m_translation.norm()));
 			return m_rotation.isApprox(other.m_rotation, eps) &&
 				   (m_translation - other.m_translation).norm() <= eps * scale;

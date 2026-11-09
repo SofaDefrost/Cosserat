@@ -128,7 +128,7 @@ namespace sofa::component::cosserat::liegroups {
 		 * `Types<Scalar>::epsilon()`.
 		 * @return True if the elements are approximately equal, false otherwise.
 		 */
-		bool computeIsApprox(const RealSpace &other, const Scalar &eps = Types<Scalar>::epsilon()) const {
+		bool computeIsApprox(const RealSpace &other, const Scalar &eps = Types<Scalar>::tolerance()) const {
 			// absolute tolerance scaled by max(1, |x|): Eigen's relative isApprox is false against a zero vector
 			const Scalar scale = std::max(Scalar(1), std::max(m_data.norm(), other.m_data.norm()));
 			return (m_data - other.m_data).norm() <= eps * scale;

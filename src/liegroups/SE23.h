@@ -216,7 +216,7 @@ namespace sofa::component::cosserat::liegroups {
 		 * @param eps The tolerance for approximation.
 		 * @return True if the elements are approximately equal, false otherwise.
 		 */
-		bool computeIsApprox(const SE23 &other, const Scalar &eps = Types<Scalar>::epsilon()) const {
+		bool computeIsApprox(const SE23 &other, const Scalar &eps = Types<Scalar>::tolerance()) const {
 			// absolute tolerance scaled by max(1, |u|): Eigen's relative isApprox is false against a velocity that is 0
 			const Scalar scale = std::max({Scalar(1), m_velocity.norm(), other.m_velocity.norm()});
 			return m_pose.computeIsApprox(other.m_pose, eps) && (m_velocity - other.m_velocity).norm() <= eps * scale;
