@@ -132,6 +132,141 @@ Chaque fichier a été compilé en standalone (gtest, stub de `sofa/testing/Base
   `NumericalInstabilityException` dans `BCH` dès que la norme dépasse π/2 ; `SE3::computeTangent` a une sémantique
   obscure ; `SE3::projector()` duplique la co-adjointe ; `expCosseratSmall`/`expCosseratGeneral`/`buildXiHat` de
   `SE3.h` sont inutilisés mais gardés (cités par `STRAIN_CONVENTION.md`) ; `Wrench::transformBy` utilise Adᵀ (pull-back).
+- Les propositions de la section « Questions de conception » (hooks `protected`, suppression de `SO3::expCosserat*` et
+  de `Types::SE3*`, déplacement des fichiers Cosserat hors de `liegroups`) ne sont pas appliquées : elles changent l'API
+  publique ou l'arborescence, donc ta décision.
+
+## Questions de conception
+
+Aucune des recommandations ci-dessous n'est appliquée dans le code : ce sont des propositions, avec leur coût.
+Les comptages d'usage viennent de `grep` dans `src/Cosserat` (hors `liegroups/`) : indicatifs, surtout pour les mots
+courants (`matrix`, `log`, `distance`).
+
+### 1. Pourquoi `computeXxx` et `xxx` coexistent-ils ?
+
+C'est le motif CRTP de `LieGroupBase`, et le préfixe a une raison précise.
+- L'API publique (`exp`, `log`, `inverse`, `adjoint`, `act`, `isApprox`, `Identity`, `hat`, `vee`, `ad`, `BCH`, les
+  Jacobiennes) est écrite une fois dans la base. Elle appelle un « point de personnalisation » du groupe dérivé :
+  `Derived::computeExp`, `computeInverse`, `computeHat`, etc.
+- Si le point de personnalisation s'appelait lui aussi `exp`, un dérivé qui l'oublie ferait que `Derived::exp` résout
+  vers la base elle-même : récursion infinie. C'est la classe de défaut trouvée au départ (`ad` ↔ `computeAd` dans
+  `SO3`). Le préfixe `compute` évite ça : un hook manquant donne une erreur de compilation, pas une boucle.
+
+Ce n'est donc pas « tout est `compute` » : `compute*` désigne les hooks, le reste l'API. Mais l'application actuelle est
+incohérente, sur quatre points :
+1. `compose` est un hook sans préfixe (la base appelle `derived().compose(other)`) : pas de risque de récursion, car la base
+   n'a pas de `compose` public, mais le nom casse la règle. Idem `print` et `getTypeName`.
+2. `SO3` redéclare à la main des wrappers publics (`exp`, `log`, `inverse`, `adjoint`, `act`, `isApprox`, `identity`) qui
+   masquent ceux de la base sans rien ajouter ; `SE3` en fait autant pour `log` et `adjoint`.
+3. Des fonctions nommées `compute*` ne sont pas des hooks : `computeCoAdjoint`, `computeQ`, `computeBCH`, `computeTangent`.
+4. Tous les hooks sont `public` dans les dérivés. Le plugin les appelle donc directement : `SE3Types::computeExp` (9 sites),
+   `.computeInverse()` (6), `.computeAdjoint()` / `.computeCoAdjoint()`, `computeRightJacobianInverse` (3), `computeIdentity` (3),
+   alors que l'API publique existe.
+
+Proposition : hooks `protected`/`private` avec `friend LieGroupBase<...>` ; renommer `compose` en `computeCompose` ;
+supprimer les wrappers dupliqués de `SO3`/`SE3` ; faire passer le plugin par `exp`/`inverse`/`adjoint`/`Identity`.
+Coût : une dizaine de sites dans le plugin, mécanique ; risque faible une fois les tests de `test_LieGroup_Instantiation`
+en place. `computeCoAdjoint` n'a pas d'équivalent dans la base (il faudrait un `coAdjoint()` public).
+
+### 2. Des fonctions `static` : bonne idée ? Faut-il les sortir de `liegroups` ?
+
+Oui pour `static`, non pour les sortir, avec deux réserves.
+- Sont statiques les fonctions qui ne dépendent d'aucun élément du groupe : `exp(ξ)` (fabrique), `hat`, `vee`, `ad`, `BCH`,
+  les Jacobiennes d'un vecteur tangent, `dexp`, `Identity`, `Random`. C'est mathématiquement exact (elles agissent sur
+  l'algèbre ou construisent un élément) et c'est ce que font Sophus, manif et Pinocchio (`exp6`, `Jexp6`).
+- Les sortir en fonctions libres ne changerait rien à l'appel (`SE3d::exp(x)` contre `exp<SE3d>(x)`) et casserait la
+  dispatch CRTP. Les ranger dans un type `LieAlgebra<G>` / `Tangent<G>` (la base en déclare un, `LieAlgebra`, jamais défini)
+  serait plus propre conceptuellement (groupe : `compose`, `inverse`, `act` ; algèbre : `hat`, `ad`, Jacobiennes, `BCH`),
+  mais c'est une refonte d'API sans gain fonctionnel : pas recommandé maintenant.
+- Réserve 1 : `Types.h` est un fourre-tout (constantes, RNG, interpolation, et des copies matricielles de `SO3Log`,
+  `SE3Exp`, `SE3Log`, `interpolateSE3`, `SE3Distance`, `generateSE3Trajectory`) avec une autre disposition du vecteur
+  tangent (`[ρ;φ]`). Aucun appelant dans le plugin, seulement des tests : à supprimer ou à déprécier plutôt qu'à maintenir
+  en double (je les ai corrigées parce qu'elles étaient publiques et fausses).
+- Réserve 2 : les fonctions libres des `.inl` (`interpolate`, `operator/`, `fromEulerZYX`, `dualMatrix`…) sont déjà hors
+  des classes, ce qui est bien ; mais `dualMatrix` n'est qu'un alias de `computeHat` et `interpolate` de la méthode membre.
+
+### 3. Les fonctions « Cosserat » ont-elles leur place dans `liegroups` ?
+
+Elles ont une raison d'être, mais pas à cet endroit.
+- `SE3::expCosserat(strain, L)` vaut `exp(L (strain + [0; e_x]))`. Le `+ e_x` est une convention de modélisation (poutre à
+  élongation unité au repos, voir `STRAIN_CONVENTION.md`), pas de la théorie des groupes. Elle est utilisée par le plugin
+  (`Strain2FramesCosseratMapping.inl:279,289`) et par d'autres en-têtes de `liegroups` (`LieGroupIntegrators.h`,
+  `CosseratUncertaintyPropagator.h`, `CosseratBodyJacobian.h`).
+  Proposition : une fonction libre `expCosserat(strain, L)` côté plugin (par exemple dans `mapping/SofaLieGroupsUtils.h`),
+  qui appelle `SE3::exp`. `liegroups` reste une bibliothèque de groupes.
+- `SO3::expCosserat`, `expCosseratFromOmega`, `expCosseratExact` : aucun appelant, et `SO3::expCosserat(k, L)` est exactement
+  `exp(L k)` (pas d'élongation sur SO(3)). Le même nom a donc deux sens selon la classe. À supprimer.
+- `SE3::expCosseratSmall`, `expCosseratGeneral`, `buildXiHat` : inutilisés depuis `fc9ac68` (seul `STRAIN_CONVENTION.md` les cite).
+  À supprimer en même temps que la doc.
+- Fichiers de `liegroups/` qui ne sont pas de la théorie des groupes : `CosseratBodyJacobian.h`,
+  `CosseratUncertaintyPropagator.h`, `control/CosseratILQRController.h`, `calibration/CosseratParameterEstimator.h`,
+  `optimization/CosseratTrajectoryOptimizer.h`, `KinematicChain.h`, `RevoluteJoint.h`, `MultiDofJoints.h`, `BezierSE3.h`,
+  `LieGroupIntegrators.h` (environ 3 000 des 8 950 lignes), plus `python/articulated_rigids_py.cpp`. Seuls
+  `CosseratBodyJacobian.h` et, via `BeamStateEstimator.h`, `CosseratUncertaintyPropagator.h` et `GaussianOnManifold.h` sont inclus
+  par le plugin ; `control/`, `calibration/`, `optimization/` ne sont utilisés que par leurs tests (le plugin a son propre
+  `Cosserat/controller/CosseratILQRController.h`, qui n'inclut pas celui de `liegroups`).
+  Proposition : un répertoire ou module à part (par exemple `src/Cosserat/geometry/` ou `liegroups_cosserat/`), avec
+  `liegroups/` limité à `Types`, `LieGroupBase`, `SO2/SO3/SE2/SE3/SE23/SGal3/RealSpace/Bundle`, `Twist`, `Wrench`,
+  `GaussianOnManifold`.
+
+### 4. Utilité des fonctions de `liegroups` dans le plugin
+
+Ce que le plugin utilise réellement (compte de sites dans `src/Cosserat`) :
+- `SE3`, `SO3` uniquement. Appels statiques : `computeExp` (9), `exp` (4), `computeRightJacobianInverse` (3), `computeIdentity` (3),
+  `hat` (2), `expCosserat` (2), `dexp` (1), `ad` (1). Méthodes d'instance : `rotation` (~31), `matrix` (~26), `inverse` (~25),
+  `act` (~17), `log` (~15), `computeInverse` (6), `computeAdjoint` (6), `translation` (5), `compose` (4), `adjoint` (4),
+  `computeCoAdjoint` (2), `computeLog` (2), `interpolate`, `distance`, `computeAction`, `quaternion` (1 chacun).
+- `distance` : `CosseratBeamGeometry.h` (somme pondérée rotation + translation, pas une distance géodésique).
+- `CosseratBodyJacobian`, `Twist`/`Wrench` (alias seulement dans `Strain2FramesCosseratMapping.h`), `GaussianOnManifold`,
+  `CosseratUncertaintyPropagator` (via `BeamStateEstimator.h`).
+- `Types<double>` : seulement les constantes et `epsilon` dans les forcefields (`BaseBeamForceField.h`, `HookeSeratBaseForceField.h`).
+
+Ce que le plugin n'utilise pas du tout : `SO2`, `SE2`, `SE23`, `SGal3`, `RealSpace`, `Bundle`, `KinematicChain`,
+`RevoluteJoint`, `MultiDofJoints`, `AutodiffSupport`, `BezierSE3` et `LieGroupIntegrators` (inclusions commentées dans
+`Strain2FramesCosseratMapping.h`), `BCH`, `dlog`, `vee`, `lieBracket`, `composeJacobians`, `inverseJacobian`,
+`actionJacobians`, `parallelTransport`, `computeTangent`, `projector`, `Types::SE3Exp/SE3Log/SO3Log`. `improvedBaseCosseratMapping.h`
+appelle `SE3d::hat/ad/dexp` et inclut `<Cosserat/liegroups/Utils.h>` qui n'existe pas dans l'arbre : à vérifier s'il est
+encore compilé (ce serait un en-tête mort).
+
+Lecture : le plugin s'appuie sur ~15 fonctions de `SE3`/`SO3`. Le reste (environ les trois quarts du code) est de la
+généralité non utilisée : sa valeur est une bibliothèque réutilisable (c'est ce que veut le projet CosseratShell qui
+dépend de `SO3`/`SE3`), mais chaque ligne non testée a produit un défaut dans cet audit. Soit on teste et on garde (c'est
+ce qui a été fait ici pour SE2, SE23, SGal3, Bundle), soit on supprime ce que personne ne veut (`Types::SE3*`, `SO3::expCosserat*`).
+
+### 5. `SE3`, `SE2`… peuvent-ils hériter des types SOFA (`Rigid3d`) ?
+
+Techniquement oui, mais c'est déconseillé, pour quatre raisons vérifiées dans les sources de SOFA.
+1. `RigidCoord<3,Real>` stocke un `sofa::type::Vec<3>` et un `sofa::type::Quat` (ordre `[x,y,z,w]`) ; `SE3` stocke un
+   vecteur et un quaternion Eigen (ordre `[w,x,y,z]`). Hériter obligerait à choisir un seul stockage, donc à perdre Eigen
+   (SIMD, `toRotationMatrix`, `slerp`, autodiff via `Scalar`) ou à convertir à chaque appel.
+2. Les opérateurs de `RigidCoord` n'ont pas le sens de ceux d'un groupe : `operator*(RigidCoord)` renvoie un **réel**
+   (produit scalaire), `operator+(Deriv)` est une mise à jour « translation + exponentielle de la rotation », pas
+   `g · exp(ξ)`, `operator-` est une différence de coordonnées. Les mélanger avec `LieGroupBase::operator*` serait une source
+   de défauts silencieux.
+3. Les dispositions diffèrent : `RigidDeriv<3>` est `[v_centre ; ω]` (linéaire d'abord), `SE3::TangentVector` est `[φ ; ρ]`
+   (angulaire d'abord).
+4. `liegroups` est aujourd'hui une bibliothèque d'en-têtes sans dépendance à SOFA (c'est ce qui permet de la compiler et de la
+   tester seule, comme ici, et de la faire utiliser par un autre projet). Hériter de `RigidCoord` la lierait à SOFA.
+
+Ce qui existe déjà et suffit : `mapping/SofaLieGroupsUtils.h` (`rigidCoordToSE3`, `se3ToRigidCoord`, utilisées sur 14 sites).
+Deux améliorations possibles sans héritage : (a) `rigidCoordToSE3` passe par `Eigen::Quaternion -> toRotationMatrix -> SO3(Matrix)`
+alors que `SO3(Quaternion)` existe : on évite un aller-retour matrice ; (b) si l'on veut des `SE3` dans des `Data<>` SOFA, il
+faut au minimum `operator<<`/`>>` (présents pour `SO3`, pas pour `SE3`) ; en faire un vrai `DataTypes` (comme `Rigid3Types`)
+fermerait la porte aux mappings, forcefields et solveurs SOFA qui attendent `Rigid3Types`.
+
+### 6. Différence entre `computeHat` et `hat`
+
+- `computeHat` est le **hook** du groupe : fonction statique qui construit la représentation matricielle d'un vecteur tangent.
+- `hat` est l'**API** : statique, dans `LieGroupBase`, avec un `static_assert` qui vérifie que le dérivé définit
+  `computeHat`, puis `return Derived::computeHat(v)`. Même résultat ; l'appelant écrit `SE3d::hat(x)`.
+- Le type de retour est `AlgebraMatrix = Matrix<Dim, Dim>` (taille de la représentation matricielle du groupe, pas du
+  vecteur tangent) : 3×3 pour SO3 et SE2, 4×4 pour SE3, et pour SE23 (9×9) et SGal3 (10×10) le bloc 5×5 de la vraie
+  représentation est placé dans le coin supérieur gauche d'une matrice de la taille `Dim`, pour que les commutateurs de la
+  base (BCH, `ad` générique) fonctionnent.
+- `vee` / `computeVee` sont leur inverse.
+- Il existe d'autres « hat » qui font la même chose pour SO(3) : `SO3::buildAntisymmetric`, `Types::skew3` / `unskew3`,
+  `Twist::hat()` (4×4 de se(3)), la fonction libre `dualMatrix`. Quatre noms pour [·]× sur ℝ³ : à unifier (garder
+  `SO3::hat`).
 
 ## Non vérifié
 
