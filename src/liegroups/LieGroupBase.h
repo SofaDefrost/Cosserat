@@ -548,6 +548,9 @@ namespace sofa::component::cosserat::liegroups {
 		static constexpr bool validateConstructorArgs(Args &&...args) noexcept {
 			return Derived::isValidConstruction(std::forward<Args>(args)...);
 		}
+
+    private:
+        [[nodiscard]] virtual TangentVector computeLog() const = 0;
 	};
 
 	/**
@@ -567,6 +570,7 @@ namespace sofa::component::cosserat::liegroups {
 	 */
 	template<typename T>
 	concept LieGroup = is_lie_group_v<T>;
+
 
 } // namespace sofa::component::cosserat::liegroups
 

@@ -11,8 +11,8 @@
 
 // correction en suivant la convention: strain = [angular_str, linear_strain]
 
-namespace sofa::component::cosserat::liegroups {
-
+namespace sofa::component::cosserat::liegroups
+{
 	/**
 	 * @brief Implementation of SE(3), the Special Euclidean group in 3D
 	 *
@@ -49,9 +49,9 @@ namespace sofa::component::cosserat::liegroups {
 		// ========== Constructors ==========
 
 		SE3() : m_rotation(), m_translation(Vector3::Zero()) {}
-		SE3(const SO3Type &rotation, const Vector3 &translation) : m_rotation(rotation), m_translation(translation) {}
+                SE3(const SO3Type &rotation, const Vector3 &translation) : m_rotation(rotation), m_translation(translation) {}
 		SE3(const Quaternion &quat, const Vector3 &translation) :
-			m_rotation(quat.toRotationMatrix()), m_translation(translation) {}
+                        m_rotation(quat), m_translation(translation) {}
 		explicit SE3(const Matrix4 &matrix) :
 			m_rotation(matrix.template block<3, 3>(0, 0)), m_translation(matrix.template block<3, 1>(0, 3)) {}
 
@@ -67,6 +67,11 @@ namespace sofa::component::cosserat::liegroups {
 		SE3 compose(const SE3 &other) const {
 			return SE3(m_rotation * other.m_rotation, m_rotation.act(other.m_translation) + m_translation);
 		}
+
+        static SE3 compose(const SE3& a, const SE3 &b)
+        {
+            return SE3(a.m_rotation * b.m_rotation, a.act(b.m_translation) + a.m_translation);
+        }
 
 		ActionVector computeAction(const ActionVector &point) const { return m_rotation.act(point) + m_translation; }
 
@@ -175,7 +180,7 @@ namespace sofa::component::cosserat::liegroups {
 		 * small-angle :
 		 *   c(θ) ≈ 1/12 + θ²/720
 		 */
-		TangentVector computeLog() const {
+        TangentVector computeLog() const override final {
 			const Vector3 phi   = m_rotation.log();
 			const Scalar  angle = phi.norm();
 			const Matrix3 K_phi = SO3Type::computeHat(phi);   // [φ]× (non normalisé)
@@ -419,8 +424,14 @@ namespace sofa::component::cosserat::liegroups {
 			return (*this) * SE3::exp(t * (this->inverse() * other).log());
 		}
 
-		static SE3 interpolateExponential(const TangentVector &xi1, const TangentVector &xi2, Scalar t) {
-			return SE3::exp(xi1 + t * (xi2 - xi1));
+        static SE3 interpolate(const SE3& left, const SE3 &right, const Scalar &t)
+        {
+            return left * SE3::exp(t * (left->inverse() * right).log());
+        }
+
+        static TangentVector interpolate(const TangentVector &xi1, const TangentVector &xi2, Scalar t)
+        {
+            return SE3::exp(xi1 + t * (xi2 - xi1)).tangent();
 		}
 
 		Scalar distance(const SE3 &other, Scalar w_rot = Scalar(1), Scalar w_trans = Scalar(1)) const {
