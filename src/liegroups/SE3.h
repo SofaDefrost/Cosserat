@@ -337,8 +337,11 @@ namespace sofa::component::cosserat::liegroups {
 
 		// ========== New Integrated Functions ==========
 
+		/// Geodesic g exp(t log(g^-1 h)); t is clamped to [0, 1] like LieGroupBase::interpolate and
+		/// SO3::interpolate (it extrapolated before).
 		SE3 interpolate(const SE3 &other, const Scalar &t) const {
-			return (*this) * SE3::exp(t * (this->inverse() * other).log());
+			const Scalar tc = std::max(Scalar(0), std::min(Scalar(1), t));
+			return (*this) * SE3::exp(tc * (this->inverse() * other).log());
 		}
 
 		static SE3 interpolateExponential(const TangentVector &xi1, const TangentVector &xi2, Scalar t) {

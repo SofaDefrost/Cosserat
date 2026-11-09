@@ -163,3 +163,28 @@ TEST(SO3SE3Audit, BCHIsDefinedForLargeInputs) {
 		ASSERT_NO_THROW(SE3d::BCH(SE3d::TangentVector::Constant(2.0), SE3d::TangentVector::Constant(-1.7), order));
 	}
 }
+
+namespace {
+template<typename G>
+void checkInterpolation(const G &a, const G &b) {
+	// interpolate clamps t to [0, 1] in every group (SO3 and the generic one did, SE3 extrapolated)
+	EXPECT_TRUE(a.interpolate(b, -0.5).isApprox(a));
+	EXPECT_TRUE(a.interpolate(b, 0.0).isApprox(a));
+	EXPECT_TRUE(a.interpolate(b, 1.0).isApprox(b));
+	EXPECT_TRUE(a.interpolate(b, 1.5).isApprox(b));
+	// and follows the geodesic g exp(t log(g^-1 h)), t -> distance fraction
+	for (double t: {0.1, 0.25, 0.5, 0.9}) {
+		const G expected = a * G::exp(t * (a.inverse() * b).log());
+		EXPECT_LT((a.interpolate(b, t).inverse() * expected).log().norm(), 1e-13) << "t=" << t;
+	}
+}
+} // namespace
+
+TEST(SO3SE3Audit, InterpolateClampsAndFollowsTheGeodesicInEveryGroup) {
+	std::mt19937_64 rng(11);
+	for (int i = 0; i < 20; ++i) {
+		checkInterpolation(SO3d::computeRandom(rng), SO3d::computeRandom(rng));
+		checkInterpolation(SE3d::computeRandom(rng), SE3d::computeRandom(rng));
+		checkInterpolation(SE2d::computeRandom(rng), SE2d::computeRandom(rng));
+	}
+}
