@@ -70,8 +70,11 @@ namespace Cosserat::mapping {
 		void apply(const sofa::core::MechanicalParams *mparams, Data<VecCoord> &out,
 				   const Data<InVecCoord> &in) override;
 
-		void applyJ(const sofa::core::MechanicalParams *mparams, Data<VecDeriv> &out,
-					const Data<InVecDeriv> &in) override;
+		void doApplyJacobianVectorProduct(
+			const sofa::core::MechanicalParams* mparams,
+			sofa::DataVecDeriv_t<Out>& tangentOut,
+			const sofa::DataVecDeriv_t<In>& tangentIn,
+			const sofa::DataVecCoord_t<In>& positionIn) override;
 
 		void applyJT(const sofa::core::MechanicalParams *mparams, Data<InVecDeriv> &out,
 					 const Data<VecDeriv> &in) override;

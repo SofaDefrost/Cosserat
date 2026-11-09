@@ -298,15 +298,23 @@ namespace Cosserat::mapping {
 	}
 
 	template<class TIn1, class TIn2, class TOut>
-	void DifferenceMultiMapping<TIn1, TIn2, TOut>::applyJ(const sofa::core::MechanicalParams * /* mparams */,
-														  const vector<OutDataVecDeriv *> &dataVecOutVel,
-														  const vector<const In1DataVecDeriv *> &dataVecIn1Vel,
-														  const vector<const In2DataVecDeriv *> &dataVecIn2Vel) {
-		if (dataVecOutVel.empty() || dataVecIn1Vel.empty() || dataVecIn2Vel.empty())
+	void DifferenceMultiMapping<TIn1, TIn2, TOut>::doApplyJacobianVectorProduct(
+		const sofa::core::MechanicalParams *mparams,
+		const sofa::type::vector<sofa::DataVecDeriv_t<Out> *> &dataVecTangentOut,
+		const sofa::type::vector<const sofa::DataVecDeriv_t<In1> *> &dataVecTangentIn1,
+		const sofa::type::vector<const sofa::DataVecDeriv_t<In2> *> &dataVecTangentIn2,
+		const sofa::type::vector<const sofa::DataVecCoord_t<In1> *> &dataVecPositionIn1,
+		const sofa::type::vector<const sofa::DataVecCoord_t<In2> *> &dataVecPositionIn2) {
+
+		SOFA_UNUSED(mparams);
+		SOFA_UNUSED(dataVecPositionIn1);
+		SOFA_UNUSED(dataVecPositionIn2);
+
+		if (dataVecTangentOut.empty() || dataVecTangentIn1.empty() || dataVecTangentIn2.empty())
 			return;
-		const In1VecDeriv &in1 = dataVecIn1Vel[0]->getValue();
-		const In2VecDeriv &in2 = dataVecIn2Vel[0]->getValue();
-		OutVecDeriv &outVel = *dataVecOutVel[0]->beginEdit();
+		const In1VecDeriv &in1 = dataVecTangentIn1[0]->getValue();
+		const In2VecDeriv &in2 = dataVecTangentIn2[0]->getValue();
+		OutVecDeriv &outVel = *dataVecTangentOut[0]->beginEdit();
 
 		size_t sz = m_constraints.size();
 		outVel.resize(sz);
@@ -341,7 +349,7 @@ namespace Cosserat::mapping {
 				outVel[i] = OutDeriv(v0, v1, v2);
 			}
 		}
-		dataVecOutVel[0]->endEdit();
+		dataVecTangentOut[0]->endEdit();
 	}
 
 	template<class TIn1, class TIn2, class TOut>
