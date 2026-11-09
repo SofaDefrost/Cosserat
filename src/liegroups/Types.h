@@ -133,43 +133,63 @@ namespace sofa::component::cosserat::liegroups {
 		}
 
 		/**
-		 * @brief Computes (1 - cos(x))/x^2 with numerical stability for small x.
-		 * Uses a Taylor expansion for x near zero to avoid division by zero.
-		 * @param x The input value.
-		 * @return The value of (1 - cos(x))/x^2.
+		 * @brief Angle below which the Taylor series of (1-cos x)/x^2 and (x-sin x)/x^3 are used.
+		 *
+		 * Both closed forms cancel catastrophically for small x (relative error ~ eps/x^2 and eps/x^2 again),
+		 * so the 6-term series (truncation < 1e-16 at 0.25 rad) replaces them up to this angle. float cancels
+		 * earlier than double and the series is still exact to float precision up to 1 rad, hence 1.
 		 */
-		static Scalar sinc2(const Scalar &x) noexcept {
-			if (isZero(x, SMALL_ANGLE_THRESHOLD)) {
-				// Taylor expansion: (1 - cos(x))/x² ≈ 1/2 - x²/24 + x⁴/720 - ...
-				const Scalar x2 = x * x;
-				return Scalar(0.5) - x2 / Scalar(24) + x2 * x2 / Scalar(720);
+		static constexpr Scalar seriesAngle() noexcept {
+			if constexpr (std::is_floating_point_v<Scalar> && sizeof(Scalar) <= 4) {
+				return Scalar(1);
+			} else {
+				return Scalar(0.25);
 			}
-			const Scalar x_sq = x * x;
-			return (Scalar(1) - std::cos(x)) / x_sq;
 		}
 
 		/**
-		 * @brief Computes (x - sin(x))/x^3 with numerical stability for small x.
-		 * Useful for Lie group computations.
+		 * @brief Computes (1 - cos(x))/x^2 = 1/2 - x^2/24 + x^4/720 - ... without cancellation.
+		 * Taylor series below seriesAngle(), 2 sin^2(x/2)/x^2 above (no 1 - cos subtraction).
+		 * @param x The input value (x >= 0 or not: the function is even).
+		 * @return The value of (1 - cos(x))/x^2.
+		 */
+		static Scalar sinc2(const Scalar &x) noexcept {
+			const Scalar x2 = x * x;
+			if (std::abs(x) < seriesAngle()) {
+				const Scalar x4 = x2 * x2;
+				return Scalar(1) / Scalar(2) - x2 / Scalar(24) + x4 / Scalar(720) - x4 * x2 / Scalar(40320) +
+					   x4 * x4 / Scalar(3628800) - x4 * x4 * x2 / Scalar(479001600);
+			}
+			const Scalar s_half = std::sin(Scalar(0.5) * x);
+			return Scalar(2) * s_half * s_half / x2;
+		}
+
+		/**
+		 * @brief Computes (x - sin(x))/x^3 = 1/6 - x^2/120 + x^4/5040 - ... without cancellation.
+		 * Taylor series below seriesAngle(), closed form above (the cancellation there is at most eps/x^2 * x).
 		 * @param x The input value.
 		 * @return The value of (x - sin(x))/x^3.
 		 */
 		static Scalar sinc3(const Scalar &x) noexcept {
-			if (isZero(x, SMALL_ANGLE_THRESHOLD)) {
-				// Taylor expansion: (x - sin(x))/x³ ≈ 1/6 - x²/120 + x⁴/5040 - ...
-				const Scalar x2 = x * x;
-				return Scalar(1.0 / 6.0) - x2 / Scalar(120) + x2 * x2 / Scalar(5040);
+			const Scalar x2 = x * x;
+			if (std::abs(x) < seriesAngle()) {
+				const Scalar x4 = x2 * x2;
+				return Scalar(1) / Scalar(6) - x2 / Scalar(120) + x4 / Scalar(5040) - x4 * x2 / Scalar(362880) +
+					   x4 * x4 / Scalar(39916800) - x4 * x4 * x2 / Scalar(6227020800.0);
 			}
-			const Scalar x_cubed = x * x * x;
-			return (x - std::sin(x)) / x_cubed;
+			return (x - std::sin(x)) / (x2 * x);
 		}
 
 		/**
-		 * @brief Computes 1 - cos(x) with numerical stability.
+		 * @brief Computes 1 - cos(x) as 2 sin^2(x/2): no subtraction of two nearly equal numbers
+		 * (1 - std::cos(x) has a relative error of eps/x^2, i.e. 8e-8 at x = 1e-5 and 100% below 1e-8).
 		 * @param x The input value.
 		 * @return The value of 1 - cos(x).
 		 */
-		static Scalar oneMinusCos(const Scalar &x) noexcept { return Scalar(1) - std::cos(x); }
+		static Scalar oneMinusCos(const Scalar &x) noexcept {
+			const Scalar s_half = std::sin(Scalar(0.5) * x);
+			return Scalar(2) * s_half * s_half;
+		}
 
 		/**
 		 * @brief Checks if an angle is effectively zero.
@@ -351,9 +371,6 @@ namespace sofa::component::cosserat::liegroups {
 			return a + t * (b - a);
 		}
 
-		/// a = (1 - cos t)/t^2, b = (t - sin t)/t^3, c = (1 - (t/2) cot(t/2))/t^2: Taylor series below 0.25 rad,
-		/// closed forms (without cancellation / half-angle form) above. Same as detail::so3JacobianCoefficients
-		/// in SO3.inl, duplicated here because Types.h is included by SO3.h.
 		/**
 		 * @brief Generates a random scalar value within the range [0, 1].
 		 * @tparam Generator The type of the random number generator.
