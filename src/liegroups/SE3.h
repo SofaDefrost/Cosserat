@@ -72,8 +72,7 @@ namespace sofa::component::cosserat::liegroups {
 
 		SE3() : m_rotation(), m_translation(Vector3::Zero()) {}
 		SE3(const SO3Type &rotation, const Vector3 &translation) : m_rotation(rotation), m_translation(translation) {}
-		SE3(const Quaternion &quat, const Vector3 &translation) :
-			m_rotation(quat.toRotationMatrix()), m_translation(translation) {}
+		SE3(const Quaternion &quat, const Vector3 &translation) : m_rotation(quat), m_translation(translation) {}
 		explicit SE3(const Matrix4 &matrix) :
 			m_rotation(matrix.template block<3, 3>(0, 0)), m_translation(matrix.template block<3, 1>(0, 3)) {}
 

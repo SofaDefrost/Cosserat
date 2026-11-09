@@ -71,9 +71,11 @@ namespace sofa::component::cosserat::liegroups {
 
 		/**
 		 * @brief Construct from rotation matrix.
+		 * The quaternion built from the matrix is normalised, so a matrix that is only orthonormal up to
+		 * rounding (accumulated product, single precision input) still gives a unit quaternion.
 		 * @param mat 3x3 rotation matrix.
 		 */
-		explicit SO3(const Matrix &mat) : m_quat(mat) {}
+		explicit SO3(const Matrix &mat) : m_quat(Quaternion(mat).normalized()) {}
 
 		/**
 		 * @brief Group composition (rotation composition).

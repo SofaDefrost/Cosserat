@@ -92,3 +92,33 @@ TEST(SO3SE3Audit, RandomUnitVectorIsUniformOnTheSphere) {
 	EXPECT_NEAR(mx / n, 0.5, 0.002);
 	EXPECT_NEAR(mxy / n, 0.0, 0.002);
 }
+
+// SE3(Quaternion, t) went through quat.toRotationMatrix() and back: for a quaternion that is not
+// unit (SO3(Quaternion) documents "will be normalized") the matrix is not a rotation and the
+// stored quaternion had norm sqrt(2) for q = (1, 1, 0, 0), a 90 degree rotation about x was lost.
+TEST(SO3SE3Audit, SE3FromNonUnitQuaternionIsNormalised) {
+	const Eigen::Quaterniond q(1, 1, 0, 0);
+	const Eigen::Vector3d t(0.1, -0.2, 0.3);
+	const SE3d g(q, t);
+	const SE3d expected(SO3d(q), t);
+	EXPECT_NEAR(g.rotation().quaternion().norm(), 1.0, 1e-15);
+	EXPECT_LT((g.matrix() - expected.matrix()).cwiseAbs().maxCoeff(), 1e-15);
+	// and a unit quaternion is reproduced exactly (no matrix round trip any more)
+	const Eigen::Quaterniond u = Eigen::Quaterniond(0.3, -0.5, 0.2, 0.7).normalized();
+	EXPECT_LT((SE3d(u, t).rotation().quaternion().coeffs() - u.coeffs()).cwiseAbs().maxCoeff(), 3e-16);
+}
+
+// SO3(Matrix) kept the quaternion Eigen builds from a matrix as is: for a rotation matrix that is
+// only orthonormal to 1e-6 (accumulated product, float input) the quaternion has norm 1 + O(1e-6),
+// so isValid(), log() and matrix() of the result drifted; 1.01 R gave a quaternion of norm 1.0039.
+TEST(SO3SE3Audit, SO3FromImperfectMatrixIsNormalised) {
+	const Eigen::Matrix3d R = SO3d(0.7, Eigen::Vector3d(1, 2, 3)).matrix();
+	for (double scale: {1.0 + 1e-6, 1.01, 0.99}) {
+		const SO3d g(Eigen::Matrix3d(scale * R));
+		EXPECT_NEAR(g.quaternion().norm(), 1.0, 1e-15) << "scale=" << scale;
+		EXPECT_TRUE(g.isValid());
+		EXPECT_LT((g.matrix() * g.matrix().transpose() - Eigen::Matrix3d::Identity()).cwiseAbs().maxCoeff(), 1e-14);
+	}
+	// a uniformly scaled rotation is still the same rotation
+	EXPECT_LT((SO3d(Eigen::Matrix3d((1.0 + 1e-6) * R)).matrix() - R).cwiseAbs().maxCoeff(), 1e-5);
+}
