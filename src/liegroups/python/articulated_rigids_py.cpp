@@ -15,6 +15,7 @@
 #include <stdexcept>
 
 #include <liegroups/KinematicChain.h>
+#include <liegroups/KinematicChainDynamics.h>
 #include <liegroups/MultiDofJoints.h>
 #include <liegroups/RevoluteJoint.h>
 
@@ -198,5 +199,84 @@ PYBIND11_MODULE(articulated_rigids, m) {
         .def("body_jacobian", [](const Chain &c, const Eigen::VectorXd &q, int i) { return c.bodyJacobian(q, i); },
              py::arg("q"), py::arg("i") = -1)
         .def("hybrid_jacobian", [](const Chain &c, const Eigen::VectorXd &q, int i) { return c.hybridJacobian(q, i); },
-             py::arg("q"), py::arg("i") = -1);
+             py::arg("q"), py::arg("i") = -1)
+        .def("world_screws", [](const Chain &c, const Eigen::VectorXd &q, const py::object &base) {
+                 return c.worldFrame(q, base.is_none() ? SE3d() : toSE3(base, "base_pose")).screws;
+             }, py::arg("q"), py::arg("base_pose") = py::none(),
+             "6 x nDof unit joint screws in the world frame (base pose given), [w ; r], reference point = world origin.")
+        .def("bias_acceleration", [](const Chain &c, const Eigen::VectorXd &q, const Eigen::VectorXd &dq,
+                                     const py::object &base, const Eigen::Matrix<double, 6, 1> &baseTwist,
+                                     const Eigen::Matrix<double, 6, 1> &baseBias) {
+                 const auto wf = c.worldFrame(q, base.is_none() ? SE3d() : toSE3(base, "base_pose"));
+                 const auto a = c.biasAcceleration(wf.screws, wf.positions, dq, baseTwist, baseBias);
+                 Eigen::MatrixXd out(a.size(), 6);
+                 for (std::size_t i = 0; i < a.size(); ++i) out.row(i) = a[i].transpose();
+                 return out;
+             }, py::arg("q"), py::arg("dq"), py::arg("base_pose") = py::none(),
+             py::arg("base_twist") = Eigen::Matrix<double, 6, 1>::Zero().eval(),
+             py::arg("base_bias") = Eigen::Matrix<double, 6, 1>::Zero().eval(),
+             "n_segments x 6 velocity-dependent accelerations [alpha ; a_origin] (world, hybrid), i.e. d/dt(J dx) without J xddot.")
+        .def("geometric_stiffness", [](const Chain &c, const Eigen::VectorXd &q, const Eigen::MatrixXd &wrenches,
+                                       const Eigen::VectorXd &dq, const py::object &base,
+                                       const Eigen::Matrix<double, 6, 1> &dBaseTwist) {
+                 const auto wf = c.worldFrame(q, base.is_none() ? SE3d() : toSE3(base, "base_pose"));
+                 std::vector<Chain::TangentVector> w(wrenches.rows());
+                 for (Eigen::Index i = 0; i < wrenches.rows(); ++i) w[i] = wrenches.row(i).transpose();
+                 const auto r = c.geometricStiffness(wf.screws, wf.positions, w, dq, dBaseTwist);
+                 return py::make_tuple(r.dQ, r.dMoment);
+             }, py::arg("q"), py::arg("wrenches"), py::arg("dq"), py::arg("base_pose") = py::none(),
+             py::arg("d_base_twist") = Eigen::Matrix<double, 6, 1>::Zero().eval(),
+             "(dQ, dMoment): change of J^T W (and of the total moment about the world origin) for fixed world wrenches "
+             "[torque about the segment origin ; force] per segment and a displacement (dq, d_base_twist).");
+
+    // ---- Rigid-body dynamics of a chain (RNEA, mass matrix, forward dynamics) ----
+    using Dyn = KinematicChainDynamics<double>;
+    using Wrenches = std::vector<Dyn::TangentVector>;
+    auto toWrenches = [](const Eigen::MatrixXd &w) {
+        Wrenches out(w.rows());
+        for (Eigen::Index i = 0; i < w.rows(); ++i) out[i] = w.row(i).transpose();
+        return out;
+    };
+    py::class_<Dyn>(m, "KinematicChainDynamics",
+                    "Rigid-body dynamics of a KinematicChain in the world frame with a fixed base: RNEA, M(q), h(q, qdot), "
+                    "forward dynamics, energies. Inertias are given per segment in the segment frame.")
+        .def(py::init<const Chain &>(), py::arg("chain"))
+        .def("set_inertia", [](Dyn &d, int segment, double mass, const py::object &com, const Eigen::Matrix3d &inertia_com) {
+                 Dyn::BodyInertia b;
+                 b.mass = mass;
+                 b.com = toVec3(com, "com");
+                 b.inertiaCom = inertia_com;
+                 d.setInertia(segment, b);
+             }, py::arg("segment"), py::arg("mass"), py::arg("com") = py::make_tuple(0., 0., 0.),
+             py::arg("inertia_com") = Eigen::Matrix3d::Zero().eval(),
+             "mass, centre of mass and rotational inertia about the centre of mass (segment axes) of one segment")
+        .def("spatial_inertia", [](const Dyn &d, int segment) { return Eigen::Matrix<double, 6, 6>(d.inertia(segment).matrix()); },
+             py::arg("segment"), "6x6 inertia about the segment origin, layout [angular ; linear]")
+        .def("inverse_dynamics", [&](const Dyn &d, const Eigen::VectorXd &q, const Eigen::VectorXd &dq, const Eigen::VectorXd &ddq,
+                                     const py::object &gravity, const py::object &external) {
+                 const Eigen::Vector3d g = gravity.is_none() ? Eigen::Vector3d(Eigen::Vector3d::Zero()) : toVec3(gravity, "gravity");
+                 if (external.is_none()) return d.inverseDynamics(q, dq, ddq, g);
+                 const Wrenches w = toWrenches(external.cast<Eigen::MatrixXd>());
+                 return d.inverseDynamics(q, dq, ddq, g, &w);
+             }, py::arg("q"), py::arg("dq"), py::arg("ddq"), py::arg("gravity") = py::none(), py::arg("external") = py::none(),
+             "RNEA: joint forces for the given acceleration. external: n_segments x 6 [torque about the origin ; force], world frame.")
+        .def("mass_matrix", &Dyn::massMatrix, py::arg("q"))
+        .def("bias_forces", [&](const Dyn &d, const Eigen::VectorXd &q, const Eigen::VectorXd &dq, const py::object &gravity,
+                                const py::object &external) {
+                 const Eigen::Vector3d g = gravity.is_none() ? Eigen::Vector3d(Eigen::Vector3d::Zero()) : toVec3(gravity, "gravity");
+                 if (external.is_none()) return d.biasForces(q, dq, g);
+                 const Wrenches w = toWrenches(external.cast<Eigen::MatrixXd>());
+                 return d.biasForces(q, dq, g, &w);
+             }, py::arg("q"), py::arg("dq"), py::arg("gravity") = py::none(), py::arg("external") = py::none())
+        .def("forward_dynamics", [&](const Dyn &d, const Eigen::VectorXd &q, const Eigen::VectorXd &dq, const Eigen::VectorXd &tau,
+                                     const py::object &gravity, const py::object &external) {
+                 const Eigen::Vector3d g = gravity.is_none() ? Eigen::Vector3d(Eigen::Vector3d::Zero()) : toVec3(gravity, "gravity");
+                 if (external.is_none()) return d.forwardDynamics(q, dq, tau, g);
+                 const Wrenches w = toWrenches(external.cast<Eigen::MatrixXd>());
+                 return d.forwardDynamics(q, dq, tau, g, &w);
+             }, py::arg("q"), py::arg("dq"), py::arg("tau"), py::arg("gravity") = py::none(), py::arg("external") = py::none())
+        .def("kinetic_energy", &Dyn::kineticEnergy, py::arg("q"), py::arg("dq"))
+        .def("potential_energy", [](const Dyn &d, const Eigen::VectorXd &q, const py::object &gravity) {
+                 return d.potentialEnergy(q, toVec3(gravity, "gravity"));
+             }, py::arg("q"), py::arg("gravity"));
 }

@@ -2,7 +2,9 @@
 #include <Cosserat/mapping/KinematicChainMapping.h>
 
 #include <sofa/core/Multi2Mapping.inl>
+#include <sofa/core/MechanicalParams.h>
 #include <sofa/core/visual/VisualParams.h>
+#include <sofa/helper/accessor.h>
 #include <sofa/helper/logging/Messaging.h>
 
 #include <optional>
@@ -20,6 +22,8 @@ KinematicChainMapping<TIn1, TIn2, TOut>::KinematicChainMapping()
                            "Per segment: pose (x y z qx qy qz qw) of the segment in its parent frame at q = 0 (default identity)")),
       d_parents(initData(&d_parents, "parents", "Per segment: index of the parent segment, -1 for the base. Empty = serial chain")),
       d_baseIndex(initData(&d_baseIndex, 0u, "baseIndex", "Index of the base pose in input2 (used only when input2 is given)")),
+      d_geometricStiffness(initData(&d_geometricStiffness, true, "geometricStiffness",
+                                    "applyDJT: add d(J^T)/dx . dx . f (needed by implicit integration of a mass on the output frames)")),
       d_drawJoints(initData(&d_drawJoints, true, "drawJoints", "Draw the joint axes when showMappings is on")),
       d_drawSize(initData(&d_drawSize, 1.0, "drawSize", "Length of the drawn joint axes")) {}
 
@@ -119,15 +123,13 @@ void KinematicChainMapping<TIn1, TIn2, TOut>::update(const In1VecCoord &q, const
     } else
         m_baseCenter = Vec3(0, 0, 0);
 
-    const std::vector<SE3d> local = m_chain.allPoses(qv);
-    std::vector<SE3d> world(local.size());
-    m_position.resize(local.size());
-    for (std::size_t i = 0; i < local.size(); ++i) {
-        world[i] = T0 * local[i];
-        m_position[i] = Vec3(world[i].translation().x(), world[i].translation().y(), world[i].translation().z());
-    }
-    // unit screws seen from the base frame, then carried to the world frame by the base pose
-    m_screws = T0.computeAdjoint() * m_chain.jointScrews(local);
+    const typename Chain::WorldFrame wf = m_chain.worldFrame(qv, T0);
+    m_position.resize(wf.positions.size());
+    m_positionE = wf.positions;
+    for (std::size_t i = 0; i < wf.positions.size(); ++i)
+        m_position[i] = Vec3(wf.positions[i].x(), wf.positions[i].y(), wf.positions[i].z());
+    m_screws = wf.screws; // unit screws in the world frame (the base pose carries them from the base frame)
+    m_poses = wf.poses;
 }
 
 template<class TIn1, class TIn2, class TOut>
@@ -141,34 +143,19 @@ void KinematicChainMapping<TIn1, TIn2, TOut>::apply(const sofa::core::Mechanical
     if (static_cast<int>(q.size()) != m_chain.nDof()) return;
     update(q, base);
 
-    Chain::VectorX qv(m_chain.nDof());
-    for (int k = 0; k < m_chain.nDof(); ++k) qv[k] = q[k][0];
-    const std::vector<SE3d> local = m_chain.allPoses(qv);
-    SE3d T0;
-    if (m_hasBase) T0 = toSE3((*base)[d_baseIndex.getValue()]);
-
     OutVecCoord &out = *dataVecOutPos[0]->beginEdit();
-    out.resize(local.size());
-    for (std::size_t i = 0; i < local.size(); ++i) out[i] = fromSE3(T0 * local[i]);
+    out.resize(m_poses.size());
+    for (std::size_t i = 0; i < m_poses.size(); ++i) out[i] = fromSE3(m_poses[i]);
     dataVecOutPos[0]->endEdit();
 }
 
 template<class TIn1, class TIn2, class TOut>
-void KinematicChainMapping<TIn1, TIn2, TOut>::applyJ(const sofa::core::MechanicalParams *,
-                                                     const sofa::type::vector<OutDataVecDeriv *> &dataVecOutVel,
-                                                     const sofa::type::vector<const In1DataVecDeriv *> &dataVecIn1Vel,
-                                                     const sofa::type::vector<const In2DataVecDeriv *> &dataVecIn2Vel) {
-    if (!m_valid || dataVecOutVel.empty() || dataVecIn1Vel.empty()) return;
-    const In1VecDeriv &dq = dataVecIn1Vel[0]->getValue();
-    const In2VecDeriv *dbase = dataVecIn2Vel.empty() || !dataVecIn2Vel[0] ? nullptr : &dataVecIn2Vel[0]->getValue();
-
+void KinematicChainMapping<TIn1, TIn2, TOut>::mapVelocity(const In1VecDeriv &dq, const In2VecDeriv *dbase, OutVecDeriv &out) const {
     Vec3 vb(0, 0, 0), wb(0, 0, 0);
     if (m_hasBase && dbase && d_baseIndex.getValue() < dbase->size()) {
         vb = getVCenter((*dbase)[d_baseIndex.getValue()]);
         wb = getVOrientation((*dbase)[d_baseIndex.getValue()]);
     }
-
-    OutVecDeriv &out = *dataVecOutVel[0]->beginEdit();
     out.resize(m_chain.nSegments());
     for (int i = 0; i < m_chain.nSegments(); ++i) {
         Vec3 w = wb;
@@ -183,7 +170,126 @@ void KinematicChainMapping<TIn1, TIn2, TOut>::applyJ(const sofa::core::Mechanica
         getVCenter(out[i]) = v;
         getVOrientation(out[i]) = w;
     }
+}
+
+template<class TIn1, class TIn2, class TOut>
+void KinematicChainMapping<TIn1, TIn2, TOut>::applyJ(const sofa::core::MechanicalParams *,
+                                                     const sofa::type::vector<OutDataVecDeriv *> &dataVecOutVel,
+                                                     const sofa::type::vector<const In1DataVecDeriv *> &dataVecIn1Vel,
+                                                     const sofa::type::vector<const In2DataVecDeriv *> &dataVecIn2Vel) {
+    if (!m_valid || dataVecOutVel.empty() || dataVecIn1Vel.empty()) return;
+    const In2VecDeriv *dbase = dataVecIn2Vel.empty() || !dataVecIn2Vel[0] ? nullptr : &dataVecIn2Vel[0]->getValue();
+    OutVecDeriv &out = *dataVecOutVel[0]->beginEdit();
+    mapVelocity(dataVecIn1Vel[0]->getValue(), dbase, out);
     dataVecOutVel[0]->endEdit();
+}
+
+template<class TIn1, class TIn2, class TOut>
+void KinematicChainMapping<TIn1, TIn2, TOut>::addBias(const In1VecDeriv &dq, const In2VecDeriv *dbase, OutVecDeriv &out) const {
+    Chain::VectorX rate(m_chain.nDof());
+    for (int k = 0; k < m_chain.nDof(); ++k) rate[k] = dq[k][0];
+    // base: spatial twist (at the world origin) and its derivative when the base acceleration is zero
+    Chain::TangentVector twist = Chain::TangentVector::Zero(), twistBias = Chain::TangentVector::Zero();
+    if (m_hasBase && dbase && d_baseIndex.getValue() < dbase->size()) {
+        const Vec3 vb = getVCenter((*dbase)[d_baseIndex.getValue()]);
+        const Vec3 wb = getVOrientation((*dbase)[d_baseIndex.getValue()]);
+        const Vec3 u = vb - sofa::type::cross(wb, m_baseCenter);
+        const Vec3 ub = -sofa::type::cross(wb, vb);
+        twist << wb[0], wb[1], wb[2], u[0], u[1], u[2];
+        twistBias << 0, 0, 0, ub[0], ub[1], ub[2];
+    }
+    const std::vector<Chain::TangentVector> a = m_chain.biasAcceleration(m_screws, m_positionE, rate, twist, twistBias);
+    out.resize(a.size());
+    for (std::size_t i = 0; i < a.size(); ++i) {
+        getVOrientation(out[i]) += Vec3(a[i][0], a[i][1], a[i][2]);
+        getVCenter(out[i]) += Vec3(a[i][3], a[i][4], a[i][5]);
+    }
+}
+
+template<class TIn1, class TIn2, class TOut>
+void KinematicChainMapping<TIn1, TIn2, TOut>::computeBiasAcceleration(OutVecDeriv &bias) {
+    bias.clear();
+    if (!m_valid || this->getFromModels1().empty()) return;
+    bias.resize(m_chain.nSegments());
+    const auto vq = this->getFromModels1()[0]->readVelocities();
+    if (static_cast<int>(vq.size()) != m_chain.nDof()) return;
+    if (m_hasBase && !this->getFromModels2().empty() && this->getFromModels2()[0]) {
+        const auto vb = this->getFromModels2()[0]->readVelocities();
+        addBias(vq.ref(), &vb.ref(), bias);
+    } else
+        addBias(vq.ref(), nullptr, bias);
+}
+
+template<class TIn1, class TIn2, class TOut>
+void KinematicChainMapping<TIn1, TIn2, TOut>::computeAccFromMapping(
+    const sofa::core::MechanicalParams *, const sofa::type::vector<OutDataVecDeriv *> &dataVecOutAcc,
+    const sofa::type::vector<const In1DataVecDeriv *> &dataVecIn1Vel, const sofa::type::vector<const In2DataVecDeriv *> &dataVecIn2Vel,
+    const sofa::type::vector<const In1DataVecDeriv *> &dataVecIn1Acc, const sofa::type::vector<const In2DataVecDeriv *> &dataVecIn2Acc) {
+    if (!m_valid || dataVecOutAcc.empty() || dataVecIn1Vel.empty() || dataVecIn1Acc.empty()) return;
+    const In2VecDeriv *dbaseVel = dataVecIn2Vel.empty() || !dataVecIn2Vel[0] ? nullptr : &dataVecIn2Vel[0]->getValue();
+    const In2VecDeriv *dbaseAcc = dataVecIn2Acc.empty() || !dataVecIn2Acc[0] ? nullptr : &dataVecIn2Acc[0]->getValue();
+    OutVecDeriv &out = *dataVecOutAcc[0]->beginEdit();
+    mapVelocity(dataVecIn1Acc[0]->getValue(), dbaseAcc, out); // J qddot
+    addBias(dataVecIn1Vel[0]->getValue(), dbaseVel, out);     // + Jdot qdot
+    dataVecOutAcc[0]->endEdit();
+}
+
+template<class TIn1, class TIn2, class TOut>
+void KinematicChainMapping<TIn1, TIn2, TOut>::applyDJT(const sofa::core::MechanicalParams *mparams, sofa::core::MultiVecDerivId parentForce,
+                                                       sofa::core::ConstMultiVecDerivId) {
+    if (!m_valid || !d_geometricStiffness.getValue() || this->getFromModels1().empty() || this->getToModels().empty()) return;
+    const SReal kfactor = mparams->kFactor();
+    if (kfactor == 0) return;
+
+    auto *model1 = this->getFromModels1()[0].get();
+    auto *modelOut = this->getToModels()[0].get();
+    // a state that no solver of its own sees can have no displacement / force vector in these MechanicalParams: nothing to do then
+    const auto *fData = mparams->readF(modelOut);
+    const auto *dx1Data = mparams->readDx(model1);
+    if (!fData || !dx1Data) return;
+    const OutVecDeriv &f = fData->getValue(); // the force below the mapping, held constant
+    const In1VecDeriv &dx1 = dx1Data->getValue();
+    if (static_cast<int>(dx1.size()) != m_chain.nDof() || static_cast<int>(f.size()) != m_chain.nSegments()) return;
+
+    Chain::VectorX dq(m_chain.nDof());
+    for (int k = 0; k < m_chain.nDof(); ++k) dq[k] = dx1[k][0];
+    std::vector<Chain::TangentVector> wrench(f.size());
+    Vec3 forceTotal(0, 0, 0);
+    for (std::size_t i = 0; i < f.size(); ++i) {
+        const Vec3 force = getVCenter(f[i]), torque = getVOrientation(f[i]);
+        wrench[i] << torque[0], torque[1], torque[2], force[0], force[1], force[2];
+        forceTotal += force;
+    }
+
+    // base displacement (spatial twist at the world origin) and the base data, when the base is used
+    auto *model2 = (m_hasBase && !this->getFromModels2().empty()) ? this->getFromModels2()[0].get() : nullptr;
+    Vec3 dc(0, 0, 0), dtheta(0, 0, 0);
+    if (model2) {
+        const auto *dx2Data = mparams->readDx(model2);
+        if (dx2Data && d_baseIndex.getValue() < dx2Data->getValue().size()) {
+            dc = getVCenter(dx2Data->getValue()[d_baseIndex.getValue()]);
+            dtheta = getVOrientation(dx2Data->getValue()[d_baseIndex.getValue()]);
+        } else
+            model2 = nullptr; // no displacement for the base: its block of the geometric stiffness is not requested
+    }
+    const Vec3 du = dc - sofa::type::cross(dtheta, m_baseCenter);
+    Chain::TangentVector dBase;
+    dBase << dtheta[0], dtheta[1], dtheta[2], du[0], du[1], du[2];
+
+    const typename Chain::GeometricStiffness gs = m_chain.geometricStiffness(m_screws, m_positionE, wrench, dq, dBase);
+
+    if (auto *pfData = parentForce[model1].write()) {
+        auto pf = sofa::helper::getWriteAccessor(*pfData);
+        for (int k = 0; k < m_chain.nDof() && k < static_cast<int>(pf.size()); ++k) pf[k][0] += static_cast<In1Real>(kfactor * gs.dQ[k]);
+    }
+    auto *pfBaseData = model2 ? parentForce[model2].write() : nullptr;
+    if (pfBaseData) {
+        auto pf = sofa::helper::getWriteAccessor(*pfBaseData);
+        if (d_baseIndex.getValue() >= pf.size()) return;
+        // total force is constant; the moment about the base centre changes by dMoment - dc x F
+        const Vec3 dMoment(gs.dMoment[0], gs.dMoment[1], gs.dMoment[2]);
+        getVOrientation(pf[d_baseIndex.getValue()]) += (dMoment - sofa::type::cross(dc, forceTotal)) * kfactor;
+    }
 }
 
 template<class TIn1, class TIn2, class TOut>

@@ -14,7 +14,13 @@
  * Velocities (applyJ) and forces (applyJT) use SOFA's Rigid3d convention: linear velocity of the segment origin and
  * angular velocity, both in the world frame; forces and torques (about the segment origin) in the world frame.
  *
- * applyDJT (geometric stiffness) is NOT implemented yet, like in ArticulatedSystemMapping.
+ * Dynamics support (what a mass defined on the output frames needs to give exact joint-space dynamics):
+ *   - applyDJT: geometric stiffness d(J^T)/dx . dx . f for the constant child force f (data geometricStiffness);
+ *   - computeBiasAcceleration / computeAccFromMapping: the velocity-dependent part of the frame accelerations, d/dt(J dx)
+ *     for zero generalised accelerations. SOFA does not apply it by itself: KinematicChainBiasForceField turns it into the
+ *     inertial force -M (Jdot qdot) on the frames, which completes  (J^T M J) qddot = J^T (f - M Jdot qdot).
+ * The maths lives in liegroups/KinematicChain.h (biasAcceleration, geometricStiffness) and is tested against finite
+ * differences in simulations/articulated/lie_tests/test_lie_chain_derivatives.py.
  ******************************************************************************/
 #pragma once
 
@@ -82,6 +88,7 @@ public:
     sofa::Data<sofa::type::vector<OutCoord>> d_restPoses;     ///< pose of the segment in its parent at q = 0 (default identity)
     sofa::Data<sofa::type::vector<int>> d_parents;            ///< parent segment, -1 = base; empty = serial chain
     sofa::Data<unsigned int> d_baseIndex;                     ///< index of the base pose in input2
+    sofa::Data<bool> d_geometricStiffness;                    ///< applyDJT: add the geometric stiffness (default true)
     sofa::Data<bool> d_drawJoints;                            ///< draw the joint axes (needs showMappings)
     sofa::Data<double> d_drawSize;                            ///< length of the drawn axes
 
@@ -114,8 +121,21 @@ public:
                  const sofa::type::vector<In2DataMatrixDeriv *> &dataMatOut2,
                  const sofa::type::vector<const OutDataMatrixDeriv *> &dataMatIn) override;
 
-    /// Not implemented (geometric stiffness); same as ArticulatedSystemMapping.
-    void applyDJT(const sofa::core::MechanicalParams *, sofa::core::MultiVecDerivId, sofa::core::ConstMultiVecDerivId) override {}
+    /// Geometric stiffness: parentForce += kFactor * d(J^T)/dx . dx . childForce  (dx = displacement read from the inputs).
+    void applyDJT(const sofa::core::MechanicalParams *mparams, sofa::core::MultiVecDerivId parentForce,
+                  sofa::core::ConstMultiVecDerivId childForce) override;
+
+    /// Frame accelerations for the input accelerations: J qddot + (velocity-dependent term).
+    void computeAccFromMapping(const sofa::core::MechanicalParams *, const sofa::type::vector<OutDataVecDeriv *> &dataVecOutAcc,
+                               const sofa::type::vector<const In1DataVecDeriv *> &dataVecIn1Vel,
+                               const sofa::type::vector<const In2DataVecDeriv *> &dataVecIn2Vel,
+                               const sofa::type::vector<const In1DataVecDeriv *> &dataVecIn1Acc,
+                               const sofa::type::vector<const In2DataVecDeriv *> &dataVecIn2Acc) override;
+    using Inherit::computeAccFromMapping;
+
+    /// Velocity-dependent part of the frame accelerations (angular, linear of the origin; world frame), computed from the
+    /// current positions (last apply) and the velocities of the input states. Zero accelerations of the inputs assumed.
+    void computeBiasAcceleration(OutVecDeriv &bias);
 
     const sofa::linearalgebra::BaseMatrix *getJ() override { return nullptr; }
 
@@ -131,11 +151,18 @@ private:
     /// Fills the cached world poses / screws from q and the optional base pose.
     void update(const In1VecCoord &q, const In2VecCoord *base);
 
+    /// J applied to (dq, dbase), shared by applyJ and computeAccFromMapping.
+    void mapVelocity(const In1VecDeriv &dq, const In2VecDeriv *dbase, OutVecDeriv &out) const;
+    /// Velocity-dependent acceleration for the velocities (dq, dbase) (zero accelerations), added to @p out.
+    void addBias(const In1VecDeriv &dq, const In2VecDeriv *dbase, OutVecDeriv &out) const;
+
     Chain m_chain;
     bool m_valid = false;
 
     // cache refreshed by apply() and used by applyJ / applyJT
     std::vector<Vec3> m_position;                                 ///< world position of every segment origin
+    std::vector<Eigen::Vector3d> m_positionE;                     ///< same, Eigen (for KinematicChain)
+    std::vector<SE3d> m_poses;                                    ///< world pose of every segment
     Eigen::Matrix<double, 6, Eigen::Dynamic> m_screws;            ///< world-frame unit screws [w ; r] of every joint
     Vec3 m_baseCenter = Vec3(0, 0, 0);
     bool m_hasBase = false;
