@@ -1,6 +1,6 @@
 # Audit de `src/liegroups`
 
-Branche `claude/liegroups-audit-b60c6e` : 24 commits au-dessus de `eb334be` (`git log eb334be..HEAD`).
+Branche `claude/liegroups-audit-b60c6e` : 36 commits au-dessus de `eb334be` (`git log eb334be..HEAD`).
 Le message de chaque commit donne la cause, le correctif, l'erreur mesurée avant/après et le test.
 
 Les erreurs ci-dessous sont absolues, mesurées contre des références en `long double` calculées
@@ -18,6 +18,10 @@ Angles testés : de 1e-9 à π−1e-9.
 `fc9ac68` expCosserat · `db8a429` tests mal spécifiés · `e0e4ec4` SO3Test · `dd3412a` float.
 
 Les trois corrections de `Types.h` (`SO3Log`, `SE3Exp`, `SE3Log`) sont dans un seul commit.
+
+Deuxième passe sur SO3 / SE3 / `Types.h` (§9) : `3a3b20c` Types sinc2/sinc3/oneMinusCos · `0882c91` tolérance par défaut
+d'`isApprox` · `3869966` tirages aléatoires (Haar) · `f9576b5` constructeurs SE3(q,t) et SO3(Matrice) · `76ecb86` BCH ordres 4 et 5 ·
+`e62535a` code mort et `m_quat` privé.
 
 ## Constats
 
@@ -85,6 +89,25 @@ pour tout angle > 1e-9), `logSO3`. Tous < 5e-15 après correction (borne élargi
 SE3, SE2, SE23, SGal3, RealSpace : g·g⁻¹ n'était jamais « égal » à l'identité (translation de 1e-17 contre 0).
 Passé en tolérance absolue pondérée par max(1, |t|).
 
+### 9. Deuxième passe : SO3, SE3 et le toolkit scalaire de `Types.h`
+Il n'existe pas de fichiers `SO3Types`/`SE3Types` : j'ai relu `SO3.h/.inl`, `SE3.h/.inl` et `Types.h` (alias, tolérances,
+fonctions sinc, tirages). Tests : `unit/test_Types_Numerics.cpp`, `unit/test_SO3_SE3_Audit.cpp`.
+
+| Défaut | Mesure avant → après | Commit |
+|---|---|---|
+| `Types::sinc2`, `sinc3`, `oneMinusCos` : formes fermées qui s'annulent, bascule série à 1e-4 seulement (même défaut que celui corrigé dans les coefficients de Jacobienne, qui restait ici) | erreur relative sinc2 5,2e-9 à 1,01e-4, sinc3 7,6e-9, `oneMinusCos` 100 % à 1e-9 et 8,3e-8 à 1e-5 → < 5e-15 | `3a3b20c` |
+| Tolérance par défaut d'`isApprox` / `isNearIdentity` = epsilon machine (2,2e-16), donc (g·h)·h⁻¹ ≠ g à cause d'un ulp | échecs sur 10000 comparaisons : SO3 126, SE3 4743, SE2 3563, SE23 6367 → 0 (défaut `Types::tolerance()` = 100 ε) | `0882c91` |
+| `SO3::computeRandom` / `SE3::computeRandom` : angle uniforme sur un axe aléatoire, pas la mesure de Haar ; `randomUnitVector` normalisait un vecteur du cube | angle moyen 1,5714 → 2,2074 (Haar : π/2 + 2/π), trace moyenne 1 → 0, E\|axe.x\| 0,516 → 0,500 | `3869966` |
+| `SE3(Quaternion, t)` repassait par `toRotationMatrix()` : pour un quaternion non unitaire la matrice n'est pas une rotation ; `SO3(Matrice)` ne normalisait pas le quaternion | norme 1,4142 → 1, erreur de matrice 1,0 → < 1e-15 ; norme 1,0039 pour 1,01·R → 1 | `f9576b5` |
+| `SO3::BCH` documente les ordres 1 à 5 mais s'arrêtait à 3 | erreur identique pour les ordres 3, 4, 5 (7,7e-5 à \|v\|,\|w\| ≈ 0,25) → ordre 4 : 3,7e-5, ordre 5 : 3,9e-6, pentes h⁵ et h⁶ ; égal au BCH générique à 1e-15 | `76ecb86` |
+| `SO3.h` : `exp_`, `expRodrigues` (doublons d'`exp`), `expCosseratExact` et un bloc « TODO » commentés, `m_quat` public ; `SE3.h` : deux générations de `computeExp/computeLog` en commentaire | aucun changement de comportement ; l'invariant de norme unité ne peut plus être cassé de l'extérieur | `e62535a` |
+
+Vérifiés sans défaut (mesurés) : `SO3::computeLog` de 1e-300 à 1e-10 rad (erreur relative 0), `SO3::expCosserat(k, L)` =
+`exp(L k)` à 1e-12 près pour |k| de 1e-14 à 5 et L de 1e-3 à 10, `SO3::interpolate` entre quaternions à 1e-9 (7,9e-17),
+quaternions antipodaux (`isApprox` vrai, distance 0), `SE3::expCosserat` sans déformation (translation `[L,0,0]`),
+aller-retour `exp(log)` en float pour SE3 (7e-7), symétrie et invariance à gauche de `SE3::distance`, Euler ZYX
+(l'erreur de 1e-8 près de ±π/2 est celle du conditionnement des angles d'Euler : atan2 donne le même ordre).
+
 ### Vérifiés sans défaut
 `SO3::computeLog` (cas qw<0, branche sous epsilon), `Twist.h`, `Wrench.h`, `SO2.h`.
 
@@ -137,6 +160,10 @@ Chaque fichier a été compilé en standalone (gtest, stub de `sofa/testing/Base
   `NumericalInstabilityException` dans `BCH` dès que la norme dépasse π/2 ; `SE3::computeTangent` a une sémantique
   obscure ; `SE3::projector()` duplique la co-adjointe ; `expCosseratSmall`/`expCosseratGeneral`/`buildXiHat` de
   `SE3.h` sont inutilisés mais gardés (cités par `STRAIN_CONVENTION.md`) ; `Wrench::transformBy` utilise Adᵀ (pull-back).
+- Deuxième passe : `SO3::interpolate` borne `t` à [0, 1] alors que `SE3::interpolate` extrapole ; `SO3::BCH` ne lève pas
+  d'exception pour de grandes normes alors que la base le fait ; `SE3::computeTangent` renvoie `[R⁻¹(p−t); log R⁻¹]`
+  (position d'abord, contraire à `[φ;ρ]`) et n'a aucun appelant ; `Types::cosc` (voir plus haut, aucun appelant) ;
+  `SO3::expCosserat` fait `exp(L k)` avec un test de petit angle sur |k| seul (sans effet : le seuil est epsilon).
 - Parmi les propositions de « Questions de conception », ne sont pas appliquées : hooks `protected` (casserait `cosserat_shell`),
   suppression de `SO3::expCosserat*`, déplacement des fichiers Cosserat hors de `liegroups` (§3 et §4, décision : ils servent
   à `cosserat_shell` et à la version « painless »).

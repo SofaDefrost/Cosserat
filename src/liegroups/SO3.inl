@@ -78,7 +78,28 @@ namespace sofa::component::cosserat::liegroups {
 
 			if (order >= 3) {
 				// Third-order term: 1/12 ([v,[v,w]] + [w,[w,v]]) = 1/12 (v x vw - w x vw)
-				result += (v.cross(vw) - w.cross(vw)) * Scalar(1.0 / 12.0);
+				const TangentVector vvw = v.cross(vw); // [v,[v,w]]
+				result += (vvw - w.cross(vw)) * Scalar(1.0 / 12.0);
+
+				if (order >= 4) {
+					// Fourth-order term: -1/24 [w,[v,[v,w]]]
+					result -= w.cross(vvw) * Scalar(1.0 / 24.0);
+
+					if (order >= 5) {
+						// Fifth-order terms (Dynkin), same as LieGroupBase::BCH; [a,b] = a x b on so(3):
+						//   -1/720 ([y,[y,[y,[y,x]]]] + [x,[x,[x,[x,y]]]])
+						//   +1/360 ([x,[y,[y,[y,x]]]] + [y,[x,[x,[x,y]]]])
+						//   +1/120 ([y,[x,[y,[x,y]]]] + [x,[y,[x,[y,x]]]])
+						const TangentVector xy = vw, yx = -vw;
+						const TangentVector xxy = v.cross(xy), yyx = w.cross(yx);
+						const TangentVector xxxy = v.cross(xxy), yyyx = w.cross(yyx);
+						const TangentVector yxy = w.cross(xy), xyx = v.cross(yx);
+						const TangentVector t720 = w.cross(yyyx) + v.cross(xxxy);
+						const TangentVector t360 = v.cross(yyyx) + w.cross(xxxy);
+						const TangentVector t120 = w.cross(v.cross(yxy)) + v.cross(w.cross(xyx));
+						result += t360 * Scalar(1.0 / 360.0) + t120 * Scalar(1.0 / 120.0) - t720 * Scalar(1.0 / 720.0);
+					}
+				}
 			}
 		}
 
@@ -100,30 +121,20 @@ namespace sofa::component::cosserat::liegroups {
 	 */
 	template<typename Scalar>
 	inline constexpr Scalar so3SeriesAngle() noexcept {
-		// float cancels earlier than double (eps 6e-8 vs 2e-16): the 6-term series is still exact to
-		// float precision up to 1 rad, so use it there (the closed forms at 0.3 rad cost 1.3e-6).
-		if constexpr (sizeof(Scalar) <= 4) {
-			return Scalar(1);
-		} else {
-			return Scalar(0.25);
-		}
+		return Types<Scalar>::seriesAngle();
 	}
 
 	template<typename Scalar>
 	inline void so3JacobianCoefficients(const Scalar theta, Scalar &a, Scalar &b, Scalar &c) noexcept {
+		// a and b are the scalar toolbox functions of Types.h (Taylor series / cancellation-free forms)
+		a = Types<Scalar>::sinc2(theta);
+		b = Types<Scalar>::sinc3(theta);
 		const Scalar t2 = theta * theta;
 		if (theta < so3SeriesAngle<Scalar>()) {
 			const Scalar t4 = t2 * t2;
-			a = Scalar(1) / Scalar(2) - t2 / Scalar(24) + t4 / Scalar(720) - t4 * t2 / Scalar(40320) +
-				t4 * t4 / Scalar(3628800) - t4 * t4 * t2 / Scalar(479001600);
-			b = Scalar(1) / Scalar(6) - t2 / Scalar(120) + t4 / Scalar(5040) - t4 * t2 / Scalar(362880) +
-				t4 * t4 / Scalar(39916800) - t4 * t4 * t2 / Scalar(6227020800.0);
 			c = Scalar(1) / Scalar(12) + t2 / Scalar(720) + t4 / Scalar(30240) + t4 * t2 / Scalar(1209600) +
 				t4 * t4 / Scalar(47900160);
 		} else {
-			const Scalar s_half = std::sin(Scalar(0.5) * theta);
-			a = Scalar(2) * s_half * s_half / t2;
-			b = (theta - std::sin(theta)) / (t2 * theta);
 			c = Scalar(1) / t2 - Scalar(1) / (Scalar(2) * theta * std::tan(Scalar(0.5) * theta));
 		}
 	}

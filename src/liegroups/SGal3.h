@@ -214,7 +214,7 @@ public:
         return Ad;
     }
 
-    bool computeIsApprox(const SGal3 &other, const Scalar &eps = Types<Scalar>::epsilon()) const {
+    bool computeIsApprox(const SGal3 &other, const Scalar &eps = Types<Scalar>::tolerance()) const {
         const Scalar scale = std::max({Scalar(1), m_velocity.norm(), other.m_velocity.norm()});
         return m_pose.computeIsApprox(other.m_pose, eps) && (m_velocity - other.m_velocity).norm() <= eps * scale &&
                std::abs(m_time - other.m_time) <= eps * std::max(Scalar(1), std::abs(m_time));
