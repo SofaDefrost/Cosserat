@@ -66,12 +66,9 @@ TEST(Instantiation, SE3InlFreeFunctions) {
 	EXPECT_NEAR(rpy[3], roll, 1e-13);
 	EXPECT_NEAR(rpy[4], pitch, 1e-13);
 	EXPECT_NEAR(rpy[5], yaw, 1e-13);
-	// interpolate / operator/ / dualMatrix
 	const SE3d h = SE3d::exp(randomSE3Tangent(rng, 0.9));
 	EXPECT_TRUE(interpolate(g, h, 0.0).isApprox(g, 1e-12));
 	EXPECT_TRUE(interpolate(g, h, 1.0).isApprox(h, 1e-12));
-	const V6 x = randomSE3Tangent(rng, 0.7);
-	EXPECT_LT((dualMatrix<double>(x) - SE3d::hat(x)).cwiseAbs().maxCoeff(), 1e-15);
 	const Eigen::Vector3d p(0.1, 0.2, 0.3);
 	EXPECT_LT((p / g - g.inverse().act(p)).norm(), 1e-15);
 }
@@ -88,9 +85,6 @@ TEST(Instantiation, SE23InlFreeFunctions) {
 	EXPECT_LT((v.tail<3>() - vel).norm(), 1e-15);
 	EXPECT_TRUE(interpolate(g, e, 0.0).isApprox(g, 1e-12));
 	EXPECT_TRUE(interpolate(g, e, 1.0).isApprox(e, 1e-12));
-	Eigen::Matrix<double, 9, 1> x;
-	x << 0.1, 0.2, 0.3, 0.4, -0.5, 0.6, 0.7, 0.8, -0.9;
-	EXPECT_LT((dualMatrix<double>(x).block<5, 5>(0, 0).cast<double>() - SE23<double>::hat(x).block<5, 5>(0, 0)).norm(), 1e-15);
 }
 
 TEST(Instantiation, SGal3InlFreeFunctions) {
@@ -102,7 +96,4 @@ TEST(Instantiation, SGal3InlFreeFunctions) {
 	const Eigen::Matrix<double, 10, 1> v = toPositionEulerVelocityTime(e);
 	EXPECT_NEAR(v[4], -0.5, 1e-13);
 	EXPECT_NEAR(v[9], 0.7, 1e-15);
-	Eigen::Matrix<double, 10, 1> x;
-	x << 0.1, 0.2, 0.3, 0.4, -0.5, 0.6, 0.7, 0.8, -0.9, 0.5;
-	EXPECT_LT((dualMatrix<double>(x).block<5, 5>(0, 0).cast<double>() - SGal3d::hat(x).block<5, 5>(0, 0)).norm(), 1e-15);
 }

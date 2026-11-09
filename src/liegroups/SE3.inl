@@ -121,16 +121,6 @@ namespace sofa::component::cosserat::liegroups {
 		return from * SE3<_Scalar>::exp(t * delta);
 	}
 
-	/**
-	 * @brief Dual vector operator for se(3): maps xi = [phi ; rho] (angular first, as everywhere in
-	 * the library) to its 4x4 matrix [[phi^, rho], [0, 0]]. The previous body took the translation
-	 * from the head and the rotation from the tail, i.e. the opposite layout, and called an
-	 * SO3::hat that does not exist.
-	 */
-	template<typename _Scalar>
-	Eigen::Matrix<_Scalar, 4, 4> dualMatrix(const typename SE3<_Scalar>::TangentVector &xi) {
-		return SE3<_Scalar>::computeHat(xi);
-	}
 
 	// BCH implementation moved to header file
 

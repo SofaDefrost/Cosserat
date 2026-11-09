@@ -19,7 +19,7 @@ TEST(AdvancedFeaturesTest, BCHApproximation) {
 	y[4] = 0.1; // small translation along Y
 
 	// For pure translations, [x,y] = 0, so BCH(x,y) = x+y
-	TangentVector z = SE3Type::computeBCH(x, y);
+	TangentVector z = SE3Type::bchSecondOrder(x, y);
 	TangentVector expected = x + y;
 
 	EXPECT_TRUE(z.isApprox(expected));
@@ -31,7 +31,7 @@ TEST(AdvancedFeaturesTest, BCHApproximation) {
 	y[1] = 0.1; // rotation Y
 
 	// [x,y] should be non-zero (rotation Z, index 2): BCH = x + y + 1/2 [x,y]
-	z = SE3Type::computeBCH(x, y);
+	z = SE3Type::bchSecondOrder(x, y);
 	EXPECT_FALSE(z.isApprox(x + y));
 	EXPECT_NEAR(z[2], 0.5 * 0.1 * 0.1, 1e-15);
 }

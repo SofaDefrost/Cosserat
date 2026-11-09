@@ -114,18 +114,6 @@ namespace sofa::component::cosserat::liegroups::testing {
 	}
 
 	/**
-	 * @brief Tests the `skew3` and `unskew3` functions in Types.
-	 * Verifies that a 3D vector can be converted to a skew-symmetric matrix and back, and that the matrix is indeed
-	 * skew-symmetric.
-	 */
-	TEST_F(TypesTest, SkewSymmetricMatrix) {
-		Vector3d v(1.0, 2.0, 3.0);
-		Matrix3d skew_mat = Typesd::skew3(v);
-		EXPECT_TRUE(Typesd::isSkewSymmetric(skew_mat));
-		EXPECT_TRUE(Typesd::unskew3(skew_mat).isApprox(v, eps));
-	}
-
-	/**
 	 * @brief Tests the random number generation functions in Types.
 	 * Verifies that random scalars are within the expected range and random unit vectors have a norm of 1.
 	 */

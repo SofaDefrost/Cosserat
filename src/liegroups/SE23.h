@@ -139,7 +139,7 @@ namespace sofa::component::cosserat::liegroups {
 		 * @param other The other SE23 element to compose with.
 		 * @return The composed SE23 element.
 		 */
-		SE23<Scalar> compose(const SE23 &other) const {
+		SE23<Scalar> computeCompose(const SE23 &other) const {
 			SE3<Scalar> composed_pose = m_pose.compose(other.m_pose);
 			Vector3 composed_velocity = m_pose.rotation().computeAction(other.m_velocity) + m_velocity;
 			return SE23(composed_pose, composed_velocity);
@@ -341,7 +341,7 @@ namespace sofa::component::cosserat::liegroups {
 
 } // namespace sofa::component::cosserat::liegroups
 
-// Out-of-line free functions (operator/, Euler conversions, interpolate, dualMatrix).
+// Out-of-line free functions (operator/, Euler conversions, interpolate).
 #include "SE23.inl"
 
 

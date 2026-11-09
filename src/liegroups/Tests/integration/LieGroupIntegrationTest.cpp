@@ -205,7 +205,7 @@ TEST_F(LieGroupIntegrationTest, ArticulatedSystem)
     
     for (int i = 0; i < 3; ++i) {
         Vector3 position(0, 0, i * link_length);
-        SO3d orientation = SO3d::identity();
+        SO3d orientation = SO3d::Identity();
         links.push_back(SE3d(orientation, position));
     }
     

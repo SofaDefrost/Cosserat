@@ -160,27 +160,21 @@ namespace sofa::component::cosserat::liegroups {
 
 		// ---- group operations (also the CRTP hooks of LieGroupBase) ----
 
-		Bundle operator*(const Bundle &other) const { return compose(other); }
-		Bundle compose(const Bundle &other) const { return multiply_impl(other, std::index_sequence_for<Groups...>()); }
+		Bundle operator*(const Bundle &other) const { return computeCompose(other); }
+		Bundle computeCompose(const Bundle &other) const { return multiply_impl(other, std::index_sequence_for<Groups...>()); }
 		Bundle &operator*=(const Bundle &other) {
 			multiply_assign_impl(other, std::index_sequence_for<Groups...>());
 			return *this;
 		}
 
-		Bundle inverse() const { return computeInverse(); }
 		Bundle computeInverse() const { return inverse_impl(std::index_sequence_for<Groups...>()); }
 
-		/// Static (as in LieGroupBase): the former non-static `exp` hid the base one, which then
-		/// could not be used by plus() / minus() / interpolate().
-		static Bundle exp(const TangentVector &algebra_element) { return computeExp(algebra_element); }
 		static Bundle computeExp(const TangentVector &algebra_element) {
 			return exp_impl(algebra_element, std::index_sequence_for<Groups...>());
 		}
 
-		TangentVector log() const { return computeLog(); }
 		TangentVector computeLog() const { return log_impl(std::index_sequence_for<Groups...>()); }
 
-		AdjointMatrix adjoint() const { return computeAdjoint(); }
 		AdjointMatrix computeAdjoint() const { return adjoint_impl(std::index_sequence_for<Groups...>()); }
 
 		ActionVector act(const ActionVector &point) const { return computeAction(point); }
@@ -200,21 +194,18 @@ namespace sofa::component::cosserat::liegroups {
 			return result;
 		}
 
-		bool isApprox(const Bundle &other, const Scalar &eps = Types<Scalar>::epsilon()) const {
-			return computeIsApprox(other, eps);
-		}
 		bool computeIsApprox(const Bundle &other, const Scalar &eps = Types<Scalar>::epsilon()) const {
 			return isApprox_impl(other, eps, std::index_sequence_for<Groups...>());
 		}
-		bool operator==(const Bundle &other) const { return isApprox(other); }
+		bool operator==(const Bundle &other) const { return computeIsApprox(other); }
 		bool operator!=(const Bundle &other) const { return !(*this == other); }
 
 		Bundle interpolate(const Bundle &other, const Scalar &t) const {
 			if (t < 0 || t > 1) {
 				throw std::invalid_argument("Interpolation parameter must be in [0,1]");
 			}
-			const TangentVector delta = (inverse() * other).log();
-			return *this * exp(t * delta);
+			const TangentVector delta = (computeInverse() * other).computeLog();
+			return *this * computeExp(t * delta);
 		}
 
 		/// Random element, each group drawn with its own Random(gen); `scale` is kept for API compatibility
