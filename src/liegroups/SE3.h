@@ -211,13 +211,6 @@ namespace sofa::component::cosserat::liegroups {
 		}
 
 		// ========== CRTP Interface Implementations ==========
-		TangentVector computeTangent(const ActionVector &point) const {
-			TangentVector tangent;
-			tangent.template head<3>() = m_rotation.inverse().act(point - m_translation);
-			tangent.template tail<3>() = m_rotation.inverse().log();
-			return tangent;
-		}
-
 		/**
 		 * @brief hat operator of se(3): [phi ; rho] -> [[phi]x rho ; 0 0] (CRTP hook of LieGroupBase::hat,
 		 * used by the generic BCH(), matrixLog() and ad()).
@@ -298,23 +291,13 @@ namespace sofa::component::cosserat::liegroups {
 		/// ad(v, w) = [v, w] = ad_v w = vee(hat(v) hat(w) - hat(w) hat(v)) (a 6-vector, not a matrix).
 		static TangentVector ad(const TangentVector &v, const TangentVector &w) { return lieBracket(v, w); }
 
-		AdjointMatrix projector() const {
-			AdjointMatrix Ad = AdjointMatrix::Zero();
-			const Matrix3 R = m_rotation.matrix();
-			Ad.template block<3, 3>(0, 0) = R;
-			Ad.template block<3, 3>(3, 3) = R;
-			Ad.template block<3, 3>(0, 3) = SO3Type::computeHat(m_translation) * R;
-			return Ad;
-		}
-
-
 		/**
 		 * @brief Differential of the logarithm at this element, in the right convention:
 		 *   log(g exp(d)) = log(g) + dlog() d + O(d^2),  dlog() = Jr^-1(log g) = dexpInv(log g).
 		 *
 		 * Declared by LieGroupBase (generic implementation through computeRightJacobianInverse);
 		 * the SE3-specific override that used to be here returned the co-adjoint matrix
-		 * instead, so it is simply removed. Note SO3::dlog() uses the left convention.
+		 * instead, so it is simply removed. SO3::dlog() uses the same (right) convention.
 		 */
 		using Base::dlog;
 
@@ -391,16 +374,17 @@ namespace sofa::component::cosserat::liegroups {
 	/**
 	 * @brief Compute the Jacobian of group composition.
 	 * 
-	 * For g = this * h, computes jacobians in the tangent space se(3).
-	 * Left Jacobian: ∂g/∂this when perturbing this on the left
-	 * Right Jacobian: ∂g/∂h when perturbing h on the left
+	 * For g = this * h, computes jacobians in the tangent space se(3), right perturbation (g exp(δ)),
+	 * the convention of all the Jacobians of this class and of dexp/dlog:
+	 * J_left  = ∂(g h)/∂g = Ad_{h⁻¹}
+	 * J_right = ∂(g h)/∂h = I
 	 * 
 	 * @param other The other SE3 element h
 	 * @return Pair of 6x6 Jacobians (J_left, J_right)
 	 */
 	std::pair<AdjointMatrix, AdjointMatrix> composeJacobians(const SE3 &other) const noexcept {
-		// For SE(3): g * h with left perturbation
-		// Left Jacobian: ∂(g*h)/∂g = Ad_{h^{-1}}
+		// For SE(3): g * h with right perturbation g exp(δ): g exp(δ) h = g h exp(Ad_{h⁻¹} δ)
+		// ∂(g*h)/∂g = Ad_{h^{-1}}
 		AdjointMatrix J_left = other.computeInverse().computeAdjoint();
 		
 		// Right Jacobian: ∂(g*h)/∂h = I
@@ -417,15 +401,15 @@ namespace sofa::component::cosserat::liegroups {
 	 * @return 6x6 Jacobian matrix
 	 */
 	AdjointMatrix inverseJacobian() const noexcept {
-		// ∂g^{-1}/∂g = -Ad_{g^{-1}}
-		return -computeInverse().computeAdjoint();
+		// right perturbation: (g exp(δ))^{-1} = g^{-1} exp(-Ad_g δ), so ∂g^{-1}/∂g = -Ad_g
+		return -computeAdjoint();
 	}
 
 	/**
 	 * @brief Compute the Jacobian of the group action on a point.
 	 *
 	 * For y = g*p (where g acts on point p), computes:
-	 * - ∂y/∂g (g perturbed on the LEFT in the tangent space, exp(ξ)·g, ξ = [φ ; ρ]ᵀ): 3x6 matrix
+	 * - ∂y/∂g (g perturbed on the right, g·exp(ξ), ξ = [φ ; ρ]ᵀ): 3x6 matrix
 	 * - ∂y/∂p: 3x3 matrix
 	 *
 	 * Columns follow the library layout [φ (angular, 0..2) ; ρ (linear, 3..5)] of computeExp/computeLog.
@@ -440,22 +424,22 @@ namespace sofa::component::cosserat::liegroups {
 	/**
 	 * @brief Compute only the Jacobian w.r.t. the group element for action.
 	 *
-	 * Left perturbation, ξ = [φ ; ρ]ᵀ:  exp(ξ)·(g·p) ≈ y + ρ + φ × y   with y = g·p = R p + t, so
+	 * Right perturbation, ξ = [φ ; ρ]ᵀ:  g·exp(ξ)·p ≈ R (p + φ × p + ρ) + t, so
 	 *
-	 *   ∂(g·p)/∂ξ = [ -[y]×  |  I₃ ]      (columns 0..2 : φ, columns 3..5 : ρ)
+	 *   ∂(g·p)/∂ξ = [ -R [p]×  |  R ]      (columns 0..2 : φ, columns 3..5 : ρ)
 	 *
-	 * (a right perturbation g·exp(ξ) would instead give [ -R [p]× | R ]; that is what the generic
-	 * LieGroupBase::actionJacobian finite differences compute.)
+	 * This is the convention of the generic LieGroupBase::actionJacobian (finite differences) and of
+	 * dexp/dlog.
 	 *
 	 * @param point The point p ∈ ℝ³
 	 * @return 3x6 Jacobian ∂(g*p)/∂g
 	 */
 	JacobianMatrix actionJacobianGroup(const ActionVector &point) const noexcept {
-		const Vector3 y = m_rotation.act(point) + m_translation;
+		const Matrix3 R = m_rotation.matrix();
 
 		JacobianMatrix J;  // 3x6
-		J.template block<3, 3>(0, 0) = -SO3Type::computeHat(y);  // ∂y/∂φ
-		J.template block<3, 3>(0, 3) = Matrix3::Identity();      // ∂y/∂ρ
+		J.template block<3, 3>(0, 0) = -R * SO3Type::computeHat(point);  // ∂y/∂φ
+		J.template block<3, 3>(0, 3) = R;                                // ∂y/∂ρ
 
 		return J;
 	}
@@ -526,7 +510,7 @@ namespace sofa::component::cosserat::liegroups {
 	static AdjointMatrix computeLeftJacobian(const TangentVector &xi) {
 		const Vector3 phi = xi.template head<3>();
 		const Vector3 rho = xi.template tail<3>();
-		const Matrix3 Jl  = SO3Type::dexp(phi); // SO3 left Jacobian
+		const Matrix3 Jl  = SO3Type::computeLeftJacobian(phi); // SO3 left Jacobian
 		const Matrix3 Q   = jacobianQ(rho, phi);
 		AdjointMatrix M = AdjointMatrix::Zero();
 		M.template block<3, 3>(0, 0) = Jl;

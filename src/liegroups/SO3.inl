@@ -141,34 +141,30 @@ namespace sofa::component::cosserat::liegroups {
 	} // namespace detail
 
 	/**
-	 * @brief Computes the differential of the exponential map (the left Jacobian Jl).
-	 *   Jl(w) = I + a(|w|) [w]x + b(|w|) [w]x^2
+	 * @brief Computes the differential of the exponential map, in the right convention shared by
+	 * LieGroupBase::dexp and SE3::dexp: exp(v + d) = exp(v) exp(Jr(v) d) + O(d^2).
+	 *   Jr(w) = I - a(|w|) [w]x + b(|w|) [w]x^2
+	 * (the left Jacobian is computeLeftJacobian).
 	 * @tparam _Scalar The scalar type.
 	 * @param v The tangent vector.
 	 * @return The matrix representing the differential of exp at v.
 	 */
 	template<typename _Scalar>
 	typename SO3<_Scalar>::AdjointMatrix SO3<_Scalar>::dexp(const TangentVector &v) {
-		Scalar a, b, c;
-		detail::so3JacobianCoefficients(v.norm(), a, b, c);
-		const Matrix V = SO3::computeHat(v);
-		return Matrix::Identity() + a * V + b * (V * V);
+		return computeRightJacobian(v);
 	}
 
 	/**
-	 * @brief Computes the differential of the logarithm map (inverse of the left Jacobian,
-	 * evaluated at log of the current element).
-	 *   Jl^-1(w) = I - 1/2 [w]x + c(|w|) [w]x^2
+	 * @brief Computes the differential of the logarithm map (inverse of the right Jacobian,
+	 * evaluated at log of the current element), same convention as LieGroupBase::dlog:
+	 * log(g exp(d)) = log(g) + dlog() d + O(d^2).
+	 *   Jr^-1(w) = I + 1/2 [w]x + c(|w|) [w]x^2
 	 * @tparam _Scalar The scalar type.
 	 * @return The matrix representing the differential of log at the current point.
 	 */
 	template<typename _Scalar>
 	typename SO3<_Scalar>::AdjointMatrix SO3<_Scalar>::dlog() const {
-		const TangentVector omega = computeLog();
-		Scalar a, b, c;
-		detail::so3JacobianCoefficients(omega.norm(), a, b, c);
-		const Matrix V = SO3::computeHat(omega);
-		return Matrix::Identity() - Scalar(0.5) * V + c * (V * V);
+		return computeRightJacobianInverse(computeLog());
 	}
 
 	/**

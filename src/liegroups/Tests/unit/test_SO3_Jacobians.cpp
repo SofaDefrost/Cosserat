@@ -57,12 +57,14 @@ TEST(SO3Jacobians, SmallAngleHasNoCancellation) {
     EXPECT_LT((Rot::computeRightJacobian(w) - expected).norm(), 1e-17);
 }
 
-TEST(SO3Jacobians, DexpIsLeftJacobianAndDlogItsInverse) {
+TEST(SO3Jacobians, DexpIsRightJacobianAndDlogItsInverse) {
     std::mt19937_64 rng(3);
     for (double angle : kAngles) {
         const Vec3 w = randomRotationVector(rng, angle);
-        EXPECT_LT((Rot::dexp(w) - Rot::computeLeftJacobian(w)).norm(), 1e-15) << angle;
-        EXPECT_LT((Rot::exp(w).dlog() - Rot::computeLeftJacobianInverse(w)).norm(), 1e-9) << angle;
+        // same convention as LieGroupBase::dexp / dlog and SE3::dexp / dlog: the right Jacobian
+        EXPECT_LT((Rot::dexp(w) - Rot::computeRightJacobian(w)).norm(), 1e-15) << angle;
+        EXPECT_LT((Rot::exp(w).dlog() - Rot::computeRightJacobianInverse(w)).norm(), 1e-9) << angle;
+        EXPECT_LT((Rot::dexp(w) - Rot::dexp_alternative(w)).norm(), 1e-12) << angle;
     }
 }
 
