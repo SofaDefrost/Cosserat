@@ -314,7 +314,7 @@ class SE3 : public LieGroup<GroupProperties<SE3<Scalar_>, Scalar_, 4, 6, 3>> {
      * @param v The 6D Lie algebra vector [angular, linear].
      * @return The 4x4 matrix representation.
      */
-    static Matrix hat(const TangentVector &v) {
+    static Matrix computeHat(const TangentVector &v) {
         Matrix result = Matrix::Zero();
         const Vector3 phi = Vector3(v.template head<3>());
         const Vector3 rho = Vector3(v.template tail<3>());
@@ -330,22 +330,12 @@ class SE3 : public LieGroup<GroupProperties<SE3<Scalar_>, Scalar_, 4, 6, 3>> {
      * @param X The 4x4 matrix representation.
      * @return The 6D Lie algebra vector [angular, linear].
      */
-    static TangentVector vee(const Matrix &X) {
+    static TangentVector computeVee(const Matrix &X) {
         TangentVector result;
         result.template head<3>() = SO3Type::computeVee(X.template block<3, 3>(0, 0));
         result.template tail<3>() = X.template block<3, 1>(0, 3);
         return result;
     }
-
-    /**
-     * @brief Hat operator for CRTP compatibility (alias for hat).
-     */
-    static Matrix computeHat(const TangentVector &v) { return hat(v); }
-
-    /**
-     * @brief Vee operator for CRTP compatibility (alias for vee).
-     */
-    static TangentVector computeVee(const Matrix &X) { return vee(X); }
 
     /**
      * @brief Algebra adjoint operator ad_v of v = [phi ; rho]: ad_v w = [v, w].

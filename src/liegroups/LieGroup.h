@@ -243,7 +243,7 @@ class LieGroup {
      * @note This is equivalent to X.compose(Derived::exp(tau)) but provides
      *       a more intuitive notation consistent with Lie theory literature.
      */
-    [[nodiscard]] Derived plus(const TangentVector &tau) const noexcept {
+    [[nodiscard]] Derived operator+(const TangentVector &tau) const noexcept {
         return derived().compose(Derived::exp(tau));
     }
 
@@ -259,32 +259,8 @@ class LieGroup {
      * @note This is the inverse operation of plus: Y.minus(X) gives the
      *       tangent vector τ such that Y = X.plus(τ)
      */
-    [[nodiscard]] TangentVector minus(const Derived &other) const noexcept {
-        return derived().inverse().compose(other).log();
-    }
-
-    /**
-     * @brief Operator overload for plus (X + τ = X ⊕ τ)
-     *
-     * Provides intuitive syntax: X_new = X + delta
-     *
-     * @param tau Tangent vector increment
-     * @return X ⊕ τ
-     */
-    [[nodiscard]] Derived operator+(const TangentVector &tau) const noexcept {
-        return plus(tau);
-    }
-
-    /**
-     * @brief Operator overload for minus (Y - X = Y ⊖ X)
-     *
-     * Provides intuitive syntax: error = Y - X
-     *
-     * @param other Another group element
-     * @return Y ⊖ X (tangent vector difference)
-     */
     [[nodiscard]] TangentVector operator-(const Derived &other) const noexcept {
-        return minus(other);
+        return derived().inverse().compose(other).log();
     }
 
     /**
