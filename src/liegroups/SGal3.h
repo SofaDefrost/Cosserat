@@ -40,16 +40,16 @@ namespace sofa::component::cosserat::liegroups {
  * - Next three components represent boost (velocity change)
  * - Last component represents time rate
  *
- * @tparam _Scalar The scalar type (must be a floating-point type)
+ * @tparam Scalar_ The scalar type (must be a floating-point type)
  */
 
-template<typename _Scalar, int _Dim = 10>
-class SGal3 : public LieGroup<GroupProperties<SGal3<_Scalar, _Dim>, _Scalar, 10, 10, 7>>
-//,public LieGroupOperations<SGal3<_Scalar>> // the Utils may be needed here!
+template<typename Scalar_, int Dim_ = 10>
+class SGal3 : public LieGroup<GroupProperties<SGal3<Scalar_, Dim_>, Scalar_, 10, 10, 7>>
+//,public LieGroupOperations<SGal3<Scalar_>> // the Utils may be needed here!
 {
 
 public:
-    using Base = LieGroup<GroupProperties<SGal3<_Scalar, _Dim>, _Scalar, 10, 10, 7>>;
+    using Base = LieGroup<GroupProperties<SGal3<Scalar_, Dim_>, Scalar_, 10, 10, 7>>;
     using Scalar = typename Base::Scalar;
     using Vector = typename Base::Vector;
     using Matrix = typename Base::Matrix;

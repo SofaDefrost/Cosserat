@@ -33,12 +33,12 @@ namespace sofa::component::cosserat::liegroups {
 	 * The Lie algebra so(3) consists of skew-symmetric 3×3 matrices, which can be
 	 * identified with vectors in ℝ³ (angular velocity vectors).
 	 *
-	 * @tparam _Scalar The scalar type (must be a floating-point type)
+	 * @tparam Scalar_ The scalar type (must be a floating-point type)
 	 */
-	template<typename _Scalar>
-        class SO3 : public LieGroup<GroupProperties<SO3<_Scalar>, _Scalar, 3, 3, 3>> {
+	template<typename Scalar_>
+        class SO3 : public LieGroup<GroupProperties<SO3<Scalar_>, Scalar_, 3, 3, 3>> {
 	public:
-        using Base = LieGroup<GroupProperties<SO3<_Scalar>, _Scalar, 3, 3, 3>>;
+        using Base = LieGroup<GroupProperties<SO3<Scalar_>, Scalar_, 3, 3, 3>>;
 		using Scalar = typename Base::Scalar;
 		using Vector = typename Base::Vector;
 		using Matrix = typename Base::Matrix;

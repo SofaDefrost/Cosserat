@@ -23,8 +23,8 @@ namespace sofa::component::cosserat::liegroups {
 	 * on the manifold. It includes robust error handling and fallbacks for
 	 * numerical stability.
 	 * @tparam Derived The derived class implementing the specific Lie group.
-	 * @tparam _Scalar The scalar type used for computations.
-	 * @tparam _Dim The dimension of the group representation.
+	 * @tparam Scalar_ The scalar type used for computations.
+	 * @tparam Dim_ The dimension of the group representation.
 	 * @tparam _AlgebraDim The dimension of the Lie algebra.
 	 * @tparam _ActionDim The dimension of vectors the group acts on.
 	 * @param other The other Lie group element to compute the distance to.
@@ -64,8 +64,8 @@ inline auto LieGroup<GroupProperties>::distance(const Derived& other) const noex
 	 * distances is needed, as it avoids the square root operation. It uses the
 	 * squared norm of the logarithm of the relative transformation.
 	 * @tparam Derived The derived class implementing the specific Lie group.
-	 * @tparam _Scalar The scalar type used for computations.
-	 * @tparam _Dim The dimension of the group representation.
+	 * @tparam Scalar_ The scalar type used for computations.
+	 * @tparam Dim_ The dimension of the group representation.
 	 * @tparam _AlgebraDim The dimension of the Lie algebra.
 	 * @tparam _ActionDim The dimension of vectors the group acts on.
 	 * @param other The other Lie group element to compute the squared distance to.
@@ -98,8 +98,8 @@ inline auto LieGroup<GroupProperties>::distance(const Derived& other) const noex
 	 * the interpolation parameter `t` to the range [0, 1] and includes error
 	 * handling.
 	 * @tparam Derived The derived class implementing the specific Lie group.
-	 * @tparam _Scalar The scalar type used for computations.
-	 * @tparam _Dim The dimension of the group representation.
+	 * @tparam Scalar_ The scalar type used for computations.
+	 * @tparam Dim_ The dimension of the group representation.
 	 * @tparam _AlgebraDim The dimension of the Lie algebra.
 	 * @tparam _ActionDim The dimension of vectors the group acts on.
 	 * @param other The target Lie group element to interpolate towards.
@@ -137,8 +137,8 @@ inline auto LieGroup<GroupProperties>::distance(const Derived& other) const noex
 	 * the manifold. It includes numerical stability checks and falls back to linear
 	 * interpolation if elements are too close or other issues arise.
 	 * @tparam Derived The derived class implementing the specific Lie group.
-	 * @tparam _Scalar The scalar type used for computations.
-	 * @tparam _Dim The dimension of the group representation.
+	 * @tparam Scalar_ The scalar type used for computations.
+	 * @tparam Dim_ The dimension of the group representation.
 	 * @tparam _AlgebraDim The dimension of the Lie algebra.
 	 * @tparam _ActionDim The dimension of vectors the group acts on.
 	 * @param other The target Lie group element for interpolation.
@@ -193,8 +193,8 @@ inline auto LieGroup<GroupProperties>::distance(const Derived& other) const noex
 	 * product of exponentials of two Lie algebra elements. This implementation
 	 * supports up to fifth-order approximation and includes a convergence check.
 	 * @tparam Derived The derived class implementing the specific Lie group.
-	 * @tparam _Scalar The scalar type used for computations.
-	 * @tparam _Dim The dimension of the group representation.
+	 * @tparam Scalar_ The scalar type used for computations.
+	 * @tparam Dim_ The dimension of the group representation.
 	 * @tparam _AlgebraDim The dimension of the Lie algebra.
 	 * @tparam _ActionDim The dimension of vectors the group acts on.
 	 * @param v The first tangent vector (Lie algebra element).
@@ -273,8 +273,8 @@ inline auto LieGroup<GroupProperties>::distance(const Derived& other) const noex
 	 * comparison/validation. This version uses direct computation with ad() operator.
 	 * 
 	 * @tparam Derived The derived class implementing the specific Lie group.
-	 * @tparam _Scalar The scalar type used for computations.
-	 * @tparam _Dim The dimension of the group representation.
+	 * @tparam Scalar_ The scalar type used for computations.
+	 * @tparam Dim_ The dimension of the group representation.
 	 * @tparam _AlgebraDim The dimension of the Lie algebra.
 	 * @tparam _ActionDim The dimension of vectors the group acts on.
 	 * @param v The tangent vector (Lie algebra element) at which to compute the
@@ -334,8 +334,8 @@ inline auto LieGroup<GroupProperties>::distance(const Derived& other) const noex
 	 * comparison/validation. This version uses direct computation with ad() operator.
 	 * 
 	 * @tparam Derived The derived class implementing the specific Lie group.
-	 * @tparam _Scalar The scalar type used for computations.
-	 * @tparam _Dim The dimension of the group representation.
+	 * @tparam Scalar_ The scalar type used for computations.
+	 * @tparam Dim_ The dimension of the group representation.
 	 * @tparam _AlgebraDim The dimension of the Lie algebra.
 	 * @tparam _ActionDim The dimension of vectors the group acts on.
 	 * @param v The tangent vector (Lie algebra element) at which to compute the
@@ -387,8 +387,8 @@ inline auto LieGroup<GroupProperties>::distance(const Derived& other) const noex
 	 * algebra. It uses Taylor series expansion for small input values and a
 	 * closed-form expression for larger values to ensure numerical stability.
 	 * @tparam Derived The derived class implementing the specific Lie group.
-	 * @tparam _Scalar The scalar type used for computations.
-	 * @tparam _Dim The dimension of the group representation.
+	 * @tparam Scalar_ The scalar type used for computations.
+	 * @tparam Dim_ The dimension of the group representation.
 	 * @tparam _AlgebraDim The dimension of the Lie algebra.
 	 * @tparam _ActionDim The dimension of vectors the group acts on.
 	 * @return The adjoint matrix representing the differential of the logarithm map
@@ -440,8 +440,8 @@ inline auto LieGroup<GroupProperties>::distance(const Derived& other) const noex
 	 * analytical method is provided or it fails, it falls back to numerical
 	 * differentiation using central differences.
 	 * @tparam Derived The derived class implementing the specific Lie group.
-	 * @tparam _Scalar The scalar type used for computations.
-	 * @tparam _Dim The dimension of the group representation.
+	 * @tparam Scalar_ The scalar type used for computations.
+	 * @tparam Dim_ The dimension of the group representation.
 	 * @tparam _AlgebraDim The dimension of the Lie algebra.
 	 * @tparam _ActionDim The dimension of vectors the group acts on.
 	 * @param point The point in the action space at which to compute the Jacobian.
@@ -498,8 +498,8 @@ inline auto LieGroup<GroupProperties>::distance(const Derived& other) const noex
 	 * matrix representation. This is a static assertion that ensures the derived
 	 * class provides its own implementation of `computeHat`.
 	 * @tparam Derived The derived class implementing the specific Lie group.
-	 * @tparam _Scalar The scalar type used for computations.
-	 * @tparam _Dim The dimension of the group representation.
+	 * @tparam Scalar_ The scalar type used for computations.
+	 * @tparam Dim_ The dimension of the group representation.
 	 * @tparam _AlgebraDim The dimension of the Lie algebra.
 	 * @tparam _ActionDim The dimension of vectors the group acts on.
 	 * @param v The tangent vector (Lie algebra element).
@@ -517,8 +517,8 @@ inline auto LieGroup<GroupProperties>::distance(const Derived& other) const noex
 	 * hat operator. A static assertion ensures the derived class provides its own
 	 * `computeVee` implementation.
 	 * @tparam Derived The derived class implementing the specific Lie group.
-	 * @tparam _Scalar The scalar type used for computations.
-	 * @tparam _Dim The dimension of the group representation.
+	 * @tparam Scalar_ The scalar type used for computations.
+	 * @tparam Dim_ The dimension of the group representation.
 	 * @tparam _AlgebraDim The dimension of the Lie algebra.
 	 * @tparam _ActionDim The dimension of vectors the group acts on.
 	 * @param X The matrix representation in the Lie algebra.
@@ -537,8 +537,8 @@ inline auto LieGroup<GroupProperties>::distance(const Derived& other) const noex
 	 * class provides an optimized `computeAd` method; otherwise, it uses a default
 	 * implementation for matrix Lie groups.
 	 * @tparam Derived The derived class implementing the specific Lie group.
-	 * @tparam _Scalar The scalar type used for computations.
-	 * @tparam _Dim The dimension of the group representation.
+	 * @tparam Scalar_ The scalar type used for computations.
+	 * @tparam Dim_ The dimension of the group representation.
 	 * @tparam _AlgebraDim The dimension of the Lie algebra.
 	 * @tparam _ActionDim The dimension of vectors the group acts on.
 	 * @param v The element of the Lie algebra in vector form.
@@ -582,8 +582,8 @@ inline auto LieGroup<GroupProperties>::distance(const Derived& other) const noex
 	 * that, when exponentiated, yields the current Lie group element. It is
 	 * primarily used for debugging and analysis purposes.
 	 * @tparam Derived The derived class implementing the specific Lie group.
-	 * @tparam _Scalar The scalar type used for computations.
-	 * @tparam _Dim The dimension of the group representation.
+	 * @tparam Scalar_ The scalar type used for computations.
+	 * @tparam Dim_ The dimension of the group representation.
 	 * @tparam _AlgebraDim The dimension of the Lie algebra.
 	 * @tparam _ActionDim The dimension of vectors the group acts on.
 	 * @return The matrix representation of the Lie algebra element.

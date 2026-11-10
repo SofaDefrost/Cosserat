@@ -36,11 +36,11 @@ namespace sofa::component::cosserat::liegroups {
 	 * This class provides type aliases and utility functions for different
 	 * scalar types used in Lie group computations.
 	 */
-	template<typename _Scalar>
-		requires (std::is_floating_point_v<_Scalar> || std::is_class_v<_Scalar>)
+	template<typename Scalar_>
+		requires (std::is_floating_point_v<Scalar_> || std::is_class_v<Scalar_>)
 	class Types {
 	public:
-		using Scalar = _Scalar;
+		using Scalar = Scalar_;
 
 		// Eigen type aliases
 		template<int Rows, int Cols = Rows>

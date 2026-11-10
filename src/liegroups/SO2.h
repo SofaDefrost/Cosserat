@@ -34,12 +34,12 @@ namespace sofa::component::cosserat::liegroups {
 	 * The Lie algebra so(2) consists of skew-symmetric 2×2 matrices, which can be
 	 * identified with real numbers (the rotation angle).
 	 *
-	 * @tparam _Scalar The scalar type (must be a floating-point type)
+	 * @tparam Scalar_ The scalar type (must be a floating-point type)
 	 */
-	template<typename _Scalar>
-	class SO2 : public LieGroup<GroupProperties<SO2<_Scalar>, _Scalar, 2, 1, 2>> {
+	template<typename Scalar_>
+	class SO2 : public LieGroup<GroupProperties<SO2<Scalar_>, Scalar_, 2, 1, 2>> {
 	public:
-		using Base = LieGroup<GroupProperties<SO2<_Scalar>, _Scalar, 2, 1, 2>>;
+		using Base = LieGroup<GroupProperties<SO2<Scalar_>, Scalar_, 2, 1, 2>>;
 		using Scalar = typename Base::Scalar;
 		using Vector = typename Base::Vector;
 		using Matrix = typename Base::Matrix;
@@ -47,7 +47,7 @@ namespace sofa::component::cosserat::liegroups {
 		using AdjointMatrix = typename Base::AdjointMatrix;
 
 		static constexpr int Dim = 2;
-		using Complex = Eigen::Vector2<_Scalar>; // Represents complex number as 2D vector
+		using Complex = Eigen::Vector2<Scalar_>; // Represents complex number as 2D vector
 
 		/**
 		 * @brief Default constructor creates identity rotation (angle = 0)
@@ -58,7 +58,7 @@ namespace sofa::component::cosserat::liegroups {
 		 * @brief Construct from angle (in radians)
 		 * @param angle The rotation angle in radians.
 		 */
-		explicit SO2(const Scalar &angle) : m_angle(Types<_Scalar>::normalizeAngle(angle)) { updateComplex(); }
+		explicit SO2(const Scalar &angle) : m_angle(Types<Scalar_>::normalizeAngle(angle)) { updateComplex(); }
 
 		/**
 		 * @brief Copy constructor
@@ -78,7 +78,7 @@ namespace sofa::component::cosserat::liegroups {
 		 * @param angle The new rotation angle in radians.
 		 */
 		void setAngle(const Scalar &angle) {
-			m_angle = Types<_Scalar>::normalizeAngle(angle);
+			m_angle = Types<Scalar_>::normalizeAngle(angle);
 			updateComplex();
 		}
 
@@ -134,7 +134,7 @@ namespace sofa::component::cosserat::liegroups {
 		 * @return True if the elements are approximately equal, false otherwise.
 		 */
 		bool computeIsApprox(const SO2 &other, const Scalar &eps) const {
-			return Types<_Scalar>::isZero(Types<_Scalar>::normalizeAngle(m_angle - other.m_angle), eps);
+			return Types<Scalar_>::isZero(Types<Scalar_>::normalizeAngle(m_angle - other.m_angle), eps);
 		}
 		/**
 		 * @brief Applies the group action of the current SO(2) element on a 2D point.
@@ -202,7 +202,7 @@ namespace sofa::component::cosserat::liegroups {
 		 */
 		void computeNormalize() {
 			// Re-normalize angle and complex representation
-			m_angle = Types<_Scalar>::normalizeAngle(m_angle);
+			m_angle = Types<Scalar_>::normalizeAngle(m_angle);
 			updateComplex();
 		}
 

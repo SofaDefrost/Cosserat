@@ -34,14 +34,14 @@ namespace sofa::component::cosserat::liegroups {
 	 * - The exponential and logarithm maps are identity functions
 	 * - The adjoint representation is the identity matrix
 	 *
-	 * @tparam _Scalar The scalar type (must be a floating-point type)
-	 * @tparam _Dim The dimension of the space
+	 * @tparam Scalar_ The scalar type (must be a floating-point type)
+	 * @tparam Dim_ The dimension of the space
 	 */
-	template<typename _Scalar, int _Dim>
-	class Rn : public LieGroup<GroupProperties<Rn<_Scalar, _Dim>, _Scalar, _Dim, _Dim, _Dim>>
+	template<typename Scalar_, int Dim_>
+	class Rn : public LieGroup<GroupProperties<Rn<Scalar_, Dim_>, Scalar_, Dim_, Dim_, Dim_>>
         {
 	public:
-		using Base = LieGroup<GroupProperties<Rn<_Scalar, _Dim>, _Scalar, _Dim, _Dim, _Dim>>;
+		using Base = LieGroup<GroupProperties<Rn<Scalar_, Dim_>, Scalar_, Dim_, Dim_, Dim_>>;
 		using Scalar = typename Base::Scalar;
 		using Vector = typename Base::Vector;
 		using Matrix = typename Base::Matrix;

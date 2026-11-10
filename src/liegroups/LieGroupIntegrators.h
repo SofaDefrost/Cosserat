@@ -63,12 +63,12 @@ namespace sofa::component::cosserat::liegroups {
  *   SE3d g1 = SE3Integrator<double>::integrateRKMK4(g0, strain_field, s0, ds);
  * @endcode
  *
- * @tparam _Scalar Scalar type (float, double, autodiff dual, …)
+ * @tparam Scalar_ Scalar type (float, double, autodiff dual, …)
  */
-template<typename _Scalar>
+template<typename Scalar_>
 class SE3Integrator {
 public:
-    using Scalar        = _Scalar;
+    using Scalar        = Scalar_;
     using SE3Type       = SE3<Scalar>;
     using TangentVector = typename SE3Type::TangentVector;
     using Vector3       = typename SE3Type::Vector3;

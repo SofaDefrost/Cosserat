@@ -27,7 +27,7 @@
 namespace sofa::component::cosserat::liegroups {
 
 // Forward declaration for matrix representation of Lie algebra
-template<typename _Scalar, int _Dim>
+template<typename Scalar_, int Dim_>
 class LieAlgebra;
 
         // Modern C++20 concepts for better error messages and type safety
@@ -63,21 +63,21 @@ struct NumericalInstabilityException : public LieGroupException {
  * satisfy. It uses the Curiously Recurring Template Pattern (CRTP) to allow
  * static polymorphism, providing better performance than virtual functions.
  *  * @tparam Derived The derived class implementing the specific Lie group
- * @tparam _Scalar The scalar type used for computations (must be a
+ * @tparam Scalar_ The scalar type used for computations (must be a
  * floating-point type)
- * @tparam _Dim The dimension of the group representation
- * @tparam _AlgebraDim The dimension of the Lie algebra (default: same as _Dim)
+ * @tparam Dim_ The dimension of the group representation
+ * @tparam _AlgebraDim The dimension of the Lie algebra (default: same as Dim_)
  * @tparam _ActionDim The dimension of vectors the group acts on (default: same
- * as _Dim)
+ * as Dim_)
  */
 
-template<typename Derived_, FloatingPoint Scalar_, int _Dim, int _AlgebraDim = _Dim, int _ActionDim = _Dim>
-    requires(_Dim > 0 && _AlgebraDim > 0 && _ActionDim > 0)
+template<typename Derived_, FloatingPoint Scalar_, int Dim_, int _AlgebraDim = Dim_, int _ActionDim = Dim_>
+    requires(Dim_ > 0 && _AlgebraDim > 0 && _ActionDim > 0)
 class GroupProperties
 {
    public:
     // Dimensions as static constants
-    static constexpr int Dim = _Dim;
+    static constexpr int Dim = Dim_;
     static constexpr int AlgebraDim = _AlgebraDim;
     static constexpr int ActionDim = _ActionDim;
     using Derived = Derived_;

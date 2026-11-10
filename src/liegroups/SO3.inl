@@ -27,12 +27,12 @@ namespace sofa::component::cosserat::liegroups {
 	 * @brief Computes the geodesic distance between two rotations.
 	 * Uses the fact that the geodesic distance between two rotations is
 	 * twice the magnitude of the rotation angle of their difference.
-	 * @tparam _Scalar The scalar type.
+	 * @tparam Scalar_ The scalar type.
 	 * @param other The other SO3 rotation.
 	 * @return The geodesic distance.
 	 */
-	template<typename _Scalar>
-	typename SO3<_Scalar>::Scalar SO3<_Scalar>::distance(const SO3 &other) const noexcept {
+	template<typename Scalar_>
+	typename SO3<Scalar_>::Scalar SO3<Scalar_>::distance(const SO3 &other) const noexcept {
 		// Directly compute the log of the relative rotation
 		const Eigen::Quaternion<Scalar> diff = m_quat.inverse() * other.m_quat;
 		return Scalar(2.0) * std::atan2(diff.vec().norm(), std::abs(diff.w()));
@@ -42,13 +42,13 @@ namespace sofa::component::cosserat::liegroups {
 	 * @brief Performs spherical linear interpolation between two rotations.
 	 * Uses quaternion SLERP which gives the geodesic path between
 	 * two rotations. The parameter t is clamped to [0,1].
-	 * @tparam _Scalar The scalar type.
+	 * @tparam Scalar_ The scalar type.
 	 * @param other The target SO3 rotation.
 	 * @param t The interpolation parameter (between 0 and 1).
 	 * @return The interpolated SO3 rotation.
 	 */
-	template<typename _Scalar>
-	SO3<_Scalar> SO3<_Scalar>::computeInterpolate(const SO3 &other, const Scalar &t) const noexcept {
+	template<typename Scalar_>
+	SO3<Scalar_> SO3<Scalar_>::computeInterpolate(const SO3 &other, const Scalar &t) const noexcept {
 		// Clamp t to [0,1] for safety
 		const Scalar t_clamped = std::max(Scalar(0), std::min(Scalar(1), t));
 		// Use quaternion SLERP for optimal interpolation
@@ -58,14 +58,14 @@ namespace sofa::component::cosserat::liegroups {
 	/**
 	 * @brief Implements the Baker-Campbell-Hausdorff formula for SO(3).
 	 * Computes log(exp(v)exp(w)) up to the specified order.
-	 * @tparam _Scalar The scalar type.
+	 * @tparam Scalar_ The scalar type.
 	 * @param v The first tangent vector.
 	 * @param w The second tangent vector.
 	 * @param order The order of approximation (e.g., 1, 2, 3).
 	 * @return The resulting tangent vector.
 	 */
-	template<typename _Scalar>
-	typename SO3<_Scalar>::TangentVector SO3<_Scalar>::BCH(const TangentVector &v, const TangentVector &w, int order) {
+	template<typename Scalar_>
+	typename SO3<Scalar_>::TangentVector SO3<Scalar_>::BCH(const TangentVector &v, const TangentVector &w, int order) {
 		// First-order approximation: v + w
 		TangentVector result = v + w;
 
@@ -94,12 +94,12 @@ namespace sofa::component::cosserat::liegroups {
 	 * @brief Computes the differential of the exponential map.
 	 * For small angles, uses a Taylor expansion. For larger angles, uses the
 	 * closed-form expression.
-	 * @tparam _Scalar The scalar type.
+	 * @tparam Scalar_ The scalar type.
 	 * @param v The tangent vector.
 	 * @return The matrix representing the differential of exp at v.
 	 */
-	template<typename _Scalar>
-	typename SO3<_Scalar>::AdjointMatrix SO3<_Scalar>::dexp(const TangentVector &v) {
+	template<typename Scalar_>
+	typename SO3<Scalar_>::AdjointMatrix SO3<Scalar_>::dexp(const TangentVector &v) {
 		const Scalar theta = v.norm();
 
 		if (theta < Types<Scalar>::SMALL_ANGLE_THRESHOLD) {
@@ -117,11 +117,11 @@ namespace sofa::component::cosserat::liegroups {
 	 * @brief Computes the differential of the logarithm map.
 	 * For small angles, uses a Taylor expansion. For larger angles, uses the
 	 * closed-form expression.
-	 * @tparam _Scalar The scalar type.
+	 * @tparam Scalar_ The scalar type.
 	 * @return The matrix representing the differential of log at the current point.
 	 */
-	template<typename _Scalar>
-	typename SO3<_Scalar>::AdjointMatrix SO3<_Scalar>::dlog() const {
+	template<typename Scalar_>
+	typename SO3<Scalar_>::AdjointMatrix SO3<Scalar_>::dlog() const {
 		const TangentVector omega = computeLog();
 		const Scalar theta = omega.norm();
 
@@ -139,12 +139,12 @@ namespace sofa::component::cosserat::liegroups {
 	/**
 	 * @brief Computes the adjoint representation of the Lie algebra element.
 	 * For SO(3), this is equivalent to the hat map: ad(v)w = [v,w] = hat(v)w.
-	 * @tparam _Scalar The scalar type.
+	 * @tparam Scalar_ The scalar type.
 	 * @param v The tangent vector.
 	 * @return The adjoint matrix.
 	 */
-	template<typename _Scalar>
-	typename SO3<_Scalar>::AdjointMatrix SO3<_Scalar>::computeAd(const TangentVector &v) {
+	template<typename Scalar_>
+	typename SO3<Scalar_>::AdjointMatrix SO3<Scalar_>::computeAd(const TangentVector &v) {
 		// For SO(3), ad(v) is just the hat map
 		// TODO :  Check this implementation  !!!
 		// For SO(3), ad(v) is just the hat map
@@ -160,12 +160,12 @@ namespace sofa::component::cosserat::liegroups {
 	 * For small angles (θ < ε):
 	 *   Jr(θ) ≈ I - ½[θ]×
 	 * 
-	 * @tparam _Scalar The scalar type.
+	 * @tparam Scalar_ The scalar type.
 	 * @param omega Angular velocity vector in ℝ³.
 	 * @return Right Jacobian matrix (3×3).
 	 */
-	template<typename _Scalar>
-	typename SO3<_Scalar>::AdjointMatrix SO3<_Scalar>::computeRightJacobian(const TangentVector &omega) noexcept {
+	template<typename Scalar_>
+	typename SO3<Scalar_>::AdjointMatrix SO3<Scalar_>::computeRightJacobian(const TangentVector &omega) noexcept {
 		const Scalar theta = omega.norm();
 		
 		// Small angle approximation
@@ -193,12 +193,12 @@ namespace sofa::component::cosserat::liegroups {
 	 * Formula from Solà et al. (2021):
 	 *   Jl(θ) = Jr(-θ)
 	 * 
-	 * @tparam _Scalar The scalar type.
+	 * @tparam Scalar_ The scalar type.
 	 * @param omega Angular velocity vector in ℝ³.
 	 * @return Left Jacobian matrix (3×3).
 	 */
-	template<typename _Scalar>
-	typename SO3<_Scalar>::AdjointMatrix SO3<_Scalar>::computeLeftJacobian(const TangentVector &omega) noexcept {
+	template<typename Scalar_>
+	typename SO3<Scalar_>::AdjointMatrix SO3<Scalar_>::computeLeftJacobian(const TangentVector &omega) noexcept {
 		// Jl(θ) = Jr(-θ)
 		return computeRightJacobian(-omega);
 	}
@@ -212,12 +212,12 @@ namespace sofa::component::cosserat::liegroups {
 	 * For small angles (θ < ε):
 	 *   Jr⁻¹(θ) ≈ I + ½[θ]×
 	 * 
-	 * @tparam _Scalar The scalar type.
+	 * @tparam Scalar_ The scalar type.
 	 * @param omega Angular velocity vector in ℝ³.
 	 * @return Inverse right Jacobian matrix (3×3).
 	 */
-	template<typename _Scalar>
-	typename SO3<_Scalar>::AdjointMatrix SO3<_Scalar>::computeRightJacobianInverse(const TangentVector &omega) noexcept {
+	template<typename Scalar_>
+	typename SO3<Scalar_>::AdjointMatrix SO3<Scalar_>::computeRightJacobianInverse(const TangentVector &omega) noexcept {
 		const Scalar theta = omega.norm();
 		
 		// Small angle approximation
@@ -248,12 +248,12 @@ namespace sofa::component::cosserat::liegroups {
 	 * Formula from Solà et al. (2021):
 	 *   Jl⁻¹(θ) = Jr⁻¹(-θ)
 	 * 
-	 * @tparam _Scalar The scalar type.
+	 * @tparam Scalar_ The scalar type.
 	 * @param omega Angular velocity vector in ℝ³.
 	 * @return Inverse left Jacobian matrix (3×3).
 	 */
-	template<typename _Scalar>
-	typename SO3<_Scalar>::AdjointMatrix SO3<_Scalar>::computeLeftJacobianInverse(const TangentVector &omega) noexcept {
+	template<typename Scalar_>
+	typename SO3<Scalar_>::AdjointMatrix SO3<Scalar_>::computeLeftJacobianInverse(const TangentVector &omega) noexcept {
 		// Jl⁻¹(θ) = Jr⁻¹(-θ)
 		return computeRightJacobianInverse(-omega);
 	}

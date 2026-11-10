@@ -47,12 +47,12 @@ namespace sofa::component::cosserat::liegroups {
  *
  * Use transformBy(g.adjoint()) which applies Ad^T internally.
  *
- * @tparam _Scalar Scalar type (float, double, autodiff dual, …)
+ * @tparam Scalar_ Scalar type (float, double, autodiff dual, …)
  */
-template<typename _Scalar>
+template<typename Scalar_>
 class Wrench {
 public:
-    using Scalar  = _Scalar;
+    using Scalar  = Scalar_;
     using LGTypes = Types<Scalar>;
 
     using Vector3 = typename LGTypes::Vector3;

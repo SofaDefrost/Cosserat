@@ -33,12 +33,12 @@ namespace sofa::component::cosserat::liegroups
  * Elements are represented by an SO(3) rotation and a 3D translation vector.
  *  * The Lie algebra se(3) consists of 6D vectors (vx, vy, vz, ωx, ωy, ωz),
  * representing translational and angular velocities.
- *  * @tparam _Scalar The scalar type (must be a floating-point type)
+ *  * @tparam Scalar_ The scalar type (must be a floating-point type)
  */
-template<typename _Scalar>
-class SE3 : public LieGroup<GroupProperties<SE3<_Scalar>, _Scalar, 4, 6, 3>> {
+template<typename Scalar_>
+class SE3 : public LieGroup<GroupProperties<SE3<Scalar_>, Scalar_, 4, 6, 3>> {
    public:
-    using Base = LieGroup<GroupProperties<SE3<_Scalar>, _Scalar, 4, 6, 3>>;
+    using Base = LieGroup<GroupProperties<SE3<Scalar_>, Scalar_, 4, 6, 3>>;
 
     using Scalar = typename Base::Scalar;
     using Matrix = typename Base::Matrix;
