@@ -1,6 +1,12 @@
-// This file provides improved implementations for common Lie group operations,
-// such as distance, interpolation, and BCH formula, with better numerical
-// stability.
+/******************************************************************************
+ * SOFA, Simulation Open-Framework Architecture
+ * (c) 2006 INRIA, USTL, UJF, CNRS, MGH
+ *
+ * This file provides inline implementations for common Lie group operations
+ * such as distance, interpolation, and BCH formula, with improved numerical
+ * stability.
+ ******************************************************************************/
+
 #pragma once
 
 #include <algorithm>
@@ -10,24 +16,24 @@
 namespace sofa::component::cosserat::liegroups {
 
 /**
- * @brief Improved implementations for common operations
- *  * This file provides improved implementations of common Lie group operations
- * with better numerical stability and error handling.
+ * @brief Inline implementations for common Lie group operations
+ *
+ * This file provides implementations of common Lie group operations with
+ * improved numerical stability and error handling. All functions are templated
+ * on GroupProperties to work with any Lie group type.
  */
 
 /**
- * @brief Computes the geodesic distance between two Lie group elements.
+ * @brief Computes the geodesic distance between two Lie group elements
+ *
  * This implementation uses the logarithm of the relative transformation to find
  * the distance in the Lie algebra, which corresponds to the geodesic distance
  * on the manifold. It includes robust error handling and fallbacks for
  * numerical stability.
- * @tparam Derived The derived class implementing the specific Lie group.
- * @tparam Scalar_ The scalar type used for computations.
- * @tparam Dim_ The dimension of the group representation.
- * @tparam _AlgebraDim The dimension of the Lie algebra.
- * @tparam _ActionDim The dimension of vectors the group acts on.
- * @param other The other Lie group element to compute the distance to.
- * @return A scalar representing the geodesic distance between the two elements.
+ *
+ * @tparam GroupProperties The group properties containing type and dimension information
+ * @param other The other Lie group element to compute the distance to
+ * @return A scalar representing the geodesic distance between the two elements
  */
 template<typename GroupProperties>
 inline auto LieGroup<GroupProperties>::distance(const Derived& other) const noexcept -> Scalar
@@ -58,17 +64,15 @@ inline auto LieGroup<GroupProperties>::distance(const Derived& other) const noex
 }
 
 /**
- * @brief Computes the squared geodesic distance between two Lie group elements.
- * This is often more efficient than `distance()` when only comparison of
+ * @brief Computes the squared geodesic distance between two Lie group elements
+ *
+ * This is often more efficient than distance() when only comparison of
  * distances is needed, as it avoids the square root operation. It uses the
  * squared norm of the logarithm of the relative transformation.
- * @tparam Derived The derived class implementing the specific Lie group.
- * @tparam Scalar_ The scalar type used for computations.
- * @tparam Dim_ The dimension of the group representation.
- * @tparam _AlgebraDim The dimension of the Lie algebra.
- * @tparam _ActionDim The dimension of vectors the group acts on.
- * @param other The other Lie group element to compute the squared distance to.
- * @return A scalar representing the squared geodesic distance.
+ *
+ * @tparam GroupProperties The group properties containing type and dimension information
+ * @param other The other Lie group element to compute the squared distance to
+ * @return A scalar representing the squared geodesic distance
  */
 template<typename GroupProperties>
 auto LieGroup<GroupProperties>::squaredDistance(const Derived &other) const noexcept -> Scalar
@@ -92,19 +96,17 @@ auto LieGroup<GroupProperties>::squaredDistance(const Derived &other) const noex
 
 /**
  * @brief Interpolates between two Lie group elements using the exponential and
- * logarithm maps. This method performs geodesic interpolation on the manifold,
+ * logarithm maps
+ *
+ * This method performs geodesic interpolation on the manifold,
  * ensuring the interpolated path stays within the group structure. It clamps
- * the interpolation parameter `t` to the range [0, 1] and includes error
+ * the interpolation parameter t to the range [0, 1] and includes error
  * handling.
- * @tparam Derived The derived class implementing the specific Lie group.
- * @tparam Scalar_ The scalar type used for computations.
- * @tparam Dim_ The dimension of the group representation.
- * @tparam _AlgebraDim The dimension of the Lie algebra.
- * @tparam _ActionDim The dimension of vectors the group acts on.
- * @param other The target Lie group element to interpolate towards.
- * @param t The interpolation parameter, typically between 0 (returns `this`)
- * and 1 (returns `other`).
- * @return The interpolated Lie group element.
+ *
+ * @tparam GroupProperties The group properties containing type and dimension information
+ * @param other The target Lie group element to interpolate towards
+ * @param t The interpolation parameter, typically between 0 (returns this) and 1 (returns other)
+ * @return The interpolated Lie group element
  */
 template<typename GroupProperties>
 inline auto LieGroup<GroupProperties>::lerp(const Derived &other, const Scalar &t) const noexcept -> Derived
@@ -130,20 +132,17 @@ inline auto LieGroup<GroupProperties>::lerp(const Derived &other, const Scalar &
 }
 
 /**
- * @brief Performs spherical linear interpolation (SLERP) between two Lie group
- * elements. This method is particularly useful for rotations and aims to
+ * @brief Performs spherical linear interpolation (SLERP) between two Lie group elements
+ *
+ * This method is particularly useful for rotations and aims to
  * provide a smooth, constant-velocity interpolation along the shortest path on
  * the manifold. It includes numerical stability checks and falls back to linear
  * interpolation if elements are too close or other issues arise.
- * @tparam Derived The derived class implementing the specific Lie group.
- * @tparam Scalar_ The scalar type used for computations.
- * @tparam Dim_ The dimension of the group representation.
- * @tparam _AlgebraDim The dimension of the Lie algebra.
- * @tparam _ActionDim The dimension of vectors the group acts on.
- * @param other The target Lie group element for interpolation.
- * @param t The interpolation parameter, typically between 0 (returns `this`)
- * and 1 (returns `other`).
- * @return The interpolated Lie group element.
+ *
+ * @tparam GroupProperties The group properties containing type and dimension information
+ * @param other The target Lie group element for interpolation
+ * @param t The interpolation parameter, typically between 0 (returns this) and 1 (returns other)
+ * @return The interpolated Lie group element
  */
 template<typename GroupProperties>
 inline auto LieGroup<GroupProperties>::slerp(const Derived &other, const Scalar &t) const noexcept -> Derived
@@ -164,7 +163,7 @@ inline auto LieGroup<GroupProperties>::slerp(const Derived &other, const Scalar 
             return derived(); // Elements are too close for meaningful interpolation
         }
 
-                // Use sinc-based interpolation for better numerical properties
+        // Use sinc-based interpolation for better numerical properties
         const Scalar theta = dist * t_clamped;
         const Scalar sin_theta = std::sin(theta);
         const Scalar sin_dist = std::sin(dist);
@@ -177,8 +176,8 @@ inline auto LieGroup<GroupProperties>::slerp(const Derived &other, const Scalar 
         const Scalar w1 = std::sin(dist - theta) / sin_dist;
         const Scalar w2 = sin_theta / sin_dist;
 
-                // This is a simplified version - actual implementation would depend on
-                // group structure
+        // This is a simplified version - actual implementation would depend on
+        // group structure
         return lerp(other, w2 / (w1 + w2));
 
     } catch (const std::exception &) {
@@ -187,32 +186,29 @@ inline auto LieGroup<GroupProperties>::slerp(const Derived &other, const Scalar 
 }
 
 /**
- * @brief Computes the Baker-Campbell-Hausdorff (BCH) formula for Lie algebra
- * elements. The BCH formula provides a way to express the logarithm of the
+ * @brief Computes the Baker-Campbell-Hausdorff (BCH) formula for Lie algebra elements
+ *
+ * The BCH formula provides a way to express the logarithm of the
  * product of exponentials of two Lie algebra elements. This implementation
  * supports up to fifth-order approximation and includes a convergence check.
- * @tparam Derived The derived class implementing the specific Lie group.
- * @tparam Scalar_ The scalar type used for computations.
- * @tparam Dim_ The dimension of the group representation.
- * @tparam _AlgebraDim The dimension of the Lie algebra.
- * @tparam _ActionDim The dimension of vectors the group acts on.
- * @param v The first tangent vector (Lie algebra element).
- * @param w The second tangent vector (Lie algebra element).
- * @param order The order of approximation to use (1 to 5). Higher orders
- * provide more accuracy but are computationally more expensive.
- * @return The tangent vector approximating log(exp(v)*exp(w)).
- * @throws NumericalInstabilityException if the inputs are too large for the
- * series to converge reliably.
+ *
+ * @tparam GroupProperties The group properties containing type and dimension information
+ * @param v The first tangent vector (Lie algebra element)
+ * @param w The second tangent vector (Lie algebra element)
+ * @param order The order of approximation to use (1 to 5). Higher orders provide more
+ * accuracy but are computationally more expensive
+ * @return The tangent vector approximating log(exp(v) * exp(w))
+ * @throws NumericalInstabilityException if the inputs are too large for the series to converge reliably
  */
 template<typename GroupProperties>
-static inline auto LieGroup<GroupProperties>::defaultComputeBCH(const TangentVector &v, const TangentVector &w,
+inline auto LieGroup<GroupProperties>::defaultComputeBCH(const TangentVector &v, const TangentVector &w,
                                            int order) -> TangentVector {
     using Derived = typename GroupProperties::Derived;
 
-            // Clamp order to reasonable range
+    // Clamp order to reasonable range
     order = std::max(1, std::min(5, order));
 
-            // Check convergence criterion
+    // Check convergence criterion
     const Scalar v_norm = v.norm();
     const Scalar w_norm = w.norm();
     const Scalar max_norm = std::max(v_norm, w_norm);
@@ -221,7 +217,7 @@ static inline auto LieGroup<GroupProperties>::defaultComputeBCH(const TangentVec
         throw NumericalInstabilityException("BCH series may not converge for large inputs");
     }
 
-            // First-order approximation
+    // First-order approximation
     TangentVector result = v + w;
 
     if (order >= 2) {
@@ -262,7 +258,8 @@ static inline auto LieGroup<GroupProperties>::defaultComputeBCH(const TangentVec
 }
 
 /**
- * @brief Alternative implementation of the differential of the exponential map.
+ * @brief Alternative implementation of the differential of the exponential map
+ *
  * This function calculates the Jacobian of the exponential map, which is
  * crucial for relating velocities in the Lie algebra to velocities on the Lie
  * group. It uses Taylor series expansion for small input values for numerical
@@ -272,15 +269,9 @@ static inline auto LieGroup<GroupProperties>::defaultComputeBCH(const TangentVec
  * that calls rightJacobian(). Both implementations should be equivalent but need
  * comparison/validation. This version uses direct computation with ad() operator.
  *
- * @tparam Derived The derived class implementing the specific Lie group.
- * @tparam Scalar_ The scalar type used for computations.
- * @tparam Dim_ The dimension of the group representation.
- * @tparam _AlgebraDim The dimension of the Lie algebra.
- * @tparam _ActionDim The dimension of vectors the group acts on.
- * @param v The tangent vector (Lie algebra element) at which to compute the
- * differential.
- * @return The adjoint matrix representing the differential of the exponential
- * map at `v`.
+ * @tparam GroupProperties The group properties containing type and dimension information
+ * @param v The tangent vector (Lie algebra element) at which to compute the differential
+ * @return The adjoint matrix representing the differential of the exponential map at v
  */
 template<typename GroupProperties>
 auto LieGroup<GroupProperties>::dexp_alternative(const TangentVector &v) -> AdjointMatrix {
@@ -294,14 +285,14 @@ auto LieGroup<GroupProperties>::dexp_alternative(const TangentVector &v) -> Adjo
         return Matrix::Identity();
     }
 
-            // Create the adjoint representation of v
+    // Create the adjoint representation of v
     const Matrix ad_v = Derived::ad(v);
     const Scalar theta_sq = theta * theta;
 
-            // Use improved series with better numerical stability
+    // Use improved series with better numerical stability
     Matrix result = Matrix::Identity();
 
-            // Series coefficients for improved numerical stability
+    // Series coefficients for improved numerical stability
     if (theta < Types::SMALL_ANGLE_THRESHOLD) {
         // Use Taylor series for small angles
         result += ad_v * Scalar(0.5);
@@ -323,25 +314,20 @@ auto LieGroup<GroupProperties>::dexp_alternative(const TangentVector &v) -> Adjo
 }
 
 /**
- * @brief Alternative implementation of the inverse differential of the exponential map.
- * This function calculates the inverse Jacobian of the exponential
- * map, useful for mapping velocities on the Lie group back to the Lie algebra.
- * It employs Taylor series expansion for small input values and a closed-form
- * expression for larger values to ensure numerical stability.
+ * @brief Alternative implementation of the inverse differential of the exponential map
+ *
+ * This function calculates the inverse Jacobian of the exponential map, useful for
+ * mapping velocities on the Lie group back to the Lie algebra. It employs Taylor
+ * series expansion for small input values and a closed-form expression for larger
+ * values to ensure numerical stability.
  *
  * NOTE: This is an alternative implementation to the wrapper dexpInv() in LieGroup.h
  * that calls rightJacobianInverse(). Both implementations should be equivalent but need
  * comparison/validation. This version uses direct computation with ad() operator.
  *
- * @tparam Derived The derived class implementing the specific Lie group.
- * @tparam Scalar_ The scalar type used for computations.
- * @tparam Dim_ The dimension of the group representation.
- * @tparam _AlgebraDim The dimension of the Lie algebra.
- * @tparam _ActionDim The dimension of vectors the group acts on.
- * @param v The tangent vector (Lie algebra element) at which to compute the
- * inverse differential.
- * @return The adjoint matrix representing the inverse differential of the
- * exponential map at `v`.
+ * @tparam GroupProperties The group properties containing type and dimension information
+ * @param v The tangent vector (Lie algebra element) at which to compute the inverse differential
+ * @return The adjoint matrix representing the inverse differential of the exponential map at v
  */
 template<typename GroupProperties>
 inline auto	LieGroup<GroupProperties>::dexpInv_alternative(const TangentVector &v) -> AdjointMatrix{
@@ -355,7 +341,7 @@ inline auto	LieGroup<GroupProperties>::dexpInv_alternative(const TangentVector &
         return Matrix::Identity();
     }
 
-            // Create the adjoint representation of v
+    // Create the adjoint representation of v
     const Matrix ad_v = Derived::ad(v);
     const Scalar theta_sq = theta * theta;
 
@@ -381,18 +367,15 @@ inline auto	LieGroup<GroupProperties>::dexpInv_alternative(const TangentVector &
 }
 
 /**
- * @brief Computes the differential of the logarithm map (dlog).
+ * @brief Computes the differential of the logarithm map (dlog)
+ *
  * This function calculates the Jacobian of the logarithm map, which is
  * essential for mapping velocities on the Lie group to velocities in the Lie
  * algebra. It uses Taylor series expansion for small input values and a
  * closed-form expression for larger values to ensure numerical stability.
- * @tparam Derived The derived class implementing the specific Lie group.
- * @tparam Scalar_ The scalar type used for computations.
- * @tparam Dim_ The dimension of the group representation.
- * @tparam _AlgebraDim The dimension of the Lie algebra.
- * @tparam _ActionDim The dimension of vectors the group acts on.
- * @return The adjoint matrix representing the differential of the logarithm map
- * at the current Lie group element.
+ *
+ * @tparam GroupProperties The group properties containing type and dimension information
+ * @return The adjoint matrix representing the differential of the logarithm map at the current Lie group element
  */
 template<typename GroupProperties>
 inline auto LieGroup<GroupProperties>::dlog() const -> AdjointMatrix {
@@ -401,7 +384,7 @@ inline auto LieGroup<GroupProperties>::dlog() const -> AdjointMatrix {
     using Scalar = typename Derived::Scalar;
     using Types = typename Derived::Types;
 
-            // Get the logarithm of the current element
+    // Get the logarithm of the current element
     const Vector v = derived().log();
     const Scalar theta = v.norm();
 
@@ -409,7 +392,7 @@ inline auto LieGroup<GroupProperties>::dlog() const -> AdjointMatrix {
         return Matrix::Identity();
     }
 
-            // Create the adjoint representation of v
+    // Create the adjoint representation of v
     const Matrix ad_v = Derived::ad(v);
     Matrix result = Matrix::Identity();
 
@@ -433,20 +416,17 @@ inline auto LieGroup<GroupProperties>::dlog() const -> AdjointMatrix {
 }
 
 /**
- * @brief Computes the action Jacobian, which describes how a point transforms
- * under the action of the Lie group with respect to changes in the Lie algebra.
- * This implementation first attempts to use an analytical method provided by
- * the derived class (if available) for better performance and accuracy. If no
- * analytical method is provided or it fails, it falls back to numerical
- * differentiation using central differences.
- * @tparam Derived The derived class implementing the specific Lie group.
- * @tparam Scalar_ The scalar type used for computations.
- * @tparam Dim_ The dimension of the group representation.
- * @tparam _AlgebraDim The dimension of the Lie algebra.
- * @tparam _ActionDim The dimension of vectors the group acts on.
- * @param point The point in the action space at which to compute the Jacobian.
- * @return The Jacobian matrix, mapping Lie algebra velocities to velocities in
- * the action space.
+ * @brief Computes the action Jacobian
+ *
+ * Describes how a point transforms under the action of the Lie group with respect
+ * to changes in the Lie algebra. This implementation first attempts to use an
+ * analytical method provided by the derived class (if available) for better
+ * performance and accuracy. If no analytical method is provided or it fails, it
+ * falls back to numerical differentiation using central differences.
+ *
+ * @tparam GroupProperties The group properties containing type and dimension information
+ * @param point The point in the action space at which to compute the Jacobian
+ * @return The Jacobian matrix, mapping Lie algebra velocities to velocities in the action space
  */
 template<typename GroupProperties>
 inline typename LieGroup<GroupProperties>::JacobianMatrix
@@ -458,35 +438,35 @@ LieGroup<GroupProperties>::actionJacobian(
     using Scalar = typename Derived::Scalar;
     using Types = typename Derived::Types;
 
-            // Try analytical computation first (if derived class provides it)
+    // Try analytical computation first (if derived class provides it)
     if constexpr (requires(const Derived &d, const ActionVector &p) { d.computeActionJacobianAnalytical(p); }) {
         try {
             return derived().computeActionJacobianAnalytical(point);
         } catch (...) {
-            // Fall through to numerical computation
+    // Fall through to numerical computation
         }
     }
 
-            // Numerical differentiation with adaptive step size
+    // Numerical differentiation with adaptive step size
     const Scalar base_eps = std::sqrt(Types::epsilon());
     const Scalar point_scale = std::max(Scalar(1.0), point.norm());
     const Scalar eps = base_eps * point_scale;
 
     Matrix J = Matrix::Zero();
 
-            // Central difference for better accuracy
+    // Central difference for better accuracy
     for (int i = 0; i < AlgebraDim; ++i) {
         AlgVec delta = AlgVec::Zero();
         delta[i] = eps;
 
-                // Central difference
+        // Central difference
         const Derived perturbed_plus = derived().compose(Derived::exp(delta));
         const Derived perturbed_minus = derived().compose(Derived::exp(-delta));
 
         const ActionVector point_plus = perturbed_plus.act(point);
         const ActionVector point_minus = perturbed_minus.act(point);
 
-                // Compute column of Jacobian using central difference
+        // Compute column of Jacobian using central difference
         J.col(i) = (point_plus - point_minus) / (Scalar(2) * eps);
     }
 
@@ -494,17 +474,15 @@ LieGroup<GroupProperties>::actionJacobian(
 }
 
 /**
- * @brief Computes the vee operator, which maps a Lie algebra matrix
- * representation back to its vector form. This is the inverse operation of the
- * hat operator. A static assertion ensures the derived class provides its own
- * `computeVee` implementation.
- * @tparam Derived The derived class implementing the specific Lie group.
- * @tparam Scalar_ The scalar type used for computations.
- * @tparam Dim_ The dimension of the group representation.
- * @tparam _AlgebraDim The dimension of the Lie algebra.
- * @tparam _ActionDim The dimension of vectors the group acts on.
- * @param X The matrix representation in the Lie algebra.
- * @return The vector representation of the Lie algebra element.
+ * @brief Computes the vee operator
+ *
+ * Maps a Lie algebra matrix representation back to its vector form.
+ * This is the inverse operation of the hat operator. A static assertion ensures
+ * the derived class provides its own computeVee implementation.
+ *
+ * @tparam GroupProperties The group properties containing type and dimension information
+ * @param X The matrix representation in the Lie algebra
+ * @return The vector representation of the Lie algebra element
  */
 template<typename GroupProperties>
 inline auto LieGroup<GroupProperties>::vee(const AlgebraMatrix &X) noexcept -> TangentVector{
@@ -513,32 +491,30 @@ inline auto LieGroup<GroupProperties>::vee(const AlgebraMatrix &X) noexcept -> T
 }
 
 /**
- * @brief Computes the adjoint representation of a Lie algebra element.
+ * @brief Computes the adjoint representation of a Lie algebra element
+ *
  * The adjoint action describes how Lie algebra elements transform under
  * conjugation by Lie group elements. This implementation checks if the derived
- * class provides an optimized `computeAd` method; otherwise, it uses a default
+ * class provides an optimized computeAd method; otherwise, it uses a default
  * implementation for matrix Lie groups.
- * @tparam Derived The derived class implementing the specific Lie group.
- * @tparam Scalar_ The scalar type used for computations.
- * @tparam Dim_ The dimension of the group representation.
- * @tparam _AlgebraDim The dimension of the Lie algebra.
- * @tparam _ActionDim The dimension of vectors the group acts on.
- * @param v The element of the Lie algebra in vector form.
- * @return The adjoint matrix representing the adjoint action.
+ *
+ * @tparam GroupProperties The group properties containing type and dimension information
+ * @param v The element of the Lie algebra in vector form
+ * @return The adjoint matrix representing the adjoint action
  */
 template<typename GroupProperties>
 inline auto LieGroup<GroupProperties>::ad(const TangentVector &v) -> Matrix {
     using Matrix = typename Derived::AdjointMatrix;
     using AlgMat = typename Derived::AlgebraMatrix;
 
-            // Check if derived class provides optimized implementation
+    // Check if derived class provides optimized implementation
     if constexpr (requires { Derived::computeAd(v); }) {
         return Derived::computeAd(v);
     } else {
         // Default implementation for matrix Lie groups
         const AlgMat X = Derived::hat(v);
 
-                // For matrix Lie algebras, ad_X(Y) = [X, Y] = XY - YX
+    // For matrix Lie algebras, ad_X(Y) = [X, Y] = XY - YX
         Matrix result = Matrix::Zero();
 
         for (int j = 0; j < AlgebraDim; ++j) {
@@ -547,10 +523,10 @@ inline auto LieGroup<GroupProperties>::ad(const TangentVector &v) -> Matrix {
             e_j[j] = Scalar(1);
             const AlgMat E_j = Derived::hat(e_j);
 
-                    // Compute [X, E_j]
+            // Compute [X, E_j]
             const AlgMat commutator = X * E_j - E_j * X;
 
-                    // Extract vector form and set as column
+            // Extract vector form and set as column
             result.col(j) = Derived::vee(commutator);
         }
 
@@ -559,16 +535,14 @@ inline auto LieGroup<GroupProperties>::ad(const TangentVector &v) -> Matrix {
 }
 
 /**
- * @brief Computes the matrix logarithm of the current Lie group element.
+ * @brief Computes the matrix logarithm of the current Lie group element
+ *
  * This function provides the matrix representation of the Lie algebra element
  * that, when exponentiated, yields the current Lie group element. It is
  * primarily used for debugging and analysis purposes.
- * @tparam Derived The derived class implementing the specific Lie group.
- * @tparam Scalar_ The scalar type used for computations.
- * @tparam Dim_ The dimension of the group representation.
- * @tparam _AlgebraDim The dimension of the Lie algebra.
- * @tparam _ActionDim The dimension of vectors the group acts on.
- * @return The matrix representation of the Lie algebra element.
+ *
+ * @tparam GroupProperties The group properties containing type and dimension information
+ * @return The matrix representation of the Lie algebra element
  */
 template<typename GroupProperties>
 inline auto LieGroup<GroupProperties>::matrixLog() const -> Matrix {
