@@ -10,7 +10,7 @@ sofa_find_package(Sofa.SimpleApi REQUIRED)
 set(LIEGROUPS_TEST_FILES
         integration/SO2Test.cpp
         integration/UtilsTest.cpp
-        integration/LieGroupBaseTest.cpp
+        integration/LieGroupTest.cpp
         integration/TypesTest.cpp
         integration/RnTest.cpp
         integration/SE2Test.cpp
