@@ -10,7 +10,7 @@ graph BT
 
     %% Core Components
     subgraph Core["Core Components"]
-        LieGroupBase["LieGroupBase.h/inl"]
+        LieGroup["LieGroup.h/inl"]
         Types["Types.h"]
         Utils["Utils.h"]
     end
@@ -37,23 +37,23 @@ graph BT
     end
 
     %% Dependencies
-    RealSpace --> LieGroupBase
-    SO2 --> LieGroupBase
-    SO3 --> LieGroupBase
-    SE2 --> LieGroupBase
+    RealSpace --> LieGroup
+    SO2 --> LieGroup
+    SO3 --> LieGroup
+    SE2 --> LieGroup
     SE2 --> SO2
-    SE3 --> LieGroupBase
+    SE3 --> LieGroup
     SE3 --> SO3
-    SE23 --> LieGroupBase
+    SE23 --> LieGroup
     SE23 --> SE3
-    SGal3 --> LieGroupBase
+    SGal3 --> LieGroup
 
     %% Bundle dependencies
-    Bundle --> LieGroupBase
+    Bundle --> LieGroup
     Bundle --> Types
 
     %% Apply styling
-    class LieGroupBase,Types,Utils core
+    class LieGroup,Types,Utils core
     class RealSpace,SO2,SO3,SE2,SE3,SE23,SGal3 implementation
     class Bundle wrapper
     class Docs docs
@@ -64,11 +64,11 @@ graph BT
 The diagram above illustrates the dependencies between different files in the Liegroups folder:
 
 1. **Core Components**:
-   - `LieGroupBase.h/inl`: Base class for all Lie group implementations
+   - `LieGroup.h/inl`: Base class for all Lie group implementations
    - `Types.h`: Contains common type definitions
    - `Utils.h`: Provides utility functions
 
-2. **Group Implementations** (all depend on LieGroupBase):
+2. **Group Implementations** (all depend on LieGroup):
    - `RealSpace.h`: Simplest implementation 
    - `SO2.h`: 2D rotation group
    - `SO3.h`: 3D rotation group

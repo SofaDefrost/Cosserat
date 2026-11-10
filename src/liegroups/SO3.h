@@ -18,8 +18,8 @@
 #pragma once
 
 #include <Eigen/Geometry>
-#include "LieGroupBase.h"
-#include "LieGroupBase.inl"
+#include "LieGroup.h"
+#include "LieGroup.inl"
 #include "Types.h"
 
 namespace sofa::component::cosserat::liegroups {
@@ -37,9 +37,9 @@ namespace sofa::component::cosserat::liegroups {
 	 * @tparam _Scalar The scalar type (must be a floating-point type)
 	 */
 	template<typename _Scalar>
-	class SO3 : public LieGroupBase<SO3<_Scalar>, _Scalar, 3, 3, 3> {
+        class SO3 : public LieGroup<GroupProperties<SO3<_Scalar>, _Scalar, 3, 3, 3>> {
 	public:
-		using Base = LieGroupBase<SO3<_Scalar>, _Scalar, 3, 3, 3>;
+        using Base = LieGroup<GroupProperties<SO3<_Scalar>, _Scalar, 3, 3, 3>>;
 		using Scalar = typename Base::Scalar;
 		using Vector = typename Base::Vector;
 		using Matrix = typename Base::Matrix;
@@ -300,7 +300,7 @@ namespace sofa::component::cosserat::liegroups {
 
 	/**
 	 * @brief Adjoint representation of Lie algebra element.
-	 * This is a CRTP-required method (used by LieGroupBase::ad).
+	 * This is a CRTP-required method (used by LieGroup::ad).
 	 * @param v Element of the Lie algebra in vector form.
 	 * @return Matrix representing the adjoint action.
 	 */
@@ -447,7 +447,7 @@ namespace sofa::component::cosserat::liegroups {
 
 		/**
 		 * @brief Print the SO3 element to an output stream.
-		 * This method is required by the LieGroupBase CRTP interface.
+		 * This method is required by the LieGroup CRTP interface.
 		 * @param os Output stream to write to.
 		 * @return Reference to the output stream.
 		 */

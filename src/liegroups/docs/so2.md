@@ -73,4 +73,4 @@ Dans le contexte de votre plugin Cosserat (qui traite des poutres déformables),
 - **SO(2)** : Représenter les rotations de sections transversales
 - **SE(2)** : Représenter les transformations complètes (position + orientation) des sections
 
-C'est pourquoi ce code définit des classes `SO2<Scalar>` et `SE2<Scalar>` qui héritent de `LieGroupBase` pour implémenter ces structures mathématiques avec les opérations appropriées (exp, log, composition, etc.).
+C'est pourquoi ce code définit des classes `SO2<Scalar>` et `SE2<Scalar>` qui héritent de `LieGroup` pour implémenter ces structures mathématiques avec les opérations appropriées (exp, log, composition, etc.).

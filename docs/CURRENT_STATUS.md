@@ -75,7 +75,7 @@ src/liegroups/
   ├── SO3.h                          # SO3 Lie group
   ├── RealSpace.h                    # RealSpace (CRTP fixed)
   ├── Bundle.h                       # Bundle (CRTP fixed)
-  └── LieGroupBase.h                 # Base class
+  └── LieGroup.h                 # Base class
 
 docs/
   ├── INCREMENTAL_IMPROVEMENT_PLAN.md  # Step-by-step plan

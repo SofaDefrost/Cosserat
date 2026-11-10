@@ -1,6 +1,3 @@
-// This file defines the SE23 (extended Special Euclidean group in 3D) class,
-// representing rigid body transformations with linear velocity in 3D space.
-
 /******************************************************************************
  *                 SOFA, Simulation Open-Framework Architecture * (c) 2006
  *INRIA, USTL, UJF, CNRS, MGH                     *
@@ -23,8 +20,8 @@
 // #define SOFA_COMPONENT_COSSERAT_LIEGROUPS_SE23_H
 #pragma once
 
-#include "LieGroupBase.h" // Then the base class interface
-#include "LieGroupBase.inl" // Then the base class interface
+#include "LieGroup.h" // Then the base class interface
+#include "LieGroup.inl" // Then the base class interface
 #include "SE3.h" // Then the base class interface
 // #include <eigen3/Eigen/Geometry.h>
 
@@ -47,11 +44,11 @@ namespace sofa::component::cosserat::liegroups {
 	 * @tparam _Scalar The scalar type (must be a floating-point type)
 	 */
 	template<typename _Scalar, int _Dim = 9>
-	class SE23 : public LieGroupBase<SE23<_Scalar, _Dim>, _Scalar, 9, 9, 6>
+	class SE23 : public LieGroup<GroupProperties<SE23<_Scalar, _Dim>, _Scalar, 9, 9, 6>>
 	//,public LieGroupOperations<SE23<_Scalar>>
 	{
 	public:
-		using Base = LieGroupBase<SE23<_Scalar, _Dim>, _Scalar, 9, 9, 6>;
+		using Base = LieGroup<GroupProperties<SE23<_Scalar, _Dim>, _Scalar, 9, 9, 6>>;
 		using Scalar = typename Base::Scalar;
 		using Vector = typename Base::Vector;
 		using Matrix = typename Base::Matrix;
@@ -268,51 +265,57 @@ namespace sofa::component::cosserat::liegroups {
 		}
 
 		/**
-		 * @brief Hat operator - maps a 9D Lie algebra vector to a 5x5 matrix
-		 * representation. This is a placeholder, actual implementation depends on the
-		 * specific representation.
-		 * @param v The 9D Lie algebra vector.
-		 * @return The 5x5 matrix representation.
+		 * @brief Hat operator - maps a 9D Lie algebra vector to a 9x9 matrix
+		 * representation. Places the vector in the first column of the matrix.
+		 * 
+		 * @param v The 9D Lie algebra vector [linear velocity, angular velocity, linear acceleration].
+		 * @return The 9x9 matrix representation.
 		 */
 		static Matrix computeHat(const TangentVector &v) {
-			// For SE_2(3), the hat operator maps a 9D vector to a 5x5 matrix
-			// This is a placeholder, actual implementation depends on the specific
-			// representation
 			Matrix result = Matrix::Zero();
-			// ... implement hat operator for SE_2(3)
+			// Place the vector in the first column of the matrix
+			result.col(0) = v;
 			return result;
 		}
 
 		/**
-		 * @brief Vee operator - inverse of hat, maps a 5x5 matrix representation to a
-		 * 9D Lie algebra vector. This is a placeholder, actual implementation depends
-		 * on the specific representation.
-		 * @param X The 5x5 matrix representation.
+		 * @brief Vee operator - inverse of hat, maps a 9x9 matrix representation to a
+		 * 9D Lie algebra vector. Extracts the first column of the matrix.
+		 * 
+		 * @param X The 9x9 matrix representation.
 		 * @return The 9D Lie algebra vector.
 		 */
 		static TangentVector computeVee(const Matrix &X) {
-			// For SE_2(3), the vee operator maps a 5x5 matrix to a 9D vector
-			// This is a placeholder, actual implementation depends on the specific
-			// representation
-			TangentVector result = TangentVector::Zero();
-			// ... implement vee operator for SE_2(3)
-			return result;
+			return X.col(0);
 		}
 
 		/**
 		 * @brief Computes the adjoint representation of a Lie algebra element for
-		 * SE23. This is a placeholder, actual implementation depends on the specific
-		 * representation.
-		 * @param v The element of the Lie algebra in vector form.
-		 * @return The adjoint matrix.
+		 * SE23. For v = [v, w, a] ∈ ℝ⁹, the adjoint matrix represents the Lie bracket.
+		 * 
+		 * The Lie bracket for se23 is:
+		 * - [v₁, v₂]_w = w₁ × w₂
+		 * - [v₁, v₂]_v = w₁ × v₂ - w₂ × v₁
+		 * - [v₁, v₂]_a = w₁ × a₂ - w₂ × a₁
+		 * 
+		 * @param v The element of the Lie algebra in vector form [v, w, a].
+		 * @return The 9x9 adjoint matrix.
 		 */
 		static AdjointMatrix computeAd(const TangentVector &v) {
-			// For SE_2(3), the adjoint operator maps a 9D vector to a 9x9 matrix
-			// This is a placeholder, actual implementation depends on the specific
-			// representation
-			AdjointMatrix result = AdjointMatrix::Zero();
-			// ... implement adjoint operator for SE_2(3)
-			return result;
+			AdjointMatrix ad = AdjointMatrix::Zero();
+			const Vector3 w = v.template segment<3>(3); // Angular velocity (indices 3-5)
+			const Matrix3 w_hat = SO3<Scalar>::computeHat(w);
+			
+			// v output (rows 0-2): v_out = -w × v_in
+			ad.template block<3, 3>(0, 3) = -w_hat;
+			
+			// w output (rows 3-5): w_out = w × w_in
+			ad.template block<3, 3>(3, 3) = w_hat;
+			
+			// a output (rows 6-8): a_out = -w × a_in
+			ad.template block<3, 3>(6, 3) = -w_hat;
+			
+			return ad;
 		}
 
 		/**

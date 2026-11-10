@@ -1,6 +1,3 @@
-// This file defines the SE2 (Special Euclidean group in 2D) class, representing
-// rigid body transformations in 2D space.
-
 /******************************************************************************
  *                 SOFA, Simulation Open-Framework Architecture * (c) 2006
  *INRIA, USTL, UJF, CNRS, MGH                     *
@@ -23,8 +20,8 @@
 
 #include <cmath>
 #include <random>
-#include "LieGroupBase.h"
-#include "LieGroupBase.inl"
+#include "LieGroup.h"
+#include "LieGroup.inl"
 #include "SO2.h"
 #include "Types.h"
 
@@ -50,9 +47,9 @@ namespace sofa::component::cosserat::liegroups {
 	 * @tparam _Dim The dimension of the ambient space (fixed at 3 for SE(2))
 	 */
 	template<typename _Scalar>
-	class SE2 : public LieGroupBase<SE2<_Scalar>, _Scalar, 3, 3, 2> {
+	class SE2 : public LieGroup<GroupProperties<SE2<_Scalar>, _Scalar, 3, 3, 2>> {
 	public:
-		using Base = LieGroupBase<SE2<_Scalar>, _Scalar, 3, 3, 2>;
+		using Base = LieGroup<GroupProperties<SE2<_Scalar>, _Scalar, 3, 3, 2>>;
 		using Scalar = typename Base::Scalar;
 		using Vector = typename Base::Vector;
 		using Matrix = typename Base::Matrix;

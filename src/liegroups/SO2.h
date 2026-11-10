@@ -1,6 +1,3 @@
-// This file defines the SO2 (Special Orthogonal group in 2D) class,
-// representing 2D rotations.
-
 /******************************************************************************
  *                 SOFA, Simulation Open-Framework Architecture * (c) 2006
  *INRIA, USTL, UJF, CNRS, MGH                     *
@@ -24,8 +21,7 @@
 #pragma once
 
 #include <cmath>
-#include "LieGroupBase.h" // Then the base class interface
-#include "LieGroupBase.inl" // Then the base class interface
+#include "LieGroup.h" // Then the base class interface
 #include "Types.h" // Then our type system
 
 namespace sofa::component::cosserat::liegroups {
@@ -44,9 +40,9 @@ namespace sofa::component::cosserat::liegroups {
 	 * @tparam _Scalar The scalar type (must be a floating-point type)
 	 */
 	template<typename _Scalar>
-	class SO2 : public LieGroupBase<SO2<_Scalar>, _Scalar, 2, 1, 2> {
+	class SO2 : public LieGroup<GroupProperties<SO2<_Scalar>, _Scalar, 2, 1, 2>> {
 	public:
-		using Base = LieGroupBase<SO2<_Scalar>, _Scalar, 2, 1, 2>;
+		using Base = LieGroup<GroupProperties<SO2<_Scalar>, _Scalar, 2, 1, 2>>;
 		using Scalar = typename Base::Scalar;
 		using Vector = typename Base::Vector;
 		using Matrix = typename Base::Matrix;
@@ -161,7 +157,7 @@ namespace sofa::component::cosserat::liegroups {
 		 * @param v The element of the Lie algebra in vector form.
 		 * @return The adjoint matrix.
 		 */
-		static AdjointMatrix computeAd(const TangentVector &v) {
+        static AdjointMatrix computeAd(const TangentVector&) {
 			return AdjointMatrix::Zero(); // Adjoint for SO(2) is zero matrix
 		}
 

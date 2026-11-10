@@ -1,15 +1,11 @@
 // This file provides improved implementations for common Lie group operations,
 // such as distance, interpolation, and BCH formula, with better numerical
 // stability.
-
-// #ifndef SOFA_COMPONENT_COSSERAT_LIEGROUPS_LIEGROUPBASE_INL
-// #define SOFA_COMPONENT_COSSERAT_LIEGROUPS_LIEGROUPBASE_INL
 #pragma once
 
 #include <algorithm>
 #include <cmath>
-#include "LieGroupBase.h"
-#include "Types.h"
+#include "LieGroup.h"
 
 namespace sofa::component::cosserat::liegroups {
 
@@ -34,34 +30,33 @@ namespace sofa::component::cosserat::liegroups {
 	 * @param other The other Lie group element to compute the distance to.
 	 * @return A scalar representing the geodesic distance between the two elements.
 	 */
-	template<typename Derived, FloatingPoint _Scalar, int _Dim, int _AlgebraDim, int _ActionDim>
-		requires(_Dim > 0 && _AlgebraDim > 0 && _ActionDim > 0)
-	inline typename LieGroupBase<Derived, _Scalar, _Dim, _AlgebraDim, _ActionDim>::Scalar
-	LieGroupBase<Derived, _Scalar, _Dim, _AlgebraDim, _ActionDim>::distance(const Derived &other) const noexcept {
-		// Check for numerical issues first
-		if (!derived().isValid() || !other.isValid()) {
-			return std::numeric_limits<Scalar>::quiet_NaN();
-		}
-		try {
-			// Use relative transformation
-			// This uses g^(-1)*h which maps to the tangent space at identity
-			const Derived rel = derived().inverse().compose(other);
-			const TangentVector tangent = rel.log();
-			return tangent.norm();
-		} catch (const std::exception &) {
-			// Fallback: check if elements are approximately equal
-			if (derived().computeIsApprox(other)) {
-				return Scalar(0);
-			}
-			// Use squared Frobenius norm as fallback distance metric
-			try {
-				const auto diff = derived().matrix() - other.matrix();
-				return std::sqrt(diff.squaredNorm());
-			} catch (...) {
-				return std::numeric_limits<Scalar>::max();
-			}
-		}
-	}
+template<typename GroupProperties>
+inline auto LieGroup<GroupProperties>::distance(const Derived& other) const noexcept -> Scalar
+{
+    // Check for numerical issues first
+    if (!derived().isValid() || !other.isValid()) {
+        return std::numeric_limits<Scalar>::quiet_NaN();
+    }
+    try {
+        // Use relative transformation
+        // This uses g^(-1)*h which maps to the tangent space at identity
+        const Derived rel = derived().inverse().compose(other);
+        const TangentVector tangent = rel.log();
+        return tangent.norm();
+    } catch (const std::exception &) {
+        // Fallback: check if elements are approximately equal
+        if (derived().computeIsApprox(other)) {
+            return Scalar(0);
+        }
+        // Use squared Frobenius norm as fallback distance metric
+        try {
+            const auto diff = derived().matrix() - other.matrix();
+            return std::sqrt(diff.squaredNorm());
+        } catch (...) {
+            return std::numeric_limits<Scalar>::max();
+        }
+    }
+}
 
 	/**
 	 * @brief Computes the squared geodesic distance between two Lie group elements.
@@ -76,11 +71,9 @@ namespace sofa::component::cosserat::liegroups {
 	 * @param other The other Lie group element to compute the squared distance to.
 	 * @return A scalar representing the squared geodesic distance.
 	 */
-	template<typename Derived, FloatingPoint _Scalar, int _Dim, int _AlgebraDim, int _ActionDim>
-		requires(_Dim > 0 && _AlgebraDim > 0 && _ActionDim > 0)
-	inline typename LieGroupBase<Derived, _Scalar, _Dim, _AlgebraDim, _ActionDim>::Scalar
-	LieGroupBase<Derived, _Scalar, _Dim, _AlgebraDim, _ActionDim>::squaredDistance(
-			const Derived &other) const noexcept {
+        template<typename GroupProperties>
+        auto LieGroup<GroupProperties>::squaredDistance(const Derived &other) const noexcept -> Scalar
+        {
 		try {
 			const Derived rel = derived().inverse().compose(other);
 			const TangentVector tangent = rel.log();
@@ -114,11 +107,9 @@ namespace sofa::component::cosserat::liegroups {
 	 * and 1 (returns `other`).
 	 * @return The interpolated Lie group element.
 	 */
-	template<typename Derived, FloatingPoint _Scalar, int _Dim, int _AlgebraDim, int _ActionDim>
-		requires(_Dim > 0 && _AlgebraDim > 0 && _ActionDim > 0)
-	inline Derived
-        LieGroupBase<Derived, _Scalar, _Dim, _AlgebraDim, _ActionDim>::lerp(const Derived &other,
-																			   const Scalar &t) const noexcept {
+        template<typename GroupProperties>
+        inline auto LieGroup<GroupProperties>::lerp(const Derived &other, const Scalar &t) const noexcept -> Derived
+        {
 
 		// Clamp interpolation parameter
 		const Scalar t_clamped = std::max(Scalar(0), std::min(Scalar(1), t));
@@ -155,11 +146,9 @@ namespace sofa::component::cosserat::liegroups {
 	 * and 1 (returns `other`).
 	 * @return The interpolated Lie group element.
 	 */
-	template<typename Derived, FloatingPoint _Scalar, int _Dim, int _AlgebraDim, int _ActionDim>
-		requires(_Dim > 0 && _AlgebraDim > 0 && _ActionDim > 0)
-	inline Derived
-	LieGroupBase<Derived, _Scalar, _Dim, _AlgebraDim, _ActionDim>::slerp(const Derived &other,
-																		 const Scalar &t) const noexcept {
+        template<typename GroupProperties>
+        inline auto LieGroup<GroupProperties>::slerp(const Derived &other, const Scalar &t) const noexcept -> Derived
+        {
 
 		const Scalar t_clamped = std::max(Scalar(0), std::min(Scalar(1), t));
 
@@ -216,11 +205,9 @@ namespace sofa::component::cosserat::liegroups {
 	 * @throws NumericalInstabilityException if the inputs are too large for the
 	 * series to converge reliably.
 	 */
-	template<typename Derived, FloatingPoint _Scalar, int _Dim, int _AlgebraDim, int _ActionDim>
-		requires(_Dim > 0 && _AlgebraDim > 0 && _ActionDim > 0)
-	inline typename LieGroupBase<Derived, _Scalar, _Dim, _AlgebraDim, _ActionDim>::TangentVector
-	LieGroupBase<Derived, _Scalar, _Dim, _AlgebraDim, _ActionDim>::BCH(const TangentVector &v, const TangentVector &w,
-																	   int order) {
+    template<typename GroupProperties>
+    inline auto LieGroup<GroupProperties>::BCH(const TangentVector &v, const TangentVector &w,
+            int order) -> TangentVector {
 
 		// Clamp order to reasonable range
 		order = std::max(1, std::min(5, order));
@@ -281,7 +268,7 @@ namespace sofa::component::cosserat::liegroups {
 	 * group. It uses Taylor series expansion for small input values for numerical
 	 * stability and a closed-form expression for larger values.
 	 * 
-	 * NOTE: This is an alternative implementation to the wrapper dexp() in LieGroupBase.h
+	 * NOTE: This is an alternative implementation to the wrapper dexp() in LieGroup.h
 	 * that calls rightJacobian(). Both implementations should be equivalent but need
 	 * comparison/validation. This version uses direct computation with ad() operator.
 	 * 
@@ -295,10 +282,8 @@ namespace sofa::component::cosserat::liegroups {
 	 * @return The adjoint matrix representing the differential of the exponential
 	 * map at `v`.
 	 */
-	template<typename Derived, FloatingPoint _Scalar, int _Dim, int _AlgebraDim, int _ActionDim>
-		requires(_Dim > 0 && _AlgebraDim > 0 && _ActionDim > 0)
-	inline typename LieGroupBase<Derived, _Scalar, _Dim, _AlgebraDim, _ActionDim>::AdjointMatrix
-	LieGroupBase<Derived, _Scalar, _Dim, _AlgebraDim, _ActionDim>::dexp_alternative(const TangentVector &v) {
+        template<typename GroupProperties>
+        auto LieGroup<GroupProperties>::dexp_alternative(const TangentVector &v) -> AdjointMatrix {
 		using Matrix = typename Derived::AdjointMatrix;
 		using Scalar = typename Derived::Scalar;
 		using Types = typename Derived::Types;
@@ -344,7 +329,7 @@ namespace sofa::component::cosserat::liegroups {
 	 * It employs Taylor series expansion for small input values and a closed-form
 	 * expression for larger values to ensure numerical stability.
 	 * 
-	 * NOTE: This is an alternative implementation to the wrapper dexpInv() in LieGroupBase.h
+	 * NOTE: This is an alternative implementation to the wrapper dexpInv() in LieGroup.h
 	 * that calls rightJacobianInverse(). Both implementations should be equivalent but need
 	 * comparison/validation. This version uses direct computation with ad() operator.
 	 * 
@@ -358,10 +343,8 @@ namespace sofa::component::cosserat::liegroups {
 	 * @return The adjoint matrix representing the inverse differential of the
 	 * exponential map at `v`.
 	 */
-	template<typename Derived, FloatingPoint _Scalar, int _Dim, int _AlgebraDim, int _ActionDim>
-		requires(_Dim > 0 && _AlgebraDim > 0 && _ActionDim > 0)
-	inline typename LieGroupBase<Derived, _Scalar, _Dim, _AlgebraDim, _ActionDim>::AdjointMatrix
-	LieGroupBase<Derived, _Scalar, _Dim, _AlgebraDim, _ActionDim>::dexpInv_alternative(const TangentVector &v) {
+        template<typename GroupProperties>
+        inline auto	LieGroup<GroupProperties>::dexpInv_alternative(const TangentVector &v) -> AdjointMatrix{
 		using Matrix = typename Derived::AdjointMatrix;
 		using Scalar = typename Derived::Scalar;
 		using Types = typename Derived::Types;
@@ -411,10 +394,8 @@ namespace sofa::component::cosserat::liegroups {
 	 * @return The adjoint matrix representing the differential of the logarithm map
 	 * at the current Lie group element.
 	 */
-	template<typename Derived, FloatingPoint _Scalar, int _Dim, int _AlgebraDim, int _ActionDim>
-		requires(_Dim > 0 && _AlgebraDim > 0 && _ActionDim > 0)
-	inline typename LieGroupBase<Derived, _Scalar, _Dim, _AlgebraDim, _ActionDim>::AdjointMatrix
-	LieGroupBase<Derived, _Scalar, _Dim, _AlgebraDim, _ActionDim>::dlog() const {
+        template<typename GroupProperties>
+    inline auto LieGroup<GroupProperties>::dlog() const -> AdjointMatrix {
 		using Matrix = typename Derived::AdjointMatrix;
 		using Vector = typename Derived::TangentVector;
 		using Scalar = typename Derived::Scalar;
@@ -467,10 +448,9 @@ namespace sofa::component::cosserat::liegroups {
 	 * @return The Jacobian matrix, mapping Lie algebra velocities to velocities in
 	 * the action space.
 	 */
-	template<typename Derived, FloatingPoint _Scalar, int _Dim, int _AlgebraDim, int _ActionDim>
-		requires(_Dim > 0 && _AlgebraDim > 0 && _ActionDim > 0)
-	inline typename LieGroupBase<Derived, _Scalar, _Dim, _AlgebraDim, _ActionDim>::JacobianMatrix
-	LieGroupBase<Derived, _Scalar, _Dim, _AlgebraDim, _ActionDim>::actionJacobian(
+        template<typename GroupProperties>
+                inline typename LieGroup<GroupProperties>::JacobianMatrix
+        LieGroup<GroupProperties>::actionJacobian(
 			const ActionVector &point) const noexcept {
 
 		using Matrix = typename Derived::JacobianMatrix;
@@ -525,10 +505,8 @@ namespace sofa::component::cosserat::liegroups {
 	 * @param v The tangent vector (Lie algebra element).
 	 * @return The matrix representation of the Lie algebra element.
 	 */
-	template<typename Derived, FloatingPoint _Scalar, int _Dim, int _AlgebraDim, int _ActionDim>
-		requires(_Dim > 0 && _AlgebraDim > 0 && _ActionDim > 0)
-	inline typename LieGroupBase<Derived, _Scalar, _Dim, _AlgebraDim, _ActionDim>::AlgebraMatrix
-	LieGroupBase<Derived, _Scalar, _Dim, _AlgebraDim, _ActionDim>::hat(const TangentVector &v) noexcept {
+    template<typename GroupProperties>
+        inline auto LieGroup<GroupProperties>::hat(const TangentVector &v) noexcept -> AlgebraMatrix{
 		static_assert(requires { Derived::computeHat(v); }, "Derived class must implement computeHat method");
 		return Derived::computeHat(v);
 	}
@@ -546,10 +524,8 @@ namespace sofa::component::cosserat::liegroups {
 	 * @param X The matrix representation in the Lie algebra.
 	 * @return The vector representation of the Lie algebra element.
 	 */
-	template<typename Derived, FloatingPoint _Scalar, int _Dim, int _AlgebraDim, int _ActionDim>
-		requires(_Dim > 0 && _AlgebraDim > 0 && _ActionDim > 0)
-	inline typename LieGroupBase<Derived, _Scalar, _Dim, _AlgebraDim, _ActionDim>::TangentVector
-	LieGroupBase<Derived, _Scalar, _Dim, _AlgebraDim, _ActionDim>::vee(const AlgebraMatrix &X) noexcept {
+    template<typename GroupProperties>
+    inline auto LieGroup<GroupProperties>::vee(const AlgebraMatrix &X) noexcept -> TangentVector{
 		static_assert(requires { Derived::computeVee(X); }, "Derived class must implement computeVee method");
 		return Derived::computeVee(X);
 	}
@@ -568,10 +544,8 @@ namespace sofa::component::cosserat::liegroups {
 	 * @param v The element of the Lie algebra in vector form.
 	 * @return The adjoint matrix representing the adjoint action.
 	 */
-	template<typename Derived, FloatingPoint _Scalar, int _Dim, int _AlgebraDim, int _ActionDim>
-		requires(_Dim > 0 && _AlgebraDim > 0 && _ActionDim > 0)
-	inline typename LieGroupBase<Derived, _Scalar, _Dim, _AlgebraDim, _ActionDim>::AdjointMatrix
-	LieGroupBase<Derived, _Scalar, _Dim, _AlgebraDim, _ActionDim>::ad(const TangentVector &v) {
+        template<typename GroupProperties>
+        inline auto LieGroup<GroupProperties>::ad(const TangentVector &v) -> Matrix {
 		using Matrix = typename Derived::AdjointMatrix;
 		using AlgMat = typename Derived::AlgebraMatrix;
 
@@ -614,10 +588,8 @@ namespace sofa::component::cosserat::liegroups {
 	 * @tparam _ActionDim The dimension of vectors the group acts on.
 	 * @return The matrix representation of the Lie algebra element.
 	 */
-	template<typename Derived, FloatingPoint _Scalar, int _Dim, int _AlgebraDim, int _ActionDim>
-		requires(_Dim > 0 && _AlgebraDim > 0 && _ActionDim > 0)
-	inline typename LieGroupBase<Derived, _Scalar, _Dim, _AlgebraDim, _ActionDim>::AlgebraMatrix
-	LieGroupBase<Derived, _Scalar, _Dim, _AlgebraDim, _ActionDim>::matrixLog() const {
+        template<typename GroupProperties>
+        inline auto LieGroup<GroupProperties>::matrixLog() const -> Matrix {
 		// This provides the matrix logarithm representation
 		const TangentVector v = derived().log();
 		return Derived::computeHat(v);

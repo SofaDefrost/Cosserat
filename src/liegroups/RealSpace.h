@@ -1,6 +1,3 @@
-// This file defines the RealSpace class, which implements the Euclidean vector
-// space as a Lie group.
-
 /******************************************************************************
  *                 SOFA, Simulation Open-Framework Architecture * (c) 2006
  *INRIA, USTL, UJF, CNRS, MGH                     *
@@ -26,8 +23,8 @@
 #include <random>
 #include <tuple>
 #include <type_traits>
-#include "LieGroupBase.h"
-#include "LieGroupBase.inl"
+#include "LieGroup.h"
+#include "LieGroup.inl"
 #include "RealSpace.h"
 #include "SE2.h"
 #include "SE3.h"
@@ -51,11 +48,11 @@ namespace sofa::component::cosserat::liegroups {
 	 * @tparam _Dim The dimension of the space
 	 */
 	template<typename _Scalar, int _Dim>
-	class RealSpace : public LieGroupBase<RealSpace<_Scalar, _Dim>, _Scalar, _Dim, _Dim, _Dim>
+	class RealSpace : public LieGroup<GroupProperties<RealSpace<_Scalar, _Dim>, _Scalar, _Dim, _Dim, _Dim>>
 	//,public LieGroupOperations<RealSpace<_Scalar, _Dim>>
 	{
 	public:
-		using Base = LieGroupBase<RealSpace<_Scalar, _Dim>, _Scalar, _Dim, _Dim, _Dim>;
+		using Base = LieGroup<GroupProperties<RealSpace<_Scalar, _Dim>, _Scalar, _Dim, _Dim, _Dim>>;
 		using Scalar = typename Base::Scalar;
 		using Vector = typename Base::Vector;
 		using Matrix = typename Base::Matrix;

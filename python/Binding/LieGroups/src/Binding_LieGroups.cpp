@@ -19,8 +19,8 @@
 #include <sstream>
 
 #include "Binding_LieGroups.h"
-#include <liegroups/LieGroupBase.h>
-#include <liegroups/LieGroupBase.inl>
+#include <liegroups/LieGroup.h>
+#include <liegroups/LieGroup.inl>
 #include <liegroups/SO2.h>
 #include <liegroups/SO3.h>
 
