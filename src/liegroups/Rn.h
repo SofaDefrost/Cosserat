@@ -72,7 +72,7 @@ class Rn : public LieGroup<GroupProperties<Rn<Scalar_, Dim_>, Scalar_, Dim_, Dim
      * @param other The other Rn element to compose with.
      * @return The composed Rn element.
      */
-    Rn compose(const Rn &other) const { return Rn(m_data + other.m_data); }
+    Rn computeCompose(const Rn &other) const { return Rn(m_data + other.m_data); }
 
     /**
      * @brief Computes the exponential map from the Lie algebra to the Rn

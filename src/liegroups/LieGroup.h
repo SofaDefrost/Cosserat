@@ -172,6 +172,20 @@ class LieGroup {
     [[nodiscard]] Derived inverse() const { return derived().computeInverse(); }
 
     /**
+     * @brief Group composition operation
+     * @param other Another element of the same Lie group
+     * @return The composition this * other
+     */
+    [[nodiscard]] virtual Derived compose(const Derived &other) const noexcept final {
+        return derived().computeCompose(other);
+    }
+
+    [[nodiscard]] static constexpr Derived compose(const Derived &a, const Derived &b) noexcept {
+        static_assert(requires { Derived::computeCompose(a, b); }, "Derived class must implement computeCompose method");
+        return Derived::computeCompose(a,b);
+    }
+
+    /**
      * @brief Exponential map from Lie algebra to Lie group
      * @param algebra_element Element of the Lie algebra (tangent space at
      * identity)

@@ -152,7 +152,7 @@ namespace sofa::component::cosserat::liegroups {
 		 * @param other The other SE2 element to compose with.
 		 * @return The composed SE2 element.
 		 */
-		SE2 compose(const SE2 &other) const { return (*this) * other; }
+        SE2 computeCompose(const SE2 &other) const { return (*this) * other; }
 
 		/**
 		 * @brief In-place group composition operator.

@@ -75,11 +75,11 @@ class SE3 : public LieGroup<GroupProperties<SE3<Scalar_>, Scalar_, 4, 6, 3>> {
         return SE3(inv_rot, -(inv_rot.act(m_translation)));
     }
 
-    SE3 compose(const SE3 &other) const {
+    SE3 computeCompose(const SE3 &other) const {
         return SE3(m_rotation * other.m_rotation, m_rotation.act(other.m_translation) + m_translation);
     }
 
-    static SE3 compose(const SE3& a, const SE3 &b)
+    static SE3 computeCompose(const SE3& a, const SE3 &b)
     {
         return SE3(a.m_rotation * b.m_rotation, a.act(b.m_translation) + a.m_translation);
     }

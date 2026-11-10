@@ -86,7 +86,7 @@ namespace sofa::component::cosserat::liegroups {
 		 * @param other The other SO3 rotation.
 		 * @return The composed SO3 rotation.
 		 */
-		SO3 compose(const SO3 &other) const noexcept { return SO3(m_quat * other.m_quat); }
+        SO3 computeCompose(const SO3 &other) const noexcept { return SO3(m_quat * other.m_quat); }
 
 		/**
 		 * @brief Computes the inverse element (opposite rotation).
