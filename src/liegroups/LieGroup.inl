@@ -205,7 +205,7 @@ inline auto LieGroup<GroupProperties>::slerp(const Derived &other, const Scalar 
  * series to converge reliably.
  */
 template<typename GroupProperties>
-static inline auto LieGroup<GroupProperties>::computeBCH(const TangentVector &v, const TangentVector &w,
+static inline auto LieGroup<GroupProperties>::defaultComputeBCH(const TangentVector &v, const TangentVector &w,
                                            int order) -> TangentVector {
     using Derived = typename GroupProperties::Derived;
 

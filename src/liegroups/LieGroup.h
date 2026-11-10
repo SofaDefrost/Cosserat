@@ -554,7 +554,7 @@ class LieGroup {
     }
 
    protected:
-    [[nodiscard]] static TangentVector computeBCH(const TangentVector &v, const TangentVector &w, const int order);
+    [[nodiscard]] static TangentVector defaultComputeBCH(const TangentVector &v, const TangentVector &w, const int order);
 
    private:
     [[nodiscard]] virtual TangentVector computeLog() const = 0;
@@ -563,8 +563,8 @@ class LieGroup {
     [[nodiscard]] virtual AdjointMatrix computeAdjoint() const = 0;
     [[nodiscard]] virtual ActionVector computeAction(const ActionVector &point) const = 0;
     [[nodiscard]] virtual bool computeIsApprox(const Derived &other, const Scalar &eps) const = 0;
-    virtual void computeNormalize() = 0;
     [[nodiscard]] virtual bool computeIsValid() const = 0;
+    virtual void computeNormalize() = 0;
 };
 
 /**

@@ -727,7 +727,7 @@ class SE3 : public LieGroup<GroupProperties<SE3<Scalar_>, Scalar_, 4, 6, 3>> {
         if(order==2)
             return x + y + Scalar(0.5) * lieBracket(x, y);
         // Higher orders (1/12 ([x,[x,y]] + [y,[y,x]]), ...) can be added if needed, otherwise fallback to Base implementation
-        return Base::computeBCH(x,y,order);
+        return Base::defaultComputeBCH(x,y,order);
     }
 
     /**
