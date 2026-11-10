@@ -39,8 +39,7 @@ namespace sofa::component::cosserat::liegroups {
 	 */
 	template<typename _Scalar, int _Dim>
 	class Rn : public LieGroup<GroupProperties<Rn<_Scalar, _Dim>, _Scalar, _Dim, _Dim, _Dim>>
-	//,public LieGroupOperations<Rn<_Scalar, _Dim>>
-	{
+        {
 	public:
 		using Base = LieGroup<GroupProperties<Rn<_Scalar, _Dim>, _Scalar, _Dim, _Dim, _Dim>>;
 		using Scalar = typename Base::Scalar;
