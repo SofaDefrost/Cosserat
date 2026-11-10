@@ -281,15 +281,6 @@ class SE3 : public LieGroup<GroupProperties<SE3<Scalar_>, Scalar_, 4, 6, 3>> {
     }
 
     /**
-     * @brief Logarithmic map — thin wrapper around computeLog() for CRTP callers.
-     *      * Returns [φ(head<3>), ρ(tail<3>)] = [angular, V⁻¹·t].
-     * Consistent with computeExp().
-     */
-    TangentVector log() const {
-        return computeLog();
-    }
-
-    /**
      * @brief Lie bracket [v, w] of se(3) in the [phi ; rho] layout (angular first).
      *      * With v = [phi_v ; rho_v], w = [phi_w ; rho_w]:
      *   [v, w] = [ phi_v x phi_w ;  phi_v x rho_w - phi_w x rho_v ] = vee(hat(v) hat(w) - hat(w) hat(v)).
@@ -408,10 +399,6 @@ class SE3 : public LieGroup<GroupProperties<SE3<Scalar_>, Scalar_, 4, 6, 3>> {
         Ad.template block<3, 3>(0, 3) = SO3Type::hat(m_translation) * R;
         return Ad;
     }
-
-
-    AdjointMatrix adjoint() const noexcept { return computeAdjoint(); }
-
 
     bool computeIsApprox(const SE3 &other, const Scalar &eps) const {
         return m_rotation.isApprox(other.m_rotation, eps) && m_translation.isApprox(other.m_translation, eps);
