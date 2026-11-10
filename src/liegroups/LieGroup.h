@@ -169,7 +169,7 @@ class LieGroup {
      * @return The inverse element such that this * inverse() = identity()
      * @throws InverseFailureException if the element is singular (not invertible)
      */
-    [[nodiscard]] Derived inverse() const { return derived().computeInverse(); }
+    [[nodiscard]] virtual Derived inverse() const final { return derived().computeInverse(); }
 
     /**
      * @brief Group composition operation
@@ -202,20 +202,20 @@ class LieGroup {
      * @throws LogarithmException if the element is outside the domain of the log
      * map
      */
-    [[nodiscard]] TangentVector log() const { return derived().computeLog(); }
+    [[nodiscard]] virtual TangentVector log() const final { return derived().computeLog(); }
 
     /**
      * @brief Adjoint representation of the group element
      * @return The adjoint matrix representing the action on the Lie algebra
      */
-    [[nodiscard]] AdjointMatrix adjoint() const noexcept { return derived().computeAdjoint(); }
+    [[nodiscard]] virtual AdjointMatrix adjoint() const noexcept final { return derived().computeAdjoint(); }
 
     /**
      * @brief Group action on a point
      * @param point The point to transform
      * @return The transformed point
      */
-    [[nodiscard]] ActionVector act(const ActionVector &point) const noexcept {
+    [[nodiscard]] virtual ActionVector act(const ActionVector &point) const noexcept final {
         return derived().computeAction(point);
     }
 
@@ -232,7 +232,7 @@ class LieGroup {
      * @param eps Tolerance for comparison (optional)
      * @return true if elements are approximately equal
      */
-    [[nodiscard]] bool isApprox(const Derived &other, const Scalar &eps = Types::epsilon()) const noexcept {
+    [[nodiscard]] virtual bool isApprox(const Derived &other, const Scalar &eps = Types::epsilon()) const noexcept final {
         return derived().computeIsApprox(other, eps);
     }
 
@@ -518,13 +518,13 @@ class LieGroup {
      * @brief Validate that the current element is a valid group element
      * @return true if valid, false otherwise
      */
-    [[nodiscard]] bool isValid() const noexcept { return derived().computeIsValid(); }
+    [[nodiscard]] virtual bool isValid() const noexcept final { return derived().computeIsValid(); }
 
     /**
      * @brief Normalize the group element to ensure it remains on the manifold
      * This is useful for numerical stability after many operations
      */
-    void normalize() noexcept { derived().computeNormalize(); }
+    virtual void normalize() noexcept final { derived().computeNormalize(); }
 
     /**
      * @brief Get normalized copy of the group element
