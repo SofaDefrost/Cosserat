@@ -320,7 +320,10 @@ class LieGroup {
      * @param order Order of approximation (1-5, default: 3)
      * @return Tangent vector approximating log(exp(v)*exp(w))
      */
-    [[nodiscard]] static TangentVector BCH(const TangentVector &v, const TangentVector &w, int order = 3);
+    [[nodiscard]] static TangentVector BCH(const TangentVector &v, const TangentVector &w, const int order = 3){
+        static_assert(requires { Derived::BCH(v,w,order); }, "Derived class must implement computeBCH method");
+        return Derived::computeBCH(v, w, order);
+    }
 
     /**
      * @brief Right Jacobian of the manifold: Jr(τ) = τD Exp(τ)/Dτ
@@ -535,6 +538,9 @@ class LieGroup {
     static constexpr bool validateConstructorArgs(Args &&...args) noexcept {
         return Derived::isValidConstruction(std::forward<Args>(args)...);
     }
+
+   protected:
+    [[nodiscard]] static TangentVector computeBCH(const TangentVector &v, const TangentVector &w, const int order);
 
    private:
     [[nodiscard]] virtual TangentVector computeLog() const = 0;

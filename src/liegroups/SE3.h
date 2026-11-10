@@ -735,10 +735,12 @@ class SE3 : public LieGroup<GroupProperties<SE3<Scalar_>, Scalar_, 4, 6, 3>> {
      * @param y Second tangent vector.
      * @return Approximate tangent vector Z.
      */
-    static TangentVector computeBCH(const TangentVector &x, const TangentVector &y) {
+    static TangentVector computeBCH(const TangentVector &x, const TangentVector &y, const int order) {
         // Second order: x + y + 1/2 [x, y], bracket in the [phi ; rho] layout (same as computeExp/computeLog).
-        // Higher orders (1/12 ([x,[x,y]] + [y,[y,x]]), ...) can be added if needed.
-        return x + y + Scalar(0.5) * lieBracket(x, y);
+        if(order==2)
+            return x + y + Scalar(0.5) * lieBracket(x, y);
+        // Higher orders (1/12 ([x,[x,y]] + [y,[y,x]]), ...) can be added if needed, otherwise fallback to Base implementation
+        return Base::computeBCH(x,y,order);
     }
 
     /**

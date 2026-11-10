@@ -8,88 +8,88 @@ using namespace sofa::component::cosserat::liegroups;
 using namespace Cosserat::mapping;
 
 TEST(AdvancedFeaturesTest, BCHApproximation) {
-	using SE3Type = SE3<double>;
-	using TangentVector = SE3Type::TangentVector;
+    using SE3Type = SE3<double>;
+    using TangentVector = SE3Type::TangentVector;
 
-	// Tangent vectors are [phi (angular, 0..2) ; rho (linear, 3..5)], same layout as exp/log.
-	TangentVector x = TangentVector::Zero();
-	x[3] = 0.1; // small translation along X
+            // Tangent vectors are [phi (angular, 0..2) ; rho (linear, 3..5)], same layout as exp/log.
+    TangentVector x = TangentVector::Zero();
+    x[3] = 0.1; // small translation along X
 
-	TangentVector y = TangentVector::Zero();
-	y[4] = 0.1; // small translation along Y
+    TangentVector y = TangentVector::Zero();
+    y[4] = 0.1; // small translation along Y
 
-	// For pure translations, [x,y] = 0, so BCH(x,y) = x+y
-	TangentVector z = SE3Type::computeBCH(x, y);
-	TangentVector expected = x + y;
+    // For pure translations, [x,y] = 0, so BCH(x,y) = x+y
+    TangentVector z = SE3Type::BCH(x, y, 2);
+    TangentVector expected = x + y;
 
-	EXPECT_TRUE(z.isApprox(expected));
+    EXPECT_TRUE(z.isApprox(expected));
 
-	// For rotations
-	x = TangentVector::Zero();
-	x[0] = 0.1; // rotation X
-	y = TangentVector::Zero();
-	y[1] = 0.1; // rotation Y
+            // For rotations
+    x = TangentVector::Zero();
+    x[0] = 0.1; // rotation X
+    y = TangentVector::Zero();
+    y[1] = 0.1; // rotation Y
 
-	// [x,y] should be non-zero (rotation Z, index 2): BCH = x + y + 1/2 [x,y]
-	z = SE3Type::computeBCH(x, y);
-	EXPECT_FALSE(z.isApprox(x + y));
-	EXPECT_NEAR(z[2], 0.5 * 0.1 * 0.1, 1e-15);
+            // [x,y] should be non-zero (rotation Z, index 2): BCH = x + y + 1/2 [x,y]
+    z = SE3Type::BCH(x, y, 2);
+    EXPECT_FALSE(z.isApprox(x + y));
+    EXPECT_NEAR(z[2], 0.5 * 0.1 * 0.1, 1e-15);
 }
 
 TEST(AdvancedFeaturesTest, ParallelTransport) {
-	using SE3Type = SE3<double>;
-	using TangentVector = SE3Type::TangentVector;
+    using SE3Type = SE3<double>;
+    using TangentVector = SE3Type::TangentVector;
 
-	SE3Type pose = SE3Type::computeIdentity();
-	TangentVector v = TangentVector::Ones();
+    SE3Type pose = SE3Type::computeIdentity();
+    TangentVector v = TangentVector::Ones();
 
-	// Transport along 0-length geodesic (at identity) should be identity
-	TangentVector v_trans = pose.parallelTransport(v);
-	EXPECT_TRUE(v_trans.isApprox(v));
+            // Transport along 0-length geodesic (at identity) should be identity
+    TangentVector v_trans = pose.parallelTransport(v);
+    EXPECT_TRUE(v_trans.isApprox(v));
 
-	// Transport along a path
-	TangentVector u = TangentVector::Zero();
-	u[0] = M_PI / 2.0; // 90 deg rotation X
-	pose = SE3Type::computeExp(u);
+            // Transport along a path
+    TangentVector u = TangentVector::Zero();
+    u[0] = M_PI / 2.0; // 90 deg rotation X
+    pose = SE3Type::computeExp(u);
 
-	v = TangentVector::Zero();
-	v[1] = 1.0; // rotation about Y (angular part, index 1)
+    v = TangentVector::Zero();
+    v[1] = 1.0; // rotation about Y (angular part, index 1)
 
-	// Transporting Y vector along X-axis rotation by 90 degrees
-	// Should result in Z vector?
-	// Parallel transport preserves the angle with the tangent of the curve?
-	// This depends on the definition.
-	// Our implementation: v - 0.5 * [u, v]
-	v_trans = pose.parallelTransport(v);
+            // Transporting Y vector along X-axis rotation by 90 degrees
+            // Should result in Z vector?
+            // Parallel transport preserves the angle with the tangent of the curve?
+            // This depends on the definition.
+            // Our implementation: v - 0.5 * [u, v]
+    v_trans = pose.parallelTransport(v);
 
-	// [u, v]: u=[pi/2,0,0, 0,0,0], v=[0,1,0, 0,0,0]  ([phi ; rho] layout)
-	// phi_u=[pi/2,0,0], phi_v=[0,1,0]
-	// phi_bracket = [pi/2,0,0]x[0,1,0] = [0,0,pi/2]
-	// bracket = [0,0,pi/2, 0,0,0]
-	// v_trans = v - 0.5 * bracket = [0,1,-pi/4, 0,0,0]
+            // [u, v]: u=[pi/2,0,0, 0,0,0], v=[0,1,0, 0,0,0]  ([phi ; rho] layout)
+            // phi_u=[pi/2,0,0], phi_v=[0,1,0]
+            // phi_bracket = [pi/2,0,0]x[0,1,0] = [0,0,pi/2]
+            // bracket = [0,0,pi/2, 0,0,0]
+            // v_trans = v - 0.5 * bracket = [0,1,-pi/4, 0,0,0]
 
-	EXPECT_DOUBLE_EQ(v_trans[2], -0.5 * M_PI / 2.0); // u has magnitude PI/2
+    EXPECT_DOUBLE_EQ(v_trans[2], -0.5 * M_PI / 2.0); // u has magnitude PI/2
 }
 
 TEST(AdvancedFeaturesTest, ShapeInterpolation) {
-	using SE3Type = SE3<double>;
-	using TangentVector = SE3Type::TangentVector;
+    using SE3Type = SE3<double>;
+    using TangentVector = SE3Type::TangentVector;
 
-	std::vector<SE3Type> shape1(2);
-	shape1[0] = SE3Type::computeIdentity();
-	shape1[1] = SE3Type::computeIdentity();
+    std::vector<SE3Type> shape1(2);
+    shape1[0] = SE3Type::computeIdentity();
+    shape1[1] = SE3Type::computeIdentity();
 
-	std::vector<SE3Type> shape2(2);
-	TangentVector u = TangentVector::Zero();
-	u[0] = 1.0;
-	shape2[0] = SE3Type::computeExp(u);
-	shape2[1] = SE3Type::computeExp(u);
+    std::vector<SE3Type> shape2(2);
+    TangentVector u = TangentVector::Zero();
+    u[0] = 1.0;
+    shape2[0] = SE3Type::computeExp(u);
+    shape2[1] = SE3Type::computeExp(u);
 
-	// Interpolate at 0.5
-	auto interpolated = BeamShapeInterpolation::interpolateShapes(shape1, shape2, 0.5);
+            // Interpolate at 0.5
+    auto interpolated = BeamShapeInterpolation::interpolateShapes(shape1, shape2, 0.5);
 
-	EXPECT_EQ(interpolated.size(), 2);
+    EXPECT_EQ(interpolated.size(), 2);
 
-	TangentVector expected_log = u * 0.5;
-	EXPECT_TRUE(interpolated[0].log().isApprox(expected_log));
+    TangentVector expected_log = u * 0.5;
+    EXPECT_TRUE(interpolated[0].log().isApprox(expected_log));
 }
