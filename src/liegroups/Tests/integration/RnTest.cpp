@@ -18,6 +18,7 @@
 
 #include <Eigen/Core>
 #include <liegroups/Rn.h>
+#include <liegroups/Rn.inl>
 #include <sofa/testing/BaseTest.h>
 
 namespace sofa::component::cosserat::liegroups::testing {
@@ -50,7 +51,6 @@ namespace sofa::component::cosserat::liegroups::testing {
 	 */
 	TYPED_TEST(RnTest, Constructors) {
 		using Rn = typename TestFixture::Rn;
-		using Scalar = typename TestFixture::Scalar;
 		using Vector = typename TestFixture::Vector;
 
 		Rn g1;
@@ -67,7 +67,6 @@ namespace sofa::component::cosserat::liegroups::testing {
 	 */
 	TYPED_TEST(RnTest, Identity) {
 		using Rn = typename TestFixture::Rn;
-		using Scalar = typename TestFixture::Scalar;
 		using Vector = typename TestFixture::Vector;
 
 		Rn identity = Rn::computeIdentity();
@@ -81,7 +80,6 @@ namespace sofa::component::cosserat::liegroups::testing {
 	 */
 	TYPED_TEST(RnTest, Inverse) {
 		using Rn = typename TestFixture::Rn;
-		using Scalar = typename TestFixture::Scalar;
 		using Vector = typename TestFixture::Vector;
 
 		Vector v = Vector::Random();
@@ -100,7 +98,6 @@ namespace sofa::component::cosserat::liegroups::testing {
 	 */
 	TYPED_TEST(RnTest, ExpLog) {
 		using Rn = typename TestFixture::Rn;
-		using Scalar = typename TestFixture::Scalar;
 		using TangentVector = typename TestFixture::TangentVector;
 
 		TangentVector v = TangentVector::Random();
@@ -114,7 +111,6 @@ namespace sofa::component::cosserat::liegroups::testing {
 	 */
 	TYPED_TEST(RnTest, Action) {
 		using Rn = typename TestFixture::Rn;
-		using Scalar = typename TestFixture::Scalar;
 		using Vector = typename TestFixture::Vector;
 
 		Vector g_data = Vector::Random();
@@ -130,7 +126,6 @@ namespace sofa::component::cosserat::liegroups::testing {
 	 */
 	TYPED_TEST(RnTest, IsApprox) {
 		using Rn = typename TestFixture::Rn;
-		using Scalar = typename TestFixture::Scalar;
 		using Vector = typename TestFixture::Vector;
 
 		Vector v = Vector::Random();
@@ -148,8 +143,6 @@ namespace sofa::component::cosserat::liegroups::testing {
 	 */
 	TYPED_TEST(RnTest, HatVee) {
 		using Rn = typename TestFixture::Rn;
-		using Scalar = typename TestFixture::Scalar;
-		using Vector = typename TestFixture::Vector;
 		using Matrix = typename Rn::Matrix;
 		using TangentVector = typename Rn::TangentVector;
 
@@ -165,7 +158,6 @@ namespace sofa::component::cosserat::liegroups::testing {
 	 */
 	TYPED_TEST(RnTest, Adjoint) {
 		using Rn = typename TestFixture::Rn;
-		using Scalar = typename TestFixture::Scalar;
 		using TangentVector = typename TestFixture::TangentVector;
 		using AdjointMatrix = typename Rn::AdjointMatrix;
 
@@ -257,8 +249,7 @@ namespace sofa::component::cosserat::liegroups::testing {
 	 * Verifies that linear interpolation is correctly performed between two Rn elements.
 	 */
 	TYPED_TEST(RnTest, Interpolate) {
-		using Rn = typename TestFixture::Rn;
-		using Scalar = typename TestFixture::Scalar;
+        using Rn = typename TestFixture::Rn;
 		using Vector = typename TestFixture::Vector;
 
 		Vector v1 = Vector::Random();
@@ -266,11 +257,11 @@ namespace sofa::component::cosserat::liegroups::testing {
 		Rn g1(v1);
 		Rn g2(v2);
 
-		Rn interpolated = g1.interpolate(g2, 0.5);
-		EXPECT_TRUE(interpolated.computeLog().isApprox((v1 + v2) / 2.0, this->eps));
+        Rn interpolated = g1.lerp(g2, 0.5);
+        EXPECT_TRUE(interpolated.computeLog().isApprox((v1 + v2) / 2.0, this->eps));
 
-		EXPECT_TRUE(g1.interpolate(g2, 0.0).computeIsApprox(g1, this->eps));
-		EXPECT_TRUE(g1.interpolate(g2, 1.0).computeIsApprox(g2, this->eps));
+        EXPECT_TRUE(g1.lerp(g2, 0.0).computeIsApprox(g1, this->eps));
+        EXPECT_TRUE(g1.lerp(g2, 1.0).computeIsApprox(g2, this->eps));
 	}
 
 } // namespace sofa::component::cosserat::liegroups::testing
