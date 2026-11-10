@@ -17,7 +17,7 @@ graph BT
 
     %% Group Implementations
     subgraph Implementations["Group Implementations"]
-        RealSpace["RealSpace.h"]
+        Rn["Rn.h"]
         SO2["SO2.h"]
         SO3["SO3.h"]
         SE2["SE2.h"]
@@ -37,7 +37,7 @@ graph BT
     end
 
     %% Dependencies
-    RealSpace --> LieGroup
+    Rn --> LieGroup
     SO2 --> LieGroup
     SO3 --> LieGroup
     SE2 --> LieGroup
@@ -54,7 +54,7 @@ graph BT
 
     %% Apply styling
     class LieGroup,Types,Utils core
-    class RealSpace,SO2,SO3,SE2,SE3,SE23,SGal3 implementation
+    class Rn,SO2,SO3,SE2,SE3,SE23,SGal3 implementation
     class Bundle wrapper
     class Docs docs
 ```
@@ -69,7 +69,7 @@ The diagram above illustrates the dependencies between different files in the Li
    - `Utils.h`: Provides utility functions
 
 2. **Group Implementations** (all depend on LieGroup):
-   - `RealSpace.h`: Simplest implementation 
+   - `Rn.h`: Simplest implementation 
    - `SO2.h`: 2D rotation group
    - `SO3.h`: 3D rotation group
    - `SE2.h`: 2D rigid transformation (depends on SO2)

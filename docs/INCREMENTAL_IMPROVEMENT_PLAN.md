@@ -497,7 +497,7 @@ All advanced features removed due to lack of validation:
 
 ### Step 3: Type-Safe Strain (Bundle) 🟡
 
-**Goal:** Use `Bundle<SO3, RealSpace>` for type safety
+**Goal:** Use `Bundle<SO3, Rn>` for type safety
 
 **Tasks:**
 

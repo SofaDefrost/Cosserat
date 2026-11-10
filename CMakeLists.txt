@@ -28,7 +28,7 @@ set(HEADER_FILES
   # Lie group implementations
   ${SRC_ROOT_LIE_GROUPE}/Types.h
   ${SRC_ROOT_LIE_GROUPE}/LieGroup.h
-  ${SRC_ROOT_LIE_GROUPE}/RealSpace.h
+  ${SRC_ROOT_LIE_GROUPE}/Rn.h
   ${SRC_ROOT_LIE_GROUPE}/SO2.h
   ${SRC_ROOT_LIE_GROUPE}/SE2.h
   ${SRC_ROOT_LIE_GROUPE}/SO3.h

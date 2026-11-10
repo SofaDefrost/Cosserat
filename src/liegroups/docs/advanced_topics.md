@@ -244,7 +244,7 @@ typename Group::TangentVector baumgarteCorrection(
 
 ```cpp
 // Forward kinematics for articulated system
-using JointState = Cosserat::Bundle<Cosserat::SE3<double>, Cosserat::RealSpace<double, 1>>; // Pose + joint angle
+using JointState = Cosserat::Bundle<Cosserat::SE3<double>, Cosserat::Rn<double, 1>>; // Pose + joint angle
 
 std::vector<Cosserat::SE3<double>> forwardKinematics(
     const std::vector<JointState>& joint_states,

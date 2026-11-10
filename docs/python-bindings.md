@@ -416,7 +416,7 @@ Bundles allow combining multiple Lie groups into product manifolds.
 ```python
 # Note: Bundle bindings are currently placeholders
 # They will be implemented for specific instantiations like:
-# - Bundle<SE3, RealSpace<6>>  (pose + velocity)
+# - Bundle<SE3, Rn<6>>  (pose + velocity)
 # - Bundle<SE3, SE3, SE3>      (multi-body system)
 ```
 

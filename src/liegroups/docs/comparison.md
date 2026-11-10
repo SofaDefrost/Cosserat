@@ -4,7 +4,7 @@ This document compares the various Lie group implementations in the Cosserat plu
 
 ## Feature Comparison
 
-| Feature                       | RealSpace                 | SO(2)                | SO(3)                | SE(2)                    | SE(3)                    | Sim(3)                      |
+| Feature                       | Rn                 | SO(2)                | SO(3)                | SE(2)                    | SE(3)                    | Sim(3)                      |
 | ----------------------------- | ------------------------- | -------------------- | -------------------- | ------------------------ | ------------------------ | --------------------------- |
 | **Dimension**                 | n (templated)             | 1                    | 3                    | 3                        | 6                        | 7                           |
 | **Represents**                | Vectors                   | 2D rotation          | 3D rotation          | 2D rigid transform       | 3D rigid transform       | 3D similarity transform     |
@@ -37,7 +37,7 @@ This document compares the various Lie group implementations in the Cosserat plu
 
 ## Lie Algebra Properties
 
-| Property                       | RealSpace | SO(2)            | SO(3)            | SE(2)                 | SE(3)            | Sim(3)          | SE(2,3)         | SGal(3)         | Bundle          |
+| Property                       | Rn | SO(2)            | SO(3)            | SE(2)                 | SE(3)            | Sim(3)          | SE(2,3)         | SGal(3)         | Bundle          |
 | ------------------------------ | --------- | ---------------- | ---------------- | --------------------- | ---------------- | --------------- | --------------- | --------------- | --------------- |
 | **Algebra dimension**          | n         | 1                | 3                | 3                     | 6                | 7               | 9               | 10              | Sum of dims     |
 | **Represents**                 | Vectors   | Angular velocity | Angular velocity | Twist (ang.+lin. vel) | Twist            | Twist + scaling | Twist + accel   | Twist + vel + τ | Component twists|
@@ -49,7 +49,7 @@ This document compares the various Lie group implementations in the Cosserat plu
 
 The following table shows approximate relative performance for common operations (normalized to the fastest implementation, lower is better):
 
-| Operation            | RealSpace | SO(2) | SO(3) | SE(2) | SE(3) | Sim(3) | SE(2,3) | SGal(3) | Bundle |
+| Operation            | Rn | SO(2) | SO(3) | SE(2) | SE(3) | Sim(3) | SE(2,3) | SGal(3) | Bundle |
 | -------------------- | --------- | ----- | ----- | ----- | ----- | ------ | ------- | ------- | ------ |
 | **Composition**      | 1.0       | 1.2   | 2.5   | 3.0   | 5.0   | 5.5    | 6.0     | 7.0     | Sum    |
 | **Inverse**          | 1.0       | 1.1   | 2.0   | 2.2   | 3.5   | 4.0    | 4.5     | 5.5     | Sum    |
@@ -62,7 +62,7 @@ Note: These numbers are approximate and can vary based on hardware, compiler opt
 
 ## Use Case Recommendations
 
-### When to use RealSpace
+### When to use Rn
 
 - When working with simple vectors or points
 - For displacements in Euclidean space
@@ -73,10 +73,10 @@ Example: Position vectors, linear velocities, forces
 
 ```cpp
 // Representing a 3D position
-Cosserat::RealSpace<double, 3> position(1.0, 2.0, 3.0);
+Cosserat::Rn<double, 3> position(1.0, 2.0, 3.0);
 
 // Representing a velocity vector
-Cosserat::RealSpace<double, 3> velocity(-0.5, 0.0, 2.0);
+Cosserat::Rn<double, 3> velocity(-0.5, 0.0, 2.0);
 
 // Simple vector addition (displacement)
 auto new_position = position.compose(velocity);

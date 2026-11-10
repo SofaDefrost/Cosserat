@@ -10,9 +10,9 @@ The benchmarks were run on a modern system with the following configuration:
 - Eigen version: 3.4.0
 - Memory: 16GB RAM
 
-## RealSpace Benchmarks
+## Rn Benchmarks
 
-The RealSpace implementation was benchmarked with various dimensions to evaluate scaling behavior.
+The Rn implementation was benchmarked with various dimensions to evaluate scaling behavior.
 
 ### Composition (Addition) Performance
 
@@ -51,7 +51,7 @@ The RealSpace implementation was benchmarked with various dimensions to evaluate
 - Both composition and inverse operations scale linearly with dimension (O(n))
 - For small dimensions (≤16), the operations are very fast and dominated by function call overhead
 - For large dimensions (≥256), memory bandwidth becomes the limiting factor
-- Operations on RealSpace are generally faster than their equivalent Eigen operations because they avoid unnecessary memory allocation
+- Operations on Rn are generally faster than their equivalent Eigen operations because they avoid unnecessary memory allocation
 
 ## SO(2) Benchmarks
 
@@ -124,7 +124,7 @@ Based on the benchmark results, here are strategies to optimize performance:
 
 1. **Choose the right representation**:
    - For pure rotations, use SO(2) instead of SE(2)
-   - For pure translations, use RealSpace instead of SE(2)
+   - For pure translations, use Rn instead of SE(2)
    - For combined transformations, use SE(2)
 
 2. **Minimize conversions**:

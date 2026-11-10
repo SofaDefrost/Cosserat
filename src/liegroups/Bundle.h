@@ -25,12 +25,12 @@
 #include <type_traits>
 #include "LieGroup.h"
 #include "LieGroup.inl"
-#include "RealSpace.h"
+#include "Rn.h"
 #include "SE2.h"
 #include "SE3.h"
 #include "SO2.h"
 #include "Types.h"
-// RealSpace.h is already included above
+// Rn.h is already included above
 
 namespace sofa::component::cosserat::liegroups {
 
@@ -141,14 +141,14 @@ namespace sofa::component::cosserat::liegroups {
 	 * Usage Examples:
 	 * ```cpp
 	 * // Rigid body pose with velocity
-	 * using RigidBodyState = Bundle<SE3<double>, RealSpace<double, 6>>;
+	 * using RigidBodyState = Bundle<SE3<double>, Rn<double, 6>>;
 	 *
 	 * // 2D robot with multiple joints
 	 * using Robot2D = Bundle<SE2<double>, SO2<double>, SO2<double>>;
 	 *
 	 * // Create and manipulate
 	 * auto state1 = RigidBodyState(SE3<double>::identity(),
-	 *                             RealSpace<double, 6>::zero());
+	 *                             Rn<double, 6>::zero());
 	 * auto state2 = RigidBodyState(pose, velocity);
 	 * auto combined = state1 * state2;
 	 * ```
@@ -545,13 +545,13 @@ namespace sofa::component::cosserat::liegroups {
 
 	// Common bundles for robotics applications
 	template<typename Scalar>
-	using SE3_Velocity = Bundle<SE3<Scalar>, RealSpace<Scalar, 6>>;
+	using SE3_Velocity = Bundle<SE3<Scalar>, Rn<Scalar, 6>>;
 
 	template<typename Scalar>
-	using SE2_Velocity = Bundle<SE2<Scalar>, RealSpace<Scalar, 3>>;
+	using SE2_Velocity = Bundle<SE2<Scalar>, Rn<Scalar, 3>>;
 
 	template<typename Scalar, int N>
-	using SE3_Joints = Bundle<SE3<Scalar>, RealSpace<Scalar, N>>;
+	using SE3_Joints = Bundle<SE3<Scalar>, Rn<Scalar, N>>;
 
 	// Convenience aliases
 	template<typename... Groups>

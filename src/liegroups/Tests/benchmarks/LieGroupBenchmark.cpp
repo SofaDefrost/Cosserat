@@ -20,7 +20,7 @@
 #include <Eigen/Geometry>
 #include <benchmark/benchmark.h>
 #include <liegroups/Bundle.h>
-#include <liegroups/RealSpace.h>
+#include <liegroups/Rn.h>
 #include <liegroups/SE23.h>
 #include <liegroups/SE3.h>
 #include <liegroups/SGal3.h>
@@ -126,10 +126,10 @@ BENCHMARK(BM_SE23_Operations);
  */
 static void BM_Bundle_Operations(benchmark::State &state) {
 	RandomGenerator rng;
-	using PoseVel = Bundle<SE3<double>, RealSpace<double, 3>>;
+	using PoseVel = Bundle<SE3<double>, Rn<double, 3>>;
 
 	PoseVel bundle(SE3<double>(SO3<double>(rng.randomAngle(), rng.randomUnitVector()), rng.randomVector()),
-				   RealSpace<double, 3>(rng.randomVector()));
+				   Rn<double, 3>(rng.randomVector()));
 
 	for (auto _: state) {
 		// Test common operations
@@ -149,14 +149,14 @@ BENCHMARK(BM_Bundle_Operations);
 static void BM_CosseratRod_Operations(benchmark::State &state) {
 	RandomGenerator rng;
 	const int num_segments = state.range(0);
-	using RodSegment = Bundle<SE3<double>, RealSpace<double, 3>>;
+	using RodSegment = Bundle<SE3<double>, Rn<double, 3>>;
 	std::vector<RodSegment> segments;
 
 	// Initialize rod segments
 	for (int i = 0; i < num_segments; ++i) {
 		segments.push_back(
 				RodSegment(SE3<double>(SO3<double>(rng.randomAngle(), rng.randomUnitVector()), rng.randomVector()),
-						   RealSpace<double, 3>(rng.randomVector())));
+						   Rn<double, 3>(rng.randomVector())));
 	}
 
 	for (auto _: state) {

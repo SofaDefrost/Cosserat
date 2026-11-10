@@ -12,7 +12,7 @@ set(LIEGROUPS_TEST_FILES
         integration/UtilsTest.cpp
         integration/LieGroupBaseTest.cpp
         integration/TypesTest.cpp
-        integration/RealSpaceTest.cpp
+        integration/RnTest.cpp
         integration/SE2Test.cpp
         integration/SE23Test.cpp
     
