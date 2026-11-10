@@ -208,6 +208,10 @@ inline auto LieGroup<GroupProperties>::distance(const Derived& other) const noex
     template<typename GroupProperties>
     inline auto LieGroup<GroupProperties>::BCH(const TangentVector &v, const TangentVector &w,
             int order) -> TangentVector {
+		using Derived = typename GroupProperties::Derived;
+
+		static_assert(requires { Derived::computeHat(v); }, "Derived class must implement computeHat method");
+		static_assert(requires { Derived::computeVee(std::declval<typename Derived::AlgebraMatrix>()); }, "Derived class must implement computeVee method");
 
 		// Clamp order to reasonable range
 		order = std::max(1, std::min(5, order));
@@ -494,24 +498,6 @@ inline auto LieGroup<GroupProperties>::distance(const Derived& other) const noex
 	}
 
 	/**
-	 * @brief Computes the hat operator, which maps a Lie algebra vector to its
-	 * matrix representation. This is a static assertion that ensures the derived
-	 * class provides its own implementation of `computeHat`.
-	 * @tparam Derived The derived class implementing the specific Lie group.
-	 * @tparam Scalar_ The scalar type used for computations.
-	 * @tparam Dim_ The dimension of the group representation.
-	 * @tparam _AlgebraDim The dimension of the Lie algebra.
-	 * @tparam _ActionDim The dimension of vectors the group acts on.
-	 * @param v The tangent vector (Lie algebra element).
-	 * @return The matrix representation of the Lie algebra element.
-	 */
-    template<typename GroupProperties>
-        inline auto LieGroup<GroupProperties>::hat(const TangentVector &v) noexcept -> AlgebraMatrix{
-		static_assert(requires { Derived::computeHat(v); }, "Derived class must implement computeHat method");
-		return Derived::computeHat(v);
-	}
-
-	/**
 	 * @brief Computes the vee operator, which maps a Lie algebra matrix
 	 * representation back to its vector form. This is the inverse operation of the
 	 * hat operator. A static assertion ensures the derived class provides its own
@@ -590,6 +576,9 @@ inline auto LieGroup<GroupProperties>::distance(const Derived& other) const noex
 	 */
         template<typename GroupProperties>
         inline auto LieGroup<GroupProperties>::matrixLog() const -> Matrix {
+		using Derived = typename GroupProperties::Derived;
+		
+		static_assert(requires { Derived::computeHat(std::declval<typename Derived::TangentVector>()); }, "Derived class must implement computeHat method");
 		// This provides the matrix logarithm representation
 		const TangentVector v = derived().log();
 		return Derived::computeHat(v);

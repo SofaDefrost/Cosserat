@@ -178,6 +178,7 @@ class LieGroup {
      * @return The corresponding element in the Lie group
      */
     [[nodiscard]] static constexpr Derived exp(const TangentVector &algebra_element) noexcept {
+        static_assert(requires { Derived::computeExp(algebra_element); }, "Derived class must implement computeExp method");
         return Derived::computeExp(algebra_element);
     }
 
@@ -225,7 +226,10 @@ class LieGroup {
      * @brief Get the identity element of the group
      * @return The identity element
      */
-    [[nodiscard]] static constexpr Derived Identity() noexcept { return Derived::computeIdentity(); }
+    [[nodiscard]] static constexpr Derived Identity() noexcept {
+        static_assert(requires { Derived::computeIdentity(); }, "Derived class must implement computeIdentity method");
+        return Derived::computeIdentity();
+    }
 
     /**
      * @brief Right-plus operator: X ⊕ τ = X ◦ Exp(τ)
@@ -319,7 +323,11 @@ class LieGroup {
      * @param v Vector representation of Lie algebra element
      * @return Matrix representation in the Lie algebra
      */
-    [[nodiscard]] static AlgebraMatrix hat(const TangentVector &v) noexcept;
+    static inline AlgebraMatrix hat(const TangentVector &v) noexcept
+    {
+        static_assert(requires { Derived::computeHat(v); }, "Derived class must implement computeHat method");
+        return Derived::computeHat(v);
+    }
 
     /**
      * @brief Convert a Lie algebra matrix to its vector representation (vee
@@ -353,6 +361,7 @@ class LieGroup {
      * @note Essential for uncertainty propagation in Kalman filters
      */
     [[nodiscard]] static AdjointMatrix rightJacobian(const TangentVector &tau) noexcept {
+        static_assert(requires { Derived::computeRightJacobian(tau); }, "Derived class must implement computeRightJacobian method");
         return Derived::computeRightJacobian(tau);
     }
 
@@ -371,6 +380,7 @@ class LieGroup {
      * @note Related to right Jacobian: Jl(τ) = Jr(-τ)
      */
     [[nodiscard]] static AdjointMatrix leftJacobian(const TangentVector &tau) noexcept {
+        static_assert(requires { Derived::computeLeftJacobian(tau); }, "Derived class must implement computeLeftJacobian method");
         return Derived::computeLeftJacobian(tau);
     }
 
@@ -384,6 +394,7 @@ class LieGroup {
      * @return Inverse right Jacobian matrix ∈ ℝᵐˣᵐ
      */
     [[nodiscard]] static AdjointMatrix rightJacobianInverse(const TangentVector &tau) noexcept {
+        static_assert(requires { Derived::computeRightJacobianInverse(tau); }, "Derived class must implement computeRightJacobianInverse method");
         return Derived::computeRightJacobianInverse(tau);
     }
 
@@ -399,6 +410,7 @@ class LieGroup {
      * @note Related to right inverse: Jl⁻¹(τ) = Jr⁻¹(-τ)
      */
     [[nodiscard]] static AdjointMatrix leftJacobianInverse(const TangentVector &tau) noexcept {
+        static_assert(requires { Derived::computeLeftJacobianInverse(tau); }, "Derived class must implement computeLeftJacobianInverse method");
         return Derived::computeLeftJacobianInverse(tau);
     }
 
@@ -492,6 +504,7 @@ class LieGroup {
      */
     template<typename Generator>
     [[nodiscard]] static Derived Random(Generator &gen) {
+        static_assert(requires { Derived::computeRandom(gen); }, "Derived class must implement computeRandom method");
         return Derived::computeRandom(gen);
     }
 
@@ -503,7 +516,10 @@ class LieGroup {
     /**
      * @brief Get type information string for debugging
      */
-    [[nodiscard]] static constexpr std::string_view typeName() noexcept { return Derived::getTypeName(); }
+    [[nodiscard]] static constexpr std::string_view typeName() noexcept {
+        static_assert(requires { Derived::getTypeName(); }, "Derived class must implement getTypeName method");
+        return Derived::getTypeName();
+    }
 
     /**
      * @brief Validate that the current element is a valid group element
