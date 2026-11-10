@@ -99,7 +99,7 @@ class TestCosseratIntegration(unittest.TestCase):
 | `test_bundle_composition()` | Bundle multiplication | Component-wise operations |
 
 **Bundle Types Tested**:
-- Pose-Velocity bundles: `Bundle<SE3, RealSpace<6>>`
+- Pose-Velocity bundles: `Bundle<SE3, Rn<6>>`
 - Multi-body systems: `Bundle<SE3, SE3, SE3>`
 
 #### 4. TestCosseratIntegration Class

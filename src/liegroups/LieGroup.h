@@ -1,0 +1,807 @@
+/******************************************************************************
+ *                 SOFA, Simulation Open-Framework Architecture * (c) 2006
+ *INRIA, USTL, UJF, CNRS, MGH                     *
+ *                                                                             *
+ * This program is free software; you can redistribute it and/or modify it     *
+ * under the terms of the GNU Lesser General Public License as published by    *
+ * the Free Software Foundation; either version 2.1 of the License, or (at     *
+ * your option) any later version.                                             *
+ *                                                                             *
+ * This program is distributed in the hope that it will be useful, but WITHOUT *
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or       *
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License *
+ * for more details.                                                           *
+ *                                                                             *
+ * You should have received a copy of the GNU Lesser General Public License    *
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.        *
+ ******************************************************************************/
+
+#pragma once
+
+#include <concepts>
+#include <iostream>
+#include <stdexcept>
+#include <type_traits>
+#include "Types.h"
+
+namespace sofa::component::cosserat::liegroups {
+
+// Forward declaration for matrix representation of Lie algebra
+template<typename Scalar_, int Dim_>
+class LieAlgebra;
+
+        // Modern C++20 concepts for better error messages and type safety
+        // Accept both standard floating-point types and autodiff types
+template<typename T>
+concept FloatingPoint = std::is_floating_point_v<T> || std::is_class_v<T>;
+
+template<typename T, typename Scalar>
+concept HasScalarType = std::same_as<typename T::Scalar, Scalar>;
+
+/**
+ * @brief Exception hierarchy for Lie group operations
+ */
+struct LieGroupException : public std::runtime_error {
+    using std::runtime_error::runtime_error;
+};
+
+struct InverseFailureException : public LieGroupException {
+    InverseFailureException() : LieGroupException("Failed to compute inverse: singular element") {}
+};
+
+struct LogarithmException : public LieGroupException {
+    LogarithmException() : LieGroupException("Logarithm undefined at this point") {}
+};
+
+struct NumericalInstabilityException : public LieGroupException {
+    NumericalInstabilityException(const std::string &msg) : LieGroupException("Numerical instability: " + msg) {}
+};
+
+/**
+ * @brief Base class template for all Lie group implementations using CRTP
+ *
+ * This class defines the interface that all Lie group implementations must
+ * satisfy. It uses the Curiously Recurring Template Pattern (CRTP) to allow
+ * static polymorphism, providing better performance than virtual functions.
+ *
+ * @tparam Derived_ The derived class implementing the specific Lie group
+ * @tparam Scalar_ The scalar type used for computations (must be a
+ * floating-point type)
+ * @tparam Dim_ The dimension of the group representation
+ * @tparam _AlgebraDim The dimension of the Lie algebra (default: same as Dim_)
+ * @tparam _ActionDim The dimension of vectors the group acts on (default: same
+ * as Dim_)
+ */
+
+template<typename Derived_, FloatingPoint Scalar_, int Dim_, int _AlgebraDim = Dim_, int _ActionDim = Dim_>
+    requires(Dim_ > 0 && _AlgebraDim > 0 && _ActionDim > 0)
+class GroupProperties
+{
+   public:
+    // Dimensions as static constants
+    static constexpr int Dim = Dim_;
+    static constexpr int AlgebraDim = _AlgebraDim;
+    static constexpr int ActionDim = _ActionDim;
+    using Derived = Derived_;
+    using Scalar = Scalar_;
+};
+
+/**
+ * @brief Base class for all Lie group implementations
+ *
+ * This class provides the common interface and functionality for all Lie groups.
+ * It uses the CRTP pattern with GroupProperties to enable static polymorphism
+ * and type safety. All concrete Lie group classes (SO3, SE3, Rn, etc.) inherit
+ * from this base class.
+ *
+ * @tparam GroupProperties_ The group properties containing type and dimension information
+ */
+template<typename GroupProperties_>
+class LieGroup {
+   public:
+    using GroupProperties = GroupProperties_;
+
+            // Type aliases for scalar and types
+    using Scalar = GroupProperties::Scalar;
+    using Types = sofa::component::cosserat::liegroups::Types<Scalar>;
+
+            // Dimensions as static constants
+    static constexpr int Dim = GroupProperties::Dim;
+    static constexpr int AlgebraDim = GroupProperties::AlgebraDim;
+    static constexpr int ActionDim = GroupProperties::ActionDim;
+
+            // Define commonly used types
+    using Vector = typename Types::template Vector<Dim>;
+    using Matrix = typename Types::template Matrix<Dim, Dim>;
+
+    using TangentVector = typename Types::template Vector<AlgebraDim>;
+    using AdjointMatrix = typename Types::template Matrix<AlgebraDim, AlgebraDim>;
+    using AlgebraMatrix = typename Types::template Matrix<Dim, Dim>;
+
+    using ActionVector = typename Types::template Vector<ActionDim>;
+    using JacobianMatrix = typename Types::template Matrix<ActionDim, AlgebraDim>;
+
+    using Derived = GroupProperties::Derived;
+    using Quaternion = typename Eigen::Quaternion<Scalar>;
+
+            // Type aliases for common patterns
+    using value_type = Scalar;
+    using tangent_vector_type = TangentVector;
+    using adjoint_matrix_type = AdjointMatrix;
+
+   protected:
+    /**
+     * @brief Protected constructor to prevent direct instantiation
+     * Only derived classes can construct this base
+     */
+    LieGroup() = default;
+
+   public:
+    // Rule of 5 - modern C++ best practices
+    LieGroup(const LieGroup &) = default;
+    LieGroup(LieGroup &&) noexcept = default;
+    LieGroup &operator=(const LieGroup &) = default;
+    LieGroup &operator=(LieGroup &&) noexcept = default;
+
+    /**
+     * @brief Access to the derived object (const version)
+     * @return Reference to the derived object
+     */
+    [[nodiscard]] constexpr const Derived &derived() const noexcept { return static_cast<const Derived &>(*this); }
+
+    /**
+     * @brief Access to the derived object (non-const version)
+     * @return Reference to the derived object
+     */
+    [[nodiscard]] constexpr Derived &derived() noexcept { return static_cast<Derived &>(*this); }
+
+    /**
+     * @brief In-place group composition with perfect forwarding
+     * @param other Another element of the same Lie group
+     * @return Reference to this after composition
+     */
+    template<typename T>
+        requires std::same_as<std::decay_t<T>, Derived>
+    constexpr Derived &operator*=(T &&other) noexcept {
+        derived() = derived().compose(std::forward<T>(other));
+        return derived();
+    }
+
+    /**
+     * @brief Group composition operation
+     * @param other Another element of the same Lie group
+     * @return The composition this * other
+     */
+    [[nodiscard]] constexpr Derived operator*(const Derived &other) const noexcept {
+        return derived().compose(other);
+    }
+
+    /**
+     * @brief Compute the inverse element
+     *
+     * Returns the inverse element such that this * inverse() = identity().
+     *
+     * @return The inverse element
+     * @throws InverseFailureException if the element is singular (not invertible)
+     */
+    [[nodiscard]] virtual Derived inverse() const final { return derived().computeInverse(); }
+
+    /**
+     * @brief Group composition operation
+     *
+     * Computes the composition of this element with another group element.
+     * This implements the group operation.
+     *
+     * @param other Another element of the same Lie group
+     * @return The composition this * other
+     */
+    [[nodiscard]] virtual Derived compose(const Derived &other) const noexcept final {
+        return derived().computeCompose(other);
+    }
+
+    /**
+     * @brief Group composition operation (free function)
+     *
+     * Static function to compute the composition of two group elements.
+     * This is a free function that delegates to the derived class implementation.
+     *
+     * @param a First group element
+     * @param b Second group element
+     * @return The composition a * b
+     */
+    [[nodiscard]] static constexpr Derived compose(const Derived &a, const Derived &b) noexcept {
+        static_assert(requires { Derived::computeCompose(a, b); }, "Derived class must implement computeCompose method");
+        return Derived::computeCompose(a,b);
+    }
+
+    /**
+     * @brief Exponential map from Lie algebra to Lie group
+     *
+     * Maps an element of the Lie algebra (tangent space at identity) to
+     * the corresponding element in the Lie group. This is a free function
+     * that delegates to the derived class implementation.
+     *
+     * @param algebra_element Element of the Lie algebra (tangent space at identity)
+     * @return The corresponding element in the Lie group
+     */
+    [[nodiscard]] static constexpr Derived exp(const TangentVector &algebra_element) noexcept {
+        static_assert(requires { Derived::computeExp(algebra_element); }, "Derived class must implement computeExp method");
+        return Derived::computeExp(algebra_element);
+    }
+
+    /**
+     * @brief Logarithmic map from Lie group to Lie algebra
+     *
+     * Maps an element of the Lie group to the corresponding element in the
+     * Lie algebra (tangent space at identity).
+     *
+     * @return The corresponding element in the Lie algebra
+     * @throws LogarithmException if the element is outside the domain of the log map
+     */
+    [[nodiscard]] virtual TangentVector log() const final { return derived().computeLog(); }
+
+    /**
+     * @brief Adjoint representation of the group element
+     *
+     * Computes the adjoint matrix representing the action of this group element
+     * on the Lie algebra via the adjoint representation.
+     *
+     * @return The adjoint matrix representing the action on the Lie algebra
+     */
+    [[nodiscard]] virtual AdjointMatrix adjoint() const noexcept final { return derived().computeAdjoint(); }
+
+    /**
+     * @brief Group action on a point
+     *
+     * Applies the group transformation to a point in the action space.
+     *
+     * @param point The point to transform
+     * @return The transformed point
+     */
+    [[nodiscard]] virtual ActionVector act(const ActionVector &point) const noexcept final {
+        return derived().computeAction(point);
+    }
+
+    /**
+     * @brief Overloaded function call operator for group action
+     *
+     * Convenience operator that forwards to act().
+     *
+     * @param point The point to transform
+     * @return The transformed point
+     */
+    [[nodiscard]] ActionVector operator()(const ActionVector &point) const noexcept { return act(point); }
+
+    /**
+     * @brief Check if this element is approximately equal to another
+     *
+     * Compares two group elements for approximate equality within a tolerance.
+     * This is useful for numerical comparisons.
+     *
+     * @param other Another element of the same Lie group
+     * @param eps Tolerance for comparison (defaults to machine epsilon)
+     * @return true if elements are approximately equal
+     */
+    [[nodiscard]] virtual bool isApprox(const Derived &other, const Scalar &eps = Types::epsilon()) const noexcept final {
+        return derived().computeIsApprox(other, eps);
+    }
+
+    /**
+     * @brief Get the identity element of the group
+     *
+     * Returns the identity element of the Lie group. This is a free function
+     * that delegates to the derived class implementation.
+     *
+     * @return The identity element
+     */
+    [[nodiscard]] static constexpr Derived Identity() noexcept {
+        static_assert(requires { Derived::computeIdentity(); }, "Derived class must implement computeIdentity method");
+        return Derived::computeIdentity();
+    }
+
+    /**
+     * @brief Right-plus operator: X ⊕ τ = X ◦ Exp(τ)
+     *
+     * This operator adds a tangent vector increment to a group element.
+     * The increment is expressed in the local frame (tangent space at X).
+     *
+     * @param tau Tangent vector in local frame (TₓM)
+     * @return Composed element X ⊕ τ ∈ M
+     *
+     * @note This is equivalent to X.compose(Derived::exp(tau)) but provides
+     *       a more intuitive notation consistent with Lie theory literature.
+     */
+    [[nodiscard]] Derived operator+(const TangentVector &tau) const noexcept {
+        return derived().compose(Derived::exp(tau));
+    }
+
+    /**
+     * @brief Right-minus operator: Y ⊖ X = Log(X⁻¹ ◦ Y)
+     *
+     * This operator computes the tangent vector difference between two
+     * group elements. The result is expressed in the local frame at X.
+     *
+     * @param other Another group element Y
+     * @return Tangent vector τ ∈ TₓM such that Y = X ⊕ τ
+     *
+     * @note This is the inverse operation of plus: Y.minus(X) gives the
+     *       tangent vector τ such that Y = X.plus(τ)
+     */
+    [[nodiscard]] TangentVector operator-(const Derived &other) const noexcept {
+        return derived().inverse().compose(other).log();
+    }
+
+    /**
+     * @brief Compute distance between two group elements
+     *
+     * Computes the geodesic distance on the Lie group manifold between
+     * this element and another.
+     *
+     * @param other Another element of the same Lie group
+     * @return A scalar representing the distance
+     */
+    [[nodiscard]] Scalar distance(const Derived &other) const noexcept;
+
+    /**
+     * @brief Linear interpolation between two group elements
+     *
+     * Computes a linear interpolation in the ambient space. Note that
+     * this may not lie exactly on the group manifold.
+     *
+     * @param other Target group element
+     * @param t Interpolation parameter between 0 and 1
+     * @return Interpolated group element
+     */
+    [[nodiscard]] Derived lerp(const Derived &other, const Scalar &t) const noexcept;
+
+    /**
+     * @brief Spherical linear interpolation between two group elements
+     *
+     * Computes a geodesic interpolation on the Lie group manifold.
+     * This is the preferred method for interpolation as it stays on the manifold.
+     *
+     * @param other Target group element
+     * @param t Interpolation parameter between 0 and 1
+     * @return Interpolated group element on the group manifold
+     */
+    [[nodiscard]] Derived slerp(const Derived &other, const Scalar &t) const noexcept;
+
+    /**
+     * @brief Get the Jacobian of the group action
+     *
+     * Computes the Jacobian matrix of the group action with respect to
+     * the group parameters at a given point.
+     *
+     * @param point The point at which to compute the Jacobian
+     * @return The Jacobian matrix mapping algebra vectors to action space vectors
+     */
+    [[nodiscard]] JacobianMatrix actionJacobian(const ActionVector &point) const noexcept;
+
+    /**
+     * @brief Convert a tangent vector to a Lie algebra matrix representation (hat operator)
+     *
+     * Maps a vector in the Lie algebra to its matrix representation.
+     * This is a free function that delegates to the derived class implementation.
+     *
+     * @param v Vector representation of Lie algebra element
+     * @return Matrix representation in the Lie algebra
+     */
+    static inline AlgebraMatrix hat(const TangentVector &v) noexcept
+    {
+        static_assert(requires { Derived::computeHat(v); }, "Derived class must implement computeHat method");
+        return Derived::computeHat(v);
+    }
+
+    /**
+     * @brief Convert a Lie algebra matrix to its vector representation (vee operator)
+     *
+     * This is the inverse of the hat() operator. It extracts the vector
+     * representation from a Lie algebra matrix.
+     *
+     * @param X Matrix representation in the Lie algebra
+     * @return Vector representation of the Lie algebra element
+     */
+    [[nodiscard]] static TangentVector vee(const AlgebraMatrix &X) noexcept;
+
+    /**
+     * @brief Baker-Campbell-Hausdorff formula for Lie algebra elements
+     *
+     * Computes an approximation of log(exp(v) * exp(w)) using the BCH series.
+     * This is a free function that delegates to the derived class implementation.
+     *
+     * @param v First tangent vector in the Lie algebra
+     * @param w Second tangent vector in the Lie algebra
+     * @param order Order of approximation (1-5, default: 3)
+     * @return Tangent vector approximating log(exp(v) * exp(w))
+     */
+    [[nodiscard]] static TangentVector BCH(const TangentVector &v, const TangentVector &w, const int order = 3){
+        static_assert(requires { Derived::computeBCH(v,w,order); }, "Derived class must implement computeBCH method");
+        return Derived::computeBCH(v, w, order);
+    }
+
+    /**
+     * @brief Right Jacobian of the manifold: Jr(τ) = τD Exp(τ)/Dτ
+     *
+     * The right Jacobian maps variations of the argument τ into variations
+     * in the local tangent space at Exp(τ).
+     *
+     * For small δτ:
+     *   Exp(τ + δτ) ≈ Exp(τ) ◦ Exp(Jr(τ) δτ)
+     *
+     * @param tau Tangent vector
+     * @return Right Jacobian matrix ∈ ℝᵐˣᵐ
+     *
+     * @note Essential for uncertainty propagation in Kalman filters
+     */
+    [[nodiscard]] static AdjointMatrix rightJacobian(const TangentVector &tau) noexcept {
+        static_assert(requires { Derived::computeRightJacobian(tau); }, "Derived class must implement computeRightJacobian method");
+        return Derived::computeRightJacobian(tau);
+    }
+
+    /**
+     * @brief Left Jacobian of the manifold: Jl(τ) = ᴱD Exp(τ)/Dτ
+     *
+     * The left Jacobian maps variations of the argument τ into variations
+     * in the global tangent space (Lie algebra at identity).
+     *
+     * For small δτ:
+     *   Exp(τ + δτ) ≈ Exp(Jl(τ) δτ) ◦ Exp(τ)
+     *
+     * @param tau Tangent vector
+     * @return Left Jacobian matrix ∈ ℝᵐˣᵐ
+     *
+     * @note Related to right Jacobian: Jl(τ) = Jr(-τ)
+     */
+    [[nodiscard]] static AdjointMatrix leftJacobian(const TangentVector &tau) noexcept {
+        static_assert(requires { Derived::computeLeftJacobian(tau); }, "Derived class must implement computeLeftJacobian method");
+        return Derived::computeLeftJacobian(tau);
+    }
+
+    /**
+     * @brief Inverse of the right Jacobian: Jr⁻¹(τ)
+     *
+     * Satisfies:
+     *   Log(Exp(τ) ◦ Exp(δτ)) ≈ τ + Jr⁻¹(τ) δτ
+     *
+     * @param tau Tangent vector
+     * @return Inverse right Jacobian matrix ∈ ℝᵐˣᵐ
+     */
+    [[nodiscard]] static AdjointMatrix rightJacobianInverse(const TangentVector &tau) noexcept {
+        static_assert(requires { Derived::computeRightJacobianInverse(tau); }, "Derived class must implement computeRightJacobianInverse method");
+        return Derived::computeRightJacobianInverse(tau);
+    }
+
+    /**
+     * @brief Inverse of the left Jacobian: Jl⁻¹(τ)
+     *
+     * Satisfies:
+     *   Log(Exp(δτ) ◦ Exp(τ)) ≈ τ + Jl⁻¹(τ) δτ
+     *
+     * @param tau Tangent vector
+     * @return Inverse left Jacobian matrix ∈ ℝᵐˣᵐ
+     *
+     * @note Related to right inverse: Jl⁻¹(τ) = Jr⁻¹(-τ)
+     */
+    [[nodiscard]] static AdjointMatrix leftJacobianInverse(const TangentVector &tau) noexcept {
+        static_assert(requires { Derived::computeLeftJacobianInverse(tau); }, "Derived class must implement computeLeftJacobianInverse method");
+        return Derived::computeLeftJacobianInverse(tau);
+    }
+
+    /**
+     * @brief Get the differential of the exponential map
+     * @param v Tangent vector
+     * @return Matrix representing the differential of exp at v
+     * @deprecated Use rightJacobian() instead for clarity
+     */
+    [[nodiscard]] static AdjointMatrix dexp(const TangentVector &v) {
+        return rightJacobian(v);
+    }
+
+    /**
+     * @brief Get the inverse of the differential of the exponential map
+     * @param v Tangent vector
+     * @return Matrix representing the inverse differential of exp at v
+     * @deprecated Use rightJacobianInverse() instead for clarity
+     */
+    [[nodiscard]] static AdjointMatrix dexpInv(const TangentVector &v) {
+        return rightJacobianInverse(v);
+    }
+
+    /**
+     * @brief Alternative implementation of the exponential map differential
+     *
+     * Uses direct computation with the ad() operator. This is an alternative
+     * implementation that derived classes can override.
+     *
+     * @param v Tangent vector
+     * @return Matrix representing the differential of exp at v
+     * @note Equivalent to rightJacobian() but uses different computation method
+     */
+    [[nodiscard]] static AdjointMatrix dexp_alternative(const TangentVector &v);
+
+    /**
+     * @brief Alternative implementation of the inverse exponential map differential
+     *
+     * Uses direct computation with the ad() operator. This is an alternative
+     * implementation that derived classes can override.
+     *
+     * @param v Tangent vector
+     * @return Matrix representing the inverse differential of exp at v
+     * @note Equivalent to rightJacobianInverse() but uses different computation method
+     */
+    [[nodiscard]] static AdjointMatrix dexpInv_alternative(const TangentVector &v);
+
+    /**
+     * @brief Get the differential of the logarithm map
+     *
+     * Computes the differential of the logarithm map at the current group element.
+     * This maps tangent vectors at the current point to tangent vectors at identity.
+     *
+     * @return Matrix representing the differential of log at the current point
+     */
+    [[nodiscard]] AdjointMatrix dlog() const;
+
+    /**
+     * @brief Factory function to create a group element from parameters
+     *
+     * Creates a new instance of the derived class using perfect forwarding
+     * of the provided arguments.
+     *
+     * @tparam Args Types of constructor arguments
+     * @param args Constructor arguments
+     * @return New group element of type Derived
+     */
+    template<typename... Args>
+    [[nodiscard]] static constexpr Derived create(Args &&...args) {
+        return Derived(std::forward<Args>(args)...);
+    }
+
+    /**
+     * @brief Compute the adjoint representation of a Lie algebra element
+     *
+     * For matrix Lie algebras, this computes the matrix representation of
+     * the adjoint action ad_X(Y) = [X,Y] = XY - YX.
+     * This is a free function that delegates to the derived class implementation.
+     *
+     * @param v Element of the Lie algebra in vector form
+     * @return Matrix representing the adjoint action
+     */
+    [[nodiscard]] static auto ad(const TangentVector &v) -> Matrix;
+
+    /**
+     * @brief Get the dimension of the group manifold
+     *
+     * Returns the dimension of the Lie group as a manifold, which is equal
+     * to the dimension of its Lie algebra.
+     *
+     * @return The dimension of the manifold
+     */
+    [[nodiscard]] static constexpr int manifoldDim() noexcept { return AlgebraDim; }
+
+    /**
+     * @brief Check if the current element is close to the identity
+     *
+     * Convenience function that checks if this element is approximately
+     * equal to the identity element of the group.
+     *
+     * @param eps Tolerance for comparison (defaults to machine epsilon)
+     * @return true if the element is close to identity within the tolerance
+     */
+    [[nodiscard]] bool isNearIdentity(const Scalar &eps = Types::epsilon()) const noexcept {
+        return isApprox(Identity(), eps);
+    }
+
+    /**
+     * @brief Compute the matrix logarithm with improved numerical stability
+     *
+     * Computes the matrix logarithm of the group element's matrix representation.
+     * This is useful for converting group elements to their Lie algebra representation.
+     *
+     * @return Matrix logarithm of the current element
+     */
+    [[nodiscard]] AlgebraMatrix matrixLog() const;
+
+    /**
+     * @brief Get a random element of the group
+     *
+     * Generates a random element uniformly distributed on the Lie group.
+     * Useful for testing, sampling, or Monte Carlo methods.
+     *
+     * @tparam Generator Type of the random number generator
+     * @param gen Random number generator
+     * @return Random group element
+     */
+    template<typename Generator>
+    [[nodiscard]] static Derived Random(Generator &gen) {
+        static_assert(requires { Derived::computeRandom(gen); }, "Derived class must implement computeRandom method");
+        return Derived::computeRandom(gen);
+    }
+
+    /**
+     * @brief Stream output operator
+     */
+    friend std::ostream &operator<<(std::ostream &os, const LieGroup &g) { return g.derived().print(os); }
+
+    /**
+     * @brief Get the type name of the derived class
+     *
+     * Returns a string identifier for the specific Lie group type.
+     * Useful for debugging and type introspection.
+     *
+     * @return String view containing the type name
+     */
+    [[nodiscard]] static constexpr std::string_view typeName() noexcept {
+        static_assert(requires { Derived::getTypeName(); }, "Derived class must implement getTypeName method");
+        return Derived::getTypeName();
+    }
+
+    /**
+     * @brief Validate that the current element is a valid group element
+     * @return true if valid, false otherwise
+     */
+    [[nodiscard]] virtual bool isValid() const noexcept final { return derived().computeIsValid(); }
+
+    /**
+     * @brief Normalize the group element to ensure it remains on the manifold
+     *
+     * Projects the element back onto the group manifold. This is useful
+     * for numerical stability after many operations.
+     */
+    virtual void normalize() noexcept final { derived().computeNormalize(); }
+
+    /**
+     * @brief Get a normalized copy of the group element
+     *
+     * Creates a copy of this element and normalizes it to ensure it lies
+     * on the group manifold. This is useful for numerical stability.
+     *
+     * @return A normalized copy of this group element
+     */
+    [[nodiscard]] Derived normalized() const noexcept {
+        Derived result = derived();
+        result.normalize();
+        return result;
+    }
+
+    /**
+     * @brief Compute the squared distance between two group elements
+     *
+     * More efficient than distance() when only comparison is needed,
+     * as it avoids the square root computation.
+     *
+     * @param other Another element of the same Lie group
+     * @return Squared distance
+     */
+    [[nodiscard]] Scalar squaredDistance(const Derived &other) const noexcept;
+
+   protected:
+    /**
+     * @brief Helper for derived classes to validate construction parameters
+     *
+     * This utility function allows derived classes to validate constructor
+     * arguments before creating an instance.
+     *
+     * @tparam Args Types of constructor arguments
+     * @param args Constructor arguments to validate
+     * @return true if the arguments are valid for construction
+     */
+    template<typename... Args>
+    static constexpr bool validateConstructorArgs(Args &&...args) noexcept {
+        return Derived::isValidConstruction(std::forward<Args>(args)...);
+    }
+
+   protected:
+    /**
+     * @brief Default Baker-Campbell-Hausdorff formula implementation
+     *
+     * This is the base implementation of the BCH formula that derived classes
+     * can override. It computes an approximation of log(exp(v) * exp(w))
+     * using the BCH series expansion up to the specified order.
+     *
+     * @param v First tangent vector in the Lie algebra
+     * @param w Second tangent vector in the Lie algebra
+     * @param order Order of the BCH series approximation (1-5)
+     * @return Tangent vector approximating log(exp(v) * exp(w))
+     */
+    [[nodiscard]] static TangentVector defaultComputeBCH(const TangentVector &v, const TangentVector &w, const int order);
+
+   private:
+    /**
+     * @brief Pure virtual method to compute the logarithm map
+     *
+     * Derived classes must implement this to compute the Lie algebra element
+     * corresponding to the current group element.
+     *
+     * @return Tangent vector in the Lie algebra
+     */
+    [[nodiscard]] virtual TangentVector computeLog() const = 0;
+
+    /**
+     * @brief Pure virtual method to compute the inverse element
+     *
+     * Derived classes must implement this to compute the group inverse
+     * such that this * inverse() = identity().
+     *
+     * @return The inverse group element
+     */
+    [[nodiscard]] virtual Derived computeInverse() const = 0;
+
+    /**
+     * @brief Pure virtual method to compute group composition
+     *
+     * Derived classes must implement this to compute the composition
+     * of this element with another group element.
+     *
+     * @param other The other group element to compose with
+     * @return The composed group element (this * other)
+     */
+    [[nodiscard]] virtual Derived computeCompose(const Derived &other) const = 0;
+
+    /**
+     * @brief Pure virtual method to compute the adjoint representation
+     *
+     * Derived classes must implement this to compute the adjoint matrix
+     * representing the action of the group on its Lie algebra.
+     *
+     * @return The adjoint matrix AdjointMatrix
+     */
+    [[nodiscard]] virtual AdjointMatrix computeAdjoint() const = 0;
+
+    /**
+     * @brief Pure virtual method to compute the group action on a point
+     *
+     * Derived classes must implement this to define how the group acts
+     * on points in the action space.
+     *
+     * @param point The point to transform
+     * @return The transformed point
+     */
+    [[nodiscard]] virtual ActionVector computeAction(const ActionVector &point) const = 0;
+
+    /**
+     * @brief Pure virtual method to check approximate equality
+     *
+     * Derived classes must implement this to check if this element is
+     * approximately equal to another within a tolerance.
+     *
+     * @param other The other element to compare with
+     * @param eps The tolerance for comparison
+     * @return true if elements are approximately equal
+     */
+    [[nodiscard]] virtual bool computeIsApprox(const Derived &other, const Scalar &eps) const = 0;
+
+    /**
+     * @brief Pure virtual method to validate the group element
+     *
+     * Derived classes must implement this to check if the current element
+     * is a valid member of the group manifold.
+     *
+     * @return true if the element is valid
+     */
+    [[nodiscard]] virtual bool computeIsValid() const = 0;
+
+    /**
+     * @brief Pure virtual method to normalize the group element
+     *
+     * Derived classes must implement this to project the element back
+     * onto the group manifold for numerical stability.
+     */
+    virtual void computeNormalize() = 0;
+};
+
+/**
+ * @brief Utility traits for Lie group types
+ */
+template<typename T>
+struct is_lie_group : std::false_type {};
+
+template<typename Derived, FloatingPoint Scalar, int Dim, int AlgDim, int ActDim>
+struct is_lie_group<LieGroup<GroupProperties<Derived, Scalar, Dim, AlgDim, ActDim>>> : std::true_type {};
+
+template<typename T>
+inline constexpr bool is_lie_group_v = is_lie_group<T>::value;
+
+} // namespace sofa::component::cosserat::liegroups
+
+// #endif // SOFA_COMPONENT_COSSERAT_LIEGROUPS_LIEGROUPBASE_H
+

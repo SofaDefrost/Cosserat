@@ -18,7 +18,7 @@
 
 #include <sofa/testing/BaseTest.h>
 #include <Cosserat/liegroups/Bundle.h>
-#include <Cosserat/liegroups/RealSpace.h>
+#include <Cosserat/liegroups/Rn.h>
 #include <Cosserat/liegroups/SO3.h>
 #include <Cosserat/liegroups/SE3.h>
 #include <Eigen/Core>
@@ -36,7 +36,7 @@ class BundleTest : public BaseTest
 {
 protected:
     // Define common types
-    using RealSpace3d = RealSpace<double, 3>;
+    using Rn3d = Rn<double, 3>;
     using SO3d = SO3<double>;
     using SE3d = SE3<double>;
     using Vector3 = Eigen::Vector3d;
@@ -44,9 +44,9 @@ protected:
     using Quaternion = Eigen::Quaterniond;
 
     // Define test bundle types
-    using PoseVel = Bundle<SE3d, RealSpace3d>;  // Pose + velocity
+    using PoseVel = Bundle<SE3d, Rn3d>;  // Pose + velocity
     using MultiBody = Bundle<SE3d, SE3d, SE3d>;  // Three rigid bodies
-    using ComplexSystem = Bundle<SE3d, SO3d, RealSpace3d>;  // Mixed system
+    using ComplexSystem = Bundle<SE3d, SO3d, Rn3d>;  // Mixed system
 
     const double pi = M_PI;
     const double eps = 1e-10;
@@ -63,7 +63,7 @@ TEST_F(BundleTest, Identity)
     // Test PoseVel identity
     PoseVel id_pv = PoseVel::identity();
     EXPECT_TRUE(id_pv.get<0>().isApprox(SE3d::identity()));
-    EXPECT_TRUE(id_pv.get<1>().isApprox(RealSpace3d::identity()));
+    EXPECT_TRUE(id_pv.get<1>().isApprox(Rn3d::identity()));
     
     // Test MultiBody identity
     MultiBody id_mb = MultiBody::identity();
@@ -74,7 +74,7 @@ TEST_F(BundleTest, Identity)
     // Test right and left identity
     Vector3 axis = Vector3(1, 1, 1).normalized();
     PoseVel g(SE3d(SO3d(pi/4, axis), Vector3(1, 2, 3)),
-              RealSpace3d(Vector3(0.1, 0.2, 0.3)));
+              Rn3d(Vector3(0.1, 0.2, 0.3)));
     
     EXPECT_TRUE((g * id_pv).isApprox(g));
     EXPECT_TRUE((id_pv * g).isApprox(g));
@@ -90,8 +90,8 @@ TEST_F(BundleTest, GroupOperation)
     Vector3 trans1(1, 0, 0), trans2(0, 1, 0);
     Vector3 vel1(0.1, 0, 0), vel2(0, 0.2, 0);
     
-    PoseVel g1(SE3d(SO3d(pi/2, axis1), trans1), RealSpace3d(vel1));
-    PoseVel g2(SE3d(SO3d(pi/2, axis2), trans2), RealSpace3d(vel2));
+    PoseVel g1(SE3d(SO3d(pi/2, axis1), trans1), Rn3d(vel1));
+    PoseVel g2(SE3d(SO3d(pi/2, axis2), trans2), Rn3d(vel2));
     
     PoseVel g12 = g1 * g2;
     
@@ -126,7 +126,7 @@ TEST_F(BundleTest, Inverse)
     Vector3 trans(1, 2, 3);
     Vector3 vel(0.1, 0.2, 0.3);
     
-    PoseVel g(SE3d(SO3d(pi/3, axis), trans), RealSpace3d(vel));
+    PoseVel g(SE3d(SO3d(pi/3, axis), trans), Rn3d(vel));
     PoseVel inv = g.inverse();
     
     // Test inverse properties
@@ -148,7 +148,7 @@ TEST_F(BundleTest, ExpLog)
     Vector3 trans(4, 5, 6);
     Vector3 vel(0.1, 0.2, 0.3);
     
-    PoseVel g(SE3d(SO3d(pi/4, axis), trans), RealSpace3d(vel));
+    PoseVel g(SE3d(SO3d(pi/4, axis), trans), Rn3d(vel));
     auto xi = g.log();
     PoseVel g2 = PoseVel().exp(xi);
     
@@ -175,7 +175,7 @@ TEST_F(BundleTest, Adjoint)
     Vector3 trans(1, 2, 0);
     Vector3 vel(0.1, 0.2, 0);
     
-    PoseVel g(SE3d(SO3d(pi/2, axis), trans), RealSpace3d(vel));
+    PoseVel g(SE3d(SO3d(pi/2, axis), trans), Rn3d(vel));
     auto Ad = g.adjoint();
     
     // Verify block diagonal structure
@@ -196,7 +196,7 @@ TEST_F(BundleTest, Action)
     Vector3 trans(1, 0, 0);
     Vector3 vel(0.1, 0, 0);
     
-    PoseVel g(SE3d(SO3d(pi/2, axis), trans), RealSpace3d(vel));
+    PoseVel g(SE3d(SO3d(pi/2, axis), trans), Rn3d(vel));
     
     // Create point and velocity
     Vector3 p(1, 0, 0);
@@ -224,7 +224,7 @@ TEST_F(BundleTest, Interpolation)
     Vector3 axis = Vector3(1, 1, 1).normalized();
     PoseVel start = PoseVel::identity();
     PoseVel end(SE3d(SO3d(pi/2, axis), Vector3(2, 0, 0)),
-                RealSpace3d(Vector3(0.2, 0, 0)));
+                Rn3d(Vector3(0.2, 0, 0)));
     
     // Test midpoint
     PoseVel mid = interpolate(start, end, 0.5);
@@ -248,7 +248,7 @@ TEST_F(BundleTest, ComplexSystem)
     ComplexSystem sys(
         SE3d(SO3d(pi/4, axis), Vector3(1, 2, 3)),    // Rigid body
         SO3d(pi/3, Vector3(0, 0, 1)),                // Pure rotation
-        RealSpace3d(Vector3(0.1, 0.2, 0.3))          // Vector space
+        Rn3d(Vector3(0.1, 0.2, 0.3))          // Vector space
     );
     
     // Test identity composition

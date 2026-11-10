@@ -18,8 +18,7 @@
 #pragma once
 
 #include <Eigen/Geometry>
-#include "LieGroupBase.h"
-#include "LieGroupBase.inl"
+#include "LieGroup.h"
 #include "Types.h"
 
 namespace sofa::component::cosserat::liegroups {
@@ -34,12 +33,12 @@ namespace sofa::component::cosserat::liegroups {
 	 * The Lie algebra so(3) consists of skew-symmetric 3×3 matrices, which can be
 	 * identified with vectors in ℝ³ (angular velocity vectors).
 	 *
-	 * @tparam _Scalar The scalar type (must be a floating-point type)
+	 * @tparam Scalar_ The scalar type (must be a floating-point type)
 	 */
-	template<typename _Scalar>
-	class SO3 : public LieGroupBase<SO3<_Scalar>, _Scalar, 3, 3, 3> {
+	template<typename Scalar_>
+        class SO3 : public LieGroup<GroupProperties<SO3<Scalar_>, Scalar_, 3, 3, 3>> {
 	public:
-		using Base = LieGroupBase<SO3<_Scalar>, _Scalar, 3, 3, 3>;
+        using Base = LieGroup<GroupProperties<SO3<Scalar_>, Scalar_, 3, 3, 3>>;
 		using Scalar = typename Base::Scalar;
 		using Vector = typename Base::Vector;
 		using Matrix = typename Base::Matrix;
@@ -87,13 +86,7 @@ namespace sofa::component::cosserat::liegroups {
 		 * @param other The other SO3 rotation.
 		 * @return The composed SO3 rotation.
 		 */
-		SO3 compose(const SO3 &other) const noexcept { return SO3(m_quat * other.m_quat); }
-
-		/**
-		 * @brief Computes the inverse element (opposite rotation).
-		 * @return The inverse SO3 rotation.
-		 */
-		SO3 inverse() const { return SO3(m_quat.conjugate()); }
+        SO3 computeCompose(const SO3 &other) const noexcept { return SO3(m_quat * other.m_quat); }
 
 		/**
 		 * @brief Computes the inverse element (opposite rotation).
@@ -117,14 +110,6 @@ namespace sofa::component::cosserat::liegroups {
 		 * @return The corresponding SO3 element.
 		 */
 		static SO3 computeExp(const TangentVector &omega) noexcept { return expImpl(omega); }
-
-
-		/**
-		 * @brief Logarithmic map from SO(3) to Lie algebra so(3).
-		 * Thin wrapper around computeLog() — no longer a code duplicate.
-		 * @return Angular velocity vector in ℝ³.
-		 */
-		TangentVector log() const { return computeLog(); }
 
 		/**
 		 * @brief Computes the logarithmic map from SO(3) to Lie algebra so(3).
@@ -155,25 +140,11 @@ namespace sofa::component::cosserat::liegroups {
 		}
 
 		/**
-		 * @brief Adjoint representation of the group element.
-		 * For SO(3), this is the rotation matrix itself.
-		 * @return The adjoint matrix representing the action on the Lie algebra.
-		 */
-		AdjointMatrix adjoint() const noexcept { return matrix(); }
-
-		/**
 		 * @brief Computes the adjoint representation of the group element.
 		 * This is a CRTP-required method.
 		 * @return The adjoint matrix representing the action on the Lie algebra.
 		 */
 		AdjointMatrix computeAdjoint() const noexcept { return matrix(); }
-
-		/**
-		 * @brief Group action on a point (rotates the point).
-		 * @param point The point to transform.
-		 * @return The transformed point.
-		 */
-		Vector act(const Vector &point) const noexcept { return m_quat * point; }
 
 		/**
 		 * @brief Computes the group action on a point (rotates the point).
@@ -182,19 +153,6 @@ namespace sofa::component::cosserat::liegroups {
 		 * @return The transformed point.
 		 */
 		Vector computeAction(const Vector &point) const noexcept { return m_quat * point; }
-
-		/**
-		 * @brief Check if approximately equal to another rotation.
-		 * Handles antipodal representation of the same rotation.
-		 * @param other Another element of the same Lie group.
-		 * @param eps Tolerance for comparison (optional).
-		 * @return true if elements are approximately equal.
-		 */
-		bool isApprox(const SO3 &other, const Scalar &eps = Types<Scalar>::epsilon()) const noexcept {
-			// Handle antipodal representation of same rotation
-			return m_quat.coeffs().isApprox(other.m_quat.coeffs(), eps) ||
-				   m_quat.coeffs().isApprox(-other.m_quat.coeffs(), eps);
-		}
 
 		/**
 		 * @brief Computes if this element is approximately equal to another.
@@ -300,7 +258,7 @@ namespace sofa::component::cosserat::liegroups {
 
 	/**
 	 * @brief Adjoint representation of Lie algebra element.
-	 * This is a CRTP-required method (used by LieGroupBase::ad).
+	 * This is a CRTP-required method (used by LieGroup::ad).
 	 * @param v Element of the Lie algebra in vector form.
 	 * @return Matrix representing the adjoint action.
 	 */
@@ -358,7 +316,7 @@ namespace sofa::component::cosserat::liegroups {
 		// For perturbation R_δ = exp(δ) * R:
 		// (exp(δ) * R) * p ≈ R*p + δ × (R*p)
 		// So: ∂(R*p)/∂δ = -[R*p]× (negative skew-symmetric)
-		Vector Rp = act(point);
+                Vector Rp = this->act(point);
 		Matrix J_wrt_rotation = -buildAntisymmetric(Rp);
 		
 		// ∂(R*p)/∂p = R
@@ -447,7 +405,7 @@ namespace sofa::component::cosserat::liegroups {
 
 		/**
 		 * @brief Print the SO3 element to an output stream.
-		 * This method is required by the LieGroupBase CRTP interface.
+		 * This method is required by the LieGroup CRTP interface.
 		 * @param os Output stream to write to.
 		 * @return Reference to the output stream.
 		 */

@@ -69,7 +69,7 @@ SE3d relative12 = system.get<1>().inverse() * system.get<2>();
 ### Cosserat Rod Dynamics
 ```cpp
 // Define rod state including velocity
-using RodState = Bundle<SE23d, RealSpace3d>;  // Configuration + strain
+using RodState = Bundle<SE23d, Rn3d>;  // Configuration + strain
 
 // Update rod configuration
 void updateRodState(RodState& state, double dt) {
@@ -134,8 +134,8 @@ if (angle < eps) {
 ### Type Safety
 ```cpp
 // Use type aliases for clarity
-using StrainVector = RealSpace<double, 6>;
-using StressVector = RealSpace<double, 6>;
+using StrainVector = Rn<double, 6>;
+using StressVector = Rn<double, 6>;
 using RodSection = Bundle<SE3d, StrainVector, StressVector>;
 ```
 

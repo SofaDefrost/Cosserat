@@ -27,7 +27,7 @@
 
 namespace sofa::component::cosserat::liegroups {
 
-	template<typename _Scalar, int _Dim = 10>
+	template<typename Scalar_, int Dim_ = 10>
 	class SGal3;
 
 	/**
@@ -37,39 +37,39 @@ namespace sofa::component::cosserat::liegroups {
 	/**
 	 * @brief Transform a point-velocity-time tuple by inverse transformation
 	 */
-	template<typename _Scalar>
-	Eigen::Matrix<_Scalar, 7, 1> operator/(const Eigen::Matrix<_Scalar, 7, 1> &point_vel_time,
-										   const SGal3<_Scalar> &g) {
+	template<typename Scalar_>
+	Eigen::Matrix<Scalar_, 7, 1> operator/(const Eigen::Matrix<Scalar_, 7, 1> &point_vel_time,
+										   const SGal3<Scalar_> &g) {
 		return g.inverse().act(point_vel_time).template head<7>();
 	}
 
 	/**
 	 * @brief Create SGal(3) transformation from components
 	 */
-	template<typename _Scalar>
-	SGal3<_Scalar> fromComponents(const typename SGal3<_Scalar>::Vector3 &position, const SO3<_Scalar> &rotation,
-								  const typename SGal3<_Scalar>::Vector3 &velocity, const _Scalar &time) {
-		return SGal3<_Scalar>(SE3<_Scalar>(rotation, position), velocity, time);
+	template<typename Scalar_>
+	SGal3<Scalar_> fromComponents(const typename SGal3<Scalar_>::Vector3 &position, const SO3<Scalar_> &rotation,
+								  const typename SGal3<Scalar_>::Vector3 &velocity, const Scalar_ &time) {
+		return SGal3<Scalar_>(SE3<Scalar_>(rotation, position), velocity, time);
 	}
 
 	/**
 	 * @brief Create SGal(3) transformation from position, Euler angles, velocity,
 	 * and time
 	 */
-	template<typename _Scalar>
-	SGal3<_Scalar> fromPositionEulerVelocityTime(const typename SGal3<_Scalar>::Vector3 &position, const _Scalar &roll,
-												 const _Scalar &pitch, const _Scalar &yaw,
-												 const typename SGal3<_Scalar>::Vector3 &velocity,
-												 const _Scalar &time) {
-		return SGal3<_Scalar>(fromPositionEulerZYX(position, roll, pitch, yaw), velocity, time);
+	template<typename Scalar_>
+	SGal3<Scalar_> fromPositionEulerVelocityTime(const typename SGal3<Scalar_>::Vector3 &position, const Scalar_ &roll,
+												 const Scalar_ &pitch, const Scalar_ &yaw,
+												 const typename SGal3<Scalar_>::Vector3 &velocity,
+												 const Scalar_ &time) {
+		return SGal3<Scalar_>(fromPositionEulerZYX(position, roll, pitch, yaw), velocity, time);
 	}
 
 	/**
 	 * @brief Convert transformation to position, Euler angles, velocity, and time
 	 */
-	template<typename _Scalar>
-	typename SGal3<_Scalar>::Vector toPositionEulerVelocityTime(const SGal3<_Scalar> &transform) {
-		typename SGal3<_Scalar>::Vector result;
+	template<typename Scalar_>
+	typename SGal3<Scalar_>::Vector toPositionEulerVelocityTime(const SGal3<Scalar_> &transform) {
+		typename SGal3<Scalar_>::Vector result;
 		result.resize(10);
 		result.template segment<6>(0) = toPositionEulerZYX(transform.pose());
 		result.template segment<3>(6) = transform.velocity();
@@ -81,18 +81,18 @@ namespace sofa::component::cosserat::liegroups {
 	 * @brief Dual vector operator for sgal(3)
 	 * Maps a 10D vector to its dual 6x6 matrix representation
 	 */
-	template<typename _Scalar>
-	Eigen::Matrix<_Scalar, 6, 6> dualMatrix(const typename SGal3<_Scalar>::TangentVector &xi) {
-		Eigen::Matrix<_Scalar, 6, 6> xi_hat = Eigen::Matrix<_Scalar, 6, 6>::Zero();
+	template<typename Scalar_>
+	Eigen::Matrix<Scalar_, 6, 6> dualMatrix(const typename SGal3<Scalar_>::TangentVector &xi) {
+		Eigen::Matrix<Scalar_, 6, 6> xi_hat = Eigen::Matrix<Scalar_, 6, 6>::Zero();
 
 		// Extract components
 		const auto &v = xi.template segment<3>(0); // Linear velocity
 		const auto &w = xi.template segment<3>(3); // Angular velocity
 		const auto &beta = xi.template segment<3>(6); // Boost
-		const _Scalar &tau = xi[9]; // Time rate
+		const Scalar_ &tau = xi[9]; // Time rate
 
 		// Fill the matrix blocks
-		xi_hat.template block<3, 3>(0, 0) = SO3<_Scalar>::computeHat(w);
+		xi_hat.template block<3, 3>(0, 0) = SO3<Scalar_>::computeHat(w);
 		xi_hat.template block<3, 1>(0, 3) = v;
 		xi_hat.template block<3, 1>(0, 4) = beta;
 		xi_hat(4, 5) = tau;
@@ -107,20 +107,20 @@ namespace sofa::component::cosserat::liegroups {
 	 * BCH(X,Y) = X + Y + 1/2[X,Y] + higher order terms
 	 * where [X,Y] is the Lie bracket for sgal(3).
 	 */
-	template<typename _Scalar, int _Dim>
-	typename SGal3<_Scalar, _Dim>::TangentVector
-	SGal3<_Scalar, _Dim>::BCH(const typename SGal3<_Scalar, _Dim>::TangentVector &X,
-							  const typename SGal3<_Scalar, _Dim>::TangentVector &Y) {
+	template<typename Scalar_, int Dim_>
+	typename SGal3<Scalar_, Dim_>::TangentVector
+	SGal3<Scalar_, Dim_>::BCH(const typename SGal3<Scalar_, Dim_>::TangentVector &X,
+							  const typename SGal3<Scalar_, Dim_>::TangentVector &Y) {
 		// Extract components
 		const auto &v1 = X.template segment<3>(0); // First linear velocity
 		const auto &w1 = X.template segment<3>(3); // First angular velocity
 		const auto &b1 = X.template segment<3>(6); // First boost
-		const _Scalar &t1 = X[9]; // First time rate
+		const Scalar_ &t1 = X[9]; // First time rate
 
 		const auto &v2 = Y.template segment<3>(0); // Second linear velocity
 		const auto &w2 = Y.template segment<3>(3); // Second angular velocity
 		const auto &b2 = Y.template segment<3>(6); // Second boost
-		const _Scalar &t2 = Y[9]; // Second time rate
+		const Scalar_ &t2 = Y[9]; // Second time rate
 
 		// Compute Lie bracket components
 		const auto w1_cross_w2 = w1.cross(w2); // Angular x Angular
@@ -131,9 +131,9 @@ namespace sofa::component::cosserat::liegroups {
 
 		// Combine terms for the BCH formula up to second order
 		TangentVector result;
-		result.template segment<3>(0) = v1 + v2 + _Scalar(0.5) * (w1_cross_v2 - v1_cross_w2);
-		result.template segment<3>(3) = w1 + w2 + _Scalar(0.5) * w1_cross_w2;
-		result.template segment<3>(6) = b1 + b2 + _Scalar(0.5) * (w1_cross_b2 - b1_cross_w2);
+		result.template segment<3>(0) = v1 + v2 + Scalar_(0.5) * (w1_cross_v2 - v1_cross_w2);
+		result.template segment<3>(3) = w1 + w2 + Scalar_(0.5) * w1_cross_w2;
+		result.template segment<3>(6) = b1 + b2 + Scalar_(0.5) * (w1_cross_b2 - b1_cross_w2);
 		result[9] = t1 + t2; // Time component adds linearly
 
 		return result;

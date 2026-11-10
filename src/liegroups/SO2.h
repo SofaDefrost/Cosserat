@@ -1,6 +1,3 @@
-// This file defines the SO2 (Special Orthogonal group in 2D) class,
-// representing 2D rotations.
-
 /******************************************************************************
  *                 SOFA, Simulation Open-Framework Architecture * (c) 2006
  *INRIA, USTL, UJF, CNRS, MGH                     *
@@ -18,14 +15,10 @@
  * You should have received a copy of the GNU Lesser General Public License    *
  * along with this program. If not, see <http://www.gnu.org/licenses/\>. *
  ******************************************************************************/
-
-// #ifndef SOFA_COMPONENT_COSSERAT_LIEGROUPS_SO2_H
-// #define SOFA_COMPONENT_COSSERAT_LIEGROUPS_SO2_H
 #pragma once
 
 #include <cmath>
-#include "LieGroupBase.h" // Then the base class interface
-#include "LieGroupBase.inl" // Then the base class interface
+#include "LieGroup.h" // Then the base class interface
 #include "Types.h" // Then our type system
 
 namespace sofa::component::cosserat::liegroups {
@@ -41,12 +34,12 @@ namespace sofa::component::cosserat::liegroups {
 	 * The Lie algebra so(2) consists of skew-symmetric 2×2 matrices, which can be
 	 * identified with real numbers (the rotation angle).
 	 *
-	 * @tparam _Scalar The scalar type (must be a floating-point type)
+	 * @tparam Scalar_ The scalar type (must be a floating-point type)
 	 */
-	template<typename _Scalar>
-	class SO2 : public LieGroupBase<SO2<_Scalar>, _Scalar, 2, 1, 2> {
+	template<typename Scalar_>
+	class SO2 : public LieGroup<GroupProperties<SO2<Scalar_>, Scalar_, 2, 1, 2>> {
 	public:
-		using Base = LieGroupBase<SO2<_Scalar>, _Scalar, 2, 1, 2>;
+		using Base = LieGroup<GroupProperties<SO2<Scalar_>, Scalar_, 2, 1, 2>>;
 		using Scalar = typename Base::Scalar;
 		using Vector = typename Base::Vector;
 		using Matrix = typename Base::Matrix;
@@ -54,7 +47,7 @@ namespace sofa::component::cosserat::liegroups {
 		using AdjointMatrix = typename Base::AdjointMatrix;
 
 		static constexpr int Dim = 2;
-		using Complex = Eigen::Vector2<_Scalar>; // Represents complex number as 2D vector
+		using Complex = Eigen::Vector2<Scalar_>; // Represents complex number as 2D vector
 
 		/**
 		 * @brief Default constructor creates identity rotation (angle = 0)
@@ -65,7 +58,7 @@ namespace sofa::component::cosserat::liegroups {
 		 * @brief Construct from angle (in radians)
 		 * @param angle The rotation angle in radians.
 		 */
-		explicit SO2(const Scalar &angle) : m_angle(Types<_Scalar>::normalizeAngle(angle)) { updateComplex(); }
+		explicit SO2(const Scalar &angle) : m_angle(Types<Scalar_>::normalizeAngle(angle)) { updateComplex(); }
 
 		/**
 		 * @brief Copy constructor
@@ -85,7 +78,7 @@ namespace sofa::component::cosserat::liegroups {
 		 * @param angle The new rotation angle in radians.
 		 */
 		void setAngle(const Scalar &angle) {
-			m_angle = Types<_Scalar>::normalizeAngle(angle);
+			m_angle = Types<Scalar_>::normalizeAngle(angle);
 			updateComplex();
 		}
 
@@ -106,7 +99,7 @@ namespace sofa::component::cosserat::liegroups {
 		 * @param other The other SO(2) element to compose with.
 		 * @return The composed SO(2) element (sum of angles).
 		 */
-		SO2<Scalar> compose(const SO2 &other) const { return SO2(m_angle + other.m_angle); }
+        SO2<Scalar> computeCompose(const SO2 &other) const { return SO2(m_angle + other.m_angle); }
 
 		/**
 		 * @brief Computes the exponential map from the Lie algebra so(2) to the SO(2)
@@ -141,7 +134,7 @@ namespace sofa::component::cosserat::liegroups {
 		 * @return True if the elements are approximately equal, false otherwise.
 		 */
 		bool computeIsApprox(const SO2 &other, const Scalar &eps) const {
-			return Types<_Scalar>::isZero(Types<_Scalar>::normalizeAngle(m_angle - other.m_angle), eps);
+			return Types<Scalar_>::isZero(Types<Scalar_>::normalizeAngle(m_angle - other.m_angle), eps);
 		}
 		/**
 		 * @brief Applies the group action of the current SO(2) element on a 2D point.
@@ -161,7 +154,7 @@ namespace sofa::component::cosserat::liegroups {
 		 * @param v The element of the Lie algebra in vector form.
 		 * @return The adjoint matrix.
 		 */
-		static AdjointMatrix computeAd(const TangentVector &v) {
+        static AdjointMatrix computeAd(const TangentVector&) {
 			return AdjointMatrix::Zero(); // Adjoint for SO(2) is zero matrix
 		}
 
@@ -209,7 +202,7 @@ namespace sofa::component::cosserat::liegroups {
 		 */
 		void computeNormalize() {
 			// Re-normalize angle and complex representation
-			m_angle = Types<_Scalar>::normalizeAngle(m_angle);
+			m_angle = Types<Scalar_>::normalizeAngle(m_angle);
 			updateComplex();
 		}
 

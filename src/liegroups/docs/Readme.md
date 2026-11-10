@@ -13,7 +13,7 @@ Lie groups are mathematical structures that are both groups and differentiable m
 
 This library implements the following Lie groups:
 
-- **RealSpace**: Euclidean vector space ℝⁿ
+- **Rn**: Euclidean vector space ℝⁿ
 - **SO(2)**: Special Orthogonal group in 2D (rotations in a plane)
 - **SE(2)**: Special Euclidean group in 2D (rigid transformations in a plane)
 - **SO(3)**: Special Orthogonal group in 3D (rotations in 3D space)
@@ -164,17 +164,17 @@ Or run specific Lie groups tests:
 
 Here are some examples of how to use the library:
 
-### RealSpace (Euclidean vector space)
+### Rn (Euclidean vector space)
 
 ```cpp
-#include <Cosserat/liegroups/RealSpace.h>
+#include <Cosserat/liegroups/Rn.h>
 
-// Create a 3D vector in RealSpace
-Cosserat::RealSpace<double, 3> point(1.0, 2.0, 3.0);
+// Create a 3D vector in Rn
+Cosserat::Rn<double, 3> point(1.0, 2.0, 3.0);
 
 // Create from Eigen vector
 Eigen::Vector3d eigen_vec(4.0, 5.0, 6.0);
-Cosserat::RealSpace<double, 3> another_point(eigen_vec);
+Cosserat::Rn<double, 3> another_point(eigen_vec);
 
 // Compose points (vector addition)
 auto result = point.compose(another_point);
@@ -230,7 +230,7 @@ auto inverse = transform.inverse();
 For more detailed documentation, including mathematical foundations, implementation details, and advanced usage examples, see:
 
 - [Mathematical Foundations](docs/math_foundations.md)
-- [RealSpace Implementation](docs/realspace.md)
+- [Rn Implementation](docs/realspace.md)
 - [SO(2) Implementation](docs/so2.md)
 - [SE(2) Implementation](docs/se2.md)
 - [SO(3) Implementation](docs/so3.md)

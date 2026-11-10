@@ -75,7 +75,7 @@ The Bundle class is designed to have minimal overhead beyond the component group
 #include <iostream>
 
 // Create a bundle of SE(3) pose and 6D velocity
-using RigidBodyState = Cosserat::Bundle<Cosserat::SE3<double>, Cosserat::RealSpace<double, 6>>;
+using RigidBodyState = Cosserat::Bundle<Cosserat::SE3<double>, Cosserat::Rn<double, 6>>;
 
 int main() {
     // Create identity bundle
@@ -85,7 +85,7 @@ int main() {
     // Create from components
     Cosserat::SE3<double> pose(Eigen::AngleAxisd(M_PI/4, Eigen::Vector3d::UnitZ()),
                               Eigen::Vector3d(1.0, 2.0, 3.0));
-    Cosserat::RealSpace<double, 6> velocity;
+    Cosserat::Rn<double, 6> velocity;
     velocity.coeffs() << 0.1, 0.2, 0.3, 0.0, 0.0, 0.0; // Linear and angular velocity
 
     RigidBodyState state(pose, velocity);
@@ -100,20 +100,20 @@ int main() {
 ```cpp
 #include <Cosserat/liegroups/Bundle.h>
 
-using RigidBodyState = Cosserat::Bundle<Cosserat::SE3<double>, Cosserat::RealSpace<double, 6>>;
+using RigidBodyState = Cosserat::Bundle<Cosserat::SE3<double>, Cosserat::Rn<double, 6>>;
 
 int main() {
     // Create two states
     RigidBodyState state1(
         Cosserat::SE3<double>(Eigen::AngleAxisd(M_PI/4, Eigen::Vector3d::UnitZ()),
                              Eigen::Vector3d(1.0, 0.0, 0.0)),
-        Cosserat::RealSpace<double, 6>(Eigen::VectorXd::Random(6))
+        Cosserat::Rn<double, 6>(Eigen::VectorXd::Random(6))
     );
 
     RigidBodyState state2(
         Cosserat::SE3<double>(Eigen::AngleAxisd(M_PI/6, Eigen::Vector3d::UnitY()),
                              Eigen::Vector3d(0.0, 1.0, 0.0)),
-        Cosserat::RealSpace<double, 6>(Eigen::VectorXd::Random(6))
+        Cosserat::Rn<double, 6>(Eigen::VectorXd::Random(6))
     );
 
     // Compose states (relative transformation)
@@ -137,13 +137,13 @@ int main() {
 ```cpp
 #include <Cosserat/liegroups/Bundle.h>
 
-using RigidBodyState = Cosserat::Bundle<Cosserat::SE3<double>, Cosserat::RealSpace<double, 6>>;
+using RigidBodyState = Cosserat::Bundle<Cosserat::SE3<double>, Cosserat::Rn<double, 6>>;
 
 int main() {
     RigidBodyState state(
         Cosserat::SE3<double>(Eigen::AngleAxisd(M_PI/3, Eigen::Vector3d::UnitZ()),
                              Eigen::Vector3d(1.0, 2.0, 3.0)),
-        Cosserat::RealSpace<double, 6>(Eigen::VectorXd::Random(6))
+        Cosserat::Rn<double, 6>(Eigen::VectorXd::Random(6))
     );
 
     // Access components (const)
@@ -158,7 +158,7 @@ int main() {
                                   Eigen::Vector3d(4.0, 5.0, 6.0));
     state.set<0>(new_pose);
 
-    Cosserat::RealSpace<double, 6> new_velocity;
+    Cosserat::Rn<double, 6> new_velocity;
     new_velocity.coeffs() << 1.0, 0.0, 0.0, 0.0, 0.0, 1.0;
     state.set<1>(new_velocity);
 
@@ -173,13 +173,13 @@ int main() {
 ```cpp
 #include <Cosserat/liegroups/Bundle.h>
 
-using RigidBodyState = Cosserat::Bundle<Cosserat::SE3<double>, Cosserat::RealSpace<double, 6>>;
+using RigidBodyState = Cosserat::Bundle<Cosserat::SE3<double>, Cosserat::Rn<double, 6>>;
 
 int main() {
     RigidBodyState state(
         Cosserat::SE3<double>(Eigen::AngleAxisd(0.1, Eigen::Vector3d::UnitZ()),
                              Eigen::Vector3d(0.1, 0.2, 0.3)),
-        Cosserat::RealSpace<double, 6>(Eigen::VectorXd::Random(6) * 0.1)
+        Cosserat::Rn<double, 6>(Eigen::VectorXd::Random(6) * 0.1)
     );
 
     // Convert to Lie algebra
@@ -205,17 +205,17 @@ int main() {
 ```cpp
 #include <Cosserat/liegroups/Bundle.h>
 
-using RigidBodyState = Cosserat::Bundle<Cosserat::SE3<double>, Cosserat::RealSpace<double, 6>>;
+using RigidBodyState = Cosserat::Bundle<Cosserat::SE3<double>, Cosserat::Rn<double, 6>>;
 
 int main() {
     RigidBodyState transform(
         Cosserat::SE3<double>(Eigen::AngleAxisd(M_PI/4, Eigen::Vector3d::UnitZ()),
                              Eigen::Vector3d(1.0, 0.0, 0.0)),
-        Cosserat::RealSpace<double, 6>::zero() // No velocity for pure transformation
+        Cosserat::Rn<double, 6>::zero() // No velocity for pure transformation
     );
 
     // The action dimension depends on the component groups
-    // For this bundle: SE(3) acts on 3D points, RealSpace<6> acts on 6D vectors
+    // For this bundle: SE(3) acts on 3D points, Rn<6> acts on 6D vectors
     // Total action dimension is computed at runtime
     int action_dim = transform.actionDimension();
     std::cout << "Action dimension: " << action_dim << "\n";
@@ -223,7 +223,7 @@ int main() {
     // Create a point in the action space
     Eigen::VectorXd point(action_dim);
     point << 1.0, 0.0, 0.0,  // 3D point for SE(3)
-            0.1, 0.0, 0.0, 0.0, 0.0, 0.1; // 6D vector for RealSpace<6>
+            0.1, 0.0, 0.0, 0.0, 0.0, 0.1; // 6D vector for Rn<6>
 
     // Apply the group action
     Eigen::VectorXd transformed_point = transform.act(point);
@@ -251,15 +251,15 @@ The library provides convenient type aliases for common bundles:
 ```cpp
 // Rigid body with velocity
 template<typename Scalar>
-using SE3_Velocity = Bundle<SE3<Scalar>, RealSpace<Scalar, 6>>;
+using SE3_Velocity = Bundle<SE3<Scalar>, Rn<Scalar, 6>>;
 
 // 2D rigid body with velocity
 template<typename Scalar>
-using SE2_Velocity = Bundle<SE2<Scalar>, RealSpace<Scalar, 3>>;
+using SE2_Velocity = Bundle<SE2<Scalar>, Rn<Scalar, 3>>;
 
 // Robot with multiple joints
 template<typename Scalar, int N>
-using SE3_Joints = Bundle<SE3<Scalar>, RealSpace<Scalar, N>>;
+using SE3_Joints = Bundle<SE3<Scalar>, Rn<Scalar, N>>;
 
 // Float and double versions
 template<typename... Groups>

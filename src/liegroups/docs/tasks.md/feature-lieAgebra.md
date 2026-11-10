@@ -12,19 +12,19 @@
 
    - Inside the Cosserat directory, create a subdirectory named "liegroups/".
    - Add the following initial files:
-     • liegroups/LieGroupBase.h (templated base class declaration)
-     • liegroups/LieGroupBase.inl (template implementations)
+     • liegroups/LieGroup.h (templated base class declaration)
+     • liegroups/LieGroup.inl (template implementations)
      • liegroups/Types.h (type definitions and forward declarations)
 
-4. Implement the LieGroupBase class:
+4. Implement the LieGroup class:
 
-   - Declare a templated class LieGroupBase to define common methods for Lie groups.
+   - Declare a templated class LieGroup to define common methods for Lie groups.
    - Provide pure virtual (or abstract) functions for composition, inverse, exponential, logarithm, Adjoint, and group action.
    - Use Eigen for matrix/vector operations.
 
 5. Implement specific derived classes:
 
-   - Create derived classes for ℝ(n), SO(2), SE(2), SO(3), SE(3), SE_2(3), and SGal(3) by extending LieGroupBase.
+   - Create derived classes for ℝ(n), SO(2), SE(2), SO(3), SE(3), SE_2(3), and SGal(3) by extending LieGroup.
    - Implement each class’s specific group properties and overrides of the base class functions.
    - Leverage Eigen’s transforms (e.g., Rotation2D, Quaternion, Isometry3d) where appropriate.
 

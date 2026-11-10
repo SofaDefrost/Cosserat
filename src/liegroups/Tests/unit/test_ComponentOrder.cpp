@@ -235,7 +235,7 @@ TEST(ComponentOrderTest, BchIsSecondOrderForPhiRhoLayout) {
     for (double eps : {0.2, 0.1, 0.05, 0.025}) {
         const V6 a = eps * a0 / a0.norm(), b = eps * b0 / b0.norm();
         const V6 ref = reference(a, b);
-        const double err = (SE3d::computeBCH(a, b) - ref).norm();
+        const double err = (SE3d::BCH(a, b, 2) - ref).norm();
         // Second-order BCH: error O(eps^3), much smaller than the O(eps^2) error of a + b alone.
         EXPECT_LT(err, 0.5 * eps * eps * eps) << "eps=" << eps;
         EXPECT_LT(err, 0.1 * (a + b - ref).norm()) << "eps=" << eps;
@@ -244,7 +244,7 @@ TEST(ComponentOrderTest, BchIsSecondOrderForPhiRhoLayout) {
     }
     // Exact second-order term, component by component: [phi_a x phi_b ; phi_a x rho_b - phi_b x rho_a] / 2
     const V6 a = rnd6(1e-3), b = rnd6(1e-3);
-    const V6 second = SE3d::computeBCH(a, b) - a - b;
+    const V6 second = SE3d::BCH(a, b, 2) - a - b;
     EXPECT_LT((second.head<3>() - 0.5 * a.head<3>().cross(b.head<3>())).norm(), 1e-15);
     EXPECT_LT((second.tail<3>() - 0.5 * (a.head<3>().cross(b.tail<3>()) - b.head<3>().cross(a.tail<3>()))).norm(), 1e-15);
 }

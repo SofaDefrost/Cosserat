@@ -255,7 +255,7 @@ int main() {
 
 10. **Use the right tool for the job**:
     - For pure rotations, use SO(3) instead of SE(3)
-    - For pure translations, use RealSpace instead of SE(3)
+    - For pure translations, use Rn instead of SE(3)
     - For similarity transforms (rotation + translation + scaling), use Sim(3)
 
 ## Numerical Stability Considerations

@@ -101,7 +101,7 @@ Where Rodrigues converts angular velocity to rotation matrix.
 
 ## Lie Groups in the Cosserat Plugin: From Simple to Complex
 
-### RealSpace (ℝⁿ): Simple Translations
+### Rn (ℝⁿ): Simple Translations
 
 **What it represents**: Pure translations in n-dimensional space
 **Intuitive**: Moving without rotating - just changing position

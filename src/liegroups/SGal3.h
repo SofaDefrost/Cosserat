@@ -1,6 +1,3 @@
-// This file defines the SGal3 (Special Galilean group in 3D) class, which
-// represents Galilean transformations.
-
 /******************************************************************************
  *                 SOFA, Simulation Open-Framework Architecture * (c) 2006
  *INRIA, USTL, UJF, CNRS, MGH                     *
@@ -23,11 +20,8 @@
 
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
-#include <random>
-#include "LieGroupBase.h" // Then the base class interface
-#include "LieGroupBase.inl" // Then the base class interface
+#include "LieGroup.h" // Then the base class interface
 #include "SE3.h" // Then other dependencies
-#include "SO2.h" // Then other dependencies
 #include "Types.h" // Then our type system
 
 namespace sofa::component::cosserat::liegroups {
@@ -46,16 +40,16 @@ namespace sofa::component::cosserat::liegroups {
  * - Next three components represent boost (velocity change)
  * - Last component represents time rate
  *
- * @tparam _Scalar The scalar type (must be a floating-point type)
+ * @tparam Scalar_ The scalar type (must be a floating-point type)
  */
 
-template<typename _Scalar, int _Dim = 10>
-class SGal3 : public LieGroupBase<SGal3<_Scalar, _Dim>, _Scalar, 10, 10, 7>
-//,public LieGroupOperations<SGal3<_Scalar>> // the Utils may be needed here!
+template<typename Scalar_, int Dim_ = 10>
+class SGal3 : public LieGroup<GroupProperties<SGal3<Scalar_, Dim_>, Scalar_, 10, 10, 7>>
+//,public LieGroupOperations<SGal3<Scalar_>> // the Utils may be needed here!
 {
 
 public:
-    using Base = LieGroupBase<SGal3<_Scalar, _Dim>, _Scalar, 10, 10, 7>;
+    using Base = LieGroup<GroupProperties<SGal3<Scalar_, Dim_>, Scalar_, 10, 10, 7>>;
     using Scalar = typename Base::Scalar;
     using Vector = typename Base::Vector;
     using Matrix = typename Base::Matrix;
@@ -284,48 +278,63 @@ private:
     }
 
     /**
-     * @brief Hat operator - maps a 10D Lie algebra vector to a 6x6 matrix
-     * representation. This is a placeholder, actual implementation depends on the
-     * specific representation.
-     * @param v The 10D Lie algebra vector.
-     * @return The 6x6 matrix representation.
+     * @brief Hat operator - maps a 10D Lie algebra vector to a 10x10 matrix
+     * representation. Places the vector in the first column of the matrix.
+     * 
+     * @param v The 10D Lie algebra vector [v, w, β, τ].
+     * @return The 10x10 matrix representation.
      */
-    static Matrix hat(const TangentVector &v) {
-        // This is a placeholder, actual implementation depends on the specific
-        // representation
+    static Matrix computeHat(const TangentVector &v) {
         Matrix result = Matrix::Zero();
-        // TODO ... implement hat operator for SGal(3)
+        // Place the vector in the first column of the matrix
+        result.col(0) = v;
         return result;
     }
 
     /**
-     * @brief Vee operator - inverse of hat, maps a 6x6 matrix representation to a
-     * 10D Lie algebra vector. This is a placeholder, actual implementation
-     * depends on the specific representation.
-     * @param X The 6x6 matrix representation.
+     * @brief Vee operator - inverse of hat, maps a 10x10 matrix representation to a
+     * 10D Lie algebra vector. Extracts the first column of the matrix.
+     * 
+     * @param X The 10x10 matrix representation.
      * @return The 10D Lie algebra vector.
      */
-    static TangentVector vee(const Matrix &X) {
-        // This is a placeholder, actual implementation depends on the specific
-        // representation
-        TangentVector result = TangentVector::Zero();
-        // TODO  ... implement vee operator for SGal(3)
-        return result;
+    static TangentVector computeVee(const Matrix &X) {
+        return X.col(0);
     }
 
     /**
      * @brief Computes the adjoint representation of a Lie algebra element for
-     * SGal3. This is a placeholder, actual implementation depends on the specific
-     * representation.
-     * @param v The element of the Lie algebra in vector form.
-     * @return The adjoint matrix.
+     * SGal3.
+     * For v = [v, w, β, τ] ∈ ℝ¹⁰, the adjoint matrix represents the action
+     * ad_v(u) = [v, u] = v ✕ u (Lie bracket).
+     * 
+     * The Lie bracket for sgal(3) is:
+     * - [v₁, v₂]_w = w₁ × w₂
+     * - [v₁, v₂]_v = -w₁ × v₂
+     * - [v₁, v₂]_β = -w₁ × β₂
+     * - [v₁, v₂]_τ = 0
+     *
+     * @param v The element of the Lie algebra in vector form [v, w, β, τ].
+     * @return The 10×10 adjoint matrix.
      */
     static AdjointMatrix computeAd(const TangentVector &v) {
-        // This is a placeholder, actual implementation depends on the specific
-        // representation
-        AdjointMatrix result = AdjointMatrix::Zero();
-        // TODO ... implement adjoint operator for SGal(3)
-        return result;
+        AdjointMatrix ad = AdjointMatrix::Zero();
+        const Vector3 w = v.template segment<3>(3); // Angular velocity (indices 3-5)
+        const Matrix3 w_hat = SO3<Scalar>::computeHat(w);
+        
+        // v output (rows 0-2): v_out = -w × v_in
+        ad.template block<3, 3>(0, 3) = -w_hat;
+        
+        // w output (rows 3-5): w_out = w × w_in
+        ad.template block<3, 3>(3, 3) = w_hat;
+        
+        // β output (rows 6-8): β_out = -w × β_in
+        ad.template block<3, 3>(6, 3) = -w_hat;
+        
+        // τ output (row 9): always 0
+        // All other blocks are zero
+        
+        return ad;
     }
 
     /**

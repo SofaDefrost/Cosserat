@@ -73,9 +73,9 @@ src/Cosserat/mapping/
 src/liegroups/
   ├── SE3.h                          # SE3 Lie group (CRTP fixed)
   ├── SO3.h                          # SO3 Lie group
-  ├── RealSpace.h                    # RealSpace (CRTP fixed)
+  ├── Rn.h                    # Rn (CRTP fixed)
   ├── Bundle.h                       # Bundle (CRTP fixed)
-  └── LieGroupBase.h                 # Base class
+  └── LieGroup.h                 # Base class
 
 docs/
   ├── INCREMENTAL_IMPROVEMENT_PLAN.md  # Step-by-step plan
@@ -88,7 +88,7 @@ docs/
 
 ✅ **All CRTP template errors fixed:**
 
-- `RealSpace.h` - Correct template parameters
+- `Rn.h` - Correct template parameters
 - `Bundle.h` - Correct template parameters  
 - `SE3.h` - Added `actionDimension()` method
 - `CosseratGeometryMapping.h` - Clean compilation

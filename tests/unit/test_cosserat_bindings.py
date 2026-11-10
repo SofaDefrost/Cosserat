@@ -304,10 +304,10 @@ class TestBundleOperations(unittest.TestCase):
     def setUp(self):
         """Set up test fixtures before each test method."""
         try:
-            from Sofa.Cosserat import Bundle, SE3, RealSpace
+            from Sofa.Cosserat import Bundle, SE3, Rn
             self.Bundle = Bundle
             self.SE3 = SE3
-            self.RealSpace = RealSpace
+            self.Rn = Rn
             self.bundle_available = True
         except ImportError:
             self.bundle_available = False
@@ -319,7 +319,7 @@ class TestBundleOperations(unittest.TestCase):
         
         try:
             # Create a pose-velocity bundle
-            PoseVel = self.Bundle[self.SE3, self.RealSpace[6]]
+            PoseVel = self.Bundle[self.SE3, self.Rn[6]]
             identity = PoseVel.identity()
             
             self.assertIsNotNone(identity)
@@ -327,7 +327,7 @@ class TestBundleOperations(unittest.TestCase):
             # Test identity properties
             test_bundle = PoseVel(
                 self.SE3.identity(),
-                self.RealSpace[6].zero()
+                self.Rn[6].zero()
             )
             
             result1 = test_bundle * identity
@@ -346,16 +346,16 @@ class TestBundleOperations(unittest.TestCase):
         
         try:
             # Create multiple bundle elements and test composition
-            PoseVel = self.Bundle[self.SE3, self.RealSpace[6]]
+            PoseVel = self.Bundle[self.SE3, self.Rn[6]]
             
             bundle1 = PoseVel(
                 self.SE3.identity(),
-                self.RealSpace[6]([0.1, 0.2, 0.3, 0.0, 0.0, 0.0])
+                self.Rn[6]([0.1, 0.2, 0.3, 0.0, 0.0, 0.0])
             )
             
             bundle2 = PoseVel(
                 self.SE3.identity(),
-                self.RealSpace[6]([0.1, 0.1, 0.1, 0.0, 0.0, 0.0])
+                self.Rn[6]([0.1, 0.1, 0.1, 0.0, 0.0, 0.0])
             )
             
             result = bundle1 * bundle2

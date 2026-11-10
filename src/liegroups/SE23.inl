@@ -26,7 +26,7 @@
 
 namespace sofa::component::cosserat::liegroups {
 
-	template<typename _Scalar>
+	template<typename Scalar_>
 	class SE23;
 
 	/**
@@ -36,37 +36,37 @@ namespace sofa::component::cosserat::liegroups {
 	/**
 	 * @brief Transform a point-velocity pair by inverse transformation
 	 */
-	template<typename _Scalar>
-	Eigen::Matrix<_Scalar, 6, 1> operator/(const Eigen::Matrix<_Scalar, 6, 1> &point_vel, const SE23<_Scalar> &g) {
+	template<typename Scalar_>
+	Eigen::Matrix<Scalar_, 6, 1> operator/(const Eigen::Matrix<Scalar_, 6, 1> &point_vel, const SE23<Scalar_> &g) {
 		return g.inverse().act(point_vel).template head<6>();
 	}
 
 	/**
 	 * @brief Create SE_2(3) transformation from pose and velocity components
 	 */
-	template<typename _Scalar>
-	SE23<_Scalar> fromComponents(const typename SE23<_Scalar>::Vector3 &position, const SO3<_Scalar> &rotation,
-								 const typename SE23<_Scalar>::Vector3 &velocity) {
-		return SE23<_Scalar>(SE3<_Scalar>(rotation, position), velocity);
+	template<typename Scalar_>
+	SE23<Scalar_> fromComponents(const typename SE23<Scalar_>::Vector3 &position, const SO3<Scalar_> &rotation,
+								 const typename SE23<Scalar_>::Vector3 &velocity) {
+		return SE23<Scalar_>(SE3<Scalar_>(rotation, position), velocity);
 	}
 
 	/**
 	 * @brief Create SE_2(3) transformation from position, Euler angles, and
 	 * velocity
 	 */
-	template<typename _Scalar>
-	SE23<_Scalar> fromPositionEulerVelocity(const typename SE23<_Scalar>::Vector3 &position, const _Scalar &roll,
-											const _Scalar &pitch, const _Scalar &yaw,
-											const typename SE23<_Scalar>::Vector3 &velocity) {
-		return SE23<_Scalar>(fromPositionEulerZYX(position, roll, pitch, yaw), velocity);
+	template<typename Scalar_>
+	SE23<Scalar_> fromPositionEulerVelocity(const typename SE23<Scalar_>::Vector3 &position, const Scalar_ &roll,
+											const Scalar_ &pitch, const Scalar_ &yaw,
+											const typename SE23<Scalar_>::Vector3 &velocity) {
+		return SE23<Scalar_>(fromPositionEulerZYX(position, roll, pitch, yaw), velocity);
 	}
 
 	/**
 	 * @brief Convert transformation to position, Euler angles, and velocity
 	 */
-	template<typename _Scalar>
-	typename SE23<_Scalar>::Vector toPositionEulerVelocity(const SE23<_Scalar> &transform) {
-		typename SE23<_Scalar>::Vector result;
+	template<typename Scalar_>
+	typename SE23<Scalar_>::Vector toPositionEulerVelocity(const SE23<Scalar_> &transform) {
+		typename SE23<Scalar_>::Vector result;
 		result.resize(9);
 		result.template segment<6>(0) = toPositionEulerZYX(transform.pose());
 		result.template segment<3>(6) = transform.velocity();
@@ -84,23 +84,23 @@ namespace sofa::component::cosserat::liegroups {
 	 * @param t Interpolation parameter in [0,1]
 	 * @return Interpolated extended pose
 	 */
-	template<typename _Scalar>
-	SE23<_Scalar> interpolate(const SE23<_Scalar> &from, const SE23<_Scalar> &to, const _Scalar &t) {
+	template<typename Scalar_>
+	SE23<Scalar_> interpolate(const SE23<Scalar_> &from, const SE23<Scalar_> &to, const Scalar_ &t) {
 		// Convert 'to' relative to 'from'
-		SE23<_Scalar> rel = from.inverse() * to;
+		SE23<Scalar_> rel = from.inverse() * to;
 		// Get the relative motion in the Lie algebra
-		typename SE23<_Scalar>::TangentVector delta = rel.log();
+		typename SE23<Scalar_>::TangentVector delta = rel.log();
 		// Scale it by t and apply it to 'from'
-		return from * SE23<_Scalar>().exp(t * delta);
+		return from * SE23<Scalar_>().exp(t * delta);
 	}
 
 	/**
 	 * @brief Dual vector operator for se_2(3)
 	 * Maps a 9D vector to its dual 5x5 matrix representation
 	 */
-	template<typename _Scalar>
-	Eigen::Matrix<_Scalar, 5, 5> dualMatrix(const typename SE23<_Scalar>::TangentVector &xi) {
-		Eigen::Matrix<_Scalar, 5, 5> xi_hat = Eigen::Matrix<_Scalar, 5, 5>::Zero();
+	template<typename Scalar_>
+	Eigen::Matrix<Scalar_, 5, 5> dualMatrix(const typename SE23<Scalar_>::TangentVector &xi) {
+		Eigen::Matrix<Scalar_, 5, 5> xi_hat = Eigen::Matrix<Scalar_, 5, 5>::Zero();
 
 		// Extract components
 		const auto &v = xi.template segment<3>(0); // Linear velocity
@@ -108,7 +108,7 @@ namespace sofa::component::cosserat::liegroups {
 		const auto &a = xi.template segment<3>(6); // Linear acceleration
 
 		// Fill the matrix blocks
-		xi_hat.template block<3, 3>(0, 0) = SO3<_Scalar>::hat(w);
+		xi_hat.template block<3, 3>(0, 0) = SO3<Scalar_>::hat(w);
 		xi_hat.template block<3, 1>(0, 3) = v;
 		xi_hat.template block<3, 1>(0, 4) = a;
 
@@ -122,8 +122,8 @@ namespace sofa::component::cosserat::liegroups {
 	 * BCH(X,Y) = X + Y + 1/2[X,Y] + higher order terms
 	 * where [X,Y] is the Lie bracket for se_2(3).
 	 */
-	template<typename _Scalar>
-	typename SE23<_Scalar>::TangentVector SE23<_Scalar>::BCH(const TangentVector &X, const TangentVector &Y) {
+	template<typename Scalar_>
+	typename SE23<Scalar_>::TangentVector SE23<Scalar_>::BCH(const TangentVector &X, const TangentVector &Y) {
 		// Extract components
 		const auto &v1 = X.template segment<3>(0); // First linear velocity
 		const auto &w1 = X.template segment<3>(3); // First angular velocity
@@ -142,9 +142,9 @@ namespace sofa::component::cosserat::liegroups {
 
 		// Combine terms for the BCH formula up to second order
 		TangentVector result;
-		result.template segment<3>(0) = v1 + v2 + _Scalar(0.5) * (w1_cross_v2 - v1_cross_w2);
-		result.template segment<3>(3) = w1 + w2 + _Scalar(0.5) * w1_cross_w2;
-		result.template segment<3>(6) = a1 + a2 + _Scalar(0.5) * (w1_cross_a2 - a1_cross_w2);
+		result.template segment<3>(0) = v1 + v2 + Scalar_(0.5) * (w1_cross_v2 - v1_cross_w2);
+		result.template segment<3>(3) = w1 + w2 + Scalar_(0.5) * w1_cross_w2;
+		result.template segment<3>(6) = a1 + a2 + Scalar_(0.5) * (w1_cross_a2 - a1_cross_w2);
 
 		return result;
 	}

@@ -18,7 +18,7 @@
 
 #include <sofa/testing/BaseTest.h>
 #include <Cosserat/liegroups/Bundle.h>
-#include <Cosserat/liegroups/RealSpace.h>
+#include <Cosserat/liegroups/Rn.h>
 #include <Cosserat/liegroups/SO3.h>
 #include <Cosserat/liegroups/SE3.h>
 #include <Cosserat/liegroups/SE23.h>
@@ -50,12 +50,12 @@ protected:
     using SE3d = SE3<double>;
     using SE23d = SE23<double>;
     using SGal3d = SGal3<double>;
-    using RealSpace3d = RealSpace<double, 3>;
+    using Rn3d = Rn<double, 3>;
 
     // Specialized bundle types for Cosserat mechanics
-    using CosseratSection = Bundle<SE3d, RealSpace3d>;  // Position, strain
-    using CosseratNode = Bundle<SE23d, RealSpace3d>;    // Configuration with velocity
-    using CosseratRod = Bundle<SE3d, RealSpace3d, RealSpace3d>; // Position, strain, stress
+    using CosseratSection = Bundle<SE3d, Rn3d>;  // Position, strain
+    using CosseratNode = Bundle<SE23d, Rn3d>;    // Configuration with velocity
+    using CosseratRod = Bundle<SE3d, Rn3d, Rn3d>; // Position, strain, stress
 
     const double pi = M_PI;
     const double eps = 1e-10;

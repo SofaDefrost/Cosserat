@@ -1,6 +1,3 @@
-// This file defines the Bundle class, which implements a product manifold of
-// multiple Lie groups.
-
 /******************************************************************************
  *                 SOFA, Simulation Open-Framework Architecture * (c) 2006
  *INRIA, USTL, UJF, CNRS, MGH                     *
@@ -26,14 +23,14 @@
 #include <random>
 #include <tuple>
 #include <type_traits>
-#include "LieGroupBase.h"
-#include "LieGroupBase.inl"
-#include "RealSpace.h"
+#include "LieGroup.h"
+#include "LieGroup.inl"
+#include "Rn.h"
 #include "SE2.h"
 #include "SE3.h"
 #include "SO2.h"
 #include "Types.h"
-// RealSpace.h is already included above
+// Rn.h is already included above
 
 namespace sofa::component::cosserat::liegroups {
 
@@ -69,7 +66,7 @@ namespace sofa::component::cosserat::liegroups {
 			static constexpr int value = -1; // Indicates runtime computation needed
 		};
 
-		// Helper to check if all types are LieGroupBase derivatives with same scalar
+		// Helper to check if all types are LieGroup derivatives with same scalar
 		// type
 		template<typename FirstScalar, typename... Groups>
 		struct AllAreLieGroups;
@@ -79,9 +76,8 @@ namespace sofa::component::cosserat::liegroups {
 
 		template<typename FirstScalar, typename Group, typename... Rest>
 		struct AllAreLieGroups<FirstScalar, Group, Rest...> {
-			static constexpr bool value = std::is_base_of_v<LieGroupBase<Group, typename Group::Scalar, Group::Dim,
-																		 Group::AlgebraDim, Group::ActionDim>,
-															Group> &&
+			static constexpr bool value = std::is_base_of_v<LieGroup<GroupProperties<Group, typename Group::Scalar, Group::Dim, Group::AlgebraDim, Group::ActionDim>>,
+																		 Group> &&
 										  std::is_same_v<FirstScalar, typename Group::Scalar> &&
 										  AllAreLieGroups<FirstScalar, Rest...>::value;
 		};
@@ -145,14 +141,14 @@ namespace sofa::component::cosserat::liegroups {
 	 * Usage Examples:
 	 * ```cpp
 	 * // Rigid body pose with velocity
-	 * using RigidBodyState = Bundle<SE3<double>, RealSpace<double, 6>>;
+	 * using RigidBodyState = Bundle<SE3<double>, Rn<double, 6>>;
 	 *
 	 * // 2D robot with multiple joints
 	 * using Robot2D = Bundle<SE2<double>, SO2<double>, SO2<double>>;
 	 *
 	 * // Create and manipulate
 	 * auto state1 = RigidBodyState(SE3<double>::identity(),
-	 *                             RealSpace<double, 6>::zero());
+	 *                             Rn<double, 6>::zero());
 	 * auto state2 = RigidBodyState(pose, velocity);
 	 * auto combined = state1 * state2;
 	 * ```
@@ -161,9 +157,10 @@ namespace sofa::component::cosserat::liegroups {
 	 */
 	template<typename... Groups>
 	class Bundle
-		: public LieGroupBase<Bundle<Groups...>, typename std::tuple_element_t<0, std::tuple<Groups...>>::Scalar,
-							  detail::TotalDimension<Groups...>::value, detail::TotalDimension<Groups...>::value,
-							  detail::TotalDimension<Groups...>::value> {
+		: public LieGroup<GroupProperties<Bundle<Groups...>, 
+				typename std::tuple_element_t<0, std::tuple<Groups...>>::Scalar,
+				  detail::TotalDimension<Groups...>::value, detail::TotalDimension<Groups...>::value,
+				  detail::TotalDimension<Groups...>::value>> {
 
 		// Compile-time validation
 		static_assert(sizeof...(Groups) > 0, "Bundle must contain at least one group");
@@ -175,8 +172,8 @@ namespace sofa::component::cosserat::liegroups {
 					  "All template parameters must be Lie groups with the same scalar type");
 
 	public:
-		using Base = LieGroupBase<Bundle<Groups...>, FirstScalar, detail::TotalDimension<Groups...>::value,
-								  detail::TotalDimension<Groups...>::value, detail::TotalDimension<Groups...>::value>;
+		using Base = LieGroup<GroupProperties<Bundle<Groups...>, FirstScalar, detail::TotalDimension<Groups...>::value,
+								  detail::TotalDimension<Groups...>::value, detail::TotalDimension<Groups...>::value>>;
 		using Scalar = typename Base::Scalar;
 		using Vector = typename Base::Vector;
 		using Matrix = typename Base::Matrix;
@@ -548,13 +545,13 @@ namespace sofa::component::cosserat::liegroups {
 
 	// Common bundles for robotics applications
 	template<typename Scalar>
-	using SE3_Velocity = Bundle<SE3<Scalar>, RealSpace<Scalar, 6>>;
+	using SE3_Velocity = Bundle<SE3<Scalar>, Rn<Scalar, 6>>;
 
 	template<typename Scalar>
-	using SE2_Velocity = Bundle<SE2<Scalar>, RealSpace<Scalar, 3>>;
+	using SE2_Velocity = Bundle<SE2<Scalar>, Rn<Scalar, 3>>;
 
 	template<typename Scalar, int N>
-	using SE3_Joints = Bundle<SE3<Scalar>, RealSpace<Scalar, N>>;
+	using SE3_Joints = Bundle<SE3<Scalar>, Rn<Scalar, N>>;
 
 	// Convenience aliases
 	template<typename... Groups>
