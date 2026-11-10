@@ -21,7 +21,6 @@
 #include <cmath>
 #include <random>
 #include "LieGroup.h"
-#include "LieGroup.inl"
 #include "SO2.h"
 #include "Types.h"
 

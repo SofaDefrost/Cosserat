@@ -21,9 +21,7 @@
 #pragma once
 
 #include "LieGroup.h" // Then the base class interface
-#include "LieGroup.inl" // Then the base class interface
 #include "SE3.h" // Then the base class interface
-// #include <eigen3/Eigen/Geometry.h>
 
 namespace sofa::component::cosserat::liegroups {
 

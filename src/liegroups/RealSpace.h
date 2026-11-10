@@ -18,19 +18,9 @@
 
 #pragma once
 
-#include <array>
 #include <iostream>
-#include <random>
-#include <tuple>
-#include <type_traits>
 #include "LieGroup.h"
-#include "LieGroup.inl"
-#include "RealSpace.h"
-#include "SE2.h"
-#include "SE3.h"
-#include "SO2.h"
 #include "Types.h"
-// RealSpace.h is already included above
 
 namespace sofa::component::cosserat::liegroups {
 

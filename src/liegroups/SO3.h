@@ -19,7 +19,6 @@
 
 #include <Eigen/Geometry>
 #include "LieGroup.h"
-#include "LieGroup.inl"
 #include "Types.h"
 
 namespace sofa::component::cosserat::liegroups {

@@ -20,11 +20,8 @@
 
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
-#include <random>
 #include "LieGroup.h" // Then the base class interface
-#include "LieGroup.inl" // Then the base class interface
 #include "SE3.h" // Then other dependencies
-#include "SO2.h" // Then other dependencies
 #include "Types.h" // Then our type system
 
 namespace sofa::component::cosserat::liegroups {
