@@ -140,7 +140,7 @@ class SE3 : public LieGroup<GroupProperties<SE3<Scalar_>, Scalar_, 4, 6, 3>> {
 
         const Scalar angle  = phi.norm();
         const SO3Type R     = SO3Type::exp(phi);
-        const Matrix3 K_phi = SO3Type::computeHat(phi);   // [φ]× (non normalisé)
+        const Matrix3 K_phi = SO3Type::hat(phi);   // [φ]× (non normalisé)
         Matrix3 V;
 
         if (angle < Types<Scalar>::SMALL_ANGLE_THRESHOLD) {
@@ -180,7 +180,7 @@ class SE3 : public LieGroup<GroupProperties<SE3<Scalar_>, Scalar_, 4, 6, 3>> {
     TangentVector computeLog() const override final {
         const Vector3 phi   = m_rotation.log();
         const Scalar  angle = phi.norm();
-        const Matrix3 K_phi = SO3Type::computeHat(phi);   // [φ]× (non normalisé)
+        const Matrix3 K_phi = SO3Type::hat(phi);   // [φ]× (non normalisé)
         Matrix3 V_inv;
 
         if (angle < Types<Scalar>::SMALL_ANGLE_THRESHOLD) {
@@ -215,10 +215,10 @@ class SE3 : public LieGroup<GroupProperties<SE3<Scalar_>, Scalar_, 4, 6, 3>> {
             // 	Matrix3 V;
 
             // 	if (angle < Types<Scalar>::epsilon()) {
-            // 		V = Matrix3::Identity() + Scalar(0.5) * SO3Type::computeHat(phi);
+            // 		V = Matrix3::Identity() + Scalar(0.5) * SO3Type::hat(phi);
             // 	} else {
             // 		const Vector3 axis = phi / angle;
-            // 		const Matrix3 K = SO3Type::computeHat(axis);
+            // 		const Matrix3 K = SO3Type::hat(axis);
             // 		const Scalar sin_angle = std::sin(angle);
             // 		const Scalar cos_angle = std::cos(angle);
             // 		V = Matrix3::Identity() + (Scalar(1) - cos_angle) / angle * K +
@@ -233,10 +233,10 @@ class SE3 : public LieGroup<GroupProperties<SE3<Scalar_>, Scalar_, 4, 6, 3>> {
             // 	Matrix3 V_inv;
 
             // 	if (angle < Types<Scalar>::epsilon()) {
-            // 		V_inv = Matrix3::Identity() - Scalar(0.5) * SO3Type::computeHat(phi);
+            // 		V_inv = Matrix3::Identity() - Scalar(0.5) * SO3Type::hat(phi);
             // 	} else {
             // 		// const Vector3 axis = phi / angle; //@appa: correction here (error if division with angle)
-            // 		const Matrix3 phiHat = SO3Type::computeHat(phi);
+            // 		const Matrix3 phiHat = SO3Type::hat(phi);
             // 		const Scalar sin_angle = std::sin(angle);
             // 		const Scalar cos_angle = std::cos(angle);
             // 		V_inv = Matrix3::Identity() - Scalar(0.5) * phiHat +
@@ -257,7 +257,7 @@ class SE3 : public LieGroup<GroupProperties<SE3<Scalar_>, Scalar_, 4, 6, 3>> {
         Ad.template block<3, 3>(0, 0) = R;
         Ad.template block<3, 3>(3, 3) = R;
 
-        Ad.template block<3, 3>(3, 0) = SO3Type::computeHat(m_translation) * R;
+        Ad.template block<3, 3>(3, 0) = SO3Type::hat(m_translation) * R;
         return Ad;
     }
 
@@ -268,7 +268,7 @@ class SE3 : public LieGroup<GroupProperties<SE3<Scalar_>, Scalar_, 4, 6, 3>> {
         coAd.template block<3, 3>(0, 0) = R;
         coAd.template block<3, 3>(3, 3) = R;
 
-        coAd.template block<3, 3>(0, 3) = SO3Type::computeHat(m_translation) * R;
+        coAd.template block<3, 3>(0, 3) = SO3Type::hat(m_translation) * R;
         return coAd;
     }
 
@@ -318,7 +318,7 @@ class SE3 : public LieGroup<GroupProperties<SE3<Scalar_>, Scalar_, 4, 6, 3>> {
         Matrix result = Matrix::Zero();
         const Vector3 phi = Vector3(v.template head<3>());
         const Vector3 rho = Vector3(v.template tail<3>());
-        result.template block<3, 3>(0, 0) = SO3Type::computeHat(phi);
+        result.template block<3, 3>(0, 0) = SO3Type::hat(phi);
         result.template block<3, 1>(0, 3) = rho;
         return result;
     }
@@ -332,7 +332,7 @@ class SE3 : public LieGroup<GroupProperties<SE3<Scalar_>, Scalar_, 4, 6, 3>> {
      */
     static TangentVector computeVee(const Matrix &X) {
         TangentVector result;
-        result.template head<3>() = SO3Type::computeVee(X.template block<3, 3>(0, 0));
+        result.template head<3>() = SO3Type::vee(X.template block<3, 3>(0, 0));
         result.template tail<3>() = X.template block<3, 1>(0, 3);
         return result;
     }
@@ -346,8 +346,8 @@ class SE3 : public LieGroup<GroupProperties<SE3<Scalar_>, Scalar_, 4, 6, 3>> {
      * Also the CRTP hook LieGroup::ad() expects.
      */
     static AdjointMatrix computeAd(const TangentVector &v) {
-        const Matrix3 phi_x = SO3Type::computeHat(Vector3(v.template head<3>()));
-        const Matrix3 rho_x = SO3Type::computeHat(Vector3(v.template tail<3>()));
+        const Matrix3 phi_x = SO3Type::hat(Vector3(v.template head<3>()));
+        const Matrix3 rho_x = SO3Type::hat(Vector3(v.template tail<3>()));
         AdjointMatrix ad = AdjointMatrix::Zero();
         ad.template block<3, 3>(0, 0) = phi_x;
         ad.template block<3, 3>(3, 3) = phi_x;
@@ -383,7 +383,7 @@ class SE3 : public LieGroup<GroupProperties<SE3<Scalar_>, Scalar_, 4, 6, 3>> {
         const Matrix3 R = m_rotation.matrix();
         Ad.template block<3, 3>(0, 0) = R;
         Ad.template block<3, 3>(3, 3) = R;
-        Ad.template block<3, 3>(0, 3) = SO3Type::computeHat(m_translation) * R;
+        Ad.template block<3, 3>(0, 3) = SO3Type::hat(m_translation) * R;
         return Ad;
     }
 
@@ -405,7 +405,7 @@ class SE3 : public LieGroup<GroupProperties<SE3<Scalar_>, Scalar_, 4, 6, 3>> {
         const Matrix3 R = m_rotation.matrix();
         Ad.template block<3, 3>(0, 0) = R;
         Ad.template block<3, 3>(3, 3) = R;
-        Ad.template block<3, 3>(0, 3) = SO3Type::computeHat(m_translation) * R;
+        Ad.template block<3, 3>(0, 3) = SO3Type::hat(m_translation) * R;
         return Ad;
     }
 
@@ -494,7 +494,7 @@ class SE3 : public LieGroup<GroupProperties<SE3<Scalar_>, Scalar_, 4, 6, 3>> {
     std::pair<AdjointMatrix, AdjointMatrix> composeJacobians(const SE3 &other) const noexcept {
         // For SE(3): g * h with left perturbation
         // Left Jacobian: ∂(g*h)/∂g = Ad_{h^{-1}}
-        AdjointMatrix J_left = other.computeInverse().computeAdjoint();
+        AdjointMatrix J_left = other.inverse().adjoint();
 
         // Right Jacobian: ∂(g*h)/∂h = I
         AdjointMatrix J_right = AdjointMatrix::Identity();
@@ -511,7 +511,7 @@ class SE3 : public LieGroup<GroupProperties<SE3<Scalar_>, Scalar_, 4, 6, 3>> {
      */
     AdjointMatrix inverseJacobian() const noexcept {
         // ∂g^{-1}/∂g = -Ad_{g^{-1}}
-        return -computeInverse().computeAdjoint();
+        return -this->inverse().adjoint();
     }
 
     /**
@@ -540,7 +540,7 @@ class SE3 : public LieGroup<GroupProperties<SE3<Scalar_>, Scalar_, 4, 6, 3>> {
         const Vector3 y = m_rotation.act(point) + m_translation;
 
         JacobianMatrix J;  // 3x6
-        J.template block<3, 3>(0, 0) = -SO3Type::computeHat(y);  // ∂y/∂φ
+        J.template block<3, 3>(0, 0) = -SO3Type::hat(y);  // ∂y/∂φ
         J.template block<3, 3>(0, 3) = Matrix3::Identity();      // ∂y/∂ρ
 
         return J;
@@ -580,7 +580,7 @@ class SE3 : public LieGroup<GroupProperties<SE3<Scalar_>, Scalar_, 4, 6, 3>> {
             /// SO3::dlog() (which only exists as a member on a group element).
     static Matrix3 so3LeftJacobianInverse(const Vector3 &phi) {
         const Scalar theta = phi.norm();
-        const Matrix3 Phi  = SO3Type::computeHat(phi);
+        const Matrix3 Phi  = SO3Type::hat(phi);
         const Matrix3 Phi2 = Phi * Phi;
         if (theta < Types<Scalar>::SMALL_ANGLE_THRESHOLD)
             return Matrix3::Identity() - Scalar(0.5) * Phi + (Scalar(1) / Scalar(12)) * Phi2;
@@ -593,8 +593,8 @@ class SE3 : public LieGroup<GroupProperties<SE3<Scalar_>, Scalar_, 4, 6, 3>> {
             /// SE(3) coupling block Q(ρ,φ) — the lower-left 3×3 block of Jl(ξ).
     static Matrix3 computeQ(const Vector3 &rho, const Vector3 &phi) {
         const Scalar theta   = phi.norm();
-        const Matrix3 N      = SO3Type::computeHat(rho);
-        const Matrix3 Phi    = SO3Type::computeHat(phi);
+        const Matrix3 N      = SO3Type::hat(rho);
+        const Matrix3 Phi    = SO3Type::hat(phi);
         const Matrix3 PhiN   = Phi * N;
         const Matrix3 NPhi   = N * Phi;
         const Matrix3 PhiNPhi = PhiN * Phi;
