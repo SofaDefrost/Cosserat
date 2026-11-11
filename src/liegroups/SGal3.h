@@ -57,12 +57,12 @@ namespace sofa::component::cosserat::liegroups {
  */
 
 template<typename Scalar_, int Dim_ = 10>
-class SGal3 : public LieGroup<SGal3<Scalar_, Dim_>, Scalar_, 10, 10, 7>
+class SGal3 : public LieGroup<GroupProperties<SGal3<Scalar_, Dim_>, Scalar_, 10, 10, 7>>
 //,public LieGroupOperations<SGal3<Scalar_>> // the Utils may be needed here!
 {
 
 public:
-    using Base = LieGroup<SGal3<Scalar_, Dim_>, Scalar_, 10, 10, 7>;
+    using Base = LieGroup<GroupProperties<SGal3<Scalar_, Dim_>, Scalar_, 10, 10, 7>>;
     using Scalar = typename Base::Scalar;
     using Vector = typename Base::Vector;
     using Matrix = typename Base::Matrix;

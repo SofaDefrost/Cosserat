@@ -44,9 +44,9 @@ namespace sofa::component::cosserat::liegroups {
 	 * @tparam Scalar_ The scalar type (must be a floating-point type)
 	 */
 	template<typename Scalar_>
-	class SO2 : public LieGroup<SO2<Scalar_>, Scalar_, 2, 1, 2> {
+	class SO2 : public LieGroup<GroupProperties<SO2<Scalar_>, Scalar_, 2, 1, 2>> {
 	public:
-		using Base = LieGroup<SO2<Scalar_>, Scalar_, 2, 1, 2>;
+		using Base = LieGroup<GroupProperties<SO2<Scalar_>, Scalar_, 2, 1, 2>>;
 		using Scalar = typename Base::Scalar;
 		using Vector = typename Base::Vector;
 		using Matrix = typename Base::Matrix;

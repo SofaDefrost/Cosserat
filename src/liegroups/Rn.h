@@ -51,11 +51,11 @@ namespace sofa::component::cosserat::liegroups {
 	 * @tparam Dim_ The dimension of the space
 	 */
 	template<typename Scalar_, int Dim_>
-	class Rn : public LieGroup<Rn<Scalar_, Dim_>, Scalar_, Dim_, Dim_, Dim_>
+	class Rn : public LieGroup<GroupProperties<Rn<Scalar_, Dim_>, Scalar_, Dim_, Dim_, Dim_>>
 	//,public LieGroupOperations<Rn<Scalar_, Dim_>>
 	{
 	public:
-		using Base = LieGroup<Rn<Scalar_, Dim_>, Scalar_, Dim_, Dim_, Dim_>;
+		using Base = LieGroup<GroupProperties<Rn<Scalar_, Dim_>, Scalar_, Dim_, Dim_, Dim_>>;
 		using Scalar = typename Base::Scalar;
 		using Vector = typename Base::Vector;
 		using Matrix = typename Base::Matrix;

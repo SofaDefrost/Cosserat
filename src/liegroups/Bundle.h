@@ -65,8 +65,8 @@ namespace sofa::component::cosserat::liegroups {
 		template<typename FirstScalar, typename... Groups>
 		struct AllAreLieGroups {
 			static constexpr bool value =
-					(std::is_base_of_v<LieGroup<Groups, typename Groups::Scalar, Groups::Dim, Groups::AlgebraDim,
-													Groups::ActionDim>,
+					(std::is_base_of_v<LieGroup<GroupProperties<Groups, typename Groups::Scalar, Groups::Dim,
+																Groups::AlgebraDim, Groups::ActionDim>>,
 									   Groups> &&
 					 ...) &&
 					(std::is_same_v<FirstScalar, typename Groups::Scalar> && ...);
@@ -110,9 +110,9 @@ namespace sofa::component::cosserat::liegroups {
 	 */
 	template<typename... Groups>
 	class Bundle
-		: public LieGroup<Bundle<Groups...>, typename std::tuple_element_t<0, std::tuple<Groups...>>::Scalar,
-							  detail::Sums<Groups...>::dim, detail::Sums<Groups...>::algebra,
-							  detail::Sums<Groups...>::action> {
+		: public LieGroup<GroupProperties<Bundle<Groups...>, typename std::tuple_element_t<0, std::tuple<Groups...>>::Scalar,
+										  detail::Sums<Groups...>::dim, detail::Sums<Groups...>::algebra,
+										  detail::Sums<Groups...>::action>> {
 		static_assert(sizeof...(Groups) > 0, "Bundle must contain at least one group");
 		using FirstGroup = std::tuple_element_t<0, std::tuple<Groups...>>;
 		using FirstScalar = typename FirstGroup::Scalar;
@@ -120,8 +120,8 @@ namespace sofa::component::cosserat::liegroups {
 					  "All template parameters must be Lie groups with the same scalar type");
 
 	public:
-		using Base = LieGroup<Bundle<Groups...>, FirstScalar, detail::Sums<Groups...>::dim,
-								  detail::Sums<Groups...>::algebra, detail::Sums<Groups...>::action>;
+		using Base = LieGroup<GroupProperties<Bundle<Groups...>, FirstScalar, detail::Sums<Groups...>::dim,
+											  detail::Sums<Groups...>::algebra, detail::Sums<Groups...>::action>>;
 		using Scalar = typename Base::Scalar;
 		using Vector = typename Base::Vector;
 		using Matrix = typename Base::Matrix;
