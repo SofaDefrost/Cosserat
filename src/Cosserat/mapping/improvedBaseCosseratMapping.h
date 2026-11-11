@@ -66,7 +66,7 @@ using RotMat = Cosserat::type::RotMat;
  * which are used to map between different representations of a Cosserat rod's
  * configuration and deformation.
  *
- * The implementation uses modern Lie group theory through the LieGroupBase
+ * The implementation uses modern Lie group theory through the LieGroup
  * hierarchy to provide numerically stable operations on SE(3) and SO(3).
  *
  * @tparam TIn1 The first input type for the mapping (typically strain state)

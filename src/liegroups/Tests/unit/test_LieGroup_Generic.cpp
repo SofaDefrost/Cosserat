@@ -1,4 +1,4 @@
-// Audit tests of the generic helpers of LieGroupBase (LieGroupBase.inl) that are
+// Audit tests of the generic helpers of LieGroup (LieGroup.inl) that are
 // reached through SO3 / SE3: dexp_alternative, dexpInv_alternative, dlog, BCH and slerp.
 // The references are the series of LieGroupReference.h (long double), not closed forms.
 
@@ -19,7 +19,7 @@ using M6 = Eigen::Matrix<double, 6, 6>;
 const double kAngles[] = {1e-9, 1e-6, 1e-3, 0.1, 1.0, 2.0, 3.0};
 } // namespace
 
-TEST(LieGroupBaseGeneric, DexpAlternativeIsTheRightJacobian) {
+TEST(LieGroupGeneric, DexpAlternativeIsTheRightJacobian) {
 	// The header says dexp_alternative is equivalent to dexp() == rightJacobian().
 	std::mt19937_64 rng(11);
 	for (double angle : kAngles) {
@@ -32,7 +32,7 @@ TEST(LieGroupBaseGeneric, DexpAlternativeIsTheRightJacobian) {
 	}
 }
 
-TEST(LieGroupBaseGeneric, DexpInvAlternativeIsTheRightJacobianInverse) {
+TEST(LieGroupGeneric, DexpInvAlternativeIsTheRightJacobianInverse) {
 	std::mt19937_64 rng(12);
 	for (double angle : kAngles) {
 		const V6 x = randomSE3Tangent(rng, angle);
@@ -44,7 +44,7 @@ TEST(LieGroupBaseGeneric, DexpInvAlternativeIsTheRightJacobianInverse) {
 	}
 }
 
-TEST(LieGroupBaseGeneric, SE3DlogIsTheInverseOfDexpAtLog) {
+TEST(LieGroupGeneric, SE3DlogIsTheInverseOfDexpAtLog) {
 	// dlog() is the differential of log at the current element, in the same
 	// (right) convention as dexp()/dexpInv(): dlog() * dexp(log g) == I.
 	std::mt19937_64 rng(13);
@@ -57,7 +57,7 @@ TEST(LieGroupBaseGeneric, SE3DlogIsTheInverseOfDexpAtLog) {
 	}
 }
 
-TEST(LieGroupBaseGeneric, SE3DlogMatchesFiniteDifferencesOfLog) {
+TEST(LieGroupGeneric, SE3DlogMatchesFiniteDifferencesOfLog) {
 	// log(g exp(d)) = log(g) + dlog(g) d + O(d^2)
 	std::mt19937_64 rng(14);
 	const V6 x = randomSE3Tangent(rng, 0.8);
@@ -73,7 +73,7 @@ TEST(LieGroupBaseGeneric, SE3DlogMatchesFiniteDifferencesOfLog) {
 	EXPECT_LT((J - g.dlog()).cwiseAbs().maxCoeff(), 1e-7);
 }
 
-TEST(LieGroupBaseGeneric, BchOrdersConvergeOnSE3) {
+TEST(LieGroupGeneric, BchOrdersConvergeOnSE3) {
 	// log(exp(v) exp(w)) - BCH_n = O(s^(n+1)): halving the size must divide the error by ~2^(n+1).
 	std::mt19937_64 rng(15);
 	std::uniform_real_distribution<double> u(-1.0, 1.0);
@@ -97,7 +97,7 @@ TEST(LieGroupBaseGeneric, BchOrdersConvergeOnSE3) {
 	EXPECT_LT(err(0.05, 5), 1e-9);
 }
 
-TEST(LieGroupBaseGeneric, SlerpIsTheGeodesicAtParameterT) {
+TEST(LieGroupGeneric, SlerpIsTheGeodesicAtParameterT) {
 	const SO3d a = SO3d::exp(Eigen::Vector3d(0.3, 0.5, -0.2));
 	const SO3d b = SO3d::exp(Eigen::Vector3d(-1.0, 0.4, 1.2));
 	for (double t : {0.1, 0.25, 0.5, 0.9})

@@ -14,7 +14,7 @@ using namespace sofa::component::cosserat::liegroups;
 using namespace liegroup_ref;
 
 namespace {
-using R2 = RealSpace<double, 2>;
+using R2 = Rn<double, 2>;
 using PoseAndJoints = Bundle<SE3d, R2>;           // algebra 6 + 2, action 3 + 2
 using PlanarChain = Bundle<SE2d, SO2d, SO2d>;     // algebra 3 + 1 + 1, action 2 + 2 + 2
 using Mixed = Bundle<SO3d, SE2d, R2>;             // algebra 3 + 3 + 2, action 3 + 2 + 2

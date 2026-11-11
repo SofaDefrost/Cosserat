@@ -34,7 +34,7 @@
 namespace sofa::component::cosserat::liegroups {
 
 	// Forward declaration for matrix representation of Lie algebra
-	template<typename _Scalar, int _Dim>
+	template<typename Scalar_, int Dim_>
 	class LieAlgebra;
 
 	// Modern C++20 concepts for better error messages and type safety
@@ -84,31 +84,31 @@ namespace sofa::component::cosserat::liegroups {
 	 *    it, i.e. recurse forever (this is how SO3::computeAd -> ad -> computeAd looped).
 	 *  - callers (plugin, tests of the maths) should use the public API; the hooks are public only for backward
 	 *    compatibility (cosserat_shell still calls SO3::computeHat, SO3::computeRightJacobian and SE3::computeAdjoint,
-	 *    equivalents: hat, rightJacobian, adjoint()). They can become protected (with `friend LieGroupBase`) once
+	 *    equivalents: hat, rightJacobian, adjoint()). They can become protected (with `friend LieGroup`) once
 	 *    those callers are migrated.
 	 *  - groups must not redeclare a public wrapper (exp, log, inverse...): it would hide the base one for nothing.
 	 *    Specialised distance/interpolate (SO3, SE3, SE2, SGal3) are the legitimate exceptions.
 	 *
 	 * @tparam Derived The derived class implementing the specific Lie group
-	 * @tparam _Scalar The scalar type used for computations (must be a
+	 * @tparam Scalar_ The scalar type used for computations (must be a
 	 * floating-point type)
-	 * @tparam _Dim The dimension of the group representation
-	 * @tparam _AlgebraDim The dimension of the Lie algebra (default: same as _Dim)
-	 * @tparam _ActionDim The dimension of vectors the group acts on (default: same
-	 * as _Dim)
+	 * @tparam Dim_ The dimension of the group representation
+	 * @tparam AlgebraDim_ The dimension of the Lie algebra (default: same as Dim_)
+	 * @tparam ActionDim_ The dimension of vectors the group acts on (default: same
+	 * as Dim_)
 	 */
-	template<typename Derived, FloatingPoint _Scalar, int _Dim, int _AlgebraDim = _Dim, int _ActionDim = _Dim>
-		requires(_Dim > 0 && _AlgebraDim > 0 && _ActionDim > 0)
-	class LieGroupBase {
+	template<typename Derived, FloatingPoint Scalar_, int Dim_, int AlgebraDim_ = Dim_, int ActionDim_ = Dim_>
+		requires(Dim_ > 0 && AlgebraDim_ > 0 && ActionDim_ > 0)
+	class LieGroup {
 	public:
 		// Type aliases for scalar and types
-		using Scalar = _Scalar;
+		using Scalar = Scalar_;
 		using Types = sofa::component::cosserat::liegroups::Types<Scalar>;
 
 		// Dimensions as static constants
-		static constexpr int Dim = _Dim;
-		static constexpr int AlgebraDim = _AlgebraDim;
-		static constexpr int ActionDim = _ActionDim;
+		static constexpr int Dim = Dim_;
+		static constexpr int AlgebraDim = AlgebraDim_;
+		static constexpr int ActionDim = ActionDim_;
 
 		// Define commonly used types
 		using Vector = typename Types::template Vector<Dim>;
@@ -133,14 +133,14 @@ namespace sofa::component::cosserat::liegroups {
 		 * @brief Protected constructor to prevent direct instantiation
 		 * Only derived classes can construct this base
 		 */
-		LieGroupBase() = default;
+		LieGroup() = default;
 
 	public:
 		// Rule of 5 - modern C++ best practices
-		LieGroupBase(const LieGroupBase &) = default;
-		LieGroupBase(LieGroupBase &&) noexcept = default;
-		LieGroupBase &operator=(const LieGroupBase &) = default;
-		LieGroupBase &operator=(LieGroupBase &&) noexcept = default;
+		LieGroup(const LieGroup &) = default;
+		LieGroup(LieGroup &&) noexcept = default;
+		LieGroup &operator=(const LieGroup &) = default;
+		LieGroup &operator=(LieGroup &&) noexcept = default;
 
 		/**
 		 * @brief Access to the derived object (const version)
@@ -542,7 +542,7 @@ namespace sofa::component::cosserat::liegroups {
 		/**
 		 * @brief Stream output operator
 		 */
-		friend std::ostream &operator<<(std::ostream &os, const LieGroupBase &g) { return g.derived().print(os); }
+		friend std::ostream &operator<<(std::ostream &os, const LieGroup &g) { return g.derived().print(os); }
 
 		/**
 		 * @brief Get type information string for debugging
@@ -583,7 +583,7 @@ namespace sofa::component::cosserat::liegroups {
 		/**
 		 * @brief Left Jacobian of exp as a function of the matrix ad: sum_k ad^k / (k+1)!
 		 * (pass -ad for the right one). Fallback used by leftJacobian() & co. for groups that do
-		 * not provide closed forms (SO2, SE2, RealSpace, SE_2(3), ...): the series converges like
+		 * not provide closed forms (SO2, SE2, Rn, SE_2(3), ...): the series converges like
 		 * exp, so it needs no small-angle branch; the inverse is the matrix inverse.
 		 */
 		[[nodiscard]] static AdjointMatrix jacobianFromAd(const AdjointMatrix &ad) noexcept {
@@ -615,16 +615,10 @@ namespace sofa::component::cosserat::liegroups {
 	struct is_lie_group : std::false_type {};
 
 	template<typename Derived, FloatingPoint Scalar, int Dim, int AlgDim, int ActDim>
-	struct is_lie_group<LieGroupBase<Derived, Scalar, Dim, AlgDim, ActDim>> : std::true_type {};
+	struct is_lie_group<LieGroup<Derived, Scalar, Dim, AlgDim, ActDim>> : std::true_type {};
 
 	template<typename T>
 	inline constexpr bool is_lie_group_v = is_lie_group<T>::value;
-
-	/**
-	 * @brief Concept to check if a type is a Lie group
-	 */
-	template<typename T>
-	concept LieGroup = is_lie_group_v<T>;
 
 } // namespace sofa::component::cosserat::liegroups
 

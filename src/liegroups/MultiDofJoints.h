@@ -27,10 +27,10 @@ namespace sofa::component::cosserat::liegroups {
 	 * q is a rotation vector, so the parametrisation is singular only at |w| = 2π (log branch limit π for
 	 * jointAngles()).
 	 */
-	template<typename _Scalar>
+	template<typename Scalar_>
 	class SphericalJoint {
 	public:
-		using Scalar = _Scalar;
+		using Scalar = Scalar_;
 		using SE3Type = SE3<Scalar>;
 		using SO3Type = SO3<Scalar>;
 		using Vector3 = typename SE3Type::Vector3;
@@ -79,10 +79,10 @@ namespace sofa::component::cosserat::liegroups {
 	 *  - point1 == point2 : condylar joint (concurrent axes, no axial rotation),
 	 *  - offset points, perpendicular axes : saddle joint.
 	 */
-	template<typename _Scalar>
+	template<typename Scalar_>
 	class TwoAxisJoint {
 	public:
-		using Scalar = _Scalar;
+		using Scalar = Scalar_;
 		using SE3Type = SE3<Scalar>;
 		using Vector3 = typename SE3Type::Vector3;
 		using Vector2 = Eigen::Matrix<Scalar, 2, 1>;

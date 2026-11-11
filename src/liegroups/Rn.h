@@ -1,4 +1,4 @@
-// This file defines the RealSpace class, which implements the Euclidean vector
+// This file defines the Rn class, which implements the Euclidean vector
 // space as a Lie group.
 
 /******************************************************************************
@@ -26,14 +26,14 @@
 #include <random>
 #include <tuple>
 #include <type_traits>
-#include "LieGroupBase.h"
-#include "LieGroupBase.inl"
-#include "RealSpace.h"
+#include "LieGroup.h"
+#include "LieGroup.inl"
+#include "Rn.h"
 #include "SE2.h"
 #include "SE3.h"
 #include "SO2.h"
 #include "Types.h"
-// RealSpace.h is already included above
+// Rn.h is already included above
 
 namespace sofa::component::cosserat::liegroups {
 
@@ -47,15 +47,15 @@ namespace sofa::component::cosserat::liegroups {
 	 * - The exponential and logarithm maps are identity functions
 	 * - The adjoint representation is the identity matrix
 	 *
-	 * @tparam _Scalar The scalar type (must be a floating-point type)
-	 * @tparam _Dim The dimension of the space
+	 * @tparam Scalar_ The scalar type (must be a floating-point type)
+	 * @tparam Dim_ The dimension of the space
 	 */
-	template<typename _Scalar, int _Dim>
-	class RealSpace : public LieGroupBase<RealSpace<_Scalar, _Dim>, _Scalar, _Dim, _Dim, _Dim>
-	//,public LieGroupOperations<RealSpace<_Scalar, _Dim>>
+	template<typename Scalar_, int Dim_>
+	class Rn : public LieGroup<Rn<Scalar_, Dim_>, Scalar_, Dim_, Dim_, Dim_>
+	//,public LieGroupOperations<Rn<Scalar_, Dim_>>
 	{
 	public:
-		using Base = LieGroupBase<RealSpace<_Scalar, _Dim>, _Scalar, _Dim, _Dim, _Dim>;
+		using Base = LieGroup<Rn<Scalar_, Dim_>, Scalar_, Dim_, Dim_, Dim_>;
 		using Scalar = typename Base::Scalar;
 		using Vector = typename Base::Vector;
 		using Matrix = typename Base::Matrix;
@@ -67,84 +67,84 @@ namespace sofa::component::cosserat::liegroups {
 		/**
 		 * @brief Default constructor initializes to zero (identity element)
 		 */
-		RealSpace() : m_data(Vector::Zero()) {}
+		Rn() : m_data(Vector::Zero()) {}
 
 		/**
 		 * @brief Construct from a vector
 		 * @param v The vector to construct from.
 		 */
-		explicit RealSpace(const Vector &v) : m_data(v) {}
+		explicit Rn(const Vector &v) : m_data(v) {}
 
 		/**
-		 * @brief Computes the inverse of the current RealSpace element.
-		 * For RealSpace, the inverse is simply the negation of the vector.
-		 * @return The inverse RealSpace element.
+		 * @brief Computes the inverse of the current Rn element.
+		 * For Rn, the inverse is simply the negation of the vector.
+		 * @return The inverse Rn element.
 		 */
-		RealSpace computeInverse() const { return RealSpace(-m_data); }
+		Rn computeInverse() const { return Rn(-m_data); }
 
 		/**
-		 * @brief Composes two RealSpace elements (group operation).
-		 * For RealSpace, composition is vector addition.
-		 * @param other The other RealSpace element to compose with.
-		 * @return The composed RealSpace element.
+		 * @brief Composes two Rn elements (group operation).
+		 * For Rn, composition is vector addition.
+		 * @param other The other Rn element to compose with.
+		 * @return The composed Rn element.
 		 */
-		RealSpace computeCompose(const RealSpace &other) const { return RealSpace(m_data + other.m_data); }
+		Rn computeCompose(const Rn &other) const { return Rn(m_data + other.m_data); }
 
 		/**
-		 * @brief Computes the exponential map from the Lie algebra to the RealSpace
-		 * group. For RealSpace, the exponential map is the identity function.
+		 * @brief Computes the exponential map from the Lie algebra to the Rn
+		 * group. For Rn, the exponential map is the identity function.
 		 * @param algebra_element The element from the Lie algebra.
-		 * @return The corresponding RealSpace element.
+		 * @return The corresponding Rn element.
 		 */
-		static RealSpace computeExp(const TangentVector &algebra_element) { return RealSpace(algebra_element); }
+		static Rn computeExp(const TangentVector &algebra_element) { return Rn(algebra_element); }
 
 		/**
-		 * @brief Computes the logarithmic map from the RealSpace group to its Lie
-		 * algebra. For RealSpace, the logarithmic map is the identity function.
+		 * @brief Computes the logarithmic map from the Rn group to its Lie
+		 * algebra. For Rn, the logarithmic map is the identity function.
 		 * @return The corresponding element in the Lie algebra.
 		 */
 		TangentVector computeLog() const { return m_data; }
 
 		/**
-		 * @brief Computes the adjoint representation of the current RealSpace
-		 * element. For RealSpace, the adjoint matrix is the identity matrix.
+		 * @brief Computes the adjoint representation of the current Rn
+		 * element. For Rn, the adjoint matrix is the identity matrix.
 		 * @return The adjoint matrix.
 		 */
 		AdjointMatrix computeAdjoint() const { return AdjointMatrix::Identity(); }
 
 		/**
-		 * @brief Applies the group action of the current RealSpace element on a
-		 * point. For RealSpace, the action is vector addition.
+		 * @brief Applies the group action of the current Rn element on a
+		 * point. For Rn, the action is vector addition.
 		 * @param point The point to act upon.
 		 * @return The transformed point.
 		 */
 		Vector computeAction(const Vector &point) const { return point + m_data; }
 
 		/**
-		 * @brief Checks if the current RealSpace element is approximately equal to
+		 * @brief Checks if the current Rn element is approximately equal to
 		 * another.
-		 * @param other The other RealSpace element to compare with.
+		 * @param other The other Rn element to compare with.
 		 * @param eps The tolerance for approximation. Defaults to
 		 * `Types<Scalar>::epsilon()`.
 		 * @return True if the elements are approximately equal, false otherwise.
 		 */
-		bool computeIsApprox(const RealSpace &other, const Scalar &eps = Types<Scalar>::tolerance()) const {
+		bool computeIsApprox(const Rn &other, const Scalar &eps = Types<Scalar>::tolerance()) const {
 			// absolute tolerance scaled by max(1, |x|): Eigen's relative isApprox is false against a zero vector
 			const Scalar scale = std::max(Scalar(1), std::max(m_data.norm(), other.m_data.norm()));
 			return (m_data - other.m_data).norm() <= eps * scale;
 		}
 
 		/**
-		 * @brief Computes the identity element of the RealSpace group.
-		 * For RealSpace, the identity element is the zero vector.
-		 * @return The identity RealSpace element.
+		 * @brief Computes the identity element of the Rn group.
+		 * For Rn, the identity element is the zero vector.
+		 * @return The identity Rn element.
 		 */
-		static RealSpace computeIdentity() { return RealSpace(Vector::Zero()); }
+		static Rn computeIdentity() { return Rn(Vector::Zero()); }
 
 		/**
-		 * @brief Computes the hat operator for RealSpace.
+		 * @brief Computes the hat operator for Rn.
 		 * This maps a tangent vector to its matrix representation in the Lie algebra.
-		 * For RealSpace, this is a diagonal matrix with the vector elements on the
+		 * For Rn, this is a diagonal matrix with the vector elements on the
 		 * diagonal.
 		 * @param v The tangent vector.
 		 * @return The matrix representation in the Lie algebra.
@@ -158,7 +158,7 @@ namespace sofa::component::cosserat::liegroups {
 		}
 
 		/**
-		 * @brief Computes the vee operator for RealSpace.
+		 * @brief Computes the vee operator for Rn.
 		 * This maps a matrix representation in the Lie algebra back to its tangent
 		 * vector form. This is the inverse of the hat operator.
 		 * @param X The matrix representation in the Lie algebra.
@@ -174,7 +174,7 @@ namespace sofa::component::cosserat::liegroups {
 
 		/**
 		 * @brief Computes the adjoint representation of a Lie algebra element for
-		 * RealSpace. For RealSpace, the adjoint matrix is the zero matrix.
+		 * Rn. For Rn, the adjoint matrix is the zero matrix.
 		 * @param v The element of the Lie algebra in vector form.
 		 * @return The adjoint matrix.
 		 */
@@ -183,18 +183,18 @@ namespace sofa::component::cosserat::liegroups {
 		}
 
 		/**
-		 * @brief Generates a random RealSpace element.
+		 * @brief Generates a random Rn element.
 		 * @tparam Generator The type of the random number generator.
 		 * @param gen The random number generator.
-		 * @return A random RealSpace element.
+		 * @return A random Rn element.
 		 */
 		template<typename Generator>
-		static RealSpace computeRandom(Generator &gen) {
-			return RealSpace(Types<Scalar>::template randomVector<Dim>(gen));
+		static Rn computeRandom(Generator &gen) {
+			return Rn(Types<Scalar>::template randomVector<Dim>(gen));
 		}
 
 		/**
-		 * @brief Prints the RealSpace element to an output stream.
+		 * @brief Prints the Rn element to an output stream.
 		 * @param os The output stream.
 		 * @return The output stream.
 		 */
@@ -204,13 +204,13 @@ namespace sofa::component::cosserat::liegroups {
 		}
 
 		/**
-		 * @brief Gets the type name of the RealSpace class.
+		 * @brief Gets the type name of the Rn class.
 		 * @return A string view of the type name.
 		 */
-		static constexpr std::string_view getTypeName() { return "RealSpace"; }
+		static constexpr std::string_view getTypeName() { return "Rn"; }
 
 		/**
-		 * @brief Checks if the current RealSpace element is valid.
+		 * @brief Checks if the current Rn element is valid.
 		 * @return True if all elements of the underlying vector are finite, false
 		 * otherwise.
 		 */
@@ -219,20 +219,20 @@ namespace sofa::component::cosserat::liegroups {
 		}
 
 		/**
-		 * @brief Normalizes the RealSpace element.
-		 * For RealSpace, no normalization is needed.
+		 * @brief Normalizes the Rn element.
+		 * For Rn, no normalization is needed.
 		 */
 		void computeNormalize() {
-			// No normalization needed for RealSpace
+			// No normalization needed for Rn
 		}
 
 		/**
-		 * @brief Computes the squared distance between the current RealSpace element
+		 * @brief Computes the squared distance between the current Rn element
 		 * and another.
-		 * @param other The other RealSpace element.
+		 * @param other The other Rn element.
 		 * @return The squared Euclidean distance between the underlying vectors.
 		 */
-		Scalar squaredDistance(const RealSpace &other) const { return (m_data - other.m_data).squaredNorm(); }
+		Scalar squaredDistance(const Rn &other) const { return (m_data - other.m_data).squaredNorm(); }
 
 	private:
 		Vector m_data; ///< The underlying vector data

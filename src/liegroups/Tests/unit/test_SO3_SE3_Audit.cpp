@@ -141,7 +141,7 @@ TEST(SO3SE3Audit, SO3BCHOrdersFourAndFiveAreImplemented) {
 		EXPECT_LT(e, previous / (order >= 4 ? 1.5 : 3)) << "order " << order;
 		previous = e;
 	}
-	// same series as the generic matrix-commutator implementation of LieGroupBase
+	// same series as the generic matrix-commutator implementation of LieGroup
 	const Eigen::Vector3d v(0.21, -0.13, 0.3), w(-0.17, 0.26, 0.11);
 	for (int order = 1; order <= 5; ++order)
 		EXPECT_LT((SO3d::BCH(v, w, order) - SO3d::Base::BCH(v, w, order)).norm(), 1e-15) << "order " << order;
@@ -151,7 +151,7 @@ TEST(SO3SE3Audit, SO3BCHOrdersFourAndFiveAreImplemented) {
 		EXPECT_LT(bchError(order, h / 2), bchError(order, h) / std::pow(2.0, order + 1) * 1.3) << "order " << order;
 }
 
-// LieGroupBase::BCH threw NumericalInstabilityException for max(|v|, |w|) > pi/2, while SO3::BCH (same
+// LieGroup::BCH threw NumericalInstabilityException for max(|v|, |w|) > pi/2, while SO3::BCH (same
 // truncated series) never did: the series is a polynomial, always defined. No exception any more; the
 // generic and the SO3 versions agree for large inputs too.
 TEST(SO3SE3Audit, BCHIsDefinedForLargeInputs) {

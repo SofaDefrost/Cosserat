@@ -27,12 +27,12 @@ namespace sofa::component::cosserat::liegroups {
 	 * @brief Computes the geodesic distance between two rotations.
 	 * Uses the fact that the geodesic distance between two rotations is
 	 * twice the magnitude of the rotation angle of their difference.
-	 * @tparam _Scalar The scalar type.
+	 * @tparam Scalar_ The scalar type.
 	 * @param other The other SO3 rotation.
 	 * @return The geodesic distance.
 	 */
-	template<typename _Scalar>
-	typename SO3<_Scalar>::Scalar SO3<_Scalar>::distance(const SO3 &other) const noexcept {
+	template<typename Scalar_>
+	typename SO3<Scalar_>::Scalar SO3<Scalar_>::distance(const SO3 &other) const noexcept {
 		// Directly compute the log of the relative rotation
 		const Eigen::Quaternion<Scalar> diff = m_quat.inverse() * other.m_quat;
 		return Scalar(2.0) * std::atan2(diff.vec().norm(), std::abs(diff.w()));
@@ -42,13 +42,13 @@ namespace sofa::component::cosserat::liegroups {
 	 * @brief Performs spherical linear interpolation between two rotations.
 	 * Uses quaternion SLERP which gives the geodesic path between
 	 * two rotations. The parameter t is clamped to [0,1].
-	 * @tparam _Scalar The scalar type.
+	 * @tparam Scalar_ The scalar type.
 	 * @param other The target SO3 rotation.
 	 * @param t The interpolation parameter (between 0 and 1).
 	 * @return The interpolated SO3 rotation.
 	 */
-	template<typename _Scalar>
-	SO3<_Scalar> SO3<_Scalar>::interpolate(const SO3 &other, const Scalar &t) const noexcept {
+	template<typename Scalar_>
+	SO3<Scalar_> SO3<Scalar_>::interpolate(const SO3 &other, const Scalar &t) const noexcept {
 		// Clamp t to [0,1] for safety
 		const Scalar t_clamped = std::max(Scalar(0), std::min(Scalar(1), t));
 		// Use quaternion SLERP for optimal interpolation
@@ -58,14 +58,14 @@ namespace sofa::component::cosserat::liegroups {
 	/**
 	 * @brief Implements the Baker-Campbell-Hausdorff formula for SO(3).
 	 * Computes log(exp(v)exp(w)) up to the specified order.
-	 * @tparam _Scalar The scalar type.
+	 * @tparam Scalar_ The scalar type.
 	 * @param v The first tangent vector.
 	 * @param w The second tangent vector.
 	 * @param order The order of approximation (e.g., 1, 2, 3).
 	 * @return The resulting tangent vector.
 	 */
-	template<typename _Scalar>
-	typename SO3<_Scalar>::TangentVector SO3<_Scalar>::BCH(const TangentVector &v, const TangentVector &w, int order) {
+	template<typename Scalar_>
+	typename SO3<Scalar_>::TangentVector SO3<Scalar_>::BCH(const TangentVector &v, const TangentVector &w, int order) {
 		// First-order approximation: v + w
 		TangentVector result = v + w;
 
@@ -86,7 +86,7 @@ namespace sofa::component::cosserat::liegroups {
 					result -= w.cross(vvw) * Scalar(1.0 / 24.0);
 
 					if (order >= 5) {
-						// Fifth-order terms (Dynkin), same as LieGroupBase::BCH; [a,b] = a x b on so(3):
+						// Fifth-order terms (Dynkin), same as LieGroup::BCH; [a,b] = a x b on so(3):
 						//   -1/720 ([y,[y,[y,[y,x]]]] + [x,[x,[x,[x,y]]]])
 						//   +1/360 ([x,[y,[y,[y,x]]]] + [y,[x,[x,[x,y]]]])
 						//   +1/120 ([y,[x,[y,[x,y]]]] + [x,[y,[x,[y,x]]]])
@@ -142,41 +142,41 @@ namespace sofa::component::cosserat::liegroups {
 
 	/**
 	 * @brief Computes the differential of the exponential map, in the right convention shared by
-	 * LieGroupBase::dexp and SE3::dexp: exp(v + d) = exp(v) exp(Jr(v) d) + O(d^2).
+	 * LieGroup::dexp and SE3::dexp: exp(v + d) = exp(v) exp(Jr(v) d) + O(d^2).
 	 *   Jr(w) = I - a(|w|) [w]x + b(|w|) [w]x^2
 	 * (the left Jacobian is computeLeftJacobian).
-	 * @tparam _Scalar The scalar type.
+	 * @tparam Scalar_ The scalar type.
 	 * @param v The tangent vector.
 	 * @return The matrix representing the differential of exp at v.
 	 */
-	template<typename _Scalar>
-	typename SO3<_Scalar>::AdjointMatrix SO3<_Scalar>::dexp(const TangentVector &v) {
+	template<typename Scalar_>
+	typename SO3<Scalar_>::AdjointMatrix SO3<Scalar_>::dexp(const TangentVector &v) {
 		return computeRightJacobian(v);
 	}
 
 	/**
 	 * @brief Computes the differential of the logarithm map (inverse of the right Jacobian,
-	 * evaluated at log of the current element), same convention as LieGroupBase::dlog:
+	 * evaluated at log of the current element), same convention as LieGroup::dlog:
 	 * log(g exp(d)) = log(g) + dlog() d + O(d^2).
 	 *   Jr^-1(w) = I + 1/2 [w]x + c(|w|) [w]x^2
-	 * @tparam _Scalar The scalar type.
+	 * @tparam Scalar_ The scalar type.
 	 * @return The matrix representing the differential of log at the current point.
 	 */
-	template<typename _Scalar>
-	typename SO3<_Scalar>::AdjointMatrix SO3<_Scalar>::dlog() const {
+	template<typename Scalar_>
+	typename SO3<Scalar_>::AdjointMatrix SO3<Scalar_>::dlog() const {
 		return computeRightJacobianInverse(computeLog());
 	}
 
 	/**
 	 * @brief Computes the adjoint representation of the Lie algebra element.
 	 * For SO(3), this is equivalent to the hat map: ad(v)w = [v,w] = hat(v)w.
-	 * @tparam _Scalar The scalar type.
+	 * @tparam Scalar_ The scalar type.
 	 * @param v The tangent vector.
 	 * @return The adjoint matrix.
 	 */
-	template<typename _Scalar>
-	typename SO3<_Scalar>::AdjointMatrix SO3<_Scalar>::computeAd(const TangentVector &v) {
-		// For SO(3), ad(v) is the hat map. Do not call ad(v) here: LieGroupBase::ad
+	template<typename Scalar_>
+	typename SO3<Scalar_>::AdjointMatrix SO3<Scalar_>::computeAd(const TangentVector &v) {
+		// For SO(3), ad(v) is the hat map. Do not call ad(v) here: LieGroup::ad
 		// dispatches back to computeAd, which would recurse forever.
 		return computeHat(v);
 	}
@@ -185,8 +185,8 @@ namespace sofa::component::cosserat::liegroups {
 	 * @brief Right Jacobian of SO(3): Jr(w) = I - a(|w|) [w]x + b(|w|) [w]x^2
 	 * (Solà et al. 2021, eq. 143).
 	 */
-	template<typename _Scalar>
-	typename SO3<_Scalar>::AdjointMatrix SO3<_Scalar>::computeRightJacobian(const TangentVector &omega) noexcept {
+	template<typename Scalar_>
+	typename SO3<Scalar_>::AdjointMatrix SO3<Scalar_>::computeRightJacobian(const TangentVector &omega) noexcept {
 		Scalar a, b, c;
 		detail::so3JacobianCoefficients(omega.norm(), a, b, c);
 		const Matrix W = SO3::computeHat(omega);
@@ -196,8 +196,8 @@ namespace sofa::component::cosserat::liegroups {
 	/**
 	 * @brief Left Jacobian of SO(3): Jl(w) = Jr(-w).
 	 */
-	template<typename _Scalar>
-	typename SO3<_Scalar>::AdjointMatrix SO3<_Scalar>::computeLeftJacobian(const TangentVector &omega) noexcept {
+	template<typename Scalar_>
+	typename SO3<Scalar_>::AdjointMatrix SO3<Scalar_>::computeLeftJacobian(const TangentVector &omega) noexcept {
 		return computeRightJacobian(-omega);
 	}
 
@@ -205,8 +205,8 @@ namespace sofa::component::cosserat::liegroups {
 	 * @brief Inverse right Jacobian: Jr^-1(w) = I + 1/2 [w]x + c(|w|) [w]x^2
 	 * (Solà et al. 2021, eq. 144).
 	 */
-	template<typename _Scalar>
-	typename SO3<_Scalar>::AdjointMatrix SO3<_Scalar>::computeRightJacobianInverse(const TangentVector &omega) noexcept {
+	template<typename Scalar_>
+	typename SO3<Scalar_>::AdjointMatrix SO3<Scalar_>::computeRightJacobianInverse(const TangentVector &omega) noexcept {
 		Scalar a, b, c;
 		detail::so3JacobianCoefficients(omega.norm(), a, b, c);
 		const Matrix W = SO3::computeHat(omega);
@@ -216,8 +216,8 @@ namespace sofa::component::cosserat::liegroups {
 	/**
 	 * @brief Inverse left Jacobian: Jl^-1(w) = Jr^-1(-w).
 	 */
-	template<typename _Scalar>
-	typename SO3<_Scalar>::AdjointMatrix SO3<_Scalar>::computeLeftJacobianInverse(const TangentVector &omega) noexcept {
+	template<typename Scalar_>
+	typename SO3<Scalar_>::AdjointMatrix SO3<Scalar_>::computeLeftJacobianInverse(const TangentVector &omega) noexcept {
 		return computeRightJacobianInverse(-omega);
 	}
 

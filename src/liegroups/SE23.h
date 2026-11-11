@@ -23,8 +23,8 @@
 // #define SOFA_COMPONENT_COSSERAT_LIEGROUPS_SE23_H
 #pragma once
 
-#include "LieGroupBase.h" // Then the base class interface
-#include "LieGroupBase.inl" // Then the base class interface
+#include "LieGroup.h" // Then the base class interface
+#include "LieGroup.inl" // Then the base class interface
 #include "SE3.h" // Then the base class interface
 // #include <eigen3/Eigen/Geometry.h>
 
@@ -44,14 +44,14 @@ namespace sofa::component::cosserat::liegroups {
 	 * - Middle three components represent angular velocity
 	 * - Last three components represent linear acceleration
 	 *
-	 * @tparam _Scalar The scalar type (must be a floating-point type)
+	 * @tparam Scalar_ The scalar type (must be a floating-point type)
 	 */
-	template<typename _Scalar, int _Dim = 9>
-	class SE23 : public LieGroupBase<SE23<_Scalar, _Dim>, _Scalar, 9, 9, 6>
-	//,public LieGroupOperations<SE23<_Scalar>>
+	template<typename Scalar_, int Dim_ = 9>
+	class SE23 : public LieGroup<SE23<Scalar_, Dim_>, Scalar_, 9, 9, 6>
+	//,public LieGroupOperations<SE23<Scalar_>>
 	{
 	public:
-		using Base = LieGroupBase<SE23<_Scalar, _Dim>, _Scalar, 9, 9, 6>;
+		using Base = LieGroup<SE23<Scalar_, Dim_>, Scalar_, 9, 9, 6>;
 		using Scalar = typename Base::Scalar;
 		using Vector = typename Base::Vector;
 		using Matrix = typename Base::Matrix;

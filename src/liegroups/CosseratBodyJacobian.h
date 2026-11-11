@@ -75,12 +75,12 @@ namespace sofa::component::cosserat::liegroups {
  *   Eigen::MatrixXd Jk = J.getJacobianAtSection(k);
  * @endcode
  *
- * @tparam _Scalar Scalar type (float, double, …)
+ * @tparam Scalar_ Scalar type (float, double, …)
  */
-template<typename _Scalar>
+template<typename Scalar_>
 class CosseratBodyJacobian {
 public:
-    using Scalar      = _Scalar;
+    using Scalar      = Scalar_;
     using SE3Type     = SE3<Scalar>;
     using TwistType   = Twist<Scalar>;
     using WrenchType  = Wrench<Scalar>;

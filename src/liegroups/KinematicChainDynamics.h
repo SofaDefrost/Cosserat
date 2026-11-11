@@ -29,10 +29,10 @@
 
 namespace sofa::component::cosserat::liegroups {
 
-	template<typename _Scalar>
+	template<typename Scalar_>
 	class KinematicChainDynamics {
 	public:
-		using Scalar = _Scalar;
+		using Scalar = Scalar_;
 		using Chain = KinematicChain<Scalar>;
 		using SE3Type = typename Chain::SE3Type;
 		using Vector3 = typename Chain::Vector3;

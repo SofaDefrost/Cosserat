@@ -34,39 +34,39 @@ namespace sofa::component::cosserat::liegroups {
 	/**
 	 * @brief Transform a point-velocity-time tuple by inverse transformation
 	 */
-	template<typename _Scalar>
-	Eigen::Matrix<_Scalar, 7, 1> operator/(const Eigen::Matrix<_Scalar, 7, 1> &point_vel_time,
-										   const SGal3<_Scalar> &g) {
+	template<typename Scalar_>
+	Eigen::Matrix<Scalar_, 7, 1> operator/(const Eigen::Matrix<Scalar_, 7, 1> &point_vel_time,
+										   const SGal3<Scalar_> &g) {
 		return g.inverse().act(point_vel_time).template head<7>();
 	}
 
 	/**
 	 * @brief Create SGal(3) transformation from components
 	 */
-	template<typename _Scalar>
-	SGal3<_Scalar> fromComponents(const typename SGal3<_Scalar>::Vector3 &position, const SO3<_Scalar> &rotation,
-								  const typename SGal3<_Scalar>::Vector3 &velocity, const _Scalar &time) {
-		return SGal3<_Scalar>(SE3<_Scalar>(rotation, position), velocity, time);
+	template<typename Scalar_>
+	SGal3<Scalar_> fromComponents(const typename SGal3<Scalar_>::Vector3 &position, const SO3<Scalar_> &rotation,
+								  const typename SGal3<Scalar_>::Vector3 &velocity, const Scalar_ &time) {
+		return SGal3<Scalar_>(SE3<Scalar_>(rotation, position), velocity, time);
 	}
 
 	/**
 	 * @brief Create SGal(3) transformation from position, Euler angles, velocity,
 	 * and time
 	 */
-	template<typename _Scalar>
-	SGal3<_Scalar> fromPositionEulerVelocityTime(const typename SGal3<_Scalar>::Vector3 &position, const _Scalar &roll,
-												 const _Scalar &pitch, const _Scalar &yaw,
-												 const typename SGal3<_Scalar>::Vector3 &velocity,
-												 const _Scalar &time) {
-		return SGal3<_Scalar>(fromPositionEulerZYX(position, roll, pitch, yaw), velocity, time);
+	template<typename Scalar_>
+	SGal3<Scalar_> fromPositionEulerVelocityTime(const typename SGal3<Scalar_>::Vector3 &position, const Scalar_ &roll,
+												 const Scalar_ &pitch, const Scalar_ &yaw,
+												 const typename SGal3<Scalar_>::Vector3 &velocity,
+												 const Scalar_ &time) {
+		return SGal3<Scalar_>(fromPositionEulerZYX(position, roll, pitch, yaw), velocity, time);
 	}
 
 	/**
 	 * @brief Convert transformation to position, Euler angles, velocity, and time
 	 */
-	template<typename _Scalar>
-	typename SGal3<_Scalar>::Vector toPositionEulerVelocityTime(const SGal3<_Scalar> &transform) {
-		typename SGal3<_Scalar>::Vector result;
+	template<typename Scalar_>
+	typename SGal3<Scalar_>::Vector toPositionEulerVelocityTime(const SGal3<Scalar_> &transform) {
+		typename SGal3<Scalar_>::Vector result;
 		result.resize(10);
 		result.template segment<6>(0) = toPositionEulerZYX(transform.pose());
 		result.template segment<3>(6) = transform.velocity();
@@ -75,7 +75,7 @@ namespace sofa::component::cosserat::liegroups {
 	}
 
 
-	// BCH: the generic LieGroupBase::BCH(v, w, order) is used; SGal3::BCH(X, Y) was declared and only
+	// BCH: the generic LieGroup::BCH(v, w, order) is used; SGal3::BCH(X, Y) was declared and only
 	// defined here, in a file nobody included, and with brackets that ignored the time terms.
 
 } // namespace sofa::component::cosserat::liegroups

@@ -63,12 +63,12 @@ namespace sofa::component::cosserat::liegroups {
  *   auto samples = curve.sample(100);             // 100 uniform samples
  * @endcode
  *
- * @tparam _Scalar Scalar type (float, double, …)
+ * @tparam Scalar_ Scalar type (float, double, …)
  */
-template<typename _Scalar>
+template<typename Scalar_>
 class BezierSE3 {
 public:
-    using Scalar        = _Scalar;
+    using Scalar        = Scalar_;
     using SE3Type       = SE3<Scalar>;
     using TangentVector = typename SE3Type::TangentVector;
 
