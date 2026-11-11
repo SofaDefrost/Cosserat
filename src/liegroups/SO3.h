@@ -239,14 +239,14 @@ namespace sofa::component::cosserat::liegroups {
 		static TangentVector BCH(const TangentVector &v, const TangentVector &w, int order = 2);
 
 		/**
-		 * @brief Differential of the exponential map.
+		 * @brief Differential of the exponential map (right Jacobian, as LieGroupBase::dexp and SE3::dexp).
 		 * @param v Tangent vector.
 		 * @return Matrix representing the differential of exp at v.
 		 */
 		static AdjointMatrix dexp(const TangentVector &v);
 
 		/**
-		 * @brief Differential of the logarithm map.
+		 * @brief Differential of the logarithm map (inverse right Jacobian at log(this), as LieGroupBase::dlog).
 		 * @return Matrix representing the differential of log at the current point.
 		 */
 		AdjointMatrix dlog() const;
@@ -275,7 +275,8 @@ namespace sofa::component::cosserat::liegroups {
 	 * - J_left = ∂g/∂this (in tangent space)
 	 * - J_right = ∂g/∂h (in tangent space)
 	 * 
-	 * Using the relation: g * exp(δ) = g * exp(Ad_g⁻¹(δ)) for left perturbation
+	 * Right perturbation g exp(δ) (the convention of every Jacobian of this class and of dexp/dlog):
+	 * (R exp(δ) S) = R S exp(Ad_{S⁻¹} δ)
 	 * 
 	 * @param other The other SO3 element h
 	 * @return Pair of Jacobians (J_left, J_right)
@@ -292,34 +293,31 @@ namespace sofa::component::cosserat::liegroups {
 	/**
 	 * @brief Compute the Jacobian of the inverse operation.
 	 * 
-	 * For R^{-1}, computes ∂(R^{-1})/∂R in the tangent space.
-	 * 
-	 * Using the relation: (R * exp(δ))^{-1} = exp(-δ) * R^{-1}
-	 * we get: ∂R^{-1}/∂R = -Ad_{R^{-1}} = -R^T
-	 * 
+	 * For R^{-1}, computes ∂(R^{-1})/∂R in the tangent space, right perturbation R exp(δ):
+	 * (R exp(δ))^{-1} = exp(-δ) R^{-1} = R^{-1} exp(-Ad_R δ), so ∂R^{-1}/∂R = -Ad_R = -R.
+	 *
 	 * @return Jacobian matrix
 	 */
 	AdjointMatrix inverseJacobian() const noexcept {
-		// ∂R^{-1}/∂R = -Ad_{R^{-1}} = -R^T
-		return -matrix().transpose();
+		// ∂R^{-1}/∂R = -Ad_R = -R (right perturbation)
+		return -matrix();
 	}
 
 	/**
 	 * @brief Compute the Jacobian of the group action on a point.
 	 * 
 	 * For y = R*p, computes:
-	 * - ∂y/∂R (with R perturbed in tangent space): 3x3 matrix
+	 * - ∂y/∂R (R perturbed on the right, R exp(δ)): 3x3 matrix
 	 * - ∂y/∂p: 3x3 matrix (rotation matrix itself)
 	 * 
 	 * @param point The point p ∈ ℝ³
 	 * @return Pair of Jacobians (∂y/∂R, ∂y/∂p)
 	 */
 	std::pair<Matrix, Matrix> actionJacobians(const Vector &point) const noexcept {
-		// For perturbation R_δ = exp(δ) * R:
-		// (exp(δ) * R) * p ≈ R*p + δ × (R*p)
-		// So: ∂(R*p)/∂δ = -[R*p]× (negative skew-symmetric)
-		Vector Rp = this->act(point);
-		Matrix J_wrt_rotation = -computeHat(Rp);
+		// For perturbation R_δ = R * exp(δ):
+		// (R * exp(δ)) * p ≈ R*p + R (δ × p)
+		// So: ∂(R*p)/∂δ = -R [p]×
+		Matrix J_wrt_rotation = -matrix() * computeHat(point);
 		
 		// ∂(R*p)/∂p = R
 		Matrix J_wrt_point = matrix();
@@ -335,7 +333,7 @@ namespace sofa::component::cosserat::liegroups {
 	 * @return Jacobian ∂(R*p)/∂R
 	 */
 	Matrix actionJacobianRotation(const Vector &point) const noexcept {
-		return -computeHat(this->act(point));
+		return -matrix() * computeHat(point);
 	}
 
 	/**

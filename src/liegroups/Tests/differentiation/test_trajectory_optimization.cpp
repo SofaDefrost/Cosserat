@@ -109,7 +109,9 @@ TEST_F(TrajectoryOptimizationTest, TargetWithBending) {
     params.learning_rate = 0.05;
     params.max_iterations = 1000;
     params.tolerance = 1e-6;
-    params.regularization = 0.01;
+    // the cost is 0.5 |p - target|^2 + 0.5 lambda |strains|^2 and a section is only 5 cm long, so lambda = 0.01
+    // puts the regularised optimum itself about 9 cm from the target (measured): use 1e-3
+    params.regularization = 0.001;
     params.verbose = false;
     
     // Optimize
@@ -360,6 +362,7 @@ TEST_F(TrajectoryOptimizationTest, InitialConditionsSensitivity) {
     CosseratTrajectoryOptimizer<double>::Parameters params;
     params.learning_rate = 0.05;
     params.max_iterations = 500;
+    params.regularization = 0.001; // the default 0.01 puts the regularised optimum about 5.3 cm from the target (measured)
     params.verbose = false;
     
     auto result1 = optimizer.optimizeToTarget(initial1, target, length, params);

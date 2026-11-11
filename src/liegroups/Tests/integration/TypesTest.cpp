@@ -57,8 +57,12 @@ namespace sofa::component::cosserat::liegroups::testing {
 	 */
 	TEST_F(TypesTest, IsZero) {
 		EXPECT_TRUE(Typesd::isZero(0.0));
-		EXPECT_TRUE(Typesd::isZero(1e-12));
-		EXPECT_TRUE(Typesd::isZero(-1e-12));
+		// default tolerance = Types::tolerance() = 100 epsilon (2.2e-14): 1e-12 is zero only for a looser tolerance
+		EXPECT_TRUE(Typesd::isZero(1e-15));
+		EXPECT_TRUE(Typesd::isZero(-1e-15));
+		EXPECT_FALSE(Typesd::isZero(1e-12));
+		EXPECT_TRUE(Typesd::isZero(1e-12, 1e-10));
+		EXPECT_TRUE(Typesd::isZero(-1e-12, 1e-10));
 		EXPECT_FALSE(Typesd::isZero(0.1));
 	}
 
@@ -68,7 +72,9 @@ namespace sofa::component::cosserat::liegroups::testing {
 	 */
 	TEST_F(TypesTest, IsApprox) {
 		EXPECT_TRUE(Typesd::isApprox(0.0, 0.0));
-		EXPECT_TRUE(Typesd::isApprox(1.0, 1.0 + 1e-12));
+		EXPECT_TRUE(Typesd::isApprox(1.0, 1.0 + 1e-15));
+		EXPECT_FALSE(Typesd::isApprox(1.0, 1.0 + 1e-12));
+		EXPECT_TRUE(Typesd::isApprox(1.0, 1.0 + 1e-12, 1e-10));
 		EXPECT_FALSE(Typesd::isApprox(0.0, 0.1));
 	}
 
@@ -80,16 +86,6 @@ namespace sofa::component::cosserat::liegroups::testing {
 		EXPECT_NEAR(Typesd::sinc(0.0), 1.0, eps);
 		EXPECT_NEAR(Typesd::sinc(pi / 2), 2.0 / pi, eps);
 		EXPECT_NEAR(Typesd::sinc(pi), 0.0, eps);
-	}
-
-	/**
-	 * @brief Tests the `cosc` function in Types.
-	 * Verifies the correct calculation of cosc(x) for various inputs, including near zero.
-	 */
-	TEST_F(TypesTest, Cosc) {
-		EXPECT_NEAR(Typesd::cosc(0.0), 1.0, eps);
-		EXPECT_NEAR(Typesd::cosc(pi / 2), 0.0, eps);
-		EXPECT_NEAR(Typesd::cosc(pi), -1.0 / pi, eps);
 	}
 
 	/**
@@ -108,6 +104,7 @@ namespace sofa::component::cosserat::liegroups::testing {
 	TEST_F(TypesTest, NormalizeAngle) {
 		EXPECT_NEAR(Typesd::normalizeAngle(0.0), 0.0, eps);
 		EXPECT_NEAR(Typesd::normalizeAngle(pi), pi, eps);
+		EXPECT_NEAR(Typesd::normalizeAngle(-pi), -pi, eps);
 		EXPECT_NEAR(Typesd::normalizeAngle(2 * pi), 0.0, eps);
 		EXPECT_NEAR(Typesd::normalizeAngle(-pi / 2), -pi / 2, eps);
 		EXPECT_NEAR(Typesd::normalizeAngle(3 * pi / 2), -pi / 2, eps);

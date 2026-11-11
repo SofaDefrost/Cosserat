@@ -60,7 +60,8 @@ namespace sofa::component::cosserat::liegroups::testing {
 
 		// Test extreme cases
 		EXPECT_NEAR(Utils::normalizeAngle(1000 * pi), 0.0, eps);
-		EXPECT_NEAR(Utils::normalizeAngle(1001 * pi), pi, eps);
+		// 1001 pi is not exactly representable: the result is +-pi up to 1e-12, the sign is arbitrary on the boundary
+		EXPECT_NEAR(std::abs(Utils::normalizeAngle(1001 * pi)), pi, 1e-9);
 	}
 
 	/**
@@ -113,8 +114,9 @@ namespace sofa::component::cosserat::liegroups::testing {
 		EXPECT_NEAR(Utils::angleDifference(0.0, pi / 4), -pi / 4, eps);
 
 		// Test differences that wrap around
-		EXPECT_NEAR(Utils::angleDifference(3 * pi / 4, -3 * pi / 4), 3 * pi / 2, eps);
-		EXPECT_NEAR(Utils::angleDifference(-3 * pi / 4, 3 * pi / 4), -3 * pi / 2, eps);
+		// the shortest signed difference: 3pi/4 - (-3pi/4) = 3pi/2 is wrapped to -pi/2
+		EXPECT_NEAR(Utils::angleDifference(3 * pi / 4, -3 * pi / 4), -pi / 2, eps);
+		EXPECT_NEAR(Utils::angleDifference(-3 * pi / 4, 3 * pi / 4), pi / 2, eps);
 
 		// Test extreme cases
 		EXPECT_NEAR(Utils::angleDifference(pi, -pi), 0.0, eps);
@@ -131,8 +133,9 @@ namespace sofa::component::cosserat::liegroups::testing {
 		EXPECT_NEAR(Utils::angleDistance(0.0, pi / 4), pi / 4, eps);
 
 		// Test distances that wrap around
-		EXPECT_NEAR(Utils::angleDistance(3 * pi / 4, -3 * pi / 4), 3 * pi / 2, eps);
-		EXPECT_NEAR(Utils::angleDistance(-3 * pi / 4, 3 * pi / 4), 3 * pi / 2, eps);
+		// the geodesic distance on the circle is at most pi: 3pi/2 is wrapped to pi/2
+		EXPECT_NEAR(Utils::angleDistance(3 * pi / 4, -3 * pi / 4), pi / 2, eps);
+		EXPECT_NEAR(Utils::angleDistance(-3 * pi / 4, 3 * pi / 4), pi / 2, eps);
 
 		// Test extreme cases
 		EXPECT_NEAR(Utils::angleDistance(pi, -pi), 0.0, eps);
@@ -165,8 +168,9 @@ namespace sofa::component::cosserat::liegroups::testing {
 		EXPECT_NEAR(Utils::slerpAngle(0.0, pi / 2, 0.5), pi / 4, eps);
 
 		// Test wrapping
-		EXPECT_NEAR(Utils::slerpAngle(-3 * pi / 4, 3 * pi / 4, 0.5), 0.0, eps);
-		EXPECT_NEAR(Utils::slerpAngle(3 * pi / 4, -3 * pi / 4, 0.5), 0.0, eps);
+		// shortest path from -3pi/4 to 3pi/4 goes through pi (not through 0): the midpoint is +-pi
+		EXPECT_NEAR(std::abs(Utils::slerpAngle(-3 * pi / 4, 3 * pi / 4, 0.5)), pi, eps);
+		EXPECT_NEAR(std::abs(Utils::slerpAngle(3 * pi / 4, -3 * pi / 4, 0.5)), pi, eps);
 
 		// Test extreme cases
 		EXPECT_NEAR(Utils::slerpAngle(pi, -pi, 0.5), pi, eps);
@@ -178,8 +182,10 @@ namespace sofa::component::cosserat::liegroups::testing {
 	 */
 	TEST_F(UtilsTest, NearZeroAngle) {
 		EXPECT_TRUE(Utils::isAngleNearZero(0.0));
-		EXPECT_TRUE(Utils::isAngleNearZero(1e-12));
-		EXPECT_TRUE(Utils::isAngleNearZero(-1e-12));
+		EXPECT_TRUE(Utils::isAngleNearZero(1e-15));
+		EXPECT_TRUE(Utils::isAngleNearZero(-1e-15));
+		EXPECT_TRUE(Utils::isAngleNearZero(1e-12, 1e-10));
+		EXPECT_FALSE(Utils::isAngleNearZero(1e-12));
 
 		EXPECT_FALSE(Utils::isAngleNearZero(0.1));
 		EXPECT_FALSE(Utils::isAngleNearZero(-0.1));
@@ -191,7 +197,8 @@ namespace sofa::component::cosserat::liegroups::testing {
 	 */
 	TEST_F(UtilsTest, NearlyEqualAngles) {
 		EXPECT_TRUE(Utils::areAnglesNearlyEqual(0.0, 0.0));
-		EXPECT_TRUE(Utils::areAnglesNearlyEqual(pi / 4, pi / 4 + 1e-12));
+		EXPECT_TRUE(Utils::areAnglesNearlyEqual(pi / 4, pi / 4 + 1e-15));
+		EXPECT_TRUE(Utils::areAnglesNearlyEqual(pi / 4, pi / 4 + 1e-12, 1e-10));
 		EXPECT_TRUE(Utils::areAnglesNearlyEqual(pi, -pi));
 		EXPECT_TRUE(Utils::areAnglesNearlyEqual(2 * pi, 0.0));
 
@@ -211,16 +218,16 @@ namespace sofa::component::cosserat::liegroups::testing {
 		EXPECT_NEAR(v1_norm[0], 0.6, eps);
 		EXPECT_NEAR(v1_norm[1], 0.8, eps);
 
-		// Test zero vector
+		// A zero vector has no direction: the documented fallback is the first basis vector (unit norm)
 		Vector2d v2(0.0, 0.0);
 		Vector2d v2_norm = Utils::safeNormalize(v2);
-		EXPECT_NEAR(v2_norm[0], 0.0, eps);
+		EXPECT_NEAR(v2_norm[0], 1.0, eps);
 		EXPECT_NEAR(v2_norm[1], 0.0, eps);
 
-		// Test near-zero vector
-		Vector2d v3(1e-12, 1e-12);
+		// same for a vector below the tolerance (norm < 100 epsilon)
+		Vector2d v3(1e-15, 1e-15);
 		Vector2d v3_norm = Utils::safeNormalize(v3);
-		EXPECT_NEAR(v3_norm[0], 0.0, eps);
+		EXPECT_NEAR(v3_norm[0], 1.0, eps);
 		EXPECT_NEAR(v3_norm[1], 0.0, eps);
 	}
 

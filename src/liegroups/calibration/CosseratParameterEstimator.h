@@ -126,41 +126,66 @@ public:
             std::cout << "Calibration Iteration 0: Cost = " << cost << "\n";
         }
         
-        // Gradient descent
+        // Levenberg-Marquardt on the regularised least-squares cost. The gradient step used before was
+        // hopeless here: the tip position depends on the scales through tiny, badly scaled sensitivities
+        // (|d p / d I_scale| ~ 1e-3 for the test data), so with a fixed learning rate the cost changed by
+        // less than the threshold and "converged" was reported at I_scale = 1.0003 for a true value of 1.2.
+        // learning_rate is the initial damping factor of the Levenberg-Marquardt step.
+        Scalar damping = m_config.learning_rate;
         for (int iter = 0; iter < m_config.max_iterations; ++iter) {
             result.iterations = iter + 1;
-            
-            // Compute gradient
-            VectorX gradient = computeGradient(params, measurements);
-            
-            // Update parameters
-            VectorX params_vec = params.toVector();
-            params_vec -= m_config.learning_rate * gradient;
-            
-            // Clamp to bounds
-            params_vec = params_vec.cwiseMax(m_config.min_scale).cwiseMin(m_config.max_scale);
-            params.fromVector(params_vec);
-            
-            // Compute new cost
-            Scalar new_cost = computeCost(params, measurements);
+
+            VectorX gradient;
+            MatrixX hessian;
+            computeGradientAndHessian(params, measurements, gradient, hessian);
+
+            if (gradient.norm() < m_config.convergence_threshold) {
+                result.converged = true;
+                result.message = "Converged: gradient norm below threshold";
+                break;
+            }
+
+            // Damped Gauss-Newton step, retried with larger damping until the cost decreases.
+            bool accepted = false;
+            Scalar new_cost = cost;
+            Parameters candidate = params;
+            for (int attempt = 0; attempt < 30 && !accepted; ++attempt) {
+                MatrixX damped = hessian;
+                for (int i = 0; i < damped.rows(); ++i) {
+                    damped(i, i) += damping * (hessian(i, i) + Scalar(1e-12));
+                }
+                VectorX step = damped.ldlt().solve(-gradient);
+                VectorX candidate_vec = (params.toVector() + step).cwiseMax(m_config.min_scale).cwiseMin(m_config.max_scale);
+                candidate.fromVector(candidate_vec);
+                new_cost = computeCost(candidate, measurements);
+                if (new_cost < cost) {
+                    accepted = true;
+                } else {
+                    damping *= Scalar(4);
+                }
+            }
+            if (!accepted) {
+                result.converged = true; // no descent direction left at working precision
+                result.message = "Converged: no cost decrease possible";
+                break;
+            }
+            damping = std::max(damping / Scalar(3), Scalar(1e-12));
+            params = candidate;
             result.cost_history.push_back(new_cost);
-            
+
             if (m_config.verbose && iter % 10 == 0) {
                 std::cout << "Calibration Iteration " << iter + 1 
                           << ": Cost = " << new_cost 
                           << ", RMSE = " << std::sqrt(new_cost / measurements.size()) << "\n";
             }
-            
-            // Check convergence
-            Scalar cost_change = std::abs(cost - new_cost);
-            if (cost_change < m_config.convergence_threshold) {
+
+            const Scalar cost_change = cost - new_cost;
+            cost = new_cost;
+            if (cost_change < m_config.convergence_threshold * m_config.convergence_threshold) {
                 result.converged = true;
-                result.message = "Converged: cost change below threshold";
-                cost = new_cost;
+                result.message = "Converged: cost decrease negligible";
                 break;
             }
-            
-            cost = new_cost;
         }
         
         result.parameters = params;
@@ -201,30 +226,37 @@ private:
     /**
      * @brief Compute gradient via finite differences
      */
-    VectorX computeGradient(const Parameters& params, const std::vector<Measurement>& measurements) const {
-        const Scalar eps = 1e-6;
-        VectorX gradient(4);
-        
-        Scalar cost_0 = computeCost(params, measurements);
-        
-        for (int i = 0; i < 4; ++i) {
-            Parameters params_plus = params;
-            VectorX p = params_plus.toVector();
-            p[i] += eps;
-            params_plus.fromVector(p);
-            
-            Scalar cost_plus = computeCost(params_plus, measurements);
-            gradient[i] = (cost_plus - cost_0) / eps;
+    using MatrixX = Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>;
+
+    /// Gradient and Gauss-Newton Hessian of the cost: J^T W J (J = finite-difference Jacobian of the
+    /// predicted position w.r.t. the 4 parameters) plus the regularisation term.
+    void computeGradientAndHessian(const Parameters& params, const std::vector<Measurement>& measurements,
+                                   VectorX& gradient, MatrixX& hessian) const {
+        const Scalar eps = 1e-7;
+        gradient = VectorX::Zero(4);
+        hessian = MatrixX::Zero(4, 4);
+        const VectorX p0 = params.toVector();
+
+        for (const auto& m : measurements) {
+            const Vector3 base = predictPosition(params, m.strains, m.segment_length);
+            Eigen::Matrix<Scalar, 3, Eigen::Dynamic> J(3, 4);
+            for (int i = 0; i < 4; ++i) {
+                VectorX p = p0;
+                p[i] += eps;
+                Parameters plus;
+                plus.fromVector(p);
+                J.col(i) = (predictPosition(plus, m.strains, m.segment_length) - base) / eps;
+            }
+            const Vector3 error = base - m.measured_position;
+            gradient += Scalar(2) * m.weight * J.transpose() * error;
+            hessian += Scalar(2) * m.weight * J.transpose() * J;
         }
-        
-        return gradient;
+
+        const VectorX deviation = p0 - VectorX::Ones(4);
+        gradient += Scalar(2) * m_config.regularization * deviation;
+        hessian += Scalar(2) * m_config.regularization * MatrixX::Identity(4, 4);
     }
     
-    /**
-     * @brief Predict tip position given parameters and strains
-     * 
-     * Note: parameter scaling affects strain directly in simplified model
-     */
     Vector3 predictPosition(
         const Parameters& params,
         const std::vector<Vector6>& strains,

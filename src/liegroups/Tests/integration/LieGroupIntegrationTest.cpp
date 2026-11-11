@@ -17,12 +17,12 @@
 ******************************************************************************/
 
 #include <sofa/testing/BaseTest.h>
-#include <Cosserat/liegroups/Bundle.h>
-#include <Cosserat/liegroups/RealSpace.h>
-#include <Cosserat/liegroups/SO3.h>
-#include <Cosserat/liegroups/SE3.h>
-#include <Cosserat/liegroups/SE23.h>
-#include <Cosserat/liegroups/SGal3.h>
+#include <liegroups/Bundle.h>
+#include <liegroups/RealSpace.h>
+#include <liegroups/SO3.h>
+#include <liegroups/SE3.h>
+#include <liegroups/SE23.h>
+#include <liegroups/SGal3.h>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <vector>
@@ -72,20 +72,21 @@ protected:
      */
     SE3d makeMaterialFrame(const Vector3& position, const Vector3& tangent,
                           const Vector3& normal) {
-        // Create rotation that aligns z-axis with tangent
-        Vector3 z_axis(0, 0, 1);
-        Vector3 rot_axis = z_axis.cross(tangent);
-        double rot_angle = std::acos(z_axis.dot(tangent));
-        SO3d R(rot_angle, rot_axis.normalized());
+        // Rotation that aligns the z-axis with the tangent (shortest arc, also valid for tangent = +-z)
+        const Vector3 t = tangent.normalized();
+        SO3d R(Quaternion::FromTwoVectors(Vector3(0, 0, 1), t));
 
-        // Additional rotation around tangent to align normal
-        Vector3 current_normal = R.act(Vector3(1, 0, 0));
-        Vector3 target_normal = normal - normal.dot(tangent) * tangent;
+        // Additional rotation around the tangent to align the x-axis with the normal. The twist angle is
+        // signed: acos() of the dot product gave the unsigned angle and twisted half of the frames the
+        // wrong way.
+        const Vector3 current_normal = R.act(Vector3(1, 0, 0));
+        Vector3 target_normal = normal - normal.dot(t) * t;
         target_normal.normalize();
-        
-        double twist_angle = std::acos(current_normal.dot(target_normal));
+
+        const double twist_angle = std::atan2(t.dot(current_normal.cross(target_normal)),
+                                              current_normal.dot(target_normal));
         if (std::abs(twist_angle) > eps) {
-            SO3d twist(twist_angle, tangent);
+            SO3d twist(twist_angle, t);
             R = twist * R;
         }
 
@@ -164,7 +165,7 @@ TEST_F(LieGroupIntegrationTest, CosseratDynamics)
     Vector3 stress(0, 0, 0);   // No initial stress
     
     // Create full Cosserat state
-    CosseratRod rod(frame, strain, stress);
+    CosseratRod rod(frame, RealSpace3d(strain), RealSpace3d(stress));
     
     // Simulate simple time evolution
     const double dt = 0.01;
@@ -183,7 +184,7 @@ TEST_F(LieGroupIntegrationTest, CosseratDynamics)
         stress = 100.0 * (strain - Vector3(0, 0, 1));  // Hook's law
         
         // Store new state
-        rod = CosseratRod(frame, strain, stress);
+        rod = CosseratRod(frame, RealSpace3d(strain), RealSpace3d(stress));
         
         // Verify physical constraints
         EXPECT_NEAR(strain.norm(), 1.0, 0.1);  // Length preservation
@@ -298,9 +299,9 @@ TEST_F(LieGroupIntegrationTest, TimeVaryingTrajectory)
         
         // Position should follow helix equation
         Vector3 pos = g1.pose().translation();
+        // atan2 wraps to [-pi, pi] while the helix keeps turning: compare the angle modulo 2 pi
         double theta = std::atan2(pos.y(), pos.x());
-        double expected_z = pitch * theta;
-        EXPECT_NEAR(pos.z(), expected_z, 0.1);
+        EXPECT_NEAR(std::remainder(pos.z() / pitch - theta, 2 * pi), 0.0, 0.1);
     }
 }
 

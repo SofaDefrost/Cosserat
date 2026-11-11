@@ -97,10 +97,10 @@ TEST_F(AnalyticalJacobianTest, SO3_InverseJacobian) {
     auto J_analytical = R.inverseJacobian();
     
     // Numerical Jacobian: ∂(R^{-1})/∂R
-    // inverseJacobian uses the left convention: perturbation exp(delta) R, result measured as
-    // (exp(delta) R)^-1 (R^-1)^-1 = R^-1 exp(-delta) R = exp(-R^T delta), so the Jacobian is -R^T.
+    // inverseJacobian uses the right convention (like composeJacobians): perturbation R exp(delta), result
+    // measured on the right of R^-1: R (R exp(delta))^-1 = R exp(-delta) R^-1 = exp(-R delta), so J = -R.
     auto inverse_func = [&R](const Vector3& delta) -> Vector3 {
-        return ((SO3d::exp(delta) * R).inverse() * R).log();
+        return (R * (R * SO3d::exp(delta)).inverse()).log();
     };
     
     Vector3 zero = Vector3::Zero();
@@ -129,8 +129,9 @@ TEST_F(AnalyticalJacobianTest, SO3_ActionJacobians) {
     auto [J_rot_analytical, J_point_analytical] = R.actionJacobians(p);
     
     // Test Jacobian w.r.t. rotation
+    // right perturbation R exp(delta): R (p + delta x p), so J = -R [p]x
     auto action_wrt_R = [&R, &p](const Vector3& delta) -> Vector3 {
-        return (SO3d::exp(delta) * R).act(p);
+        return (R * SO3d::exp(delta)).act(p);
     };
     
     Vector3 zero = Vector3::Zero();
@@ -228,8 +229,9 @@ TEST_F(AnalyticalJacobianTest, SE3_InverseJacobian) {
     auto J_analytical = g.inverseJacobian();
     
     // Numerical Jacobian
+    // right perturbation g exp(delta), result measured on the right of g^-1: J = -Ad_g
     auto inverse_func = [&g](const Vector6& delta) -> Vector6 {
-        return ((SE3d::exp(delta) * g).inverse() * g).log();
+        return (g * (g * SE3d::exp(delta)).inverse()).log();
     };
     
     Vector6 zero = Vector6::Zero();
@@ -261,8 +263,9 @@ TEST_F(AnalyticalJacobianTest, SE3_ActionJacobians) {
     auto [J_group_analytical, J_point_analytical] = g.actionJacobians(p);
     
     // Test Jacobian w.r.t. group element
+    // right perturbation g exp(delta): R (p + phi x p + rho) + t, so J = [-R [p]x | R]
     auto action_wrt_g = [&g, &p](const Vector6& delta) -> Vector3 {
-        return (SE3d::exp(delta) * g).act(p);
+        return (g * SE3d::exp(delta)).act(p);
     };
     
     Vector6 zero = Vector6::Zero();

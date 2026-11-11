@@ -103,21 +103,6 @@ namespace sofa::component::cosserat::liegroups {
 		}
 
 		/**
-		 * @brief Computes cos(x)/x with numerical stability for small x.
-		 * Uses a Taylor expansion for x near zero to avoid division by zero.
-		 * @param x The input value.
-		 * @return The value of cos(x)/x.
-		 */
-		static Scalar cosc(const Scalar &x) noexcept {
-			if (isZero(x, SMALL_ANGLE_THRESHOLD)) {
-				// Taylor expansion: cos(x)/x ≈ 1 - x²/6 + x⁴/120 - ...
-				const Scalar x2 = x * x;
-				return Scalar(1) - x2 / Scalar(6) + x2 * x2 / Scalar(120);
-			}
-			return std::cos(x) / x;
-		}
-
-		/**
 		 * @brief Computes sin(x)/x with numerical stability for small x.
 		 * Uses a Taylor expansion for x near zero to avoid division by zero.
 		 * @param x The input value.
@@ -231,32 +216,33 @@ namespace sofa::component::cosserat::liegroups {
 		static Scalar safeSqrt(const Scalar &x) noexcept { return std::sqrt(std::max(Scalar(0), x)); }
 
 		/**
-		 * @brief Normalizes an angle to the range [-pi, pi].
+		 * @brief Normalizes an angle to the closed range [-pi, pi].
+		 * An angle already in the range is returned unchanged (so pi stays pi and -pi stays -pi); other angles
+		 * are wrapped by a multiple of 2 pi.
 		 * @param angle The angle to normalize in radians.
 		 * @return The normalized angle in radians.
 		 */
 		static Scalar normalizeAngle(const Scalar &angle) noexcept {
-			Scalar result = std::fmod(angle + PI, TWO_PI);
-			if (result < Scalar(0)) {
+			if (angle >= -PI && angle <= PI) {
+				return angle;
+			}
+			Scalar result = std::fmod(angle, TWO_PI);
+			if (result > PI) {
+				result -= TWO_PI;
+			} else if (result < -PI) {
 				result += TWO_PI;
 			}
-			return result - PI;
+			return result;
 		}
 
 		/**
-		 * @brief Computes the angle difference with proper wrapping.
-		 * Always returns the shortest angular distance between two angles.
+		 * @brief Computes the angle difference a - b with proper wrapping.
+		 * Always returns the shortest signed angular difference, in [-pi, pi].
 		 * @param a The first angle.
 		 * @param b The second angle.
 		 * @return The shortest angle difference in [-π, π].
 		 */
-		static Scalar angleDifference(Scalar a, Scalar b) {
-			Scalar diff = std::fmod(a - b + PI, TWO_PI);
-			if (diff < Scalar(0)) {
-				diff += TWO_PI;
-			}
-			return diff - PI;
-		}
+		static Scalar angleDifference(Scalar a, Scalar b) { return normalizeAngle(a - b); }
 
 		/**
 		 * @brief Performs spherical linear interpolation (SLERP) between two angles.

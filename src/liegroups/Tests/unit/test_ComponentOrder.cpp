@@ -271,14 +271,14 @@ TEST(ComponentOrderTest, ParallelTransportFollowsItsDefinition) {
 // ------------------------------------------------------------------ action Jacobians
 
 namespace {
-// y = (expm(hat(delta)) * G * [p;1]).head<3>(): left perturbation, exp from the 4x4 matrix series.
-V3 leftPerturbedAction(const M4 &G, const V6 &delta, const V3 &p) {
+// y = (G * expm(hat(delta)) * [p;1]).head<3>(): right perturbation, exp from the 4x4 matrix series.
+V3 rightPerturbedAction(const M4 &G, const V6 &delta, const V3 &p) {
     const Eigen::Vector4d ph(p.x(), p.y(), p.z(), 1.0);
-    return (expm(hat(delta)) * G * ph).head<3>();
+    return (G * expm(hat(delta)) * ph).head<3>();
 }
 } // namespace
 
-TEST(ComponentOrderTest, ActionJacobianGroupMatchesLeftPerturbationFiniteDifferences) {
+TEST(ComponentOrderTest, ActionJacobianGroupMatchesRightPerturbationFiniteDifferences) {
     for (int i = 0; i < 20; i++) {
         const V6 xi0 = rnd6(0.9); // generic rotation AND non-zero translation
         const M4 G = expm(hat(xi0));
@@ -289,13 +289,13 @@ TEST(ComponentOrderTest, ActionJacobianGroupMatchesLeftPerturbationFiniteDiffere
         for (int k = 0; k < 6; k++) {
             V6 d = V6::Zero();
             d[k] = h;
-            fd.col(k) = (leftPerturbedAction(G, d, p) - leftPerturbedAction(G, -d, p)) / (2 * h);
+            fd.col(k) = (rightPerturbedAction(G, d, p) - rightPerturbedAction(G, -d, p)) / (2 * h);
         }
         const auto J = g.actionJacobianGroup(p);
         EXPECT_LT((J - fd).norm(), 1e-8);
-        // layout [phi ; rho]: the rho columns (3..5) are the identity, the phi columns are -[g.p]x
-        EXPECT_LT((J.block<3, 3>(0, 3) - Eigen::Matrix3d::Identity()).norm(), 1e-15);
-        EXPECT_LT((J.block<3, 3>(0, 0) + SO3d::computeHat(g.act(p))).norm(), 1e-14);
+        // layout [phi ; rho], right perturbation: the rho columns (3..5) are R, the phi columns are -R [p]x
+        EXPECT_LT((J.block<3, 3>(0, 3) - g.rotation().matrix()).norm(), 1e-15);
+        EXPECT_LT((J.block<3, 3>(0, 0) + g.rotation().matrix() * SO3d::computeHat(p)).norm(), 1e-14);
         // the pair version returns the same group block, plus the point block R
         const auto [Jg, Jp] = g.actionJacobians(p);
         EXPECT_LT((Jg - J).norm(), 1e-15);
@@ -316,11 +316,11 @@ TEST(ComponentOrderTest, ActionJacobianPointMatchesFiniteDifferences) {
     EXPECT_LT((g.actionJacobianPoint(p) - fd).norm(), 1e-8);
 }
 
-TEST(ComponentOrderTest, ActionJacobianIsNotTheRightPerturbationOne) {
-    // Sanity: the left-perturbation Jacobian differs from the right one [-R [p]x | R] when t != 0 and R != I.
+TEST(ComponentOrderTest, ActionJacobianIsNotTheLeftPerturbationOne) {
+    // Sanity: the right-perturbation Jacobian differs from the left one [-[g.p]x | I] when t != 0 and R != I.
     const SE3d g(expm(hat(rnd6(0.9))));
     const V3 p(0.4, -0.7, 1.1);
-    Eigen::Matrix<double, 3, 6> right;
-    right << -g.rotation().matrix() * SO3d::computeHat(p), g.rotation().matrix();
-    EXPECT_GT((g.actionJacobianGroup(p) - right).norm(), 1e-2);
+    Eigen::Matrix<double, 3, 6> left;
+    left << -SO3d::computeHat(g.act(p)), Eigen::Matrix3d::Identity();
+    EXPECT_GT((g.actionJacobianGroup(p) - left).norm(), 1e-2);
 }
