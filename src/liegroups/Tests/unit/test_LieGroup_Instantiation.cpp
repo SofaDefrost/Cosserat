@@ -36,7 +36,7 @@ TEST(Instantiation, SE3BaseDistanceSquaredDistanceAndNearIdentity) {
 	std::mt19937_64 rng(22);
 	const SE3d g = SE3d::exp(randomSE3Tangent(rng, 0.9)), h = SE3d::exp(randomSE3Tangent(rng, 0.4));
 	// The generic distance is the norm of log(g^-1 h); SE3::distance (weighted sum) hides it.
-	using Base = LieGroup<SE3d, double, 4, 6, 3>;
+	using Base = LieGroup<GroupProperties<SE3d, double, 4, 6, 3>>;
 	EXPECT_NEAR(g.Base::distance(h), (g.inverse() * h).log().norm(), 1e-12);
 	EXPECT_NEAR(g.Base::squaredDistance(h), (g.inverse() * h).log().squaredNorm(), 1e-12);
 	// A group element within rounding of the identity (translation 1e-17, not exactly 0) is near identity.

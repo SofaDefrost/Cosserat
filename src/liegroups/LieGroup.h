@@ -65,6 +65,29 @@ namespace sofa::component::cosserat::liegroups {
 	};
 
 	/**
+	 * @brief Compile-time description of a Lie group: the derived type, the scalar type and the three dimensions.
+	 *
+	 * Pure traits (no data member), so it adds nothing to sizeof. It is the single template argument of the
+	 * CRTP base: `class SO3 : public LieGroup<GroupProperties<SO3<Scalar_>, Scalar_, 3, 3, 3>>`.
+	 *
+	 * @tparam Derived_ The derived class implementing the specific Lie group
+	 * @tparam Scalar_ The scalar type used for computations (floating-point or autodiff type)
+	 * @tparam Dim_ The dimension of the group representation
+	 * @tparam AlgebraDim_ The dimension of the Lie algebra (default: same as Dim_)
+	 * @tparam ActionDim_ The dimension of vectors the group acts on (default: same as Dim_)
+	 */
+	template<typename Derived_, FloatingPoint Scalar_, int Dim_, int AlgebraDim_ = Dim_, int ActionDim_ = Dim_>
+		requires(Dim_ > 0 && AlgebraDim_ > 0 && ActionDim_ > 0)
+	class GroupProperties {
+	public:
+		static constexpr int Dim = Dim_;
+		static constexpr int AlgebraDim = AlgebraDim_;
+		static constexpr int ActionDim = ActionDim_;
+		using Derived = Derived_;
+		using Scalar = Scalar_;
+	};
+
+	/**
 	 * @brief Base class template for all Lie group implementations using CRTP
 	 *
 	 * This class defines the interface that all Lie group implementations must
@@ -89,26 +112,21 @@ namespace sofa::component::cosserat::liegroups {
 	 *  - groups must not redeclare a public wrapper (exp, log, inverse...): it would hide the base one for nothing.
 	 *    Specialised distance/interpolate (SO3, SE3, SE2, SGal3) are the legitimate exceptions.
 	 *
-	 * @tparam Derived The derived class implementing the specific Lie group
-	 * @tparam Scalar_ The scalar type used for computations (must be a
-	 * floating-point type)
-	 * @tparam Dim_ The dimension of the group representation
-	 * @tparam AlgebraDim_ The dimension of the Lie algebra (default: same as Dim_)
-	 * @tparam ActionDim_ The dimension of vectors the group acts on (default: same
-	 * as Dim_)
+	 * @tparam GroupProperties_ A GroupProperties<Derived, Scalar, Dim, AlgebraDim, ActionDim> instance
 	 */
-	template<typename Derived, FloatingPoint Scalar_, int Dim_, int AlgebraDim_ = Dim_, int ActionDim_ = Dim_>
-		requires(Dim_ > 0 && AlgebraDim_ > 0 && ActionDim_ > 0)
+	template<typename GroupProperties_>
 	class LieGroup {
 	public:
+		using GroupProperties = GroupProperties_;
+
 		// Type aliases for scalar and types
-		using Scalar = Scalar_;
+		using Scalar = typename GroupProperties::Scalar;
 		using Types = sofa::component::cosserat::liegroups::Types<Scalar>;
 
 		// Dimensions as static constants
-		static constexpr int Dim = Dim_;
-		static constexpr int AlgebraDim = AlgebraDim_;
-		static constexpr int ActionDim = ActionDim_;
+		static constexpr int Dim = GroupProperties::Dim;
+		static constexpr int AlgebraDim = GroupProperties::AlgebraDim;
+		static constexpr int ActionDim = GroupProperties::ActionDim;
 
 		// Define commonly used types
 		using Vector = typename Types::template Vector<Dim>;
@@ -121,12 +139,15 @@ namespace sofa::component::cosserat::liegroups {
 		using ActionVector = typename Types::template Vector<ActionDim>;
 		using JacobianMatrix = typename Types::template Matrix<ActionDim, AlgebraDim>;
 
-		using DerivedType = Derived;
+		using DerivedType = typename GroupProperties::Derived;
 
 		// Type aliases for common patterns
 		using value_type = Scalar;
 		using tangent_vector_type = TangentVector;
 		using adjoint_matrix_type = AdjointMatrix;
+
+	private:
+		using Derived = DerivedType;
 
 	protected:
 		/**
@@ -614,8 +635,8 @@ namespace sofa::component::cosserat::liegroups {
 	template<typename T>
 	struct is_lie_group : std::false_type {};
 
-	template<typename Derived, FloatingPoint Scalar, int Dim, int AlgDim, int ActDim>
-	struct is_lie_group<LieGroup<Derived, Scalar, Dim, AlgDim, ActDim>> : std::true_type {};
+	template<typename GroupProperties_>
+	struct is_lie_group<LieGroup<GroupProperties_>> : std::true_type {};
 
 	template<typename T>
 	inline constexpr bool is_lie_group_v = is_lie_group<T>::value;

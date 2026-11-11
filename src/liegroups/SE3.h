@@ -47,9 +47,9 @@ namespace sofa::component::cosserat::liegroups {
 	} // namespace detail
 
 	template<typename Scalar_>
-	class SE3 : public LieGroup<SE3<Scalar_>, Scalar_, 4, 6, 3> {
+	class SE3 : public LieGroup<GroupProperties<SE3<Scalar_>, Scalar_, 4, 6, 3>> {
 	public:
-		using Base = LieGroup<SE3<Scalar_>, Scalar_, 4, 6, 3>;
+		using Base = LieGroup<GroupProperties<SE3<Scalar_>, Scalar_, 4, 6, 3>>;
 		using Scalar = typename Base::Scalar;
 		using Vector4 = typename Base::Vector;
 

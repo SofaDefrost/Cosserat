@@ -51,9 +51,9 @@ namespace sofa::component::cosserat::liegroups {
 	 * @tparam Dim_ The dimension of the ambient space (fixed at 3 for SE(2))
 	 */
 	template<typename Scalar_>
-	class SE2 : public LieGroup<SE2<Scalar_>, Scalar_, 3, 3, 2> {
+	class SE2 : public LieGroup<GroupProperties<SE2<Scalar_>, Scalar_, 3, 3, 2>> {
 	public:
-		using Base = LieGroup<SE2<Scalar_>, Scalar_, 3, 3, 2>;
+		using Base = LieGroup<GroupProperties<SE2<Scalar_>, Scalar_, 3, 3, 2>>;
 		using Scalar = typename Base::Scalar;
 		using Vector = typename Base::Vector;
 		using Matrix = typename Base::Matrix;
