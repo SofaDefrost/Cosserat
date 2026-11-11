@@ -348,6 +348,9 @@ namespace sofa::component::cosserat::liegroups {
 			return SE3::exp(xi1 + t * (xi2 - xi1));
 		}
 
+		/// w_rot * (rotation angle of g^-1 h) + w_trans * |t_g - t_h|. A sum of two distances, hence a distance;
+		/// left-invariant, d(k g, k h) = d(g, h), but not right-invariant and not the Riemannian metric
+		/// sqrt(w_rot angle^2 + w_trans |dt|^2).
 		Scalar distance(const SE3 &other, Scalar w_rot = Scalar(1), Scalar w_trans = Scalar(1)) const {
 			const Scalar rot_dist = m_rotation.distance(other.m_rotation);
 			const Scalar trans_dist = (m_translation - other.m_translation).norm();
