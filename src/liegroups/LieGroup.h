@@ -213,6 +213,8 @@ namespace sofa::component::cosserat::liegroups {
 		 * @return The corresponding element in the Lie group
 		 */
 		[[nodiscard]] static constexpr Derived exp(const TangentVector &algebra_element) noexcept {
+			static_assert(requires { Derived::computeExp(algebra_element); },
+						  "Derived class must implement computeExp method");
 			return Derived::computeExp(algebra_element);
 		}
 
@@ -262,7 +264,10 @@ namespace sofa::component::cosserat::liegroups {
 		 * @brief Get the identity element of the group
 		 * @return The identity element
 		 */
-		[[nodiscard]] static constexpr Derived Identity() noexcept { return Derived::computeIdentity(); }
+		[[nodiscard]] static constexpr Derived Identity() noexcept {
+			static_assert(requires { Derived::computeIdentity(); }, "Derived class must implement computeIdentity method");
+			return Derived::computeIdentity();
+		}
 
 		/**
 		 * @brief Right-plus operator: X ⊕ τ = X ◦ Exp(τ)
@@ -557,6 +562,7 @@ namespace sofa::component::cosserat::liegroups {
 		 */
 		template<typename Generator>
 		[[nodiscard]] static Derived Random(Generator &gen) {
+			static_assert(requires { Derived::computeRandom(gen); }, "Derived class must implement computeRandom method");
 			return Derived::computeRandom(gen);
 		}
 
@@ -568,7 +574,10 @@ namespace sofa::component::cosserat::liegroups {
 		/**
 		 * @brief Get type information string for debugging
 		 */
-		[[nodiscard]] static constexpr std::string_view typeName() noexcept { return Derived::getTypeName(); }
+		[[nodiscard]] static constexpr std::string_view typeName() noexcept {
+			static_assert(requires { Derived::getTypeName(); }, "Derived class must implement getTypeName method");
+			return Derived::getTypeName();
+		}
 
 		/**
 		 * @brief Validate that the current element is a valid group element

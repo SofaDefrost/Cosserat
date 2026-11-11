@@ -182,23 +182,23 @@ namespace sofa::component::cosserat::liegroups {
 
 		if (order >= 2) {
 			// Second-order term: 1/2 * [v, w]
-			const AlgebraMatrix vMat = Derived::computeHat(v);
-			const AlgebraMatrix wMat = Derived::computeHat(w);
+			const AlgebraMatrix vMat = Derived::hat(v);
+			const AlgebraMatrix wMat = Derived::hat(w);
 			const AlgebraMatrix comm_vw = vMat * wMat - wMat * vMat;
-			result += Derived::computeVee(comm_vw) * Scalar(0.5);
+			result += Derived::vee(comm_vw) * Scalar(0.5);
 
 			if (order >= 3) {
 				// Third-order terms: 1/12 * [v, [v, w]] + 1/12 * [w, [w, v]]
 				const AlgebraMatrix comm_v_vw = vMat * comm_vw - comm_vw * vMat;
 				const AlgebraMatrix comm_w_wv = wMat * (-comm_vw) - (-comm_vw) * wMat;
 
-				result += Derived::computeVee(comm_v_vw) * Scalar(1.0 / 12.0);
-				result += Derived::computeVee(comm_w_wv) * Scalar(1.0 / 12.0);
+				result += Derived::vee(comm_v_vw) * Scalar(1.0 / 12.0);
+				result += Derived::vee(comm_w_wv) * Scalar(1.0 / 12.0);
 
 				if (order >= 4) {
 					// Fourth-order term: -1/24 * [w, [v, [v, w]]]
 					const AlgebraMatrix comm4 = wMat * comm_v_vw - comm_v_vw * wMat;
-					result -= Derived::computeVee(comm4) * Scalar(1.0 / 24.0);
+					result -= Derived::vee(comm4) * Scalar(1.0 / 24.0);
 
 					if (order >= 5) {
 						// Fifth-order terms (Dynkin / Wikipedia):
@@ -219,9 +219,9 @@ namespace sofa::component::cosserat::liegroups {
 						const AlgebraMatrix t720 = br(wMat, yyyx) + br(vMat, xxxy);
 						const AlgebraMatrix t360 = br(vMat, yyyx) + br(wMat, xxxy);
 						const AlgebraMatrix t120 = br(wMat, br(vMat, yxy)) + br(vMat, br(wMat, xyx));
-						result -= Derived::computeVee(t720) * Scalar(1.0 / 720.0);
-						result += Derived::computeVee(t360) * Scalar(1.0 / 360.0);
-						result += Derived::computeVee(t120) * Scalar(1.0 / 120.0);
+						result -= Derived::vee(t720) * Scalar(1.0 / 720.0);
+						result += Derived::vee(t360) * Scalar(1.0 / 360.0);
+						result += Derived::vee(t120) * Scalar(1.0 / 120.0);
 					}
 				}
 			}
@@ -426,7 +426,7 @@ namespace sofa::component::cosserat::liegroups {
 			return Derived::computeAd(v);
 		} else {
 			// Default implementation for matrix Lie groups
-			const AlgMat X = Derived::computeHat(v);
+			const AlgMat X = Derived::hat(v);
 
 			// For matrix Lie algebras, ad_X(Y) = [X, Y] = XY - YX
 			Matrix result = Matrix::Zero();
@@ -435,13 +435,13 @@ namespace sofa::component::cosserat::liegroups {
 				// Create basis vector and convert to algebra matrix
 				TangentVector e_j = TangentVector::Zero();
 				e_j[j] = Scalar(1);
-				const AlgMat E_j = Derived::computeHat(e_j);
+				const AlgMat E_j = Derived::hat(e_j);
 
 				// Compute [X, E_j]
 				const AlgMat commutator = X * E_j - E_j * X;
 
 				// Extract vector form and set as column
-				result.col(j) = Derived::computeVee(commutator);
+				result.col(j) = Derived::vee(commutator);
 			}
 
 			return result;
@@ -461,7 +461,7 @@ namespace sofa::component::cosserat::liegroups {
 	LieGroup<GroupProperties_>::matrixLog() const {
 		// This provides the matrix logarithm representation
 		const TangentVector v = derived().log();
-		return Derived::computeHat(v);
+		return Derived::hat(v);
 	}
 
 } // End namespace sofa::component::cosserat::liegroups
