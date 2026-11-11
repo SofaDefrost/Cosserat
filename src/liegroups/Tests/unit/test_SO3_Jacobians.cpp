@@ -61,7 +61,7 @@ TEST(SO3Jacobians, DexpIsRightJacobianAndDlogItsInverse) {
     std::mt19937_64 rng(3);
     for (double angle : kAngles) {
         const Vec3 w = randomRotationVector(rng, angle);
-        // same convention as LieGroupBase::dexp / dlog and SE3::dexp / dlog: the right Jacobian
+        // same convention as LieGroup::dexp / dlog and SE3::dexp / dlog: the right Jacobian
         EXPECT_LT((Rot::dexp(w) - Rot::computeRightJacobian(w)).norm(), 1e-15) << angle;
         EXPECT_LT((Rot::exp(w).dlog() - Rot::computeRightJacobianInverse(w)).norm(), 1e-9) << angle;
         EXPECT_LT((Rot::dexp(w) - Rot::dexp_alternative(w)).norm(), 1e-12) << angle;

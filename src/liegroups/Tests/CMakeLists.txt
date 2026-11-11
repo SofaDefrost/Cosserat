@@ -10,9 +10,9 @@ sofa_find_package(Sofa.SimpleApi REQUIRED)
 set(LIEGROUPS_TEST_FILES
         integration/SO2Test.cpp
         integration/UtilsTest.cpp
-        integration/LieGroupBaseTest.cpp
+        integration/LieGroupTest.cpp
         integration/TypesTest.cpp
-        integration/RealSpaceTest.cpp
+        integration/RnTest.cpp
         integration/SE2Test.cpp
         integration/SE23Test.cpp
         integration/SGal3Test.cpp
@@ -24,7 +24,7 @@ set(LIEGROUPS_TEST_FILES
         unit/test_jacobian_verification.cpp
         unit/test_SO3_Jacobians.cpp
         unit/test_LieGroup_Instantiation.cpp
-        unit/test_LieGroupBase_Generic.cpp
+        unit/test_LieGroup_Generic.cpp
         unit/test_SE3_Numerics.cpp
         unit/test_SE2_Audit.cpp
         unit/test_SE23_Audit.cpp

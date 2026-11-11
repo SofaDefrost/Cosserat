@@ -28,12 +28,12 @@ namespace sofa::component::cosserat::liegroups {
 	 * Twists follow the library convention ξ = [φ (angular), ρ (linear)].
 	 * Body twists are expressed in the frame of the body they belong to.
 	 *
-	 * @tparam _Scalar Floating-point scalar type.
+	 * @tparam Scalar_ Floating-point scalar type.
 	 */
-	template<typename _Scalar>
+	template<typename Scalar_>
 	class RevoluteJoint {
 	public:
-		using Scalar = _Scalar;
+		using Scalar = Scalar_;
 		using SE3Type = SE3<Scalar>;
 		using SO3Type = SO3<Scalar>;
 		using Vector3 = typename SE3Type::Vector3;
@@ -129,10 +129,10 @@ namespace sofa::component::cosserat::liegroups {
 	 * The parent pose (SE3, 6 DoF) and the angle q (1 DoF) are the state; the child
 	 * pose is derived by group composition, so the two bodies stay exactly articulated.
 	 */
-	template<typename _Scalar>
+	template<typename Scalar_>
 	class ArticulatedRigidPair {
 	public:
-		using Scalar = _Scalar;
+		using Scalar = Scalar_;
 		using SE3Type = SE3<Scalar>;
 		using JointType = RevoluteJoint<Scalar>;
 		using TangentVector = typename SE3Type::TangentVector;

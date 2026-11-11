@@ -72,12 +72,12 @@ namespace sofa::component::cosserat::liegroups {
  *   }
  * @endcode
  *
- * @tparam _Scalar Scalar type (float, double, …)
+ * @tparam Scalar_ Scalar type (float, double, …)
  */
-template<typename _Scalar>
+template<typename Scalar_>
 class CosseratUncertaintyPropagator {
 public:
-    using Scalar    = _Scalar;
+    using Scalar    = Scalar_;
     using SE3Type   = SE3<Scalar>;
     using GaussianSE3 = GaussianOnManifold<SE3Type>;
 

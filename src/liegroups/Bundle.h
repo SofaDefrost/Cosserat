@@ -26,14 +26,14 @@
 #include <random>
 #include <tuple>
 #include <type_traits>
-#include "LieGroupBase.h"
-#include "LieGroupBase.inl"
-#include "RealSpace.h"
+#include "LieGroup.h"
+#include "LieGroup.inl"
+#include "Rn.h"
 #include "SE2.h"
 #include "SE3.h"
 #include "SO2.h"
 #include "Types.h"
-// RealSpace.h is already included above
+// Rn.h is already included above
 
 namespace sofa::component::cosserat::liegroups {
 
@@ -65,7 +65,7 @@ namespace sofa::component::cosserat::liegroups {
 		template<typename FirstScalar, typename... Groups>
 		struct AllAreLieGroups {
 			static constexpr bool value =
-					(std::is_base_of_v<LieGroupBase<Groups, typename Groups::Scalar, Groups::Dim, Groups::AlgebraDim,
+					(std::is_base_of_v<LieGroup<Groups, typename Groups::Scalar, Groups::Dim, Groups::AlgebraDim,
 													Groups::ActionDim>,
 									   Groups> &&
 					 ...) &&
@@ -94,14 +94,14 @@ namespace sofa::component::cosserat::liegroups {
 	 * Usage Examples:
 	 * ```cpp
 	 * // Rigid body pose with velocity
-	 * using RigidBodyState = Bundle<SE3<double>, RealSpace<double, 6>>;
+	 * using RigidBodyState = Bundle<SE3<double>, Rn<double, 6>>;
 	 *
 	 * // 2D robot with multiple joints
 	 * using Robot2D = Bundle<SE2<double>, SO2<double>, SO2<double>>;
 	 *
 	 * // Create and manipulate
 	 * auto state1 = RigidBodyState(SE3<double>::identity(),
-	 *                             RealSpace<double, 6>::zero());
+	 *                             Rn<double, 6>::zero());
 	 * auto state2 = RigidBodyState(pose, velocity);
 	 * auto combined = state1 * state2;
 	 * ```
@@ -110,7 +110,7 @@ namespace sofa::component::cosserat::liegroups {
 	 */
 	template<typename... Groups>
 	class Bundle
-		: public LieGroupBase<Bundle<Groups...>, typename std::tuple_element_t<0, std::tuple<Groups...>>::Scalar,
+		: public LieGroup<Bundle<Groups...>, typename std::tuple_element_t<0, std::tuple<Groups...>>::Scalar,
 							  detail::Sums<Groups...>::dim, detail::Sums<Groups...>::algebra,
 							  detail::Sums<Groups...>::action> {
 		static_assert(sizeof...(Groups) > 0, "Bundle must contain at least one group");
@@ -120,7 +120,7 @@ namespace sofa::component::cosserat::liegroups {
 					  "All template parameters must be Lie groups with the same scalar type");
 
 	public:
-		using Base = LieGroupBase<Bundle<Groups...>, FirstScalar, detail::Sums<Groups...>::dim,
+		using Base = LieGroup<Bundle<Groups...>, FirstScalar, detail::Sums<Groups...>::dim,
 								  detail::Sums<Groups...>::algebra, detail::Sums<Groups...>::action>;
 		using Scalar = typename Base::Scalar;
 		using Vector = typename Base::Vector;
@@ -158,7 +158,7 @@ namespace sofa::component::cosserat::liegroups {
 		Bundle &operator=(const Bundle &other) = default;
 		Bundle &operator=(Bundle &&other) noexcept = default;
 
-		// ---- group operations (also the CRTP hooks of LieGroupBase) ----
+		// ---- group operations (also the CRTP hooks of LieGroup) ----
 
 		Bundle operator*(const Bundle &other) const { return computeCompose(other); }
 		Bundle computeCompose(const Bundle &other) const { return multiply_impl(other, std::index_sequence_for<Groups...>()); }
@@ -369,13 +369,13 @@ namespace sofa::component::cosserat::liegroups {
 	};
 
 	template<typename Scalar>
-	using SE3_Velocity = Bundle<SE3<Scalar>, RealSpace<Scalar, 6>>;
+	using SE3_Velocity = Bundle<SE3<Scalar>, Rn<Scalar, 6>>;
 
 	template<typename Scalar>
-	using SE2_Velocity = Bundle<SE2<Scalar>, RealSpace<Scalar, 3>>;
+	using SE2_Velocity = Bundle<SE2<Scalar>, Rn<Scalar, 3>>;
 
 	template<typename Scalar, int N>
-	using SE3_Joints = Bundle<SE3<Scalar>, RealSpace<Scalar, N>>;
+	using SE3_Joints = Bundle<SE3<Scalar>, Rn<Scalar, N>>;
 
 	// Convenience aliases
 	template<typename... Groups>

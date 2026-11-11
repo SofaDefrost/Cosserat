@@ -1,8 +1,8 @@
-// Audit of SE2 (and the SO2 / RealSpace Jacobian hooks) against long double references.
+// Audit of SE2 (and the SO2 / Rn Jacobian hooks) against long double references.
 // SE2 tangent layout: xi = [rho_x ; rho_y ; theta].
 
 #include <gtest/gtest.h>
-#include <liegroups/RealSpace.h>
+#include <liegroups/Rn.h>
 #include <liegroups/SE2.h>
 #include <liegroups/SO2.h>
 
@@ -85,7 +85,7 @@ TEST(SE2Audit, MatrixAndTangentConstructorsCompileAndAgree) {
 }
 
 TEST(SE2Audit, JacobiansMatchSeries) {
-	// LieGroupBase::leftJacobian & co. must work for SE2 (no closed form needed: the series
+	// LieGroup::leftJacobian & co. must work for SE2 (no closed form needed: the series
 	// sum ad^k/(k+1)! is the definition).
 	std::mt19937_64 rng(45);
 	for (double th : kThetas) {
@@ -101,13 +101,13 @@ TEST(SE2Audit, JacobiansMatchSeries) {
 	}
 }
 
-TEST(SE2Audit, SO2AndRealSpaceJacobiansExist) {
+TEST(SE2Audit, SO2AndRnJacobiansExist) {
 	// Abelian groups: every Jacobian is the identity.
 	SO2d::TangentVector t;
 	t << 0.7;
 	EXPECT_NEAR(SO2d::leftJacobian(t)(0, 0), 1.0, 1e-15);
 	EXPECT_NEAR(SO2d::rightJacobianInverse(t)(0, 0), 1.0, 1e-15);
-	using R3 = RealSpace<double, 3>;
+	using R3 = Rn<double, 3>;
 	const R3::TangentVector v(0.1, -2.0, 3.0);
 	EXPECT_LT((R3::leftJacobian(v) - Eigen::Matrix3d::Identity()).norm(), 1e-15);
 	EXPECT_LT((R3::rightJacobianInverse(v) - Eigen::Matrix3d::Identity()).norm(), 1e-15);

@@ -18,7 +18,7 @@
 
 #include <sofa/testing/BaseTest.h>
 #include <liegroups/Bundle.h>
-#include <liegroups/RealSpace.h>
+#include <liegroups/Rn.h>
 #include <liegroups/SO3.h>
 #include <liegroups/SE3.h>
 #include <liegroups/SE23.h>
@@ -50,12 +50,12 @@ protected:
     using SE3d = SE3<double>;
     using SE23d = SE23<double>;
     using SGal3d = SGal3<double>;
-    using RealSpace3d = RealSpace<double, 3>;
+    using Rn3d = Rn<double, 3>;
 
     // Specialized bundle types for Cosserat mechanics
-    using CosseratSection = Bundle<SE3d, RealSpace3d>;  // Position, strain
-    using CosseratNode = Bundle<SE23d, RealSpace3d>;    // Configuration with velocity
-    using CosseratRod = Bundle<SE3d, RealSpace3d, RealSpace3d>; // Position, strain, stress
+    using CosseratSection = Bundle<SE3d, Rn3d>;  // Position, strain
+    using CosseratNode = Bundle<SE23d, Rn3d>;    // Configuration with velocity
+    using CosseratRod = Bundle<SE3d, Rn3d, Rn3d>; // Position, strain, stress
 
     const double pi = M_PI;
     const double eps = 1e-10;
@@ -165,7 +165,7 @@ TEST_F(LieGroupIntegrationTest, CosseratDynamics)
     Vector3 stress(0, 0, 0);   // No initial stress
     
     // Create full Cosserat state
-    CosseratRod rod(frame, RealSpace3d(strain), RealSpace3d(stress));
+    CosseratRod rod(frame, Rn3d(strain), Rn3d(stress));
     
     // Simulate simple time evolution
     const double dt = 0.01;
@@ -184,7 +184,7 @@ TEST_F(LieGroupIntegrationTest, CosseratDynamics)
         stress = 100.0 * (strain - Vector3(0, 0, 1));  // Hook's law
         
         // Store new state
-        rod = CosseratRod(frame, RealSpace3d(strain), RealSpace3d(stress));
+        rod = CosseratRod(frame, Rn3d(strain), Rn3d(stress));
         
         // Verify physical constraints
         EXPECT_NEAR(strain.norm(), 1.0, 0.1);  // Length preservation

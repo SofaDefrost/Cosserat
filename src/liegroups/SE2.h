@@ -23,8 +23,8 @@
 
 #include <cmath>
 #include <random>
-#include "LieGroupBase.h"
-#include "LieGroupBase.inl"
+#include "LieGroup.h"
+#include "LieGroup.inl"
 #include "SO3.h" // detail::so3JacobianCoefficients (shared sin/cos series)
 #include "SO2.h"
 #include "Types.h"
@@ -47,13 +47,13 @@ namespace sofa::component::cosserat::liegroups {
 	 * SE(2) = {(R,t) | R ∈ SO(2), t ∈ ℝ²}
 	 * Matrix form: [R t; 0 1] where R is 2x2 rotation matrix, t is 2x1 translation
 	 *
-	 * @tparam _Scalar The scalar type (must be a floating-point type)
-	 * @tparam _Dim The dimension of the ambient space (fixed at 3 for SE(2))
+	 * @tparam Scalar_ The scalar type (must be a floating-point type)
+	 * @tparam Dim_ The dimension of the ambient space (fixed at 3 for SE(2))
 	 */
-	template<typename _Scalar>
-	class SE2 : public LieGroupBase<SE2<_Scalar>, _Scalar, 3, 3, 2> {
+	template<typename Scalar_>
+	class SE2 : public LieGroup<SE2<Scalar_>, Scalar_, 3, 3, 2> {
 	public:
-		using Base = LieGroupBase<SE2<_Scalar>, _Scalar, 3, 3, 2>;
+		using Base = LieGroup<SE2<Scalar_>, Scalar_, 3, 3, 2>;
 		using Scalar = typename Base::Scalar;
 		using Vector = typename Base::Vector;
 		using Matrix = typename Base::Matrix;
@@ -172,7 +172,7 @@ namespace sofa::component::cosserat::liegroups {
 			return *this;
 		}
 
-		// interpolate(other, t): LieGroupBase::interpolate, the geodesic g exp(t log(g^-1 h)). (SE2 used to
+		// interpolate(other, t): LieGroup::interpolate, the geodesic g exp(t log(g^-1 h)). (SE2 used to
 		// override it with SLERP(rotation) + LERP(translation), which is not the geodesic nor an
 		// interpolation of the group.)
 

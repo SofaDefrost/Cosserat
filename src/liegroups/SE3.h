@@ -5,7 +5,7 @@
 
 #include <Eigen/Geometry>
 #include <vector>
-#include "LieGroupBase.h"
+#include "LieGroup.h"
 #include "SO3.h"
 #include "Types.h"
 
@@ -22,7 +22,7 @@ namespace sofa::component::cosserat::liegroups {
 	 * The Lie algebra se(3) consists of 6D vectors (vx, vy, vz, ωx, ωy, ωz),
 	 * representing translational and angular velocities.
 	 *
-	 * @tparam _Scalar The scalar type (must be a floating-point type)
+	 * @tparam Scalar_ The scalar type (must be a floating-point type)
 	 */
 	namespace detail {
 	/// Coefficients of the Q block of the SE(3) left Jacobian, see SE3::jacobianQ.
@@ -46,10 +46,10 @@ namespace sofa::component::cosserat::liegroups {
 	}
 	} // namespace detail
 
-	template<typename _Scalar>
-	class SE3 : public LieGroupBase<SE3<_Scalar>, _Scalar, 4, 6, 3> {
+	template<typename Scalar_>
+	class SE3 : public LieGroup<SE3<Scalar_>, Scalar_, 4, 6, 3> {
 	public:
-		using Base = LieGroupBase<SE3<_Scalar>, _Scalar, 4, 6, 3>;
+		using Base = LieGroup<SE3<Scalar_>, Scalar_, 4, 6, 3>;
 		using Scalar = typename Base::Scalar;
 		using Vector4 = typename Base::Vector;
 
@@ -212,7 +212,7 @@ namespace sofa::component::cosserat::liegroups {
 
 		// ========== CRTP Interface Implementations ==========
 		/**
-		 * @brief hat operator of se(3): [phi ; rho] -> [[phi]x rho ; 0 0] (CRTP hook of LieGroupBase::hat,
+		 * @brief hat operator of se(3): [phi ; rho] -> [[phi]x rho ; 0 0] (CRTP hook of LieGroup::hat,
 		 * used by the generic BCH(), matrixLog() and ad()).
 		 */
 		static Matrix4 computeHat(const TangentVector &xi) {
@@ -255,7 +255,7 @@ namespace sofa::component::cosserat::liegroups {
 		 *
 		 * Independent of any group element (no rotation block); this is the derivative at t = 0 of
 		 * Ad(exp(t v)). Static, but can still be called on an instance for backward compatibility.
-		 * Also the CRTP hook LieGroupBase::ad() expects.
+		 * Also the CRTP hook LieGroup::ad() expects.
 		 */
 		static AdjointMatrix computeAd(const TangentVector &v) {
 			const Matrix3 phi_x = SO3Type::computeHat(Vector3(v.template head<3>()));
@@ -295,7 +295,7 @@ namespace sofa::component::cosserat::liegroups {
 		 * @brief Differential of the logarithm at this element, in the right convention:
 		 *   log(g exp(d)) = log(g) + dlog() d + O(d^2),  dlog() = Jr^-1(log g) = dexpInv(log g).
 		 *
-		 * Declared by LieGroupBase (generic implementation through computeRightJacobianInverse);
+		 * Declared by LieGroup (generic implementation through computeRightJacobianInverse);
 		 * the SE3-specific override that used to be here returned the co-adjoint matrix
 		 * instead, so it is simply removed. SO3::dlog() uses the same (right) convention.
 		 */
@@ -337,7 +337,7 @@ namespace sofa::component::cosserat::liegroups {
 
 		// ========== New Integrated Functions ==========
 
-		/// Geodesic g exp(t log(g^-1 h)); t is clamped to [0, 1] like LieGroupBase::interpolate and
+		/// Geodesic g exp(t log(g^-1 h)); t is clamped to [0, 1] like LieGroup::interpolate and
 		/// SO3::interpolate (it extrapolated before).
 		SE3 interpolate(const SE3 &other, const Scalar &t) const {
 			const Scalar tc = std::max(Scalar(0), std::min(Scalar(1), t));
@@ -434,7 +434,7 @@ namespace sofa::component::cosserat::liegroups {
 	 *
 	 *   ∂(g·p)/∂ξ = [ -R [p]×  |  R ]      (columns 0..2 : φ, columns 3..5 : ρ)
 	 *
-	 * This is the convention of the generic LieGroupBase::actionJacobian (finite differences) and of
+	 * This is the convention of the generic LieGroup::actionJacobian (finite differences) and of
 	 * dexp/dlog.
 	 *
 	 * @param point The point p ∈ ℝ³
@@ -475,7 +475,7 @@ namespace sofa::component::cosserat::liegroups {
 	//            [ -Jl⁻¹·Q·Jl⁻¹    Jl_SO3⁻¹(φ)  ]
 	// Right Jacobians follow from Jr(ξ) = Jl(-ξ).
 	//
-	// NOTE: These are the CRTP hooks required by LieGroupBase::leftJacobian /
+	// NOTE: These are the CRTP hooks required by LieGroup::leftJacobian /
 	// rightJacobian / *Inverse. Before this, SE3 had none, so those wrappers
 	// were uninstantiable for SE(3).
 
@@ -512,7 +512,7 @@ namespace sofa::component::cosserat::liegroups {
 			   c3 * (Phi * NPhi2 + Phi2 * NPhi);
 	}
 
-	/// Left Jacobian of SE(3) exp — CRTP hook for LieGroupBase::leftJacobian.
+	/// Left Jacobian of SE(3) exp — CRTP hook for LieGroup::leftJacobian.
 	static AdjointMatrix computeLeftJacobian(const TangentVector &xi) {
 		const Vector3 phi = xi.template head<3>();
 		const Vector3 rho = xi.template tail<3>();
@@ -525,7 +525,7 @@ namespace sofa::component::cosserat::liegroups {
 		return M;
 	}
 
-	/// Inverse left Jacobian — CRTP hook for LieGroupBase::leftJacobianInverse.
+	/// Inverse left Jacobian — CRTP hook for LieGroup::leftJacobianInverse.
 	static AdjointMatrix computeLeftJacobianInverse(const TangentVector &xi) {
 		const Vector3 phi = xi.template head<3>();
 		const Vector3 rho = xi.template tail<3>();
@@ -605,7 +605,7 @@ namespace sofa::component::cosserat::liegroups {
 
 		/**
 		 * @brief Print the SE3 element to an output stream.
-		 * This method is required by the LieGroupBase CRTP interface.
+		 * This method is required by the LieGroup CRTP interface.
 		 * @param os Output stream to write to.
 		 * @return Reference to the output stream.
 		 */

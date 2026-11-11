@@ -24,8 +24,8 @@
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
 #include <random>
-#include "LieGroupBase.h" // Then the base class interface
-#include "LieGroupBase.inl" // Then the base class interface
+#include "LieGroup.h" // Then the base class interface
+#include "LieGroup.inl" // Then the base class interface
 #include "SE3.h" // Then other dependencies
 #include "SO2.h" // Then other dependencies
 #include "Types.h" // Then our type system
@@ -53,16 +53,16 @@ namespace sofa::component::cosserat::liegroups {
  *
  * The action vector is [point ; velocity ; time] ∈ ℝ⁷.
  *
- * @tparam _Scalar The scalar type (must be a floating-point type)
+ * @tparam Scalar_ The scalar type (must be a floating-point type)
  */
 
-template<typename _Scalar, int _Dim = 10>
-class SGal3 : public LieGroupBase<SGal3<_Scalar, _Dim>, _Scalar, 10, 10, 7>
-//,public LieGroupOperations<SGal3<_Scalar>> // the Utils may be needed here!
+template<typename Scalar_, int Dim_ = 10>
+class SGal3 : public LieGroup<SGal3<Scalar_, Dim_>, Scalar_, 10, 10, 7>
+//,public LieGroupOperations<SGal3<Scalar_>> // the Utils may be needed here!
 {
 
 public:
-    using Base = LieGroupBase<SGal3<_Scalar, _Dim>, _Scalar, 10, 10, 7>;
+    using Base = LieGroup<SGal3<Scalar_, Dim_>, Scalar_, 10, 10, 7>;
     using Scalar = typename Base::Scalar;
     using Vector = typename Base::Vector;
     using Matrix = typename Base::Matrix;
@@ -146,7 +146,7 @@ public:
         return T;
     }
 
-    // ---- CRTP hooks of LieGroupBase (public: the base class and the callers use them) ----
+    // ---- CRTP hooks of LieGroup (public: the base class and the callers use them) ----
 
     static SGal3<Scalar> computeIdentity() noexcept { return SGal3(); }
 
