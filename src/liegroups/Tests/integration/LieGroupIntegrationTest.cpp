@@ -92,9 +92,6 @@ protected:
 
         return SE3d(R, position);
     }
-
-    void SetUp() override {}
-    void TearDown() override {}
 };
 
 /**
