@@ -64,7 +64,7 @@ namespace Cosserat::mapping {
 
 		SE3Type gX_;
 
-		// Lazy cache of computeAdjoint() / computeCoAdjoint(). Invalidated by setTransformation().
+		// Lazy cache of adjoint() / coAdjoint(). Invalidated by setTransformation().
 		mutable AdjointMatrix adjoint_;
 		mutable AdjointMatrix coAdjoint_;
 		mutable bool adjoint_dirty_   = true;
@@ -76,7 +76,7 @@ namespace Cosserat::mapping {
 		SectionInfo() = default;
 
 		SectionInfo(double length, const TangentVector &strain, const unsigned int i0,
-					const SE3Type &transform = SE3Type::computeIdentity()) :
+					const SE3Type &transform = SE3Type::Identity()) :
 			sec_length_(length), strain_(strain), index_0_(i0), gX_(transform) {}
 
 		SectionInfo(double length, const Vector3 &angular_strain, const unsigned int i0) :
@@ -162,7 +162,7 @@ namespace Cosserat::mapping {
 
 		const AdjointMatrix &getAdjoint() const {
 			if (adjoint_dirty_) {
-				adjoint_       = gX_.computeAdjoint();
+				adjoint_       = gX_.adjoint();
 				adjoint_dirty_ = false;
 			}
 			return adjoint_;
@@ -170,7 +170,7 @@ namespace Cosserat::mapping {
 
 		const AdjointMatrix &getCoAdjoint() const {
 			if (coAdjoint_dirty_) {
-				coAdjoint_       = gX_.computeCoAdjoint();
+				coAdjoint_       = gX_.coAdjoint();
 				coAdjoint_dirty_ = false;
 			}
 			return coAdjoint_;
@@ -187,7 +187,7 @@ namespace Cosserat::mapping {
 			xi.template head<3>() = t * sec_length_ * Vector3::UnitX();
 			xi.template tail<3>() = t * angular_strain_;
 
-			return gX_ * SE3Type::computeExp(xi);
+			return gX_ * SE3Type::exp(xi);
 		}
 
 		TangentVector getTransformationDerivative(double /*t*/) const {
@@ -201,7 +201,7 @@ namespace Cosserat::mapping {
 			return gX_.distance(other.gX_, w_rot, w_trans);
 		}
 
-		Vector3 transformPoint(const Vector3 &point) const { return gX_.computeAction(point); }
+		Vector3 transformPoint(const Vector3 &point) const { return gX_.act(point); }
 
 		bool isApprox(const SectionInfo &other, double eps = 1e-6) const {
 			return gX_.computeIsApprox(other.gX_, eps) &&
@@ -210,7 +210,7 @@ namespace Cosserat::mapping {
 		}
 
 		SectionInfo inverse() const {
-			return SectionInfo(sec_length_, -strain_, index_0_, gX_.computeInverse());
+			return SectionInfo(sec_length_, -strain_, index_0_, gX_.inverse());
 		}
 
 		SectionInfo compose(const SectionInfo &other) const {
@@ -286,7 +286,7 @@ namespace Cosserat::mapping {
 
 		const AdjointMatrix &getAdjoint() const {
 			if (adjoint_dirty_) {
-				adjoint_       = transformation_.computeAdjoint();
+				adjoint_       = transformation_.adjoint();
 				adjoint_dirty_ = false;
 			}
 			return adjoint_;
@@ -294,7 +294,7 @@ namespace Cosserat::mapping {
 
 		const AdjointMatrix &getCoAdjoint() const {
 			if (coAdjoint_dirty_) {
-				coAdjoint_       = transformation_.computeCoAdjoint();
+				coAdjoint_       = transformation_.coAdjoint();
 				coAdjoint_dirty_ = false;
 			}
 			return coAdjoint_;
@@ -309,7 +309,7 @@ namespace Cosserat::mapping {
 
 			TangentVector xi = t * kappa_;
 			xi.template head<3>() += t * frames_sect_length_ * Vector3::UnitX();
-			return transformation_ * SE3Type::computeExp(xi);
+			return transformation_ * SE3Type::exp(xi);
 		}
 
 		friend std::ostream &operator<<(std::ostream &os, const FrameInfo &frame) {
@@ -586,9 +586,9 @@ namespace Cosserat::mapping {
 					strain_plus[k]  += eps;
 					strain_minus[k] -= eps;
 
-					SE3Type g_plus  = SE3Type::computeExp(strain_plus * curv_abs);
-					SE3Type g_minus = SE3Type::computeExp(strain_minus * curv_abs);
-					SE3Type g_diff = g_plus * g_minus.computeInverse();
+					SE3Type g_plus  = SE3Type::exp(strain_plus * curv_abs);
+					SE3Type g_minus = SE3Type::exp(strain_minus * curv_abs);
+					SE3Type g_diff = g_plus * g_minus.inverse();
 					TangentVector diff = g_diff.log();
 					numerical_jac.col(k) = diff / (2.0 * eps);
 				}

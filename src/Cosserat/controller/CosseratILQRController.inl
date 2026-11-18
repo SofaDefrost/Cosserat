@@ -174,7 +174,7 @@ namespace Cosserat::controller {
 		const SE3Types g_tip = rigidToSE3(frames_data[tip_idx]);
 
 		// ── Tip error in se(3): e = log(g_ref⁻¹ · g_tip) ─────────────────
-		const TangentVector e = g_ref.computeInverse().compose(g_tip).log();
+		const TangentVector e = g_ref.inverse().compose(g_tip).log();
 		const double err_norm = e.norm();
 
 		// Update diagnostic outputs

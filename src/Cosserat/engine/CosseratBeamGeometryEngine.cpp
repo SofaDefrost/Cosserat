@@ -22,7 +22,7 @@ void CosseratBeamGeometryEngine::buildStraightConfiguration(double totalLength, 
     frames.reserve(nbSections);
     edges.reserve(nbSections);
 
-    SO3 identity = SO3::identity();
+    SO3 identity = SO3::Identity();
 
     for (int i = 0; i < nbNodes; ++i) {
         nodes.emplace_back(Vec3d(i * sectionLength, 0.0, 0.0));
@@ -53,7 +53,7 @@ void CosseratBeamGeometryEngine::buildCurvedConfiguration(double totalLength, in
 
     // Initialize R0 and x0
     nodes.emplace_back(Vec3d(0.0, 0.0, 0.0));
-    frames.emplace_back(SO3::identity());
+    frames.emplace_back(SO3::Identity());
 
     for (int i = 0; i < nbSections; ++i) {
         // Retrieve the curvature for the current segment (or 0 by default)
@@ -101,7 +101,7 @@ void CosseratBeamGeometryEngine::buildConfiguration(double totalLength, int nbSe
 
     // Initialize x0 and the temporary reference frame
     nodes.emplace_back(Vec3d(0.0, 0.0, 0.0));
-    SO3 current_frame = SO3::identity();
+    SO3 current_frame = SO3::Identity();
 
     for (int i = 0; i < nbSections; ++i) {
         // Retrieve the curvature for the current segment (or 0 by default)

@@ -194,13 +194,10 @@ sofa::type::Vec3d CosseratIntrinsicState::getAngularStrain(size_t i) {
 // ─────────────────────────────────────────────────────────────────────────────
 // J_r⁻¹(ω) — right Lie Jacobian inverse of SO(3)
 //
-// NOTE — implémentation de référence côté plugin :
-//   `liegroups::SO3` ne fournit pas de J_r⁻¹ utilisable : `SO3::dlog()` / `SO3::dexp()` sont
-//   déclarées dans SO3.h mais leurs définitions sont dans SO3.inl, qui ne compile pas comme
-//   en-tête (donc jamais compilées). Cette fonction est la seule implémentation de J_r⁻¹
-//   disponible ; elle travaille directement en `sofa::type::Mat3x3d` pour éviter les
-//   conversions Eigen ↔ SOFA dans la boucle de force (chemin chaud). Si SO3 reçoit un jour
-//   une J_r⁻¹ compilée et testée, cette fonction pourra y déléguer.
+// NOTE — `liegroups::SO3::computeRightJacobianInverse(ω)` (= `SO3::exp(ω).dlog()`) fournit désormais
+//   la même matrice, compilée et testée contre une référence long double (SO3.inl est inclus par
+//   SO3.h). Cette fonction reste en `sofa::type::Mat3x3d` pour éviter les conversions Eigen ↔ SOFA
+//   dans la boucle de force (chemin chaud) ; elle pourrait y déléguer.
 //
 // Formule (Solà 2018, eq. 144) :
 //   J_r⁻¹(ω) = I + ½ [ω]× + c(θ) [ω]×²

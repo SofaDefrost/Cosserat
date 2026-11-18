@@ -94,6 +94,8 @@ set(HEADER_FILES
   ${SRC_ROOT_DIR}/engine/CosseratIntrinsicState.h
   ${SRC_ROOT_DIR}/engine/PainlessBeamForceField.h
   ${SRC_ROOT_DIR}/mapping/StaggeredCosseratMapping.h
+  ${SRC_ROOT_DIR}/mapping/KinematicChainMapping.h
+  ${SRC_ROOT_DIR}/mapping/KinematicChainMapping.inl
 )
 set(SOURCE_FILES
     ${SRC_ROOT_DIR}/initCosserat.cpp
@@ -125,6 +127,7 @@ set(SOURCE_FILES
     ${SRC_ROOT_DIR}/engine/CosseratIntrinsicState.cpp
     ${SRC_ROOT_DIR}/engine/PainlessBeamForceField.cpp
     ${SRC_ROOT_DIR}/mapping/StaggeredCosseratMapping.cpp
+    ${SRC_ROOT_DIR}/mapping/KinematicChainMapping.cpp
 )
 
 sofa_find_package(SoftRobots QUIET)

@@ -286,7 +286,7 @@ TEST(AutodiffIntegration, ReverseMode_CosseratChain) {
 	}
 	
 	// Forward kinematics: T = T1 * T2 * T3
-	SE3var T = SE3var::identity();
+	SE3var T = SE3var::Identity();
 	for (int i = 0; i < N; i++) {
 		Eigen::Matrix<var, 6, 1> xi = L * strains[i];
 		SE3var Ti = SE3var::exp(xi);

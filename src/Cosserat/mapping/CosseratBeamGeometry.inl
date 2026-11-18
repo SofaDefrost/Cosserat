@@ -50,7 +50,7 @@ namespace Cosserat::mapping {
 
 		// First node (anchor): zero length, identity transform
 		TangentVector init_strain = TangentVector::Zero();
-		SectionInfo node_0(0., init_strain, 0, SE3Type::computeIdentity());
+		SectionInfo node_0(0., init_strain, 0, SE3Type::Identity());
 		m_section_properties.push_back(node_0);
 
 		TangentVector strain_0 = TangentVector::Zero();
@@ -61,7 +61,7 @@ namespace Cosserat::mapping {
 
 		for (size_t i = 0; i < node_count - 1; ++i) {
 			double length = m_section_length_vectors[i];
-			SectionInfo node(length, strain_0, i, SE3Type::computeIdentity());
+			SectionInfo node(length, strain_0, i, SE3Type::Identity());
 			node.setIndices(i);
 			node.setStrain(strain[i]);
 			m_section_properties.push_back(node);

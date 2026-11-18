@@ -106,7 +106,7 @@ namespace sofa::component::cosserat::liegroups {
 		 * @param other The other SO(2) element to compose with.
 		 * @return The composed SO(2) element (sum of angles).
 		 */
-		SO2<Scalar> compose(const SO2 &other) const { return SO2(m_angle + other.m_angle); }
+		SO2<Scalar> computeCompose(const SO2 &other) const { return SO2(m_angle + other.m_angle); }
 
 		/**
 		 * @brief Computes the exponential map from the Lie algebra so(2) to the SO(2)

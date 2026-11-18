@@ -71,9 +71,11 @@ namespace sofa::component::cosserat::liegroups {
 
 		/**
 		 * @brief Construct from rotation matrix.
+		 * The quaternion built from the matrix is normalised, so a matrix that is only orthonormal up to
+		 * rounding (accumulated product, single precision input) still gives a unit quaternion.
 		 * @param mat 3x3 rotation matrix.
 		 */
-		explicit SO3(const Matrix &mat) : m_quat(mat) {}
+		explicit SO3(const Matrix &mat) : m_quat(Quaternion(mat).normalized()) {}
 
 		/**
 		 * @brief Group composition (rotation composition).
@@ -87,13 +89,7 @@ namespace sofa::component::cosserat::liegroups {
 		 * @param other The other SO3 rotation.
 		 * @return The composed SO3 rotation.
 		 */
-		SO3 compose(const SO3 &other) const noexcept { return SO3(m_quat * other.m_quat); }
-
-		/**
-		 * @brief Computes the inverse element (opposite rotation).
-		 * @return The inverse SO3 rotation.
-		 */
-		SO3 inverse() const { return SO3(m_quat.conjugate()); }
+		SO3 computeCompose(const SO3 &other) const noexcept { return SO3(m_quat * other.m_quat); }
 
 		/**
 		 * @brief Computes the inverse element (opposite rotation).
@@ -104,13 +100,6 @@ namespace sofa::component::cosserat::liegroups {
 
 	public:
 		/**
-		 * @brief Exponential map from Lie algebra so(3) to SO(3).
-		 * @param omega Angular velocity vector in ℝ³.
-		 * @return The corresponding SO3 element.
-		 */
-		static SO3 exp(const TangentVector &omega) noexcept { return expImpl(omega); }
-
-		/**
 		 * @brief Computes the exponential map from Lie algebra so(3) to SO(3).
 		 * This is a CRTP-required method.
 		 * @param omega Angular velocity vector in ℝ³.
@@ -118,13 +107,6 @@ namespace sofa::component::cosserat::liegroups {
 		 */
 		static SO3 computeExp(const TangentVector &omega) noexcept { return expImpl(omega); }
 
-
-		/**
-		 * @brief Logarithmic map from SO(3) to Lie algebra so(3).
-		 * Thin wrapper around computeLog() — no longer a code duplicate.
-		 * @return Angular velocity vector in ℝ³.
-		 */
-		TangentVector log() const { return computeLog(); }
 
 		/**
 		 * @brief Computes the logarithmic map from SO(3) to Lie algebra so(3).
@@ -155,25 +137,11 @@ namespace sofa::component::cosserat::liegroups {
 		}
 
 		/**
-		 * @brief Adjoint representation of the group element.
-		 * For SO(3), this is the rotation matrix itself.
-		 * @return The adjoint matrix representing the action on the Lie algebra.
-		 */
-		AdjointMatrix adjoint() const noexcept { return matrix(); }
-
-		/**
 		 * @brief Computes the adjoint representation of the group element.
 		 * This is a CRTP-required method.
 		 * @return The adjoint matrix representing the action on the Lie algebra.
 		 */
 		AdjointMatrix computeAdjoint() const noexcept { return matrix(); }
-
-		/**
-		 * @brief Group action on a point (rotates the point).
-		 * @param point The point to transform.
-		 * @return The transformed point.
-		 */
-		Vector act(const Vector &point) const noexcept { return m_quat * point; }
 
 		/**
 		 * @brief Computes the group action on a point (rotates the point).
@@ -184,26 +152,13 @@ namespace sofa::component::cosserat::liegroups {
 		Vector computeAction(const Vector &point) const noexcept { return m_quat * point; }
 
 		/**
-		 * @brief Check if approximately equal to another rotation.
-		 * Handles antipodal representation of the same rotation.
-		 * @param other Another element of the same Lie group.
-		 * @param eps Tolerance for comparison (optional).
-		 * @return true if elements are approximately equal.
-		 */
-		bool isApprox(const SO3 &other, const Scalar &eps = Types<Scalar>::epsilon()) const noexcept {
-			// Handle antipodal representation of same rotation
-			return m_quat.coeffs().isApprox(other.m_quat.coeffs(), eps) ||
-				   m_quat.coeffs().isApprox(-other.m_quat.coeffs(), eps);
-		}
-
-		/**
 		 * @brief Computes if this element is approximately equal to another.
 		 * This is a CRTP-required method.
 		 * @param other Another element of the same Lie group.
 		 * @param eps Tolerance for comparison (optional).
 		 * @return true if elements are approximately equal.
 		 */
-		bool computeIsApprox(const SO3 &other, const Scalar &eps = Types<Scalar>::epsilon()) const noexcept {
+		bool computeIsApprox(const SO3 &other, const Scalar &eps = Types<Scalar>::tolerance()) const noexcept {
 			// Handle antipodal representation of same rotation
 			return m_quat.coeffs().isApprox(other.m_quat.coeffs(), eps) ||
 				   m_quat.coeffs().isApprox(-other.m_quat.coeffs(), eps);
@@ -222,12 +177,6 @@ namespace sofa::component::cosserat::liegroups {
 		void computeNormalize() noexcept { m_quat.normalize(); }
 
 		/**
-		 * @brief Get the identity element of the group.
-		 * @return The identity element.
-		 */
-		static SO3 identity() noexcept { return SO3(); }
-
-		/**
 		 * @brief Computes the identity element of the group.
 		 * This is a CRTP-required method.
 		 * @return The identity element.
@@ -242,11 +191,15 @@ namespace sofa::component::cosserat::liegroups {
 		 */
 		template<typename Generator>
 		static SO3 computeRandom(Generator &gen) {
-			// Generate random axis and angle
-			Vector axis = Types<Scalar>::template randomUnitVector<3>(gen);
-			std::uniform_real_distribution<Scalar> dist(-M_PI, M_PI);
-			Scalar angle = dist(gen);
-			return SO3(angle, axis);
+			// Haar-distributed rotation: a unit quaternion with independent standard normal
+			// components is uniform on S^3, hence uniform on SO(3). (A uniform angle about a uniform
+			// axis is not: it over-represents small rotations, mean angle 1.57 instead of 2.21.)
+			std::normal_distribution<Scalar> dist(Scalar(0), Scalar(1));
+			Quaternion q(dist(gen), dist(gen), dist(gen), dist(gen));
+			if (q.norm() < Types<Scalar>::epsilon()) {
+				return SO3();
+			}
+			return SO3(q);
 		}
 
 		/**
@@ -286,14 +239,14 @@ namespace sofa::component::cosserat::liegroups {
 		static TangentVector BCH(const TangentVector &v, const TangentVector &w, int order = 2);
 
 		/**
-		 * @brief Differential of the exponential map.
+		 * @brief Differential of the exponential map (right Jacobian, as LieGroupBase::dexp and SE3::dexp).
 		 * @param v Tangent vector.
 		 * @return Matrix representing the differential of exp at v.
 		 */
 		static AdjointMatrix dexp(const TangentVector &v);
 
 		/**
-		 * @brief Differential of the logarithm map.
+		 * @brief Differential of the logarithm map (inverse right Jacobian at log(this), as LieGroupBase::dlog).
 		 * @return Matrix representing the differential of log at the current point.
 		 */
 		AdjointMatrix dlog() const;
@@ -306,6 +259,13 @@ namespace sofa::component::cosserat::liegroups {
 	 */
 	static AdjointMatrix computeAd(const TangentVector &v);
 
+	/// SO(3) Jacobians of the exponential map (Solà et al. 2021, eq. 143-144).
+	/// CRTP hooks used by LieGroupBase::leftJacobian / rightJacobian / *Inverse.
+	static AdjointMatrix computeRightJacobian(const TangentVector &omega) noexcept;
+	static AdjointMatrix computeLeftJacobian(const TangentVector &omega) noexcept;
+	static AdjointMatrix computeRightJacobianInverse(const TangentVector &omega) noexcept;
+	static AdjointMatrix computeLeftJacobianInverse(const TangentVector &omega) noexcept;
+
 	// ========== NEW: Differentiation Jacobians ==========
 
 	/**
@@ -315,7 +275,8 @@ namespace sofa::component::cosserat::liegroups {
 	 * - J_left = ∂g/∂this (in tangent space)
 	 * - J_right = ∂g/∂h (in tangent space)
 	 * 
-	 * Using the relation: g * exp(δ) = g * exp(Ad_g⁻¹(δ)) for left perturbation
+	 * Right perturbation g exp(δ) (the convention of every Jacobian of this class and of dexp/dlog):
+	 * (R exp(δ) S) = R S exp(Ad_{S⁻¹} δ)
 	 * 
 	 * @param other The other SO3 element h
 	 * @return Pair of Jacobians (J_left, J_right)
@@ -332,34 +293,31 @@ namespace sofa::component::cosserat::liegroups {
 	/**
 	 * @brief Compute the Jacobian of the inverse operation.
 	 * 
-	 * For R^{-1}, computes ∂(R^{-1})/∂R in the tangent space.
-	 * 
-	 * Using the relation: (R * exp(δ))^{-1} = exp(-δ) * R^{-1}
-	 * we get: ∂R^{-1}/∂R = -Ad_{R^{-1}} = -R^T
-	 * 
+	 * For R^{-1}, computes ∂(R^{-1})/∂R in the tangent space, right perturbation R exp(δ):
+	 * (R exp(δ))^{-1} = exp(-δ) R^{-1} = R^{-1} exp(-Ad_R δ), so ∂R^{-1}/∂R = -Ad_R = -R.
+	 *
 	 * @return Jacobian matrix
 	 */
 	AdjointMatrix inverseJacobian() const noexcept {
-		// ∂R^{-1}/∂R = -Ad_{R^{-1}} = -R^T
-		return -matrix().transpose();
+		// ∂R^{-1}/∂R = -Ad_R = -R (right perturbation)
+		return -matrix();
 	}
 
 	/**
 	 * @brief Compute the Jacobian of the group action on a point.
 	 * 
 	 * For y = R*p, computes:
-	 * - ∂y/∂R (with R perturbed in tangent space): 3x3 matrix
+	 * - ∂y/∂R (R perturbed on the right, R exp(δ)): 3x3 matrix
 	 * - ∂y/∂p: 3x3 matrix (rotation matrix itself)
 	 * 
 	 * @param point The point p ∈ ℝ³
 	 * @return Pair of Jacobians (∂y/∂R, ∂y/∂p)
 	 */
 	std::pair<Matrix, Matrix> actionJacobians(const Vector &point) const noexcept {
-		// For perturbation R_δ = exp(δ) * R:
-		// (exp(δ) * R) * p ≈ R*p + δ × (R*p)
-		// So: ∂(R*p)/∂δ = -[R*p]× (negative skew-symmetric)
-		Vector Rp = act(point);
-		Matrix J_wrt_rotation = -buildAntisymmetric(Rp);
+		// For perturbation R_δ = R * exp(δ):
+		// (R * exp(δ)) * p ≈ R*p + R (δ × p)
+		// So: ∂(R*p)/∂δ = -R [p]×
+		Matrix J_wrt_rotation = -matrix() * computeHat(point);
 		
 		// ∂(R*p)/∂p = R
 		Matrix J_wrt_point = matrix();
@@ -375,7 +333,7 @@ namespace sofa::component::cosserat::liegroups {
 	 * @return Jacobian ∂(R*p)/∂R
 	 */
 	Matrix actionJacobianRotation(const Vector &point) const noexcept {
-		return -buildAntisymmetric(act(point));
+		return -matrix() * computeHat(point);
 	}
 
 	/**
@@ -405,25 +363,6 @@ namespace sofa::component::cosserat::liegroups {
 		 * @return The Eigen AngleAxis representation.
 		 */
 		Eigen::AngleAxis<Scalar> angleAxis() const { return Eigen::AngleAxis<Scalar>(m_quat); }
-
-		/**
-		 * @brief Builds the antisymmetric matrix [v]× from a 3D vector.
-		 * [v]× = [ 0   -v.z   v.y ]
-		 *        [ v.z   0   -v.x ]
-		 *        [-v.y  v.x    0  ]
-		 * @param v Input 3D vector.
-		 * @return 3x3 antisymmetric matrix.
-		 */
-		static Matrix buildAntisymmetric(const Vector &v) noexcept {
-			Matrix result = Matrix::Zero();
-			result(0, 1) = -v.z();
-			result(0, 2) = v.y();
-			result(1, 0) = v.z();
-			result(1, 2) = -v.x();
-			result(2, 0) = -v.y();
-			result(2, 1) = v.x();
-			return result;
-		}
 
 		/**
 		 * @brief Convert vector to skew-symmetric matrix (hat operator).
@@ -498,27 +437,6 @@ namespace sofa::component::cosserat::liegroups {
 			return SO3(matrixToQuaternion(rotation_matrix));
 		}
 
-		/**
-		 * @brief Exponential map using standard Rodrigues formula (for comparison).
-		 * @param omega Angular velocity vector in ℝ³.
-		 * @return The corresponding SO3 element.
-		 */
-		static SO3 expRodrigues(const TangentVector &omega) noexcept {
-			const Scalar theta = omega.norm();
-
-			if (theta < Types<Scalar>::epsilon()) {
-				return SO3(Quaternion(Scalar(1), omega.x() * Scalar(0.5), omega.y() * Scalar(0.5),
-									  omega.z() * Scalar(0.5)));
-			}
-
-			const Vector axis = omega / theta;
-			const Scalar half_theta = theta * Scalar(0.5);
-			const Scalar sin_half_theta = std::sin(half_theta);
-
-			return SO3(Quaternion(std::cos(half_theta), axis.x() * sin_half_theta, axis.y() * sin_half_theta,
-								  axis.z() * sin_half_theta));
-		}
-
 	private:
 		/**
 		 * @brief Convert a 3x3 rotation matrix to quaternion.
@@ -558,81 +476,6 @@ namespace sofa::component::cosserat::liegroups {
 
 			return Quaternion(w, x, y, z);
 		}
-		/**
-		 * @brief Exponential map using Cosserat-style Taylor expansion (complete implementation).
-		 * This method uses a 3rd-order Taylor expansion following Cosserat rod theory approach.
-		 * For small angles: R ≈ I + s[k]×
-		 * For general case: R = I + s[k]× + α[k]×² + β[k]×³
-		 * where α = (1-cos(s‖k‖))/‖k‖², β = (s‖k‖-sin(s‖k‖))/‖k‖³
-		 *
-		 * @param strain Angular strain rate vector in ℝ³ (curvature vector).
-		 * @param length Arc length parameter for integration.
-		 * @return The corresponding SO3 element.
-		 * TODO :  uncomment this implementation
-		 */
-		// static SO3 expCosserat(const TangentVector &strain, const Scalar &length) noexcept {
-		//   const Scalar strain_norm = strain.norm();
-		//
-		//   // Handle near-zero strain case with first-order approximation
-		//   if (strain_norm <= Types<Scalar>::epsilon()) {
-		//     // R ≈ I + length * [strain]×
-		//     // For quaternion: q ≈ (1, 0.5 * length * strain)
-		//     const TangentVector half_rotation = strain * (length * Scalar(0.5));
-		//     const Scalar norm_check = half_rotation.norm();
-		//
-		//     // Ensure quaternion normalization for very small rotations
-		//     if (norm_check < Scalar(0.5)) {
-		//       return SO3(Quaternion(Scalar(1), half_rotation.x(), half_rotation.y(),
-		//       half_rotation.z()).normalized());
-		//     } else {
-		//       // Fallback to exact computation if rotation isn't that small
-		//       return expCosseratExact(strain, length);
-		//     }
-		//   }
-		//
-		//  return expCosseratExact(strain, length);
-		//}
-
-	private:
-		/**
-		 * @brief Exact Cosserat exponential computation using 3rd-order Taylor expansion.
-		 * @param strain Angular strain rate vector.
-		 * @param length Arc length parameter.
-		 * @return The corresponding SO3 element.
-		 */
-		static SO3 expCosseratExact(const TangentVector &strain, const Scalar &length) noexcept {
-			const Scalar strain_norm = strain.norm();
-			const Scalar s_norm = length * strain_norm; // Total rotation angle
-
-			// Compute Taylor expansion coefficients
-			const Scalar strain_norm2 = strain_norm * strain_norm;
-			const Scalar strain_norm3 = strain_norm2 * strain_norm;
-
-			// Cosserat coefficients:
-			// α = (1 - cos(s‖k‖)) / ‖k‖²
-			// β = (s‖k‖ - sin(s‖k‖)) / ‖k‖³
-			const Scalar cos_s_norm = std::cos(s_norm);
-			const Scalar sin_s_norm = std::sin(s_norm);
-
-			const Scalar alpha = (Scalar(1) - cos_s_norm) / strain_norm2;
-			const Scalar beta = (s_norm - sin_s_norm) / strain_norm3;
-
-			// Build the antisymmetric matrix [strain]×
-			const Matrix strain_cross = buildAntisymmetric(strain);
-
-			// Compute powers of the antisymmetric matrix
-			const Matrix strain_cross2 = strain_cross * strain_cross;
-			const Matrix strain_cross3 = strain_cross2 * strain_cross;
-
-			// Taylor expansion: R = I + s[k]× + α[k]×² + β[k]×³
-			const Matrix rotation_matrix =
-					Matrix::Identity() + length * strain_cross + alpha * strain_cross2 + beta * strain_cross3;
-
-			// Convert rotation matrix to quaternion
-			return SO3(matrixToQuaternion(rotation_matrix));
-		}
-
-
 	public:
 		/**
 		 * @brief Utility method: Cosserat exponential with combined omega parameter.
@@ -645,27 +488,7 @@ namespace sofa::component::cosserat::liegroups {
 			return expCosserat(omega, Scalar(1));
 		}
 
-		/**
-		 * @brief Standard exponential map using optimized Rodrigues formula.
-		 * @param omega Angular velocity vector in ℝ³.
-		 * @return The corresponding SO3 element.
-		 */
-		static SO3 exp_(const TangentVector &omega) noexcept {
-			const Scalar theta = omega.norm();
-
-			if (theta < Types<Scalar>::epsilon()) {
-				const TangentVector half_omega = omega * Scalar(0.5);
-				return SO3(Quaternion(Scalar(1), half_omega.x(), half_omega.y(), half_omega.z()).normalized());
-			}
-
-			const TangentVector axis = omega / theta;
-			const Scalar half_theta = theta * Scalar(0.5);
-			const Scalar sin_half_theta = std::sin(half_theta);
-			const Scalar cos_half_theta = std::cos(half_theta);
-
-			return SO3(Quaternion(cos_half_theta, axis.x() * sin_half_theta, axis.y() * sin_half_theta,
-								  axis.z() * sin_half_theta));
-		}
+	private:
 		Quaternion m_quat; ///< Unit quaternion representing the rotation
 		/**
 		 * @brief Internal implementation of the exponential map.
@@ -735,5 +558,8 @@ inline std::istream& operator>>(std::istream& is, SO3<Scalar>& R) {
 }
 
 } // namespace sofa::component::cosserat::liegroups
+
+// Out-of-line definitions (distance, interpolate, BCH, dexp, dlog, Jacobians).
+#include "SO3.inl"
 
 // #endif // SOFA_COMPONENT_COSSERAT_LIEGROUPS_SO3_H

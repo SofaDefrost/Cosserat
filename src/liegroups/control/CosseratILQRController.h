@@ -280,26 +280,32 @@ namespace sofa::component::cosserat::liegroups::control {
 			return cost_pos + cost_rot;
 		}
 
+		/// Gains of the backward pass: du = alpha k + K dx, dx = log(x_nominal^-1 x) (right perturbation).
+		struct Gains {
+			std::vector<Matrix6> K; // feedback
+			std::vector<Vector6> k; // feedforward
+		};
+
 		/**
 		 * @brief Backward pass: Dynamic programming to compute value function
 		 *
-		 * Computes Q-function approximation and feedback gains via Riccati recursion
+		 * Riccati recursion on the quadratic model of the cost-to-go. States are perturbed on the right,
+		 * x exp(dx), dx = [phi ; rho] (library layout, angular first), as in SE3::composeJacobians.
 		 *
 		 * @param x State trajectory
 		 * @param u Control sequence
 		 * @param ref Reference trajectory
-		 * @return Feedback gains for each time step
+		 * @return Feedback and feedforward gains for each time step
 		 */
-		std::vector<Matrix6> backwardPass(const std::vector<SE3Type> &x, const std::vector<Vector6> &u,
-										  const Trajectory &ref) const {
+		Gains backwardPass(const std::vector<SE3Type> &x, const std::vector<Vector6> &u, const Trajectory &ref) const {
 			const int T = static_cast<int>(u.size());
-			std::vector<Matrix6> K(T); // Feedback gains
+			Gains gains;
+			gains.K.resize(T);
+			gains.k.resize(T);
 
 			// Terminal value function (gradient and Hessian)
 			Vector6 V_x = Vector6::Zero();
 			Matrix6 V_xx = Matrix6::Zero();
-
-			// Initialize terminal cost derivatives
 			computeTerminalCostDerivatives(x[T], ref.poses[T], V_x, V_xx);
 
 			// Backward recursion
@@ -322,73 +328,67 @@ namespace sofa::component::cosserat::liegroups::control {
 				// Regularization for numerical stability
 				Q_uu += m_config.regularization * Matrix6::Identity();
 
-				// Feedback gain: K = -Q_uu^{-1} * Q_ux
-				K[k] = -Q_uu.ldlt().solve(Q_ux);
-
-				// Feedforward term: k = -Q_uu^{-1} * Q_u
-				Vector6 k_ff = -Q_uu.ldlt().solve(Q_u);
+				// Feedback gain K = -Q_uu^{-1} Q_ux, feedforward k = -Q_uu^{-1} Q_u
+				const auto Q_uu_ldlt = Q_uu.ldlt();
+				gains.K[k] = -Q_uu_ldlt.solve(Q_ux);
+				gains.k[k] = -Q_uu_ldlt.solve(Q_u);
 
 				// Update value function
-				V_x = Q_x + K[k].transpose() * Q_uu * k_ff + Q_ux.transpose() * k_ff + K[k].transpose() * Q_u;
-				V_xx = Q_xx + K[k].transpose() * Q_uu * K[k] + Q_ux.transpose() * K[k] + K[k].transpose() * Q_ux;
+				V_x = Q_x + gains.K[k].transpose() * Q_uu * gains.k[k] + gains.K[k].transpose() * Q_u +
+					  Q_ux.transpose() * gains.k[k];
+				V_xx = Q_xx + gains.K[k].transpose() * Q_uu * gains.K[k] + gains.K[k].transpose() * Q_ux +
+					   Q_ux.transpose() * gains.K[k];
 
 				// Ensure V_xx remains symmetric
 				V_xx = 0.5 * (V_xx + V_xx.transpose());
 			}
 
-			return K;
+			return gains;
 		}
 
 		/**
 		 * @brief Linearize Cosserat dynamics around (x, u)
 		 *
-		 * Dynamics: x_{k+1} = f(x_k, u_k) = x_k * exp(L * u_k)
-		 *
-		 * Linearization:
-		 * δx_{k+1} ≈ F_x * δx_k + F_u * δu_k
-		 *
-		 * Using SE(3) Jacobians from Phase 2
+		 * Dynamics: x_{k+1} = f(x_k, u_k) = x_k * exp(L * u_k), right perturbations on x and on x_{k+1}:
+		 *   dx_{k+1} = Ad_{exp(L u)^-1} dx_k + Jr(L u) L du
 		 */
 		std::pair<Matrix6, Matrix6> linearizeDynamics(const SE3Type &x, const Vector6 &u, Scalar L) const {
-			// F_x: ∂f/∂x using composition jacobians
-			Vector6 xi = u * L;
-			SE3Type exp_u = SE3Type::exp(xi);
+			const Vector6 xi = u * L;
+			const SE3Type exp_u = SE3Type::exp(xi);
 
-			auto [J_g1, J_g2] = x.composeJacobians(exp_u);
-			Matrix6 F_x = J_g1; // 6x6
-
-			// F_u: ∂f/∂u using chain rule
-			// f(x,u) = x * exp(L*u)
-			// ∂f/∂u = ∂(x * exp(L*u))/∂u
-			//       = x * ∂exp(L*u)/∂(L*u) * L
-			//       = J_g2 * leftJacobian(L*u) * L
-
-			// Approximate leftJacobian with identity for small strains
-			// Or use finite differences
-			Matrix6 F_u = J_g2 * L; // Simplified
+			// F_x = d(x exp(xi))/dx = Ad_{exp(xi)^-1}
+			const Matrix6 F_x = x.composeJacobians(exp_u).first;
+			// F_u = d(exp(L u))/du in the right tangent space = Jr(L u) L (exp(xi + d) = exp(xi) exp(Jr(xi) d))
+			const Matrix6 F_u = SE3Type::computeRightJacobian(xi) * L;
 
 			return {F_x, F_u};
 		}
 
+		/// Position part of a state cost, right perturbation: p(x exp(dx)) = p + R rho, so d p / d dx = [0 | R].
+		/// Rotation part: log(R_ref^T R exp(phi)) = r + Jr^-1(r) phi. Gauss-Newton Hessian.
+		void stateCostDerivatives(const SE3Type &x, const SE3Type &x_ref, Scalar Q_pos, Scalar Q_rot, Vector6 &g,
+								  Matrix6 &H) const {
+			const Vector3 pos_error = x.translation() - x_ref.translation();
+			const Matrix3 R = x.rotation().matrix();
+			const Vector3 r = (x_ref.rotation().inverse() * x.rotation()).log();
+			const Matrix3 Jinv = SO3<Scalar>::computeRightJacobianInverse(r);
+
+			g.setZero();
+			H.setZero();
+			g.template head<3>() = Scalar(2) * Q_rot * Jinv.transpose() * r;
+			g.template tail<3>() = Scalar(2) * Q_pos * R.transpose() * pos_error;
+			H.template topLeftCorner<3, 3>() = Scalar(2) * Q_rot * Jinv.transpose() * Jinv;
+			H.template bottomRightCorner<3, 3>() = Scalar(2) * Q_pos * Matrix3::Identity();
+		}
+
 		/**
-		 * @brief Compute cost function derivatives
+		 * @brief Compute cost function derivatives (cost = Q_pos |dp|^2 + Q_rot |dR|^2 + R_control |u|^2)
 		 */
 		void computeCostDerivatives(const SE3Type &x, const Vector6 &u, const SE3Type &x_ref, Vector6 &l_x,
 									Vector6 &l_u, Matrix6 &l_xx, Matrix6 &l_uu, Matrix6 &l_ux) const {
-			// Simplified: approximate with diagonal Hessians
-			// For accurate derivatives, use finite differences or autodiff
-
-			// Gradient w.r.t. state (simplified)
-			Vector3 pos_error = x.translation() - x_ref.translation();
-			l_x = Vector6::Zero();
-			l_x.template head<3>() = 2.0 * m_config.Q_position * pos_error;
-
-			// Gradient w.r.t. control
-			l_u = 2.0 * m_config.R_control * u;
-
-			// Hessians (diagonal approximation)
-			l_xx = Matrix6::Identity() * m_config.Q_position;
-			l_uu = Matrix6::Identity() * m_config.R_control;
+			stateCostDerivatives(x, x_ref, m_config.Q_position, m_config.Q_rotation, l_x, l_xx);
+			l_u = Scalar(2) * m_config.R_control * u;
+			l_uu = Scalar(2) * m_config.R_control * Matrix6::Identity();
 			l_ux = Matrix6::Zero();
 		}
 
@@ -396,32 +396,35 @@ namespace sofa::component::cosserat::liegroups::control {
 		 * @brief Compute terminal cost derivatives
 		 */
 		void computeTerminalCostDerivatives(const SE3Type &x, const SE3Type &x_ref, Vector6 &V_x, Matrix6 &V_xx) const {
-			Vector3 pos_error = x.translation() - x_ref.translation();
+			stateCostDerivatives(x, x_ref, m_config.Q_final_position, m_config.Q_final_rotation, V_x, V_xx);
+		}
 
-			V_x = Vector6::Zero();
-			V_x.template head<3>() = 2.0 * m_config.Q_final_position * pos_error;
-
-			V_xx = Matrix6::Identity() * m_config.Q_final_position;
+		/// Roll the controls out with the feedback policy u_new = u + alpha k + K log(x_nominal^-1 x_new).
+		std::pair<std::vector<SE3Type>, std::vector<Vector6>> rollout(const std::vector<SE3Type> &x_nom,
+																	  const std::vector<Vector6> &u, const Gains &gains,
+																	  Scalar alpha, const Trajectory &ref) const {
+			const size_t T = u.size();
+			std::vector<SE3Type> x(T + 1);
+			std::vector<Vector6> u_new(T);
+			x[0] = SE3Type::computeIdentity();
+			for (size_t k = 0; k < T; ++k) {
+				const Vector6 dx = (x_nom[k].inverse() * x[k]).log();
+				u_new[k] = u[k] + alpha * gains.k[k] + gains.K[k] * dx;
+				x[k + 1] = x[k] * SE3Type::exp(u_new[k] * ref.segment_length);
+			}
+			return {x, u_new};
 		}
 
 		/**
-		 * @brief Line search with Armijo condition
+		 * @brief Line search on the feedforward step (backtracking, accept any cost decrease)
 		 */
 		std::tuple<std::vector<Vector6>, std::vector<SE3Type>, Scalar, Scalar>
-		lineSearch(const std::vector<SE3Type> &x, const std::vector<Vector6> &u, const std::vector<Matrix6> &K,
+		lineSearch(const std::vector<SE3Type> &x, const std::vector<Vector6> &u, const Gains &gains,
 				   const Trajectory &ref, Scalar current_cost) const {
 			Scalar alpha = 1.0;
 
 			for (int iter = 0; iter < m_config.max_line_search_iters; ++iter) {
-				// Apply feedback gains with step size alpha
-				std::vector<Vector6> u_new(u.size());
-				for (size_t k = 0; k < u.size(); ++k) {
-					// Simple feedforward update (could add feedback term)
-					Vector6 du = K[k] * Vector6::Zero(); // Simplified: no state deviation term
-					u_new[k] = u[k] + alpha * du;
-				}
-
-				// Evaluate new trajectory
+				const std::vector<Vector6> u_new = rollout(x, u, gains, alpha, ref).second;
 				auto [x_new, cost_new] = forwardPass(u_new, ref);
 
 				// Accept if cost decreased
@@ -446,8 +449,7 @@ namespace sofa::component::cosserat::liegroups::control {
 		 */
 		std::vector<Matrix6> computeFeedbackGains(const std::vector<SE3Type> &x, const std::vector<Vector6> &u,
 												  const Trajectory &ref) const {
-			// Reuse backward pass result
-			return backwardPass(x, u, ref);
+			return backwardPass(x, u, ref).K;
 		}
 	};
 

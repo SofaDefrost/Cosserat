@@ -141,6 +141,7 @@ public:
         }
         
         // Gradient descent loop
+        double last_step = params.learning_rate;
         for (int iter = 0; iter < params.max_iterations; ++iter) {
             // Compute cost and gradient
             Cost cost = computeCostAndGradient(
@@ -163,8 +164,14 @@ public:
                 std::cout << "  Current position: " << current_pose.translation().transpose() << std::endl;
             }
             
-            // Check convergence
-            if (cost.value < params.tolerance) {
+            // Check convergence: first-order stationarity. The cost includes the regularisation term, so it
+            // has a floor above `tolerance` at the optimum (0.5 lambda |strain|^2) and `cost < tolerance` could
+            // never be reached for a target that needs non-zero strains.
+            double grad_norm_sq = 0.0;
+            for (const auto& g : cost.gradient) {
+                grad_norm_sq += g.squaredNorm();
+            }
+            if (std::sqrt(grad_norm_sq) < params.tolerance) {
                 result.converged = true;
                 result.iterations = iter;
                 if (params.verbose) {
@@ -177,14 +184,19 @@ public:
             double step_size = params.learning_rate;
             
             if (params.use_line_search) {
+                // Start from twice the last accepted step (never below learning_rate): the Armijo backtracking
+                // keeps it valid, and a fixed small step needed thousands of iterations on a flat quadratic.
+                const double initial_step = std::max(params.learning_rate, 2.0 * last_step);
                 step_size = lineSearch(
                     result.strains,
                     cost.gradient,
                     target,
                     section_length,
                     cost.value,
-                    params
+                    params,
+                    initial_step
                 );
+                last_step = step_size;
             }
             
             // Update strains
@@ -501,7 +513,8 @@ private:
         const SE3Type& target,
         double section_length,
         double current_cost,
-        const Parameters& params
+        const Parameters& params,
+        double initial_step
     ) const {
         const int n_sections = static_cast<int>(strains.size());
         
@@ -511,7 +524,7 @@ private:
             grad_norm_sq += g.squaredNorm();
         }
         
-        double step_size = params.learning_rate;
+        double step_size = initial_step;
         
         // Try decreasing step sizes
         for (int iter = 0; iter < params.max_line_search_iters; ++iter) {

@@ -168,41 +168,20 @@ namespace sofa::component::cosserat::liegroups {
 		if (t_clamped >= Scalar(1) - Types::epsilon())
 			return other;
 
-		try {
-			// Compute the "angular distance"
-			const Scalar dist = distance(other);
-
-			if (dist < Types::epsilon()) {
-				return derived(); // Elements are too close for meaningful interpolation
-			}
-
-			// Use sinc-based interpolation for better numerical properties
-			const Scalar theta = dist * t_clamped;
-			const Scalar sin_theta = std::sin(theta);
-			const Scalar sin_dist = std::sin(dist);
-
-			if (std::abs(sin_dist) < Types::epsilon()) {
-				// Fallback to linear interpolation
-				return interpolate(other, t_clamped);
-			}
-
-			const Scalar w1 = std::sin(dist - theta) / sin_dist;
-			const Scalar w2 = sin_theta / sin_dist;
-
-			// This is a simplified version - actual implementation would depend on
-			// group structure
-			return interpolate(other, w2 / (w1 + w2));
-
-		} catch (const std::exception &) {
-			return interpolate(other, t_clamped);
-		}
+		// The geodesic g exp(t log(g^-1 h)) is the SLERP on any group with a bi-invariant metric,
+		// and its parameter is t itself. The previous code reweighted t by
+		// sin(t d) / (sin((1-t) d) + sin(t d)), which is the chord/sphere weighting for
+		// interpolating *vectors* and made slerp(0.25) differ from interpolate(0.25) by 0.125 rad.
+		return interpolate(other, t_clamped);
 	}
 
 	/**
 	 * @brief Computes the Baker-Campbell-Hausdorff (BCH) formula for Lie algebra
 	 * elements. The BCH formula provides a way to express the logarithm of the
 	 * product of exponentials of two Lie algebra elements. This implementation
-	 * supports up to fifth-order approximation and includes a convergence check.
+	 * supports up to fifth-order approximation. The result is a truncated series: it is
+	 * always defined, accurate for small inputs (error ~ |.|^(order+1)) and degrading for large ones,
+	 * exactly like SO3::BCH (no exception).
 	 * @tparam Derived The derived class implementing the specific Lie group.
 	 * @tparam _Scalar The scalar type used for computations.
 	 * @tparam _Dim The dimension of the group representation.
@@ -213,8 +192,6 @@ namespace sofa::component::cosserat::liegroups {
 	 * @param order The order of approximation to use (1 to 5). Higher orders
 	 * provide more accuracy but are computationally more expensive.
 	 * @return The tangent vector approximating log(exp(v)*exp(w)).
-	 * @throws NumericalInstabilityException if the inputs are too large for the
-	 * series to converge reliably.
 	 */
 	template<typename Derived, FloatingPoint _Scalar, int _Dim, int _AlgebraDim, int _ActionDim>
 		requires(_Dim > 0 && _AlgebraDim > 0 && _ActionDim > 0)
@@ -224,15 +201,6 @@ namespace sofa::component::cosserat::liegroups {
 
 		// Clamp order to reasonable range
 		order = std::max(1, std::min(5, order));
-
-		// Check convergence criterion
-		const Scalar v_norm = v.norm();
-		const Scalar w_norm = w.norm();
-		const Scalar max_norm = std::max(v_norm, w_norm);
-
-		if (max_norm > M_PI / Scalar(2)) {
-			throw NumericalInstabilityException("BCH series may not converge for large inputs");
-		}
 
 		// First-order approximation
 		TangentVector result = v + w;
@@ -258,14 +226,27 @@ namespace sofa::component::cosserat::liegroups {
 					result -= Derived::computeVee(comm4) * Scalar(1.0 / 24.0);
 
 					if (order >= 5) {
-						// Fifth-order terms: more complex nested commutators
-						// -1/720 * [v, [w, [v, [v, w]]]] - 1/720 * [w, [v, [w, [w, v]]]]
-						const AlgebraMatrix comm5a = vMat * comm4 - comm4 * vMat;
-						const AlgebraMatrix comm_w_v_wv = wMat * comm_w_wv - comm_w_wv * wMat;
-						const AlgebraMatrix comm5b = wMat * comm_w_v_wv - comm_w_v_wv * wMat;
-
-						result -= Derived::computeVee(comm5a) * Scalar(1.0 / 720.0);
-						result -= Derived::computeVee(comm5b) * Scalar(1.0 / 720.0);
+						// Fifth-order terms (Dynkin / Wikipedia):
+						//   -1/720 ([y,[y,[y,[y,x]]]] + [x,[x,[x,[x,y]]]])
+						//   +1/360 ([x,[y,[y,[y,x]]]] + [y,[x,[x,[x,y]]]])
+						//   +1/120 ([y,[x,[y,[x,y]]]] + [x,[y,[x,[y,x]]]])
+						auto br = [](const AlgebraMatrix &A, const AlgebraMatrix &B) -> AlgebraMatrix {
+							return A * B - B * A;
+						};
+						const AlgebraMatrix xy = comm_vw;
+						const AlgebraMatrix yx = -comm_vw;
+						const AlgebraMatrix xxy = br(vMat, xy);
+						const AlgebraMatrix yyx = br(wMat, yx);
+						const AlgebraMatrix xxxy = br(vMat, xxy);
+						const AlgebraMatrix yyyx = br(wMat, yyx);
+						const AlgebraMatrix yxy = br(wMat, xy);
+						const AlgebraMatrix xyx = br(vMat, yx);
+						const AlgebraMatrix t720 = br(wMat, yyyx) + br(vMat, xxxy);
+						const AlgebraMatrix t360 = br(vMat, yyyx) + br(wMat, xxxy);
+						const AlgebraMatrix t120 = br(wMat, br(vMat, yxy)) + br(vMat, br(wMat, xyx));
+						result -= Derived::computeVee(t720) * Scalar(1.0 / 720.0);
+						result += Derived::computeVee(t360) * Scalar(1.0 / 360.0);
+						result += Derived::computeVee(t120) * Scalar(1.0 / 120.0);
 					}
 				}
 			}
@@ -278,12 +259,12 @@ namespace sofa::component::cosserat::liegroups {
 	 * @brief Alternative implementation of the differential of the exponential map.
 	 * This function calculates the Jacobian of the exponential map, which is
 	 * crucial for relating velocities in the Lie algebra to velocities on the Lie
-	 * group. It uses Taylor series expansion for small input values for numerical
-	 * stability and a closed-form expression for larger values.
-	 * 
+	 * group. It evaluates the series sum_k (-ad_v)^k / (k+1)! from the ad() operator, which
+	 * has no singularity and no cancellation.
+	 *
 	 * NOTE: This is an alternative implementation to the wrapper dexp() in LieGroupBase.h
-	 * that calls rightJacobian(). Both implementations should be equivalent but need
-	 * comparison/validation. This version uses direct computation with ad() operator.
+	 * that calls rightJacobian(); both return the right Jacobian (checked against each other
+	 * in Tests/unit/test_LieGroupBase_Generic.cpp).
 	 * 
 	 * @tparam Derived The derived class implementing the specific Lie group.
 	 * @tparam _Scalar The scalar type used for computations.
@@ -301,39 +282,20 @@ namespace sofa::component::cosserat::liegroups {
 	LieGroupBase<Derived, _Scalar, _Dim, _AlgebraDim, _ActionDim>::dexp_alternative(const TangentVector &v) {
 		using Matrix = typename Derived::AdjointMatrix;
 		using Scalar = typename Derived::Scalar;
-		using Types = typename Derived::Types;
 
-		const Scalar theta = v.norm();
-
-		if (Types::isZero(theta)) {
-			return Matrix::Identity();
-		}
-
-		// Create the adjoint representation of v
-		const Matrix ad_v = Derived::ad(v);
-		const Scalar theta_sq = theta * theta;
-
-		// Use improved series with better numerical stability
+		// Right Jacobian Jr(v) = sum_k (-ad_v)^k / (k+1)!, the same convention as dexp() ==
+		// rightJacobian(). The series is valid for every group and every |v| (it converges like
+		// exp), so there is no small-angle branch and no cancellation to guard against.
+		const Matrix minus_ad = -Derived::ad(v);
 		Matrix result = Matrix::Identity();
-
-		// Series coefficients for improved numerical stability
-		if (theta < Types::SMALL_ANGLE_THRESHOLD) {
-			// Use Taylor series for small angles
-			result += ad_v * Scalar(0.5);
-			result += ad_v * ad_v * Scalar(1.0 / 12.0);
-			result += ad_v * ad_v * ad_v * Scalar(1.0 / 720.0);
-		} else {
-			// Use closed form for larger angles
-			const Scalar sin_theta = std::sin(theta);
-			const Scalar cos_theta = std::cos(theta);
-
-			const Scalar c1 = sin_theta / theta;
-			const Scalar c2 = (Scalar(1) - cos_theta) / theta_sq;
-
-			result += ad_v * c2;
-			result += ad_v * ad_v * (theta - sin_theta) / (theta_sq * theta);
+		Matrix term = Matrix::Identity();
+		for (int k = 1; k < 64; ++k) {
+			term = term * minus_ad / Scalar(k + 1);
+			result += term;
+			if (term.cwiseAbs().maxCoeff() <= std::numeric_limits<Scalar>::epsilon() * Scalar(1e-3)) {
+				break;
+			}
 		}
-
 		return result;
 	}
 
@@ -341,12 +303,10 @@ namespace sofa::component::cosserat::liegroups {
 	 * @brief Alternative implementation of the inverse differential of the exponential map.
 	 * This function calculates the inverse Jacobian of the exponential
 	 * map, useful for mapping velocities on the Lie group back to the Lie algebra.
-	 * It employs Taylor series expansion for small input values and a closed-form
-	 * expression for larger values to ensure numerical stability.
-	 * 
+	 * Computed as the inverse of dexp_alternative().
+	 *
 	 * NOTE: This is an alternative implementation to the wrapper dexpInv() in LieGroupBase.h
-	 * that calls rightJacobianInverse(). Both implementations should be equivalent but need
-	 * comparison/validation. This version uses direct computation with ad() operator.
+	 * that calls rightJacobianInverse(); both return the right Jacobian inverse.
 	 * 
 	 * @tparam Derived The derived class implementing the specific Lie group.
 	 * @tparam _Scalar The scalar type used for computations.
@@ -362,47 +322,19 @@ namespace sofa::component::cosserat::liegroups {
 		requires(_Dim > 0 && _AlgebraDim > 0 && _ActionDim > 0)
 	inline typename LieGroupBase<Derived, _Scalar, _Dim, _AlgebraDim, _ActionDim>::AdjointMatrix
 	LieGroupBase<Derived, _Scalar, _Dim, _AlgebraDim, _ActionDim>::dexpInv_alternative(const TangentVector &v) {
-		using Matrix = typename Derived::AdjointMatrix;
-		using Scalar = typename Derived::Scalar;
-		using Types = typename Derived::Types;
-
-		const Scalar theta = v.norm();
-
-		if (Types::isZero(theta)) {
-			return Matrix::Identity();
-		}
-
-		// Create the adjoint representation of v
-		const Matrix ad_v = Derived::ad(v);
-		const Scalar theta_sq = theta * theta;
-
-		Matrix result = Matrix::Identity();
-
-		if (theta < Types::SMALL_ANGLE_THRESHOLD) {
-			// Taylor series for small angles
-			result -= ad_v * Scalar(0.5);
-			result += ad_v * ad_v * Scalar(1.0 / 12.0);
-			result -= ad_v * ad_v * ad_v * Scalar(1.0 / 720.0);
-		} else {
-			// Closed form for larger angles
-			const Scalar sin_theta = std::sin(theta);
-			const Scalar cos_theta = std::cos(theta);
-			const Scalar half_theta = theta * Scalar(0.5);
-			const Scalar cot_half = cos_theta / sin_theta;
-
-			result -= ad_v * Scalar(0.5);
-			result += ad_v * ad_v * (Scalar(1.0 / 12.0) - half_theta * cot_half / Scalar(6.0));
-		}
-
-		return result;
+		// Inverse of the series of dexp_alternative(). The Bernoulli series
+		// I + ad/2 + ad^2/12 - ad^4/720 + ... would only converge for |ad_v| < 2 pi and its
+		// coefficients are easy to get wrong; inverting the always-convergent series is exact
+		// up to the conditioning of Jr (singular only when exp is, i.e. at |phi| = 2 pi k).
+		return dexp_alternative(v).inverse();
 	}
 
 	/**
 	 * @brief Computes the differential of the logarithm map (dlog).
 	 * This function calculates the Jacobian of the logarithm map, which is
 	 * essential for mapping velocities on the Lie group to velocities in the Lie
-	 * algebra. It uses Taylor series expansion for small input values and a
-	 * closed-form expression for larger values to ensure numerical stability.
+	 * algebra: log(g exp(d)) = log(g) + dlog() d + O(d^2), i.e. dexpInv(log g).
+	 * Groups may hide it with their own convention (SO3::dlog() is the left one).
 	 * @tparam Derived The derived class implementing the specific Lie group.
 	 * @tparam _Scalar The scalar type used for computations.
 	 * @tparam _Dim The dimension of the group representation.
@@ -415,40 +347,14 @@ namespace sofa::component::cosserat::liegroups {
 		requires(_Dim > 0 && _AlgebraDim > 0 && _ActionDim > 0)
 	inline typename LieGroupBase<Derived, _Scalar, _Dim, _AlgebraDim, _ActionDim>::AdjointMatrix
 	LieGroupBase<Derived, _Scalar, _Dim, _AlgebraDim, _ActionDim>::dlog() const {
-		using Matrix = typename Derived::AdjointMatrix;
-		using Vector = typename Derived::TangentVector;
-		using Scalar = typename Derived::Scalar;
-		using Types = typename Derived::Types;
-
-		// Get the logarithm of the current element
-		const Vector v = derived().log();
-		const Scalar theta = v.norm();
-
-		if (Types::isZero(theta)) {
-			return Matrix::Identity();
-		}
-
-		// Create the adjoint representation of v
-		const Matrix ad_v = Derived::ad(v);
-		Matrix result = Matrix::Identity();
-
-		if (theta < Types::SMALL_ANGLE_THRESHOLD) {
-			// Taylor series for small angles
-			result -= ad_v * Scalar(0.5);
-			result += ad_v * ad_v * Scalar(1.0 / 12.0);
-			result -= ad_v * ad_v * ad_v * Scalar(1.0 / 720.0);
+		// log(g exp(d)) = log(g) + Jr^-1(log g) d + O(d^2): the inverse of the right Jacobian
+		// at log(g), i.e. dexpInv(log g), consistent with dexp()/dexpInv() of this class.
+		const TangentVector v = derived().log();
+		if constexpr (requires { Derived::computeRightJacobianInverse(v); }) {
+			return Derived::computeRightJacobianInverse(v);
 		} else {
-			// Closed form for larger angles
-			const Scalar sin_theta = std::sin(theta);
-			const Scalar cos_theta = std::cos(theta);
-			const Scalar half_theta = theta * Scalar(0.5);
-
-			const Scalar factor = half_theta * std::cos(half_theta) / std::sin(half_theta);
-			result -= ad_v * Scalar(0.5);
-			result += ad_v * ad_v * (Scalar(1.0 / 12.0) - factor / Scalar(6.0));
+			return dexpInv_alternative(v);
 		}
-
-		return result;
 	}
 
 	/**

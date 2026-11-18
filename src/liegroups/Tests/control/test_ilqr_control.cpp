@@ -45,6 +45,11 @@ TEST_F(ILQRControllerTest, StraightLineTracking) {
     EXPECT_TRUE(result.converged || result.iterations > 0);
     EXPECT_GT(result.iterations, 0);
     EXPECT_LT(result.final_cost, 10.0);  // Reasonable cost
+    // The straight line is reachable (u = 1 along x): the optimum is the control effort alone,
+    // R_control * 5 * |u|^2 = 0.05, the end point is 5e-4 m from the reference. The optimizer used to
+    // leave the controls untouched (cost 112 = the initial cost).
+    EXPECT_LT(result.final_cost, 0.1);
+    EXPECT_LT((result.trajectory.back().translation() - ref.poses.back().translation()).norm(), 1e-2);
 }
 
 TEST_F(ILQRControllerTest, CurvedTrajectory) {
@@ -73,6 +78,8 @@ TEST_F(ILQRControllerTest, CurvedTrajectory) {
     auto result = controller.optimize(ref, initial);
     
     EXPECT_GT(result.iterations, 0);
+    // the cost drops by more than two orders of magnitude (141 -> 0.22 measured)
+    EXPECT_LT(result.final_cost, result.cost_history.front() * 0.01);
     EXPECT_EQ(result.optimal_strains.size(), 10);
     EXPECT_EQ(result.feedback_gains.size(), 10);
 }

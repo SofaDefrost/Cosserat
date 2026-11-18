@@ -25,6 +25,7 @@
 #include <random>
 #include "LieGroupBase.h"
 #include "LieGroupBase.inl"
+#include "SO3.h" // detail::so3JacobianCoefficients (shared sin/cos series)
 #include "SO2.h"
 #include "Types.h"
 
@@ -102,7 +103,8 @@ namespace sofa::component::cosserat::liegroups {
 				throw std::invalid_argument("Invalid SE(2) transformation matrix");
 			}
 
-			m_rotation = SO2<Scalar>(matrix.template block<2, 2>(0, 0));
+			// SO2 has no matrix constructor: recover the angle from the first column.
+			m_rotation = SO2<Scalar>(std::atan2(matrix(1, 0), matrix(0, 0)));
 			m_translation = matrix.template block<2, 1>(0, 2);
 		}
 
@@ -111,7 +113,7 @@ namespace sofa::component::cosserat::liegroups {
 		 * @param tangent_vector 3D vector [vx, vy, ω] representing the Lie algebra
 		 * element.
 		 */
-		explicit SE2(const TangentVector &tangent_vector) { *this = exp(tangent_vector); }
+		explicit SE2(const TangentVector &tangent_vector) { *this = computeExp(tangent_vector); }
 
 		/**
 		 * @brief Copy constructor.
@@ -156,7 +158,7 @@ namespace sofa::component::cosserat::liegroups {
 		 * @param other The other SE2 element to compose with.
 		 * @return The composed SE2 element.
 		 */
-		SE2 compose(const SE2 &other) const { return (*this) * other; }
+		SE2 computeCompose(const SE2 &other) const { return (*this) * other; }
 
 		/**
 		 * @brief In-place group composition operator.
@@ -170,18 +172,9 @@ namespace sofa::component::cosserat::liegroups {
 			return *this;
 		}
 
-		/**
-		 * @brief Interpolates between this and another SE(2) element.
-		 * Uses SLERP for the rotation and LERP for the translation.
-		 * @param other The target SE(2) element.
-		 * @param t The interpolation parameter [0, 1].
-		 * @return The interpolated SE(2) element.
-		 */
-		SE2 interpolate(const SE2 &other, const Scalar &t) const {
-			const SO2<Scalar> interp_rot = m_rotation.interpolate(other.m_rotation, t);
-			const Vector2 interp_trans = m_translation + t * (other.m_translation - m_translation);
-			return SE2(interp_rot, interp_trans);
-		}
+		// interpolate(other, t): LieGroupBase::interpolate, the geodesic g exp(t log(g^-1 h)). (SE2 used to
+		// override it with SLERP(rotation) + LERP(translation), which is not the geodesic nor an
+		// interpolation of the group.)
 
 		// ========== Lie Algebra Operations ==========
 
@@ -197,21 +190,16 @@ namespace sofa::component::cosserat::liegroups {
 			const Scalar &theta = algebra_element[2];
 			const Vector2 rho(algebra_element[0], algebra_element[1]);
 
-			// Handle small angle case for numerical stability
-			if (std::abs(theta) < Types<Scalar>::epsilon()) {
-				return SE2(SO2<Scalar>(theta), rho);
-			}
-
-			// Compute V matrix for translation component
-			const Scalar sin_theta = std::sin(theta);
-			const Scalar cos_theta = std::cos(theta);
-			const Scalar theta_inv = Scalar(1.0) / theta;
-			const Scalar sin_over_theta = sin_theta * theta_inv;
-			const Scalar one_minus_cos_over_theta = (Scalar(1.0) - cos_theta) * theta_inv;
-
+			// V(theta) = [sin t / t, -(1 - cos t)/t ; (1 - cos t)/t, sin t / t]. With the shared
+			// coefficients a = (1 - cos t)/t^2 and b = (t - sin t)/t^3 (series for small t):
+			// sin t / t = 1 - t^2 b and (1 - cos t)/t = t a, with no division by theta and no
+			// cancellation (the direct quotients were off by 1e-9 at theta = 1e-9).
+			Scalar a, b, c;
+			detail::so3JacobianCoefficients(std::abs(theta), a, b, c);
+			const Scalar sin_over_theta = Scalar(1) - theta * theta * b;
+			const Scalar one_minus_cos_over_theta = theta * a;
 			Matrix2 V;
 			V << sin_over_theta, -one_minus_cos_over_theta, one_minus_cos_over_theta, sin_over_theta;
-
 			return SE2(SO2<Scalar>(theta), V * rho);
 		}
 
@@ -221,39 +209,18 @@ namespace sofa::component::cosserat::liegroups {
 		 */
 		TangentVector computeLog() const {
 			const Scalar theta = m_rotation.angle();
-			TangentVector result;
 
-			// Handle small angle case
-			if (std::abs(theta) < Types<Scalar>::epsilon()) {
-				result << m_translation, theta;
-				return result;
-			}
-
-			// Check for singularity (θ = ±π)
-			const Scalar abs_theta = std::abs(theta);
-			if (abs_theta > M_PI - Types<Scalar>::epsilon()) {
-				// Near ±π, use series expansion for numerical stability
-				const Scalar theta_sq = theta * theta;
-				const Scalar coeff = Scalar(1.0) - theta_sq / Scalar(12.0); // First correction term
-				Matrix2 V_inv = coeff * Matrix2::Identity();
-				V_inv(0, 1) = -theta / Scalar(2.0);
-				V_inv(1, 0) = theta / Scalar(2.0);
-
-				Vector2 rho = V_inv * m_translation;
-				result << rho, theta;
-				return result;
-			}
-
-			// General case
-			const Scalar sin_theta = std::sin(theta);
-			const Scalar cos_theta = std::cos(theta);
-			const Scalar half_theta = theta * Scalar(0.5);
-			const Scalar cot_half = cos_theta / sin_theta; // cot(θ/2) = cos(θ)/sin(θ) for θ ≠ 0
-
+			// V^-1(theta) = [h, theta/2 ; -theta/2, h] with h = (theta/2) cot(theta/2) = 1 - theta^2 c,
+			// c = (1 - (t/2) cot(t/2)) / t^2 from the shared coefficients (series for small t, finite and
+			// accurate up to |theta| = pi). The previous code used cot(theta) instead of cot(theta/2),
+			// the wrong sign for the off-diagonal terms and, for small theta, h = 1/2 instead of 1.
+			Scalar a, b, c;
+			detail::so3JacobianCoefficients(std::abs(theta), a, b, c);
+			const Scalar h = Scalar(1) - theta * theta * c;
 			Matrix2 V_inv;
-			V_inv << half_theta * cot_half, -half_theta, half_theta, half_theta * cot_half;
-
-			Vector2 rho = V_inv * m_translation;
+			V_inv << h, Scalar(0.5) * theta, -Scalar(0.5) * theta, h;
+			const Vector2 rho = V_inv * m_translation;
+			TangentVector result;
 			result << rho, theta;
 			return result;
 		}
@@ -269,8 +236,9 @@ namespace sofa::component::cosserat::liegroups {
 			Ad.template block<2, 2>(0, 0) = m_rotation.matrix();
 
 			// Translation coupling (top-right 2x1)
-			Ad(0, 2) = -m_translation.y();
-			Ad(1, 2) = m_translation.x();
+			// Ad_g = [R, -J t ; 0, 1] with J = [[0, -1], [1, 0]]: the translation column is (t_y, -t_x).
+			Ad(0, 2) = m_translation.y();
+			Ad(1, 2) = -m_translation.x();
 
 			// Bottom row for angular component
 			Ad(2, 2) = Scalar(1.0);
@@ -297,9 +265,11 @@ namespace sofa::component::cosserat::liegroups {
 		 * @param eps The tolerance for approximation.
 		 * @return True if the elements are approximately equal, false otherwise.
 		 */
-		bool computeIsApprox(const SE2 &other, const Scalar &eps) const {
+		bool computeIsApprox(const SE2 &other, const Scalar &eps = Types<Scalar>::tolerance()) const {
+			// absolute tolerance scaled by max(1, |t|): Eigen's relative isApprox is false against a zero translation
+			const Scalar scale = std::max(Scalar(1), std::max(m_translation.norm(), other.m_translation.norm()));
 			return m_rotation.computeIsApprox(other.m_rotation, eps) &&
-				   m_translation.isApprox(other.m_translation, eps);
+				   (m_translation - other.m_translation).norm() <= eps * scale;
 		}
 
 		/**
@@ -401,13 +371,16 @@ namespace sofa::component::cosserat::liegroups {
 		 * @return The adjoint matrix.
 		 */
 		static AdjointMatrix computeAd(const TangentVector &v) {
-			AdjointMatrix Ad = AdjointMatrix::Zero();
-			Ad(0, 0) = 1.0;
-			Ad(1, 1) = 1.0;
-			Ad(2, 2) = 1.0;
-			Ad(0, 2) = -v(1);
-			Ad(1, 2) = v(0);
-			return Ad;
+			// ad_xi y = [xi, y] = vee(hat(xi) hat(y) - hat(y) hat(xi)), xi = [rho ; theta]:
+			//   rho part: theta_x J rho_y - theta_y J rho_x,  theta part: 0
+			// so ad_xi = [[theta J, -J rho], [0, 0]]. (The previous body returned an
+			// identity-plus-translation matrix, i.e. an adjoint, not ad.)
+			AdjointMatrix ad = AdjointMatrix::Zero();
+			ad(0, 1) = -v(2);
+			ad(1, 0) = v(2);
+			ad(0, 2) = v(1);
+			ad(1, 2) = -v(0);
+			return ad;
 		}
 
 		/**
@@ -497,11 +470,12 @@ namespace sofa::component::cosserat::liegroups {
 		 * Checks if the bottom row is [0, 0, 1] and if the rotation part is valid.
 		 * @param matrix The 3x3 matrix to validate.
 		 * @param eps The tolerance for floating-point comparisons. Defaults to
-		 * `Types<Scalar>::epsilon()`.
+		 * sqrt(epsilon): a matrix rebuilt from exp/compose is orthonormal only to a few ulps.
 		 * @return True if the matrix is a valid SE(2) transformation matrix, false
 		 * otherwise.
 		 */
-		static bool isValidTransformationMatrix(const Matrix3 &matrix, const Scalar &eps = Types<Scalar>::epsilon()) {
+		static bool isValidTransformationMatrix(const Matrix3 &matrix,
+											 const Scalar &eps = std::sqrt(Types<Scalar>::epsilon())) {
 			// Check bottom row is [0, 0, 1]
 			if (!matrix.template block<1, 2>(2, 0).isZero(eps) || std::abs(matrix(2, 2) - Scalar(1)) > eps) {
 				return false;

@@ -89,6 +89,9 @@ TEST(CosseratParameterEstimator, RecoverKnownParameters) {
     config.max_iterations = 200;
     config.learning_rate = 0.05;
     config.convergence_threshold = 1e-6;
+    // Perfect data: no pull towards 1. The tip position depends on I_scale through ~1e-3 sensitivities, so even
+    // the default 0.001 regularisation dominates the data term and moves the optimum to I_scale = 1.02.
+    config.regularization = 0.0;
     config.verbose = false;
     
     Estimator estimator(config);
@@ -168,8 +171,8 @@ TEST(CosseratParameterEstimator, ConvergenceMonotonic) {
         }
     }
     
-    // Allow at most 10% of iterations to increase
-    EXPECT_LT(num_increases, result.cost_history.size() / 10);
+    // Levenberg-Marquardt only accepts steps that decrease the cost: strictly monotone history
+    EXPECT_EQ(num_increases, 0);
     
     // Final cost should be lower than initial
     EXPECT_LT(result.final_cost, result.cost_history[0] * 0.5);

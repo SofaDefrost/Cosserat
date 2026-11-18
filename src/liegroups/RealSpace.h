@@ -88,7 +88,7 @@ namespace sofa::component::cosserat::liegroups {
 		 * @param other The other RealSpace element to compose with.
 		 * @return The composed RealSpace element.
 		 */
-		RealSpace compose(const RealSpace &other) const { return RealSpace(m_data + other.m_data); }
+		RealSpace computeCompose(const RealSpace &other) const { return RealSpace(m_data + other.m_data); }
 
 		/**
 		 * @brief Computes the exponential map from the Lie algebra to the RealSpace
@@ -128,8 +128,10 @@ namespace sofa::component::cosserat::liegroups {
 		 * `Types<Scalar>::epsilon()`.
 		 * @return True if the elements are approximately equal, false otherwise.
 		 */
-		bool computeIsApprox(const RealSpace &other, const Scalar &eps = Types<Scalar>::epsilon()) const {
-			return m_data.isApprox(other.m_data, eps);
+		bool computeIsApprox(const RealSpace &other, const Scalar &eps = Types<Scalar>::tolerance()) const {
+			// absolute tolerance scaled by max(1, |x|): Eigen's relative isApprox is false against a zero vector
+			const Scalar scale = std::max(Scalar(1), std::max(m_data.norm(), other.m_data.norm()));
+			return (m_data - other.m_data).norm() <= eps * scale;
 		}
 
 		/**

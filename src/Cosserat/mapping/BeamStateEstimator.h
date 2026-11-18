@@ -120,10 +120,10 @@ namespace Cosserat::mapping {
 
 			// Innovation in tangent space: r = log(X⁻¹ · Z)
 			const SE3Type &X = pose_estimate_.getMean();
-			const TangentVector r = X.computeInverse().compose(measurement).computeLog();
+			const TangentVector r = X.inverse().compose(measurement).log();
 
 			// Mean update: X_new = X · exp(K · r)
-			const SE3Type X_new = X.compose(SE3Type::computeExp(K * r));
+			const SE3Type X_new = X.compose(SE3Type::exp(K * r));
 
 			// Covariance update: P_new = (I − K) · P
 			const CovarianceMatrix P_new =

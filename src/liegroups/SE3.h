@@ -24,6 +24,28 @@ namespace sofa::component::cosserat::liegroups {
 	 *
 	 * @tparam _Scalar The scalar type (must be a floating-point type)
 	 */
+	namespace detail {
+	/// Coefficients of the Q block of the SE(3) left Jacobian, see SE3::jacobianQ.
+	template<typename Scalar>
+	inline void se3QCoefficients(const Scalar t, Scalar &c1, Scalar &c2, Scalar &c3) noexcept {
+		const Scalar t2 = t * t;
+		if (t < so3SeriesAngle<Scalar>()) {
+			const Scalar t4 = t2 * t2;
+			c1 = Scalar(1) / Scalar(6) - t2 / Scalar(120) + t4 / Scalar(5040) - t4 * t2 / Scalar(362880) +
+				 t4 * t4 / Scalar(39916800) - t4 * t4 * t2 / Scalar(6227020800.0);
+			c2 = Scalar(1) / Scalar(24) - t2 / Scalar(720) + t4 / Scalar(40320) - t4 * t2 / Scalar(3628800) +
+				 t4 * t4 / Scalar(479001600) - t4 * t4 * t2 / Scalar(87178291200.0);
+			c3 = Scalar(1) / Scalar(120) - t2 / Scalar(2520) + t4 / Scalar(120960) - t4 * t2 / Scalar(9979200) +
+				 t4 * t4 / Scalar(1245404160.0);
+		} else {
+			const Scalar st = std::sin(t), ct = std::cos(t);
+			c1 = (t - st) / (t2 * t);
+			c2 = (Scalar(0.5) * t2 + ct - Scalar(1)) / (t2 * t2);
+			c3 = (Scalar(2) * t - Scalar(3) * st + t * ct) / (Scalar(2) * t2 * t2 * t);
+		}
+	}
+	} // namespace detail
+
 	template<typename _Scalar>
 	class SE3 : public LieGroupBase<SE3<_Scalar>, _Scalar, 4, 6, 3> {
 	public:
@@ -50,8 +72,7 @@ namespace sofa::component::cosserat::liegroups {
 
 		SE3() : m_rotation(), m_translation(Vector3::Zero()) {}
 		SE3(const SO3Type &rotation, const Vector3 &translation) : m_rotation(rotation), m_translation(translation) {}
-		SE3(const Quaternion &quat, const Vector3 &translation) :
-			m_rotation(quat.toRotationMatrix()), m_translation(translation) {}
+		SE3(const Quaternion &quat, const Vector3 &translation) : m_rotation(quat), m_translation(translation) {}
 		explicit SE3(const Matrix4 &matrix) :
 			m_rotation(matrix.template block<3, 3>(0, 0)), m_translation(matrix.template block<3, 1>(0, 3)) {}
 
@@ -64,7 +85,7 @@ namespace sofa::component::cosserat::liegroups {
 			return SE3(inv_rot, -(inv_rot.act(m_translation)));
 		}
 
-		SE3 compose(const SE3 &other) const {
+		SE3 computeCompose(const SE3 &other) const {
 			return SE3(m_rotation * other.m_rotation, m_rotation.act(other.m_translation) + m_translation);
 		}
 
@@ -86,11 +107,8 @@ namespace sofa::component::cosserat::liegroups {
 	 *
 	 * For ξ = [φ, ρ]ᵀ ∈ se(3):
 	 *
-	 * Small case (‖φ‖ ≈ 0):
-	 *   T = I₄ + s·ξ̂
-	 *
-	 * General case:
-	 *   T = I₄ + s·ξ̂ + α·ξ̂² + β·ξ̂³
+	 * T = exp(s·ξ̂) with ξ̂ = hat([φ ; ρ + e_x]) = I₄ + s·ξ̂ + α·ξ̂² + β·ξ̂³ (closed form, evaluated through
+	 * computeExp for numerical stability at small ‖φ‖)
 	 *   where α = (1-cos(s‖φ‖))/‖φ‖², β = (s‖φ‖-sin(s‖φ‖))/‖φ‖³
 	 *
 	 * @param strain 6D strain vector [φ, ρ]ᵀ (angular and linear strain rates).
@@ -98,18 +116,13 @@ namespace sofa::component::cosserat::liegroups {
 	 * @return The corresponding SE3 element.
 	 */
 		static SE3 expCosserat(const TangentVector &strain, const Scalar &length) noexcept {
-			// Extract translation and rotation parts
-			const Vector3 rho = strain.template tail<3>(); // Linear strain (translation rate)
-			const Vector3 phi = strain.template head<3>(); // Angular strain (rotation rate)
-
-			const Scalar phi_norm = phi.norm();
-
-			// Handle small rotation case
-			if (phi_norm <= std::numeric_limits<Scalar>::epsilon()) {
-				return expCosseratSmall(rho, phi, length);
-			}
-
-			return expCosseratGeneral(rho, phi, phi_norm, length);
+			// exp(length * (strain + [0 ; e_x])): the rod is at unit stretch when rho = 0, hence the +1 on the
+			// x component of the linear part. Going through the cancellation-free computeExp replaces the
+			// series I + sξ̂ + αξ̂² + βξ̂³ whose α = (1-cos(s‖φ‖))/‖φ‖² and β = (s‖φ‖-sin(s‖φ‖))/‖φ‖³ multiply
+			// matrices holding the O(1) unit stretch: with ‖φ‖ = 1e-9 the translation was off by 4.6e-10.
+			TangentVector xi = strain;
+			xi[3] += Scalar(1);
+			return computeExp(length * xi);
 		}
 
 		/**
@@ -130,27 +143,13 @@ namespace sofa::component::cosserat::liegroups {
 		static SE3 computeExp(const TangentVector &xi) {
 			const Vector3 rho = xi.template tail<3>();
 			const Vector3 phi = xi.template head<3>();
-
-			const Scalar angle  = phi.norm();
-			const SO3Type R     = SO3Type::exp(phi);
-			const Matrix3 K_phi = SO3Type::computeHat(phi);   // [φ]× (non normalisé)
-			Matrix3 V;
-
-			if (angle < Types<Scalar>::SMALL_ANGLE_THRESHOLD) {
-				// 3rd-order Taylor expansion in θ
-				const Scalar theta2 = angle * angle;
-				const Scalar c1 = Scalar(0.5)        - theta2 / Scalar(24);
-				const Scalar c2 = Scalar(1) / Scalar(6) - theta2 / Scalar(120);
-				V = Matrix3::Identity() + c1 * K_phi + c2 * (K_phi * K_phi);
-			} else {
-				// General case, in terms of [φ]× :
-				//   V = I + (1-cos θ)/θ² · [φ]× + (θ-sin θ)/θ³ · [φ]×²
-				const Scalar theta2 = angle * angle;
-				const Scalar theta3 = theta2 * angle;
-				const Scalar c1 = (Scalar(1) - std::cos(angle)) / theta2;
-				const Scalar c2 = (angle - std::sin(angle))      / theta3;
-				V = Matrix3::Identity() + c1 * K_phi + c2 * (K_phi * K_phi);
-			}
+			const SO3Type R = SO3Type::exp(phi);
+			const Matrix3 K_phi = SO3Type::computeHat(phi); // [phi]x (not normalised)
+			// V(phi) = I + a [phi]x + b [phi]x^2 is the SO(3) left Jacobian; a, b come from the
+			// shared series / closed-form switch (no cancellation, see detail::so3JacobianCoefficients).
+			Scalar a, b, c;
+			detail::so3JacobianCoefficients(phi.norm(), a, b, c);
+			const Matrix3 V = Matrix3::Identity() + a * K_phi + b * (K_phi * K_phi);
 			return SE3(R, V * rho);
 		}
 
@@ -176,78 +175,19 @@ namespace sofa::component::cosserat::liegroups {
 		 *   c(θ) ≈ 1/12 + θ²/720
 		 */
 		TangentVector computeLog() const {
-			const Vector3 phi   = m_rotation.log();
-			const Scalar  angle = phi.norm();
-			const Matrix3 K_phi = SO3Type::computeHat(phi);   // [φ]× (non normalisé)
-			Matrix3 V_inv;
-
-			if (angle < Types<Scalar>::SMALL_ANGLE_THRESHOLD) {
-				// 3rd-order Taylor expansion in θ
-				const Scalar theta2 = angle * angle;
-				const Scalar c2 = Scalar(1) / Scalar(12) + theta2 / Scalar(720);
-				V_inv = Matrix3::Identity() - Scalar(0.5) * K_phi + c2 * (K_phi * K_phi);
-			} else {
-				// General case, in terms of [φ]× :
-				//   V⁻¹ = I − ½ [φ]× + c(θ) [φ]×²
-				const Scalar sin_a  = std::sin(angle);
-				const Scalar cos_a  = std::cos(angle);
-				const Scalar theta2 = angle * angle;
-				const Scalar c2 = Scalar(1) / theta2
-				                - (Scalar(1) + cos_a) / (Scalar(2) * angle * sin_a);
-				V_inv = Matrix3::Identity() - Scalar(0.5) * K_phi + c2 * (K_phi * K_phi);
-			}
-
+			const Vector3 phi = m_rotation.log();
+			const Matrix3 K_phi = SO3Type::computeHat(phi); // [phi]x (not normalised)
+			// V^-1(phi) = I - [phi]x/2 + c [phi]x^2 with c = 1/t^2 - 1/(2 t tan(t/2)); the half-angle
+			// form stays accurate up to t = pi where the (1 + cos t)/(2 t sin t) form had 1e-9 errors.
+			Scalar a, b, c;
+			detail::so3JacobianCoefficients(phi.norm(), a, b, c);
+			const Matrix3 V_inv = Matrix3::Identity() - Scalar(0.5) * K_phi + c * (K_phi * K_phi);
 			const Vector3 rho = V_inv * m_translation;
 			TangentVector result;
-			result.template head<3>() = phi;  // angular first — consistent with computeExp()
-			result.template tail<3>() = rho;  // linear second
+			result.template head<3>() = phi; // angular first, consistent with computeExp()
+			result.template tail<3>() = rho; // linear second
 			return result;
 		}
-
-		// static SE3 computeExp(const TangentVector &xi) {
-		// 	const Vector3 rho = xi.template tail<3>();
-		// 	const Vector3 phi = xi.template head<3>();
-
-		// 	const Scalar angle = phi.norm();
-		// 	const SO3Type R = SO3Type::exp(phi);
-		// 	Matrix3 V;
-
-		// 	if (angle < Types<Scalar>::epsilon()) {
-		// 		V = Matrix3::Identity() + Scalar(0.5) * SO3Type::computeHat(phi);
-		// 	} else {
-		// 		const Vector3 axis = phi / angle;
-		// 		const Matrix3 K = SO3Type::computeHat(axis);
-		// 		const Scalar sin_angle = std::sin(angle);
-		// 		const Scalar cos_angle = std::cos(angle);
-		// 		V = Matrix3::Identity() + (Scalar(1) - cos_angle) / angle * K +
-		// 			(angle - sin_angle) / (angle * angle) * K * K;
-		// 	}
-		// 	return SE3(R, V * rho);
-		// }
-
-		// TangentVector computeLog() const {
-		// 	const Vector3 phi = m_rotation.log();
-		// 	const Scalar angle = phi.norm();
-		// 	Matrix3 V_inv;
-
-		// 	if (angle < Types<Scalar>::epsilon()) {
-		// 		V_inv = Matrix3::Identity() - Scalar(0.5) * SO3Type::computeHat(phi);
-		// 	} else {
-		// 		// const Vector3 axis = phi / angle; //@appa: correction here (error if division with angle)
-		// 		const Matrix3 phiHat = SO3Type::computeHat(phi);
-		// 		const Scalar sin_angle = std::sin(angle);
-		// 		const Scalar cos_angle = std::cos(angle);
-		// 		V_inv = Matrix3::Identity() - Scalar(0.5) * phiHat +
-		// 				((Scalar(2) * sin_angle - angle * (Scalar(1) + cos_angle)) /
-		// 						(Scalar(2) * angle * angle * sin_angle)) * phiHat * phiHat;
-		// 	}
-
-		// 	const Vector3 rho = V_inv * m_translation;
-		// 	TangentVector result;
-		// 	result.template head<3>() = phi;
-		// 	result.template tail<3>() = rho;
-		// 	return result;
-		// }
 
 		AdjointMatrix computeAdjoint() const {
 			AdjointMatrix Ad = AdjointMatrix::Zero();
@@ -260,7 +200,7 @@ namespace sofa::component::cosserat::liegroups {
 		}
 
 
-		AdjointMatrix computeCoAdjoint() const {
+		AdjointMatrix coAdjoint() const {
 			AdjointMatrix coAd = AdjointMatrix::Zero();
 			const Matrix3 R = m_rotation.matrix();
 			coAd.template block<3, 3>(0, 0) = R;
@@ -271,21 +211,23 @@ namespace sofa::component::cosserat::liegroups {
 		}
 
 		// ========== CRTP Interface Implementations ==========
-		TangentVector computeTangent(const ActionVector &point) const {
-			TangentVector tangent;
-			tangent.template head<3>() = m_rotation.inverse().act(point - m_translation);
-			tangent.template tail<3>() = m_rotation.inverse().log();
-			return tangent;
+		/**
+		 * @brief hat operator of se(3): [phi ; rho] -> [[phi]x rho ; 0 0] (CRTP hook of LieGroupBase::hat,
+		 * used by the generic BCH(), matrixLog() and ad()).
+		 */
+		static Matrix4 computeHat(const TangentVector &xi) {
+			Matrix4 X = Matrix4::Zero();
+			X.template block<3, 3>(0, 0) = SO3Type::computeHat(Vector3(xi.template head<3>()));
+			X.template block<3, 1>(0, 3) = xi.template tail<3>();
+			return X;
 		}
 
-		/**
-		 * @brief Logarithmic map — thin wrapper around computeLog() for CRTP callers.
-		 *
-		 * Returns [φ(head<3>), ρ(tail<3>)] = [angular, V⁻¹·t].
-		 * Consistent with computeExp().
-		 */
-		TangentVector log() const {
-			return computeLog();
+		/// vee operator of se(3), inverse of computeHat().
+		static TangentVector computeVee(const Matrix4 &X) {
+			TangentVector xi;
+			xi.template head<3>() = SO3Type::computeVee(Matrix3(X.template block<3, 3>(0, 0)));
+			xi.template tail<3>() = X.template block<3, 1>(0, 3);
+			return xi;
 		}
 
 		/**
@@ -349,46 +291,26 @@ namespace sofa::component::cosserat::liegroups {
 		/// ad(v, w) = [v, w] = ad_v w = vee(hat(v) hat(w) - hat(w) hat(v)) (a 6-vector, not a matrix).
 		static TangentVector ad(const TangentVector &v, const TangentVector &w) { return lieBracket(v, w); }
 
-		AdjointMatrix projector() const {
-			AdjointMatrix Ad = AdjointMatrix::Zero();
-			const Matrix3 R = m_rotation.matrix();
-			Ad.template block<3, 3>(0, 0) = R;
-			Ad.template block<3, 3>(3, 3) = R;
-			Ad.template block<3, 3>(0, 3) = SO3Type::computeHat(m_translation) * R;
-			return Ad;
-		}
-
+		/**
+		 * @brief Differential of the logarithm at this element, in the right convention:
+		 *   log(g exp(d)) = log(g) + dlog() d + O(d^2),  dlog() = Jr^-1(log g) = dexpInv(log g).
+		 *
+		 * Declared by LieGroupBase (generic implementation through computeRightJacobianInverse);
+		 * the SE3-specific override that used to be here returned the co-adjoint matrix
+		 * instead, so it is simply removed. SO3::dlog() uses the same (right) convention.
+		 */
+		using Base::dlog;
 
 		/**
-		 * @brief ⚠ MISNAMED — this returns the adjoint Ad_g, NOT the differential
-		 *        of the logarithm map.
-		 *
-		 * The true differential of the SE(3) log requires the inverse of the
-		 * SE(3) left Jacobian (with the « Q-matrix » of Barfoot et al.) and is
-		 * NOT implemented here. Anyone calling this function expecting d(log)/dg
-		 * will get nonsense.
-		 *
-		 * Kept under the historical name for API compatibility — see also the
-		 * (correct) `computeAdjoint()` method which returns the exact same value.
-		 *
-		 * TODO : either implement the real d(log) (see Barfoot, State Estimation
-		 * for Robotics, §7.1.4), or rename this to `adjointAlias()` and deprecate.
+		 * @brief Approximate equality. The translations are compared with an absolute tolerance
+		 * scaled by max(1, |t|): Eigen's isApprox is relative (|a-b| <= eps min(|a|,|b|)), so it
+		 * is false for any non-zero difference when one translation is exactly 0, e.g. for
+		 * identity versus a product g * g^-1 whose translation is 1e-17.
 		 */
-		AdjointMatrix dlog() const {
-			AdjointMatrix Ad = AdjointMatrix::Zero();
-			const Matrix3 R = m_rotation.matrix();
-			Ad.template block<3, 3>(0, 0) = R;
-			Ad.template block<3, 3>(3, 3) = R;
-			Ad.template block<3, 3>(0, 3) = SO3Type::computeHat(m_translation) * R;
-			return Ad;
-		}
-
-
-		AdjointMatrix adjoint() const noexcept { return computeAdjoint(); }
-
-
-		bool computeIsApprox(const SE3 &other, const Scalar &eps) const {
-			return m_rotation.isApprox(other.m_rotation, eps) && m_translation.isApprox(other.m_translation, eps);
+		bool computeIsApprox(const SE3 &other, const Scalar &eps = Types<Scalar>::tolerance()) const {
+			const Scalar scale = std::max(Scalar(1), std::max(m_translation.norm(), other.m_translation.norm()));
+			return m_rotation.isApprox(other.m_rotation, eps) &&
+				   (m_translation - other.m_translation).norm() <= eps * scale;
 		}
 
 		/**
@@ -415,14 +337,20 @@ namespace sofa::component::cosserat::liegroups {
 
 		// ========== New Integrated Functions ==========
 
+		/// Geodesic g exp(t log(g^-1 h)); t is clamped to [0, 1] like LieGroupBase::interpolate and
+		/// SO3::interpolate (it extrapolated before).
 		SE3 interpolate(const SE3 &other, const Scalar &t) const {
-			return (*this) * SE3::exp(t * (this->inverse() * other).log());
+			const Scalar tc = std::max(Scalar(0), std::min(Scalar(1), t));
+			return (*this) * SE3::exp(tc * (this->inverse() * other).log());
 		}
 
 		static SE3 interpolateExponential(const TangentVector &xi1, const TangentVector &xi2, Scalar t) {
 			return SE3::exp(xi1 + t * (xi2 - xi1));
 		}
 
+		/// w_rot * (rotation angle of g^-1 h) + w_trans * |t_g - t_h|. A sum of two distances, hence a distance;
+		/// left-invariant, d(k g, k h) = d(g, h), but not right-invariant and not the Riemannian metric
+		/// sqrt(w_rot angle^2 + w_trans |dt|^2).
 		Scalar distance(const SE3 &other, Scalar w_rot = Scalar(1), Scalar w_trans = Scalar(1)) const {
 			const Scalar rot_dist = m_rotation.distance(other.m_rotation);
 			const Scalar trans_dist = (m_translation - other.m_translation).norm();
@@ -452,16 +380,17 @@ namespace sofa::component::cosserat::liegroups {
 	/**
 	 * @brief Compute the Jacobian of group composition.
 	 * 
-	 * For g = this * h, computes jacobians in the tangent space se(3).
-	 * Left Jacobian: ∂g/∂this when perturbing this on the left
-	 * Right Jacobian: ∂g/∂h when perturbing h on the left
+	 * For g = this * h, computes jacobians in the tangent space se(3), right perturbation (g exp(δ)),
+	 * the convention of all the Jacobians of this class and of dexp/dlog:
+	 * J_left  = ∂(g h)/∂g = Ad_{h⁻¹}
+	 * J_right = ∂(g h)/∂h = I
 	 * 
 	 * @param other The other SE3 element h
 	 * @return Pair of 6x6 Jacobians (J_left, J_right)
 	 */
 	std::pair<AdjointMatrix, AdjointMatrix> composeJacobians(const SE3 &other) const noexcept {
-		// For SE(3): g * h with left perturbation
-		// Left Jacobian: ∂(g*h)/∂g = Ad_{h^{-1}}
+		// For SE(3): g * h with right perturbation g exp(δ): g exp(δ) h = g h exp(Ad_{h⁻¹} δ)
+		// ∂(g*h)/∂g = Ad_{h^{-1}}
 		AdjointMatrix J_left = other.computeInverse().computeAdjoint();
 		
 		// Right Jacobian: ∂(g*h)/∂h = I
@@ -478,15 +407,15 @@ namespace sofa::component::cosserat::liegroups {
 	 * @return 6x6 Jacobian matrix
 	 */
 	AdjointMatrix inverseJacobian() const noexcept {
-		// ∂g^{-1}/∂g = -Ad_{g^{-1}}
-		return -computeInverse().computeAdjoint();
+		// right perturbation: (g exp(δ))^{-1} = g^{-1} exp(-Ad_g δ), so ∂g^{-1}/∂g = -Ad_g
+		return -computeAdjoint();
 	}
 
 	/**
 	 * @brief Compute the Jacobian of the group action on a point.
 	 *
 	 * For y = g*p (where g acts on point p), computes:
-	 * - ∂y/∂g (g perturbed on the LEFT in the tangent space, exp(ξ)·g, ξ = [φ ; ρ]ᵀ): 3x6 matrix
+	 * - ∂y/∂g (g perturbed on the right, g·exp(ξ), ξ = [φ ; ρ]ᵀ): 3x6 matrix
 	 * - ∂y/∂p: 3x3 matrix
 	 *
 	 * Columns follow the library layout [φ (angular, 0..2) ; ρ (linear, 3..5)] of computeExp/computeLog.
@@ -501,22 +430,22 @@ namespace sofa::component::cosserat::liegroups {
 	/**
 	 * @brief Compute only the Jacobian w.r.t. the group element for action.
 	 *
-	 * Left perturbation, ξ = [φ ; ρ]ᵀ:  exp(ξ)·(g·p) ≈ y + ρ + φ × y   with y = g·p = R p + t, so
+	 * Right perturbation, ξ = [φ ; ρ]ᵀ:  g·exp(ξ)·p ≈ R (p + φ × p + ρ) + t, so
 	 *
-	 *   ∂(g·p)/∂ξ = [ -[y]×  |  I₃ ]      (columns 0..2 : φ, columns 3..5 : ρ)
+	 *   ∂(g·p)/∂ξ = [ -R [p]×  |  R ]      (columns 0..2 : φ, columns 3..5 : ρ)
 	 *
-	 * (a right perturbation g·exp(ξ) would instead give [ -R [p]× | R ]; that is what the generic
-	 * LieGroupBase::actionJacobian finite differences compute.)
+	 * This is the convention of the generic LieGroupBase::actionJacobian (finite differences) and of
+	 * dexp/dlog.
 	 *
 	 * @param point The point p ∈ ℝ³
 	 * @return 3x6 Jacobian ∂(g*p)/∂g
 	 */
 	JacobianMatrix actionJacobianGroup(const ActionVector &point) const noexcept {
-		const Vector3 y = m_rotation.act(point) + m_translation;
+		const Matrix3 R = m_rotation.matrix();
 
 		JacobianMatrix J;  // 3x6
-		J.template block<3, 3>(0, 0) = -SO3Type::computeHat(y);  // ∂y/∂φ
-		J.template block<3, 3>(0, 3) = Matrix3::Identity();      // ∂y/∂ρ
+		J.template block<3, 3>(0, 0) = -R * SO3Type::computeHat(point);  // ∂y/∂φ
+		J.template block<3, 3>(0, 3) = R;                                // ∂y/∂ρ
 
 		return J;
 	}
@@ -554,51 +483,41 @@ namespace sofa::component::cosserat::liegroups {
 	/// c = (1 - ½θ·cot(θ/2))/θ²  (→ 1/12 as θ→0). Static counterpart of
 	/// SO3::dlog() (which only exists as a member on a group element).
 	static Matrix3 so3LeftJacobianInverse(const Vector3 &phi) {
-		const Scalar theta = phi.norm();
-		const Matrix3 Phi  = SO3Type::computeHat(phi);
-		const Matrix3 Phi2 = Phi * Phi;
-		if (theta < Types<Scalar>::SMALL_ANGLE_THRESHOLD)
-			return Matrix3::Identity() - Scalar(0.5) * Phi + (Scalar(1) / Scalar(12)) * Phi2;
-		const Scalar theta2 = theta * theta;
-		const Scalar ht     = Scalar(0.5) * theta;
-		const Scalar c = (Scalar(1) - Scalar(0.5) * theta * std::cos(ht) / std::sin(ht)) / theta2;
-		return Matrix3::Identity() - Scalar(0.5) * Phi + c * Phi2;
+		Scalar a, b, c;
+		detail::so3JacobianCoefficients(phi.norm(), a, b, c);
+		const Matrix3 Phi = SO3Type::computeHat(phi);
+		return Matrix3::Identity() - Scalar(0.5) * Phi + c * (Phi * Phi);
 	}
 
 	/// SE(3) coupling block Q(ρ,φ) — the lower-left 3×3 block of Jl(ξ).
-	static Matrix3 computeQ(const Vector3 &rho, const Vector3 &phi) {
+	static Matrix3 jacobianQ(const Vector3 &rho, const Vector3 &phi) {
 		const Scalar theta   = phi.norm();
 		const Matrix3 N      = SO3Type::computeHat(rho);
 		const Matrix3 Phi    = SO3Type::computeHat(phi);
 		const Matrix3 PhiN   = Phi * N;
 		const Matrix3 NPhi   = N * Phi;
 		const Matrix3 PhiNPhi = PhiN * Phi;
-		if (theta < Types<Scalar>::SMALL_ANGLE_THRESHOLD)
-			return Scalar(0.5) * N + (Scalar(1) / Scalar(6)) * (PhiN + NPhi)
-				 + (Scalar(1) / Scalar(12)) * PhiNPhi;
-		const Scalar theta2 = theta * theta;
-		const Scalar theta3 = theta2 * theta;
-		const Scalar theta4 = theta2 * theta2;
-		const Scalar theta5 = theta4 * theta;
-		const Scalar st = std::sin(theta);
-		const Scalar ct = std::cos(theta);
-		const Scalar c1 = (theta - st) / theta3;
-		const Scalar c2 = (Scalar(0.5) * theta2 + ct - Scalar(1)) / theta4;
-		const Scalar c3 = -c2 - Scalar(3) * (theta - st - theta3 / Scalar(6)) / theta5;
-		const Matrix3 Phi2  = Phi * Phi;
-		const Matrix3 NPhi2 = N * Phi2;
-		return Scalar(0.5) * N
-			 + c1 * (PhiN + NPhi + PhiNPhi)
-			 + c2 * (Phi2 * N + NPhi2 - Scalar(3) * PhiNPhi)
-			 - Scalar(0.5) * c3 * (Phi * NPhi2 + Phi2 * NPhi);
+		const Matrix3 Phi2   = Phi * Phi;
+		const Matrix3 NPhi2  = N * Phi2;
+		// Q = 1/2 N + c1 (Phi N + N Phi + Phi N Phi)
+		//          + c2 (Phi^2 N + N Phi^2 - 3 Phi N Phi)
+		//          + c3 (Phi N Phi^2 + Phi^2 N Phi)           (Barfoot, State Estimation, eq. 7.86)
+		// c1 = (t - sin t)/t^3,  c2 = (t^2/2 + cos t - 1)/t^4,  c3 = (2t - 3 sin t + t cos t)/(2 t^5).
+		// All three cancel catastrophically for small t (the former closed forms were wrong by
+		// 1e-8 near 2e-4 and the former small-angle branch dropped the O(t^2) terms), so below
+		// kSeriesAngle they are evaluated by their Taylor series.
+		Scalar c1, c2, c3;
+		detail::se3QCoefficients(theta, c1, c2, c3);
+		return Scalar(0.5) * N + c1 * (PhiN + NPhi + PhiNPhi) + c2 * (Phi2 * N + NPhi2 - Scalar(3) * PhiNPhi) +
+			   c3 * (Phi * NPhi2 + Phi2 * NPhi);
 	}
 
 	/// Left Jacobian of SE(3) exp — CRTP hook for LieGroupBase::leftJacobian.
 	static AdjointMatrix computeLeftJacobian(const TangentVector &xi) {
 		const Vector3 phi = xi.template head<3>();
 		const Vector3 rho = xi.template tail<3>();
-		const Matrix3 Jl  = SO3Type::dexp(phi); // SO3 left Jacobian
-		const Matrix3 Q   = computeQ(rho, phi);
+		const Matrix3 Jl  = SO3Type::computeLeftJacobian(phi); // SO3 left Jacobian
+		const Matrix3 Q   = jacobianQ(rho, phi);
 		AdjointMatrix M = AdjointMatrix::Zero();
 		M.template block<3, 3>(0, 0) = Jl;
 		M.template block<3, 3>(3, 3) = Jl;
@@ -611,7 +530,7 @@ namespace sofa::component::cosserat::liegroups {
 		const Vector3 phi = xi.template head<3>();
 		const Vector3 rho = xi.template tail<3>();
 		const Matrix3 Ji  = so3LeftJacobianInverse(phi);
-		const Matrix3 Q   = computeQ(rho, phi);
+		const Matrix3 Q   = jacobianQ(rho, phi);
 		AdjointMatrix M = AdjointMatrix::Zero();
 		M.template block<3, 3>(0, 0) = Ji;
 		M.template block<3, 3>(3, 3) = Ji;
@@ -652,13 +571,8 @@ namespace sofa::component::cosserat::liegroups {
 			// Random translation
 			Vector3 t = Types<Scalar>::template randomVector<3>(gen);
 
-			// Random rotation
-			// Using a simple approach: random axis and random angle
-			Vector3 axis = Types<Scalar>::template randomUnitVector<3>(gen);
-			std::uniform_real_distribution<Scalar> dist(-M_PI, M_PI);
-			Scalar angle = dist(gen);
-
-			return SE3(SO3Type(angle, axis), t);
+			// Haar-distributed rotation (see SO3::computeRandom)
+			return SE3(SO3Type::computeRandom(gen), t);
 		}
 
 		Matrix4 matrix() const {
@@ -713,7 +627,7 @@ namespace sofa::component::cosserat::liegroups {
 		 * @param y Second tangent vector.
 		 * @return Approximate tangent vector Z.
 		 */
-		static TangentVector computeBCH(const TangentVector &x, const TangentVector &y) {
+		static TangentVector bchSecondOrder(const TangentVector &x, const TangentVector &y) {
 			// Second order: x + y + 1/2 [x, y], bracket in the [phi ; rho] layout (same as computeExp/computeLog).
 			// Higher orders (1/12 ([x,[x,y]] + [y,[y,x]]), ...) can be added if needed.
 			return x + y + Scalar(0.5) * lieBracket(x, y);
@@ -829,28 +743,8 @@ namespace sofa::component::cosserat::liegroups {
 			xi_hat(2, 0) = -phi.y();
 			xi_hat(2, 1) = phi.x();
 
-			// Top-right 3x1: translation part
-			// xi_hat(0, 3) = 1.0 + rho.x(); // Wait, why 1.0 + rho.x()? This looks wrong in the original code.
-			// The original code had: xi_hat(0, 3) = 1.0 + rho.x();
-			// This seems like a bug in the previous implementation or a specific convention I'm not aware of.
-			// Standard se(3) hat map puts rho in the translation part.
-			// If I change it, I might break existing logic if it relied on this.
-			// However, looking at expCosseratSmall: T = I + s * xi_hat.
-			// If xi_hat(0,3) has 1.0, then T(0,3) = s * (1 + rho.x).
-			// But T(0,3) should be s * rho.x (for small s).
-			// Wait, T = I + ...
-			// I(0,3) is 0.
-			// So T(0,3) = s * (1 + rho.x).
-			// This implies a constant velocity component of 1 in X direction?
-			// Cosserat rods usually align along X.
-			// So "strain" might be deviation from [1, 0, 0] elongation?
-			// If rho is the strain, and the reference configuration has elongation 1,
-			// then the actual translation rate is 1 + rho.x.
-			// YES. In Cosserat mapping, the strain 'e' usually is (v - v_rest).
-			// If v_rest = [1, 0, 0], then v = [1+e_x, e_y, e_z].
-			// So the tangent vector representing the spatial derivative of the frame is indeed [1+rho.x, rho.y, rho.z].
-			// I will keep it as is, assuming 'rho' passed here is the strain (deviation).
-
+			// Translation part: [1 + rho_x, rho_y, rho_z]. rho is the strain, i.e. the deviation from the rest
+			// configuration whose spatial derivative is the unit stretch e_x (see STRAIN_CONVENTION.md).
 			xi_hat(0, 3) = 1 + rho.x();
 			xi_hat(1, 3) = rho.y();
 			xi_hat(2, 3) = rho.z();
@@ -865,3 +759,7 @@ namespace sofa::component::cosserat::liegroups {
 	using SE3d = SE3<double>;
 
 } // namespace sofa::component::cosserat::liegroups
+
+// Out-of-line free functions (operator/, Euler conversions, interpolate).
+#include "SE3.inl"
+

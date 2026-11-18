@@ -79,7 +79,7 @@ namespace Cosserat::mapping {
 				for (size_t k = 0; k < shapes.size(); ++k) {
 					// Log map relative to reference
 					// v_k = Log(ref^-1 * shape_k)
-					SE3Type diff = reference.computeInverse() * shapes[k][i];
+					SE3Type diff = reference.inverse() * shapes[k][i];
 					weighted_sum += weights[k] * diff.log();
 					total_weight += weights[k];
 				}
@@ -89,7 +89,7 @@ namespace Cosserat::mapping {
 				}
 
 				// Result = ref * Exp(weighted_sum)
-				result.push_back(reference * SE3Type::computeExp(weighted_sum));
+				result.push_back(reference * SE3Type::exp(weighted_sum));
 			}
 
 			return result;
