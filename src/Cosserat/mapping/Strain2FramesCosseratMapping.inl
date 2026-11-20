@@ -246,7 +246,7 @@ namespace Cosserat::mapping {
 
 	}
 
-	template<class TIn1, class TIn2, class TOut>
+        template<class TIn1, class TIn2, class TOut>
 	void Strain2FramesCosseratMapping<TIn1, TIn2, TOut>::updateFrameTransformations(
 			const sofa::type::vector<Coord1> &vec_of_strains) {
 		auto nb_node = vec_of_strains.size();
@@ -297,14 +297,19 @@ namespace Cosserat::mapping {
 
 
 	template<class TIn1, class TIn2, class TOut>
-	void
-	Strain2FramesCosseratMapping<TIn1, TIn2, TOut>::applyJ(const sofa::core::MechanicalParams * /* mparams */,
-													   const vector<sofa::DataVecDeriv_t<Out> *> &dataVecOutVel,
-													   const vector<const sofa::DataVecDeriv_t<In1> *> &dataVecIn1Vel,
-													   const vector<const sofa::DataVecDeriv_t<In2> *> &dataVecIn2Vel) {
+	void Strain2FramesCosseratMapping<TIn1, TIn2, TOut>::doApplyJacobianVectorProduct(
+		const sofa::core::MechanicalParams *mparams,
+		const sofa::type::vector<sofa::DataVecDeriv_t<Out> *> &dataVecTangentOut,
+		const sofa::type::vector<const sofa::DataVecDeriv_t<In1> *> &dataVecTangentIn1,
+		const sofa::type::vector<const sofa::DataVecDeriv_t<In2> *> &dataVecTangentIn2,
+		const sofa::type::vector<const sofa::DataVecCoord_t<In1> *> &dataVecPositionIn1,
+		const sofa::type::vector<const sofa::DataVecCoord_t<In2> *> &dataVecPositionIn2) {
 
+		SOFA_UNUSED(mparams);
+		SOFA_UNUSED(dataVecPositionIn1);
+		SOFA_UNUSED(dataVecPositionIn2);
 
-		if (dataVecOutVel.empty() || dataVecIn1Vel.empty() || dataVecIn2Vel.empty())
+		if (dataVecTangentOut.empty() || dataVecTangentIn1.empty() || dataVecTangentIn2.empty())
 			return;
 
 		if (this->d_componentState.getValue() != sofa::core::objectmodel::ComponentState::Valid)
@@ -313,9 +318,9 @@ namespace Cosserat::mapping {
 		if (d_debug.getValue())
 			std::cout << " ########## Strain2FramesCosseratMapping ApplyJ Function ########" << std::endl;
 
-		const sofa::VecDeriv_t<In1> &strain_vel = dataVecIn1Vel[0]->getValue();
-		const sofa::VecDeriv_t<In2> &base_vel = dataVecIn2Vel[0]->getValue();
-		sofa::VecDeriv_t<Out> &frame_vel = *dataVecOutVel[0]->beginEdit();
+		const sofa::VecDeriv_t<In1> &strain_vel = dataVecTangentIn1[0]->getValue();
+		const sofa::VecDeriv_t<In2> &base_vel = dataVecTangentIn2[0]->getValue();
+		sofa::VecDeriv_t<Out> &frame_vel = *dataVecTangentOut[0]->beginEdit();
 
 		const sofa::VecCoord_t<Out> &framePositions =
 				this->m_frames->read(sofa::core::vec_id::read_access::position)->getValue();
@@ -447,7 +452,7 @@ namespace Cosserat::mapping {
 			displayVelocities(strain_vel, base_vel, frame_vel, "applyJ - output");
 		}
 
-		dataVecOutVel[0]->endEdit();
+		dataVecTangentOut[0]->endEdit();
 
 	}
 

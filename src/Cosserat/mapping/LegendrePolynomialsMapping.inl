@@ -72,10 +72,15 @@ namespace Cosserat::mapping {
 	}
 
 	template<class TIn, class TOut>
-	void LegendrePolynomialsMapping<TIn, TOut>::applyJ(const sofa::core::MechanicalParams * /*mparams*/,
-													   Data<VecDeriv> &dOut, const Data<InVecDeriv> &dIn) {
-		sofa::helper::WriteOnlyAccessor<Data<VecDeriv>> velOut = dOut;
-		sofa::helper::ReadAccessor<Data<InVecDeriv>> velIn = dIn;
+	void LegendrePolynomialsMapping<TIn, TOut>::doApplyJacobianVectorProduct(
+		const sofa::core::MechanicalParams *mparams, sofa::DataVecDeriv_t<Out> &tangentOut,
+		const sofa::DataVecDeriv_t<In> &tangentIn, const sofa::DataVecCoord_t<In> &positionIn) {
+
+		SOFA_UNUSED(mparams);
+		SOFA_UNUSED(positionIn);
+
+		sofa::helper::WriteOnlyAccessor<Data<VecDeriv>> velOut = tangentOut;
+		sofa::helper::ReadAccessor<Data<InVecDeriv>> velIn = tangentIn;
 
 		const auto sz = d_vectorOfCurvilinearAbscissa.getValue().size();
 		velOut.resize(sz - 1);

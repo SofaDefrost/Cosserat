@@ -159,10 +159,13 @@ namespace Cosserat::mapping {
 				   const sofa::type::vector<const sofa::DataVecCoord_t<In1> *> &dataVecIn1Pos,
 				   const sofa::type::vector<const sofa::DataVecCoord_t<In2> *> &dataVecIn2Pos) override;
 
-		void applyJ(const sofa::core::MechanicalParams *mparams,
-					const sofa::type::vector<sofa::DataVecDeriv_t<Out> *> &dataVecOutVel,
-					const sofa::type::vector<const sofa::DataVecDeriv_t<In1> *> &dataVecIn1Vel,
-					const sofa::type::vector<const sofa::DataVecDeriv_t<In2> *> &dataVecIn2Vel) override;
+		void doApplyJacobianVectorProduct(
+			const sofa::core::MechanicalParams* mparams,
+			const sofa::type::vector< sofa::DataVecDeriv_t<Out>*>& dataVecTangentOut,
+			const sofa::type::vector<const sofa::DataVecDeriv_t<In1>*>& dataVecTangentIn1,
+			const sofa::type::vector<const sofa::DataVecDeriv_t<In2>*>& dataVecTangentIn2,
+			const sofa::type::vector<const sofa::DataVecCoord_t<In1>*>& dataVecPositionIn1,
+			const sofa::type::vector<const sofa::DataVecCoord_t<In2>*>& dataVecPositionIn2) override;
 
 		void applyJT(const sofa::core::MechanicalParams *mparams,
 					 const sofa::type::vector<sofa::DataVecDeriv_t<In1> *> &dataVecOut1Force,
