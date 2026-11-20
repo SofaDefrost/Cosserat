@@ -43,7 +43,9 @@ set(LIEGROUPS_TEST_FILES
         unit/test_ComponentOrder.cpp
         unit/test_LieGroupIntegrators.cpp
         unit/test_BodyJacobianUncertaintyBezier.cpp
-        
+        unit/test_LinearStrainElement.cpp
+        unit/test_LinearStrainElementCantilever.cpp
+
         # Differentiation tests
         differentiation/test_finite_differences.cpp
         differentiation/test_analytical_jacobians.cpp

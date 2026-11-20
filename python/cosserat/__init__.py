@@ -7,6 +7,7 @@ from .beam import CosseratBase
 from .geometry import (CosseratGeometry, calculate_beam_parameters,
                        calculate_frame_parameters, generate_edge_list)
 from .header import addHeader, addSolverNode, addVisual
+from .linear_strain import LinearStrainRod, add_linear_strain_rod
 from .params import (BeamGeometryParameters, BeamPhysicsBaseParameters,
                      BeamPhysicsParametersNoInertia, Parameters)
 from .utils import addEdgeCollision, addPointsCollision, create_rigid_node
@@ -25,6 +26,8 @@ __all__ = [
     'create_rigid_node',
     'addHeader',
     'addVisual',
-    'addSolverNode'
+    'addSolverNode',
+    'LinearStrainRod',
+    'add_linear_strain_rod'
 ]
 
